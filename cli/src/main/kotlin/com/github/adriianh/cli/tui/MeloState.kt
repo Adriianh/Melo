@@ -1,0 +1,53 @@
+package com.github.adriianh.cli.tui
+
+import com.github.adriianh.core.domain.model.SimilarTrack
+import com.github.adriianh.core.domain.model.Track
+import dev.tamboui.image.ImageData
+
+/**
+ * Sections available in the sidebar navigation.
+ */
+enum class SidebarSection {
+    SEARCH,
+    LIBRARY
+}
+
+/**
+ * Tabs for the detail panel.
+ */
+enum class DetailTab {
+    INFO,
+    LYRICS,
+    SIMILAR
+}
+
+/**
+ * Unified application state for the Melo TUI.
+ */
+data class MeloState(
+    // Sidebar
+    val activeSection: SidebarSection = SidebarSection.SEARCH,
+
+    // Search
+    val query: String = "",
+    val results: List<Track> = emptyList(),
+    val selectedIndex: Int = 0,
+    val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = true,
+    val errorMessage: String? = null,
+
+    // Selected track details
+    val selectedTrack: Track? = null,
+    val detailTab: DetailTab = DetailTab.INFO,
+    val lyrics: String? = null,
+    val isLoadingLyrics: Boolean = false,
+    val similarTracks: List<SimilarTrack> = emptyList(),
+    val artworkData: ImageData? = null,
+
+    // Now playing (player bar)
+    val nowPlaying: Track? = null,
+    val isPlaying: Boolean = false,
+    val progress: Double = 0.0,
+    val volume: Int = 75
+)
