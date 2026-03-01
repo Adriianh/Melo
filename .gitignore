@@ -42,4 +42,7 @@ bin/
 .vscode/
 
 ### Mac OS ###
-.DS_Store\n# Environment variables\n.env
+.DS_Store
+
+# Environment variables
+.env
