@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+      
+      - name: Build installer
+        run: ./gradlew :cli:packageApp
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: melo-${{ matrix.os }}
+          path: cli/build/installer/
