@@ -1,6 +1,7 @@
 plugins {
     id("buildsrc.convention.kotlin-jvm")
     id("io.github.goooler.shadow") version "8.1.8"
+    alias(libs.plugins.graalvmNative)
 }
 
 dependencies {
@@ -27,6 +28,17 @@ tasks {
     }
 }
 
+graalvmNative {
+    binaries {
+        named("main") {
+            imageName.set("melo")
+            mainClass.set("com.github.adriianh.cli.MeloKt")
+            buildArgs.add("--no-fallback")
+            buildArgs.add("-H:+ReportExceptionStackTraces")
+        }
+    }
+}
+
 tasks.register<Exec>("packageApp") {
     dependsOn(tasks.shadowJar)
 
@@ -43,8 +55,10 @@ tasks.register<Exec>("packageApp") {
         "--main-class", "com.github.adriianh.cli.MeloKt",
         "--name", "melo",
         "--app-version", "1.0.0",
+        "--description", "Melo Music Player",
+        "--vendor", "adriiianhh",
         "--dest", outputDir.absolutePath,
-        "--type", "app-image"
+        "--icon", "${project.rootDir}/assets/logo.png"
     )
 }
 
