@@ -36,6 +36,8 @@ graalvmNative {
             buildArgs.add("--no-fallback")
             buildArgs.add("-H:+ReportExceptionStackTraces")
             buildArgs.add("--initialize-at-run-time=kotlin.DeprecationLevel")
+            buildArgs.add("--initialize-at-run-time=kotlin.jvm.internal.Intrinsics")
+            buildArgs.add("--trace-class-initialization=kotlin.DeprecationLevel")
         }
     }
 }
