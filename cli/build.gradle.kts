@@ -35,6 +35,7 @@ graalvmNative {
             mainClass.set("com.github.adriianh.cli.MeloKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-H:+ReportExceptionStackTraces")
+            buildArgs.add("--initialize-at-run-time=kotlin.DeprecationLevel")
         }
     }
 }
