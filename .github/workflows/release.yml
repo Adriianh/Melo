@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
   workflow_dispatch:
@@ -13,30 +11,56 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    
+        include:
+          - os: ubuntu-latest
+            task: distUnix
+            artifact: "cli/build/dist/melo-*-linux.tar.gz"
+            label: linux
+          - os: macos-latest
+            task: distUnix
+            artifact: "cli/build/dist/melo-*-macos.tar.gz"
+            label: macos
+          - os: windows-latest
+            task: distWindows
+            artifact: "cli/build/dist/melo-*-windows.zip"
+            label: windows
+
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: graalvm/setup-graalvm@v1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '21'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          native-image-job-reports: 'true'
 
-      - name: Build Native Binary
-        run: ./gradlew :cli:nativeCompile
+      - name: Build distribution
+        run: ./gradlew :cli:${{ matrix.task }}
 
-      - name: Build Installer
-        run: ./gradlew :cli:packageApp
-      
-      - name: Upload Artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: melo-${{ matrix.os }}
-          path: |
-            cli/build/native/nativeCompile/
-            cli/build/installer/
+          name: melo-${{ matrix.label }}
+          path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only create a release when a tag is pushed
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
