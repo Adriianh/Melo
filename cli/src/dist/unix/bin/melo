@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 MELO_HOME="$(cd "$(dirname "$0")/.." && pwd)"
-exec java -jar "$MELO_HOME/melo.jar" "$@"
+exec java --enable-native-access=ALL-UNNAMED -jar "$MELO_HOME/melo.jar" "$@"
 

@@ -1,3 +1,3 @@
 $meloHome = Split-Path -Parent $PSScriptRoot
-& java -jar "$meloHome\melo.jar" @args
+& java --enable-native-access=ALL-UNNAMED -jar "$meloHome\melo.jar" @args
 

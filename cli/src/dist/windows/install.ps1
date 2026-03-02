@@ -11,8 +11,8 @@ New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
 
 Copy-Item -Path "$ScriptDir\melo.jar" -Destination "$InstallDir\melo.jar" -Force
 
-Set-Content "$BinDir\melo.bat" "@echo off`r`njava -jar `"$InstallDir\melo.jar`" %*`r`n"
-Set-Content "$BinDir\melo.ps1" "& java -jar `"$InstallDir\melo.jar`" @args`r`n"
+Set-Content "$BinDir\melo.bat" "@echo off`r`njava --enable-native-access=ALL-UNNAMED -jar `"$InstallDir\melo.jar`" %*`r`n"
+Set-Content "$BinDir\melo.ps1" "& java --enable-native-access=ALL-UNNAMED -jar `"$InstallDir\melo.jar`" @args`r`n"
 
 # Create a .env template only if one doesn't exist yet
 $envFile = "$ConfigDir\.env"

@@ -10,7 +10,7 @@ mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cp "$SCRIPT_DIR/melo.jar" "$INSTALL_DIR/melo.jar"
 
-printf '#!/usr/bin/env sh\nexec java -jar "%s/melo.jar" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/melo"
+printf '#!/usr/bin/env sh\nexec java --enable-native-access=ALL-UNNAMED -jar "%s/melo.jar" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/melo"
 chmod +x "$BIN_DIR/melo"
 
 # Create a .env template only if one doesn't exist yet
