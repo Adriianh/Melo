@@ -36,21 +36,38 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
-private val env = dotenv {
-    directory = System.getProperty("user.dir")
-    ignoreIfMissing = true
+/**
+ * Resolves a .env key by searching in priority order:
+ *   1. Current working directory (developer workflow / docker)
+ *   2. ~/.config/melo/          (installed user config)
+ * Returns null if the key is absent in all locations.
+ */
+private fun resolveEnv(key: String): String? {
+    val locations = listOf(
+        System.getProperty("user.dir"),
+        "${System.getProperty("user.home")}/.config/melo",       // Linux / macOS
+        "${System.getenv("APPDATA") ?: ""}\\melo",               // Windows
+    )
+    for (dir in locations) {
+        val value = dotenv {
+            directory = dir
+            ignoreIfMissing = true
+        }.get(key, null)
+        if (value != null) return value
+    }
+    return null
 }
 
 private fun hasSpotifyKeys() =
-    env.get("SPOTIFY_CLIENT_ID", null) != null &&
-            env.get("SPOTIFY_CLIENT_SECRET", null) != null
+    resolveEnv("SPOTIFY_CLIENT_ID") != null &&
+            resolveEnv("SPOTIFY_CLIENT_SECRET") != null
 
 val appModule = module {
     // Infrastructure
     single {
         HttpClient(CIO) {
             install(ContentNegotiation) {
-                val jsonConfig = Json { 
+                val jsonConfig = Json {
                     ignoreUnknownKeys = true
                     isLenient = true
                 }
@@ -69,9 +86,20 @@ val appModule = module {
 
     // API Clients
     single { ItunesApiClient(get()) }
-    single { SpotifyAuthClient(get()) }
+    single {
+        SpotifyAuthClient(
+            httpClient    = get(),
+            clientId      = resolveEnv("SPOTIFY_CLIENT_ID")     ?: "",
+            clientSecret  = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
+        )
+    }
     single { SpotifyApiClient(get(), get()) }
-    single { LastFmApiClient(get()) }
+    single {
+        LastFmApiClient(
+            httpClient = get(),
+            apiKey     = resolveEnv("LASTFM_API_KEY") ?: "",
+        )
+    }
     single { LyricsApiClient(get()) }
     single { PipedApiClient(get()) }
 

@@ -1,25 +1,14 @@
 package com.github.adriianh.data.remote.lastfm
 
 import com.github.adriianh.core.domain.model.SimilarTrack
-import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 
 class LastFmApiClient(
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val apiKey: String,
 ) {
-
-    private val dotenv = dotenv {
-        directory = System.getProperty("user.dir")
-        ignoreIfMissing = false
-    }
-
-    private val apiKey = dotenv["LASTFM_API_KEY"]
 
     suspend fun getTopTags(artist: String, limit: Int = 5): List<String> {
         return try {
