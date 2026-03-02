@@ -25,7 +25,7 @@ import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
 import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
 import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
-import io.github.cdimascio.dotenv.dotenv
+import com.github.adriianh.cli.config.resolveEnv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -36,27 +36,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
-/**
- * Resolves a .env key by searching in priority order:
- *   1. Current working directory (developer workflow / docker)
- *   2. ~/.config/melo/          (installed user config)
- * Returns null if the key is absent in all locations.
- */
-private fun resolveEnv(key: String): String? {
-    val locations = listOf(
-        System.getProperty("user.dir"),
-        "${System.getProperty("user.home")}/.config/melo",       // Linux / macOS
-        "${System.getenv("APPDATA") ?: ""}\\melo",               // Windows
-    )
-    for (dir in locations) {
-        val value = dotenv {
-            directory = dir
-            ignoreIfMissing = true
-        }.get(key, null)
-        if (value != null) return value
-    }
-    return null
-}
 
 private fun hasSpotifyKeys() =
     resolveEnv("SPOTIFY_CLIENT_ID") != null &&
