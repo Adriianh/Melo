@@ -1,0 +1,33 @@
+CREATE TABLE IF NOT EXISTS play_history (
+    id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    track_id    TEXT    NOT NULL,
+    title       TEXT    NOT NULL,
+    artist      TEXT    NOT NULL,
+    album       TEXT    NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    artwork_url TEXT,
+    source_id   TEXT,
+    played_at   INTEGER NOT NULL  -- epoch millis
+);
+
+insertPlay:
+INSERT INTO play_history (track_id, title, artist, album, duration_ms, artwork_url, source_id, played_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+selectRecentPlays:
+SELECT * FROM play_history ORDER BY played_at DESC LIMIT :limit;
+
+selectDistinctRecentTracks:
+SELECT * FROM play_history
+WHERE id IN (
+    SELECT MAX(id) FROM play_history GROUP BY track_id
+)
+ORDER BY played_at DESC
+LIMIT :limit;
+
+deleteOldHistory:
+DELETE FROM play_history
+WHERE id NOT IN (
+    SELECT id FROM play_history ORDER BY played_at DESC LIMIT 200
+);
+

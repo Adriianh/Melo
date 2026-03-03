@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS favorites (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    title       TEXT    NOT NULL,
+    artist      TEXT    NOT NULL,
+    album       TEXT    NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    artwork_url TEXT,
+    source_id   TEXT,
+    added_at    INTEGER NOT NULL  -- epoch millis
+);
+
+insertFavorite:
+INSERT OR REPLACE INTO favorites (id, title, artist, album, duration_ms, artwork_url, source_id, added_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteFavorite:
+DELETE FROM favorites WHERE id = ?;
+
+selectAllFavorites:
+SELECT * FROM favorites ORDER BY added_at DESC;
+
+selectFavoriteById:
+SELECT * FROM favorites WHERE id = ?;
+
+isFavorite:
+SELECT COUNT(*) FROM favorites WHERE id = ?;
+
