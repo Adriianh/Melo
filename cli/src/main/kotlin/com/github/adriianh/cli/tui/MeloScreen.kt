@@ -2,7 +2,7 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.GREEN
+import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
@@ -49,14 +49,14 @@ class MeloScreen(
     private val searchInputState = TextInputState()
     private val resultList: ListElement<*> = list()
         .highlightSymbol("▸ ")
-        .highlightColor(GREEN)
+        .highlightColor(PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
 
     private val sidebarList: ListElement<*> = list()
         .items("🏠 Home", "🔍 Search", "📚 Your Library")
         .highlightSymbol("▸ ")
-        .highlightColor(GREEN)
+        .highlightColor(PRIMARY_COLOR)
         .selected(1)
         .focusable()
         .id("sidebar-list")
@@ -71,7 +71,7 @@ class MeloScreen(
 
     private val similarArea: ListElement<*> = list()
         .highlightSymbol("• ")
-        .highlightColor(GREEN)
+        .highlightColor(PRIMARY_COLOR)
         .scrollbar()
         .focusable()
         .id("similar-area")
@@ -86,12 +86,9 @@ class MeloScreen(
         marqueeJob = runner()?.scheduleRepeating({
             runner()?.runOnRenderThread {
                 marqueeTick++
-                // 10 ticks (~1.5s) delay before starting scroll
                 if (marqueeTick > 10) {
                     val track = state.selectedTrack
                     val newOffset = state.marqueeOffset + 1
-                    // Detect wrap-around: when the offset reaches the start of the loop again,
-                    // reset marqueeTick to re-apply the pause before scrolling resumes
                     if (track != null) {
                         val separator = "   •   "
                         val full = track.title + separator
@@ -124,7 +121,7 @@ class MeloScreen(
     private fun renderSearchBar(): Element {
         return panel(
             row(
-                text("♫ Melo").bold().fg(GREEN).length(8),
+                text("♫ Melo").bold().fg(PRIMARY_COLOR).length(8),
                 textInput(searchInputState)
                     .placeholder("Search for songs, artists...")
                     .onSubmit(::performSearch)
@@ -192,7 +189,7 @@ class MeloScreen(
                 track.title
             }
             row(
-                text(nowPlayingIndicator).fg(GREEN).length(2),
+                text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
                 text("${index + 1}").dim().length(3),
                 text(titleText).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
                 text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
@@ -243,7 +240,7 @@ class MeloScreen(
 
         val detailTabs = tabs("Info", "Lyrics", "Similar")
             .selected(state.detailTab.ordinal)
-            .highlightColor(GREEN)
+            .highlightColor(PRIMARY_COLOR)
             .divider(" │ ")
 
         val tabContent = when (state.detailTab) {
@@ -281,7 +278,7 @@ class MeloScreen(
             text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
             text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
             text(""),
-            if (track.sourceId != null) text("✓ Available for streaming").dim().fg(GREEN)
+            if (track.sourceId != null) text("✓ Available for streaming").dim().fg(PRIMARY_COLOR)
             else text("✗ Not available for streaming").dim()
         ).flex(Flex.START)
     }
@@ -331,7 +328,7 @@ class MeloScreen(
                 val items = state.similarTracks.map { similar ->
                     val matchPercent = (similar.match * 100).toInt()
                     row(
-                        text("• ").fg(GREEN).length(2),
+                        text("• ").fg(PRIMARY_COLOR).length(2),
                         text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                         text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
                         text("($matchPercent%)").dim().length(6)
@@ -350,7 +347,7 @@ class MeloScreen(
 
         val trackInfo = if (nowPlaying != null) {
             row(
-                text(if (state.isPlaying) "▶" else "⏸").fg(GREEN).length(2),
+                text(if (state.isPlaying) "▶" else "⏸").fg(PRIMARY_COLOR).length(2),
                 text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                 text(" — ").fg(TEXT_DIM).length(3),
                 text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill()
@@ -363,7 +360,7 @@ class MeloScreen(
             row(
                 text(formatProgress(state.progress, nowPlaying.durationMs)).fg(TEXT_DIM).length(13),
                 lineGauge((state.progress * 100).toInt())
-                    .filledColor(GREEN)
+                    .filledColor(PRIMARY_COLOR)
                     .unfilledColor(TEXT_DIM)
                     .fill()
             )

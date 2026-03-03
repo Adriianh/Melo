@@ -8,8 +8,8 @@ import dev.tamboui.style.Style
  */
 object MeloTheme {
     // Brand
-    val GREEN: Color = Color.hex("#1DB954")
-    val GREEN_DARK: Color = Color.hex("#1AA34A")
+    val PRIMARY_COLOR: Color = Color.hex("#8b2eb9")
+    val SECONDARY_COLOR: Color = Color.hex("#1AA34A")
 
     // Backgrounds
     val BG_DARK: Color = Color.hex("#121212")
@@ -28,12 +28,12 @@ object MeloTheme {
 
     // Borders
     val BORDER_DEFAULT: Color = Color.hex("#333333")
-    val BORDER_FOCUSED: Color = GREEN
+    val BORDER_FOCUSED: Color = PRIMARY_COLOR
 
     // Styles
     val TITLE_STYLE: Style = Style.EMPTY.bold().fg(TEXT_PRIMARY)
     val SUBTITLE_STYLE: Style = Style.EMPTY.fg(TEXT_SECONDARY)
     val DIM_STYLE: Style = Style.EMPTY.fg(TEXT_DIM)
-    val HIGHLIGHT_STYLE: Style = Style.EMPTY.fg(GREEN).bold()
-    val NOW_PLAYING_STYLE: Style = Style.EMPTY.fg(GREEN)
+    val HIGHLIGHT_STYLE: Style = Style.EMPTY.fg(PRIMARY_COLOR).bold()
+    val NOW_PLAYING_STYLE: Style = Style.EMPTY.fg(PRIMARY_COLOR)
 }
