@@ -5,11 +5,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
-import com.github.adriianh.core.domain.usecase.GetSimilarTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetTrackUseCase
-import com.github.adriianh.core.domain.usecase.LoadMoreTracksUseCase
-import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.*
 import com.github.ajalt.clikt.core.CliktCommand
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -34,9 +30,19 @@ class SearchCommand : CliktCommand(
         val getTrack: GetTrackUseCase by inject()
         val getLyrics: GetLyricsUseCase by inject()
         val getSimilarTracks: GetSimilarTracksUseCase by inject()
+        val getFavorites: GetFavoritesUseCase by inject()
+        val addFavorite: AddFavoriteUseCase by inject()
+        val removeFavorite: RemoveFavoriteUseCase by inject()
+        val isFavorite: IsFavoriteUseCase by inject()
+        val getRecentTracks: GetRecentTracksUseCase by inject()
+        val recordPlay: RecordPlayUseCase by inject()
 
         try {
-            MeloScreen(searchTracks, loadMoreTracks, getTrack, getLyrics, getSimilarTracks).run()
+            MeloScreen(
+                searchTracks, loadMoreTracks, getTrack, getLyrics, getSimilarTracks,
+                getFavorites, addFavorite, removeFavorite, isFavorite,
+                getRecentTracks, recordPlay,
+            ).run()
         } finally {
             stopKoin()
         }

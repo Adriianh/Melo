@@ -1,24 +1,19 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
-import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.component.buildPlayerBar
+import com.github.adriianh.cli.tui.component.buildSearchBar
+import com.github.adriianh.cli.tui.component.buildSidebar
+import com.github.adriianh.cli.tui.screen.renderHomeScreen
+import com.github.adriianh.cli.tui.screen.renderLibraryScreen
+import com.github.adriianh.cli.tui.screen.renderSearchScreen
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
-import dev.tamboui.image.Image
-import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Constraint
-import dev.tamboui.layout.Flex
-import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
 import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
-import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.TuiConfig
@@ -35,6 +30,12 @@ class MeloScreen(
     private val getTrack: GetTrackUseCase,
     private val getLyrics: GetLyricsUseCase,
     private val getSimilarTracks: GetSimilarTracksUseCase,
+    private val getFavorites: GetFavoritesUseCase,
+    private val addFavorite: AddFavoriteUseCase,
+    private val removeFavorite: RemoveFavoriteUseCase,
+    private val isFavoriteUseCase: IsFavoriteUseCase,
+    private val getRecentTracks: GetRecentTracksUseCase,
+    private val recordPlay: RecordPlayUseCase,
 ) : ToolkitApp() {
 
     private var state = MeloState()
@@ -43,21 +44,31 @@ class MeloScreen(
     private var loadMoreJob: Job? = null
     private var lastQuery = ""
     private var marqueeJob: ToolkitRunner.ScheduledAction? = null
-    private var marqueeTick = 0  // counts ticks before scrolling starts
+    private var marqueeTick = 0
 
-    // UI state holders
+    // ── Widget instances ──
+
     private val searchInputState = TextInputState()
+
     private val resultList: ListElement<*> = list()
         .highlightSymbol("▸ ")
-        .highlightColor(PRIMARY_COLOR)
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
+
+    private val favoritesList: ListElement<*> = list()
+        .highlightSymbol("▸ ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("library-list")
 
     private val sidebarList: ListElement<*> = list()
         .items("🏠 Home", "🔍 Search", "📚 Your Library")
         .highlightSymbol("▸ ")
-        .highlightColor(PRIMARY_COLOR)
-        .selected(1)
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .selected(SidebarSection.SEARCH.ordinal)
         .focusable()
         .id("sidebar-list")
         .onKeyEvent(::handleSidebarKey)
@@ -68,21 +79,30 @@ class MeloScreen(
         .focusable()
         .id("lyrics-area")
 
-
     private val similarArea: ListElement<*> = list()
         .highlightSymbol("• ")
-        .highlightColor(PRIMARY_COLOR)
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
         .scrollbar()
         .focusable()
         .id("similar-area")
 
-    override fun configure(): TuiConfig {
-        return TuiConfig.builder()
-            .mouseCapture(true)
-            .build()
-    }
+    // ─────────────────────────────── Lifecycle ────────────────────────────────
+
+    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() {
+        // Observe favorites and recent tracks reactively
+        scope.launch {
+            getFavorites().collect { tracks ->
+                state = state.copy(favorites = tracks)
+            }
+        }
+        scope.launch {
+            getRecentTracks(20).collect { entries ->
+                state = state.copy(recentTracks = entries)
+            }
+        }
+        // Marquee animation ticker
         marqueeJob = runner()?.scheduleRepeating({
             runner()?.runOnRenderThread {
                 marqueeTick++
@@ -92,9 +112,7 @@ class MeloScreen(
                     if (track != null) {
                         val separator = "   •   "
                         val full = track.title + separator
-                        if (newOffset % full.length == 0) {
-                            marqueeTick = 0
-                        }
+                        if (newOffset % full.length == 0) marqueeTick = 0
                     }
                     state = state.copy(marqueeOffset = newOffset)
                 }
@@ -104,289 +122,24 @@ class MeloScreen(
 
     override fun onStop() {
         marqueeJob?.cancel()
+        scope.cancel()
     }
 
-    // ───────────────────────────────── Render ─────────────────────────────────
+    // ─────────────────────────────── Render ───────────────────────────────────
 
-    override fun render(): Element {
-        return dock()
-            .top(renderSearchBar(), Constraint.length(3))
-            .bottom(renderPlayerBar(), Constraint.length(3))
-            .left(renderSidebar(), Constraint.length(22))
-            .center(renderMainContent())
-    }
+    override fun render(): Element = dock()
+        .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
+        .bottom(buildPlayerBar(state, ::formatDuration), Constraint.length(3))
+        .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
+        .center(renderMainContent())
 
-    // ── Search Bar (Top) ──
-
-    private fun renderSearchBar(): Element {
-        return panel(
-            row(
-                text("♫ Melo").bold().fg(PRIMARY_COLOR).length(8),
-                textInput(searchInputState)
-                    .placeholder("Search for songs, artists...")
-                    .onSubmit(::performSearch)
-                    .fill()
-            )
-        ).rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .id("search-bar")
-            .onKeyEvent(::handleSearchBarKey)
-    }
-
-    // ── Sidebar (Left) ──
-
-    private fun renderSidebar(): Element {
-        return panel(
-            column(
-                sidebarList.fill()
-            )
-        ).title("Navigation")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-    }
-
-    // ── Main Content (Center) ──
-
-    private fun renderMainContent(): Element {
-        val content = when {
-            state.isLoading -> panel(
-                column(
-                    spacer(),
-                    text("  Searching...").dim().centered(),
-                    spacer()
-                )
-            ).title("Results").rounded().borderColor(BORDER_DEFAULT)
-
-            state.errorMessage != null -> panel(
-                text(state.errorMessage!!).fg(MeloTheme.ACCENT_RED)
-            ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
-
-            state.results.isEmpty() -> panel(
-                column(
-                    spacer(),
-                    text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
-                    text("  Press Tab to focus the search bar").fg(TEXT_DIM).centered(),
-                    spacer()
-                )
-            ).title("Melo").rounded().borderColor(BORDER_DEFAULT)
-
-            else -> renderResultsArea()
-        }
-
-        return content
-    }
-
-    private fun renderResultsArea(): Element {
-        val items = state.results.mapIndexed { index, track ->
-            val duration = formatDuration(track.durationMs)
-            val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
-            val isSelected = index == state.selectedIndex
-            val titleText = if (isSelected) {
-                marqueeText(track.title, state.marqueeOffset, 40)
-            } else {
-                track.title
-            }
-            row(
-                text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
-                text("${index + 1}").dim().length(3),
-                text(titleText).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
-                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                text(duration).fg(TEXT_DIM).length(6)
-            )
-        }
-
-        resultList.elements(*items.toTypedArray())
-
-        val resultsTitle = if (state.isLoadingMore) "Searching... ↓" else "Search Results"
-
-        val header = row(
-            text("").length(2),
-            text("#").dim().length(3),
-            text("Title").dim().fill(),
-            text("Artist").dim().percent(25),
-            text("Time").dim().length(6)
-        ).margin(Margin.horizontal(1))
-
-        val resultsPanel = panel(
-            column(
-                header,
-                text("").length(1),
-                resultList.fill()
-            )
+    private fun renderMainContent(): Element = when (state.activeSection) {
+        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack)
+        SidebarSection.SEARCH  -> renderSearchScreen(
+            state, resultList, lyricsArea, similarArea,
+            ::marqueeText, ::handleResultsKey, ::handleDetailKey
         )
-            .title(resultsTitle)
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("results-panel")
-            .onKeyEvent(::handleResultsKey)
-
-        return if (state.selectedTrack != null) {
-            dock()
-                .center(resultsPanel)
-                .right(renderDetailPanel(), Constraint.percentage(35))
-        } else {
-            dock().center(resultsPanel)
-        }
-    }
-
-    // ── Detail Panel (Right) ──
-
-    private fun renderDetailPanel(): Element {
-        val track = state.selectedTrack ?: return spacer()
-
-        val detailTabs = tabs("Info", "Lyrics", "Similar")
-            .selected(state.detailTab.ordinal)
-            .highlightColor(PRIMARY_COLOR)
-            .divider(" │ ")
-
-        val tabContent = when (state.detailTab) {
-            DetailTab.INFO -> renderTrackMetadata(track)
-            DetailTab.LYRICS -> renderLyricsTab()
-            DetailTab.SIMILAR -> renderSimilarTab()
-        }
-
-        val layeredContent = if (state.detailTab != DetailTab.INFO) {
-            stack(
-                ClearGraphicsElement().fill(),
-                tabContent.fill()
-            )
-        } else {
-            column(
-                renderArtwork(),
-                tabContent.fill()
-            )
-        }
-
-        return panel(
-            detailTabs.length(1),
-            layeredContent.fill()
-        ).title("Now Playing")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("detail-panel")
-            .onKeyEvent(::handleDetailKey)
-    }
-
-    private fun renderTrackMetadata(track: Track): StyledElement<*> {
-        return column(
-            text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
-            text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
-            text(""),
-            if (track.sourceId != null) text("✓ Available for streaming").dim().fg(PRIMARY_COLOR)
-            else text("✗ Not available for streaming").dim()
-        ).flex(Flex.START)
-    }
-
-    private fun renderArtwork(): StyledElement<*> {
-        return if (state.artworkData != null) {
-            widget(Image.builder()
-                .data(state.artworkData)
-                .scaling(ImageScaling.FIT)
-                .block(dev.tamboui.widgets.block.Block.builder()
-                    .borders(dev.tamboui.widgets.block.Borders.ALL)
-                    .borderType(dev.tamboui.widgets.block.BorderType.ROUNDED)
-                    .build())
-                .build()).length(18)
-        } else {
-            stack(
-                ClearGraphicsElement().fill(),
-                panel(text(" [ No Artwork ] ").dim().centered()).rounded().fit().length(5)
-            )
-        }
-    }
-
-    private fun renderLyricsTab(): StyledElement<*> {
-        return when {
-            state.isLoadingLyrics -> column(
-                spacer(),
-                text("  Loading lyrics...").dim().centered(),
-                spacer()
-            )
-            state.lyrics != null -> lyricsArea.markup(state.lyrics!!).fill()
-            else -> column(
-                spacer(),
-                text("  Press Enter to load lyrics").fg(TEXT_SECONDARY).centered(),
-                spacer()
-            )
-        }
-    }
-
-    private fun renderSimilarTab(): StyledElement<*> {
-        return when {
-            state.similarTracks.isEmpty() -> column(
-                spacer(),
-                text("  No similar tracks found").fg(TEXT_SECONDARY).centered(),
-                spacer()
-            )
-            else -> {
-                val items = state.similarTracks.map { similar ->
-                    val matchPercent = (similar.match * 100).toInt()
-                    row(
-                        text("• ").fg(PRIMARY_COLOR).length(2),
-                        text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                        text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
-                        text("($matchPercent%)").dim().length(6)
-                    )
-                }
-                similarArea.elements(*items.toTypedArray())
-                similarArea.fill()
-            }
-        }
-    }
-
-    // ── Player Bar (Bottom) ──
-
-    private fun renderPlayerBar(): Element {
-        val nowPlaying = state.nowPlaying
-
-        val trackInfo = if (nowPlaying != null) {
-            row(
-                text(if (state.isPlaying) "▶" else "⏸").fg(PRIMARY_COLOR).length(2),
-                text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                text(" — ").fg(TEXT_DIM).length(3),
-                text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill()
-            )
-        } else {
-            text("  No track selected").fg(TEXT_DIM)
-        }
-
-        val progressBar = if (nowPlaying != null) {
-            row(
-                text(formatProgress(state.progress, nowPlaying.durationMs)).fg(TEXT_DIM).length(13),
-                lineGauge((state.progress * 100).toInt())
-                    .filledColor(PRIMARY_COLOR)
-                    .unfilledColor(TEXT_DIM)
-                    .fill()
-            )
-        } else {
-            lineGauge(0)
-                .filledColor(TEXT_DIM)
-                .unfilledColor(TEXT_DIM)
-        }
-
-        val volumeBar = row(
-            text(if (state.volume > 50) "🔊" else if (state.volume > 0) "🔉" else "🔇")
-                .length(2),
-            lineGauge(state.volume)
-                .filledColor(TEXT_PRIMARY)
-                .unfilledColor(TEXT_DIM)
-                .length(8)
-        )
-
-        return panel(
-            row(
-                trackInfo.percent(35),
-                progressBar.fill(),
-                volumeBar.length(12)
-            )
-        ).rounded()
-            .borderColor(BORDER_DEFAULT)
+        SidebarSection.LIBRARY -> renderLibraryScreen(state, favoritesList, ::handleLibraryKey)
     }
 
     // ─────────────────────────────── Event Handlers ───────────────────────────
@@ -401,68 +154,47 @@ class MeloScreen(
     }
 
     private fun handleSidebarKey(event: KeyEvent): EventResult {
-        when {
-            event.matches(Actions.SELECT) -> {
-                val section = SidebarSection.entries.getOrNull(sidebarList.selected())
-                if (section != null) {
-                    state = state.copy(activeSection = section)
-                }
-                return EventResult.HANDLED
-            }
+        if (event.matches(Actions.SELECT)) {
+            val section = SidebarSection.entries.getOrNull(sidebarList.selected())
+            if (section != null) state = state.copy(activeSection = section)
+            return EventResult.HANDLED
         }
         return EventResult.UNHANDLED
     }
 
     private fun handleResultsKey(event: KeyEvent): EventResult {
         if (state.results.isEmpty()) return EventResult.UNHANDLED
-
         when {
             event.matches(Actions.SELECT) -> {
-                val selected = state.results.getOrNull(resultList.selected())
-                if (selected != null) {
-                    state = state.copy(
-                        selectedTrack = selected,
-                        nowPlaying = selected,
-                        isPlaying = true,
-                        progress = 0.0,
-                        marqueeOffset = 0
-                    )
-                    marqueeTick = 0
-                    loadTrackDetails(selected.id, selected)
-                }
+                val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                playTrack(selected)
                 return EventResult.HANDLED
             }
-
             event.matches(Actions.MOVE_DOWN) -> {
                 val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
                 resultList.selected(newIndex)
-
-                val track = state.results.getOrNull(newIndex)
-                if (track != null) {
+                state.results.getOrNull(newIndex)?.let { track ->
                     state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
                     marqueeTick = 0
                     debouncedLoadDetails(track)
                 }
-
-                if (newIndex >= state.results.size - 5 && !state.isLoadingMore && state.hasMore) {
-                    loadMore()
-                }
+                if (newIndex >= state.results.size - 5 && !state.isLoadingMore && state.hasMore) loadMore()
                 return EventResult.HANDLED
             }
-
             event.matches(Actions.MOVE_UP) -> {
                 val newIndex = maxOf(0, state.selectedIndex - 1)
                 resultList.selected(newIndex)
-
-                val track = state.results.getOrNull(newIndex)
-                if (track != null) {
+                state.results.getOrNull(newIndex)?.let { track ->
                     state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
                     marqueeTick = 0
                     debouncedLoadDetails(track)
                 }
                 return EventResult.HANDLED
             }
-
+            event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                state.results.getOrNull(state.selectedIndex)?.let { toggleFavorite(it) }
+                return EventResult.HANDLED
+            }
             event.code() == KeyCode.CHAR && event.character() == 'l' -> {
                 loadLyrics()
                 return EventResult.HANDLED
@@ -496,7 +228,62 @@ class MeloScreen(
         return EventResult.UNHANDLED
     }
 
-    // ─────────────────────────────── Actions ─────────────────────────────────
+    private fun handleLibraryKey(event: KeyEvent): EventResult {
+        if (state.favorites.isEmpty()) return EventResult.UNHANDLED
+        when {
+            event.matches(Actions.SELECT) -> {
+                state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_DOWN) -> {
+                favoritesList.selected(minOf(state.favorites.lastIndex, favoritesList.selected() + 1))
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_UP) -> {
+                favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
+    // ─────────────────────────────── Actions ──────────────────────────────────
+
+    private fun playTrack(track: Track) {
+        state = state.copy(
+            selectedTrack = track,
+            nowPlaying = track,
+            isPlaying = true,
+            progress = 0.0,
+            marqueeOffset = 0,
+        )
+        marqueeTick = 0
+        loadTrackDetails(track.id, track)
+        scope.launch { recordPlay(track) }
+        checkIsFavorite(track.id)
+    }
+
+    private fun toggleFavorite(track: Track) {
+        scope.launch {
+            if (isFavoriteUseCase(track.id)) removeFavorite(track.id)
+            else addFavorite(track)
+            state = state.copy(isFavorite = isFavoriteUseCase(track.id))
+        }
+    }
+
+    private fun removeFavoriteTrack(track: Track) {
+        scope.launch { removeFavorite(track.id) }
+    }
+
+    private fun checkIsFavorite(trackId: String) {
+        scope.launch {
+            state = state.copy(isFavorite = isFavoriteUseCase(trackId))
+        }
+    }
 
     private fun performSearch() {
         val query = searchInputState.text()
@@ -508,8 +295,10 @@ class MeloScreen(
             isLoading = true,
             errorMessage = null,
             selectedTrack = null,
-            hasMore = true
+            hasMore = true,
+            activeSection = SidebarSection.SEARCH,
         )
+        sidebarList.selected(SidebarSection.SEARCH.ordinal)
 
         scope.launch {
             try {
@@ -520,18 +309,13 @@ class MeloScreen(
                     isLoading = false,
                     selectedIndex = 0,
                     selectedTrack = firstTrack,
-                    hasMore = loadMoreTracks.hasMore(results.size)
+                    hasMore = loadMoreTracks.hasMore(results.size),
                 )
                 resultList.selected(0)
                 focusResults()
-                if (firstTrack != null) {
-                    loadTrackDetails(firstTrack.id)
-                }
+                if (firstTrack != null) loadTrackDetails(firstTrack.id)
             } catch (e: Exception) {
-                state = state.copy(
-                    isLoading = false,
-                    errorMessage = "Search failed: ${e.message}"
-                )
+                state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
             }
         }
     }
@@ -541,17 +325,14 @@ class MeloScreen(
         loadMoreJob?.cancel()
         val offset = state.results.size
         state = state.copy(isLoadingMore = true)
-
         loadMoreJob = scope.launch {
             try {
                 val more = loadMoreTracks(lastQuery, offset)
-                if (isActive) {
-                    state = state.copy(
-                        results = state.results + more,
-                        isLoadingMore = false,
-                        hasMore = loadMoreTracks.hasMore(offset + more.size)
-                    )
-                }
+                if (isActive) state = state.copy(
+                    results = state.results + more,
+                    isLoadingMore = false,
+                    hasMore = loadMoreTracks.hasMore(offset + more.size),
+                )
             } catch (_: Exception) {
                 state = state.copy(isLoadingMore = false)
             }
@@ -568,31 +349,18 @@ class MeloScreen(
 
     private fun loadTrackDetails(trackId: String, knownTrack: Track? = null) {
         detailsJob?.cancel()
-        state = state.copy(
-            lyrics = null,
-            isLoadingLyrics = false,
-            similarTracks = emptyList(),
-            artworkData = null
-        )
-
+        state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), artworkData = null)
         detailsJob = scope.launch {
             val fullTrackDeferred = async { getTrack(trackId) }
             val similarDeferred = async {
-                val artist = knownTrack?.artist ?: fullTrackDeferred.await()?.artist
-                    ?: return@async emptyList<SimilarTrack>()
-                val title = knownTrack?.title ?: fullTrackDeferred.await()?.title
-                    ?: return@async emptyList<SimilarTrack>()
+                val artist = knownTrack?.artist ?: fullTrackDeferred.await()?.artist ?: return@async emptyList<SimilarTrack>()
+                val title  = knownTrack?.title  ?: fullTrackDeferred.await()?.title  ?: return@async emptyList<SimilarTrack>()
                 getSimilarTracks(artist, title)
             }
-
             val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
             val artworkData = fullTrack.artworkUrl?.let { ArtworkRenderer.load(it) }
-
             if (isActive) {
-                state = state.copy(
-                    selectedTrack = fullTrack,
-                    artworkData = artworkData
-                )
+                state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
                 val similar = similarDeferred.await()
                 if (isActive) state = state.copy(similarTracks = similar)
             }
@@ -604,10 +372,7 @@ class MeloScreen(
         state = state.copy(isLoadingLyrics = true, lyrics = null)
         scope.launch {
             val lyrics = getLyrics(track.artist, track.title)
-            state = state.copy(
-                lyrics = lyrics ?: "Lyrics not found",
-                isLoadingLyrics = false
-            )
+            state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
         }
     }
 
@@ -624,21 +389,11 @@ class MeloScreen(
         return "$minutes:${seconds.toString().padStart(2, '0')}"
     }
 
-    private fun formatProgress(progress: Double, durationMs: Long): String {
-        val currentMs = (progress * durationMs).toLong()
-        return "${formatDuration(currentMs)} / ${formatDuration(durationMs)}"
-    }
-
-    /**
-     * Returns a scrolling (marquee) version of [text] based on [offset].
-     * If the text fits within [maxWidth] no scrolling is applied.
-     * The text loops with a gap separator: "Long title...   Long title..."
-     */
     private fun marqueeText(text: String, offset: Int, maxWidth: Int): String {
         if (text.length <= maxWidth) return text
         val separator = "   •   "
         val full = text + separator
-        val loop = full.repeat(2)  // enough to always slice a window
+        val loop = full.repeat(2)
         val start = offset % full.length
         return loop.substring(start, start + maxWidth)
     }
