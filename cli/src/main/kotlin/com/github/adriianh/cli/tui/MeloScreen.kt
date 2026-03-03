@@ -88,7 +88,18 @@ class MeloScreen(
                 marqueeTick++
                 // 10 ticks (~1.5s) delay before starting scroll
                 if (marqueeTick > 10) {
-                    state = state.copy(marqueeOffset = state.marqueeOffset + 1)
+                    val track = state.selectedTrack
+                    val newOffset = state.marqueeOffset + 1
+                    // Detect wrap-around: when the offset reaches the start of the loop again,
+                    // reset marqueeTick to re-apply the pause before scrolling resumes
+                    if (track != null) {
+                        val separator = "   •   "
+                        val full = track.title + separator
+                        if (newOffset % full.length == 0) {
+                            marqueeTick = 0
+                        }
+                    }
+                    state = state.copy(marqueeOffset = newOffset)
                 }
             }
         }, Duration.ofMillis(150))
