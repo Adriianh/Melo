@@ -8,9 +8,11 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Parameters
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.Base64
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Serializable
 private data class TokenResponse(
@@ -34,9 +36,9 @@ class SpotifyAuthClient(
         return fetchNewToken()
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     private suspend fun fetchNewToken(): String {
-        val credentials = Base64.getEncoder()
-            .encodeToString("$clientId:$clientSecret".toByteArray())
+        val credentials = Base64.encode("$clientId:$clientSecret".toByteArray())
 
         val response = httpClient.post("https://accounts.spotify.com/api/token") {
             header(HttpHeaders.Authorization, "Basic $credentials")
