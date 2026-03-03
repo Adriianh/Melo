@@ -6,6 +6,8 @@ import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
+import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
@@ -378,23 +380,5 @@ class MeloScreen(
 
     private fun focusResults() {
         runner()?.focusManager()?.setFocus("results-panel")
-    }
-
-    // ─────────────────────────────── Utilities ────────────────────────────────
-
-    private fun formatDuration(ms: Long): String {
-        val totalSeconds = ms / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return "$minutes:${seconds.toString().padStart(2, '0')}"
-    }
-
-    private fun marqueeText(text: String, offset: Int, maxWidth: Int): String {
-        if (text.length <= maxWidth) return text
-        val separator = "   •   "
-        val full = text + separator
-        val loop = full.repeat(2)
-        val start = offset % full.length
-        return loop.substring(start, start + maxWidth)
     }
 }
