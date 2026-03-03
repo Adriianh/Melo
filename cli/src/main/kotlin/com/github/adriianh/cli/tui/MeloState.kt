@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.ImageData
@@ -8,8 +9,9 @@ import dev.tamboui.image.ImageData
  * Sections available in the sidebar navigation.
  */
 enum class SidebarSection {
+    HOME,
     SEARCH,
-    LIBRARY
+    LIBRARY,
 }
 
 /**
@@ -18,7 +20,7 @@ enum class SidebarSection {
 enum class DetailTab {
     INFO,
     LYRICS,
-    SIMILAR
+    SIMILAR,
 }
 
 /**
@@ -45,6 +47,13 @@ data class MeloState(
     val similarTracks: List<SimilarTrack> = emptyList(),
     val artworkData: ImageData? = null,
 
+    // Library
+    val favorites: List<Track> = emptyList(),
+    val isFavorite: Boolean = false,
+
+    // Home
+    val recentTracks: List<HistoryEntry> = emptyList(),
+
     // Now playing (player bar)
     val nowPlaying: Track? = null,
     val isPlaying: Boolean = false,
@@ -52,5 +61,5 @@ data class MeloState(
     // Marquee scroll animation
     val marqueeOffset: Int = 0,
     val progress: Double = 0.0,
-    val volume: Int = 75
+    val volume: Int = 75,
 )
