@@ -4,12 +4,20 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.DiscoveryRepository
+import com.github.adriianh.core.domain.repository.FavoritesRepository
+import com.github.adriianh.core.domain.repository.HistoryRepository
 import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
+import com.github.adriianh.core.domain.usecase.AddFavoriteUseCase
+import com.github.adriianh.core.domain.usecase.GetFavoritesUseCase
 import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
+import com.github.adriianh.core.domain.usecase.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.GetTrackUseCase
+import com.github.adriianh.core.domain.usecase.IsFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.LoadMoreTracksUseCase
+import com.github.adriianh.core.domain.usecase.RecordPlayUseCase
+import com.github.adriianh.core.domain.usecase.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
 import com.github.adriianh.data.provider.FallbackMusicProvider
 import com.github.adriianh.data.provider.ItunesMusicProvider
@@ -22,7 +30,11 @@ import com.github.adriianh.data.remote.lyrics.LyricsApiClient
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
+import com.github.adriianh.data.local.DatabaseFactory
+import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
+import com.github.adriianh.data.repository.FavoritesRepositoryImpl
+import com.github.adriianh.data.repository.HistoryRepositoryImpl
 import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.cli.config.resolveEnv
@@ -101,6 +113,9 @@ val appModule = module {
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get()) }
     single<LyricsRepository> { LyricsRepositoryImpl(get()) }
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
+    single<MeloDatabase> { DatabaseFactory.create() }
+    single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
+    single<HistoryRepository> { HistoryRepositoryImpl(get()) }
 
     // Use Cases
     single { SearchTracksUseCase(get()) }
@@ -108,4 +123,10 @@ val appModule = module {
     single { GetTrackUseCase(get()) }
     single { GetLyricsUseCase(get()) }
     single { GetSimilarTracksUseCase(get()) }
+    single { GetFavoritesUseCase(get()) }
+    single { AddFavoriteUseCase(get()) }
+    single { RemoveFavoriteUseCase(get()) }
+    single { IsFavoriteUseCase(get()) }
+    single { GetRecentTracksUseCase(get()) }
+    single { RecordPlayUseCase(get()) }
 }
