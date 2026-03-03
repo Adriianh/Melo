@@ -9,4 +9,5 @@ kotlin {
 dependencies {
     implementation(libs.kotlinGradlePlugin)
     implementation(libs.kotlinSerializationPlugin)
+    implementation(libs.sqldelightGradlePlugin)
 }
