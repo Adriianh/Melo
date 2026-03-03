@@ -12,23 +12,23 @@ class MusicBrainzMusicProvider(
 ) : MusicProvider {
 
     override suspend fun search(query: String): List<Track> = coroutineScope {
-        val recordings = apiClient.search(query)
-        recordings.map { recording ->
-            val releaseId = recording.releases.firstOrNull()?.id
-            val artworkUrl = releaseId?.let {
-                async { apiClient.getCoverArtUrl(it) }
-            }
+        apiClient.search(query, limit = 20).map { recording ->
+            val artworkUrl = recording.releases.firstOrNull()?.id?.let { async { apiClient.getCoverArtUrl(it) } }
+            recording.toDomain(artworkUrl = artworkUrl?.await())
+        }
+    }
+
+    override suspend fun searchAll(query: String): List<Track> = coroutineScope {
+        apiClient.search(query, limit = 100).map { recording ->
+            val artworkUrl = recording.releases.firstOrNull()?.id?.let { async { apiClient.getCoverArtUrl(it) } }
             recording.toDomain(artworkUrl = artworkUrl?.await())
         }
     }
 
     override suspend fun getTrack(id: String): Track? = coroutineScope {
         val mbid = id.removePrefix("mb:")
-        val recordings = apiClient.search("rid:$mbid", limit = 1)
-        val recording = recordings.firstOrNull() ?: return@coroutineScope null
-        val releaseId = recording.releases.firstOrNull()?.id
-        val artworkUrl = releaseId?.let { apiClient.getCoverArtUrl(it) }
-
+        val recording = apiClient.search("rid:$mbid", limit = 1).firstOrNull() ?: return@coroutineScope null
+        val artworkUrl = recording.releases.firstOrNull()?.id?.let { apiClient.getCoverArtUrl(it) }
         recording.toDomain(artworkUrl = artworkUrl)
     }
 }

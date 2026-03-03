@@ -23,17 +23,18 @@ class MusicBrainzApiClient {
         }
     }
 
-    private suspend fun fetchRecordings(query: String, limit: Int = 20): MusicBrainzRecordingSearchResponse {
+    private suspend fun fetchRecordings(query: String, limit: Int = 20, offset: Int = 0): MusicBrainzRecordingSearchResponse {
         return httpClient.get("https://musicbrainz.org/ws/2/recording/") {
             parameter("query", query)
             parameter("fmt", "json")
             parameter("limit", limit)
+            if (offset > 0) parameter("offset", offset)
         }.body()
     }
 
-    suspend fun search(query: String, limit: Int = 20): List<MusicBrainzRecording> {
+    suspend fun search(query: String, limit: Int = 20, offset: Int = 0): List<MusicBrainzRecording> {
         return try {
-            fetchRecordings(query, limit).recordings
+            fetchRecordings(query, limit, offset).recordings
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {

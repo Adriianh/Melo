@@ -10,5 +10,6 @@ class LoadMoreTracksUseCase(
         if (query.isBlank()) return emptyList()
         return repository.loadMore(query, offset)
     }
-}
 
+    fun hasMore(offset: Int): Boolean = repository.hasMore(offset)
+}

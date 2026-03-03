@@ -2,17 +2,13 @@ package com.github.adriianh.data.remote.itunes
 
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 
 class ItunesApiClient(
     private val httpClient: HttpClient
 ) {
 
-    suspend fun search(query: String, limit: Int = 200): List<ItunesTrackDto> {
+    suspend fun search(query: String, limit: Int = 20): List<ItunesTrackDto> {
         return try {
             httpClient.get("https://itunes.apple.com/search") {
                 parameter("term", query)
@@ -42,4 +38,3 @@ class ItunesApiClient(
         }
     }
 }
-

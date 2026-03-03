@@ -10,13 +10,10 @@ import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
 import dev.tamboui.image.Image
-import dev.tamboui.image.ImageData
-import dev.tamboui.css.Styleable
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Flex
 import dev.tamboui.layout.Margin
-import dev.tamboui.style.Color
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
 import dev.tamboui.toolkit.element.Element
@@ -402,7 +399,7 @@ class MeloScreen(
             }
 
             event.matches(Actions.MOVE_DOWN) -> {
-                val newIndex = minOf(state.results.lastIndex, resultList.selected() + 1)
+                val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
                 resultList.selected(newIndex)
 
                 val track = state.results.getOrNull(newIndex)
@@ -418,7 +415,7 @@ class MeloScreen(
             }
 
             event.matches(Actions.MOVE_UP) -> {
-                val newIndex = maxOf(0, resultList.selected() - 1)
+                val newIndex = maxOf(0, state.selectedIndex - 1)
                 resultList.selected(newIndex)
 
                 val track = state.results.getOrNull(newIndex)
@@ -468,6 +465,8 @@ class MeloScreen(
         val query = searchInputState.text()
         if (query.isBlank()) return
         lastQuery = query
+        loadMoreJob?.cancel()
+        loadMoreJob = null
         state = state.copy(
             isLoading = true,
             errorMessage = null,
@@ -484,11 +483,10 @@ class MeloScreen(
                     isLoading = false,
                     selectedIndex = 0,
                     selectedTrack = firstTrack,
-                    hasMore = results.size >= 20
+                    hasMore = loadMoreTracks.hasMore(results.size)
                 )
                 resultList.selected(0)
                 focusResults()
-
                 if (firstTrack != null) {
                     loadTrackDetails(firstTrack.id)
                 }
@@ -504,16 +502,17 @@ class MeloScreen(
     private fun loadMore() {
         if (lastQuery.isBlank()) return
         loadMoreJob?.cancel()
+        val offset = state.results.size
         state = state.copy(isLoadingMore = true)
 
         loadMoreJob = scope.launch {
             try {
-                val more = loadMoreTracks(lastQuery, state.results.size)
+                val more = loadMoreTracks(lastQuery, offset)
                 if (isActive) {
                     state = state.copy(
                         results = state.results + more,
                         isLoadingMore = false,
-                        hasMore = more.size >= 20
+                        hasMore = loadMoreTracks.hasMore(offset + more.size)
                     )
                 }
             } catch (_: Exception) {
@@ -557,7 +556,6 @@ class MeloScreen(
                     selectedTrack = fullTrack,
                     artworkData = artworkData
                 )
-
                 val similar = similarDeferred.await()
                 if (isActive) state = state.copy(similarTracks = similar)
             }

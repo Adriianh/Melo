@@ -14,7 +14,7 @@ class SpotifyApiClient(
     private val authClient: SpotifyAuthClient
 ) {
 
-    suspend fun search(query: String, limit: Int = 20): SpotifySearchResponse {
+    suspend fun search(query: String, limit: Int = 20, offset: Int = 0): SpotifySearchResponse {
         val token = authClient.getAccessToken()
 
         return httpClient.get("https://api.spotify.com/v1/search") {
@@ -22,6 +22,7 @@ class SpotifyApiClient(
             parameter("q", query)
             parameter("type", "track")
             parameter("limit", limit)
+            if (offset > 0) parameter("offset", offset)
         }.body()
     }
 

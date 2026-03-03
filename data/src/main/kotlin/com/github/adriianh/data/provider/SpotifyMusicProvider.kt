@@ -10,7 +10,11 @@ class SpotifyMusicProvider(
 ) : MusicProvider {
 
     override suspend fun search(query: String): List<Track> {
-        return apiClient.search(query).tracks.items.map { it.toDomain() }
+        return apiClient.search(query, limit = 20).tracks.items.map { it.toDomain() }
+    }
+
+    override suspend fun searchAll(query: String): List<Track> {
+        return apiClient.search(query, limit = 50).tracks.items.map { it.toDomain() }
     }
 
     override suspend fun getTrack(id: String): Track? {

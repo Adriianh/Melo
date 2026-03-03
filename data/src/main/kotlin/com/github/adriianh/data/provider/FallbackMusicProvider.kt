@@ -8,13 +8,16 @@ class FallbackMusicProvider(
     private val fallback: MusicProvider?
 ) : MusicProvider {
 
-    inline fun <reified T : MusicProvider> primaryAs(): T? = primary as? T
-
     override suspend fun search(query: String): List<Track> {
         val results = primary.search(query)
         if (results.isNotEmpty()) return results
-        println("Primary provider returned no results, trying fallback")
         return fallback?.search(query) ?: emptyList()
+    }
+
+    override suspend fun searchAll(query: String): List<Track> {
+        val results = primary.searchAll(query)
+        if (results.isNotEmpty()) return results
+        return fallback?.searchAll(query) ?: emptyList()
     }
 
     override suspend fun getTrack(id: String): Track? {
