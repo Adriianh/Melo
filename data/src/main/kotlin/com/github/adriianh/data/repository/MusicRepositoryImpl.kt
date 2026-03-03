@@ -25,17 +25,14 @@ class MusicRepositoryImpl(
     private var backgroundFetch: Job? = null
 
     override suspend fun search(query: String): List<Track> {
-        // Cancel any previous background fetch
         backgroundFetch?.cancel()
         cachedResults = emptyList()
 
-        // Return first 20 immediately for fast response
-        val initial = musicProvider.search(query)
+        val initial = deduplicate(musicProvider.search(query))
         cachedResults = initial
 
-        // Fetch all 200 in background and update cache silently
         backgroundFetch = scope.launch {
-            val full = musicProvider.searchAll(query)
+            val full = deduplicate(musicProvider.searchAll(query))
             if (full.size > cachedResults.size) {
                 cachedResults = full
             }
@@ -45,16 +42,26 @@ class MusicRepositoryImpl(
     }
 
     override suspend fun loadMore(query: String, offset: Int): List<Track> {
-        // Wait for background fetch to complete before serving next pages
         backgroundFetch?.join()
         return cachedResults.drop(offset).take(pageSize)
     }
 
     override fun hasMore(offset: Int): Boolean {
-        // If background fetch is still running we optimistically say true,
-        // loadMore will join() and then return the real next page
         if (backgroundFetch?.isActive == true) return true
         return offset < cachedResults.size
+    }
+
+    private fun deduplicate(tracks: List<Track>): List<Track> {
+        val seen = mutableSetOf<String>()
+        return tracks.filter { track ->
+            val title = track.title
+                .lowercase()
+                .replace(Regex("\\s*[\\(\\[].*?[\\)\\]]"), "")
+                .trim()
+            val durationBucket = track.durationMs / 10_000  // 10-second buckets
+            val key = "${track.artist.lowercase()}|$title|$durationBucket"
+            seen.add(key)
+        }
     }
 
     override suspend fun getTrack(id: String): Track? = coroutineScope {
