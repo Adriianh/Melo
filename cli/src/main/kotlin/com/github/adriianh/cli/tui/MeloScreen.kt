@@ -16,6 +16,7 @@ import dev.tamboui.layout.Flex
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
+import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
@@ -26,6 +27,7 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.input.TextInputState
 import kotlinx.coroutines.*
+import java.time.Duration
 
 class MeloScreen(
     private val searchTracks: SearchTracksUseCase,
@@ -40,6 +42,8 @@ class MeloScreen(
     private var detailsJob: Job? = null
     private var loadMoreJob: Job? = null
     private var lastQuery = ""
+    private var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    private var marqueeTick = 0  // counts ticks before scrolling starts
 
     // UI state holders
     private val searchInputState = TextInputState()
@@ -76,6 +80,22 @@ class MeloScreen(
         return TuiConfig.builder()
             .mouseCapture(true)
             .build()
+    }
+
+    override fun onStart() {
+        marqueeJob = runner()?.scheduleRepeating({
+            runner()?.runOnRenderThread {
+                marqueeTick++
+                // 10 ticks (~1.5s) delay before starting scroll
+                if (marqueeTick > 10) {
+                    state = state.copy(marqueeOffset = state.marqueeOffset + 1)
+                }
+            }
+        }, Duration.ofMillis(150))
+    }
+
+    override fun onStop() {
+        marqueeJob?.cancel()
     }
 
     // ───────────────────────────────── Render ─────────────────────────────────
@@ -154,11 +174,17 @@ class MeloScreen(
         val items = state.results.mapIndexed { index, track ->
             val duration = formatDuration(track.durationMs)
             val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
+            val isSelected = index == state.selectedIndex
+            val titleText = if (isSelected) {
+                marqueeText(track.title, state.marqueeOffset, 40)
+            } else {
+                track.title
+            }
             row(
                 text(nowPlayingIndicator).fg(GREEN).length(2),
                 text("${index + 1}").dim().length(3),
-                text(track.title).fg(TEXT_PRIMARY).fill(),
-                text(track.artist).fg(TEXT_SECONDARY).percent(25),
+                text(titleText).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
                 text(duration).fg(TEXT_DIM).length(6)
             )
         }
@@ -241,8 +267,8 @@ class MeloScreen(
 
     private fun renderTrackMetadata(track: Track): StyledElement<*> {
         return column(
-            text(track.title).bold().fg(TEXT_PRIMARY),
-            text(track.artist).fg(TEXT_SECONDARY),
+            text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
+            text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
             text(""),
             if (track.sourceId != null) text("✓ Available for streaming").dim().fg(GREEN)
             else text("✗ Not available for streaming").dim()
@@ -295,9 +321,8 @@ class MeloScreen(
                     val matchPercent = (similar.match * 100).toInt()
                     row(
                         text("• ").fg(GREEN).length(2),
-                        text(similar.title).fg(TEXT_PRIMARY).fill(),
-                        text(" — ").dim().length(3),
-                        text(similar.artist).fg(TEXT_SECONDARY).percent(30),
+                        text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+                        text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
                         text("($matchPercent%)").dim().length(6)
                     )
                 }
@@ -315,9 +340,9 @@ class MeloScreen(
         val trackInfo = if (nowPlaying != null) {
             row(
                 text(if (state.isPlaying) "▶" else "⏸").fg(GREEN).length(2),
-                text(nowPlaying.title).bold().fg(TEXT_PRIMARY).fill(),
+                text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                 text(" — ").fg(TEXT_DIM).length(3),
-                text(nowPlaying.artist).fg(TEXT_SECONDARY).fill()
+                text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill()
             )
         } else {
             text("  No track selected").fg(TEXT_DIM)
@@ -391,8 +416,10 @@ class MeloScreen(
                         selectedTrack = selected,
                         nowPlaying = selected,
                         isPlaying = true,
-                        progress = 0.0
+                        progress = 0.0,
+                        marqueeOffset = 0
                     )
+                    marqueeTick = 0
                     loadTrackDetails(selected.id, selected)
                 }
                 return EventResult.HANDLED
@@ -404,7 +431,8 @@ class MeloScreen(
 
                 val track = state.results.getOrNull(newIndex)
                 if (track != null) {
-                    state = state.copy(selectedIndex = newIndex, selectedTrack = track)
+                    state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
+                    marqueeTick = 0
                     debouncedLoadDetails(track)
                 }
 
@@ -420,7 +448,8 @@ class MeloScreen(
 
                 val track = state.results.getOrNull(newIndex)
                 if (track != null) {
-                    state = state.copy(selectedIndex = newIndex, selectedTrack = track)
+                    state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
+                    marqueeTick = 0
                     debouncedLoadDetails(track)
                 }
                 return EventResult.HANDLED
@@ -590,5 +619,19 @@ class MeloScreen(
     private fun formatProgress(progress: Double, durationMs: Long): String {
         val currentMs = (progress * durationMs).toLong()
         return "${formatDuration(currentMs)} / ${formatDuration(durationMs)}"
+    }
+
+    /**
+     * Returns a scrolling (marquee) version of [text] based on [offset].
+     * If the text fits within [maxWidth] no scrolling is applied.
+     * The text loops with a gap separator: "Long title...   Long title..."
+     */
+    private fun marqueeText(text: String, offset: Int, maxWidth: Int): String {
+        if (text.length <= maxWidth) return text
+        val separator = "   •   "
+        val full = text + separator
+        val loop = full.repeat(2)  // enough to always slice a window
+        val start = offset % full.length
+        return loop.substring(start, start + maxWidth)
     }
 }
