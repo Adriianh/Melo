@@ -216,12 +216,6 @@ class MeloScreen(
         val focused = runner()?.focusManager()?.focusedId()
         val isFocused = focused == "results-panel"
         when {
-            event.matches(Actions.SELECT) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
-                playTrack(selected)
-                return EventResult.HANDLED
-            }
             event.matches(Actions.MOVE_DOWN) -> {
                 if (!isFocused) return EventResult.UNHANDLED
                 val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
@@ -243,6 +237,12 @@ class MeloScreen(
                     marqueeTick = 0
                     debouncedLoadDetails(track)
                 }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                playTrack(selected)
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'f' -> {
@@ -317,22 +317,13 @@ class MeloScreen(
      * -      → volume down 5
      */
     private fun handlePlayerBarKey(event: KeyEvent): EventResult {
-        when (KeyCode.CHAR) {
-            event.code() if event.character() == ' ' -> {
-                togglePlayPause()
-                return EventResult.HANDLED
-            }
-            event.code() if event.character() == '+' -> {
-                adjustVolume(5)
-                return EventResult.HANDLED
-            }
-            event.code() if event.character() == '-' -> {
-                adjustVolume(-5)
-                return EventResult.HANDLED
-            }
-            else -> {}
+        if (event.code() != KeyCode.CHAR) return EventResult.UNHANDLED
+        return when (event.character()) {
+            ' '  -> { togglePlayPause(); EventResult.HANDLED }
+            '+'  -> { adjustVolume(5);   EventResult.HANDLED }
+            '-'  -> { adjustVolume(-5);  EventResult.HANDLED }
+            else -> EventResult.UNHANDLED
         }
-        return EventResult.UNHANDLED
     }
 
     // ─────────────────────────────── Actions ──────────────────────────────────

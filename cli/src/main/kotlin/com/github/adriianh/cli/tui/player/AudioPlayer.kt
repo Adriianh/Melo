@@ -9,16 +9,17 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Audio player that streams audio via ffmpeg → PulseAudio/PipeWire.
+ * Audio player backed by ffplay (bundled with ffmpeg).
  *
- * Using PulseAudio as the output sink means ffmpeg participates in the normal
- * system audio mixer — no exclusive device access, no conflicts with other apps.
+ * ffplay uses SDL2 for audio output, which auto-selects the best backend per OS:
+ *   Linux  → PipeWire / PulseAudio / ALSA  (no exclusive access, mixes with other apps)
+ *   macOS  → CoreAudio
+ *   Windows → DirectSound / WASAPI
  *
- * Pause  : SIGSTOP / SIGCONT sent to the ffmpeg process (Linux/macOS).
- * Volume : softvol filter passed to ffmpeg at play time; re-starts playback
- *          from the current position when changed (acceptable UX trade-off).
+ * Pause on Linux/macOS : SIGSTOP / SIGCONT — instantaneous, no buffer delay.
+ * Pause on Windows     : restart from last known position (POSIX signals unavailable).
  *
- * Requires: ffmpeg with PulseAudio support (ffmpeg -f pulse).
+ * Volume : softvol filter via -af volume=N; restarts from current position on change.
  */
 class AudioPlayer(
     private val scope: CoroutineScope,
@@ -27,8 +28,8 @@ class AudioPlayer(
     private val onError: (Throwable) -> Unit = {},
 ) {
     private var playJob: Job? = null
-    private var ffmpegProcess: Process? = null
-    private var ffmpegPid: Long? = null
+    private var playerProcess: Process? = null
+    private var playerPid: Long? = null
 
     private val isPaused = AtomicBoolean(false)
     private val isStopped = AtomicBoolean(false)
@@ -36,10 +37,11 @@ class AudioPlayer(
     @Volatile private var startTimeMs: Long = 0L
     @Volatile private var pausedAtMs: Long = 0L
     @Volatile private var volumePct: Int = 75
-
     @Volatile private var currentUrl: String? = null
 
     val isPlaying: Boolean get() = playJob?.isActive == true && !isPaused.get()
+
+    private val isWindows = System.getProperty("os.name").lowercase().contains("win")
 
     // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -50,39 +52,48 @@ class AudioPlayer(
         isStopped.set(false)
         startTimeMs = System.currentTimeMillis()
         pausedAtMs = 0L
-        launchPlayback(url, volumePct)
+        launchPlayback(url, volumePct, seekMs = 0L)
     }
 
     fun pause() {
         if (isPaused.get() || !isPlaying) return
         isPaused.set(true)
         pausedAtMs += System.currentTimeMillis() - startTimeMs
-        sendSignal("SIGSTOP")
+        if (isWindows) {
+            suspendProcessWindows(playerPid ?: return)
+        } else {
+            sendUnixSignal("SIGSTOP")
+        }
     }
 
     fun resume() {
         if (!isPaused.get()) return
         startTimeMs = System.currentTimeMillis()
         isPaused.set(false)
-        sendSignal("SIGCONT")
+        if (isWindows) {
+            resumeProcessWindows(playerPid ?: return)
+        } else {
+            sendUnixSignal("SIGCONT")
+        }
     }
 
-    /** Volume 0–100. Takes effect immediately via a softvol filter restart. */
+    /** Volume 0–100. Restarts ffplay from current position with new softvol. */
     fun setVolume(pct: Int) {
         volumePct = pct.coerceIn(0, 100)
         val url = currentUrl ?: return
         if (playJob?.isActive == true) {
-            val elapsed = if (isPaused.get()) pausedAtMs else pausedAtMs + (System.currentTimeMillis() - startTimeMs)
-            restartWithVolume(url, volumePct, elapsed)
+            val elapsed = if (isPaused.get()) pausedAtMs
+                          else pausedAtMs + (System.currentTimeMillis() - startTimeMs)
+            restartAt(url, volumePct, elapsed)
         }
     }
 
     fun stop() {
         isStopped.set(true)
         isPaused.set(false)
-        ffmpegProcess?.destroy()
-        ffmpegProcess = null
-        ffmpegPid = null
+        playerProcess?.destroy()
+        playerProcess = null
+        playerPid = null
         playJob?.cancel()
         playJob = null
         currentUrl = null
@@ -98,13 +109,12 @@ class AudioPlayer(
 
     // ── Internal ───────────────────────────────────────────────────────────────
 
-    private fun launchPlayback(url: String, volPct: Int, seekMs: Long = 0L) {
+    private fun launchPlayback(url: String, volPct: Int, seekMs: Long) {
         playJob = scope.launch(Dispatchers.IO) {
             try {
-                val process = buildFfmpegProcess(url, volPct, seekMs)
-                ffmpegProcess = process
-                ffmpegPid = process.pid()
-
+                val process = buildFfplayProcess(url, volPct, seekMs)
+                playerProcess = process
+                playerPid = process.pid()
                 startTimeMs = System.currentTimeMillis()
 
                 val progressJob = scope.launch(Dispatchers.IO) {
@@ -129,37 +139,30 @@ class AudioPlayer(
         }
     }
 
-    private fun restartWithVolume(url: String, volPct: Int, elapsedMs: Long) {
+    private fun restartAt(url: String, volPct: Int, elapsedMs: Long) {
         isStopped.set(false)
-        ffmpegProcess?.destroy()
-        ffmpegProcess = null
-        ffmpegPid = null
+        isPaused.set(false)
+        playerProcess?.destroy()
+        playerProcess = null
+        playerPid = null
         playJob?.cancel()
         playJob = null
-        isPaused.set(false)
         pausedAtMs = elapsedMs
         startTimeMs = System.currentTimeMillis()
         launchPlayback(url, volPct, elapsedMs)
     }
 
-    private fun sendSignal(signal: String) {
-        val pid = ffmpegPid ?: return
-        try {
-            ProcessBuilder("kill", "-$signal", pid.toString())
-                .redirectErrorStream(true)
-                .start()
-                .waitFor()
-        } catch (_: Exception) { /* best-effort */ }
-    }
+    // ── Process builders ───────────────────────────────────────────────────────
 
-    private fun buildFfmpegProcess(url: String, volPct: Int, seekMs: Long): Process {
-        val volume = volPct / 100.0
+    private fun buildFfplayProcess(url: String, volPct: Int, seekMs: Long): Process {
+        val volume = volPct
 
         val cmd = mutableListOf(
-            ffmpegBinary(),
-            "-reconnect", "1",
-            "-reconnect_streamed", "1",
-            "-reconnect_delay_max", "5",
+            ffplayBinary(),
+            "-nodisp",
+            "-autoexit",
+            "-loglevel", "quiet",
+            "-af", "volume=${volume / 100.0}",
         )
 
         if (seekMs > 0) {
@@ -167,12 +170,10 @@ class AudioPlayer(
         }
 
         cmd += listOf(
+            "-reconnect", "1",
+            "-reconnect_streamed", "1",
+            "-reconnect_delay_max", "5",
             "-i", url,
-            "-af", "volume=$volume",
-            "-vn",
-            "-f", "pulse",
-            "-name", "Melo",
-            "default"
         )
 
         return ProcessBuilder(cmd)
@@ -181,8 +182,53 @@ class AudioPlayer(
             .start()
     }
 
-    private fun ffmpegBinary(): String {
-        val candidates = listOf("ffmpeg", "/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg")
+    // ── Signal helpers ─────────────────────────────────────────────────────────
+
+    private fun sendUnixSignal(signal: String) {
+        val pid = playerPid ?: return
+        try {
+            ProcessBuilder("kill", "-$signal", pid.toString())
+                .redirectErrorStream(true)
+                .start()
+                .waitFor()
+        } catch (_: Exception) { /* best-effort */ }
+    }
+
+    /**
+     * Windows: suspend all threads via NtSuspendProcess through a small PowerShell one-liner.
+     * This is the closest equivalent to SIGSTOP on Windows.
+     */
+    private fun suspendProcessWindows(pid: Long) {
+        try {
+            ProcessBuilder(
+                "powershell", "-Command",
+                "\$proc = Get-Process -Id $pid -ErrorAction SilentlyContinue; " +
+                "if (\$proc) { \$proc.Suspend() }"
+            ).redirectErrorStream(true).start().waitFor()
+        } catch (_: Exception) { /* best-effort */ }
+    }
+
+    private fun resumeProcessWindows(pid: Long) {
+        try {
+            ProcessBuilder(
+                "powershell", "-Command",
+                "\$proc = [System.Diagnostics.Process]::GetProcessById($pid); " +
+                "if (\$proc) { \$proc.Resume() }"
+            ).redirectErrorStream(true).start().waitFor()
+        } catch (_: Exception) { /* best-effort */ }
+    }
+
+    // ── Binary resolution ──────────────────────────────────────────────────────
+
+    private fun ffplayBinary(): String {
+        val name = if (isWindows) "ffplay.exe" else "ffplay"
+        val candidates = listOf(
+            name,
+            "/usr/bin/ffplay",
+            "/usr/local/bin/ffplay",
+            "/opt/homebrew/bin/ffplay",
+            "C:\\ffmpeg\\bin\\ffplay.exe",
+        )
         for (bin in candidates) {
             try {
                 val p = ProcessBuilder(bin, "-version").redirectErrorStream(true).start()
@@ -192,6 +238,6 @@ class AudioPlayer(
                 continue
             }
         }
-        return "ffmpeg"
+        return name
     }
 }
