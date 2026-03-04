@@ -16,6 +16,7 @@ dependencies {
     implementation(libs.dotenv)
     implementation(libs.scrimageCore)
     runtimeOnly(libs.slf4jSimple)
+    implementation(libs.jlayer)
 
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)

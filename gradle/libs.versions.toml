@@ -1,6 +1,7 @@
 [versions]
 kotlin = "2.3.0"
 slf4j = "2.0.17"
+jlayer = "1.0.1"
 kotlinxDatetime = "0.7.1"
 kotlinxSerializationJSON = "1.9.0"
 kotlinxCoroutines = "1.10.2"
@@ -36,6 +37,7 @@ tamboouiJline = { module = "dev.tamboui:tamboui-jline3-backend", version.ref = "
 tambouiImage = { module = "dev.tamboui:tamboui-image", version.ref = "tamboui" }
 scrimageCore = { module = "com.sksamuel.scrimage:scrimage-core", version.ref = "scrimage" }
 slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+jlayer = { module = "javazoom:jlayer", version.ref = "jlayer" }
 sqldelightRuntime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelightCoroutinesExtensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelightSqliteDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
