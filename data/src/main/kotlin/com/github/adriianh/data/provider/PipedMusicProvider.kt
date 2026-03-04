@@ -7,12 +7,9 @@ import com.github.adriianh.data.remote.piped.PipedApiClient
 /**
  * MusicProvider backed by Piped's YouTube Music search (`music_songs` filter).
  *
- * Results are songs found on YouTube Music, which covers a broader catalogue than
- * iTunes — including regional/independent releases not available on the iTunes Store
- *
  * Track IDs are prefixed with `piped:` to distinguish them from iTunes/Spotify IDs.
- * Artwork is not returned by Piped's search endpoint; it is left null so the TUI
- * falls back gracefully.
+ * Full track metadata (including artwork) is fetched via the /streams endpoint on
+ * [getTrack].
  */
 class PipedMusicProvider(
     private val apiClient: PipedApiClient
@@ -24,6 +21,9 @@ class PipedMusicProvider(
     override suspend fun searchAll(query: String): List<Track> =
         apiClient.searchTracks(query, limit = 100)
 
-    /** Piped results carry the video ID as their source; track detail lookup is not supported. */
-    override suspend fun getTrack(id: String): Track? = null
+    override suspend fun getTrack(id: String): Track? {
+        val videoId = id.removePrefix("piped:")
+        if (videoId.isBlank()) return null
+        return apiClient.getTrackDetails(videoId)
+    }
 }

@@ -43,6 +43,28 @@ class PipedApiClient(
         }
     }
 
+    suspend fun getTrackDetails(videoId: String): Track? {
+        return try {
+            val response = httpClient.get("$baseUrl/streams/$videoId")
+                .body<PipedStreamsResponse>()
+            if (response.title.isBlank()) return null
+            Track(
+                id         = "piped:$videoId",
+                title      = response.title,
+                artist     = response.uploader,
+                album      = "",
+                durationMs = response.duration * 1_000L,
+                genres     = emptyList(),
+                artworkUrl = response.thumbnailUrl,
+                sourceId   = videoId
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     suspend fun getStreamUrl(videoId: String): String? {
         return try {
             val response = httpClient.get("$baseUrl/streams/$videoId")

@@ -29,8 +29,17 @@ class MergedMusicProvider(
     }
 
     override suspend fun getTrack(id: String): Track? {
-        for (provider in providers) {
-            val track = runCatching { provider.getTrack(id) }.getOrNull()
+        val provider = when {
+            id.startsWith("itunes:") -> providers.filterIsInstance<ItunesMusicProvider>().firstOrNull()
+            id.startsWith("piped:")  -> providers.filterIsInstance<PipedMusicProvider>().firstOrNull()
+            id.startsWith("spotify:") || !id.contains(':') ->
+                providers.filterIsInstance<SpotifyMusicProvider>().firstOrNull()
+            else -> null
+        }
+        if (provider != null) return runCatching { provider.getTrack(id) }.getOrNull()
+
+        for (p in providers) {
+            val track = runCatching { p.getTrack(id) }.getOrNull()
             if (track != null) return track
         }
         return null

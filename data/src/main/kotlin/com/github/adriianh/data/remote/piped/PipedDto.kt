@@ -20,6 +20,10 @@ data class PipedStreamDto(
 
 @Serializable
 data class PipedStreamsResponse(
+    val title: String = "",
+    val uploader: String = "",
+    val thumbnailUrl: String? = null,
+    val duration: Long = 0L,
     val audioStreams: List<PipedAudioStreamDto> = emptyList()
 )
 

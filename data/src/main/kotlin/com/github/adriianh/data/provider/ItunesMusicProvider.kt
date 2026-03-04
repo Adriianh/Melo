@@ -18,6 +18,7 @@ class ItunesMusicProvider(
     }
 
     override suspend fun getTrack(id: String): Track? {
+        if (!id.startsWith("itunes:") && id.contains(':')) return null
         val trackId = id.removePrefix("itunes:")
         return apiClient.getTrack(trackId)?.toDomain()
     }

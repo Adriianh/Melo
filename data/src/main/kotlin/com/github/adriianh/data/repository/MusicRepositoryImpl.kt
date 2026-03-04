@@ -67,7 +67,11 @@ class MusicRepositoryImpl(
     override suspend fun getTrack(id: String): Track? = coroutineScope {
         val track = musicProvider.getTrack(id) ?: return@coroutineScope null
         val genres = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
-        val sourceId = async { audioProvider?.getSourceId(track.title, track.artist, track.durationMs) }
+        val sourceId = if (track.sourceId != null) {
+            async { track.sourceId }
+        } else {
+            async { audioProvider?.getSourceId(track.title, track.artist, track.durationMs) }
+        }
         track.copy(
             genres = genres.await(),
             sourceId = sourceId.await()

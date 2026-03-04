@@ -18,6 +18,7 @@ class SpotifyMusicProvider(
     }
 
     override suspend fun getTrack(id: String): Track? {
+        if (id.contains(':') && !id.startsWith("spotify:")) return null
         return apiClient.getTrack(id)?.toDomain()
     }
 }
