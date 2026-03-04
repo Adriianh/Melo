@@ -1,50 +1,27 @@
 package com.github.adriianh.cli.di
 
+import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
-import com.github.adriianh.core.domain.repository.DiscoveryRepository
-import com.github.adriianh.core.domain.repository.FavoritesRepository
-import com.github.adriianh.core.domain.repository.HistoryRepository
-import com.github.adriianh.core.domain.repository.LyricsRepository
-import com.github.adriianh.core.domain.repository.MusicRepository
-import com.github.adriianh.core.domain.usecase.AddFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.GetFavoritesUseCase
-import com.github.adriianh.core.domain.usecase.GetStreamUseCase
-import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
-import com.github.adriianh.core.domain.usecase.GetRecentTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetSimilarTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetTrackUseCase
-import com.github.adriianh.core.domain.usecase.IsFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.LoadMoreTracksUseCase
-import com.github.adriianh.core.domain.usecase.RecordPlayUseCase
-import com.github.adriianh.core.domain.usecase.RemoveFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
-import com.github.adriianh.data.provider.FallbackMusicProvider
-import com.github.adriianh.data.provider.ItunesMusicProvider
-import com.github.adriianh.data.provider.LastFmDiscoveryProvider
-import com.github.adriianh.data.provider.YtDlpAudioProvider
-import com.github.adriianh.data.provider.SpotifyMusicProvider
+import com.github.adriianh.core.domain.repository.*
+import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.data.local.DatabaseFactory
+import com.github.adriianh.data.local.MeloDatabase
+import com.github.adriianh.data.provider.*
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsApiClient
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
-import com.github.adriianh.data.local.DatabaseFactory
-import com.github.adriianh.data.local.MeloDatabase
-import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
-import com.github.adriianh.data.repository.FavoritesRepositoryImpl
-import com.github.adriianh.data.repository.HistoryRepositoryImpl
-import com.github.adriianh.data.repository.LyricsRepositoryImpl
-import com.github.adriianh.data.repository.MusicRepositoryImpl
-import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.data.repository.*
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.http.ContentType
+import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -97,15 +74,12 @@ val appModule = module {
 
     // Providers
     single<MusicProvider> {
-        val itunes = ItunesMusicProvider(get())
-        val spotify = if (hasSpotifyKeys()) SpotifyMusicProvider(get()) else null
-
-        if (spotify != null) {
-            println("Spotify keys found, using as fallback provider")
-            FallbackMusicProvider(primary = itunes, fallback = spotify)
-        } else {
-            itunes
-        }
+        val providers = mutableListOf<MusicProvider>(
+            ItunesMusicProvider(get()),
+            PipedMusicProvider(get())
+        )
+        if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
+        MergedMusicProvider(providers)
     }
     single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
     single<AudioProvider> { YtDlpAudioProvider(get()) }

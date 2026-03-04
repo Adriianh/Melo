@@ -1,5 +1,6 @@
 package com.github.adriianh.data.remote.piped
 
+import com.github.adriianh.core.domain.model.Track
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,7 +14,8 @@ data class PipedStreamDto(
     val type: String = "",
     val title: String = "",
     val uploaderName: String = "",
-    val duration: Long = 0L
+    val duration: Long = 0L,
+    val thumbnail: String? = null
 )
 
 @Serializable
@@ -28,3 +30,18 @@ data class PipedAudioStreamDto(
     val quality: String = "",
     val bitrate: Int = 0
 )
+
+/** Converts a Piped search result to the domain [Track] model. */
+fun PipedStreamDto.toDomain(): Track {
+    val videoId = url.substringAfter("v=").substringBefore("&")
+    return Track(
+        id         = "piped:$videoId",
+        title      = title,
+        artist     = uploaderName,
+        album      = "",
+        durationMs = duration * 1_000L,
+        genres     = emptyList(),
+        artworkUrl = thumbnail,
+        sourceId   = videoId.takeIf { it.isNotBlank() }
+    )
+}

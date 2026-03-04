@@ -1,12 +1,9 @@
 package com.github.adriianh.data.remote.piped
 
+import com.github.adriianh.core.domain.model.Track
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 import kotlin.math.abs
 
 class PipedApiClient(
@@ -59,6 +56,29 @@ class PipedApiClient(
             throw e
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /**
+     * Returns a list of [Track]s from Piped's `music_songs` search, suitable for
+     * use as a [com.github.adriianh.core.domain.provider.MusicProvider].
+     * Duration comes from Piped in **seconds**; it is converted to milliseconds here.
+     */
+    suspend fun searchTracks(query: String, limit: Int = 20): List<Track> {
+        return try {
+            val response = httpClient.get("$baseUrl/search") {
+                parameter("q", query)
+                parameter("filter", "music_songs")
+            }.body<PipedSearchResponse>()
+
+            response.items
+                .filter { it.type == "stream" }
+                .take(limit)
+                .map { it.toDomain() }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 

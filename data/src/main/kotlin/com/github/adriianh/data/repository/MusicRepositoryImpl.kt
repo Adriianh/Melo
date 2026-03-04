@@ -56,7 +56,7 @@ class MusicRepositoryImpl(
         return tracks.filter { track ->
             val title = track.title
                 .lowercase()
-                .replace(Regex("\\s*[\\(\\[].*?[\\)\\]]"), "")
+                .replace(Regex("""\s*[(\[{].*?[)\]}]"""), "")
                 .trim()
             val durationBucket = track.durationMs / 10_000  // 10-second buckets
             val key = "${track.artist.lowercase()}|$title|$durationBucket"
