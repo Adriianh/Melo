@@ -138,7 +138,7 @@ class MeloScreen(
         .center(renderMainContent())
 
     private fun renderMainContent(): Element = when (state.activeSection) {
-        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack)
+        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleSidebarKey)
         SidebarSection.SEARCH  -> renderSearchScreen(
             state, resultList, lyricsArea, similarArea,
             ::marqueeText, ::handleResultsKey, ::handleDetailKey
@@ -233,7 +233,7 @@ class MeloScreen(
     }
 
     private fun handleLibraryKey(event: KeyEvent): EventResult {
-        if (state.favorites.isEmpty()) return EventResult.UNHANDLED
+        if (state.favorites.isEmpty()) return handleSidebarKey(event)
         when {
             event.matches(Actions.SELECT) -> {
                 state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
@@ -252,7 +252,7 @@ class MeloScreen(
                 return EventResult.HANDLED
             }
         }
-        return EventResult.UNHANDLED
+        return handleSidebarKey(event)
     }
 
     // ─────────────────────────────── Actions ──────────────────────────────────

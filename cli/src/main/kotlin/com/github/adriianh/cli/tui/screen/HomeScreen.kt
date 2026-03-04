@@ -12,10 +12,16 @@ import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
+import dev.tamboui.toolkit.event.EventResult
+import dev.tamboui.tui.event.KeyEvent
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 fun renderHomeScreen(
     state: MeloState,
     onSelectTrack: (Track) -> Unit,
+    onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val recentSection = if (state.recentTracks.isEmpty()) {
         column(
@@ -34,7 +40,7 @@ fun renderHomeScreen(
             )
         }
         column(*items.toTypedArray())
-    }
+    }.id("recent-section")
 
     val quickPicksSection = if (state.recentTracks.isEmpty()) {
         column(
@@ -61,7 +67,7 @@ fun renderHomeScreen(
         } else {
             column(*items.toTypedArray())
         }
-    }
+    }.id("favorites-section")
 
     val greeting = buildGreeting()
 
@@ -95,16 +101,16 @@ fun renderHomeScreen(
             .focusedBorderColor(BORDER_FOCUSED)
             .focusable()
             .id("home-panel")
+            .onKeyEvent(onKeyEvent)
             .fill()
     )
 }
 
 private fun buildGreeting(): String {
-    val hour = java.time.LocalTime.now().hour
+    val hour = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
     return when {
         hour < 12 -> "  Good morning"
         hour < 18 -> "  Good afternoon"
         else      -> "  Good evening"
     }
 }
-
