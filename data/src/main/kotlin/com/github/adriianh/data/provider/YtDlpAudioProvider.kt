@@ -1,46 +1,61 @@
 package com.github.adriianh.data.provider
 
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * AudioProvider backed by yt-dlp running as a local subprocess.
- * On first use, resolves the yt-dlp binary via [YtDlpBootstrap] — downloading it
- * automatically to ~/.config/melo/yt-dlp if not already present on the system.
+ * AudioProvider that combines two backends for best results:
+ *
+ *  - **Piped** (`music_songs` filter) handles *search*: it queries YouTube Music
+ *    specifically, so results are always official audio tracks — no music videos,
+ *    covers or parodies slipping through.
+ *
+ *  - **yt-dlp** handles *stream resolution*: given the video ID returned by Piped
+ *    it resolves the direct audio URL locally in ~2-4 s, without relying on any
+ *    Piped instance staying alive.
+ *
+ * On first use, [YtDlpBootstrap] ensures yt-dlp is available, downloading it to
+ * `~/.config/melo/yt-dlp` automatically if it is not on the system PATH.
  */
-class YtDlpAudioProvider : AudioProvider {
+class YtDlpAudioProvider(
+    private val pipedApiClient: PipedApiClient
+) : AudioProvider {
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
 
+    /**
+     * Uses Piped's `music_songs` filter to find the correct YouTube Music video ID
+     * for the given track. Returns the ID (e.g. `"4NRXx6U8ABQ"`) or null on failure.
+     */
     override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? =
-        withContext(Dispatchers.IO) {
-            try {
-                val cleanTitle = title
-                    .replace(Regex("\\s*\\(.*?\\)"), "")
-                    .replace(Regex("\\s*\\[.*?]"), "")
-                    .trim()
-                val query = "ytsearch1:$cleanTitle $artist"
-                runYtDlp("--no-playlist", "--get-id", query).trim().takeIf { it.isNotBlank() }
-            } catch (_: Exception) {
-                null
-            }
-        }
+        pipedApiClient.search(title, title, artist, durationMs)
 
+    /**
+     * Resolves a direct audio-stream URL for the given YouTube video ID using a
+     * single yt-dlp subprocess (~2-4 s). Returns null on failure.
+     */
     override suspend fun getStreamUrl(sourceId: String): String? =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://www.youtube.com/watch?v=$sourceId"
-                runYtDlp("--no-playlist", "-f", "bestaudio", "--get-url", url)
-                    .trim().takeIf { it.isNotBlank() }
+                runYtDlp(
+                    "--quiet",
+                    "--no-warnings",
+                    "--no-playlist",
+                    "--skip-download",
+                    "-f", "bestaudio",
+                    "--get-url",
+                    url
+                ).lines().firstOrNull { it.startsWith("http") }
             } catch (_: Exception) {
                 null
             }
         }
 
     private fun runYtDlp(vararg args: String): String {
-        val command = listOf(ytDlpBin) + args.toList()
-        val process = ProcessBuilder(command)
+        val process = ProcessBuilder(listOf(ytDlpBin) + args.toList())
             .redirectErrorStream(false)
             .start()
         val output = process.inputStream.bufferedReader().readText()

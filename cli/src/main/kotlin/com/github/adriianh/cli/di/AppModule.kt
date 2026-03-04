@@ -108,7 +108,7 @@ val appModule = module {
         }
     }
     single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
-    single<AudioProvider> { YtDlpAudioProvider() }
+    single<AudioProvider> { YtDlpAudioProvider(get()) }
 
     // Repositories
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get()) }
