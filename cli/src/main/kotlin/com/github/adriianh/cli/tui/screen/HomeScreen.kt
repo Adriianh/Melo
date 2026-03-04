@@ -8,15 +8,13 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 
 fun renderHomeScreen(
     state: MeloState,
@@ -104,13 +102,4 @@ fun renderHomeScreen(
             .onKeyEvent(onKeyEvent)
             .fill()
     )
-}
-
-private fun buildGreeting(): String {
-    val hour = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
-    return when {
-        hour < 12 -> "  Good morning"
-        hour < 18 -> "  Good afternoon"
-        else      -> "  Good evening"
-    }
 }
