@@ -93,18 +93,20 @@ class MeloScreen(
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() {
-        // Observe favorites and recent tracks reactively
         scope.launch {
             getFavorites().collect { tracks ->
-                state = state.copy(favorites = tracks)
+                runner()?.runOnRenderThread {
+                    state = state.copy(favorites = tracks)
+                }
             }
         }
         scope.launch {
             getRecentTracks(20).collect { entries ->
-                state = state.copy(recentTracks = entries)
+                runner()?.runOnRenderThread {
+                    state = state.copy(recentTracks = entries)
+                }
             }
         }
-        // Marquee animation ticker
         marqueeJob = runner()?.scheduleRepeating({
             runner()?.runOnRenderThread {
                 marqueeTick++
@@ -273,7 +275,10 @@ class MeloScreen(
         scope.launch {
             if (isFavoriteUseCase(track.id)) removeFavorite(track.id)
             else addFavorite(track)
-            state = state.copy(isFavorite = isFavoriteUseCase(track.id))
+            val isFav = isFavoriteUseCase(track.id)
+            runner()?.runOnRenderThread {
+                state = state.copy(isFavorite = isFav)
+            }
         }
     }
 
@@ -283,7 +288,10 @@ class MeloScreen(
 
     private fun checkIsFavorite(trackId: String) {
         scope.launch {
-            state = state.copy(isFavorite = isFavoriteUseCase(trackId))
+            val isFav = isFavoriteUseCase(trackId)
+            runner()?.runOnRenderThread {
+                state = state.copy(isFavorite = isFav)
+            }
         }
     }
 
@@ -306,18 +314,22 @@ class MeloScreen(
             try {
                 val results = searchTracks(query)
                 val firstTrack = results.firstOrNull()
-                state = state.copy(
-                    results = results,
-                    isLoading = false,
-                    selectedIndex = 0,
-                    selectedTrack = firstTrack,
-                    hasMore = loadMoreTracks.hasMore(results.size),
-                )
-                resultList.selected(0)
-                focusResults()
+                runner()?.runOnRenderThread {
+                    state = state.copy(
+                        results = results,
+                        isLoading = false,
+                        selectedIndex = 0,
+                        selectedTrack = firstTrack,
+                        hasMore = loadMoreTracks.hasMore(results.size),
+                    )
+                    resultList.selected(0)
+                    focusResults()
+                }
                 if (firstTrack != null) loadTrackDetails(firstTrack.id)
             } catch (e: Exception) {
-                state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
+                runner()?.runOnRenderThread {
+                    state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
+                }
             }
         }
     }
@@ -330,13 +342,17 @@ class MeloScreen(
         loadMoreJob = scope.launch {
             try {
                 val more = loadMoreTracks(lastQuery, offset)
-                if (isActive) state = state.copy(
-                    results = state.results + more,
-                    isLoadingMore = false,
-                    hasMore = loadMoreTracks.hasMore(offset + more.size),
-                )
+                if (isActive) runner()?.runOnRenderThread {
+                    state = state.copy(
+                        results = state.results + more,
+                        isLoadingMore = false,
+                        hasMore = loadMoreTracks.hasMore(offset + more.size),
+                    )
+                }
             } catch (_: Exception) {
-                state = state.copy(isLoadingMore = false)
+                runner()?.runOnRenderThread {
+                    state = state.copy(isLoadingMore = false)
+                }
             }
         }
     }
@@ -362,9 +378,13 @@ class MeloScreen(
             val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
             val artworkData = fullTrack.artworkUrl?.let { ArtworkRenderer.load(it) }
             if (isActive) {
-                state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
+                runner()?.runOnRenderThread {
+                    state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
+                }
                 val similar = similarDeferred.await()
-                if (isActive) state = state.copy(similarTracks = similar)
+                if (isActive) runner()?.runOnRenderThread {
+                    state = state.copy(similarTracks = similar)
+                }
             }
         }
     }
@@ -374,7 +394,9 @@ class MeloScreen(
         state = state.copy(isLoadingLyrics = true, lyrics = null)
         scope.launch {
             val lyrics = getLyrics(track.artist, track.title)
-            state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
+            runner()?.runOnRenderThread {
+                state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
+            }
         }
     }
 
