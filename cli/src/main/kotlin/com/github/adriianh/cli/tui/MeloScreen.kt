@@ -135,7 +135,7 @@ class MeloScreen(
         .center(renderMainContent())
 
     private fun renderMainContent(): Element = when (state.activeSection) {
-        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleSidebarKey)
+        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey)
         SidebarSection.SEARCH  -> renderSearchScreen(
             state, resultList, lyricsArea, similarArea,
             ::marqueeText, ::handleResultsKey, ::handleDetailKey
@@ -154,25 +154,38 @@ class MeloScreen(
         return EventResult.UNHANDLED
     }
 
+    private fun handleHomeKey(event: KeyEvent): EventResult {
+        val isFocused = runner()?.focusManager()?.focusedId() == "home-panel"
+        if (!isFocused) return EventResult.UNHANDLED
+        if (event.matches(Actions.SELECT)) return applySidebarSelection()
+        return EventResult.UNHANDLED
+    }
+
     private fun handleSidebarKey(event: KeyEvent): EventResult {
+        val isFocused = runner()?.focusManager()?.focusedId() == "sidebar-panel"
+        if (!isFocused) return EventResult.UNHANDLED
         when {
             event.matches(Actions.MOVE_UP) -> {
-                val newIndex = maxOf(0, sidebarList.selected() - 1)
-                sidebarList.selected(newIndex)
+                sidebarList.selected(maxOf(0, sidebarList.selected() - 1))
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_DOWN) -> {
-                val newIndex = minOf(SidebarSection.entries.lastIndex, sidebarList.selected() + 1)
-                sidebarList.selected(newIndex)
+                sidebarList.selected(minOf(SidebarSection.entries.lastIndex, sidebarList.selected() + 1))
                 return EventResult.HANDLED
             }
             event.matches(Actions.SELECT) -> {
-                val section = SidebarSection.entries.getOrNull(sidebarList.selected())
-                if (section != null) state = state.copy(activeSection = section)
+                applySidebarSelection()
                 return EventResult.HANDLED
             }
         }
         return EventResult.UNHANDLED
+    }
+
+    /** Applies the currently highlighted sidebar item regardless of which panel has focus. */
+    private fun applySidebarSelection(): EventResult {
+        val section = SidebarSection.entries.getOrNull(sidebarList.selected())
+        if (section != null) state = state.copy(activeSection = section)
+        return EventResult.HANDLED
     }
 
     private fun handleResultsKey(event: KeyEvent): EventResult {
@@ -247,11 +260,11 @@ class MeloScreen(
     }
 
     private fun handleLibraryKey(event: KeyEvent): EventResult {
-        if (state.favorites.isEmpty()) return handleSidebarKey(event)
+        if (state.favorites.isEmpty()) return EventResult.UNHANDLED
         val isFocused = runner()?.focusManager()?.focusedId() == "library-panel"
         when {
             event.matches(Actions.SELECT) -> {
-                if (!isFocused) return handleSidebarKey(event)
+                if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
                 return EventResult.HANDLED
             }
@@ -271,7 +284,7 @@ class MeloScreen(
                 return EventResult.HANDLED
             }
         }
-        return handleSidebarKey(event)
+        return EventResult.UNHANDLED
     }
 
     // ─────────────────────────────── Actions ──────────────────────────────────
