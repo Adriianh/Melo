@@ -102,13 +102,6 @@ class AudioPlayer(
         pausedAtMs = 0L
     }
 
-    fun togglePlayPause() {
-        when {
-            isPaused.get() -> resume()
-            isPlaying      -> pause()
-        }
-    }
-
     // ── Internal ───────────────────────────────────────────────────────────────
 
     private fun launchPlayback(url: String, volPct: Int, seekMs: Long) {
@@ -140,8 +133,6 @@ class AudioPlayer(
             }
         }
     }
-
-    // ── Volume via pactl ───────────────────────────────────────────────────────
 
     /**
      * Adjusts the volume of the ffplay sink-input via pactl without interrupting playback.
@@ -200,8 +191,6 @@ class AudioPlayer(
         return results
     }
 
-    private fun parseClientId(output: String, pid: Long): String? =
-        parseClientIds(output, pid).firstOrNull()
 
     /**
      * Finds the sink-input index whose header `Client:` field matches [clientId].
@@ -209,16 +198,17 @@ class AudioPlayer(
      * `pactl list sink-inputs` header format:
      *   Sink Input #84
      *       Driver: PipeWire
-     *       Client: 42          ← this field, not the properties block
+     *       Client: 42 ← this field, not the properties block
      */
     private fun parseSinkInputByClientId(output: String, clientId: String): String? {
         var currentIndex: String? = null
         for (line in output.lines()) {
             val indexMatch = Regex("""^Sink Input #(\d+)""").find(line.trim())
+
             if (indexMatch != null) {
                 currentIndex = indexMatch.groupValues[1]
             }
-            // Match "        Client: 42"
+
             val clientMatch = Regex("""^\s+Client:\s+(\d+)$""").find(line)
             if (clientMatch != null && clientMatch.groupValues[1] == clientId) {
                 return currentIndex
@@ -226,22 +216,6 @@ class AudioPlayer(
         }
         return null
     }
-
-    private fun parseSinkInputIndex(output: String, pid: Long): String? {
-        var currentIndex: String? = null
-        val pidStr = "\"$pid\""
-        for (line in output.lines()) {
-            val indexMatch = Regex("""^Sink Input #(\d+)""").find(line.trim())
-            if (indexMatch != null) currentIndex = indexMatch.groupValues[1]
-            if ((line.contains("application.process.id =") ||
-                 line.contains("pipewire.sec.pid =")) && line.contains(pidStr)) {
-                return currentIndex
-            }
-        }
-        return null
-    }
-
-    // ── Process builders ───────────────────────────────────────────────────────
 
     private fun buildFfplayProcess(url: String, volPct: Int, seekMs: Long): Process {
         val volume = volPct / 100.0
@@ -271,8 +245,6 @@ class AudioPlayer(
             .start()
     }
 
-    // ── Signal helpers ─────────────────────────────────────────────────────────
-
     private fun sendUnixSignal(signal: String) {
         val pid = playerPid ?: return
         try {
@@ -280,7 +252,7 @@ class AudioPlayer(
                 .redirectErrorStream(true)
                 .start()
                 .waitFor()
-        } catch (_: Exception) { /* best-effort */ }
+        } catch (_: Exception) { }
     }
 
     private fun suspendProcessWindows(pid: Long) {
@@ -302,8 +274,6 @@ class AudioPlayer(
             ).redirectErrorStream(true).start().waitFor()
         } catch (_: Exception) { }
     }
-
-    // ── Binary resolution ──────────────────────────────────────────────────────
 
     private fun ffplayBinary(): String {
         val name = if (isWindows) "ffplay.exe" else "ffplay"
