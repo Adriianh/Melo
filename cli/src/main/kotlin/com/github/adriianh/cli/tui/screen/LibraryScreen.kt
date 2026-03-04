@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -21,17 +22,21 @@ fun renderLibraryScreen(
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     if (state.favorites.isEmpty()) {
-        return panel(
-            column(
-                spacer(),
-                text("  Your library is empty").fg(TEXT_SECONDARY).centered(),
-                text("  Press F on any track to add it to your favorites").fg(TEXT_DIM).centered(),
-                spacer()
-            )
-        ).title("📚 Your Library")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
+        return stack(
+            ClearGraphicsElement().fill(),
+            panel(
+                column(
+                    spacer(),
+                    text("  Your library is empty").fg(TEXT_SECONDARY).centered(),
+                    text("  Press F on any track to add it to your favorites").fg(TEXT_DIM).centered(),
+                    spacer()
+                )
+            ).title("📚 Your Library")
+                .rounded()
+                .borderColor(BORDER_DEFAULT)
+                .focusedBorderColor(BORDER_FOCUSED)
+                .fill()
+        )
     }
 
     val items = state.favorites.mapIndexed { index, track ->
@@ -55,19 +60,23 @@ fun renderLibraryScreen(
         text("Time").dim().length(6),
     ).margin(Margin.horizontal(1))
 
-    return panel(
-        column(
-            header,
-            text("").length(1),
-            favoritesList.fill()
-        )
-    ).title("📚 Your Library  [F] remove")
-        .rounded()
-        .borderColor(BORDER_DEFAULT)
-        .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
-        .id("library-panel")
-        .onKeyEvent(onKeyEvent)
+    return stack(
+        ClearGraphicsElement().fill(),
+        panel(
+            column(
+                header,
+                text("").length(1),
+                favoritesList.fill()
+            )
+        ).title("📚 Your Library  [F] remove")
+            .rounded()
+            .borderColor(BORDER_DEFAULT)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .focusable()
+            .id("library-panel")
+            .onKeyEvent(onKeyEvent)
+            .fill()
+    )
 }
 
 private fun formatDuration(ms: Long): String {

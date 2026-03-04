@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -65,34 +66,38 @@ fun renderHomeScreen(
 
     val greeting = buildGreeting()
 
-    return panel(
-        column(
-            text(greeting).bold().fg(PRIMARY_COLOR),
-            text(""),
-            dock()
-                .left(
-                    panel(recentSection)
-                        .title("🕘 Recently Played")
-                        .rounded()
-                        .borderColor(BORDER_DEFAULT)
-                        .fill(),
-                    Constraint.percentage(60)
-                )
-                .center(
-                    panel(quickPicksSection)
-                        .title("♥ Favorites")
-                        .rounded()
-                        .borderColor(BORDER_DEFAULT)
-                        .fill()
-                )
-                .fill()
-        )
-    ).title("Home")
-        .rounded()
-        .borderColor(BORDER_DEFAULT)
-        .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
-        .id("home-panel")
+    return stack(
+        ClearGraphicsElement().fill(),
+        panel(
+            column(
+                text(greeting).bold().fg(PRIMARY_COLOR),
+                text(""),
+                dock()
+                    .left(
+                        panel(recentSection)
+                            .title("🕘 Recently Played")
+                            .rounded()
+                            .borderColor(BORDER_DEFAULT)
+                            .fill(),
+                        Constraint.percentage(60)
+                    )
+                    .center(
+                        panel(quickPicksSection)
+                            .title("♥ Favorites")
+                            .rounded()
+                            .borderColor(BORDER_DEFAULT)
+                            .fill()
+                    )
+                    .fill()
+            )
+        ).title("Home")
+            .rounded()
+            .borderColor(BORDER_DEFAULT)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .focusable()
+            .id("home-panel")
+            .fill()
+    )
 }
 
 private fun buildGreeting(): String {
