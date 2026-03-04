@@ -46,6 +46,23 @@ class PipedApiClient(
         }
     }
 
+    suspend fun getStreamUrl(videoId: String): String? {
+        return try {
+            val response = httpClient.get("$baseUrl/streams/$videoId")
+                .body<PipedStreamsResponse>()
+
+            // Prefer opus/webm for best quality, fallback to any available stream
+            response.audioStreams
+                .filter { it.url.isNotBlank() }
+                .maxByOrNull { it.bitrate }
+                ?.url
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun normalize(text: String): String = text
         .lowercase()
         .replace(Regex("\\s*\\(.*?\\)"), "")

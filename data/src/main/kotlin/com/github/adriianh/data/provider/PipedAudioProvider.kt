@@ -14,4 +14,8 @@ class PipedAudioProvider(
         val query = "$cleanTitle $artist"
         return apiClient.search(query, title, artist, durationMs)
     }
+
+    override suspend fun getStreamUrl(sourceId: String): String? {
+        return apiClient.getStreamUrl(sourceId)
+    }
 }
