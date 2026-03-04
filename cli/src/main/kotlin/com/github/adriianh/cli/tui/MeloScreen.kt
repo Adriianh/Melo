@@ -155,23 +155,39 @@ class MeloScreen(
     }
 
     private fun handleSidebarKey(event: KeyEvent): EventResult {
-        if (event.matches(Actions.SELECT)) {
-            val section = SidebarSection.entries.getOrNull(sidebarList.selected())
-            if (section != null) state = state.copy(activeSection = section)
-            return EventResult.HANDLED
+        when {
+            event.matches(Actions.MOVE_UP) -> {
+                val newIndex = maxOf(0, sidebarList.selected() - 1)
+                sidebarList.selected(newIndex)
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_DOWN) -> {
+                val newIndex = minOf(SidebarSection.entries.lastIndex, sidebarList.selected() + 1)
+                sidebarList.selected(newIndex)
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.SELECT) -> {
+                val section = SidebarSection.entries.getOrNull(sidebarList.selected())
+                if (section != null) state = state.copy(activeSection = section)
+                return EventResult.HANDLED
+            }
         }
         return EventResult.UNHANDLED
     }
 
     private fun handleResultsKey(event: KeyEvent): EventResult {
         if (state.results.isEmpty()) return EventResult.UNHANDLED
+        val focused = runner()?.focusManager()?.focusedId()
+        val isFocused = focused == "results-panel"
         when {
             event.matches(Actions.SELECT) -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
                 playTrack(selected)
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_DOWN) -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
                 resultList.selected(newIndex)
                 state.results.getOrNull(newIndex)?.let { track ->
@@ -183,6 +199,7 @@ class MeloScreen(
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_UP) -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 val newIndex = maxOf(0, state.selectedIndex - 1)
                 resultList.selected(newIndex)
                 state.results.getOrNull(newIndex)?.let { track ->
@@ -231,20 +248,25 @@ class MeloScreen(
 
     private fun handleLibraryKey(event: KeyEvent): EventResult {
         if (state.favorites.isEmpty()) return handleSidebarKey(event)
+        val isFocused = runner()?.focusManager()?.focusedId() == "library-panel"
         when {
             event.matches(Actions.SELECT) -> {
+                if (!isFocused) return handleSidebarKey(event)
                 state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_DOWN) -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 favoritesList.selected(minOf(state.favorites.lastIndex, favoritesList.selected() + 1))
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_UP) -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
                 return EventResult.HANDLED
             }
