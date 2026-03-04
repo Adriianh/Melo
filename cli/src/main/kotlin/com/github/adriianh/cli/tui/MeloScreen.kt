@@ -286,11 +286,6 @@ class MeloScreen(
         if (state.favorites.isEmpty()) return EventResult.UNHANDLED
         val isFocused = runner()?.focusManager()?.focusedId() == "library-panel"
         when {
-            event.matches(Actions.SELECT) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
-                return EventResult.HANDLED
-            }
             event.matches(Actions.MOVE_DOWN) -> {
                 if (!isFocused) return EventResult.UNHANDLED
                 favoritesList.selected(minOf(state.favorites.lastIndex, favoritesList.selected() + 1))
@@ -299,6 +294,11 @@ class MeloScreen(
             event.matches(Actions.MOVE_UP) -> {
                 if (!isFocused) return EventResult.UNHANDLED
                 favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'f' -> {
