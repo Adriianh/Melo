@@ -259,8 +259,8 @@ class AudioPlayer(
         try {
             ProcessBuilder(
                 "powershell", "-Command",
-                "\$proc = Get-Process -Id $pid -ErrorAction SilentlyContinue; " +
-                "if (\$proc) { \$proc.Suspend() }"
+                $$"$proc = Get-Process -Id $$pid -ErrorAction SilentlyContinue; " +
+                        $$"if ($proc) { $proc.Suspend() }"
             ).redirectErrorStream(true).start().waitFor()
         } catch (_: Exception) { }
     }
@@ -269,8 +269,8 @@ class AudioPlayer(
         try {
             ProcessBuilder(
                 "powershell", "-Command",
-                "\$proc = [System.Diagnostics.Process]::GetProcessById($pid); " +
-                "if (\$proc) { \$proc.Resume() }"
+                $$"$proc = [System.Diagnostics.Process]::GetProcessById($$pid); " +
+                        $$"if ($proc) { $proc.Resume() }"
             ).redirectErrorStream(true).start().waitFor()
         } catch (_: Exception) { }
     }
