@@ -253,10 +253,6 @@ class MeloScreen(
                 loadLyrics()
                 return EventResult.HANDLED
             }
-            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
-                togglePlayPause()
-                return EventResult.HANDLED
-            }
         }
         return EventResult.UNHANDLED
     }
@@ -308,10 +304,6 @@ class MeloScreen(
             event.code() == KeyCode.CHAR && event.character() == 'f' -> {
                 if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
-                togglePlayPause()
                 return EventResult.HANDLED
             }
         }
