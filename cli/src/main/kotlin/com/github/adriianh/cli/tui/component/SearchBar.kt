@@ -23,6 +23,7 @@ fun buildSearchBar(
 ).rounded()
     .borderColor(BORDER_DEFAULT)
     .focusedBorderColor(BORDER_FOCUSED)
+    .focusable()
     .id("search-bar")
     .onKeyEvent(onKeyEvent)
 

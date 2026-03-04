@@ -17,4 +17,7 @@ fun buildSidebar(
     .rounded()
     .borderColor(BORDER_DEFAULT)
     .focusedBorderColor(BORDER_FOCUSED)
+    .focusable()
+    .id("sidebar-panel")
+    .onKeyEvent(onKeyEvent)
 

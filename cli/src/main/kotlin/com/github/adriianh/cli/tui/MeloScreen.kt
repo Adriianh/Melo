@@ -71,9 +71,6 @@ class MeloScreen(
         .highlightSymbol("▸ ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .selected(SidebarSection.SEARCH.ordinal)
-        .focusable()
-        .id("sidebar-list")
-        .onKeyEvent(::handleSidebarKey)
 
     private val lyricsArea = markupTextArea()
         .scrollbar()
