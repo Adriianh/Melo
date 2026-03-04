@@ -6,12 +6,12 @@ import kotlinx.coroutines.withContext
 
 /**
  * AudioProvider backed by yt-dlp running as a local subprocess.
- * Requires yt-dlp to be installed on the system (https://github.com/yt-dlp/yt-dlp).
- *
- * getSourceId  → returns the YouTube video ID found via yt-dlp's ytsearch
- * getStreamUrl → returns the best direct audio stream URL for a given video ID
+ * On first use, resolves the yt-dlp binary via [YtDlpBootstrap] — downloading it
+ * automatically to ~/.config/melo/yt-dlp if not already present on the system.
  */
 class YtDlpAudioProvider : AudioProvider {
+
+    private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
 
     override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? =
         withContext(Dispatchers.IO) {
@@ -21,13 +21,7 @@ class YtDlpAudioProvider : AudioProvider {
                     .replace(Regex("\\s*\\[.*?]"), "")
                     .trim()
                 val query = "ytsearch1:$cleanTitle $artist"
-
-                val result = runYtDlp(
-                    "--no-playlist",
-                    "--get-id",
-                    query
-                )
-                result.trim().takeIf { it.isNotBlank() }
+                runYtDlp("--no-playlist", "--get-id", query).trim().takeIf { it.isNotBlank() }
             } catch (_: Exception) {
                 null
             }
@@ -37,43 +31,20 @@ class YtDlpAudioProvider : AudioProvider {
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://www.youtube.com/watch?v=$sourceId"
-                val result = runYtDlp(
-                    "--no-playlist",
-                    "-f", "bestaudio",
-                    "--get-url",
-                    url
-                )
-                result.trim().takeIf { it.isNotBlank() }
+                runYtDlp("--no-playlist", "-f", "bestaudio", "--get-url", url)
+                    .trim().takeIf { it.isNotBlank() }
             } catch (_: Exception) {
                 null
             }
         }
 
     private fun runYtDlp(vararg args: String): String {
-        val command = mutableListOf(ytDlpBinary()) + args.toList()
+        val command = listOf(ytDlpBin) + args.toList()
         val process = ProcessBuilder(command)
             .redirectErrorStream(false)
             .start()
-
         val output = process.inputStream.bufferedReader().readText()
         process.waitFor()
         return output
     }
-
-    private fun ytDlpBinary(): String {
-        val candidates = listOf("yt-dlp", "/usr/local/bin/yt-dlp", "/usr/bin/yt-dlp")
-        for (bin in candidates) {
-            try {
-                val probe = ProcessBuilder(bin, "--version")
-                    .redirectErrorStream(true)
-                    .start()
-                probe.waitFor()
-                if (probe.exitValue() == 0) return bin
-            } catch (_: Exception) {
-                continue
-            }
-        }
-        return "yt-dlp"
-    }
 }
-
