@@ -7,14 +7,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
+import javax.sound.sampled.FloatControl
 import javax.sound.sampled.SourceDataLine
 
 /**
  * Audio player that decodes any stream URL via ffmpeg and outputs PCM to javax.sound.sampled.
  * Supports all formats yt-dlp may return: opus/webm, m4a/aac, mp3, etc.
+ *
+ * Pause: blocks the PCM write loop so ffmpeg keeps buffering internally — resumes exactly
+ *        where it left off without restarting the stream.
+ * Volume: controlled via FloatControl.Type.MASTER_GAIN on the SourceDataLine.
  *
  * Requires ffmpeg to be installed on the system.
  */
@@ -31,9 +37,13 @@ class AudioPlayer(
     private val isPaused = AtomicBoolean(false)
     private val isStopped = AtomicBoolean(false)
 
-    @Volatile private var currentUrl: String? = null
+    private val pauseLock = ReentrantLock()
+    private val resumeCondition = pauseLock.newCondition()
+
     @Volatile private var startTimeMs: Long = 0L
     @Volatile private var pausedAtMs: Long = 0L
+
+    @Volatile private var volumePct: Int = 75
 
     val isPlaying: Boolean get() = playJob?.isActive == true && !isPaused.get()
 
@@ -44,7 +54,6 @@ class AudioPlayer(
 
     fun play(url: String) {
         stop()
-        currentUrl = url
         isPaused.set(false)
         isStopped.set(false)
         startTimeMs = System.currentTimeMillis()
@@ -61,7 +70,7 @@ class AudioPlayer(
         }
     }
 
-    private suspend fun startPlayback(url: String) {
+    private fun startPlayback(url: String) {
         val ffmpeg = buildFfmpegProcess(url)
         ffmpegProcess = ffmpeg
 
@@ -69,6 +78,7 @@ class AudioPlayer(
         val line = AudioSystem.getLine(info) as SourceDataLine
         audioLine = line
         line.open(pcmFormat)
+        applyVolume(line, volumePct)
         line.start()
 
         startTimeMs = System.currentTimeMillis()
@@ -89,6 +99,17 @@ class AudioPlayer(
             var read: Int
             while (stream.read(buffer).also { read = it } != -1) {
                 if (isStopped.get()) break
+
+                pauseLock.lock()
+                try {
+                    while (isPaused.get() && !isStopped.get()) {
+                        resumeCondition.await()
+                    }
+                } finally {
+                    pauseLock.unlock()
+                }
+
+                if (isStopped.get()) break
                 line.write(buffer, 0, read)
             }
         } finally {
@@ -108,18 +129,36 @@ class AudioPlayer(
         isPaused.set(true)
         pausedAtMs += System.currentTimeMillis() - startTimeMs
         audioLine?.stop()
+        audioLine?.flush()
     }
 
     fun resume() {
         if (!isPaused.get()) return
-        isPaused.set(false)
         startTimeMs = System.currentTimeMillis()
         audioLine?.start()
+        isPaused.set(false)
+        pauseLock.lock()
+        try {
+            resumeCondition.signalAll()
+        } finally {
+            pauseLock.unlock()
+        }
+    }
+
+    fun setVolume(pct: Int) {
+        volumePct = pct.coerceIn(0, 100)
+        audioLine?.let { applyVolume(it, volumePct) }
     }
 
     fun stop() {
         isStopped.set(true)
-        isPaused.set(false)
+        pauseLock.lock()
+        try {
+            isPaused.set(false)
+            resumeCondition.signalAll()
+        } finally {
+            pauseLock.unlock()
+        }
         audioLine?.stop()
         audioLine?.close()
         audioLine = null
@@ -127,7 +166,6 @@ class AudioPlayer(
         ffmpegProcess = null
         playJob?.cancel()
         playJob = null
-        currentUrl = null
         pausedAtMs = 0L
     }
 
@@ -138,23 +176,43 @@ class AudioPlayer(
         }
     }
 
+    // ── Volume helper ──────────────────────────────────────────────────────────
+
+    /**
+     * Converts a 0–100 percentage to decibels and applies it to the line's MASTER_GAIN control.
+     * 100  →  0.0 dB  (full volume, no attenuation)
+     *  50  → ~-6 dB
+     *   0  → minimum dB (silence)
+     */
+    private fun applyVolume(line: SourceDataLine, pct: Int) {
+        if (!line.isControlSupported(FloatControl.Type.MASTER_GAIN)) return
+        val gain = line.getControl(FloatControl.Type.MASTER_GAIN) as FloatControl
+        val dB = if (pct == 0) {
+            gain.minimum
+        } else {
+            gain.minimum + (0f - gain.minimum) * (pct / 100f)
+        }
+        gain.value = dB.coerceIn(gain.minimum, gain.maximum)
+    }
+
+    // ── ffmpeg helpers ─────────────────────────────────────────────────────────
+
     private fun buildFfmpegProcess(url: String): Process {
-        // ffmpeg reads the URL and outputs raw PCM s16le stereo 44100
         val cmd = listOf(
             ffmpegBinary(),
             "-reconnect", "1",
             "-reconnect_streamed", "1",
             "-reconnect_delay_max", "5",
             "-i", url,
-            "-vn",                    // no video
-            "-acodec", "pcm_s16le",   // raw PCM output
-            "-ar", "44100",           // sample rate
-            "-ac", "2",               // stereo
-            "-f", "s16le",            // raw format
-            "pipe:1"                  // write to stdout
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "44100",
+            "-ac", "2",
+            "-f", "s16le",
+            "pipe:1"
         )
         return ProcessBuilder(cmd)
-            .redirectErrorStream(false) // keep stderr separate so we don't mix it with PCM
+            .redirectErrorStream(false)
             .start()
     }
 

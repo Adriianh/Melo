@@ -9,8 +9,14 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
+import dev.tamboui.tui.event.KeyEvent
+import dev.tamboui.toolkit.event.EventResult
 
-fun buildPlayerBar(state: MeloState, formatDuration: (Long) -> String): Element {
+fun buildPlayerBar(
+    state: MeloState,
+    formatDuration: (Long) -> String,
+    onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
+): Element {
     val nowPlaying = state.nowPlaying
 
     val trackInfo = if (nowPlaying != null) {
@@ -45,20 +51,26 @@ fun buildPlayerBar(state: MeloState, formatDuration: (Long) -> String): Element 
         lineGauge(0).filledColor(TEXT_DIM).unfilledColor(TEXT_DIM)
     }
 
+    val volumeIcon = when {
+        state.volume == 0 -> "🔇"
+        state.volume < 50 -> "🔉"
+        else -> "🔊"
+    }
+    val volumeHint = text("${state.volume}%").fg(TEXT_DIM).length(4)
     val volumeBar = row(
-        text(if (state.volume > 50) "🔊" else if (state.volume > 0) "🔉" else "🔇").length(2),
+        text(volumeIcon).length(2),
         lineGauge(state.volume)
             .filledColor(TEXT_PRIMARY)
             .unfilledColor(TEXT_DIM)
-            .length(8)
+            .length(8),
+        volumeHint
     )
 
     return panel(
         row(
             trackInfo.percent(35),
             progressBar.fill(),
-            volumeBar.length(12)
+            volumeBar.length(16)
         )
-    ).rounded().borderColor(BORDER_DEFAULT)
+    ).rounded().borderColor(BORDER_DEFAULT).onKeyEvent(onKeyEvent)
 }
-

@@ -154,7 +154,7 @@ class MeloScreen(
 
     override fun render(): Element = dock()
         .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
-        .bottom(buildPlayerBar(state, ::formatDuration), Constraint.length(3))
+        .bottom(buildPlayerBar(state, ::formatDuration, ::handlePlayerBarKey), Constraint.length(3))
         .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
         .center(renderMainContent())
 
@@ -205,7 +205,6 @@ class MeloScreen(
         return EventResult.UNHANDLED
     }
 
-    /** Applies the currently highlighted sidebar item regardless of which panel has focus. */
     private fun applySidebarSelection(): EventResult {
         val section = SidebarSection.entries.getOrNull(sidebarList.selected())
         if (section != null) state = state.copy(activeSection = section)
@@ -319,6 +318,31 @@ class MeloScreen(
         return EventResult.UNHANDLED
     }
 
+    /**
+     * Global player controls — handled regardless of which panel has focus.
+     * Space  → play / pause
+     * +      → volume up 5
+     * -      → volume down 5
+     */
+    private fun handlePlayerBarKey(event: KeyEvent): EventResult {
+        when (KeyCode.CHAR) {
+            event.code() if event.character() == ' ' -> {
+                togglePlayPause()
+                return EventResult.HANDLED
+            }
+            event.code() if event.character() == '+' -> {
+                adjustVolume(5)
+                return EventResult.HANDLED
+            }
+            event.code() if event.character() == '-' -> {
+                adjustVolume(-5)
+                return EventResult.HANDLED
+            }
+            else -> {}
+        }
+        return EventResult.UNHANDLED
+    }
+
     // ─────────────────────────────── Actions ──────────────────────────────────
 
     private fun playTrack(track: Track) {
@@ -358,6 +382,12 @@ class MeloScreen(
             audioPlayer.resume()
             state = state.copy(isPlaying = true)
         }
+    }
+
+    private fun adjustVolume(delta: Int) {
+        val newVol = (state.volume + delta).coerceIn(0, 100)
+        state = state.copy(volume = newVol)
+        audioPlayer.setVolume(newVol)
     }
 
     private fun toggleFavorite(track: Track) {
