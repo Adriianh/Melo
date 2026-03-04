@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.koinCore)
     implementation(libs.dotenv)
     implementation(libs.scrimageCore)
+    runtimeOnly(libs.slf4jSimple)
 
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)
