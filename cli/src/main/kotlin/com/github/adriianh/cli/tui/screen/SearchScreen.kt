@@ -36,7 +36,7 @@ fun renderSearchScreen(
     ).title("Results").rounded().borderColor(BORDER_DEFAULT)
 
     state.errorMessage != null -> panel(
-        text(state.errorMessage!!).fg(MeloTheme.ACCENT_RED)
+        text(state.errorMessage).fg(MeloTheme.ACCENT_RED)
     ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
 
     state.results.isEmpty() -> panel(

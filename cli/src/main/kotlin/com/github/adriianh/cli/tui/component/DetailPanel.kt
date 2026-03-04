@@ -107,7 +107,7 @@ private fun renderLyricsTab(
         text("  Loading lyrics...").dim().centered(),
         spacer()
     )
-    state.lyrics != null  -> lyricsArea.markup(state.lyrics!!).fill()
+    state.lyrics != null  -> lyricsArea.markup(state.lyrics).fill()
     else -> column(
         spacer(),
         text("  Press Enter to load lyrics").fg(TEXT_SECONDARY).centered(),
