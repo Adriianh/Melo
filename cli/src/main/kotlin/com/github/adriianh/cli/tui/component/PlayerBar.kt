@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
@@ -13,8 +14,14 @@ fun buildPlayerBar(state: MeloState, formatDuration: (Long) -> String): Element 
     val nowPlaying = state.nowPlaying
 
     val trackInfo = if (nowPlaying != null) {
+        val statusIcon = when {
+            state.isLoadingAudio -> "⏳"
+            state.audioError != null -> "✗"
+            state.isPlaying -> "▶"
+            else -> "⏸"
+        }
         row(
-            text(if (state.isPlaying) "▶" else "⏸").fg(PRIMARY_COLOR).length(2),
+            text(statusIcon).fg(if (state.audioError != null) ACCENT_RED else PRIMARY_COLOR).length(2),
             text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
             text(" — ").fg(TEXT_DIM).length(3),
             text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill()

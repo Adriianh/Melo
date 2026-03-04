@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.SimilarTrack
@@ -38,6 +39,7 @@ class MeloScreen(
     private val isFavoriteUseCase: IsFavoriteUseCase,
     private val getRecentTracks: GetRecentTracksUseCase,
     private val recordPlay: RecordPlayUseCase,
+    private val getStream: GetStreamUseCase,
 ) : ToolkitApp() {
 
     private var state = MeloState()
@@ -47,6 +49,27 @@ class MeloScreen(
     private var lastQuery = ""
     private var marqueeJob: ToolkitRunner.ScheduledAction? = null
     private var marqueeTick = 0
+
+    private val audioPlayer = AudioPlayer(
+        scope = scope,
+        onProgress = { elapsedMs ->
+            runner()?.runOnRenderThread {
+                val duration = state.nowPlaying?.durationMs ?: 0L
+                val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
+                state = state.copy(progress = progress)
+            }
+        },
+        onFinish = {
+            runner()?.runOnRenderThread {
+                state = state.copy(isPlaying = false, progress = 0.0)
+            }
+        },
+        onError = { err ->
+            runner()?.runOnRenderThread {
+                state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message)
+            }
+        },
+    )
 
     // ── Widget instances ──
 
@@ -123,6 +146,7 @@ class MeloScreen(
 
     override fun onStop() {
         marqueeJob?.cancel()
+        audioPlayer.stop()
         scope.cancel()
     }
 
@@ -230,6 +254,10 @@ class MeloScreen(
                 loadLyrics()
                 return EventResult.HANDLED
             }
+            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
+                togglePlayPause()
+                return EventResult.HANDLED
+            }
         }
         return EventResult.UNHANDLED
     }
@@ -283,6 +311,10 @@ class MeloScreen(
                 state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
                 return EventResult.HANDLED
             }
+            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
+                togglePlayPause()
+                return EventResult.HANDLED
+            }
         }
         return EventResult.UNHANDLED
     }
@@ -293,14 +325,39 @@ class MeloScreen(
         state = state.copy(
             selectedTrack = track,
             nowPlaying = track,
-            isPlaying = true,
+            isPlaying = false,
+            isLoadingAudio = true,
+            audioError = null,
             progress = 0.0,
             marqueeOffset = 0,
         )
         marqueeTick = 0
+        audioPlayer.stop()
         loadTrackDetails(track.id, track)
-        scope.launch { recordPlay(track) }
+        scope.launch {
+            recordPlay(track)
+            val url = getStream(track)
+            runner()?.runOnRenderThread {
+                if (url == null) {
+                    state = state.copy(isLoadingAudio = false, audioError = "Stream not available")
+                    return@runOnRenderThread
+                }
+                state = state.copy(isPlaying = true, isLoadingAudio = false)
+                audioPlayer.play(url)
+            }
+        }
         checkIsFavorite(track.id)
+    }
+
+    private fun togglePlayPause() {
+        if (state.nowPlaying == null || state.isLoadingAudio) return
+        if (state.isPlaying) {
+            audioPlayer.pause()
+            state = state.copy(isPlaying = false)
+        } else {
+            audioPlayer.resume()
+            state = state.copy(isPlaying = true)
+        }
     }
 
     private fun toggleFavorite(track: Track) {

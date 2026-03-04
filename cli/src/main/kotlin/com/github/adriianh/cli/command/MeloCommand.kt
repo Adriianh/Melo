@@ -18,6 +18,7 @@ import com.github.adriianh.core.domain.usecase.LoadMoreTracksUseCase
 import com.github.adriianh.core.domain.usecase.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.GetStreamUseCase
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -63,12 +64,13 @@ class MeloCommand : CliktCommand(
         val isFavorite: IsFavoriteUseCase by inject()
         val getRecentTracks: GetRecentTracksUseCase by inject()
         val recordPlay: RecordPlayUseCase by inject()
+        val getStream: GetStreamUseCase by inject()
 
         try {
             MeloScreen(
                 searchTracks, loadMoreTracks, getTrack, getLyrics, getSimilarTracks,
                 getFavorites, addFavorite, removeFavorite, isFavorite,
-                getRecentTracks, recordPlay,
+                getRecentTracks, recordPlay, getStream,
             ).run()
         } finally {
             stopKoin()

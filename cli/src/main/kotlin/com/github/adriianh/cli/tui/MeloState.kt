@@ -57,6 +57,8 @@ data class MeloState(
     // Now playing (player bar)
     val nowPlaying: Track? = null,
     val isPlaying: Boolean = false,
+    val isLoadingAudio: Boolean = false,
+    val audioError: String? = null,
 
     // Marquee scroll animation
     val marqueeOffset: Int = 0,

@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.usecase.AddFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.GetFavoritesUseCase
+import com.github.adriianh.core.domain.usecase.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.GetSimilarTracksUseCase
@@ -129,4 +130,5 @@ val appModule = module {
     single { IsFavoriteUseCase(get()) }
     single { GetRecentTracksUseCase(get()) }
     single { RecordPlayUseCase(get()) }
+    single { GetStreamUseCase(get()) }
 }
