@@ -3,6 +3,7 @@ package com.github.adriianh.cli.command.config
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.config.configDir
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
 
 class ConfigCommand : CliktCommand(name = "config") {
@@ -12,6 +13,8 @@ class ConfigCommand : CliktCommand(name = "config") {
             ConfigListCommand(),
         )
     }
+
+    override fun help(context: Context): String = Messages.get("help.config_command")
 
     override fun run() = Unit
 }
