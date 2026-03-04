@@ -12,9 +12,6 @@ import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
-import dev.tamboui.toolkit.event.EventResult
-import dev.tamboui.tui.bindings.Actions
-import dev.tamboui.tui.event.KeyEvent
 
 fun renderHomeScreen(
     state: MeloState,
@@ -46,13 +43,15 @@ fun renderHomeScreen(
             spacer()
         )
     } else {
-        val items = state.favorites.take(5).map { track ->
+        val items = state.favorites.mapIndexed { index, track ->
+            val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
             row(
-                text("♥ ").fg(PRIMARY_COLOR).length(2),
+                text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
+                text("${index + 1}").dim().length(3),
                 text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
+                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             )
-        }
+        }.take(10)
         if (items.isEmpty()) {
             column(
                 spacer(),
