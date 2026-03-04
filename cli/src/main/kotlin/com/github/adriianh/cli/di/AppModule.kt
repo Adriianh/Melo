@@ -23,7 +23,7 @@ import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
 import com.github.adriianh.data.provider.FallbackMusicProvider
 import com.github.adriianh.data.provider.ItunesMusicProvider
 import com.github.adriianh.data.provider.LastFmDiscoveryProvider
-import com.github.adriianh.data.provider.PipedAudioProvider
+import com.github.adriianh.data.provider.YtDlpAudioProvider
 import com.github.adriianh.data.provider.SpotifyMusicProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
@@ -108,7 +108,7 @@ val appModule = module {
         }
     }
     single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
-    single<AudioProvider> { PipedAudioProvider(get()) }
+    single<AudioProvider> { YtDlpAudioProvider() }
 
     // Repositories
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get()) }
