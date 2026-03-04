@@ -2,6 +2,7 @@ package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.*
@@ -74,18 +75,17 @@ val appModule = module {
 
     // Providers
     single<MusicProvider> {
-        val providers = mutableListOf<MusicProvider>(
-            ItunesMusicProvider(get()),
-            PipedMusicProvider(get())
-        )
+        val itunes = ItunesMusicProvider(get())
+        val providers = mutableListOf<MusicProvider>(itunes, PipedMusicProvider(get()))
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
+    single<ArtworkProvider> { ItunesMusicProvider(get()) }
     single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
 
     // Repositories
-    single<MusicRepository> { MusicRepositoryImpl(get(), get(), get()) }
+    single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
     single<LyricsRepository> { LyricsRepositoryImpl(get()) }
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<MeloDatabase> { DatabaseFactory.create() }

@@ -2,6 +2,7 @@ package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.MusicRepository
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
 class MusicRepositoryImpl(
     private val musicProvider: MusicProvider,
     private val audioProvider: AudioProvider?,
-    private val discoveryProvider: DiscoveryProvider?
+    private val discoveryProvider: DiscoveryProvider?,
+    private val artworkProvider: ArtworkProvider? = null
 ) : MusicRepository {
 
     private val pageSize = 20
@@ -66,15 +68,21 @@ class MusicRepositoryImpl(
 
     override suspend fun getTrack(id: String): Track? = coroutineScope {
         val track = musicProvider.getTrack(id) ?: return@coroutineScope null
-        val genres = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
+        val genres   = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
         val sourceId = if (track.sourceId != null) {
             async { track.sourceId }
         } else {
             async { audioProvider?.getSourceId(track.title, track.artist, track.durationMs) }
         }
+        val artwork = if (track.artworkUrl != null) {
+            async { track.artworkUrl }
+        } else {
+            async { artworkProvider?.resolveArtwork(track.title, track.artist) }
+        }
         track.copy(
-            genres = genres.await(),
-            sourceId = sourceId.await()
+            genres     = genres.await(),
+            sourceId   = sourceId.await(),
+            artworkUrl = artwork.await()
         )
     }
 }

@@ -37,4 +37,35 @@ class ItunesApiClient(
             null
         }
     }
+
+    /**
+     * Searches iTunes for a track by title + artist and returns the best matching
+     * artwork URL, or null if nothing is found. Used as a fallback to provide
+     * artwork for tracks that come from providers without artwork (e.g. Piped).
+     */
+    suspend fun searchArtwork(title: String, artist: String): String? {
+        return try {
+            val results = httpClient.get("https://itunes.apple.com/search") {
+                parameter("term", "$title $artist")
+                parameter("media", "music")
+                parameter("entity", "song")
+                parameter("limit", 5)
+            }.body<ItunesSearchResponse>().results
+
+            val normalizedTitle  = title.lowercase().trim()
+            val normalizedArtist = artist.lowercase().trim()
+
+            val best = results.firstOrNull { dto ->
+                dto.artistName.lowercase().contains(normalizedArtist) &&
+                dto.trackName.lowercase().contains(normalizedTitle) &&
+                dto.artworkUrl100 != null
+            } ?: results.firstOrNull { it.artworkUrl100 != null }
+
+            best?.artworkUrl100?.replace("100x100bb", "600x600bb")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

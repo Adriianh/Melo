@@ -1,13 +1,14 @@
 package com.github.adriianh.data.provider
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.itunes.toDomain
 
 class ItunesMusicProvider(
     private val apiClient: ItunesApiClient
-) : MusicProvider {
+) : MusicProvider, ArtworkProvider {
 
     override suspend fun search(query: String): List<Track> {
         return apiClient.search(query, limit = 20).map { it.toDomain() }
@@ -22,4 +23,7 @@ class ItunesMusicProvider(
         val trackId = id.removePrefix("itunes:")
         return apiClient.getTrack(trackId)?.toDomain()
     }
+
+    override suspend fun resolveArtwork(title: String, artist: String): String? =
+        apiClient.searchArtwork(title, artist)
 }
