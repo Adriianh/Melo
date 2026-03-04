@@ -45,7 +45,7 @@ fun PipedStreamDto.toDomain(): Track {
         album      = "",
         durationMs = duration * 1_000L,
         genres     = emptyList(),
-        artworkUrl = thumbnail,
+        artworkUrl = null,
         sourceId   = videoId.takeIf { it.isNotBlank() }
     )
 }

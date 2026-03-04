@@ -55,7 +55,7 @@ class PipedApiClient(
                 album      = "",
                 durationMs = response.duration * 1_000L,
                 genres     = emptyList(),
-                artworkUrl = response.thumbnailUrl,
+                artworkUrl = null,
                 sourceId   = videoId
             )
         } catch (e: kotlinx.coroutines.CancellationException) {
