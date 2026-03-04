@@ -51,7 +51,6 @@ class PipedApiClient(
             val response = httpClient.get("$baseUrl/streams/$videoId")
                 .body<PipedStreamsResponse>()
 
-            // Prefer opus/webm for best quality, fallback to any available stream
             response.audioStreams
                 .filter { it.url.isNotBlank() }
                 .maxByOrNull { it.bitrate }
