@@ -28,7 +28,7 @@ enum class DetailTab {
  */
 data class MeloState(
     // Sidebar
-    val activeSection: SidebarSection = SidebarSection.SEARCH,
+    val activeSection: SidebarSection = SidebarSection.HOME,
 
     // Search
     val query: String = "",
