@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":data"))
     implementation(libs.clikt)
     implementation(libs.kotlinxCoroutines)
+    implementation(libs.kotlinxDatetime)
     implementation(libs.koinCore)
     implementation(libs.dotenv)
     implementation(libs.scrimageCore)
