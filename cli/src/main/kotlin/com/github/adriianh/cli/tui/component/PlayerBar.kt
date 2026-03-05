@@ -128,7 +128,22 @@ fun buildPlayerBar(
         text(albumText).fg(TEXT_DIM).ellipsis().fill(),
     ).percent(20)
 
+    val shuffleColor = if (state.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
+    val repeatIcon = when (state.repeatMode) {
+        RepeatMode.OFF -> ICON_REPEAT
+        RepeatMode.ALL -> ICON_REPEAT
+        RepeatMode.ONE -> ICON_REPEAT1
+    }
+    val repeatColor = if (state.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
+    val queueColor = if (state.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
+    val queueCount = if (state.queue.isNotEmpty()) " ${state.queue.size}" else ""
+
     val centerBottom = row(
+        text(ICON_SHUFFLE).fg(shuffleColor).length(2)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onToggleShuffle(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
         text(ICON_PREV).fg(controlColor).length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onSeekBackward(); EventResult.HANDLED }
@@ -144,31 +159,14 @@ fun buildPlayerBar(
                 if (event.kind() == MouseEventKind.PRESS) { onSeekForward(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-    ).flex(Flex.CENTER).spacing(2).fill()
-
-    val shuffleColor = if (state.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
-    val repeatIcon = when (state.repeatMode) {
-        RepeatMode.OFF -> ICON_REPEAT
-        RepeatMode.ALL -> ICON_REPEAT
-        RepeatMode.ONE -> ICON_REPEAT1
-    }
-    val repeatColor = if (state.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
-    val queueColor = if (state.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
-    val queueCount = if (state.queue.isNotEmpty()) " ${state.queue.size}" else ""
-
-    val rightBottom = row(
-        text(ICON_SHUFFLE).fg(shuffleColor).length(2)
-            .onMouseEvent { event ->
-                if (event.kind() == MouseEventKind.PRESS) { onToggleShuffle(); EventResult.HANDLED }
-                else EventResult.UNHANDLED
-            },
-        text(" ").length(1),
-        text(repeatIcon).fg(repeatColor).length(3)
+        text(repeatIcon).fg(repeatColor).length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onCycleRepeat(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-        text(" ").length(1),
+    ).flex(Flex.CENTER).spacing(2).fill()
+
+    val rightBottom = row(
         text("$ICON_QUEUE$queueCount").fg(queueColor).length(4)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onToggleQueue(); EventResult.HANDLED }
@@ -179,7 +177,6 @@ fun buildPlayerBar(
     val bottomRow = row(leftBottom, centerBottom, rightBottom).length(1)
 
     val borderColor = if (state.isPlaying) PRIMARY_COLOR else BORDER_DEFAULT
-
     return panel(topRow, bottomRow)
         .rounded()
         .borderColor(borderColor)

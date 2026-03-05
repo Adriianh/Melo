@@ -170,7 +170,7 @@ class MeloScreen(
         }
         val bottomSection = if (state.isQueueVisible) {
             dock()
-                .bottom(playerBarBuilder(), Constraint.length(5))
+                .bottom(playerBarBuilder(), Constraint.length(4))
                 .center(buildQueuePanel(state, queueList, ::handleQueueKey))
         } else {
             playerBarBuilder()
