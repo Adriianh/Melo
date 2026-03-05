@@ -344,16 +344,58 @@ class MeloScreen(
     }
 
     private fun handlePlayerBarKey(event: KeyEvent): EventResult {
-        if (event.code() != KeyCode.CHAR) return EventResult.UNHANDLED
-        return when (event.character()) {
-            ' '  -> { togglePlayPause(); EventResult.HANDLED }
-            '+'  -> { adjustVolume(5);   EventResult.HANDLED }
-            '-'  -> { adjustVolume(-5);  EventResult.HANDLED }
-            's'  -> { toggleShuffle();   EventResult.HANDLED }
-            'r'  -> { cycleRepeat();     EventResult.HANDLED }
-            'q'  -> { toggleQueue();     EventResult.HANDLED }
-            else -> EventResult.UNHANDLED
+        when {
+            event.matches(Actions.MOVE_LEFT) -> {
+                seekTo(state.progress - 0.05)
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_RIGHT) -> {
+                seekTo(state.progress + 0.05)
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'p' -> {
+                seekBackward()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'n' -> {
+                seekForward()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
+                togglePlayPause()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                toggleQueue()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'r' -> {
+                cycleRepeat()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 's' -> {
+                toggleShuffle()
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == '+' -> {
+                adjustVolume(5)
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == '-' -> {
+                adjustVolume(-5)
+                return EventResult.HANDLED
+            }
         }
+        return EventResult.UNHANDLED
+    }
+
+    private fun seekTo(progress: Double) {
+        val duration = state.nowPlaying?.durationMs ?: return
+        if (state.isLoadingAudio) return
+        val clampedProgress = progress.coerceIn(0.0, 1.0)
+        val seekMs = (clampedProgress * duration).toLong()
+        state = state.copy(progress = clampedProgress)
+        audioPlayer.seek(seekMs)
     }
 
     private fun handleQueueKey(event: KeyEvent): EventResult {
@@ -388,14 +430,15 @@ class MeloScreen(
     }
 
     private fun playTrack(track: Track) {
-        // Sync queue: if track is in queue use its index, otherwise insert at current position
         val existingIndex = state.queue.indexOfFirst { it.id == track.id }
-        val (newQueue, newIndex) = if (existingIndex >= 0) {
-            state.queue to existingIndex
-        } else {
-            val insertAt = (state.queueIndex + 1).coerceAtLeast(0)
-            val q = state.queue.toMutableList().also { it.add(insertAt, track) }
-            q to insertAt
+        val (newQueue, newIndex, newRadioMode) = when {
+            state.isRadioMode && existingIndex < 0 -> Triple(listOf(track), 0, false)
+            existingIndex >= 0 -> Triple(state.queue, existingIndex, state.isRadioMode)
+            else -> {
+                val insertAt = (state.queueIndex + 1).coerceAtLeast(0)
+                val q = state.queue.toMutableList().also { it.add(insertAt, track) }
+                Triple(q, insertAt, false)
+            }
         }
 
         state = state.copy(
@@ -408,7 +451,7 @@ class MeloScreen(
             marqueeOffset = 0,
             queue = newQueue,
             queueIndex = newIndex,
-            isRadioMode = state.isRadioMode,
+            isRadioMode = newRadioMode,
         )
         marqueeTick = 0
         audioPlayer.stop()
@@ -570,7 +613,7 @@ class MeloScreen(
         if (removingPlaying) {
             audioPlayer.stop()
             if (newQueue.isEmpty()) {
-                state = state.copy(nowPlaying = null, isPlaying = false, progress = 0.0)
+                state = state.copy(nowPlaying = null, isPlaying = false, progress = 0.0, isRadioMode = false)
             } else {
                 val nextIndex = if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0
                 playFromQueue(nextIndex)
