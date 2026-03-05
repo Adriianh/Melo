@@ -361,23 +361,22 @@ class MeloScreen(
         when {
             event.matches(Actions.MOVE_DOWN) -> {
                 if (!isFocused) return EventResult.UNHANDLED
-                queueList.selected(minOf(state.queue.lastIndex, queueList.selected() + 1))
+                state = state.copy(queueCursor = minOf(state.queue.lastIndex, state.queueCursor + 1))
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_UP) -> {
                 if (!isFocused) return EventResult.UNHANDLED
-                queueList.selected(maxOf(0, queueList.selected() - 1))
+                state = state.copy(queueCursor = maxOf(0, state.queueCursor - 1))
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.ENTER -> {
                 if (!isFocused) return EventResult.UNHANDLED
-                val idx = queueList.selected()
-                state.queue.getOrNull(idx)?.let { playFromQueue(idx) }
+                state.queue.getOrNull(state.queueCursor)?.let { playFromQueue(state.queueCursor) }
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.DELETE || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
                 if (!isFocused) return EventResult.UNHANDLED
-                removeFromQueue(queueList.selected())
+                removeFromQueue(state.queueCursor)
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'c' -> {
@@ -492,6 +491,7 @@ class MeloScreen(
 
     private fun removeFromQueue(index: Int) {
         if (index < 0 || index >= state.queue.size) return
+        val removingPlaying = index == state.queueIndex
         val newQueue = state.queue.toMutableList().also { it.removeAt(index) }
         val newIndex = when {
             newQueue.isEmpty() -> -1
@@ -499,11 +499,30 @@ class MeloScreen(
             index == state.queueIndex -> minOf(index, newQueue.lastIndex)
             else -> state.queueIndex
         }
-        state = state.copy(queue = newQueue, queueIndex = newIndex)
+        val newCursor = minOf(state.queueCursor, (newQueue.size - 1).coerceAtLeast(0))
+        state = state.copy(queue = newQueue, queueIndex = newIndex, queueCursor = newCursor)
+
+        if (removingPlaying) {
+            audioPlayer.stop()
+            if (newQueue.isEmpty()) {
+                state = state.copy(nowPlaying = null, isPlaying = false, progress = 0.0)
+            } else {
+                val nextIndex = if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0
+                playFromQueue(nextIndex)
+            }
+        }
     }
 
     private fun clearQueue() {
-        state = state.copy(queue = emptyList(), queueIndex = -1)
+        audioPlayer.stop()
+        state = state.copy(
+            queue = emptyList(),
+            queueIndex = -1,
+            queueCursor = 0,
+            nowPlaying = null,
+            isPlaying = false,
+            progress = 0.0,
+        )
     }
 
     private fun toggleQueue() {

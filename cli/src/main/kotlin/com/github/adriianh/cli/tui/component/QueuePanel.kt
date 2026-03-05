@@ -51,7 +51,7 @@ fun buildQueuePanel(
     }
 
     queueList.elements(*items.toTypedArray())
-    if (state.queueIndex >= 0) queueList.selected(state.queueIndex)
+    queueList.selected(state.queueCursor)
 
     val remaining = state.queue.size - (state.queueIndex + 1).coerceAtLeast(0)
     val title = "$ICON_QUEUE Queue  ${state.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"

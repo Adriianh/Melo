@@ -72,6 +72,7 @@ data class MeloState(
     // Queue
     val queue: List<Track> = emptyList(),
     val queueIndex: Int = -1,
+    val queueCursor: Int = 0,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffleEnabled: Boolean = false,
     val isQueueVisible: Boolean = false,
