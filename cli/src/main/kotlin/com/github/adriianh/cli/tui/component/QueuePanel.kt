@@ -30,7 +30,7 @@ fun buildQueuePanel(
             )
         ).title("$ICON_QUEUE Queue  [Q] add  [Del] remove  [C] clear")
             .rounded()
-            .borderColor(BORDER_DEFAULT)
+            .borderColor(PRIMARY_COLOR)
             .onKeyEvent(onKeyEvent)
     }
 
@@ -56,6 +56,6 @@ fun buildQueuePanel(
         queueList.fill()
     ).title(title)
         .rounded()
-        .borderColor(BORDER_DEFAULT)
+        .borderColor(PRIMARY_COLOR)
         .onKeyEvent(onKeyEvent)
 }
