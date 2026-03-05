@@ -4,9 +4,10 @@ import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_CLOCK
+import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
@@ -79,7 +80,7 @@ fun renderHomeScreen(
                 dock()
                     .left(
                         panel(recentSection)
-                            .title("🕘 Recently Played")
+                            .title("$ICON_CLOCK Recently Played")
                             .rounded()
                             .borderColor(BORDER_DEFAULT)
                             .fill(),
@@ -87,7 +88,7 @@ fun renderHomeScreen(
                     )
                     .center(
                         panel(quickPicksSection)
-                            .title("♥ Favorites")
+                            .title("$ICON_HEART Favorites")
                             .rounded()
                             .borderColor(BORDER_DEFAULT)
                             .fill()

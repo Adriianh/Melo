@@ -4,6 +4,8 @@ import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_LIBRARY
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
@@ -32,7 +34,7 @@ fun renderLibraryScreen(
                     text("  Press F on any track to add it to your favorites").fg(TEXT_DIM).centered(),
                     spacer()
                 )
-            ).title("📚 Your Library")
+            ).title("$ICON_LIBRARY Your Library")
                 .rounded()
                 .borderColor(BORDER_DEFAULT)
                 .focusedBorderColor(BORDER_FOCUSED)
@@ -42,7 +44,7 @@ fun renderLibraryScreen(
 
     val items = state.favorites.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
-        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
+        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
         row(
             text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
@@ -69,7 +71,7 @@ fun renderLibraryScreen(
                 text("").length(1),
                 favoritesList.fill()
             )
-        ).title("📚 Your Library  [F] remove")
+        ).title("$ICON_LIBRARY Your Library  [F] remove")
             .rounded()
             .borderColor(BORDER_DEFAULT)
             .focusedBorderColor(BORDER_FOCUSED)
