@@ -6,6 +6,15 @@ import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.ImageData
 
 /**
+ * Repeat modes for queue playback.
+ */
+enum class RepeatMode {
+    OFF,
+    ONE,
+    ALL,
+}
+
+/**
  * Sections available in the sidebar navigation.
  */
 enum class SidebarSection {
@@ -60,8 +69,19 @@ data class MeloState(
     val isLoadingAudio: Boolean = false,
     val audioError: String? = null,
 
+    // Queue
+    val queue: List<Track> = emptyList(),
+    val queueIndex: Int = -1,
+    val queueCursor: Int = 0,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val shuffleEnabled: Boolean = false,
+    val isQueueVisible: Boolean = false,
+
     // Marquee scroll animation
     val marqueeOffset: Int = 0,
     val progress: Double = 0.0,
     val volume: Int = 75,
+
+    // Radio / auto-play
+    val isRadioMode: Boolean = false,
 )

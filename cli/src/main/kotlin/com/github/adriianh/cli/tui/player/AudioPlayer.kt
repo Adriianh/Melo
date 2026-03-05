@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Audio player backed by ffplay (bundled with ffmpeg).
@@ -31,7 +32,8 @@ class AudioPlayer(
     private var playerPid: Long? = null
 
     private val isPaused = AtomicBoolean(false)
-    private val isStopped = AtomicBoolean(false)
+
+    private val sessionId = AtomicLong(0L)
 
     @Volatile private var startTimeMs: Long = 0L
     @Volatile private var pausedAtMs: Long = 0L
@@ -53,10 +55,10 @@ class AudioPlayer(
         stop()
         currentUrl = url
         isPaused.set(false)
-        isStopped.set(false)
         startTimeMs = System.currentTimeMillis()
         pausedAtMs = 0L
-        launchPlayback(url, volumePct, seekMs = 0L)
+        val session = sessionId.incrementAndGet()
+        launchPlayback(url, volumePct, seekMs = 0L, session = session)
     }
 
     fun pause() {
@@ -90,8 +92,42 @@ class AudioPlayer(
         }
     }
 
+    /**
+     * Seek to [ms] milliseconds from the start of the current stream.
+     * Restarts ffplay with -ss, preserving volume and paused state.
+     */
+    fun seek(ms: Long) {
+        val url = currentUrl ?: return
+        val clampedMs = ms.coerceAtLeast(0L)
+        val wasPaused = isPaused.get()
+
+        playerProcess?.destroy()
+        playerProcess = null
+        playerPid = null
+        playJob?.cancel()
+        playJob = null
+        isPaused.set(false)
+
+        pausedAtMs = if (wasPaused) clampedMs else 0L
+        startTimeMs = System.currentTimeMillis()
+
+        val session = sessionId.incrementAndGet()
+        if (wasPaused) isPaused.set(true)
+
+        launchPlayback(url, volumePct, seekMs = clampedMs, session = session)
+
+        if (wasPaused) {
+            scope.launch(Dispatchers.IO) {
+                delay(300)
+                if (isPaused.get() && sessionId.get() == session) {
+                    if (isWindows) suspendProcessWindows(playerPid ?: return@launch)
+                    else sendUnixSignal("SIGSTOP")
+                }
+            }
+        }
+    }
     fun stop() {
-        isStopped.set(true)
+        sessionId.incrementAndGet() // invalidate any running job
         isPaused.set(false)
         playerProcess?.destroy()
         playerProcess = null
@@ -104,7 +140,7 @@ class AudioPlayer(
 
     // ── Internal ───────────────────────────────────────────────────────────────
 
-    private fun launchPlayback(url: String, volPct: Int, seekMs: Long) {
+    private fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
         playJob = scope.launch(Dispatchers.IO) {
             try {
                 val process = buildFfplayProcess(url, volPct, seekMs)
@@ -113,7 +149,7 @@ class AudioPlayer(
                 startTimeMs = System.currentTimeMillis()
 
                 val progressJob = scope.launch(Dispatchers.IO) {
-                    while (isActive && !isStopped.get()) {
+                    while (isActive && sessionId.get() == session) {
                         if (!isPaused.get()) {
                             val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
                             onProgress(elapsed + seekMs)
@@ -125,11 +161,11 @@ class AudioPlayer(
                 process.waitFor()
                 progressJob.cancel()
 
-                if (!isStopped.get()) onFinish()
+                if (sessionId.get() == session) onFinish()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                if (!isStopped.get()) onError(e)
+                if (sessionId.get() == session) onError(e)
             }
         }
     }
