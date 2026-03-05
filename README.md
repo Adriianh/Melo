@@ -18,28 +18,54 @@
 
 ## 🎶 About Melo
 
-Melo is a music player designed for speed and versatility. While it currently offers a powerful and intuitive Command-Line Interface (CLI), it is architected with a future-proof mindset to support graphical interfaces across multiple platforms. Melo seamlessly integrates with top-tier music services like Spotify, Last.fm, and MusicBrainz to provide a unified listening experience.
+Melo is a music player designed for speed and versatility. While it currently offers a powerful and intuitive Command-Line Interface (CLI), it is architected with a future-proof mindset to support graphical interfaces across multiple platforms. Melo integrates with Spotify, iTunes, Piped, and Last.fm to provide a unified listening and discovery experience.
 
 ## ✨ Features
 
-- 🚀 **Intuitive CLI**: Full control from your terminal with high-quality TUI components.
-- 🔍 **Multi-source Search**: Discover tracks across Spotify, iTunes, and MusicBrainz simultaneously.
-- 📻 **Music Discovery**: Integration with Last.fm to find similar artists and suggest new tracks.
-- 🎧 **Direct Streaming**: High-quality audio streaming via Piped integration.
-- 📦 **Cross-platform Support**: Runs on any system with Java 21+ (**Windows**, **macOS**, **Linux**).
+- 🚀 **Intuitive TUI**: Full control from your terminal with a rich, keyboard-driven interface.
+- 🔍 **Multi-source Search**: Discover tracks across iTunes and Piped simultaneously, with deduplication.
+- 🎵 **Queue System**: Build a playback queue, shuffle, and cycle through repeat modes (off / all / one).
+- 📻 **Radio Auto-play**: When your queue runs out, Melo automatically fetches similar tracks via Last.fm and keeps playing — just like Spotify Radio.
+- ⏩ **Seek**: Jump forward or backward within a track using keyboard shortcuts.
+- 🎧 **Direct Streaming**: High-quality audio streaming powered by Piped + yt-dlp + ffplay.
+- 🖼️ **Artwork & Lyrics**: Album art rendered inline in the terminal; lyrics fetched on demand.
+- ❤️ **Library**: Save your favourite tracks and access them from the Library screen.
+- 📦 **Cross-platform**: Runs on any system with Java 21+ (**Windows**, **macOS**, **Linux**).
 
 ## 🛠️ Tech Stack
 
 - **Language**: [Kotlin](https://kotlinlang.org/) (JVM)
-- **Build System**: [Gradle 9.1.0](https://gradle.org/) with Kotlin DSL
-- **Architecture**: Clean Architecture principles (Modules: `cli`, `core`, `data`)
+- **Build System**: [Gradle 9.0.0](https://gradle.org/) with Kotlin DSL
+- **Architecture**: Clean Architecture (modules: `cli`, `core`, `data`)
 - **CLI Framework**: [Clikt](https://ajalt.github.io/clikt/) · [TamboUI](https://tamboui.dev/)
 - **Dependency Injection**: [Koin](https://insert-koin.io/)
+- **Audio**: [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffplay](https://ffmpeg.org/)
+- **Data sources**: Spotify API · iTunes Search API · Piped · Last.fm
+
+## 🎹 Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Play selected track |
+| `Space` | Play / Pause |
+| `←` / `→` | Seek ±5% within track |
+| `p` / `n` | Previous / Next track in queue |
+| `q` | Add track to queue / Toggle queue panel |
+| `s` | Toggle shuffle |
+| `r` | Cycle repeat mode (off → all → one) |
+| `f` | Toggle favourite |
+| `+` / `-` | Volume up / down |
+| `Tab` | Cycle focus between panels |
+| `1` / `2` / `3` | Switch detail tab (Info / Lyrics / Similar) |
+| `Del` / `d` | Remove track from queue |
+| `c` | Clear queue |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - **Java 21** or higher — [Download Temurin](https://adoptium.net/)
+- **yt-dlp** — [Install guide](https://github.com/yt-dlp/yt-dlp#installation)
+- **ffmpeg** (includes ffplay) — [Download](https://ffmpeg.org/download.html)
 
 ### Installation from release
 
@@ -65,7 +91,7 @@ cd melo-*\
 
 After installation, run:
 ```
-melo search
+melo
 ```
 
 ### Uninstall
@@ -98,7 +124,7 @@ cd melo-*\
    ```
 3. Run directly:
    ```bash
-   java -jar cli/build/libs/melo.jar search
+   java -jar cli/build/libs/melo.jar
    ```
 4. Or build a distributable archive for your current OS:
    ```bash
@@ -109,9 +135,13 @@ cd melo-*\
 ## 📈 Roadmap
 
 - [x] Core structure and Clean Architecture setup.
-- [x] API integration with Spotify, Last.fm, and MusicBrainz.
+- [x] API integration with Spotify, iTunes, Piped and Last.fm.
 - [x] Automated cross-platform distribution (fat-JAR + shell wrappers).
+- [x] Full TUI with search, library, home screen and detail panels.
+- [x] Audio playback with queue, shuffle, repeat and seek.
+- [x] Spotify-style radio auto-play via Last.fm similar tracks.
 - [ ] GUI implementation using Compose for Desktop.
+- [ ] Mobile support via Compose Multiplatform.
 - [ ] Local library and playlist management.
 
 ## 📄 License
