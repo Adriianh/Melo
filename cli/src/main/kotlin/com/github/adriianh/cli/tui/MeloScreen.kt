@@ -62,7 +62,7 @@ class MeloScreen(
         },
         onFinish = {
             runner()?.runOnRenderThread {
-                state = state.copy(isPlaying = false, progress = 0.0)
+                state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0)
                 seekForward()
             }
         },
@@ -458,8 +458,10 @@ class MeloScreen(
     }
 
     private fun seekForward() {
-        if (state.isLoadingAudio) return
         val queue = state.queue
+        val isAtLastIndex = queue.isNotEmpty() && state.queueIndex + 1 >= queue.size
+
+        if (state.isLoadingAudio && !isAtLastIndex) return
         if (queue.isEmpty()) return
 
         val nextIndex = when {
@@ -482,12 +484,14 @@ class MeloScreen(
     }
 
     private fun loadSimilarAndPlay() {
-        val track = state.nowPlaying ?: return
+        val seed = state.nowPlaying ?: return
+        val alreadyPlayed = state.queue.map { it.id }.toSet()
+
         audioPlayer.stop()
         state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
         scope.launch {
             try {
-                val similar = getSimilarTracks(track.artist, track.title)
+                val similar = getSimilarTracks(seed.artist, seed.title)
                 if (similar.isEmpty()) {
                     runner()?.runOnRenderThread {
                         state = state.copy(isLoadingAudio = false, isRadioMode = false)
@@ -496,7 +500,7 @@ class MeloScreen(
                 }
                 val resolved = similar
                     .shuffled()
-                    .take(10)
+                    .take(15)
                     .map { st ->
                         async {
                             runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull()
@@ -504,7 +508,9 @@ class MeloScreen(
                     }
                     .awaitAll()
                     .filterNotNull()
+                    .filter { it.id !in alreadyPlayed }
                     .distinctBy { it.id }
+                    .take(10)
 
                 if (resolved.isEmpty()) {
                     runner()?.runOnRenderThread {
