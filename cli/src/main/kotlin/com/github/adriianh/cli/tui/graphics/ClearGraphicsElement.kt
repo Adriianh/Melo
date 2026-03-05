@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.tui
+package com.github.adriianh.cli.tui.graphics
 
 import dev.tamboui.layout.Constraint
 import dev.tamboui.terminal.Frame

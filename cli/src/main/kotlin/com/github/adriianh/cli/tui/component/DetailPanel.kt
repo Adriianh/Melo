@@ -1,6 +1,6 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.ClearGraphicsElement
+import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT

@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.tui
+package com.github.adriianh.cli.tui.graphics
 
 import dev.tamboui.buffer.Buffer
 import dev.tamboui.layout.Rect
