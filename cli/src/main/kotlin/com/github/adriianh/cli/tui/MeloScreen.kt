@@ -461,12 +461,16 @@ class MeloScreen(
         val queue = state.queue
         if (queue.isEmpty()) return
 
-        val nextIndex = when (state.repeatMode) {
-            RepeatMode.ONE -> state.queueIndex  // replay same
-            RepeatMode.ALL -> (state.queueIndex + 1) % queue.size
-            RepeatMode.OFF -> {
+        val nextIndex = when {
+            state.repeatMode == RepeatMode.ONE -> state.queueIndex
+            state.shuffleEnabled && queue.size > 1 -> {
+                val candidates = queue.indices.filter { it != state.queueIndex }
+                candidates.random()
+            }
+            state.repeatMode == RepeatMode.ALL -> (state.queueIndex + 1) % queue.size
+            else -> {
                 val next = state.queueIndex + 1
-                if (next >= queue.size) return  // end of queue
+                if (next >= queue.size) return
                 next
             }
         }
