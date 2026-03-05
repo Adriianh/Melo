@@ -81,4 +81,7 @@ data class MeloState(
     val marqueeOffset: Int = 0,
     val progress: Double = 0.0,
     val volume: Int = 75,
+
+    // Radio / auto-play
+    val isRadioMode: Boolean = false,
 )

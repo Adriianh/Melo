@@ -63,6 +63,7 @@ object MeloTheme {
     val ICON_REPEAT:   String get() = if (supportsUnicode) "↻"   else "[R]"
     val ICON_REPEAT1:  String get() = if (supportsUnicode) "↺1"  else "[R1]"
     val ICON_QUEUE:    String get() = if (supportsUnicode) "≡"   else "[Q]"
+    val ICON_RADIO:    String get() = if (supportsUnicode) "📻"  else "[~]"
 
     // Brand
     val PRIMARY_COLOR: Color = Color.hex("#8b2eb9")

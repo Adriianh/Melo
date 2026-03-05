@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_QUEUE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_RADIO
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
@@ -54,7 +55,8 @@ fun buildQueuePanel(
     queueList.selected(state.queueCursor)
 
     val remaining = state.queue.size - (state.queueIndex + 1).coerceAtLeast(0)
-    val title = "$ICON_QUEUE Queue  ${state.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"
+    val radioLabel = if (state.isRadioMode) "  $ICON_RADIO Radio" else ""
+    val title = "$ICON_QUEUE Queue$radioLabel  ${state.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"
 
     return panel(
         queueList.fill()

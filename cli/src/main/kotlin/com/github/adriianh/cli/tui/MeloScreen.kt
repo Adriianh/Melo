@@ -470,11 +470,62 @@ class MeloScreen(
             state.repeatMode == RepeatMode.ALL -> (state.queueIndex + 1) % queue.size
             else -> {
                 val next = state.queueIndex + 1
-                if (next >= queue.size) return
+                if (next >= queue.size) {
+                    loadSimilarAndPlay()
+                    return
+                }
                 next
             }
         }
         playFromQueue(nextIndex)
+    }
+
+    private fun loadSimilarAndPlay() {
+        val track = state.nowPlaying ?: return
+        state = state.copy(isLoadingAudio = true, isRadioMode = true)
+        scope.launch {
+            try {
+                val similar = getSimilarTracks(track.artist, track.title)
+                if (similar.isEmpty()) {
+                    runner()?.runOnRenderThread {
+                        state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0, isRadioMode = false)
+                    }
+                    return@launch
+                }
+                val resolved = similar
+                    .shuffled()
+                    .take(10)
+                    .map { st ->
+                        async {
+                            runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull()
+                        }
+                    }
+                    .awaitAll()
+                    .filterNotNull()
+                    .distinctBy { it.id }
+
+                if (resolved.isEmpty()) {
+                    runner()?.runOnRenderThread {
+                        state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0, isRadioMode = false)
+                    }
+                    return@launch
+                }
+
+                runner()?.runOnRenderThread {
+                    state = state.copy(
+                        queue = resolved,
+                        queueIndex = -1,
+                        queueCursor = 0,
+                        isLoadingAudio = false,
+                    )
+                    playFromQueue(0)
+                }
+            } catch (e: Exception) {
+                runner()?.runOnRenderThread {
+                    state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = e.message, isRadioMode = false)
+                }
+            }
+        }
     }
 
     private fun playFromQueue(index: Int) {
@@ -486,7 +537,8 @@ class MeloScreen(
     private fun addToQueue(track: Track) {
         val newQueue = state.queue + track
         val newIndex = if (state.queueIndex < 0 && state.nowPlaying == null) 0 else state.queueIndex
-        state = state.copy(queue = newQueue, queueIndex = newIndex)
+
+        state = state.copy(queue = newQueue, queueIndex = newIndex, isRadioMode = false)
 
         if (state.nowPlaying == null && !state.isLoadingAudio) {
             playFromQueue(0)
