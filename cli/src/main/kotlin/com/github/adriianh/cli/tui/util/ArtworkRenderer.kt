@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.tui
+package com.github.adriianh.cli.tui.util
 
 import dev.tamboui.image.ImageData
 import io.ktor.client.*

@@ -6,14 +6,13 @@ import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.handler.*
+import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
-import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import com.github.adriianh.core.domain.model.SimilarTrack
-import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
@@ -21,47 +20,50 @@ import dev.tamboui.toolkit.app.ToolkitApp
 import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
-import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.TuiConfig
-import dev.tamboui.tui.bindings.Actions
-import dev.tamboui.tui.event.KeyCode
-import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.input.TextInputState
 import kotlinx.coroutines.*
 import java.time.Duration
 
 class MeloScreen(
-    private val searchTracks: SearchTracksUseCase,
-    private val loadMoreTracks: LoadMoreTracksUseCase,
-    private val getTrack: GetTrackUseCase,
-    private val getLyrics: GetLyricsUseCase,
-    private val getSimilarTracks: GetSimilarTracksUseCase,
-    private val getFavorites: GetFavoritesUseCase,
-    private val addFavorite: AddFavoriteUseCase,
-    private val removeFavorite: RemoveFavoriteUseCase,
-    private val isFavoriteUseCase: IsFavoriteUseCase,
-    private val getRecentTracks: GetRecentTracksUseCase,
-    private val recordPlay: RecordPlayUseCase,
-    private val getStream: GetStreamUseCase,
-    private val getPlaylists: GetPlaylistsUseCase,
-    private val getPlaylistTracks: GetPlaylistTracksUseCase,
-    private val createPlaylist: CreatePlaylistUseCase,
-    private val renamePlaylist: RenamePlaylistUseCase,
-    private val deletePlaylist: DeletePlaylistUseCase,
-    private val addTrackToPlaylist: AddTrackToPlaylistUseCase,
-    private val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase,
+    // Search
+    internal val searchTracks: SearchTracksUseCase,
+    internal val loadMoreTracks: LoadMoreTracksUseCase,
+    internal val getTrack: GetTrackUseCase,
+    internal val getLyrics: GetLyricsUseCase,
+    internal val getSimilarTracks: GetSimilarTracksUseCase,
+    // Favorites
+    internal val getFavorites: GetFavoritesUseCase,
+    internal val addFavorite: AddFavoriteUseCase,
+    internal val removeFavorite: RemoveFavoriteUseCase,
+    internal val isFavoriteUseCase: IsFavoriteUseCase,
+    // History & playback
+    internal val getRecentTracks: GetRecentTracksUseCase,
+    internal val recordPlay: RecordPlayUseCase,
+    internal val getStream: GetStreamUseCase,
+    // Playlists
+    internal val getPlaylists: GetPlaylistsUseCase,
+    internal val getPlaylistTracks: GetPlaylistTracksUseCase,
+    internal val createPlaylist: CreatePlaylistUseCase,
+    internal val renamePlaylist: RenamePlaylistUseCase,
+    internal val deletePlaylist: DeletePlaylistUseCase,
+    internal val addTrackToPlaylist: AddTrackToPlaylistUseCase,
+    internal val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase,
 ) : ToolkitApp() {
 
-    private var state = MeloState()
-    private val scope = CoroutineScope(Dispatchers.IO)
-    private var detailsJob: Job? = null
-    private var loadMoreJob: Job? = null
-    private var playlistTracksJob: Job? = null
-    private var lastQuery = ""
-    private var marqueeJob: ToolkitRunner.ScheduledAction? = null
-    private var marqueeTick = 0
+    internal var state = MeloState()
+    internal val scope = CoroutineScope(Dispatchers.IO)
+    internal var detailsJob: Job? = null
+    internal var loadMoreJob: Job? = null
+    internal var playlistTracksJob: Job? = null
+    internal var lastQuery = ""
+    internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    internal var marqueeTick = 0
 
-    private val audioPlayer = AudioPlayer(
+    /** Exposes the protected runner() for internal extension functions. */
+    internal fun appRunner() = runner()
+
+    internal val audioPlayer = AudioPlayer(
         scope = scope,
         onProgress = { elapsedMs ->
             runner()?.runOnRenderThread {
@@ -83,15 +85,15 @@ class MeloScreen(
         },
     )
 
-    private val searchInputState = TextInputState()
+    internal val searchInputState = TextInputState()
 
-    private val resultList: ListElement<*> = list()
+    internal val resultList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
 
-    private val favoritesList: ListElement<*> = list()
+    internal val favoritesList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
@@ -99,7 +101,7 @@ class MeloScreen(
         .focusable()
         .id("library-list")
 
-    private val playlistsList: ListElement<*> = list()
+    internal val playlistsList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
@@ -107,7 +109,7 @@ class MeloScreen(
         .focusable()
         .id("playlists-list")
 
-    private val playlistTracksList: ListElement<*> = list()
+    internal val playlistTracksList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
@@ -115,7 +117,7 @@ class MeloScreen(
         .focusable()
         .id("playlist-tracks-list")
 
-    private val sidebarList: ListElement<*> = list()
+    internal val sidebarList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_HOME} Home",
             "${MeloTheme.ICON_SEARCH} Search",
@@ -123,22 +125,22 @@ class MeloScreen(
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .selected(SidebarSection.SEARCH.ordinal)
+        .selected(SidebarSection.HOME.ordinal)
 
-    private val lyricsArea = markupTextArea()
+    internal val lyricsArea = markupTextArea()
         .scrollbar()
         .wrapWord()
         .focusable()
         .id("lyrics-area")
 
-    private val similarArea: ListElement<*> = list()
+    internal val similarArea: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_BULLET} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .scrollbar()
         .focusable()
         .id("similar-area")
 
-    private val queueList: ListElement<*> = list()
+    internal val queueList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
@@ -154,23 +156,17 @@ class MeloScreen(
     override fun onStart() {
         scope.launch {
             getFavorites().collect { tracks ->
-                runner()?.runOnRenderThread {
-                    state = state.copy(favorites = tracks)
-                }
+                runner()?.runOnRenderThread { state = state.copy(favorites = tracks) }
             }
         }
         scope.launch {
             getRecentTracks(20).collect { entries ->
-                runner()?.runOnRenderThread {
-                    state = state.copy(recentTracks = entries)
-                }
+                runner()?.runOnRenderThread { state = state.copy(recentTracks = entries) }
             }
         }
         scope.launch {
             getPlaylists().collect { playlists ->
-                runner()?.runOnRenderThread {
-                    state = state.copy(playlists = playlists)
-                }
+                runner()?.runOnRenderThread { state = state.copy(playlists = playlists) }
             }
         }
         marqueeJob = runner()?.scheduleRepeating({
@@ -232,805 +228,10 @@ class MeloScreen(
         SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey)
         SidebarSection.SEARCH  -> renderSearchScreen(
             state, resultList, lyricsArea, similarArea,
-            ::marqueeText, ::handleResultsKey, ::handleDetailKey
+            ::marqueeText, ::handleResultsKey, ::handleDetailKey,
         )
-        SidebarSection.LIBRARY -> renderLibraryScreen(state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey)
-    }
-
-    private fun handleSearchBarKey(event: KeyEvent): EventResult {
-        if (state.results.isNotEmpty()) {
-            if (event.matches(Actions.MOVE_DOWN) || event.matches(Actions.MOVE_UP)) {
-                return handleResultsKey(event)
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handleHomeKey(event: KeyEvent): EventResult {
-        val isFocused = runner()?.focusManager()?.focusedId() == "home-panel"
-        if (!isFocused) return EventResult.UNHANDLED
-        if (event.matches(Actions.SELECT)) return applySidebarSelection()
-        return EventResult.UNHANDLED
-    }
-
-    private fun handleSidebarKey(event: KeyEvent): EventResult {
-        val isFocused = runner()?.focusManager()?.focusedId() == "sidebar-panel"
-        if (!isFocused) return EventResult.UNHANDLED
-        when {
-            event.matches(Actions.MOVE_UP) -> {
-                sidebarList.selected(maxOf(0, sidebarList.selected() - 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_DOWN) -> {
-                sidebarList.selected(minOf(SidebarSection.entries.lastIndex, sidebarList.selected() + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.SELECT) -> {
-                applySidebarSelection()
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun applySidebarSelection(): EventResult {
-        val section = SidebarSection.entries.getOrNull(sidebarList.selected())
-        if (section != null) state = state.copy(activeSection = section)
-        return EventResult.HANDLED
-    }
-
-    private fun handleResultsKey(event: KeyEvent): EventResult {
-        when (state.playlistInputMode) {
-            PlaylistInputMode.CREATE,
-            PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
-            PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
-            PlaylistInputMode.NONE   -> {}
-        }
-
-        if (state.results.isEmpty()) return EventResult.UNHANDLED
-        val focused = runner()?.focusManager()?.focusedId()
-        val isFocused = focused == "results-panel"
-        when {
-            event.matches(Actions.MOVE_DOWN) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
-                resultList.selected(newIndex)
-                state.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
-                    marqueeTick = 0
-                    debouncedLoadDetails(track)
-                }
-                if (newIndex >= state.results.size - 5 && !state.isLoadingMore && state.hasMore) loadMore()
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                val newIndex = maxOf(0, state.selectedIndex - 1)
-                resultList.selected(newIndex)
-                state.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
-                    marqueeTick = 0
-                    debouncedLoadDetails(track)
-                }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
-                playTrack(selected)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-                state.results.getOrNull(state.selectedIndex)?.let { toggleFavorite(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                state.results.getOrNull(state.selectedIndex)?.let { addToQueue(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'a' -> {
-                val track = state.results.getOrNull(state.selectedIndex)
-                if (track != null) openPlaylistPicker(track)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'l' -> {
-                loadLyrics()
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handleDetailKey(event: KeyEvent): EventResult {
-        when {
-            event.code() == KeyCode.CHAR && event.character() == '1' -> {
-                state = state.copy(detailTab = DetailTab.INFO)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == '2' -> {
-                state = state.copy(detailTab = DetailTab.LYRICS)
-                if (state.lyrics == null && !state.isLoadingLyrics) loadLyrics()
-                runner()?.focusManager()?.setFocus("lyrics-area")
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == '3' -> {
-                state = state.copy(detailTab = DetailTab.SIMILAR)
-                runner()?.focusManager()?.setFocus("similar-area")
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.SELECT) && state.detailTab == DetailTab.LYRICS -> {
-                if (state.lyrics == null) loadLyrics()
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handleLibraryKey(event: KeyEvent): EventResult {
-        when (state.playlistInputMode) {
-            PlaylistInputMode.CREATE,
-            PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
-            PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
-            PlaylistInputMode.NONE   -> {}
-        }
-
-        val isFocused = runner()?.focusManager()?.focusedId() == "library-panel"
-        if (!isFocused) return EventResult.UNHANDLED
-
-        if (event.code() == KeyCode.CHAR && event.character() == '1') {
-            state = state.copy(libraryTab = LibraryTab.FAVORITES)
-            return EventResult.HANDLED
-        }
-        if (event.code() == KeyCode.CHAR && event.character() == '2') {
-            state = state.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false)
-            return EventResult.HANDLED
-        }
-
-        return when (state.libraryTab) {
-            LibraryTab.FAVORITES  -> handleFavoritesKey(event)
-            LibraryTab.PLAYLISTS  -> if (state.isInPlaylistDetail)
-                handlePlaylistDetailKey(event)
-            else
-                handlePlaylistsKey(event)
-        }
-    }
-
-    private fun handleFavoritesKey(event: KeyEvent): EventResult {
-        when {
-            event.matches(Actions.MOVE_DOWN) -> {
-                favoritesList.selected(minOf(state.favorites.lastIndex.coerceAtLeast(0), favoritesList.selected() + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-                state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                state.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'a' -> {
-                val track = state.favorites.getOrNull(favoritesList.selected())
-                if (track != null) openPlaylistPicker(track)
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handlePlaylistsKey(event: KeyEvent): EventResult {
-        when {
-            event.matches(Actions.MOVE_DOWN) -> {
-                playlistsList.selected(minOf(state.playlists.lastIndex.coerceAtLeast(0), playlistsList.selected() + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                playlistsList.selected(maxOf(0, playlistsList.selected() - 1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                openPlaylistDetail(playlistsList.selected())
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'n' -> {
-                state = state.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = "")
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'r' -> {
-                val pl = state.playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
-                state = state.copy(playlistInputMode = PlaylistInputMode.RENAME, playlistInput = pl.name)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
-                val pl = state.playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
-                scope.launch { deletePlaylist(pl.id) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'p' -> {
-                openPlaylistDetail(playlistsList.selected(), autoPlay = true)
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handlePlaylistDetailKey(event: KeyEvent): EventResult {
-        when {
-            event.code() == KeyCode.ESCAPE -> {
-                state = state.copy(isInPlaylistDetail = false, selectedPlaylist = null, playlistTracks = emptyList())
-                playlistTracksJob?.cancel()
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_DOWN) -> {
-                playlistTracksList.selected(minOf(state.playlistTracks.lastIndex.coerceAtLeast(0), playlistTracksList.selected() + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                playlistTracksList.selected(maxOf(0, playlistTracksList.selected() - 1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                state.playlistTracks.getOrNull(playlistTracksList.selected())?.let { playTrack(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                state.playlistTracks.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
-                val pl = state.selectedPlaylist ?: return EventResult.UNHANDLED
-                val track = state.playlistTracks.getOrNull(playlistTracksList.selected()) ?: return EventResult.UNHANDLED
-                scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handlePlaylistInput(event: KeyEvent): EventResult {
-        when {
-            event.code() == KeyCode.ESCAPE -> {
-                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = "")
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                val name = state.playlistInput.trim()
-                if (name.isNotBlank()) {
-                    when (state.playlistInputMode) {
-                        PlaylistInputMode.CREATE -> scope.launch { createPlaylist(name) }
-                        PlaylistInputMode.RENAME -> {
-                            val pl = state.playlists.getOrNull(playlistsList.selected())
-                            if (pl != null) scope.launch { renamePlaylist(pl.id, name) }
-                        }
-                        PlaylistInputMode.PICKER,
-                        PlaylistInputMode.NONE -> {}
-                    }
-                }
-                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = "")
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.BACKSPACE -> {
-                state = state.copy(playlistInput = state.playlistInput.dropLast(1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR -> {
-                state = state.copy(playlistInput = state.playlistInput + event.character())
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun openPlaylistDetail(index: Int, autoPlay: Boolean = false) {
-        val pl = state.playlists.getOrNull(index) ?: return
-        state = state.copy(selectedPlaylist = pl, isInPlaylistDetail = true, playlistTracks = emptyList())
-        playlistTracksJob?.cancel()
-        playlistTracksJob = scope.launch {
-            getPlaylistTracks(pl.id).collect { tracks ->
-                runner()?.runOnRenderThread {
-                    state = state.copy(playlistTracks = tracks)
-                    if (autoPlay && tracks.isNotEmpty()) {
-                        val newQueue = tracks
-                        state = state.copy(queue = newQueue, queueIndex = -1, isRadioMode = false)
-                        playFromQueue(0)
-                    }
-                }
-            }
-        }
-    }
-
-
-    private fun openPlaylistPicker(track: Track) {
-        if (state.playlists.isEmpty()) {
-            // No playlists yet — open create overlay, remember track for after creation
-            state = state.copy(
-                playlistInputMode = PlaylistInputMode.CREATE,
-                playlistInput = "",
-                playlistPickerTrack = track,
-            )
-        } else {
-            state = state.copy(
-                playlistInputMode = PlaylistInputMode.PICKER,
-                playlistPickerTrack = track,
-                playlistPickerCursor = 0,
-            )
-        }
-    }
-
-    private fun handlePlaylistPicker(event: KeyEvent): EventResult {
-        when {
-            event.code() == KeyCode.ESCAPE -> {
-                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistPickerTrack = null)
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_DOWN) -> {
-                state = state.copy(playlistPickerCursor = minOf(state.playlists.lastIndex, state.playlistPickerCursor + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                state = state.copy(playlistPickerCursor = maxOf(0, state.playlistPickerCursor - 1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                val pl = state.playlists.getOrNull(state.playlistPickerCursor) ?: return EventResult.UNHANDLED
-                val track = state.playlistPickerTrack ?: return EventResult.UNHANDLED
-                scope.launch { addTrackToPlaylist(pl.id, track) }
-                state = state.copy(
-                    playlistInputMode = PlaylistInputMode.NONE,
-                    playlistPickerTrack = null,
-                )
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun handlePlayerBarKey(event: KeyEvent): EventResult {
-        when {
-            event.matches(Actions.MOVE_LEFT) -> {
-                seekTo(state.progress - 0.05)
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_RIGHT) -> {
-                seekTo(state.progress + 0.05)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'p' -> {
-                seekBackward()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'n' -> {
-                seekForward()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == ' ' -> {
-                togglePlayPause()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                toggleQueue()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'r' -> {
-                cycleRepeat()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 's' -> {
-                toggleShuffle()
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == '+' -> {
-                adjustVolume(5)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == '-' -> {
-                adjustVolume(-5)
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun seekTo(progress: Double) {
-        val duration = state.nowPlaying?.durationMs ?: return
-        if (state.isLoadingAudio) return
-        val clampedProgress = progress.coerceIn(0.0, 1.0)
-        val seekMs = (clampedProgress * duration).toLong()
-        state = state.copy(progress = clampedProgress)
-        audioPlayer.seek(seekMs)
-    }
-
-    private fun handleQueueKey(event: KeyEvent): EventResult {
-        val isFocused = runner()?.focusManager()?.focusedId() == "queue-panel"
-        when {
-            event.matches(Actions.MOVE_DOWN) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                state = state.copy(queueCursor = minOf(state.queue.lastIndex, state.queueCursor + 1))
-                return EventResult.HANDLED
-            }
-            event.matches(Actions.MOVE_UP) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                state = state.copy(queueCursor = maxOf(0, state.queueCursor - 1))
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.ENTER -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                state.queue.getOrNull(state.queueCursor)?.let { playFromQueue(state.queueCursor) }
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.DELETE || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                removeFromQueue(state.queueCursor)
-                return EventResult.HANDLED
-            }
-            event.code() == KeyCode.CHAR && event.character() == 'c' -> {
-                clearQueue()
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.UNHANDLED
-    }
-
-    private fun playTrack(track: Track) {
-        val existingIndex = state.queue.indexOfFirst { it.id == track.id }
-        val (newQueue, newIndex, newRadioMode) = when {
-            state.isRadioMode && existingIndex < 0 -> Triple(listOf(track), 0, false)
-            existingIndex >= 0 -> Triple(state.queue, existingIndex, state.isRadioMode)
-            else -> {
-                val insertAt = (state.queueIndex + 1).coerceAtLeast(0)
-                val q = state.queue.toMutableList().also { it.add(insertAt, track) }
-                Triple(q, insertAt, false)
-            }
-        }
-
-        state = state.copy(
-            selectedTrack = track,
-            nowPlaying = track,
-            isPlaying = false,
-            isLoadingAudio = true,
-            audioError = null,
-            progress = 0.0,
-            marqueeOffset = 0,
-            queue = newQueue,
-            queueIndex = newIndex,
-            isRadioMode = newRadioMode,
+        SidebarSection.LIBRARY -> renderLibraryScreen(
+            state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
         )
-        marqueeTick = 0
-        audioPlayer.stop()
-        loadTrackDetails(track.id, track)
-        scope.launch {
-            recordPlay(track)
-            val url = getStream(track)
-            runner()?.runOnRenderThread {
-                if (url == null) {
-                    state = state.copy(isLoadingAudio = false, audioError = "Stream not available")
-                    return@runOnRenderThread
-                }
-                state = state.copy(isPlaying = true, isLoadingAudio = false)
-                audioPlayer.play(url)
-            }
-        }
-        checkIsFavorite(track.id)
-    }
-
-    private fun togglePlayPause() {
-        if (state.nowPlaying == null || state.isLoadingAudio) return
-        if (state.isPlaying) {
-            audioPlayer.pause()
-            state = state.copy(isPlaying = false)
-        } else {
-            audioPlayer.resume()
-            state = state.copy(isPlaying = true)
-        }
-    }
-
-    private fun adjustVolume(delta: Int) {
-        val newVol = (state.volume + delta).coerceIn(0, 100)
-        state = state.copy(volume = newVol)
-        audioPlayer.setVolume(newVol)
-    }
-
-    private fun seekBackward() {
-        if (state.isLoadingAudio) return
-        // If more than 3s played, restart track; otherwise go to previous in queue
-        val threshold = 3000L
-        val elapsedMs = (state.progress * (state.nowPlaying?.durationMs ?: 0L)).toLong()
-        if (elapsedMs > threshold || state.queueIndex <= 0) {
-            state.nowPlaying?.let { playTrack(it) }
-        } else {
-            playFromQueue(state.queueIndex - 1)
-        }
-    }
-
-    private fun seekForward() {
-        val queue = state.queue
-        val isAtLastIndex = queue.isNotEmpty() && state.queueIndex + 1 >= queue.size
-
-        if (state.isLoadingAudio && !isAtLastIndex) return
-        if (queue.isEmpty()) return
-
-        val nextIndex = when {
-            state.repeatMode == RepeatMode.ONE -> state.queueIndex
-            state.repeatMode == RepeatMode.ALL && queue.isNotEmpty() -> (state.queueIndex + 1) % queue.size
-            state.shuffleEnabled && queue.size > 1 -> {
-                val candidates = queue.indices.filter { it != state.queueIndex }
-                candidates.random()
-            }
-            else -> {
-                val next = state.queueIndex + 1
-                if (next >= queue.size) {
-                    loadSimilarAndPlay()
-                    return
-                }
-                next
-            }
-        }
-        playFromQueue(nextIndex)
-    }
-
-    private fun loadSimilarAndPlay() {
-        val seed = state.nowPlaying ?: return
-        val alreadyPlayed = state.queue.map { it.id }.toSet()
-
-        audioPlayer.stop()
-        state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
-        scope.launch {
-            try {
-                val similar = getSimilarTracks(seed.artist, seed.title)
-                if (similar.isEmpty()) {
-                    runner()?.runOnRenderThread {
-                        state = state.copy(isLoadingAudio = false, isRadioMode = false)
-                    }
-                    return@launch
-                }
-                val resolved = similar
-                    .shuffled()
-                    .take(15)
-                    .map { st ->
-                        async {
-                            runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull()
-                        }
-                    }
-                    .awaitAll()
-                    .filterNotNull()
-                    .filter { it.id !in alreadyPlayed }
-                    .distinctBy { it.id }
-                    .take(10)
-
-                if (resolved.isEmpty()) {
-                    runner()?.runOnRenderThread {
-                        state = state.copy(isLoadingAudio = false, isRadioMode = false)
-                    }
-                    return@launch
-                }
-
-                runner()?.runOnRenderThread {
-                    state = state.copy(
-                        queue = resolved,
-                        queueIndex = -1,
-                        queueCursor = 0,
-                        isLoadingAudio = false,
-                        isRadioMode = true,
-                    )
-                    playFromQueue(0)
-                }
-            } catch (e: Exception) {
-                runner()?.runOnRenderThread {
-                    state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = e.message, isRadioMode = false)
-                }
-            }
-        }
-    }
-
-    private fun playFromQueue(index: Int) {
-        val track = state.queue.getOrNull(index) ?: return
-        state = state.copy(queueIndex = index)
-        playTrack(track)
-    }
-
-    private fun addToQueue(track: Track) {
-        val newQueue = state.queue + track
-        val newIndex = if (state.queueIndex < 0 && state.nowPlaying == null) 0 else state.queueIndex
-
-        state = state.copy(queue = newQueue, queueIndex = newIndex, isRadioMode = false)
-
-        if (state.nowPlaying == null && !state.isLoadingAudio) {
-            playFromQueue(0)
-        }
-    }
-
-    private fun removeFromQueue(index: Int) {
-        if (index < 0 || index >= state.queue.size) return
-        val removingPlaying = index == state.queueIndex
-        val newQueue = state.queue.toMutableList().also { it.removeAt(index) }
-        val newIndex = when {
-            newQueue.isEmpty() -> -1
-            index < state.queueIndex -> state.queueIndex - 1
-            index == state.queueIndex -> minOf(index, newQueue.lastIndex)
-            else -> state.queueIndex
-        }
-        val newCursor = minOf(state.queueCursor, (newQueue.size - 1).coerceAtLeast(0))
-        state = state.copy(queue = newQueue, queueIndex = newIndex, queueCursor = newCursor)
-
-        if (removingPlaying) {
-            audioPlayer.stop()
-            if (newQueue.isEmpty()) {
-                state = state.copy(nowPlaying = null, isPlaying = false, progress = 0.0, isRadioMode = false)
-            } else {
-                val nextIndex = if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0
-                playFromQueue(nextIndex)
-            }
-        }
-    }
-
-    private fun clearQueue() {
-        audioPlayer.stop()
-        state = state.copy(
-            queue = emptyList(),
-            queueIndex = -1,
-            queueCursor = 0,
-            nowPlaying = null,
-            isPlaying = false,
-            progress = 0.0,
-            isRadioMode = false,
-        )
-    }
-
-    private fun toggleQueue() {
-        state = state.copy(isQueueVisible = !state.isQueueVisible)
-    }
-
-    private fun toggleShuffle() {
-        state = state.copy(shuffleEnabled = !state.shuffleEnabled)
-    }
-
-    private fun cycleRepeat() {
-        val next = when (state.repeatMode) {
-            RepeatMode.OFF -> RepeatMode.ALL
-            RepeatMode.ALL -> RepeatMode.ONE
-            RepeatMode.ONE -> RepeatMode.OFF
-        }
-        state = state.copy(repeatMode = next)
-    }
-
-    private fun toggleFavorite(track: Track) {
-        scope.launch {
-            if (isFavoriteUseCase(track.id)) removeFavorite(track.id)
-            else addFavorite(track)
-            val isFav = isFavoriteUseCase(track.id)
-            runner()?.runOnRenderThread {
-                state = state.copy(isFavorite = isFav)
-            }
-        }
-    }
-
-    private fun removeFavoriteTrack(track: Track) {
-        scope.launch { removeFavorite(track.id) }
-    }
-
-    private fun checkIsFavorite(trackId: String) {
-        scope.launch {
-            val isFav = isFavoriteUseCase(trackId)
-            runner()?.runOnRenderThread {
-                state = state.copy(isFavorite = isFav)
-            }
-        }
-    }
-
-    private fun performSearch() {
-        val query = searchInputState.text()
-        if (query.isBlank()) return
-        lastQuery = query
-        loadMoreJob?.cancel()
-        loadMoreJob = null
-        state = state.copy(
-            isLoading = true,
-            errorMessage = null,
-            selectedTrack = null,
-            hasMore = true,
-            activeSection = SidebarSection.SEARCH,
-        )
-        sidebarList.selected(SidebarSection.SEARCH.ordinal)
-
-        scope.launch {
-            try {
-                val results = searchTracks(query)
-                val firstTrack = results.firstOrNull()
-                runner()?.runOnRenderThread {
-                    state = state.copy(
-                        results = results,
-                        isLoading = false,
-                        selectedIndex = 0,
-                        selectedTrack = firstTrack,
-                        hasMore = loadMoreTracks.hasMore(results.size),
-                    )
-                    resultList.selected(0)
-                    focusResults()
-                }
-                if (firstTrack != null) loadTrackDetails(firstTrack.id)
-            } catch (e: Exception) {
-                runner()?.runOnRenderThread {
-                    state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
-                }
-            }
-        }
-    }
-
-    private fun loadMore() {
-        if (lastQuery.isBlank()) return
-        loadMoreJob?.cancel()
-        val offset = state.results.size
-        state = state.copy(isLoadingMore = true)
-        loadMoreJob = scope.launch {
-            try {
-                val more = loadMoreTracks(lastQuery, offset)
-                if (isActive) runner()?.runOnRenderThread {
-                    state = state.copy(
-                        results = state.results + more,
-                        isLoadingMore = false,
-                        hasMore = loadMoreTracks.hasMore(offset + more.size),
-                    )
-                }
-            } catch (_: Exception) {
-                runner()?.runOnRenderThread {
-                    state = state.copy(isLoadingMore = false)
-                }
-            }
-        }
-    }
-
-    private fun debouncedLoadDetails(track: Track) {
-        detailsJob?.cancel()
-        detailsJob = scope.launch {
-            delay(150)
-            if (isActive) loadTrackDetails(track.id, track)
-        }
-    }
-
-    private fun loadTrackDetails(trackId: String, knownTrack: Track? = null) {
-        detailsJob?.cancel()
-        state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), artworkData = null)
-        detailsJob = scope.launch {
-            val fullTrackDeferred = async { getTrack(trackId) }
-            val similarDeferred = async {
-                val artist = knownTrack?.artist ?: fullTrackDeferred.await()?.artist ?: return@async emptyList<SimilarTrack>()
-                val title  = knownTrack?.title  ?: fullTrackDeferred.await()?.title  ?: return@async emptyList<SimilarTrack>()
-                getSimilarTracks(artist, title)
-            }
-            val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
-            val artworkData = fullTrack.artworkUrl?.let { ArtworkRenderer.load(it) }
-            if (isActive) {
-                runner()?.runOnRenderThread {
-                    state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
-                }
-                val similar = similarDeferred.await()
-                if (isActive) runner()?.runOnRenderThread {
-                    state = state.copy(similarTracks = similar)
-                }
-            }
-        }
-    }
-
-    private fun loadLyrics() {
-        val track = state.selectedTrack ?: return
-        state = state.copy(isLoadingLyrics = true, lyrics = null)
-        scope.launch {
-            val lyrics = getLyrics(track.artist, track.title)
-            runner()?.runOnRenderThread {
-                state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
-            }
-        }
-    }
-
-    private fun focusResults() {
-        runner()?.focusManager()?.setFocus("results-panel")
     }
 }
