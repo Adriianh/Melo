@@ -154,7 +154,14 @@ class MeloScreen(
 
     override fun render(): Element = dock()
         .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
-        .bottom(buildPlayerBar(state, ::formatDuration, ::handlePlayerBarKey), Constraint.length(3))
+        .bottom(buildPlayerBar(
+            state,
+            ::formatDuration,
+            ::handlePlayerBarKey,
+            ::togglePlayPause,
+            ::adjustVolume,
+            ::seekForward, ::seekBackward
+        ), Constraint.length(4))
         .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
         .center(renderMainContent())
 
@@ -371,6 +378,16 @@ class MeloScreen(
         val newVol = (state.volume + delta).coerceIn(0, 100)
         state = state.copy(volume = newVol)
         audioPlayer.setVolume(newVol)
+    }
+
+    private fun seekBackward() {
+        val track = state.nowPlaying ?: return
+        if (state.isLoadingAudio) return
+        playTrack(track)
+    }
+
+    private fun seekForward() {
+        // No-op until a queue/playlist system is implemented
     }
 
     private fun toggleFavorite(track: Track) {

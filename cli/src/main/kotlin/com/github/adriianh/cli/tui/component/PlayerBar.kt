@@ -10,6 +10,8 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import dev.tamboui.style.Style
 import dev.tamboui.text.Line
 import dev.tamboui.text.Span
+import dev.tamboui.layout.Flex
+import dev.tamboui.tui.event.MouseEventKind
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.tui.event.KeyEvent
@@ -19,6 +21,10 @@ fun buildPlayerBar(
     state: MeloState,
     formatDuration: (Long) -> String,
     onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
+    onPlayPause: () -> Unit = {},
+    onVolumeChange: (Int) -> Unit = {},
+    onSeekForward: () -> Unit = {},
+    onSeekBackward: () -> Unit = {},
 ): Element {
     val nowPlaying = state.nowPlaying
 
@@ -40,7 +46,7 @@ fun buildPlayerBar(
         Line.from(Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
     }
 
-    val leftSection = if (nowPlaying != null) {
+    val leftTop = if (nowPlaying != null) {
         row(
             text(statusIcon).fg(statusColor).length(2),
             text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill(),
@@ -52,7 +58,7 @@ fun buildPlayerBar(
         ).percent(20)
     }
 
-    val centerSection = if (nowPlaying != null) {
+    val centerTop = if (nowPlaying != null) {
         val currentMs = (state.progress * nowPlaying.durationMs).toLong()
         val elapsed = formatDuration(currentMs)
         val total = formatDuration(nowPlaying.durationMs)
@@ -79,20 +85,66 @@ fun buildPlayerBar(
         state.volume < 50 -> "🔉"
         else -> "🔊"
     }
-    val rightSection = row(
+    val rightTop = row(
         text(volumeIcon).length(2),
         text(" ").length(1),
         lineGauge(state.volume)
             .filledColor(TEXT_PRIMARY)
             .unfilledColor(TEXT_DIM)
-            .fill(),
+            .fill()
+            .onMouseEvent { event ->
+                when (event.kind()) {
+                    MouseEventKind.SCROLL_UP   -> { onVolumeChange(5);  EventResult.HANDLED }
+                    MouseEventKind.SCROLL_DOWN -> { onVolumeChange(-5); EventResult.HANDLED }
+                    else -> EventResult.UNHANDLED
+                }
+            },
         text(" ${state.volume}%").fg(TEXT_DIM).length(5),
     ).percent(20)
 
+    val topRow = row(leftTop, centerTop, rightTop).length(1)
+
+    val controlColor = if (nowPlaying != null && !state.isLoadingAudio) PRIMARY_COLOR else TEXT_DIM
+    val playPauseIcon = if (state.isPlaying) "⏸" else "▶"
+
+    val albumText = nowPlaying?.album?.takeIf { it.isNotBlank() } ?: ""
+    val leftBottom = row(
+        text(albumText).fg(TEXT_DIM).ellipsis().fill(),
+    ).percent(20)
+
+    val centerBottom = row(
+        text("⏮")
+            .fg(controlColor)
+            .length(2)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onSeekBackward(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text(playPauseIcon)
+            .fg(controlColor)
+            .length(2)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onPlayPause(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text("⏭")
+            .fg(controlColor)
+            .length(2)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onSeekForward(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+    ).flex(Flex.CENTER).spacing(2).fill()
+
+    val rightBottom = row(
+        spacer(),
+    ).percent(20)
+
+    val bottomRow = row(leftBottom, centerBottom, rightBottom).length(1)
+
     val borderColor = if (state.isPlaying) PRIMARY_COLOR else BORDER_DEFAULT
 
-    return panel(leftSection, centerSection, rightSection)
-        .horizontal()
+    return panel(topRow, bottomRow)
         .rounded()
         .borderColor(borderColor)
         .focusedBorderColor(borderColor)
