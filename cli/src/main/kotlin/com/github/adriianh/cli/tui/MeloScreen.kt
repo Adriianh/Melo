@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
@@ -204,7 +205,7 @@ class MeloScreen(
         val bottomSection = if (state.isQueueVisible) {
             dock()
                 .bottom(playerBarBuilder(), Constraint.length(4))
-                .center(buildQueuePanel(state, queueList, ::handleQueueKey))
+                .center(stack(ClearGraphicsElement(), buildQueuePanel(state, queueList, ::handleQueueKey)))
         } else {
             playerBarBuilder()
         }
