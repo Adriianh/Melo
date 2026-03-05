@@ -357,7 +357,7 @@ class MeloScreen(
     }
 
     private fun handleQueueKey(event: KeyEvent): EventResult {
-        val isFocused = runner()?.focusManager()?.focusedId() == "queue-list"
+        val isFocused = runner()?.focusManager()?.focusedId() == "queue-panel"
         when {
             event.matches(Actions.MOVE_DOWN) -> {
                 if (!isFocused) return EventResult.UNHANDLED
