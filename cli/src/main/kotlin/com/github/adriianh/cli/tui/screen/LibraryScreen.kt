@@ -56,7 +56,6 @@ fun renderLibraryScreen(
         val label = when (state.playlistInputMode) {
             PlaylistInputMode.CREATE -> "New playlist name: "
             PlaylistInputMode.RENAME -> "Rename to: "
-            else -> ""
         }
         row(
             text(label).fg(TEXT_SECONDARY).length(label.length),
@@ -150,8 +149,6 @@ private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*
         )
     }
     playlistsList.elements(*items.toTypedArray())
-    playlistsList.focusable()
-    playlistsList.id("playlists-list")
 
     val header = row(
         text("Name").dim().fill(),
@@ -170,7 +167,7 @@ private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement
     val tracks   = state.playlistTracks
 
     val titleLine = Line.from(
-        Span.styled("${playlist?.name ?: "Playlist"}", Style.EMPTY.fg(PRIMARY_COLOR).bold()),
+        Span.styled(playlist?.name ?: "Playlist", Style.EMPTY.fg(PRIMARY_COLOR).bold()),
         Span.styled("  ${tracks.size} tracks", Style.EMPTY.fg(TEXT_DIM)),
     )
 
@@ -196,8 +193,6 @@ private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement
         )
     }
     tracksList.elements(*items.toTypedArray())
-    tracksList.focusable()
-    tracksList.id("playlist-tracks-list")
 
     val header = row(
         text("").length(2),
