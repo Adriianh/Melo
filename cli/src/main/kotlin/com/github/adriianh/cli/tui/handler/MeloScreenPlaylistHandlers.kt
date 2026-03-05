@@ -1,6 +1,6 @@
 package com.github.adriianh.cli.tui.handler
-import com.github.adriianh.cli.tui.*
 
+import com.github.adriianh.cli.tui.*
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
