@@ -42,12 +42,13 @@ enum class LibraryTab {
 }
 
 /**
- * Input mode for playlist create/rename.
+ * Input mode for playlist create/rename/picker overlay.
  */
 enum class PlaylistInputMode {
     NONE,
     CREATE,
     RENAME,
+    PICKER,
 }
 
 /**
@@ -86,6 +87,8 @@ data class MeloState(
     val isInPlaylistDetail: Boolean = false,
     val playlistInput: String = "",
     val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
+    val playlistPickerTrack: Track? = null,
+    val playlistPickerCursor: Int = 0,
 
     // Home
     val recentTracks: List<HistoryEntry> = emptyList(),

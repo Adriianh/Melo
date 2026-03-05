@@ -12,7 +12,6 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Margin
 import dev.tamboui.style.Style
@@ -45,38 +44,18 @@ fun renderLibraryScreen(
     }
 
     val hints = when (state.libraryTab) {
-        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [1] favorites  [2] playlists"
+        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [1] favorites  [2] playlists"
         LibraryTab.PLAYLISTS -> if (state.isInPlaylistDetail)
             "[Enter] play  [Q] queue  [D] remove  [Esc] back"
         else
             "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1] favorites  [2] playlists"
     }
 
-    val inputRow = if (state.playlistInputMode != PlaylistInputMode.NONE) {
-        val label = when (state.playlistInputMode) {
-            PlaylistInputMode.CREATE -> "New playlist name: "
-            PlaylistInputMode.RENAME -> "Rename to: "
-        }
-        row(
-            text(label).fg(TEXT_SECONDARY).length(label.length),
-            text(state.playlistInput + "█").fg(TEXT_PRIMARY).fill(),
-        ).margin(Margin.horizontal(1))
-    } else null
-
-    val body = if (inputRow != null) {
-        column(
-            tabBar,
-            text("").length(1),
-            content,
-            inputRow,
-        )
-    } else {
-        column(
-            tabBar,
-            text("").length(1),
-            content,
-        )
-    }
+    val body = column(
+        tabBar,
+        text("").length(1),
+        content,
+    )
 
     return stack(
         ClearGraphicsElement().fill(),
