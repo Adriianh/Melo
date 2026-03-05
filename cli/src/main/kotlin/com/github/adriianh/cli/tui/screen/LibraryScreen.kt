@@ -14,9 +14,6 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Margin
-import dev.tamboui.style.Style
-import dev.tamboui.text.Line
-import dev.tamboui.text.Span
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
@@ -145,14 +142,14 @@ private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement
     val playlist = state.selectedPlaylist
     val tracks   = state.playlistTracks
 
-    val titleLine = Line.from(
-        Span.styled(playlist?.name ?: "Playlist", Style.EMPTY.fg(PRIMARY_COLOR).bold()),
-        Span.styled("  ${tracks.size} tracks", Style.EMPTY.fg(TEXT_DIM)),
+    val titleRow = row(
+        text(playlist?.name ?: "Playlist").fg(PRIMARY_COLOR).bold(),
+        text("  ${tracks.size} track${if (tracks.size != 1) "s" else ""}").fg(TEXT_DIM),
     )
 
     if (tracks.isEmpty()) {
         return column(
-            text(titleLine).length(1),
+            titleRow,
             text("").length(1),
             spacer(),
             text("  This playlist is empty").fg(TEXT_SECONDARY).centered(),
@@ -182,7 +179,7 @@ private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement
     ).margin(Margin.horizontal(1))
 
     return column(
-        text(titleLine).length(1),
+        titleRow,
         text("").length(1),
         header,
         text("").length(1),
