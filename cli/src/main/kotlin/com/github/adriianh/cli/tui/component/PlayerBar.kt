@@ -9,6 +9,10 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_NEXT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PAUSE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PREV
+import com.github.adriianh.cli.tui.MeloTheme.ICON_QUEUE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_REPEAT
+import com.github.adriianh.cli.tui.MeloTheme.ICON_REPEAT1
+import com.github.adriianh.cli.tui.MeloTheme.ICON_SHUFFLE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_HIGH
 import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_LOW
 import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_MUTE
@@ -16,15 +20,16 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.RepeatMode
+import dev.tamboui.layout.Flex
 import dev.tamboui.style.Style
 import dev.tamboui.text.Line
 import dev.tamboui.text.Span
-import dev.tamboui.layout.Flex
-import dev.tamboui.tui.event.MouseEventKind
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
-import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.toolkit.event.EventResult
+import dev.tamboui.tui.event.KeyEvent
+import dev.tamboui.tui.event.MouseEventKind
 
 fun buildPlayerBar(
     state: MeloState,
@@ -34,6 +39,9 @@ fun buildPlayerBar(
     onVolumeChange: (Int) -> Unit = {},
     onSeekForward: () -> Unit = {},
     onSeekBackward: () -> Unit = {},
+    onToggleShuffle: () -> Unit = {},
+    onCycleRepeat: () -> Unit = {},
+    onToggleQueue: () -> Unit = {},
 ): Element {
     val nowPlaying = state.nowPlaying
 
@@ -46,14 +54,13 @@ fun buildPlayerBar(
     val statusColor = if (state.audioError != null) ACCENT_RED else PRIMARY_COLOR
 
     val panelTitle = if (nowPlaying != null) {
-        val titleStyle = if (state.isPlaying)
-            Style.EMPTY.fg(PRIMARY_COLOR).bold()
-        else
-            Style.EMPTY.fg(TEXT_PRIMARY).bold()
+        val titleStyle = if (state.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
+            else Style.EMPTY.fg(TEXT_PRIMARY).bold()
         Line.from(Span.styled(nowPlaying.title, titleStyle))
     } else {
         Line.from(Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
     }
+
 
     val leftTop = if (nowPlaying != null) {
         row(
@@ -122,31 +129,51 @@ fun buildPlayerBar(
     ).percent(20)
 
     val centerBottom = row(
-        text(ICON_PREV)
-            .fg(controlColor)
-            .length(2)
+        text(ICON_PREV).fg(controlColor).length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onSeekBackward(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-        text(playPauseIcon)
-            .fg(controlColor)
-            .length(2)
+        text(playPauseIcon).fg(controlColor).length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onPlayPause(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-        text(ICON_NEXT)
-            .fg(controlColor)
-            .length(2)
+        text(ICON_NEXT).fg(controlColor).length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onSeekForward(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
     ).flex(Flex.CENTER).spacing(2).fill()
 
+    val shuffleColor = if (state.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
+    val repeatIcon = when (state.repeatMode) {
+        RepeatMode.OFF -> ICON_REPEAT
+        RepeatMode.ALL -> ICON_REPEAT
+        RepeatMode.ONE -> ICON_REPEAT1
+    }
+    val repeatColor = if (state.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
+    val queueColor = if (state.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
+    val queueCount = if (state.queue.isNotEmpty()) " ${state.queue.size}" else ""
+
     val rightBottom = row(
-        spacer(),
+        text(ICON_SHUFFLE).fg(shuffleColor).length(2)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onToggleShuffle(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text(" ").length(1),
+        text(repeatIcon).fg(repeatColor).length(3)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onCycleRepeat(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text(" ").length(1),
+        text("$ICON_QUEUE$queueCount").fg(queueColor).length(4)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onToggleQueue(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
     ).percent(20)
 
     val bottomRow = row(leftBottom, centerBottom, rightBottom).length(1)

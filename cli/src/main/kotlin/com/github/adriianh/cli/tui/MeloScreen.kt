@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.component.buildPlayerBar
+import com.github.adriianh.cli.tui.component.buildQueuePanel
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
@@ -62,6 +63,7 @@ class MeloScreen(
         onFinish = {
             runner()?.runOnRenderThread {
                 state = state.copy(isPlaying = false, progress = 0.0)
+                seekForward()
             }
         },
         onError = { err ->
@@ -110,6 +112,14 @@ class MeloScreen(
         .focusable()
         .id("similar-area")
 
+    private val queueList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("queue-list")
+
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() {
@@ -150,18 +160,29 @@ class MeloScreen(
         scope.cancel()
     }
 
-    override fun render(): Element = dock()
-        .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
-        .bottom(buildPlayerBar(
-            state,
-            ::formatDuration,
-            ::handlePlayerBarKey,
-            ::togglePlayPause,
-            ::adjustVolume,
-            ::seekForward, ::seekBackward
-        ), Constraint.length(4))
-        .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
-        .center(renderMainContent())
+    override fun render(): Element {
+        val playerBarBuilder = {
+            buildPlayerBar(
+                state, ::formatDuration, ::handlePlayerBarKey,
+                ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
+                ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
+            )
+        }
+        val bottomSection = if (state.isQueueVisible) {
+            dock()
+                .bottom(playerBarBuilder(), Constraint.length(5))
+                .center(buildQueuePanel(state, queueList, ::handleQueueKey))
+        } else {
+            playerBarBuilder()
+        }
+        val bottomConstraint = if (state.isQueueVisible) Constraint.length(15) else Constraint.length(5)
+
+        return dock()
+            .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
+            .bottom(bottomSection, bottomConstraint)
+            .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
+            .center(renderMainContent())
+    }
 
     private fun renderMainContent(): Element = when (state.activeSection) {
         SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey)
@@ -252,6 +273,10 @@ class MeloScreen(
                 state.results.getOrNull(state.selectedIndex)?.let { toggleFavorite(it) }
                 return EventResult.HANDLED
             }
+            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                state.results.getOrNull(state.selectedIndex)?.let { addToQueue(it) }
+                return EventResult.HANDLED
+            }
             event.code() == KeyCode.CHAR && event.character() == 'l' -> {
                 loadLyrics()
                 return EventResult.HANDLED
@@ -309,6 +334,11 @@ class MeloScreen(
                 state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
                 return EventResult.HANDLED
             }
+            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                state.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
+                return EventResult.HANDLED
+            }
         }
         return EventResult.UNHANDLED
     }
@@ -319,11 +349,56 @@ class MeloScreen(
             ' '  -> { togglePlayPause(); EventResult.HANDLED }
             '+'  -> { adjustVolume(5);   EventResult.HANDLED }
             '-'  -> { adjustVolume(-5);  EventResult.HANDLED }
+            's'  -> { toggleShuffle();   EventResult.HANDLED }
+            'r'  -> { cycleRepeat();     EventResult.HANDLED }
+            'q'  -> { toggleQueue();     EventResult.HANDLED }
             else -> EventResult.UNHANDLED
         }
     }
 
+    private fun handleQueueKey(event: KeyEvent): EventResult {
+        val isFocused = runner()?.focusManager()?.focusedId() == "queue-list"
+        when {
+            event.matches(Actions.MOVE_DOWN) -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                queueList.selected(minOf(state.queue.lastIndex, queueList.selected() + 1))
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_UP) -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                queueList.selected(maxOf(0, queueList.selected() - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                val idx = queueList.selected()
+                state.queue.getOrNull(idx)?.let { playFromQueue(idx) }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.DELETE || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
+                if (!isFocused) return EventResult.UNHANDLED
+                removeFromQueue(queueList.selected())
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'c' -> {
+                clearQueue()
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
     private fun playTrack(track: Track) {
+        // Sync queue: if track is in queue use its index, otherwise insert at current position
+        val existingIndex = state.queue.indexOfFirst { it.id == track.id }
+        val (newQueue, newIndex) = if (existingIndex >= 0) {
+            state.queue to existingIndex
+        } else {
+            val insertAt = (state.queueIndex + 1).coerceAtLeast(0)
+            val q = state.queue.toMutableList().also { it.add(insertAt, track) }
+            q to insertAt
+        }
+
         state = state.copy(
             selectedTrack = track,
             nowPlaying = track,
@@ -332,6 +407,8 @@ class MeloScreen(
             audioError = null,
             progress = 0.0,
             marqueeOffset = 0,
+            queue = newQueue,
+            queueIndex = newIndex,
         )
         marqueeTick = 0
         audioPlayer.stop()
@@ -369,13 +446,77 @@ class MeloScreen(
     }
 
     private fun seekBackward() {
-        val track = state.nowPlaying ?: return
         if (state.isLoadingAudio) return
-        playTrack(track)
+        // If more than 3s played, restart track; otherwise go to previous in queue
+        val threshold = 3000L
+        val elapsedMs = (state.progress * (state.nowPlaying?.durationMs ?: 0L)).toLong()
+        if (elapsedMs > threshold || state.queueIndex <= 0) {
+            state.nowPlaying?.let { playTrack(it) }
+        } else {
+            playFromQueue(state.queueIndex - 1)
+        }
     }
 
     private fun seekForward() {
-        // No-op until a queue/playlist system is implemented
+        if (state.isLoadingAudio) return
+        val queue = state.queue
+        if (queue.isEmpty()) return
+
+        val nextIndex = when (state.repeatMode) {
+            RepeatMode.ONE -> state.queueIndex  // replay same
+            RepeatMode.ALL -> (state.queueIndex + 1) % queue.size
+            RepeatMode.OFF -> {
+                val next = state.queueIndex + 1
+                if (next >= queue.size) return  // end of queue
+                next
+            }
+        }
+        playFromQueue(nextIndex)
+    }
+
+    private fun playFromQueue(index: Int) {
+        val track = state.queue.getOrNull(index) ?: return
+        state = state.copy(queueIndex = index)
+        playTrack(track)
+    }
+
+    private fun addToQueue(track: Track) {
+        val newQueue = state.queue + track
+        val newIndex = if (state.queueIndex < 0 && state.nowPlaying == null) 0 else state.queueIndex
+        state = state.copy(queue = newQueue, queueIndex = newIndex)
+    }
+
+    private fun removeFromQueue(index: Int) {
+        if (index < 0 || index >= state.queue.size) return
+        val newQueue = state.queue.toMutableList().also { it.removeAt(index) }
+        val newIndex = when {
+            newQueue.isEmpty() -> -1
+            index < state.queueIndex -> state.queueIndex - 1
+            index == state.queueIndex -> minOf(index, newQueue.lastIndex)
+            else -> state.queueIndex
+        }
+        state = state.copy(queue = newQueue, queueIndex = newIndex)
+    }
+
+    private fun clearQueue() {
+        state = state.copy(queue = emptyList(), queueIndex = -1)
+    }
+
+    private fun toggleQueue() {
+        state = state.copy(isQueueVisible = !state.isQueueVisible)
+    }
+
+    private fun toggleShuffle() {
+        state = state.copy(shuffleEnabled = !state.shuffleEnabled)
+    }
+
+    private fun cycleRepeat() {
+        val next = when (state.repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+        state = state.copy(repeatMode = next)
     }
 
     private fun toggleFavorite(track: Track) {
