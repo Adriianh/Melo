@@ -25,16 +25,15 @@ object MeloTheme {
         val termProgram = System.getenv("TERM_PROGRAM") ?: ""
         val colorTerm = System.getenv("COLORTERM") ?: ""
         val vteVersion = System.getenv("VTE_VERSION")
-        val wtSession = System.getenv("WT_SESSION")       // Windows Terminal
+        val wtSession = System.getenv("WT_SESSION")
         val kitty = System.getenv("KITTY_WINDOW_ID")
 
-        // Terminals known to reliably support Unicode:
-        val isKnownGoodTerminal = colorTerm.isNotEmpty()        // truecolor terminals (kitty, alacritty, etc.)
-            || vteVersion != null                               // VTE-based (GNOME Terminal, Tilix, etc.)
-            || termProgram.isNotEmpty()                         // iTerm2, VSCode, Hyper, etc.
-            || wtSession != null                                // Windows Terminal
-            || kitty != null                                    // Kitty
-            || term.startsWith("xterm-256color")               // xterm-256color usually has Unicode fonts
+        val isKnownGoodTerminal = colorTerm.isNotEmpty()
+            || vteVersion != null
+            || termProgram.isNotEmpty()
+            || wtSession != null
+            || kitty != null
+            || term.startsWith("xterm-256color")
             || term == "screen-256color"
             || term == "tmux-256color"
             || term.startsWith("rxvt-unicode")
