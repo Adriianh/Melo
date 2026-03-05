@@ -1,7 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
+import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_QUEUE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
@@ -31,6 +31,9 @@ fun buildQueuePanel(
         ).title("$ICON_QUEUE Queue  [Q] add  [Del] remove  [C] clear")
             .rounded()
             .borderColor(PRIMARY_COLOR)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .focusable()
+            .id("queue-panel")
             .onKeyEvent(onKeyEvent)
     }
 
@@ -57,5 +60,8 @@ fun buildQueuePanel(
     ).title(title)
         .rounded()
         .borderColor(PRIMARY_COLOR)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("queue-panel")
         .onKeyEvent(onKeyEvent)
 }

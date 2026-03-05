@@ -484,6 +484,10 @@ class MeloScreen(
         val newQueue = state.queue + track
         val newIndex = if (state.queueIndex < 0 && state.nowPlaying == null) 0 else state.queueIndex
         state = state.copy(queue = newQueue, queueIndex = newIndex)
+
+        if (state.nowPlaying == null && !state.isLoadingAudio) {
+            playFromQueue(0)
+        }
     }
 
     private fun removeFromQueue(index: Int) {
