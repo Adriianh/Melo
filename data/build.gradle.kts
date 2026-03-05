@@ -22,6 +22,8 @@ sqldelight {
     databases {
         create("MeloDatabase") {
             packageName.set("com.github.adriianh.data.local")
+            version = 2
+            verifyMigrations = true
         }
     }
 }
