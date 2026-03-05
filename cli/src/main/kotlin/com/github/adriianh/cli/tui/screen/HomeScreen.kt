@@ -4,10 +4,12 @@ import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_BULLET
 import com.github.adriianh.cli.tui.MeloTheme.ICON_CLOCK
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
+import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
@@ -34,7 +36,7 @@ fun renderHomeScreen(
         val items = state.recentTracks.take(10).map { entry ->
             val track = entry.track
             row(
-                text("▸ ").fg(PRIMARY_COLOR).length(2),
+                text("$ICON_BULLET ").fg(PRIMARY_COLOR).length(2),
                 text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                 text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
             )
