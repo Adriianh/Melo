@@ -71,18 +71,16 @@ class MeloScreen(
         },
     )
 
-    // ── Widget instances ──
-
     private val searchInputState = TextInputState()
 
     private val resultList: ListElement<*> = list()
-        .highlightSymbol("▸ ")
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
 
     private val favoritesList: ListElement<*> = list()
-        .highlightSymbol("▸ ")
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
@@ -90,8 +88,12 @@ class MeloScreen(
         .id("library-list")
 
     private val sidebarList: ListElement<*> = list()
-        .items("🏠 Home", "🔍 Search", "📚 Your Library")
-        .highlightSymbol("▸ ")
+        .items(
+            "${MeloTheme.ICON_HOME} Home",
+            "${MeloTheme.ICON_SEARCH} Search",
+            "${MeloTheme.ICON_LIBRARY} Your Library",
+        )
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .selected(SidebarSection.SEARCH.ordinal)
 
@@ -102,13 +104,11 @@ class MeloScreen(
         .id("lyrics-area")
 
     private val similarArea: ListElement<*> = list()
-        .highlightSymbol("• ")
+        .highlightSymbol("${MeloTheme.ICON_BULLET} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .scrollbar()
         .focusable()
         .id("similar-area")
-
-    // ─────────────────────────────── Lifecycle ────────────────────────────────
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
@@ -150,8 +150,6 @@ class MeloScreen(
         scope.cancel()
     }
 
-    // ─────────────────────────────── Render ───────────────────────────────────
-
     override fun render(): Element = dock()
         .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
         .bottom(buildPlayerBar(
@@ -173,8 +171,6 @@ class MeloScreen(
         )
         SidebarSection.LIBRARY -> renderLibraryScreen(state, favoritesList, ::handleLibraryKey)
     }
-
-    // ─────────────────────────────── Event Handlers ───────────────────────────
 
     private fun handleSearchBarKey(event: KeyEvent): EventResult {
         if (state.results.isNotEmpty()) {
@@ -317,12 +313,6 @@ class MeloScreen(
         return EventResult.UNHANDLED
     }
 
-    /**
-     * Global player controls — handled regardless of which panel has focus.
-     * Space  → play / pause
-     * +      → volume up 5
-     * -      → volume down 5
-     */
     private fun handlePlayerBarKey(event: KeyEvent): EventResult {
         if (event.code() != KeyCode.CHAR) return EventResult.UNHANDLED
         return when (event.character()) {
@@ -332,8 +322,6 @@ class MeloScreen(
             else -> EventResult.UNHANDLED
         }
     }
-
-    // ─────────────────────────────── Actions ──────────────────────────────────
 
     private fun playTrack(track: Track) {
         state = state.copy(

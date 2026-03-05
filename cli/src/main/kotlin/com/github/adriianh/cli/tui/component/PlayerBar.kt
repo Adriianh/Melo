@@ -3,6 +3,15 @@ package com.github.adriianh.cli.tui.component
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
+import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
+import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NEXT
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PAUSE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PREV
+import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_HIGH
+import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_LOW
+import com.github.adriianh.cli.tui.MeloTheme.ICON_VOL_MUTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
@@ -29,10 +38,10 @@ fun buildPlayerBar(
     val nowPlaying = state.nowPlaying
 
     val statusIcon = when {
-        state.isLoadingAudio -> "⏳"
-        state.audioError != null -> "✗"
-        state.isPlaying -> "▶"
-        else -> "⏸"
+        state.isLoadingAudio -> ICON_LOADING
+        state.audioError != null -> ICON_ERROR
+        state.isPlaying -> ICON_PLAY
+        else -> ICON_PAUSE
     }
     val statusColor = if (state.audioError != null) ACCENT_RED else PRIMARY_COLOR
 
@@ -81,9 +90,9 @@ fun buildPlayerBar(
     }
 
     val volumeIcon = when {
-        state.volume == 0 -> "🔇"
-        state.volume < 50 -> "🔉"
-        else -> "🔊"
+        state.volume == 0 -> ICON_VOL_MUTE
+        state.volume < 50 -> ICON_VOL_LOW
+        else -> ICON_VOL_HIGH
     }
     val rightTop = row(
         text(volumeIcon).length(2),
@@ -105,7 +114,7 @@ fun buildPlayerBar(
     val topRow = row(leftTop, centerTop, rightTop).length(1)
 
     val controlColor = if (nowPlaying != null && !state.isLoadingAudio) PRIMARY_COLOR else TEXT_DIM
-    val playPauseIcon = if (state.isPlaying) "⏸" else "▶"
+    val playPauseIcon = if (state.isPlaying) ICON_PAUSE else ICON_PLAY
 
     val albumText = nowPlaying?.album?.takeIf { it.isNotBlank() } ?: ""
     val leftBottom = row(
@@ -113,7 +122,7 @@ fun buildPlayerBar(
     ).percent(20)
 
     val centerBottom = row(
-        text("⏮")
+        text(ICON_PREV)
             .fg(controlColor)
             .length(2)
             .onMouseEvent { event ->
@@ -127,7 +136,7 @@ fun buildPlayerBar(
                 if (event.kind() == MouseEventKind.PRESS) { onPlayPause(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-        text("⏭")
+        text(ICON_NEXT)
             .fg(controlColor)
             .length(2)
             .onMouseEvent { event ->

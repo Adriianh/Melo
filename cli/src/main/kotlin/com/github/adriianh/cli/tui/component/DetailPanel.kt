@@ -1,15 +1,16 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_BULLET
+import com.github.adriianh.cli.tui.MeloTheme.ICON_CHECK
+import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
@@ -73,8 +74,8 @@ private fun renderTrackMetadata(
     text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
     text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
     text(""),
-    if (track.sourceId != null) text("✓ Available for streaming").dim().fg(PRIMARY_COLOR)
-    else text("✗ Not available for streaming").dim()
+    if (track.sourceId != null) text("$ICON_CHECK Available for streaming").dim().fg(PRIMARY_COLOR)
+    else text("$ICON_ERROR Not available for streaming").dim()
 ).flex(Flex.START)
 
 private fun renderArtwork(state: MeloState): StyledElement<*> =
@@ -129,7 +130,7 @@ private fun renderSimilarTab(
     val items = state.similarTracks.map { similar ->
         val matchPercent = (similar.match * 100).toInt()
         row(
-            text("• ").fg(PRIMARY_COLOR).length(2),
+            text("$ICON_BULLET ").fg(PRIMARY_COLOR).length(2),
             text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
             text("($matchPercent%)").dim().length(6)

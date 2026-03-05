@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
@@ -48,7 +49,7 @@ fun renderHomeScreen(
         )
     } else {
         val items = state.favorites.mapIndexed { index, track ->
-            val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
+            val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
             row(
                 text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
                 text("${index + 1}").dim().length(3),

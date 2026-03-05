@@ -4,13 +4,14 @@ import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.component.buildDetailPanel
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
@@ -66,7 +67,7 @@ private fun renderResultsArea(
 ): Element {
     val items = state.results.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
-        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "♫ " else "  "
+        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isSelected = index == state.selectedIndex
         val titleText = if (isSelected) marqueeText(track.title, state.marqueeOffset, 40)
                         else track.title
@@ -76,7 +77,7 @@ private fun renderResultsArea(
             text("${index + 1}").dim().length(3),
             text(titleText).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(if (isFav) "♥" else " ").fg(PRIMARY_COLOR).length(2),
+            text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
             text(duration).fg(TEXT_DIM).length(6),
         )
     }
@@ -89,7 +90,7 @@ private fun renderResultsArea(
         text("#").dim().length(3),
         text("Title").dim().fill(),
         text("Artist").dim().percent(25),
-        text("♥").dim().length(2),
+        text(ICON_HEART).dim().length(2),
         text("Time").dim().length(6),
     ).margin(Margin.horizontal(1))
 
