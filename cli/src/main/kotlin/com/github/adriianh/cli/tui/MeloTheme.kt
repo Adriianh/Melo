@@ -8,8 +8,9 @@ import dev.tamboui.style.Style
  */
 object MeloTheme {
     /**
-     * True if the terminal likely supports Unicode/UTF-8.
-     * Checks LANG, LC_ALL, LC_CTYPE env vars and the JVM stdout charset.
+     * True if the terminal likely supports Unicode/UTF-8 rendering.
+     * Requires both a UTF-8 locale AND a terminal known to render Unicode correctly.
+     * Plain `xterm` without a Unicode font is excluded even if LANG is UTF-8.
      */
     val supportsUnicode: Boolean by lazy {
         val charset = System.out.charset().name()
@@ -18,7 +19,27 @@ object MeloTheme {
             System.getenv("LC_ALL"),
             System.getenv("LC_CTYPE"),
         ).joinToString(" ").uppercase()
-        charset.contains("UTF", ignoreCase = true) || lang.contains("UTF")
+        val hasUtfLocale = charset.contains("UTF", ignoreCase = true) || lang.contains("UTF")
+
+        val term = System.getenv("TERM") ?: ""
+        val termProgram = System.getenv("TERM_PROGRAM") ?: ""
+        val colorTerm = System.getenv("COLORTERM") ?: ""
+        val vteVersion = System.getenv("VTE_VERSION")
+        val wtSession = System.getenv("WT_SESSION")       // Windows Terminal
+        val kitty = System.getenv("KITTY_WINDOW_ID")
+
+        // Terminals known to reliably support Unicode:
+        val isKnownGoodTerminal = colorTerm.isNotEmpty()        // truecolor terminals (kitty, alacritty, etc.)
+            || vteVersion != null                               // VTE-based (GNOME Terminal, Tilix, etc.)
+            || termProgram.isNotEmpty()                         // iTerm2, VSCode, Hyper, etc.
+            || wtSession != null                                // Windows Terminal
+            || kitty != null                                    // Kitty
+            || term.startsWith("xterm-256color")               // xterm-256color usually has Unicode fonts
+            || term == "screen-256color"
+            || term == "tmux-256color"
+            || term.startsWith("rxvt-unicode")
+
+        hasUtfLocale && isKnownGoodTerminal
     }
 
     val ICON_PLAY: String get() = if (supportsUnicode) "▶"  else ">"
