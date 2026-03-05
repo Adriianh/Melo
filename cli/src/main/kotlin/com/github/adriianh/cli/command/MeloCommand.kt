@@ -7,18 +7,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.core.domain.usecase.AddFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.GetFavoritesUseCase
-import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
-import com.github.adriianh.core.domain.usecase.GetRecentTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetSimilarTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetTrackUseCase
-import com.github.adriianh.core.domain.usecase.IsFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.LoadMoreTracksUseCase
-import com.github.adriianh.core.domain.usecase.RecordPlayUseCase
-import com.github.adriianh.core.domain.usecase.RemoveFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
-import com.github.adriianh.core.domain.usecase.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.*
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -65,12 +54,21 @@ class MeloCommand : CliktCommand(
         val getRecentTracks: GetRecentTracksUseCase by inject()
         val recordPlay: RecordPlayUseCase by inject()
         val getStream: GetStreamUseCase by inject()
+        val getPlaylists: GetPlaylistsUseCase by inject()
+        val getPlaylistTracks: GetPlaylistTracksUseCase by inject()
+        val createPlaylist: CreatePlaylistUseCase by inject()
+        val renamePlaylist: RenamePlaylistUseCase by inject()
+        val deletePlaylist: DeletePlaylistUseCase by inject()
+        val addTrackToPlaylist: AddTrackToPlaylistUseCase by inject()
+        val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase by inject()
 
         try {
             MeloScreen(
                 searchTracks, loadMoreTracks, getTrack, getLyrics, getSimilarTracks,
                 getFavorites, addFavorite, removeFavorite, isFavorite,
                 getRecentTracks, recordPlay, getStream,
+                getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,
+                deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist,
             ).run()
         } finally {
             stopKoin()

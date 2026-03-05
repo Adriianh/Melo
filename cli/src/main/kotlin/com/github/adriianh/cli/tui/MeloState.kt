@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui
 
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.ImageData
@@ -33,6 +34,24 @@ enum class DetailTab {
 }
 
 /**
+ * Tabs for the library panel.
+ */
+enum class LibraryTab {
+    FAVORITES,
+    PLAYLISTS,
+}
+
+/**
+ * Input mode for playlist create/rename/picker overlay.
+ */
+enum class PlaylistInputMode {
+    NONE,
+    CREATE,
+    RENAME,
+    PICKER,
+}
+
+/**
  * Unified application state for the Melo TUI.
  */
 data class MeloState(
@@ -59,6 +78,17 @@ data class MeloState(
     // Library
     val favorites: List<Track> = emptyList(),
     val isFavorite: Boolean = false,
+    val libraryTab: LibraryTab = LibraryTab.FAVORITES,
+
+    // Playlists
+    val playlists: List<Playlist> = emptyList(),
+    val selectedPlaylist: Playlist? = null,
+    val playlistTracks: List<Track> = emptyList(),
+    val isInPlaylistDetail: Boolean = false,
+    val playlistInput: String = "",
+    val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
+    val playlistPickerTrack: Track? = null,
+    val playlistPickerCursor: Int = 0,
 
     // Home
     val recentTracks: List<HistoryEntry> = emptyList(),

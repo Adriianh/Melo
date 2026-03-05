@@ -4,6 +4,8 @@ import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildQueuePanel
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
+import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
+import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
@@ -41,12 +43,20 @@ class MeloScreen(
     private val getRecentTracks: GetRecentTracksUseCase,
     private val recordPlay: RecordPlayUseCase,
     private val getStream: GetStreamUseCase,
+    private val getPlaylists: GetPlaylistsUseCase,
+    private val getPlaylistTracks: GetPlaylistTracksUseCase,
+    private val createPlaylist: CreatePlaylistUseCase,
+    private val renamePlaylist: RenamePlaylistUseCase,
+    private val deletePlaylist: DeletePlaylistUseCase,
+    private val addTrackToPlaylist: AddTrackToPlaylistUseCase,
+    private val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase,
 ) : ToolkitApp() {
 
     private var state = MeloState()
     private val scope = CoroutineScope(Dispatchers.IO)
     private var detailsJob: Job? = null
     private var loadMoreJob: Job? = null
+    private var playlistTracksJob: Job? = null
     private var lastQuery = ""
     private var marqueeJob: ToolkitRunner.ScheduledAction? = null
     private var marqueeTick = 0
@@ -89,6 +99,22 @@ class MeloScreen(
         .focusable()
         .id("library-list")
 
+    private val playlistsList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("playlists-list")
+
+    private val playlistTracksList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("playlist-tracks-list")
+
     private val sidebarList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_HOME} Home",
@@ -120,6 +146,9 @@ class MeloScreen(
         .focusable()
         .id("queue-list")
 
+    private val playlistInputOverlay = PlaylistInputOverlay { state }
+    private val playlistPickerOverlay = PlaylistPickerOverlay { state }
+
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() {
@@ -134,6 +163,13 @@ class MeloScreen(
             getRecentTracks(20).collect { entries ->
                 runner()?.runOnRenderThread {
                     state = state.copy(recentTracks = entries)
+                }
+            }
+        }
+        scope.launch {
+            getPlaylists().collect { playlists ->
+                runner()?.runOnRenderThread {
+                    state = state.copy(playlists = playlists)
                 }
             }
         }
@@ -156,6 +192,7 @@ class MeloScreen(
 
     override fun onStop() {
         marqueeJob?.cancel()
+        playlistTracksJob?.cancel()
         audioPlayer.stop()
         scope.cancel()
     }
@@ -177,11 +214,18 @@ class MeloScreen(
         }
         val bottomConstraint = if (state.isQueueVisible) Constraint.length(15) else Constraint.length(5)
 
-        return dock()
+        val mainLayout = dock()
             .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
             .bottom(bottomSection, bottomConstraint)
             .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
+
+        return when (state.playlistInputMode) {
+            PlaylistInputMode.CREATE,
+            PlaylistInputMode.RENAME -> stack(mainLayout, playlistInputOverlay)
+            PlaylistInputMode.PICKER -> stack(mainLayout, playlistPickerOverlay)
+            PlaylistInputMode.NONE   -> mainLayout
+        }
     }
 
     private fun renderMainContent(): Element = when (state.activeSection) {
@@ -190,7 +234,7 @@ class MeloScreen(
             state, resultList, lyricsArea, similarArea,
             ::marqueeText, ::handleResultsKey, ::handleDetailKey
         )
-        SidebarSection.LIBRARY -> renderLibraryScreen(state, favoritesList, ::handleLibraryKey)
+        SidebarSection.LIBRARY -> renderLibraryScreen(state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey)
     }
 
     private fun handleSearchBarKey(event: KeyEvent): EventResult {
@@ -236,6 +280,13 @@ class MeloScreen(
     }
 
     private fun handleResultsKey(event: KeyEvent): EventResult {
+        when (state.playlistInputMode) {
+            PlaylistInputMode.CREATE,
+            PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
+            PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
+            PlaylistInputMode.NONE   -> {}
+        }
+
         if (state.results.isEmpty()) return EventResult.UNHANDLED
         val focused = runner()?.focusManager()?.focusedId()
         val isFocused = focused == "results-panel"
@@ -277,6 +328,11 @@ class MeloScreen(
                 state.results.getOrNull(state.selectedIndex)?.let { addToQueue(it) }
                 return EventResult.HANDLED
             }
+            event.code() == KeyCode.CHAR && event.character() == 'a' -> {
+                val track = state.results.getOrNull(state.selectedIndex)
+                if (track != null) openPlaylistPicker(track)
+                return EventResult.HANDLED
+            }
             event.code() == KeyCode.CHAR && event.character() == 'l' -> {
                 loadLyrics()
                 return EventResult.HANDLED
@@ -311,32 +367,226 @@ class MeloScreen(
     }
 
     private fun handleLibraryKey(event: KeyEvent): EventResult {
-        if (state.favorites.isEmpty()) return EventResult.UNHANDLED
+        when (state.playlistInputMode) {
+            PlaylistInputMode.CREATE,
+            PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
+            PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
+            PlaylistInputMode.NONE   -> {}
+        }
+
         val isFocused = runner()?.focusManager()?.focusedId() == "library-panel"
+        if (!isFocused) return EventResult.UNHANDLED
+
+        if (event.code() == KeyCode.CHAR && event.character() == '1') {
+            state = state.copy(libraryTab = LibraryTab.FAVORITES)
+            return EventResult.HANDLED
+        }
+        if (event.code() == KeyCode.CHAR && event.character() == '2') {
+            state = state.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false)
+            return EventResult.HANDLED
+        }
+
+        return when (state.libraryTab) {
+            LibraryTab.FAVORITES  -> handleFavoritesKey(event)
+            LibraryTab.PLAYLISTS  -> if (state.isInPlaylistDetail)
+                handlePlaylistDetailKey(event)
+            else
+                handlePlaylistsKey(event)
+        }
+    }
+
+    private fun handleFavoritesKey(event: KeyEvent): EventResult {
         when {
             event.matches(Actions.MOVE_DOWN) -> {
-                if (!isFocused) return EventResult.UNHANDLED
-                favoritesList.selected(minOf(state.favorites.lastIndex, favoritesList.selected() + 1))
+                favoritesList.selected(minOf(state.favorites.lastIndex.coerceAtLeast(0), favoritesList.selected() + 1))
                 return EventResult.HANDLED
             }
             event.matches(Actions.MOVE_UP) -> {
-                if (!isFocused) return EventResult.UNHANDLED
                 favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.ENTER -> {
-                if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-                if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
                 return EventResult.HANDLED
             }
             event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                if (!isFocused) return EventResult.UNHANDLED
                 state.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'a' -> {
+                val track = state.favorites.getOrNull(favoritesList.selected())
+                if (track != null) openPlaylistPicker(track)
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
+    private fun handlePlaylistsKey(event: KeyEvent): EventResult {
+        when {
+            event.matches(Actions.MOVE_DOWN) -> {
+                playlistsList.selected(minOf(state.playlists.lastIndex.coerceAtLeast(0), playlistsList.selected() + 1))
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_UP) -> {
+                playlistsList.selected(maxOf(0, playlistsList.selected() - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                openPlaylistDetail(playlistsList.selected())
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'n' -> {
+                state = state.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = "")
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'r' -> {
+                val pl = state.playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
+                state = state.copy(playlistInputMode = PlaylistInputMode.RENAME, playlistInput = pl.name)
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
+                val pl = state.playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
+                scope.launch { deletePlaylist(pl.id) }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'p' -> {
+                openPlaylistDetail(playlistsList.selected(), autoPlay = true)
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
+    private fun handlePlaylistDetailKey(event: KeyEvent): EventResult {
+        when {
+            event.code() == KeyCode.ESCAPE -> {
+                state = state.copy(isInPlaylistDetail = false, selectedPlaylist = null, playlistTracks = emptyList())
+                playlistTracksJob?.cancel()
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_DOWN) -> {
+                playlistTracksList.selected(minOf(state.playlistTracks.lastIndex.coerceAtLeast(0), playlistTracksList.selected() + 1))
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_UP) -> {
+                playlistTracksList.selected(maxOf(0, playlistTracksList.selected() - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                state.playlistTracks.getOrNull(playlistTracksList.selected())?.let { playTrack(it) }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                state.playlistTracks.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
+                val pl = state.selectedPlaylist ?: return EventResult.UNHANDLED
+                val track = state.playlistTracks.getOrNull(playlistTracksList.selected()) ?: return EventResult.UNHANDLED
+                scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
+    private fun handlePlaylistInput(event: KeyEvent): EventResult {
+        when {
+            event.code() == KeyCode.ESCAPE -> {
+                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = "")
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                val name = state.playlistInput.trim()
+                if (name.isNotBlank()) {
+                    when (state.playlistInputMode) {
+                        PlaylistInputMode.CREATE -> scope.launch { createPlaylist(name) }
+                        PlaylistInputMode.RENAME -> {
+                            val pl = state.playlists.getOrNull(playlistsList.selected())
+                            if (pl != null) scope.launch { renamePlaylist(pl.id, name) }
+                        }
+                        PlaylistInputMode.PICKER,
+                        PlaylistInputMode.NONE -> {}
+                    }
+                }
+                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = "")
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.BACKSPACE -> {
+                state = state.copy(playlistInput = state.playlistInput.dropLast(1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.CHAR -> {
+                state = state.copy(playlistInput = state.playlistInput + event.character())
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.UNHANDLED
+    }
+
+    private fun openPlaylistDetail(index: Int, autoPlay: Boolean = false) {
+        val pl = state.playlists.getOrNull(index) ?: return
+        state = state.copy(selectedPlaylist = pl, isInPlaylistDetail = true, playlistTracks = emptyList())
+        playlistTracksJob?.cancel()
+        playlistTracksJob = scope.launch {
+            getPlaylistTracks(pl.id).collect { tracks ->
+                runner()?.runOnRenderThread {
+                    state = state.copy(playlistTracks = tracks)
+                    if (autoPlay && tracks.isNotEmpty()) {
+                        val newQueue = tracks
+                        state = state.copy(queue = newQueue, queueIndex = -1, isRadioMode = false)
+                        playFromQueue(0)
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun openPlaylistPicker(track: Track) {
+        if (state.playlists.isEmpty()) {
+            // No playlists yet — open create overlay, remember track for after creation
+            state = state.copy(
+                playlistInputMode = PlaylistInputMode.CREATE,
+                playlistInput = "",
+                playlistPickerTrack = track,
+            )
+        } else {
+            state = state.copy(
+                playlistInputMode = PlaylistInputMode.PICKER,
+                playlistPickerTrack = track,
+                playlistPickerCursor = 0,
+            )
+        }
+    }
+
+    private fun handlePlaylistPicker(event: KeyEvent): EventResult {
+        when {
+            event.code() == KeyCode.ESCAPE -> {
+                state = state.copy(playlistInputMode = PlaylistInputMode.NONE, playlistPickerTrack = null)
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_DOWN) -> {
+                state = state.copy(playlistPickerCursor = minOf(state.playlists.lastIndex, state.playlistPickerCursor + 1))
+                return EventResult.HANDLED
+            }
+            event.matches(Actions.MOVE_UP) -> {
+                state = state.copy(playlistPickerCursor = maxOf(0, state.playlistPickerCursor - 1))
+                return EventResult.HANDLED
+            }
+            event.code() == KeyCode.ENTER -> {
+                val pl = state.playlists.getOrNull(state.playlistPickerCursor) ?: return EventResult.UNHANDLED
+                val track = state.playlistPickerTrack ?: return EventResult.UNHANDLED
+                scope.launch { addTrackToPlaylist(pl.id, track) }
+                state = state.copy(
+                    playlistInputMode = PlaylistInputMode.NONE,
+                    playlistPickerTrack = null,
+                )
                 return EventResult.HANDLED
             }
         }

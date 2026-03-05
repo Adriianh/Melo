@@ -1,0 +1,26 @@
+CREATE TABLE IF NOT EXISTS playlists (
+    id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name       TEXT    NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+insertPlaylist:
+INSERT INTO playlists (name, created_at)
+VALUES (?, ?);
+
+renamePlaylist:
+UPDATE playlists SET name = ? WHERE id = ?;
+
+deletePlaylist:
+DELETE FROM playlists WHERE id = ?;
+
+selectAllPlaylists:
+SELECT p.id, p.name, p.created_at, COUNT(pt.track_id) AS track_count
+FROM playlists p
+LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
+GROUP BY p.id
+ORDER BY p.created_at DESC;
+
+lastInsertId:
+SELECT last_insert_rowid();
+

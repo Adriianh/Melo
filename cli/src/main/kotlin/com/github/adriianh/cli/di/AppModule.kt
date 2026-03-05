@@ -91,6 +91,7 @@ val appModule = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
+    single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
 
     // Use Cases
     single { SearchTracksUseCase(get()) }
@@ -105,4 +106,11 @@ val appModule = module {
     single { GetRecentTracksUseCase(get()) }
     single { RecordPlayUseCase(get()) }
     single { GetStreamUseCase(get()) }
+    single { GetPlaylistsUseCase(get()) }
+    single { GetPlaylistTracksUseCase(get()) }
+    single { CreatePlaylistUseCase(get()) }
+    single { RenamePlaylistUseCase(get()) }
+    single { DeletePlaylistUseCase(get()) }
+    single { AddTrackToPlaylistUseCase(get()) }
+    single { RemoveTrackFromPlaylistUseCase(get()) }
 }
