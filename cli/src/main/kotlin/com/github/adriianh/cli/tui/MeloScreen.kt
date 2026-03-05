@@ -408,6 +408,7 @@ class MeloScreen(
             marqueeOffset = 0,
             queue = newQueue,
             queueIndex = newIndex,
+            isRadioMode = state.isRadioMode,
         )
         marqueeTick = 0
         audioPlayer.stop()
@@ -463,11 +464,11 @@ class MeloScreen(
 
         val nextIndex = when {
             state.repeatMode == RepeatMode.ONE -> state.queueIndex
+            state.repeatMode == RepeatMode.ALL && queue.isNotEmpty() -> (state.queueIndex + 1) % queue.size
             state.shuffleEnabled && queue.size > 1 -> {
                 val candidates = queue.indices.filter { it != state.queueIndex }
                 candidates.random()
             }
-            state.repeatMode == RepeatMode.ALL -> (state.queueIndex + 1) % queue.size
             else -> {
                 val next = state.queueIndex + 1
                 if (next >= queue.size) {
@@ -578,6 +579,7 @@ class MeloScreen(
             nowPlaying = null,
             isPlaying = false,
             progress = 0.0,
+            isRadioMode = false,
         )
     }
 
