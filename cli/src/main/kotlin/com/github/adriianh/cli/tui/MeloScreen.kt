@@ -483,13 +483,14 @@ class MeloScreen(
 
     private fun loadSimilarAndPlay() {
         val track = state.nowPlaying ?: return
-        state = state.copy(isLoadingAudio = true, isRadioMode = true)
+        audioPlayer.stop()
+        state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
         scope.launch {
             try {
                 val similar = getSimilarTracks(track.artist, track.title)
                 if (similar.isEmpty()) {
                     runner()?.runOnRenderThread {
-                        state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0, isRadioMode = false)
+                        state = state.copy(isLoadingAudio = false, isRadioMode = false)
                     }
                     return@launch
                 }
@@ -507,7 +508,7 @@ class MeloScreen(
 
                 if (resolved.isEmpty()) {
                     runner()?.runOnRenderThread {
-                        state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0, isRadioMode = false)
+                        state = state.copy(isLoadingAudio = false, isRadioMode = false)
                     }
                     return@launch
                 }
@@ -518,6 +519,7 @@ class MeloScreen(
                         queueIndex = -1,
                         queueCursor = 0,
                         isLoadingAudio = false,
+                        isRadioMode = true,
                     )
                     playFromQueue(0)
                 }
