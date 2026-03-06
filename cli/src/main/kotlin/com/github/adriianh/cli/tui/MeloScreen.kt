@@ -54,6 +54,10 @@ class MeloScreen(
     internal val deletePlaylist: DeletePlaylistUseCase,
     internal val addTrackToPlaylist: AddTrackToPlaylistUseCase,
     internal val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase,
+    // Session
+    internal val saveSession: SaveSessionUseCase,
+    internal val restoreSession: RestoreSessionUseCase,
+    internal val clearSession: ClearSessionUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer
 ) : ToolkitApp() {
@@ -213,6 +217,7 @@ class MeloScreen(
                 runner()?.runOnRenderThread { state = state.copy(playlists = playlists) }
             }
         }
+        scope.launch { restoreLastSession() }
         marqueeJob = runner()?.scheduleRepeating({
             runner()?.runOnRenderThread {
                 marqueeTick++
@@ -233,9 +238,9 @@ class MeloScreen(
     override fun onStop() {
         marqueeJob?.cancel()
         playlistTracksJob?.cancel()
+        scope.launch { persistSession() }.also { it.invokeOnCompletion { scope.cancel() } }
         audioPlayer.stop()
         mediaSession.destroy()
-        scope.cancel()
     }
 
     override fun render(): Element {
