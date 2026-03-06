@@ -238,9 +238,11 @@ class MeloScreen(
     override fun onStop() {
         marqueeJob?.cancel()
         playlistTracksJob?.cancel()
-        scope.launch { persistSession() }.also { it.invokeOnCompletion { scope.cancel() } }
         audioPlayer.stop()
         mediaSession.destroy()
+        // Use a fresh scope so the save isn't racing against the main scope's cancellation
+        kotlinx.coroutines.runBlocking { persistSession() }
+        scope.cancel()
     }
 
     override fun render(): Element {
