@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS session (
-    id          INTEGER NOT NULL PRIMARY KEY DEFAULT 1,  -- single-row table
-    queue_json  TEXT    NOT NULL,                        -- JSON array of serialized tracks
+    id          INTEGER NOT NULL PRIMARY KEY DEFAULT 1,
+    queue_json  TEXT    NOT NULL,
     queue_index INTEGER NOT NULL DEFAULT -1,
     position_ms INTEGER NOT NULL DEFAULT 0,
     saved_at    INTEGER NOT NULL
@@ -15,4 +15,3 @@ SELECT * FROM session WHERE id = 1;
 
 deleteSession:
 DELETE FROM session WHERE id = 1;
-

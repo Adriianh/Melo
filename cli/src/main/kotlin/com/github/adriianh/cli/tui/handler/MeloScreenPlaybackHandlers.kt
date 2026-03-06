@@ -25,6 +25,8 @@ internal fun MeloScreen.playTrack(track: Track) {
         nowPlayingArtwork = null,
     )
     marqueeTick = 0
+    scrobbleSubmitted = false
+    trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
     loadTrackDetails(track.id, track)
     scope.launch {
@@ -47,6 +49,7 @@ internal fun MeloScreen.playTrack(track: Track) {
             state = state.copy(isPlaying = true, isLoadingAudio = false)
             audioPlayer.play(url)
             mediaSession.updateTrack(track, track.durationMs)
+            onTrackStarted(track)
         }
         val lrc = getSyncedLyrics(track.artist, track.title)
         appRunner()?.runOnRenderThread {

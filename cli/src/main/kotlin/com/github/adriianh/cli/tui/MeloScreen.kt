@@ -58,6 +58,9 @@ class MeloScreen(
     internal val saveSession: SaveSessionUseCase,
     internal val restoreSession: RestoreSessionUseCase,
     internal val clearSession: ClearSessionUseCase,
+    // Scrobbling
+    internal val updateNowPlaying: UpdateNowPlayingUseCase,
+    internal val scrobble: ScrobbleUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer
 ) : ToolkitApp() {
@@ -70,6 +73,8 @@ class MeloScreen(
     internal var lastQuery = ""
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0
+    internal var scrobbleSubmitted = false
+    internal var trackStartedAt = 0L
 
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
@@ -100,6 +105,7 @@ class MeloScreen(
                 val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
                 state = state.copy(progress = progress, nowPlayingPositionMs = elapsedMs)
                 mediaSession.updatePosition(elapsedMs)
+                state.nowPlaying?.let { onTrackProgress(it, elapsedMs, trackStartedAt) }
             }
         },
         onFinish = {
@@ -240,7 +246,6 @@ class MeloScreen(
         playlistTracksJob?.cancel()
         audioPlayer.stop()
         mediaSession.destroy()
-        // Use a fresh scope so the save isn't racing against the main scope's cancellation
         kotlinx.coroutines.runBlocking { persistSession() }
         scope.cancel()
     }

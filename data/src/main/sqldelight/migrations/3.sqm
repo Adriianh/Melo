@@ -5,4 +5,3 @@ CREATE TABLE IF NOT EXISTS session (
     position_ms INTEGER NOT NULL DEFAULT 0,
     saved_at    INTEGER NOT NULL
 );
-

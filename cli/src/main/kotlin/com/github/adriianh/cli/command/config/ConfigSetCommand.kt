@@ -8,6 +8,7 @@ import java.io.File
 
 private val ALLOWED_KEYS = setOf(
     "LASTFM_API_KEY",
+    "LASTFM_SHARED_SECRET",
     "SPOTIFY_CLIENT_ID",
     "SPOTIFY_CLIENT_SECRET",
 )
