@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LyricsResponse(
-    @SerialName("plainLyrics") val plainLyrics: String? = null
+    @SerialName("plainLyrics") val plainLyrics: String? = null,
+    @SerialName("syncedLyrics") val syncedLyrics: String? = null,
 )

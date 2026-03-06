@@ -46,6 +46,7 @@ class MeloCommand : CliktCommand(
         val loadMoreTracks: LoadMoreTracksUseCase by inject()
         val getTrack: GetTrackUseCase by inject()
         val getLyrics: GetLyricsUseCase by inject()
+        val getSyncedLyrics: GetSyncedLyricsUseCase by inject()
         val getSimilarTracks: GetSimilarTracksUseCase by inject()
         val getFavorites: GetFavoritesUseCase by inject()
         val addFavorite: AddFavoriteUseCase by inject()
@@ -64,7 +65,7 @@ class MeloCommand : CliktCommand(
 
         try {
             MeloScreen(
-                searchTracks, loadMoreTracks, getTrack, getLyrics, getSimilarTracks,
+                searchTracks, loadMoreTracks, getTrack, getLyrics, getSyncedLyrics, getSimilarTracks,
                 getFavorites, addFavorite, removeFavorite, isFavorite,
                 getRecentTracks, recordPlay, getStream,
                 getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,

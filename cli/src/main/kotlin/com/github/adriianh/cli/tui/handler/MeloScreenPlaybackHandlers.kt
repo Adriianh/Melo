@@ -1,6 +1,8 @@
 package com.github.adriianh.cli.tui.handler
 
 import  com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
 
@@ -20,10 +22,21 @@ internal fun MeloScreen.playTrack(track: Track) {
         isPlaying = false, isLoadingAudio = true,
         audioError = null, progress = 0.0, marqueeOffset = 0,
         queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
+        syncedLyrics = emptyList(), isLoadingSyncedLyrics = true, nowPlayingPositionMs = 0L,
+        nowPlayingArtwork = null,
     )
     marqueeTick = 0
     audioPlayer.stop()
     loadTrackDetails(track.id, track)
+    scope.launch {
+        val artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
+        val artwork = artworkUrl?.let { ArtworkRenderer.load(it) }
+        appRunner()?.runOnRenderThread {
+            if (state.nowPlaying?.id == track.id) {
+                state = state.copy(nowPlayingArtwork = artwork)
+            }
+        }
+    }
     scope.launch {
         recordPlay(track)
         val url = getStream(track)
@@ -35,6 +48,13 @@ internal fun MeloScreen.playTrack(track: Track) {
             state = state.copy(isPlaying = true, isLoadingAudio = false)
             audioPlayer.play(url)
             mediaSession.updateTrack(track, track.durationMs)
+        }
+        val lrc = getSyncedLyrics(track.artist, track.title)
+        appRunner()?.runOnRenderThread {
+            state = state.copy(
+                syncedLyrics = if (lrc != null) LrcParser.parse(lrc) else emptyList(),
+                isLoadingSyncedLyrics = false,
+            )
         }
     }
     checkIsFavorite(track.id)

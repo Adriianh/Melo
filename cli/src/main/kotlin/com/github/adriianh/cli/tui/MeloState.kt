@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.SimilarTrack
@@ -22,6 +23,7 @@ enum class SidebarSection {
     HOME,
     SEARCH,
     LIBRARY,
+    NOW_PLAYING,
 }
 
 /**
@@ -82,6 +84,7 @@ data class MeloState(
     val isLoadingLyrics: Boolean = false,
     val similarTracks: List<SimilarTrack> = emptyList(),
     val artworkData: ImageData? = null,
+    val nowPlayingArtwork: ImageData? = null,
 
     // Library
     val favorites: List<Track> = emptyList(),
@@ -125,4 +128,13 @@ data class MeloState(
 
     // Radio / auto-play
     val isRadioMode: Boolean = false,
+
+    // Now Playing screen — synced lyrics
+    val syncedLyrics: List<LrcLine> = emptyList(),
+    val isLoadingSyncedLyrics: Boolean = false,
+    val nowPlayingPositionMs: Long = 0L,
+
+    // Graphics
+    val needsGraphicsClear: Boolean = false,
+    val pendingSection: SidebarSection? = null,
 )

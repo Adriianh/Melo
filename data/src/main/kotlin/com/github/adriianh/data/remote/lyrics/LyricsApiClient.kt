@@ -12,14 +12,17 @@ class LyricsApiClient(
     private val httpClient: HttpClient
 ) {
 
-    suspend fun getLyrics(artist: String, title: String): String? {
+    /**
+     * Fetches both plain and synced lyrics in a single request.
+     * Returns null if the request fails or the track is not found.
+     */
+    suspend fun getLyricsResponse(artist: String, title: String): LyricsResponse? {
         return try {
-            val response = httpClient.get("https://lrclib.net/api/get") {
+            httpClient.get("https://lrclib.net/api/get") {
                 parameter("artist_name", artist)
                 parameter("track_name", title)
-            }
-            response.body<LyricsResponse>().plainLyrics
-        } catch (e: Exception) {
+            }.body<LyricsResponse>()
+        } catch (_: Exception) {
             null
         }
     }
