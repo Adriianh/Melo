@@ -1,11 +1,11 @@
 package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.component.buildPlayerBar
-import com.github.adriianh.cli.tui.component.buildQueuePanel
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.component.QueueOverlay
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
 import com.github.adriianh.cli.tui.player.AudioPlayer
@@ -192,6 +192,7 @@ class MeloScreen(
 
     private val playlistInputOverlay = PlaylistInputOverlay { state }
     private val playlistPickerOverlay = PlaylistPickerOverlay { state }
+    private val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
@@ -238,33 +239,26 @@ class MeloScreen(
     }
 
     override fun render(): Element {
-        val playerBarBuilder = {
-            buildPlayerBar(
-                state, ::formatDuration, ::handlePlayerBarKey,
-                ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
-                ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
-            )
-        }
-        val bottomSection = if (state.isQueueVisible) {
-            dock()
-                .bottom(playerBarBuilder(), Constraint.length(4))
-                .center(stack(ClearGraphicsElement(), buildQueuePanel(state, queueList, ::handleQueueKey)))
-        } else {
-            playerBarBuilder()
-        }
-        val bottomConstraint = if (state.isQueueVisible) Constraint.length(15) else Constraint.length(4)
-
         val mainLayout = dock()
             .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
-            .bottom(bottomSection, bottomConstraint)
+            .bottom(
+                buildPlayerBar(
+                    state, ::formatDuration, ::handlePlayerBarKey,
+                    ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
+                    ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
+                ),
+                Constraint.length(4),
+            )
             .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
 
+        val withQueue = if (state.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
+
         return when (state.playlistInputMode) {
             PlaylistInputMode.CREATE,
-            PlaylistInputMode.RENAME -> stack(mainLayout, playlistInputOverlay)
-            PlaylistInputMode.PICKER -> stack(mainLayout, playlistPickerOverlay)
-            PlaylistInputMode.NONE   -> mainLayout
+            PlaylistInputMode.RENAME -> stack(withQueue, playlistInputOverlay)
+            PlaylistInputMode.PICKER -> stack(withQueue, playlistPickerOverlay)
+            PlaylistInputMode.NONE   -> withQueue
         }
     }
 
