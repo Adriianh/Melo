@@ -179,7 +179,6 @@ internal fun MeloScreen.cycleRepeat() {
 internal fun MeloScreen.loadSimilarAndPlay() {
     val seed = state.nowPlaying ?: return
     val alreadyPlayed = state.queue.map { it.id }.toSet()
-    audioPlayer.stop()
     state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
     scope.launch {
         try {
