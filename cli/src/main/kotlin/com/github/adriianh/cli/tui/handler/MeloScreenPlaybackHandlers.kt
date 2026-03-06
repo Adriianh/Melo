@@ -34,6 +34,7 @@ internal fun MeloScreen.playTrack(track: Track) {
             }
             state = state.copy(isPlaying = true, isLoadingAudio = false)
             audioPlayer.play(url)
+            mediaSession.updateTrack(track, track.durationMs)
         }
     }
     checkIsFavorite(track.id)
@@ -41,8 +42,15 @@ internal fun MeloScreen.playTrack(track: Track) {
 
 internal fun MeloScreen.togglePlayPause() {
     if (state.nowPlaying == null || state.isLoadingAudio) return
-    if (state.isPlaying) { audioPlayer.pause(); state = state.copy(isPlaying = false) }
-    else { audioPlayer.resume(); state = state.copy(isPlaying = true) }
+    if (state.isPlaying) {
+        audioPlayer.pause()
+        state = state.copy(isPlaying = false)
+        mediaSession.notifyPaused()
+    } else {
+        audioPlayer.resume()
+        state = state.copy(isPlaying = true)
+        mediaSession.notifyResumed()
+    }
 }
 
 internal fun MeloScreen.adjustVolume(delta: Int) {

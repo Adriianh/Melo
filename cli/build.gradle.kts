@@ -19,6 +19,7 @@ dependencies {
 
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)
+    implementation(libs.jmtc)
 }
 
 val appVersion = "1.0.0"

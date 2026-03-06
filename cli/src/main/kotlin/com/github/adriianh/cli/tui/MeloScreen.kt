@@ -9,6 +9,7 @@ import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
 import com.github.adriianh.cli.tui.player.AudioPlayer
+import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
@@ -64,13 +65,32 @@ class MeloScreen(
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
 
-    internal val audioPlayer = AudioPlayer(
+    internal val mediaSession = MediaSessionManager(
+        onPlayPause = {
+            runner()?.runOnRenderThread { togglePlayPause() }
+        },
+        onNext = {
+            runner()?.runOnRenderThread { seekForward() }
+        },
+        onPrevious = {
+            runner()?.runOnRenderThread { seekBackward() }
+        },
+        onStop = {
+            runner()?.runOnRenderThread {
+                audioPlayer.stop()
+                state = state.copy(isPlaying = false, progress = 0.0)
+            }
+        },
+    )
+
+    internal val audioPlayer: AudioPlayer = AudioPlayer(
         scope = scope,
         onProgress = { elapsedMs ->
             runner()?.runOnRenderThread {
                 val duration = state.nowPlaying?.durationMs ?: 0L
                 val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
                 state = state.copy(progress = progress)
+                mediaSession.updatePosition(elapsedMs)
             }
         },
         onFinish = {
@@ -82,6 +102,7 @@ class MeloScreen(
         onError = { err ->
             runner()?.runOnRenderThread {
                 state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message)
+                mediaSession.notifyStopped()
             }
         },
     )
@@ -169,6 +190,7 @@ class MeloScreen(
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() {
+        mediaSession.init()
         scope.launch {
             getFavorites().collect { tracks ->
                 runner()?.runOnRenderThread { state = state.copy(favorites = tracks) }
@@ -205,6 +227,7 @@ class MeloScreen(
         marqueeJob?.cancel()
         playlistTracksJob?.cancel()
         audioPlayer.stop()
+        mediaSession.destroy()
         scope.cancel()
     }
 
