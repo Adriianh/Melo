@@ -93,8 +93,8 @@ val appModule = module {
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
 
-    // Use Cases — factory instead of single: these are stateless wrappers over repositories,
-    // so there is no benefit to holding them as permanent singletons in the Koin container.
+    // Use Cases — factory instead of single: stateless wrappers over repositories,
+    // no benefit to holding them as permanent singletons in the Koin container.
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
     factory { GetTrackUseCase(get()) }
