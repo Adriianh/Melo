@@ -102,16 +102,6 @@ graalvmNative {
 
 // ─── distribution tasks ───────────────────────────────────────────────────────────────────
 
-/**
- * Produces  cli/build/dist/melo-<version>-linux.tar.gz
- *                        or melo-<version>-macos.tar.gz
- * Layout inside the archive:
- *   melo-<version>/
- *     melo.jar
- *     bin/melo       (from src/dist/unix/bin/melo)
- *     install.sh     (from src/dist/unix/install.sh)
- *     uninstall.sh   (from src/dist/unix/uninstall.sh)
- */
 tasks.register("distUnix") {
     dependsOn(tasks.shadowJar)
 
@@ -132,10 +122,8 @@ tasks.register("distUnix") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        // Copy the JAR
         jarFile.copyTo(File(rootDir, "$appName.jar"), overwrite = true)
 
-        // Copy scripts from src/dist/unix/ preserving the directory tree
         distSrc.resolve("unix").walkTopDown().forEach { src ->
             if (src.isFile) {
                 val dest = File(rootDir, src.relativeTo(distSrc.resolve("unix")).path)
@@ -145,7 +133,6 @@ tasks.register("distUnix") {
             }
         }
 
-        // Package as tar.gz
         val tarName = "$appName-$appVersion-$osTag.tar.gz"
         val result  = ProcessBuilder("tar", "-czf", File(distDir, tarName).absolutePath, "$appName-$appVersion")
             .directory(stageDir)
@@ -158,16 +145,6 @@ tasks.register("distUnix") {
     }
 }
 
-/**
- * Produces  cli/build/dist/melo-<version>-windows.zip
- * Layout inside the archive:
- *   melo-<version>/
- *     melo.jar
- *     bin/melo.bat   (from src/dist/windows/bin/melo.bat)
- *     bin/melo.ps1   (from src/dist/windows/bin/melo.ps1)
- *     install.ps1    (from src/dist/windows/install.ps1)
- *     uninstall.ps1  (from src/dist/windows/uninstall.ps1)
- */
 tasks.register("distWindows") {
     dependsOn(tasks.shadowJar)
 
@@ -187,10 +164,8 @@ tasks.register("distWindows") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        // Copy the JAR
         jarFile.copyTo(File(rootDir, "$appName.jar"), overwrite = true)
 
-        // Copy scripts from src/dist/windows/ preserving the directory tree
         distSrc.resolve("windows").walkTopDown().forEach { src ->
             if (src.isFile) {
                 val dest = File(rootDir, src.relativeTo(distSrc.resolve("windows")).path)
@@ -199,7 +174,6 @@ tasks.register("distWindows") {
             }
         }
 
-        // Package as zip
         val zipFile = File(distDir, "$appName-$appVersion-windows.zip")
         ZipOutputStream(zipFile.outputStream().buffered()).use { zos ->
             stageDir.walkTopDown().forEach { file ->
@@ -216,7 +190,6 @@ tasks.register("distWindows") {
     }
 }
 
-// Convenience task: build the right distribution for the current OS
 tasks.register("dist") {
     dependsOn(tasks.shadowJar)
     val os = System.getProperty("os.name").lowercase()
