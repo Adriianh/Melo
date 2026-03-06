@@ -36,7 +36,8 @@ class MusicRepositoryImpl(
         backgroundFetch = scope.launch {
             val full = deduplicate(musicProvider.searchAll(query))
             if (full.size > cachedResults.size) {
-                cachedResults = full
+                // Cap the cache to avoid unbounded heap growth when providers return large result sets.
+                cachedResults = full.take(MAX_CACHE_SIZE)
             }
         }
 
@@ -84,5 +85,11 @@ class MusicRepositoryImpl(
             sourceId   = sourceId.await(),
             artworkUrl = artwork.await()
         )
+    }
+
+    companion object {
+        /** Maximum number of tracks kept in the in-memory result cache.
+         *  Avoids unbounded heap growth when multiple providers return large result sets. */
+        private const val MAX_CACHE_SIZE = 200
     }
 }

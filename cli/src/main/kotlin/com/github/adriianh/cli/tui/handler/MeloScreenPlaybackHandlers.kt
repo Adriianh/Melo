@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
 import  com.github.adriianh.cli.tui.*
-import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
@@ -30,7 +29,7 @@ internal fun MeloScreen.playTrack(track: Track) {
     loadTrackDetails(track.id, track)
     scope.launch {
         val artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
-        val artwork = artworkUrl?.let { ArtworkRenderer.load(it) }
+        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
         appRunner()?.runOnRenderThread {
             if (state.nowPlaying?.id == track.id) {
                 state = state.copy(nowPlayingArtwork = artwork)
@@ -118,83 +117,3 @@ internal fun MeloScreen.playFromQueue(index: Int) {
     state = state.copy(queueIndex = index)
     playTrack(track)
 }
-
-internal fun MeloScreen.addToQueue(track: Track) {
-    val newQueue = state.queue + track
-    val newIndex = if (state.queueIndex < 0 && state.nowPlaying == null) 0 else state.queueIndex
-    state = state.copy(queue = newQueue, queueIndex = newIndex, isRadioMode = false)
-    if (state.nowPlaying == null && !state.isLoadingAudio) playFromQueue(0)
-}
-
-internal fun MeloScreen.removeFromQueue(index: Int) {
-    if (index < 0 || index >= state.queue.size) return
-    val removingPlaying = index == state.queueIndex
-    val newQueue = state.queue.toMutableList().also { it.removeAt(index) }
-    val newIndex = when {
-        newQueue.isEmpty() -> -1
-        index < state.queueIndex -> state.queueIndex - 1
-        index == state.queueIndex -> minOf(index, newQueue.lastIndex)
-        else -> state.queueIndex
-    }
-    state = state.copy(
-        queue = newQueue,
-        queueIndex = newIndex,
-        queueCursor = minOf(state.queueCursor, (newQueue.size - 1).coerceAtLeast(0)),
-    )
-    if (removingPlaying) {
-        audioPlayer.stop()
-        if (newQueue.isEmpty()) state = state.copy(nowPlaying = null, isPlaying = false, progress = 0.0, isRadioMode = false)
-        else playFromQueue(if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0)
-    }
-}
-
-internal fun MeloScreen.clearQueue() {
-    audioPlayer.stop()
-    state = state.copy(queue = emptyList(), queueIndex = -1, queueCursor = 0,
-        nowPlaying = null, isPlaying = false, progress = 0.0, isRadioMode = false)
-}
-
-internal fun MeloScreen.toggleQueue() { state = state.copy(isQueueVisible = !state.isQueueVisible) }
-internal fun MeloScreen.toggleShuffle() { state = state.copy(shuffleEnabled = !state.shuffleEnabled) }
-internal fun MeloScreen.cycleRepeat() {
-    state = state.copy(repeatMode = when (state.repeatMode) {
-        RepeatMode.OFF -> RepeatMode.ALL
-        RepeatMode.ALL -> RepeatMode.ONE
-        RepeatMode.ONE -> RepeatMode.OFF
-    })
-}
-
-internal fun MeloScreen.loadSimilarAndPlay() {
-    val seed = state.nowPlaying ?: return
-    val alreadyPlayed = state.queue.map { it.id }.toSet()
-    audioPlayer.stop()
-    state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
-    scope.launch {
-        try {
-            val similar = getSimilarTracks(seed.artist, seed.title)
-            if (similar.isEmpty()) {
-                appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
-                return@launch
-            }
-            val resolved = coroutineScope {
-                similar.shuffled().take(15)
-                    .map { st -> async { runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull() } }
-                    .awaitAll()
-            }.filterNotNull().filter { it.id !in alreadyPlayed }.distinctBy { it.id }.take(10)
-
-            if (resolved.isEmpty()) {
-                appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
-                return@launch
-            }
-            appRunner()?.runOnRenderThread {
-                state = state.copy(queue = resolved, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true)
-                playFromQueue(0)
-            }
-        } catch (e: Exception) {
-            appRunner()?.runOnRenderThread {
-                state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = e.message, isRadioMode = false)
-            }
-        }
-    }
-}
-

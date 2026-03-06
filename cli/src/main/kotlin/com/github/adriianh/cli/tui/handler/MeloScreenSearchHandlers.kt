@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
-import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
@@ -71,7 +70,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
             getSimilarTracks(artist, title)
         }
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
-        val artworkData = fullTrack.artworkUrl?.let { ArtworkRenderer.load(it) }
+        val artworkData = fullTrack.artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) {
             appRunner()?.runOnRenderThread {
                 state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)

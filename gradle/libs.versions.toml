@@ -11,7 +11,7 @@ koin = "4.2.0-RC1"
 mockk = "1.13.13"
 tamboui = "0.1.0"
 scrimage = "4.1.3"
-graalvm = "0.10.4"
+graalvm = "0.10.6"
 sqldelight = "2.0.2"
 jmtc = "0.0.3"
 

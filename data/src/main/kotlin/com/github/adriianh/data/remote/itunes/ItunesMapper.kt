@@ -9,7 +9,6 @@ fun ItunesTrackDto.toDomain(): Track = Track(
     album = collectionName ?: "Unknown",
     durationMs = trackTimeMillis ?: 0L,
     genres = if (primaryGenreName != null) listOf(primaryGenreName) else emptyList(),
-    artworkUrl = artworkUrl100?.replace("100x100", "600x600"),
+    artworkUrl = artworkUrl100?.replace("100x100", "300x300"),
     sourceId = null
 )
-
