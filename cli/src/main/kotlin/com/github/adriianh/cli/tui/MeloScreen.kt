@@ -49,7 +49,7 @@ class MeloScreen(
     // Playlists
     internal val getPlaylists: GetPlaylistsUseCase,
     internal val getPlaylistTracks: GetPlaylistTracksUseCase,
-    internal val createPlaylist: CreateP    laylistUseCase,
+    internal val createPlaylist: CreatePlaylistUseCase,
     internal val renamePlaylist: RenamePlaylistUseCase,
     internal val deletePlaylist: DeletePlaylistUseCase,
     internal val addTrackToPlaylist: AddTrackToPlaylistUseCase,
