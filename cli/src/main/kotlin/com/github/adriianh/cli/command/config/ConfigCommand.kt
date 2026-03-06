@@ -11,6 +11,7 @@ class ConfigCommand : CliktCommand(name = "config") {
         subcommands(
             ConfigSetCommand(),
             ConfigListCommand(),
+            ConfigAuthCommand(),
         )
     }
 
