@@ -87,14 +87,15 @@ val appModule = module {
     single<AudioProvider> { YtDlpAudioProvider(get()) }
 
     // Repositories
-    single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
-    single<SessionRepository> { SessionRepositoryImpl(get()) }
-    single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
-    single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<MeloDatabase> { DatabaseFactory.create() }
+    single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
+    single<LyricsRepository> { LyricsRepositoryImpl(get()) }
+    single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
+    single<SessionRepository> { SessionRepositoryImpl(get()) }
+    single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
 
     // Use Cases — factory instead of single: stateless wrappers over repositories,
     // no benefit to holding them as permanent singletons in the Koin container.
