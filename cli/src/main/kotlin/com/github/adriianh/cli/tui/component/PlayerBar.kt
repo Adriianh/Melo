@@ -47,6 +47,7 @@ fun buildPlayerBar(
     val nowPlaying = state.nowPlaying
 
     val statusIcon = when {
+        state.isRestoringSession -> ICON_LOADING
         state.isLoadingAudio -> ICON_LOADING
         state.audioError != null -> ICON_ERROR
         state.isPlaying -> ICON_PLAY
@@ -54,14 +55,15 @@ fun buildPlayerBar(
     }
     val statusColor = if (state.audioError != null) ACCENT_RED else PRIMARY_COLOR
 
-    val panelTitle = if (nowPlaying != null) {
+    val panelTitle = if (state.isRestoringSession) {
+        Line.from(Span.styled("Resuming session…", Style.EMPTY.fg(TEXT_DIM)))
+    } else if (nowPlaying != null) {
         val titleStyle = if (state.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
             else Style.EMPTY.fg(TEXT_PRIMARY).bold()
         Line.from(Span.styled(nowPlaying.title, titleStyle))
     } else {
         Line.from(Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
     }
-
 
     val leftTop = if (nowPlaying != null) {
         row(
