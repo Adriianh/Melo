@@ -92,6 +92,7 @@ val appModule = module {
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
+    single<SessionRepository> { SessionRepositoryImpl(get()) }
 
     // Use Cases — factory instead of single: stateless wrappers over repositories,
     // no benefit to holding them as permanent singletons in the Koin container.
@@ -115,4 +116,7 @@ val appModule = module {
     factory { DeletePlaylistUseCase(get()) }
     factory { AddTrackToPlaylistUseCase(get()) }
     factory { RemoveTrackFromPlaylistUseCase(get()) }
+    factory { SaveSessionUseCase(get()) }
+    factory { RestoreSessionUseCase(get()) }
+    factory { ClearSessionUseCase(get()) }
 }

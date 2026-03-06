@@ -129,6 +129,9 @@ data class MeloState(
     // Radio / auto-play
     val isRadioMode: Boolean = false,
 
+    // Session restore
+    val isRestoringSession: Boolean = false,
+
     // Now Playing screen — synced lyrics
     val syncedLyrics: List<LrcLine> = emptyList(),
     val isLoadingSyncedLyrics: Boolean = false,
