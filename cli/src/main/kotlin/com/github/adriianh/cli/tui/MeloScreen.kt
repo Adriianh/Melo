@@ -1,25 +1,32 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.component.*
+import com.github.adriianh.cli.tui.component.buildPlayerBar
+import com.github.adriianh.cli.tui.component.buildQueuePanel
+import com.github.adriianh.cli.tui.component.buildSearchBar
+import com.github.adriianh.cli.tui.component.buildSidebar
+import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
+import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
-import com.github.adriianh.cli.tui.screen.*
+import com.github.adriianh.cli.tui.screen.renderHomeScreen
+import com.github.adriianh.cli.tui.screen.renderLibraryScreen
+import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
+import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.usecase.*
-import dev.tamboui.toolkit.Constraint
-import dev.tamboui.toolkit.Element
-import dev.tamboui.toolkit.component.list.TuiList
-import dev.tamboui.toolkit.component.list.TuiListState
-import dev.tamboui.toolkit.component.text.TuiTextArea
-import dev.tamboui.toolkit.component.text.TuiTextAreaState
-import dev.tamboui.toolkit.input.overlay.TuiInputOverlay
-import dev.tamboui.toolkit.input.overlay.TuiInputOverlayState
+import dev.tamboui.layout.Constraint
+import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.app.ToolkitApp
+import dev.tamboui.toolkit.app.ToolkitRunner
+import dev.tamboui.toolkit.element.Element
+import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
-import dev.tamboui.tui.TuiScreen
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import dev.tamboui.widgets.input.TextInputState
+import kotlinx.coroutines.*
 import java.time.Duration
 
 class MeloScreen(
@@ -47,59 +54,144 @@ class MeloScreen(
     internal val deletePlaylist: DeletePlaylistUseCase,
     internal val addTrackToPlaylist: AddTrackToPlaylistUseCase,
     internal val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase,
-) : TuiScreen() {
+    // Artwork
+    internal val artworkRenderer: ArtworkRenderer
+) : ToolkitApp() {
 
-    internal var state: MeloState = MeloState()
-        set(value) {
-            field = value
-            invalidate()
-        }
-
+    internal var state = MeloState()
     internal val scope = CoroutineScope(Dispatchers.IO)
-
-    internal var detailsJob   = kotlinx.coroutines.Job()
-    internal var loadMoreJob  = kotlinx.coroutines.Job()
-    internal var playlistTracksJob: kotlinx.coroutines.Job? = null
-    internal var lastQuery    = ""
-    internal var marqueeJob: Any? = null
-    internal var marqueeTick  = 0
+    internal var detailsJob: Job? = null
+    internal var loadMoreJob: Job? = null
+    internal var playlistTracksJob: Job? = null
+    internal var lastQuery = ""
+    internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    internal var marqueeTick = 0
 
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
 
-    internal val mediaSession = MediaSessionManager()
-    internal val audioPlayer  = AudioPlayer(
-        onProgress = { positionMs ->
+    internal val mediaSession = MediaSessionManager(
+        onPlayPause = {
+            runner()?.runOnRenderThread { togglePlayPause() }
+        },
+        onNext = {
+            runner()?.runOnRenderThread { seekForward() }
+        },
+        onPrevious = {
+            runner()?.runOnRenderThread { seekBackward() }
+        },
+        onStop = {
             runner()?.runOnRenderThread {
-                state = state.copy(nowPlayingPositionMs = positionMs)
+                audioPlayer.stop()
+                state = state.copy(isPlaying = false, progress = 0.0)
             }
         },
-        onFinish   = {
-            runner()?.runOnRenderThread { handleTrackFinished() }
-        },
-        onError    = { _ ->
-            runner()?.runOnRenderThread {
-                state = state.copy(isLoadingAudio = false, audioError = "Playback error")
-            }
-        },
-        isPlaying  = { state.isPlaying },
     )
 
-    internal val searchInputState = TuiTextAreaState()
+    internal val audioPlayer: AudioPlayer = AudioPlayer(
+        scope = scope,
+        onProgress = { elapsedMs ->
+            runner()?.runOnRenderThread {
+                val duration = state.nowPlaying?.durationMs ?: 0L
+                val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
+                state = state.copy(progress = progress, nowPlayingPositionMs = elapsedMs)
+                mediaSession.updatePosition(elapsedMs)
+            }
+        },
+        onFinish = {
+            runner()?.runOnRenderThread {
+                state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0)
+                seekForward()
+            }
+        },
+        onError = { err ->
+            runner()?.runOnRenderThread {
+                state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message)
+                mediaSession.notifyStopped()
+            }
+        },
+    )
 
-    internal val homeRecentList   = TuiListState()
-    internal val homeFavoritesList = TuiListState()
-    internal val resultList       = TuiListState()
-    internal val favoritesList    = TuiListState()
-    internal val playlistsList    = TuiListState()
-    internal val playlistTracksList = TuiListState()
-    internal val sidebarList      = TuiListState()
-    internal val lyricsArea       = TuiTextAreaState()
-    internal val similarArea      = TuiTextAreaState()
-    internal val queueList        = TuiListState()
+    internal val searchInputState = TextInputState()
 
-    internal val playlistInputOverlay  = TuiInputOverlayState()
-    internal val playlistPickerOverlay = TuiInputOverlayState()
+    internal val homeRecentList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("home-recent-list")
+
+    internal val homeFavoritesList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("home-favorites-list")
+
+    internal val resultList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+
+    internal val favoritesList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("library-list")
+
+    internal val playlistsList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("playlists-list")
+
+    internal val playlistTracksList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("playlist-tracks-list")
+
+    internal val sidebarList: ListElement<*> = list()
+        .items(
+            "${MeloTheme.ICON_HOME} Home",
+            "${MeloTheme.ICON_SEARCH} Search",
+            "${MeloTheme.ICON_LIBRARY} Your Library",
+            "${MeloTheme.ICON_NOTE} Now Playing",
+        )
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .selected(SidebarSection.HOME.ordinal)
+
+    internal val lyricsArea = markupTextArea()
+        .scrollbar()
+        .wrapWord()
+        .focusable()
+        .id("lyrics-area")
+
+    internal val similarArea: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_BULLET} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .scrollbar()
+        .focusable()
+        .id("similar-area")
+
+    internal val queueList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("queue-list")
+
+    private val playlistInputOverlay = PlaylistInputOverlay { state }
+    private val playlistPickerOverlay = PlaylistPickerOverlay { state }
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
@@ -134,9 +226,7 @@ class MeloScreen(
                     state = state.copy(marqueeOffset = newOffset)
                 }
             }
-        // Slowed from 150ms to 300ms: halves MeloState.copy() frequency,
-        // significantly reducing short-lived object allocation and GC pressure.
-        }, Duration.ofMillis(300))
+        }, Duration.ofMillis(150))
     }
 
     override fun onStop() {
@@ -175,6 +265,52 @@ class MeloScreen(
             PlaylistInputMode.RENAME -> stack(mainLayout, playlistInputOverlay)
             PlaylistInputMode.PICKER -> stack(mainLayout, playlistPickerOverlay)
             PlaylistInputMode.NONE   -> mainLayout
+        }
+    }
+
+    private fun renderMainContent(): Element {
+        if (state.needsGraphicsClear) {
+            val pending = state.pendingSection
+            val targetSection = pending ?: state.activeSection
+            state = state.copy(
+                needsGraphicsClear = false,
+                activeSection = targetSection,
+                pendingSection = null,
+                artworkData = if (targetSection != SidebarSection.SEARCH) null else state.artworkData,
+            )
+            if (targetSection == SidebarSection.NOW_PLAYING) {
+                appRunner()?.focusManager()?.setFocus("now-playing-panel")
+            }
+            val targetContent = when (targetSection) {
+                SidebarSection.HOME    -> renderHomeScreen(
+                    state, homeRecentList, homeFavoritesList,
+                    onKeyEvent = ::handleHomeKey,
+                )
+                SidebarSection.SEARCH  -> renderSearchScreen(
+                    state, resultList, lyricsArea, similarArea,
+                    ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+                )
+                SidebarSection.LIBRARY -> renderLibraryScreen(
+                    state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+                )
+                SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+            }
+            return stack(ClearGraphicsElement().fill(), targetContent)
+        }
+
+        return when (state.activeSection) {
+            SidebarSection.HOME    -> renderHomeScreen(
+                state, homeRecentList, homeFavoritesList,
+                onKeyEvent = ::handleHomeKey,
+            )
+            SidebarSection.SEARCH  -> renderSearchScreen(
+                state, resultList, lyricsArea, similarArea,
+                ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+            )
+            SidebarSection.LIBRARY -> renderLibraryScreen(
+                state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+            )
+            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
         }
     }
 }
