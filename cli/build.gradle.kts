@@ -4,6 +4,7 @@ import java.util.zip.ZipOutputStream
 plugins {
     id("buildsrc.convention.kotlin-jvm")
     id("io.github.goooler.shadow") version "8.1.8"
+    alias(libs.plugins.graalvmNative)
 }
 
 dependencies {
@@ -43,7 +44,63 @@ tasks {
     }
 }
 
-// ─── distribution tasks ───────────────────────────────────────────────────────
+// ─── GraalVM native image ───────────────────────────────────────────────────
+
+/**
+ * Produces a self-contained native binary at cli/build/native/nativeCompile/melo.
+ * The binary requires no JVM and starts in milliseconds with ~15-30 MB RSS.
+ *
+ * Prerequisites:
+ *   - GraalVM JDK 21+ installed and set as JAVA_HOME
+ *   - Run: ./gradlew :cli:nativeCompile
+ *
+ * Reflection config for Ktor, kotlinx-serialization, JNA, JPEG/image-io, SQLite,
+ * and all app DTOs lives in:
+ *   cli/src/main/resources/META-INF/native-image/reachability-metadata.json
+ *
+ * Reference: https://ktor.io/docs/graalvm.html
+ */
+graalvmNative {
+    binaries {
+        named("main") {
+            imageName.set(appName)
+            mainClass.set("com.github.adriianh.cli.MeloKt")
+            fallback.set(false)
+            verbose.set(true)
+
+            // ── Ktor / Kotlin / kotlinx ecosystem ────────────────────────
+            buildArgs.addAll(
+                "--initialize-at-build-time=io.ktor",
+                "--initialize-at-build-time=kotlin",
+                "--initialize-at-build-time=kotlinx.coroutines",
+                "--initialize-at-build-time=kotlinx.serialization",
+                "--initialize-at-build-time=kotlinx.serialization.json.Json",
+                "--initialize-at-build-time=kotlinx.serialization.json.JsonImpl",
+                "--initialize-at-build-time=kotlinx.serialization.json.ClassDiscriminatorMode",
+                "--initialize-at-build-time=kotlinx.serialization.modules.SerializersModuleKt",
+                "--initialize-at-build-time=kotlinx.io.bytestring.ByteString",
+                "--initialize-at-build-time=kotlinx.io.SegmentPool",
+                // ── SLF4J / logging ──────────────────────────────────
+                "--initialize-at-build-time=org.slf4j.LoggerFactory",
+                "--initialize-at-build-time=org.slf4j.helpers.Reporter",
+                "--initialize-at-build-time=org.slf4j.simple.SimpleLogger",
+                // ── Native image housekeeping ───────────────────────────
+                "-H:+InstallExitHandlers",
+                "-H:+ReportUnsupportedElementsAtRuntime",
+                "-H:+ReportExceptionStackTraces",
+                // ── Required for JNA (MediaSessionManager / SMTC) ────────────
+                "--enable-native-access=ALL-UNNAMED",
+            )
+        }
+    }
+
+    // Wire nativeCompile to depend on shadowJar so the fat-jar is ready first
+    tasks.named("nativeCompile") {
+        dependsOn(tasks.named("shadowJar"))
+    }
+}
+
+// ─── distribution tasks ───────────────────────────────────────────────────────────────────
 
 /**
  * Produces  cli/build/dist/melo-<version>-linux.tar.gz
@@ -147,7 +204,7 @@ tasks.register("distWindows") {
         ZipOutputStream(zipFile.outputStream().buffered()).use { zos ->
             stageDir.walkTopDown().forEach { file ->
                 if (file.isFile) {
-                    val entryName = file.relativeTo(stageDir).path.replace("\\", "/")
+                    val entryName = file.relativeTo(stageDir).path.replace("\\\\", "/")
                     zos.putNextEntry(ZipEntry(entryName))
                     file.inputStream().use { it.copyTo(zos) }
                     zos.closeEntry()

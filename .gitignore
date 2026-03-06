@@ -1,4 +1,3 @@
-.gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -32,6 +31,8 @@ bin/
 !**/src/test/**/bin/
 !**/src/dist/**/bin/
 **/src/main/resources/META-INF/
+!**/src/main/resources/META-INF/native-image/
+!**/src/main/resources/META-INF/native-image/**
 
 ### NetBeans ###
 /nbproject/private/

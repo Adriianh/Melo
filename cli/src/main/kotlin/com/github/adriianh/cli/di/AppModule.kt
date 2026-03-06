@@ -21,7 +21,6 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
@@ -44,13 +43,13 @@ val appModule = module {
                 json(jsonConfig)
                 json(jsonConfig, contentType = ContentType.Text.JavaScript)
             }
-            install(Logging) {
-                level = LogLevel.INFO
-            }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 3)
                 exponentialDelay()
             }
+            // Logging disabled: all logs are suppressed to WARN via simplelogger.properties anyway,
+            // but keeping Ktor's Logging plugin active causes it to buffer full request/response bodies
+            // in memory on every API call, which significantly increases heap pressure.
         }
     }
 
@@ -93,25 +92,26 @@ val appModule = module {
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
 
-    // Use Cases
-    single { SearchTracksUseCase(get()) }
-    single { LoadMoreTracksUseCase(get()) }
-    single { GetTrackUseCase(get()) }
-    single { GetLyricsUseCase(get()) }
-    single { GetSyncedLyricsUseCase(get()) }
-    single { GetSimilarTracksUseCase(get()) }
-    single { GetFavoritesUseCase(get()) }
-    single { AddFavoriteUseCase(get()) }
-    single { RemoveFavoriteUseCase(get()) }
-    single { IsFavoriteUseCase(get()) }
-    single { GetRecentTracksUseCase(get()) }
-    single { RecordPlayUseCase(get()) }
-    single { GetStreamUseCase(get()) }
-    single { GetPlaylistsUseCase(get()) }
-    single { GetPlaylistTracksUseCase(get()) }
-    single { CreatePlaylistUseCase(get()) }
-    single { RenamePlaylistUseCase(get()) }
-    single { DeletePlaylistUseCase(get()) }
-    single { AddTrackToPlaylistUseCase(get()) }
-    single { RemoveTrackFromPlaylistUseCase(get()) }
+    // Use Cases — factory instead of single: these are stateless wrappers over repositories,
+    // so there is no benefit to holding them as permanent singletons in the Koin container.
+    factory { SearchTracksUseCase(get()) }
+    factory { LoadMoreTracksUseCase(get()) }
+    factory { GetTrackUseCase(get()) }
+    factory { GetLyricsUseCase(get()) }
+    factory { GetSyncedLyricsUseCase(get()) }
+    factory { GetSimilarTracksUseCase(get()) }
+    factory { GetFavoritesUseCase(get()) }
+    factory { AddFavoriteUseCase(get()) }
+    factory { RemoveFavoriteUseCase(get()) }
+    factory { IsFavoriteUseCase(get()) }
+    factory { GetRecentTracksUseCase(get()) }
+    factory { RecordPlayUseCase(get()) }
+    factory { GetStreamUseCase(get()) }
+    factory { GetPlaylistsUseCase(get()) }
+    factory { GetPlaylistTracksUseCase(get()) }
+    factory { CreatePlaylistUseCase(get()) }
+    factory { RenamePlaylistUseCase(get()) }
+    factory { DeletePlaylistUseCase(get()) }
+    factory { AddTrackToPlaylistUseCase(get()) }
+    factory { RemoveTrackFromPlaylistUseCase(get()) }
 }
