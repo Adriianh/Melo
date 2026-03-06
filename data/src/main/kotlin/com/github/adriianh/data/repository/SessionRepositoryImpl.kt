@@ -7,6 +7,7 @@ import com.github.adriianh.data.local.MeloDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class SessionRepositoryImpl(database: MeloDatabase) : SessionRepository {
@@ -40,8 +41,6 @@ class SessionRepositoryImpl(database: MeloDatabase) : SessionRepository {
     override suspend fun clearSession() = withContext(Dispatchers.IO) {
         queries.deleteSession()
     }
-
-    // ── DTO ──────────────────────────────────────────────────────────────────
 
     @Serializable
     private data class TrackDto(
