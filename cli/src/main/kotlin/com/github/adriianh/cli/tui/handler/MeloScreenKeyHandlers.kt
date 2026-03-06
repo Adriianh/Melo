@@ -269,6 +269,10 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
 internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "queue-panel"
     when {
+        event.code() == KeyCode.ESCAPE -> {
+            state = state.copy(isQueueVisible = false)
+            return EventResult.HANDLED
+        }
         event.matches(Actions.MOVE_DOWN) -> {
             if (!isFocused) return EventResult.UNHANDLED
             state = state.copy(queueCursor = minOf(state.queue.lastIndex, state.queueCursor + 1))
