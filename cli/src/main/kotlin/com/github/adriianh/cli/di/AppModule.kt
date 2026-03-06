@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
@@ -25,7 +26,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
-
 
 private fun hasSpotifyKeys() =
     resolveEnv("SPOTIFY_CLIENT_ID") != null &&
@@ -54,6 +54,7 @@ val appModule = module {
     }
 
     // API Clients
+    single { ArtworkRenderer(get()) }
     single { ItunesApiClient(get()) }
     single {
         SpotifyAuthClient(

@@ -7,6 +7,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.usecase.*
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -62,6 +63,7 @@ class MeloCommand : CliktCommand(
         val deletePlaylist: DeletePlaylistUseCase by inject()
         val addTrackToPlaylist: AddTrackToPlaylistUseCase by inject()
         val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase by inject()
+        val artworkRenderer: ArtworkRenderer by inject()
 
         try {
             MeloScreen(
@@ -70,6 +72,7 @@ class MeloCommand : CliktCommand(
                 getRecentTracks, recordPlay, getStream,
                 getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,
                 deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist,
+                artworkRenderer,
             ).run()
         } finally {
             stopKoin()

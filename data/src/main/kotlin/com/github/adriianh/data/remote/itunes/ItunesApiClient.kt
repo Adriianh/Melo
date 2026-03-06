@@ -18,8 +18,7 @@ class ItunesApiClient(
             }.body<ItunesSearchResponse>().results
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
-        } catch (e: Exception) {
-            println("iTunes search error: ${e.message}")
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -32,8 +31,7 @@ class ItunesApiClient(
             }.body<ItunesSearchResponse>().results.firstOrNull()
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
-        } catch (e: Exception) {
-            println("iTunes getTrack error: ${e.message}")
+        } catch (_: Exception) {
             null
         }
     }
@@ -61,7 +59,7 @@ class ItunesApiClient(
                 dto.artworkUrl100 != null
             } ?: results.firstOrNull { it.artworkUrl100 != null }
 
-            best?.artworkUrl100?.replace("100x100bb", "600x600bb")
+            best?.artworkUrl100?.replace("100x100bb", "300x300bb")
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) {
