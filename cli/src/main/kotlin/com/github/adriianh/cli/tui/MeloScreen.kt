@@ -242,7 +242,7 @@ class MeloScreen(
     private fun renderMainContent(): Element = when (state.activeSection) {
         SidebarSection.HOME    -> renderHomeScreen(
             state, homeRecentList, homeFavoritesList,
-            onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey,
+            onKeyEvent = ::handleHomeKey,
         )
         SidebarSection.SEARCH  -> renderSearchScreen(
             state, resultList, lyricsArea, similarArea,
