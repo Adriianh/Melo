@@ -88,6 +88,20 @@ class MeloScreen(
 
     internal val searchInputState = TextInputState()
 
+    internal val homeRecentList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("home-recent-list")
+
+    internal val homeFavoritesList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("home-favorites-list")
+
     internal val resultList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -209,7 +223,7 @@ class MeloScreen(
         } else {
             playerBarBuilder()
         }
-        val bottomConstraint = if (state.isQueueVisible) Constraint.length(15) else Constraint.length(5)
+        val bottomConstraint = if (state.isQueueVisible) Constraint.length(15) else Constraint.length(4)
 
         val mainLayout = dock()
             .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
@@ -226,7 +240,10 @@ class MeloScreen(
     }
 
     private fun renderMainContent(): Element = when (state.activeSection) {
-        SidebarSection.HOME    -> renderHomeScreen(state, onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey)
+        SidebarSection.HOME    -> renderHomeScreen(
+            state, homeRecentList, homeFavoritesList,
+            onSelectTrack = ::playTrack, onKeyEvent = ::handleHomeKey,
+        )
         SidebarSection.SEARCH  -> renderSearchScreen(
             state, resultList, lyricsArea, similarArea,
             ::marqueeText, ::handleResultsKey, ::handleDetailKey,

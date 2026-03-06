@@ -42,6 +42,14 @@ enum class LibraryTab {
 }
 
 /**
+ * Active section within the Home screen.
+ */
+enum class HomeSection {
+    RECENT,
+    FAVORITES,
+}
+
+/**
  * Input mode for playlist create/rename/picker overlay.
  */
 enum class PlaylistInputMode {
@@ -92,6 +100,9 @@ data class MeloState(
 
     // Home
     val recentTracks: List<HistoryEntry> = emptyList(),
+    val homeSection: HomeSection = HomeSection.RECENT,
+    val homeRecentCursor: Int = 0,
+    val homeFavoritesCursor: Int = 0,
 
     // Now playing (player bar)
     val nowPlaying: Track? = null,

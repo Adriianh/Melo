@@ -15,9 +15,85 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
-    val isFocused = appRunner()?.focusManager()?.focusedId() == "home-panel"
+    val focusedId = appRunner()?.focusManager()?.focusedId()
+    val isFocused = focusedId == "home-panel"
+        || focusedId == "home-recent-panel"
+        || focusedId == "home-favorites-panel"
     if (!isFocused) return EventResult.UNHANDLED
-    if (event.matches(Actions.SELECT)) return applySidebarSelection()
+
+    if (focusedId == "home-recent-panel" && state.homeSection != HomeSection.RECENT) {
+        state = state.copy(homeSection = HomeSection.RECENT)
+    } else if (focusedId == "home-favorites-panel" && state.homeSection != HomeSection.FAVORITES) {
+        state = state.copy(homeSection = HomeSection.FAVORITES)
+    }
+
+    if (event.code() == KeyCode.TAB) {
+        val next = if (state.homeSection == HomeSection.RECENT) HomeSection.FAVORITES else HomeSection.RECENT
+        state = state.copy(homeSection = next)
+        val nextFocusId = if (next == HomeSection.RECENT) "home-recent-panel" else "home-favorites-panel"
+        appRunner()?.focusManager()?.setFocus(nextFocusId)
+        return EventResult.HANDLED
+    }
+
+    when (state.homeSection) {
+        HomeSection.RECENT -> {
+            val maxIndex = (state.recentTracks.size - 1).coerceAtLeast(0)
+            when {
+                event.matches(Actions.MOVE_DOWN) -> {
+                    state = state.copy(homeRecentCursor = minOf(maxIndex, state.homeRecentCursor + 1))
+                    return EventResult.HANDLED
+                }
+                event.matches(Actions.MOVE_UP) -> {
+                    state = state.copy(homeRecentCursor = maxOf(0, state.homeRecentCursor - 1))
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.ENTER -> {
+                    val track = state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                    playTrack(track)
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                    val track = state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                    addToQueue(track)
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                    val track = state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                    toggleFavorite(track)
+                    return EventResult.HANDLED
+                }
+            }
+        }
+        HomeSection.FAVORITES -> {
+            val maxIndex = (state.favorites.size - 1).coerceAtLeast(0)
+            when {
+                event.matches(Actions.MOVE_DOWN) -> {
+                    state = state.copy(homeFavoritesCursor = minOf(maxIndex, state.homeFavoritesCursor + 1))
+                    return EventResult.HANDLED
+                }
+                event.matches(Actions.MOVE_UP) -> {
+                    state = state.copy(homeFavoritesCursor = maxOf(0, state.homeFavoritesCursor - 1))
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.ENTER -> {
+                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    playTrack(track)
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    addToQueue(track)
+                    return EventResult.HANDLED
+                }
+                event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    toggleFavorite(track)
+                    return EventResult.HANDLED
+                }
+            }
+        }
+    }
+
     return EventResult.UNHANDLED
 }
 
