@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.screen
 
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
-import com.github.adriianh.cli.tui.HomeSection
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -13,7 +12,6 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
-import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
@@ -25,7 +23,6 @@ fun renderHomeScreen(
     state: MeloState,
     recentList: ListElement<*>,
     favoritesList: ListElement<*>,
-    onSelectTrack: (Track) -> Unit,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val recentPanel = if (state.recentTracks.isEmpty()) {
