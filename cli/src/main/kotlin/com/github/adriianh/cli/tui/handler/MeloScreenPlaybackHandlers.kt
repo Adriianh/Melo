@@ -155,7 +155,11 @@ internal fun MeloScreen.clearQueue() {
     )
 }
 
-internal fun MeloScreen.toggleQueue() { state = state.copy(isQueueVisible = !state.isQueueVisible) }
+internal fun MeloScreen.toggleQueue() {
+    val nowVisible = !state.isQueueVisible
+    state = state.copy(isQueueVisible = nowVisible)
+    if (nowVisible) appRunner()?.focusManager()?.setFocus("queue-panel")
+}
 
 internal fun MeloScreen.toggleShuffle() { state = state.copy(shuffleEnabled = !state.shuffleEnabled) }
 
