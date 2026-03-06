@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.di
 
+import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -66,8 +67,9 @@ val appModule = module {
     single { SpotifyApiClient(get(), get()) }
     single {
         LastFmApiClient(
-            httpClient = get(),
-            apiKey     = resolveEnv("LASTFM_API_KEY") ?: "",
+            httpClient   = get(),
+            apiKey       = resolveEnv("LASTFM_API_KEY")      ?: "",
+            sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
         )
     }
     single { LyricsApiClient(get()) }
@@ -86,13 +88,13 @@ val appModule = module {
 
     // Repositories
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
-    single<LyricsRepository> { LyricsRepositoryImpl(get()) }
+    single<SessionRepository> { SessionRepositoryImpl(get()) }
+    single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<MeloDatabase> { DatabaseFactory.create() }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
-    single<SessionRepository> { SessionRepositoryImpl(get()) }
 
     // Use Cases — factory instead of single: stateless wrappers over repositories,
     // no benefit to holding them as permanent singletons in the Koin container.
@@ -119,4 +121,7 @@ val appModule = module {
     factory { SaveSessionUseCase(get()) }
     factory { RestoreSessionUseCase(get()) }
     factory { ClearSessionUseCase(get()) }
+    factory { UpdateNowPlayingUseCase(get()) }
+    factory { ScrobbleUseCase(get()) }
+    factory { AuthenticateLastFmUseCase(get()) }
 }
