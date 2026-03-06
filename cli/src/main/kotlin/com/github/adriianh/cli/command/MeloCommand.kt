@@ -63,6 +63,9 @@ class MeloCommand : CliktCommand(
         val deletePlaylist: DeletePlaylistUseCase by inject()
         val addTrackToPlaylist: AddTrackToPlaylistUseCase by inject()
         val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase by inject()
+        val saveSession: SaveSessionUseCase by inject()
+        val restoreSession: RestoreSessionUseCase by inject()
+        val clearSession: ClearSessionUseCase by inject()
         val artworkRenderer: ArtworkRenderer by inject()
 
         try {
@@ -72,6 +75,7 @@ class MeloCommand : CliktCommand(
                 getRecentTracks, recordPlay, getStream,
                 getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,
                 deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist,
+                saveSession, restoreSession, clearSession,
                 artworkRenderer,
             ).run()
         } finally {
