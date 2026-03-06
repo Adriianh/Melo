@@ -7,7 +7,6 @@ import kotlinx.coroutines.delay
 internal suspend fun MeloScreen.restoreLastSession() {
     val session = restoreSession() ?: return
 
-    // Set queue and mark as restoring — playFromQueue runs on the render thread
     appRunner()?.runOnRenderThread {
         state = state.copy(
             queue = session.queue,
@@ -17,17 +16,15 @@ internal suspend fun MeloScreen.restoreLastSession() {
         playFromQueue(session.queueIndex)
     }
 
-    // Give the render thread a moment to process the above before polling
+    // Give the render thread a moment to process before polling
     delay(300)
 
-    // Wait up to 10s for audio to start playing
     var waited = 0
     while (waited < 10_000) {
         delay(250)
         waited += 250
         val s = state
         when {
-            // Audio started — seek to saved position if meaningful
             !s.isLoadingAudio && s.isPlaying -> {
                 if (session.positionMs > 3_000L) {
                     val duration = s.nowPlaying?.durationMs?.takeIf { it > 0 } ?: break
@@ -37,7 +34,6 @@ internal suspend fun MeloScreen.restoreLastSession() {
                 }
                 break
             }
-            // Audio failed — bail out silently
             s.audioError != null -> break
         }
     }
