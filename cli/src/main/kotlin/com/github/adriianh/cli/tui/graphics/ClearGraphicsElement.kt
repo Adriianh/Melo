@@ -19,6 +19,6 @@ class ClearGraphicsElement : StyledElement<ClearGraphicsElement>() {
 
     override fun constraint(): Constraint = Constraint.length(1)
 
-    override fun preferredSize(availableWidth: Int, availableHeight: Int, context: RenderContext): Size =
+    override fun preferredSize(availableWidth: Int, availableHeight: Int, context: RenderContext?): Size =
         Size.of(1, 1)
 }

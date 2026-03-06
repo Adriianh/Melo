@@ -12,6 +12,7 @@ import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
+import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -33,6 +34,7 @@ class MeloScreen(
     internal val loadMoreTracks: LoadMoreTracksUseCase,
     internal val getTrack: GetTrackUseCase,
     internal val getLyrics: GetLyricsUseCase,
+    internal val getSyncedLyrics: GetSyncedLyricsUseCase,
     internal val getSimilarTracks: GetSimilarTracksUseCase,
     // Favorites
     internal val getFavorites: GetFavoritesUseCase,
@@ -89,7 +91,7 @@ class MeloScreen(
             runner()?.runOnRenderThread {
                 val duration = state.nowPlaying?.durationMs ?: 0L
                 val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
-                state = state.copy(progress = progress)
+                state = state.copy(progress = progress, nowPlayingPositionMs = elapsedMs)
                 mediaSession.updatePosition(elapsedMs)
             }
         },
@@ -158,6 +160,7 @@ class MeloScreen(
             "${MeloTheme.ICON_HOME} Home",
             "${MeloTheme.ICON_SEARCH} Search",
             "${MeloTheme.ICON_LIBRARY} Your Library",
+            "${MeloTheme.ICON_NOTE} Now Playing",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -262,17 +265,49 @@ class MeloScreen(
         }
     }
 
-    private fun renderMainContent(): Element = when (state.activeSection) {
-        SidebarSection.HOME    -> renderHomeScreen(
-            state, homeRecentList, homeFavoritesList,
-            onKeyEvent = ::handleHomeKey,
-        )
-        SidebarSection.SEARCH  -> renderSearchScreen(
-            state, resultList, lyricsArea, similarArea,
-            ::marqueeText, ::handleResultsKey, ::handleDetailKey,
-        )
-        SidebarSection.LIBRARY -> renderLibraryScreen(
-            state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
-        )
+    private fun renderMainContent(): Element {
+        if (state.needsGraphicsClear) {
+            val pending = state.pendingSection
+            val targetSection = pending ?: state.activeSection
+            state = state.copy(
+                needsGraphicsClear = false,
+                activeSection = targetSection,
+                pendingSection = null,
+                artworkData = if (targetSection != SidebarSection.SEARCH) null else state.artworkData,
+            )
+            if (targetSection == SidebarSection.NOW_PLAYING) {
+                appRunner()?.focusManager()?.setFocus("now-playing-panel")
+            }
+            val targetContent = when (targetSection) {
+                SidebarSection.HOME    -> renderHomeScreen(
+                    state, homeRecentList, homeFavoritesList,
+                    onKeyEvent = ::handleHomeKey,
+                )
+                SidebarSection.SEARCH  -> renderSearchScreen(
+                    state, resultList, lyricsArea, similarArea,
+                    ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+                )
+                SidebarSection.LIBRARY -> renderLibraryScreen(
+                    state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+                )
+                SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+            }
+            return stack(ClearGraphicsElement().fill(), targetContent)
+        }
+
+        return when (state.activeSection) {
+            SidebarSection.HOME    -> renderHomeScreen(
+                state, homeRecentList, homeFavoritesList,
+                onKeyEvent = ::handleHomeKey,
+            )
+            SidebarSection.SEARCH  -> renderSearchScreen(
+                state, resultList, lyricsArea, similarArea,
+                ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+            )
+            SidebarSection.LIBRARY -> renderLibraryScreen(
+                state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+            )
+            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+        }
     }
 }

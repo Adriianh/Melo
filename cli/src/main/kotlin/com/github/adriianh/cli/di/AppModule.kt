@@ -98,6 +98,7 @@ val appModule = module {
     single { LoadMoreTracksUseCase(get()) }
     single { GetTrackUseCase(get()) }
     single { GetLyricsUseCase(get()) }
+    single { GetSyncedLyricsUseCase(get()) }
     single { GetSimilarTracksUseCase(get()) }
     single { GetFavoritesUseCase(get()) }
     single { AddFavoriteUseCase(get()) }

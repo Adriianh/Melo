@@ -8,7 +8,7 @@ class LyricsRepositoryImpl(
 ) : LyricsRepository {
 
     override suspend fun getLyrics(artist: String, title: String): String? {
-        val raw = lyricsApiClient.getLyrics(artist, title) ?: return null
+        val raw = lyricsApiClient.getLyricsResponse(artist, title)?.plainLyrics ?: return null
         return if (raw.startsWith("Paroles") || raw.startsWith("Lyrics of")) {
             val firstNewline = raw.indexOf('\n')
             if (firstNewline != -1) raw.substring(firstNewline).trimStart() else raw
@@ -16,4 +16,7 @@ class LyricsRepositoryImpl(
             raw
         }
     }
+
+    override suspend fun getSyncedLyrics(artist: String, title: String): String? =
+        lyricsApiClient.getLyricsResponse(artist, title)?.syncedLyrics
 }

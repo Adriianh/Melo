@@ -73,7 +73,9 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
         val artworkData = fullTrack.artworkUrl?.let { ArtworkRenderer.load(it) }
         if (isActive) {
-            appRunner()?.runOnRenderThread { state = state.copy(selectedTrack = fullTrack, artworkData = artworkData) }
+            appRunner()?.runOnRenderThread {
+                state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
+            }
             val similar = similarDeferred.await()
             if (isActive) appRunner()?.runOnRenderThread { state = state.copy(similarTracks = similar) }
         }
