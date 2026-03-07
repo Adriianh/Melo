@@ -28,16 +28,7 @@ internal fun MeloScreen.playTrack(track: Track) {
     scrobbleSubmitted = false
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
-    loadTrackDetails(track.id, track)
-    scope.launch {
-        val artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
-        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
-        appRunner()?.runOnRenderThread {
-            if (state.nowPlaying?.id == track.id) {
-                state = state.copy(nowPlayingArtwork = artwork)
-            }
-        }
-    }
+    loadNowPlayingMetadata(track)
     scope.launch {
         recordPlay(track)
         val url = getStream(track)

@@ -77,6 +77,7 @@ class MeloScreen(
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null
+    internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0

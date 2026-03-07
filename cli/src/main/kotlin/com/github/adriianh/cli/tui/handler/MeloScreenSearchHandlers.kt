@@ -79,6 +79,24 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
     }
 }
 
+/**
+ * Loads only the playback-related metadata for a now-playing track (lyrics, synced lyrics).
+ * Does NOT touch [MeloState.similarTracks] — those always reflect the selected track,
+ * not the playing one, so they are managed exclusively by [loadTrackDetails].
+ */
+internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
+    nowPlayingMetadataJob?.cancel()
+    nowPlayingMetadataJob = scope.launch {
+        val artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
+        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
+        if (isActive) appRunner()?.runOnRenderThread {
+            if (state.nowPlaying?.id == track.id) {
+                state = state.copy(nowPlayingArtwork = artwork)
+            }
+        }
+    }
+}
+
 internal fun MeloScreen.loadLyrics() {
     val track = state.selectedTrack ?: return
     state = state.copy(isLoadingLyrics = true, lyrics = null)
