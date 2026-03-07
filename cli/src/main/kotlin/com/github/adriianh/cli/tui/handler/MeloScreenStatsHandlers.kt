@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.StatsTimeUnit
 import com.github.adriianh.core.domain.model.StatsPeriod
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
@@ -26,6 +27,7 @@ internal fun MeloScreen.loadStats(period: StatsPeriod = state.statsPeriod) {
 
 internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
     val periods = StatsPeriod.entries
+    val units = StatsTimeUnit.entries
     val current = state.statsPeriod
     when {
         event.code() == KeyCode.TAB ||
@@ -37,6 +39,11 @@ internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
         event.code() == KeyCode.CHAR && event.character() == 'h' -> {
             val prev = periods[(current.ordinal - 1 + periods.size) % periods.size]
             loadStats(prev)
+            return EventResult.HANDLED
+        }
+        event.code() == KeyCode.CHAR && event.character() == 'u' -> {
+            val next = units[(state.statsTimeUnit.ordinal + 1) % units.size]
+            state = state.copy(statsTimeUnit = next)
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'r' -> {
