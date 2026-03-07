@@ -13,7 +13,7 @@ internal fun MeloScreen.performSearch() {
     loadMoreJob = null
     state = state.copy(isLoading = true, errorMessage = null, selectedTrack = null,
         hasMore = true, activeSection = SidebarSection.SEARCH)
-    sidebarList.selected(SidebarSection.SEARCH.ordinal)
+    sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
     scope.launch {
         try {
             val results = searchTracks(query)

@@ -14,6 +14,7 @@ import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
 import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.screen.renderStatsScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -61,6 +62,10 @@ class MeloScreen(
     // Scrobbling
     internal val updateNowPlaying: UpdateNowPlayingUseCase,
     internal val scrobble: ScrobbleUseCase,
+    // Statistics
+    internal val getTopTracks: GetTopTracksUseCase,
+    internal val getTopArtists: GetTopArtistsUseCase,
+    internal val getListeningStats: GetListeningStatsUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer
 ) : ToolkitApp() {
@@ -168,16 +173,24 @@ class MeloScreen(
         .focusable()
         .id("playlist-tracks-list")
 
-    internal val sidebarList: ListElement<*> = list()
+    internal val sidebarNavList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_HOME} Home",
             "${MeloTheme.ICON_SEARCH} Search",
             "${MeloTheme.ICON_LIBRARY} Your Library",
-            "${MeloTheme.ICON_NOTE} Now Playing",
+            "${MeloTheme.ICON_NOW_PLAYING} Now Playing",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .selected(SidebarSection.HOME.ordinal)
+
+    internal val sidebarUtilList: ListElement<*> = list()
+        .items(
+            "${MeloTheme.ICON_STATS} Statistics",
+        )
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .selected(-1)
 
     internal val lyricsArea = markupTextArea()
         .scrollbar()
@@ -246,7 +259,7 @@ class MeloScreen(
         playlistTracksJob?.cancel()
         audioPlayer.stop()
         mediaSession.destroy()
-        kotlinx.coroutines.runBlocking { persistSession() }
+        runBlocking { persistSession() }
         scope.cancel()
     }
 
@@ -261,7 +274,7 @@ class MeloScreen(
                 ),
                 Constraint.length(4),
             )
-            .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
+            .left(buildSidebar(sidebarNavList, sidebarUtilList, state.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
 
         val withQueue = if (state.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
@@ -300,6 +313,7 @@ class MeloScreen(
                     state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
                 )
                 SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+                SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
             }
             return stack(ClearGraphicsElement().fill(), targetContent)
         }
@@ -317,6 +331,7 @@ class MeloScreen(
                 state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
             )
             SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+            SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
         }
     }
 }
