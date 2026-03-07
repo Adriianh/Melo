@@ -31,10 +31,18 @@ internal fun MeloScreen.playTrack(track: Track) {
     loadNowPlayingMetadata(track)
     scope.launch {
         recordPlay(track)
-        val url = getStream(track)
+        var url: String? = null
+        var attempts = 0
+        val maxAttempts = 3
+        while (attempts < maxAttempts && url == null) {
+            url = getStream(track)
+            if (url == null) delay(700L)
+            attempts++
+        }
         appRunner()?.runOnRenderThread {
             if (url == null) {
-                state = state.copy(isLoadingAudio = false, audioError = "Stream not available")
+                state = state.copy(isLoadingAudio = false, audioError = "Stream not available, skipping...")
+                seekForward()
                 return@runOnRenderThread
             }
             state = state.copy(isPlaying = true, isLoadingAudio = false)
@@ -194,4 +202,3 @@ internal fun MeloScreen.loadSimilarAndPlay() {
         }
     }
 }
-
