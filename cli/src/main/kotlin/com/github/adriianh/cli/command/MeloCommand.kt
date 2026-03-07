@@ -9,6 +9,7 @@ import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -72,10 +73,12 @@ class MeloCommand : CliktCommand(
         val getTopArtists: GetTopArtistsUseCase by inject()
         val getListeningStats: GetListeningStatsUseCase by inject()
         val artworkRenderer: ArtworkRenderer by inject()
+        val pipedApiClient: PipedApiClient by inject()
 
         try {
             MeloScreen(
                 searchTracks, loadMoreTracks, getTrack, getLyrics, getSyncedLyrics, getSimilarTracks,
+                pipedApiClient,
                 getFavorites, addFavorite, removeFavorite, isFavorite,
                 getRecentTracks, recordPlay, getStream,
                 getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,

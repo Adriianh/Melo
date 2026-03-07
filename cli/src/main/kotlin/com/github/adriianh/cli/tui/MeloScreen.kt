@@ -19,6 +19,7 @@ import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -38,6 +39,7 @@ class MeloScreen(
     internal val getLyrics: GetLyricsUseCase,
     internal val getSyncedLyrics: GetSyncedLyricsUseCase,
     internal val getSimilarTracks: GetSimilarTracksUseCase,
+    internal val pipedApiClient: PipedApiClient,
     // Favorites
     internal val getFavorites: GetFavoritesUseCase,
     internal val addFavorite: AddFavoriteUseCase,
