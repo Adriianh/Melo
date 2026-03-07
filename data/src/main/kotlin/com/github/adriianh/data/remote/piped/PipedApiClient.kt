@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.model.Track
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.utils.io.CancellationException
 import kotlin.math.abs
 
 class PipedApiClient(
@@ -98,6 +99,39 @@ class PipedApiClient(
                 .take(limit)
                 .map { it.toDomain() }
         } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Returns tracks related to [videoId] based on YouTube's recommendation algorithm.
+     * Filters out non-music content by discarding items with duration outside the
+     * typical song range (30s–10min). Items of type "playlist" or "channel" are also excluded.
+     */
+    suspend fun getRelatedTracks(videoId: String, limit: Int = 20): List<Track> {
+        return try {
+            val response = httpClient.get("$baseUrl/streams/$videoId")
+                .body<PipedStreamsResponse>()
+            response.relatedStreams
+                .filter { it.type == "stream" && it.duration in 30..600 && it.title.isNotBlank() }
+                .take(limit)
+                .mapNotNull { related ->
+                    val relatedVideoId = related.url.substringAfter("v=").substringBefore("&")
+                    if (relatedVideoId.isBlank()) return@mapNotNull null
+                    Track(
+                        id         = "piped:$relatedVideoId",
+                        title      = related.title,
+                        artist     = related.uploaderName,
+                        album      = "",
+                        durationMs = related.duration * 1_000L,
+                        genres     = emptyList(),
+                        artworkUrl = null,
+                        sourceId   = relatedVideoId,
+                    )
+                }
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             emptyList()
