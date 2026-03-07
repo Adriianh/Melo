@@ -67,6 +67,15 @@ enum class PlaylistInputMode {
 }
 
 /**
+ * Unit used to display listening time in the statistics screen.
+ */
+enum class StatsTimeUnit(val label: String) {
+    SECONDS("Secs"),
+    MINUTES("Mins"),
+    HOURS("Hours"),
+}
+
+/**
  * Unified application state for the Melo TUI.
  */
 data class MeloState(
@@ -148,6 +157,7 @@ data class MeloState(
 
     // Statistics
     val statsPeriod: StatsPeriod = StatsPeriod.ALL_TIME,
+    val statsTimeUnit: StatsTimeUnit = StatsTimeUnit.MINUTES,
     val statsTopTracks: List<TrackStat> = emptyList(),
     val statsTopArtists: List<ArtistStat> = emptyList(),
     val statsListening: ListeningStats? = null,
