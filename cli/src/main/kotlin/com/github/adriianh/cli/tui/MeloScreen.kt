@@ -173,17 +173,24 @@ class MeloScreen(
         .focusable()
         .id("playlist-tracks-list")
 
-    internal val sidebarList: ListElement<*> = list()
+    internal val sidebarNavList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_HOME} Home",
             "${MeloTheme.ICON_SEARCH} Search",
             "${MeloTheme.ICON_LIBRARY} Your Library",
             "${MeloTheme.ICON_NOW_PLAYING} Now Playing",
-            "${MeloTheme.ICON_STATS} Statistics",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .selected(SidebarSection.HOME.ordinal)
+
+    internal val sidebarUtilList: ListElement<*> = list()
+        .items(
+            "${MeloTheme.ICON_STATS} Statistics",
+        )
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .selected(-1)
 
     internal val lyricsArea = markupTextArea()
         .scrollbar()
@@ -267,7 +274,7 @@ class MeloScreen(
                 ),
                 Constraint.length(4),
             )
-            .left(buildSidebar(sidebarList, ::handleSidebarKey), Constraint.length(22))
+            .left(buildSidebar(sidebarNavList, sidebarUtilList, state.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
 
         val withQueue = if (state.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
