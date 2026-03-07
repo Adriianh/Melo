@@ -31,3 +31,30 @@ WHERE id NOT IN (
     SELECT id FROM play_history ORDER BY played_at DESC LIMIT 200
 );
 
+selectTopTracks:
+SELECT track_id, title, artist, album, artwork_url, source_id,
+       COUNT(*) AS play_count,
+       SUM(duration_ms) AS total_ms
+FROM play_history
+WHERE (:since = 0 OR played_at >= :since)
+GROUP BY track_id
+ORDER BY play_count DESC
+LIMIT :limit;
+
+selectTopArtists:
+SELECT artist,
+       COUNT(*) AS play_count,
+       SUM(duration_ms) AS total_ms
+FROM play_history
+WHERE (:since = 0 OR played_at >= :since)
+GROUP BY artist
+ORDER BY play_count DESC
+LIMIT :limit;
+
+selectTotalListeningMs:
+SELECT COALESCE(SUM(duration_ms), 0) AS total_ms,
+       COUNT(*) AS total_plays,
+       COUNT(DISTINCT track_id) AS unique_tracks,
+       COUNT(DISTINCT artist) AS unique_artists
+FROM play_history
+WHERE (:since = 0 OR played_at >= :since);
