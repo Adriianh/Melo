@@ -24,7 +24,17 @@ data class PipedStreamsResponse(
     val uploader: String = "",
     val thumbnailUrl: String? = null,
     val duration: Long = 0L,
-    val audioStreams: List<PipedAudioStreamDto> = emptyList()
+    val audioStreams: List<PipedAudioStreamDto> = emptyList(),
+    val relatedStreams: List<PipedRelatedStreamDto> = emptyList(),
+)
+
+@Serializable
+data class PipedRelatedStreamDto(
+    val url: String = "",
+    val title: String = "",
+    val uploaderName: String = "",
+    val duration: Long = 0L,
+    val type: String = "",
 )
 
 @Serializable
