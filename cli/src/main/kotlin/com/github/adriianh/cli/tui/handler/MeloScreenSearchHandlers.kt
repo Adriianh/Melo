@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
-import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
 
@@ -65,9 +64,9 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
     detailsJob = scope.launch {
         val fullTrackDeferred = async { getTrack(trackId) }
         val similarDeferred = async {
-            val artist = knownTrack?.artist ?: fullTrackDeferred.await()?.artist ?: return@async emptyList<SimilarTrack>()
-            val title  = knownTrack?.title  ?: fullTrackDeferred.await()?.title  ?: return@async emptyList<SimilarTrack>()
-            getSimilarTracks(artist, title)
+            val track = knownTrack ?: fullTrackDeferred.await() ?: return@async emptyList<Track>()
+            val videoId = track.sourceId ?: return@async emptyList<Track>()
+            pipedApiClient.getRelatedTracks(videoId)
         }
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
         val artworkData = fullTrack.artworkUrl?.let { artworkRenderer.load(it) }
