@@ -65,8 +65,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
         val fullTrackDeferred = async { getTrack(trackId) }
         val similarDeferred = async {
             val track = knownTrack ?: fullTrackDeferred.await() ?: return@async emptyList<Track>()
-            val videoId = track.sourceId ?: return@async emptyList<Track>()
-            pipedApiClient.getRelatedTracks(videoId)
+            resolveSimilarTracks(track, limit = 10)
         }
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
         val artworkData = fullTrack.artworkUrl?.let { artworkRenderer.load(it) }

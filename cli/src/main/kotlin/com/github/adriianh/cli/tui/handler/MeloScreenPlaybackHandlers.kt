@@ -178,12 +178,11 @@ internal fun MeloScreen.cycleRepeat() {
 
 internal fun MeloScreen.loadSimilarAndPlay() {
     val seed = state.nowPlaying ?: return
-    val seedVideoId = seed.sourceId ?: return
     val alreadyPlayed = state.queue.map { it.id }.toSet()
     state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
     scope.launch {
         try {
-            val related = pipedApiClient.getRelatedTracks(seedVideoId)
+            val related = resolveSimilarTracks(seed, limit = 15)
                 .filter { it.id !in alreadyPlayed }
                 .distinctBy { it.id }
                 .shuffled()

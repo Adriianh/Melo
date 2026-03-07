@@ -15,6 +15,7 @@ import com.github.adriianh.data.provider.*
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsApiClient
+import com.github.adriianh.data.remote.deezer.DeezerApiClient
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
@@ -23,6 +24,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
@@ -44,8 +46,13 @@ val appModule = module {
                 json(jsonConfig)
                 json(jsonConfig, contentType = ContentType.Text.JavaScript)
             }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 10_000
+                connectTimeoutMillis = 5_000
+                socketTimeoutMillis  = 10_000
+            }
             install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 3)
+                retryOnExceptionOrServerErrors(maxRetries = 2)
                 exponentialDelay()
             }
         }
@@ -71,6 +78,7 @@ val appModule = module {
     }
     single { LyricsApiClient(get()) }
     single { PipedApiClient(get()) }
+    single { DeezerApiClient(get()) }
 
     // Providers
     single<MusicProvider> {
@@ -80,7 +88,14 @@ val appModule = module {
         MergedMusicProvider(providers)
     }
     single<ArtworkProvider> { ItunesMusicProvider(get()) }
-    single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
+    single<DiscoveryProvider> {
+        CompositeDiscoveryProvider(
+            listOf(
+                LastFmDiscoveryProvider(get()),
+                DeezerDiscoveryProvider(get()),
+            )
+        )
+    }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
 
     // Repositories
