@@ -3,9 +3,8 @@ package com.github.adriianh.cli.command.config
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
+import com.github.adriianh.data.repository.ScrobblingRepositoryImpl
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.options.prompt
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -13,12 +12,10 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
-import java.io.File
+import java.awt.Desktop
+import java.net.URI
 
 class ConfigAuthCommand : CliktCommand(name = "auth") {
-    private val username by option("--username", "-u", help = "Last.fm username").prompt("Last.fm username")
-    private val password by option("--password", "-p", help = "Last.fm password").prompt("Last.fm password", hideInput = true)
-
     override fun run() {
         val apiKey = resolveEnv("LASTFM_API_KEY")
         val sharedSecret = resolveEnv("LASTFM_SHARED_SECRET")
@@ -38,31 +35,45 @@ class ConfigAuthCommand : CliktCommand(name = "auth") {
             }
         }
 
-        echo("Authenticating with Last.fm…")
-        val sessionKey = runBlocking {
-            try {
-                LastFmApiClient(client, apiKey, sharedSecret).getMobileSession(username, password)
-            } finally {
-                client.close()
-            }
-        }
+        val repository = ScrobblingRepositoryImpl(
+            client = LastFmApiClient(client, apiKey, sharedSecret),
+            configDir = configDir,
+        )
 
-        if (sessionKey == null) {
-            echo("✗ Authentication failed. Check your username, password and API credentials.", err = true)
+        val authUrl = runBlocking { repository.startWebAuth() }
+        if (authUrl == null) {
+            echo("✗ Could not obtain a token from Last.fm. Check your API credentials.", err = true)
+            client.close()
             return
         }
 
-        val envFile = File("$configDir/.env")
-        envFile.parentFile?.mkdirs()
-        val lines = if (envFile.exists()) envFile.readLines() else emptyList()
-        val key = "LASTFM_SESSION_KEY"
-        val updated = if (lines.any { it.startsWith("$key=") }) {
-            lines.map { if (it.startsWith("$key=")) "$key=$sessionKey" else it }
+        echo("Opening Last.fm in your browser to authorize Melo…")
+        echo("  $authUrl")
+
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            Desktop.getDesktop().browse(URI(authUrl))
         } else {
-            lines + "$key=$sessionKey"
+            echo("  (Could not open browser automatically — please open the URL above manually.)")
         }
-        envFile.writeText(updated.joinToString("\n") + "\n")
-        echo("✓ Authenticated as $username — session key saved.")
+
+        echo("")
+        echo("Once you have authorized Melo in the browser, press ENTER to continue.")
+        readlnOrNull()
+
+        val token = repository.getPendingToken()
+        if (token == null) {
+            echo("✗ No pending token found. Please run 'melo config auth' again.", err = true)
+            client.close()
+            return
+        }
+
+        val success = runBlocking { repository.completeWebAuth(token) }
+        client.close()
+
+        if (success) {
+            echo("✓ Authenticated with Last.fm — session key saved.")
+        } else {
+            echo("✗ Authorization failed. Make sure you approved the request in the browser, then try again.", err = true)
+        }
     }
 }
-

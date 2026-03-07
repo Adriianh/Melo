@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.command.config
 
 import com.github.adriianh.cli.config.Messages
-import com.github.adriianh.cli.config.configDir
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -19,4 +18,3 @@ class ConfigCommand : CliktCommand(name = "config") {
 
     override fun run() = Unit
 }
-
