@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.StatsTimeUnit
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.core.domain.model.StatsPeriod
 import dev.tamboui.layout.Constraint
@@ -18,12 +19,32 @@ import dev.tamboui.tui.event.KeyEvent
 private const val MINUTES_IN_HOUR = 60
 private const val MINUTES_IN_DAY = 1440
 
+private fun formatSummaryTime(totalMs: Long): String {
+    val totalSecs = totalMs / 1_000
+    val totalMins = totalSecs / 60
+    return when {
+        totalMins >= MINUTES_IN_DAY ->
+            "${totalMins / MINUTES_IN_DAY}d ${(totalMins % MINUTES_IN_DAY) / MINUTES_IN_HOUR}h"
+        totalMins >= MINUTES_IN_HOUR ->
+            "${totalMins / MINUTES_IN_HOUR}h ${totalMins % MINUTES_IN_HOUR}m"
+        totalMins >= 1 -> "${totalMins}m ${totalSecs % 60}s"
+        else -> "${totalSecs}s"
+    }
+}
+
+private fun formatByUnit(totalMs: Long, unit: StatsTimeUnit): String = when (unit) {
+    StatsTimeUnit.SECONDS -> "${totalMs / 1_000}s"
+    StatsTimeUnit.MINUTES -> "${totalMs / 60_000}m"
+    StatsTimeUnit.HOURS   -> "${"%.1f".format(totalMs / 3_600_000.0)}h"
+}
+
 fun renderStatsScreen(
     state: MeloState,
     onKeyEvent: (KeyEvent) -> dev.tamboui.toolkit.event.EventResult,
 ): Element {
     val listening = state.statsListening
     val periodTabs = buildPeriodTabs(state.statsPeriod)
+    val unitTabs = buildUnitTabs(state.statsTimeUnit)
 
     val summaryPanel = if (listening == null) {
         panel(
@@ -37,18 +58,12 @@ fun renderStatsScreen(
             )
         )
     } else {
-        val totalMins = listening.totalMs / 60_000
-        val timeStr = when {
-            totalMins >= MINUTES_IN_DAY -> "${totalMins / MINUTES_IN_DAY}d ${(totalMins % MINUTES_IN_DAY) / MINUTES_IN_HOUR}h"
-            totalMins >= MINUTES_IN_HOUR -> "${totalMins / MINUTES_IN_HOUR}h ${totalMins % MINUTES_IN_HOUR}m"
-            else -> "${totalMins}m"
-        }
         panel(
             column(
                 row(
                     column(
                         text("  Total Time").fg(TEXT_DIM),
-                        text("  $timeStr").fg(PRIMARY_COLOR).bold(),
+                        text("  ${formatSummaryTime(listening.totalMs)}").fg(PRIMARY_COLOR).bold(),
                     ).fill(),
                     column(
                         text("  Plays").fg(TEXT_DIM),
@@ -79,14 +94,23 @@ fun renderStatsScreen(
             )
         )
     } else {
+        val unitLabel = state.statsTimeUnit.label
         panel(
             column(
+                row(
+                    text("  #").fg(TEXT_DIM).length(4),
+                    text("Track").fg(TEXT_DIM).fill(),
+                    text("Artist").fg(TEXT_DIM).percent(28),
+                    text("Plays").fg(TEXT_DIM).length(7),
+                    text(unitLabel).fg(PRIMARY_COLOR).bold().length(10),
+                ),
                 *state.statsTopTracks.mapIndexed { i, stat ->
                     row(
                         text("  ${i + 1}").fg(TEXT_DIM).length(4),
                         text(stat.track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                        text(stat.track.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
-                        text("${stat.playCount}×").fg(PRIMARY_COLOR).length(5),
+                        text(stat.track.artist).fg(TEXT_SECONDARY).ellipsis().percent(28),
+                        text("${stat.playCount}×").fg(TEXT_SECONDARY).length(7),
+                        text(formatByUnit(stat.totalMs, state.statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
                     )
                 }.toTypedArray()
             ).fill()
@@ -105,13 +129,21 @@ fun renderStatsScreen(
             )
         )
     } else {
+        val unitLabel = state.statsTimeUnit.label
         panel(
             column(
+                row(
+                    text("  #").fg(TEXT_DIM).length(4),
+                    text("Artist").fg(TEXT_DIM).fill(),
+                    text("Plays").fg(TEXT_DIM).length(7),
+                    text(unitLabel).fg(PRIMARY_COLOR).bold().length(10),
+                ),
                 *state.statsTopArtists.mapIndexed { i, stat ->
                     row(
                         text("  ${i + 1}").fg(TEXT_DIM).length(4),
                         text(stat.artist).fg(TEXT_PRIMARY).ellipsis().fill(),
-                        text("${stat.playCount}×").fg(PRIMARY_COLOR).length(5),
+                        text("${stat.playCount}×").fg(TEXT_SECONDARY).length(7),
+                        text(formatByUnit(stat.totalMs, state.statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
                     )
                 }.toTypedArray()
             ).fill()
@@ -121,14 +153,15 @@ fun renderStatsScreen(
         .rounded()
         .borderColor(BORDER_DEFAULT)
 
-    val hints = text("  [Tab/l] next period   [h] prev period   [r] refresh")
-        .fg(TEXT_DIM)
+    val hints = text(
+        "  [Tab/l] next period   [h] prev period   [u] cycle time unit   [r] refresh"
+    ).fg(TEXT_DIM)
 
     return stack(
         ClearGraphicsElement().fill(),
         panel(
             column(
-                periodTabs,
+                row(periodTabs, spacer(), unitTabs),
                 text(""),
                 summaryPanel.length(5),
                 text(""),
@@ -154,6 +187,16 @@ private fun buildPeriodTabs(current: StatsPeriod): Element {
     val tabs = StatsPeriod.entries.map { period ->
         val selected = period == current
         val label = "  ${period.labelShort}  "
+        if (selected) text(label).fg(PRIMARY_COLOR).bold()
+        else text(label).fg(TEXT_DIM)
+    }
+    return row(*tabs.toTypedArray())
+}
+
+private fun buildUnitTabs(current: StatsTimeUnit): Element {
+    val tabs = StatsTimeUnit.entries.map { unit ->
+        val selected = unit == current
+        val label = "  ${unit.label}  "
         if (selected) text(label).fg(PRIMARY_COLOR).bold()
         else text(label).fg(TEXT_DIM)
     }
