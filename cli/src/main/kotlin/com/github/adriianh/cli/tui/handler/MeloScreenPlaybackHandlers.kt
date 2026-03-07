@@ -178,27 +178,23 @@ internal fun MeloScreen.cycleRepeat() {
 
 internal fun MeloScreen.loadSimilarAndPlay() {
     val seed = state.nowPlaying ?: return
+    val seedVideoId = seed.sourceId ?: return
     val alreadyPlayed = state.queue.map { it.id }.toSet()
     state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
     scope.launch {
         try {
-            val similar = getSimilarTracks(seed.artist, seed.title)
-            if (similar.isEmpty()) {
-                appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
-                return@launch
-            }
-            val resolved = coroutineScope {
-                similar.shuffled().take(15)
-                    .map { st -> async { runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull() } }
-                    .awaitAll()
-            }.filterNotNull().filter { it.id !in alreadyPlayed }.distinctBy { it.id }.take(10)
+            val related = pipedApiClient.getRelatedTracks(seedVideoId)
+                .filter { it.id !in alreadyPlayed }
+                .distinctBy { it.id }
+                .shuffled()
+                .take(10)
 
-            if (resolved.isEmpty()) {
+            if (related.isEmpty()) {
                 appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
                 return@launch
             }
             appRunner()?.runOnRenderThread {
-                state = state.copy(queue = resolved, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true)
+                state = state.copy(queue = related, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true)
                 playFromQueue(0)
             }
         } catch (e: Exception) {
