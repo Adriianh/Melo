@@ -18,6 +18,7 @@ import com.github.adriianh.cli.tui.screen.renderStatsScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.layout.Constraint
@@ -69,7 +70,8 @@ class MeloScreen(
     internal val getTopArtists: GetTopArtistsUseCase,
     internal val getListeningStats: GetListeningStatsUseCase,
     // Artwork
-    internal val artworkRenderer: ArtworkRenderer
+    internal val artworkRenderer: ArtworkRenderer,
+    internal val artworkProvider: ArtworkProvider
 ) : ToolkitApp() {
 
     internal var state = MeloState()
