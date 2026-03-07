@@ -8,6 +8,7 @@ import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
@@ -73,8 +74,8 @@ class MeloCommand : CliktCommand(
         val getTopArtists: GetTopArtistsUseCase by inject()
         val getListeningStats: GetListeningStatsUseCase by inject()
         val artworkRenderer: ArtworkRenderer by inject()
+        val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
-
         try {
             MeloScreen(
                 searchTracks, loadMoreTracks, getTrack, getLyrics, getSyncedLyrics, getSimilarTracks,
@@ -86,7 +87,7 @@ class MeloCommand : CliktCommand(
                 saveSession, restoreSession, clearSession,
                 updateNowPlaying, scrobble,
                 getTopTracks, getTopArtists, getListeningStats,
-                artworkRenderer,
+                artworkRenderer, artworkProvider
             ).run()
         } finally {
             stopKoin()
