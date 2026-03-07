@@ -125,4 +125,6 @@ val appModule = module {
     factory { UpdateNowPlayingUseCase(get()) }
     factory { ScrobbleUseCase(get()) }
     factory { AuthenticateLastFmUseCase(get()) }
+    factory { StartWebAuthUseCase(get()) }
+    factory { CompleteWebAuthUseCase(get()) }
 }

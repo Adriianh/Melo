@@ -9,6 +9,19 @@ interface ScrobblingRepository {
     /** Authenticate with Last.fm and persist the session key. Returns true on success. */
     suspend fun authenticate(username: String, password: String): Boolean
 
+    /**
+     * Requests a temporary token and returns the URL the user must open to authorize the app.
+     * Returns null if the token could not be obtained.
+     */
+    suspend fun startWebAuth(): String?
+
+    /**
+     * Exchanges the given token for a permanent session key and persists it.
+     * Must be called after the user has authorized the token in the browser.
+     * Returns true on success.
+     */
+    suspend fun completeWebAuth(token: String): Boolean
+
     /** Notify Last.fm of the currently playing track. Fails silently. */
     suspend fun updateNowPlaying(track: Track)
 

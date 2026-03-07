@@ -28,12 +28,9 @@ class ConfigSetCommand : CliktCommand(name = "set") {
         val envFile = File("$configDir/.env")
         envFile.parentFile.mkdirs()
 
-        val existed: Boolean
         val lines: List<String> = if (envFile.exists()) {
-            existed = true
             envFile.readLines()
         } else {
-            existed = false
             emptyList()
         }
 
