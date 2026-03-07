@@ -118,6 +118,7 @@ internal fun MeloScreen.applySidebarSelection(): EventResult {
     val section = SidebarSection.entries.getOrNull(sidebarList.selected())
     if (section != null && section != state.activeSection) {
         state = state.copy(needsGraphicsClear = true, pendingSection = section)
+        if (section == SidebarSection.STATS) loadStats()
     }
     return EventResult.HANDLED
 }
