@@ -5,7 +5,6 @@ import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.ListeningStats
 import com.github.adriianh.core.domain.model.Playlist
-import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackStat
@@ -96,7 +95,7 @@ data class MeloState(
     val detailTab: DetailTab = DetailTab.INFO,
     val lyrics: String? = null,
     val isLoadingLyrics: Boolean = false,
-    val similarTracks: List<SimilarTrack> = emptyList(),
+    val similarTracks: List<Track> = emptyList(),
     val artworkData: ImageData? = null,
     val nowPlayingArtwork: ImageData? = null,
 
