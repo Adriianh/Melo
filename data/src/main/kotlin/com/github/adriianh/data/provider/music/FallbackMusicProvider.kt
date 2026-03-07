@@ -1,4 +1,4 @@
-package com.github.adriianh.data.provider
+package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.MusicProvider

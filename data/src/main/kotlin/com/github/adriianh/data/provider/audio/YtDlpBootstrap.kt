@@ -1,4 +1,4 @@
-package com.github.adriianh.data.provider
+package com.github.adriianh.data.provider.audio
 
 import java.io.File
 import java.net.URI
