@@ -97,16 +97,49 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
     return EventResult.UNHANDLED
 }
 
+val NAV_SECTIONS = listOf(
+    SidebarSection.HOME,
+    SidebarSection.SEARCH,
+    SidebarSection.LIBRARY,
+    SidebarSection.NOW_PLAYING,
+)
+private val UTIL_SECTIONS = listOf(
+    SidebarSection.STATS,
+)
+
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "sidebar-panel"
     if (!isFocused) return EventResult.UNHANDLED
+
     when {
         event.matches(Actions.MOVE_UP) -> {
-            sidebarList.selected(maxOf(0, sidebarList.selected() - 1))
+            if (state.sidebarInUtil) {
+                val idx = sidebarUtilList.selected()
+                if (idx > 0) {
+                    sidebarUtilList.selected(idx - 1)
+                } else {
+                    sidebarNavList.selected(NAV_SECTIONS.lastIndex)
+                    sidebarUtilList.selected(-1)
+                    state = state.copy(sidebarInUtil = false)
+                }
+            } else {
+                sidebarNavList.selected(maxOf(0, sidebarNavList.selected() - 1))
+            }
             return EventResult.HANDLED
         }
         event.matches(Actions.MOVE_DOWN) -> {
-            sidebarList.selected(minOf(SidebarSection.entries.lastIndex, sidebarList.selected() + 1))
+            if (!state.sidebarInUtil) {
+                val idx = sidebarNavList.selected()
+                if (idx < NAV_SECTIONS.lastIndex) {
+                    sidebarNavList.selected(idx + 1)
+                } else {
+                    sidebarUtilList.selected(0)
+                    sidebarNavList.selected(-1)
+                    state = state.copy(sidebarInUtil = true)
+                }
+            } else {
+                sidebarUtilList.selected(minOf(UTIL_SECTIONS.lastIndex, sidebarUtilList.selected() + 1))
+            }
             return EventResult.HANDLED
         }
         event.matches(Actions.SELECT) -> return applySidebarSelection()
@@ -115,7 +148,11 @@ internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.applySidebarSelection(): EventResult {
-    val section = SidebarSection.entries.getOrNull(sidebarList.selected())
+    val section = if (state.sidebarInUtil) {
+        UTIL_SECTIONS.getOrNull(sidebarUtilList.selected())
+    } else {
+        NAV_SECTIONS.getOrNull(sidebarNavList.selected())
+    }
     if (section != null && section != state.activeSection) {
         state = state.copy(needsGraphicsClear = true, pendingSection = section)
         if (section == SidebarSection.STATS) loadStats()
