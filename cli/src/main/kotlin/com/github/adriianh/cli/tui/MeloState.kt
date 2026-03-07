@@ -1,10 +1,14 @@
 package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.util.LrcLine
+import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.ListeningStats
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.SimilarTrack
+import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackStat
 import dev.tamboui.image.ImageData
 
 /**
@@ -24,6 +28,7 @@ enum class SidebarSection {
     SEARCH,
     LIBRARY,
     NOW_PLAYING,
+    STATS,
 }
 
 /**
@@ -140,4 +145,11 @@ data class MeloState(
     // Graphics
     val needsGraphicsClear: Boolean = false,
     val pendingSection: SidebarSection? = null,
+
+    // Statistics
+    val statsPeriod: StatsPeriod = StatsPeriod.ALL_TIME,
+    val statsTopTracks: List<TrackStat> = emptyList(),
+    val statsTopArtists: List<ArtistStat> = emptyList(),
+    val statsListening: ListeningStats? = null,
+    val statsLoading: Boolean = false,
 )
