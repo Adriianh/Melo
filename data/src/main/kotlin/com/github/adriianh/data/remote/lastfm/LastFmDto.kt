@@ -20,6 +20,11 @@ data class LastFmTagDto(
 )
 
 @Serializable
+data class LastFmTokenResponse(
+    val token: String,
+)
+
+@Serializable
 data class LastFmSessionResponse(
     val session: LastFmSession
 )
