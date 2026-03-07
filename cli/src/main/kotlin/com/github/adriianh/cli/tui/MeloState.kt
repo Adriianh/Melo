@@ -96,6 +96,7 @@ data class MeloState(
     val lyrics: String? = null,
     val isLoadingLyrics: Boolean = false,
     val similarTracks: List<Track> = emptyList(),
+    val isLoadingSimilar: Boolean = false,
     val artworkData: ImageData? = null,
     val nowPlayingArtwork: ImageData? = null,
 

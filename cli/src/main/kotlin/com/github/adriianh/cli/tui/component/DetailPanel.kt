@@ -120,6 +120,13 @@ private fun renderSimilarTab(
     state: MeloState,
     similarArea: ListElement<*>,
 ): StyledElement<*> {
+    if (state.isLoadingSimilar) {
+        return column(
+            spacer(),
+            text("  Loading similar tracks...").dim().centered(),
+            spacer()
+        )
+    }
     if (state.similarTracks.isEmpty()) {
         return column(
             spacer(),
