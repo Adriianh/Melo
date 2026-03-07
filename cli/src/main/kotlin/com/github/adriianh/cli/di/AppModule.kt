@@ -48,9 +48,6 @@ val appModule = module {
                 retryOnExceptionOrServerErrors(maxRetries = 3)
                 exponentialDelay()
             }
-            // Logging disabled: all logs are suppressed to WARN via simplelogger.properties anyway,
-            // but keeping Ktor's Logging plugin active causes it to buffer full request/response bodies
-            // in memory on every API call, which significantly increases heap pressure.
         }
     }
 
@@ -78,7 +75,7 @@ val appModule = module {
     // Providers
     single<MusicProvider> {
         val itunes = ItunesMusicProvider(get())
-        val providers = mutableListOf<MusicProvider>(itunes, PipedMusicProvider(get()))
+        val providers = mutableListOf(itunes, PipedMusicProvider(get()))
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
@@ -96,9 +93,8 @@ val appModule = module {
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
+    single<StatsRepository> { StatsRepositoryImpl(get()) }
 
-    // Use Cases — factory instead of single: stateless wrappers over repositories,
-    // no benefit to holding them as permanent singletons in the Koin container.
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
     factory { GetTrackUseCase(get()) }
@@ -127,4 +123,7 @@ val appModule = module {
     factory { AuthenticateLastFmUseCase(get()) }
     factory { StartWebAuthUseCase(get()) }
     factory { CompleteWebAuthUseCase(get()) }
+    factory { GetTopTracksUseCase(get()) }
+    factory { GetTopArtistsUseCase(get()) }
+    factory { GetListeningStatsUseCase(get()) }
 }
