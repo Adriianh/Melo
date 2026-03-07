@@ -4,7 +4,7 @@ import com.github.adriianh.core.domain.model.SimilarTrack
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import java.security.MessageDigest
 import java.util.SortedMap
@@ -56,20 +56,14 @@ class LastFmApiClient(
     suspend fun getMobileSession(username: String, password: String): String? {
         return try {
             val params = sortedMapOf(
-                "api_key" to apiKey,
-                "method"  to "auth.getMobileSession",
+                "api_key"  to apiKey,
+                "method"   to "auth.getMobileSession",
                 "password" to password,
                 "username" to username,
             )
             val sig = sign(params)
-            httpClient.submitForm(
-                url = BASE_URL,
-                formParameters = parameters {
-                    params.forEach { (k, v) -> append(k, v) }
-                    append("api_sig", sig)
-                    append("format", "json")
-                }
-            ).body<LastFmSessionResponse>().session.key
+            post(params + mapOf("api_sig" to sig, "format" to "json"))
+                .body<LastFmSessionResponse>().session.key
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -95,14 +89,7 @@ class LastFmApiClient(
                 "track"    to title,
             ).also { if (album.isNotBlank()) it["album"] = album }
             val sig = sign(params)
-            httpClient.submitForm(
-                url = BASE_URL,
-                formParameters = parameters {
-                    params.forEach { (k, v) -> append(k, v) }
-                    append("api_sig", sig)
-                    append("format", "json")
-                }
-            )
+            post(params + mapOf("api_sig" to sig, "format" to "json"))
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) { }
@@ -118,30 +105,42 @@ class LastFmApiClient(
     ) {
         try {
             val params = sortedMapOf(
-                "api_key"   to apiKey,
-                "artist[0]" to artist,
-                "method"    to "track.scrobble",
-                "sk"        to sessionKey,
+                "api_key"      to apiKey,
+                "artist[0]"    to artist,
+                "method"       to "track.scrobble",
+                "sk"           to sessionKey,
                 "timestamp[0]" to timestamp.toString(),
-                "track[0]"  to title,
+                "track[0]"     to title,
             ).also { if (album.isNotBlank()) it["album[0]"] = album }
             val sig = sign(params)
-            httpClient.submitForm(
-                url = BASE_URL,
-                formParameters = parameters {
-                    params.forEach { (k, v) -> append(k, v) }
-                    append("api_sig", sig)
-                    append("format", "json")
-                }
-            )
+            post(params + mapOf("api_sig" to sig, "format" to "json"))
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) { }
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * POST to the Last.fm API with application/x-www-form-urlencoded body.
+     * Using explicit post() instead of submitForm() to guarantee the correct
+     * Content-Type and avoid Ktor content-negotiation interference.
+     * Parameters are manually URL-encoded to preserve the exact values used
+     * when computing the api_sig — submitForm re-encodes internally which
+     * can cause signature mismatches.
+     */
+    private suspend fun post(params: Map<String, String>): HttpResponse =
+        httpClient.post(BASE_URL) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(params.entries.joinToString("&") { (k, v) ->
+                "${k.encodeURLParameter()}=${v.encodeURLParameter()}"
+            })
+        }
+
     /**
      * Builds the Last.fm API signature: concatenate sorted key=value pairs
      * (excluding format and callback), append the shared secret, then MD5.
+     * See https://www.last.fm/api/authspec section 8.
      */
     private fun sign(params: SortedMap<String, String>): String {
         val base = params.entries.joinToString("") { (k, v) -> "$k$v" } + sharedSecret
