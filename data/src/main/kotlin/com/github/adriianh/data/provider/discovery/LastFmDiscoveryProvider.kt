@@ -1,4 +1,4 @@
-package com.github.adriianh.data.provider
+package com.github.adriianh.data.provider.discovery
 
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.provider.DiscoveryProvider

@@ -28,22 +28,21 @@ internal fun MeloScreen.playTrack(track: Track) {
     scrobbleSubmitted = false
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
-    loadTrackDetails(track.id, track)
-    scope.launch {
-        val artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
-        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
-        appRunner()?.runOnRenderThread {
-            if (state.nowPlaying?.id == track.id) {
-                state = state.copy(nowPlayingArtwork = artwork)
-            }
-        }
-    }
+    loadNowPlayingMetadata(track)
     scope.launch {
         recordPlay(track)
-        val url = getStream(track)
+        var url: String? = null
+        var attempts = 0
+        val maxAttempts = 3
+        while (attempts < maxAttempts && url == null) {
+            url = getStream(track)
+            if (url == null) delay(700L)
+            attempts++
+        }
         appRunner()?.runOnRenderThread {
             if (url == null) {
-                state = state.copy(isLoadingAudio = false, audioError = "Stream not available")
+                state = state.copy(isLoadingAudio = false, audioError = "Stream not available, skipping...")
+                seekForward()
                 return@runOnRenderThread
             }
             state = state.copy(isPlaying = true, isLoadingAudio = false)
@@ -182,23 +181,18 @@ internal fun MeloScreen.loadSimilarAndPlay() {
     state = state.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0)
     scope.launch {
         try {
-            val similar = getSimilarTracks(seed.artist, seed.title)
-            if (similar.isEmpty()) {
-                appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
-                return@launch
-            }
-            val resolved = coroutineScope {
-                similar.shuffled().take(15)
-                    .map { st -> async { runCatching { searchTracks("${st.artist} ${st.title}").firstOrNull() }.getOrNull() } }
-                    .awaitAll()
-            }.filterNotNull().filter { it.id !in alreadyPlayed }.distinctBy { it.id }.take(10)
+            val related = resolveSimilarTracks(seed, limit = 15)
+                .filter { it.id !in alreadyPlayed }
+                .distinctBy { it.id }
+                .shuffled()
+                .take(10)
 
-            if (resolved.isEmpty()) {
+            if (related.isEmpty()) {
                 appRunner()?.runOnRenderThread { state = state.copy(isLoadingAudio = false, isRadioMode = false) }
                 return@launch
             }
             appRunner()?.runOnRenderThread {
-                state = state.copy(queue = resolved, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true)
+                state = state.copy(queue = related, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true)
                 playFromQueue(0)
             }
         } catch (e: Exception) {
@@ -208,4 +202,3 @@ internal fun MeloScreen.loadSimilarAndPlay() {
         }
     }
 }
-

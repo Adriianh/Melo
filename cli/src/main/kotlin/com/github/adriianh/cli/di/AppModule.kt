@@ -3,15 +3,26 @@ package com.github.adriianh.cli.di
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.*
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
-import com.github.adriianh.data.provider.*
+import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
+import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
+import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
+import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
+import com.github.adriianh.data.provider.discovery.CompositeDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.DeezerDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.LastFmDiscoveryProvider
+import com.github.adriianh.data.provider.music.ItunesMusicProvider
+import com.github.adriianh.data.provider.music.MergedMusicProvider
+import com.github.adriianh.data.provider.music.PipedMusicProvider
+import com.github.adriianh.data.provider.music.SpotifyMusicProvider
+import com.github.adriianh.data.remote.deezer.DeezerApiClient
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsApiClient
@@ -44,8 +55,13 @@ val appModule = module {
                 json(jsonConfig)
                 json(jsonConfig, contentType = ContentType.Text.JavaScript)
             }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 10_000
+                connectTimeoutMillis = 5_000
+                socketTimeoutMillis  = 10_000
+            }
             install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 3)
+                retryOnExceptionOrServerErrors(maxRetries = 2)
                 exponentialDelay()
             }
         }
@@ -71,6 +87,7 @@ val appModule = module {
     }
     single { LyricsApiClient(get()) }
     single { PipedApiClient(get()) }
+    single { DeezerApiClient(get()) }
 
     // Providers
     single<MusicProvider> {
@@ -79,8 +96,19 @@ val appModule = module {
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
-    single<ArtworkProvider> { ItunesMusicProvider(get()) }
-    single<DiscoveryProvider> { LastFmDiscoveryProvider(get()) }
+    single<ArtworkProvider> {
+        val itunes = ItunesArtworkProvider(get())
+        val deezer = DeezerArtworkProvider(get())
+        CompositeArtworkProvider(itunes, deezer)
+    }
+    single<DiscoveryProvider> {
+        CompositeDiscoveryProvider(
+            listOf(
+                LastFmDiscoveryProvider(get()),
+                DeezerDiscoveryProvider(get()),
+            )
+        )
+    }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
 
     // Repositories

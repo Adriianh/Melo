@@ -1,4 +1,4 @@
-package com.github.adriianh.data.provider
+package com.github.adriianh.data.provider.audio
 
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient

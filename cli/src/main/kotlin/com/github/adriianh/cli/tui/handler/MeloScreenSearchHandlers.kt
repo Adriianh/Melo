@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
-import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
 
@@ -61,22 +60,47 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
 
 internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = null) {
     detailsJob?.cancel()
-    state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), artworkData = null)
+    state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null)
     detailsJob = scope.launch {
         val fullTrackDeferred = async { getTrack(trackId) }
         val similarDeferred = async {
-            val artist = knownTrack?.artist ?: fullTrackDeferred.await()?.artist ?: return@async emptyList<SimilarTrack>()
-            val title  = knownTrack?.title  ?: fullTrackDeferred.await()?.title  ?: return@async emptyList<SimilarTrack>()
-            getSimilarTracks(artist, title)
+            val track = knownTrack ?: fullTrackDeferred.await() ?: return@async emptyList<Track>()
+            resolveSimilarTracks(track, limit = 10)
         }
-        val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: return@launch
-        val artworkData = fullTrack.artworkUrl?.let { artworkRenderer.load(it) }
+        val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: run {
+            appRunner()?.runOnRenderThread { state = state.copy(isLoadingSimilar = false) }
+            return@launch
+        }
+        var artworkUrl = fullTrack.artworkUrl
+        if (artworkUrl.isNullOrBlank()) {
+            artworkUrl = artworkProvider.resolveArtwork(fullTrack.title, fullTrack.artist)
+        }
+
+        val artworkData = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) {
             appRunner()?.runOnRenderThread {
                 state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
             }
             val similar = similarDeferred.await()
-            if (isActive) appRunner()?.runOnRenderThread { state = state.copy(similarTracks = similar) }
+            if (isActive) appRunner()?.runOnRenderThread {
+                state = state.copy(similarTracks = similar, isLoadingSimilar = false)
+            }
+        }
+    }
+}
+
+internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
+    nowPlayingMetadataJob?.cancel()
+    nowPlayingMetadataJob = scope.launch {
+        var artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
+        if (artworkUrl.isNullOrBlank()) {
+            artworkUrl = artworkProvider.resolveArtwork(track.title, track.artist)
+        }
+        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
+        if (isActive) appRunner()?.runOnRenderThread {
+            if (state.nowPlaying?.id == track.id) {
+                state = state.copy(nowPlayingArtwork = artwork)
+            }
         }
     }
 }
@@ -95,5 +119,3 @@ internal fun MeloScreen.loadLyrics() {
 internal fun MeloScreen.focusResults() {
     appRunner()?.focusManager()?.setFocus("results-panel")
 }
-
-

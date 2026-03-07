@@ -18,7 +18,9 @@ import com.github.adriianh.cli.tui.screen.renderStatsScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -38,6 +40,7 @@ class MeloScreen(
     internal val getLyrics: GetLyricsUseCase,
     internal val getSyncedLyrics: GetSyncedLyricsUseCase,
     internal val getSimilarTracks: GetSimilarTracksUseCase,
+    internal val pipedApiClient: PipedApiClient,
     // Favorites
     internal val getFavorites: GetFavoritesUseCase,
     internal val addFavorite: AddFavoriteUseCase,
@@ -67,7 +70,8 @@ class MeloScreen(
     internal val getTopArtists: GetTopArtistsUseCase,
     internal val getListeningStats: GetListeningStatsUseCase,
     // Artwork
-    internal val artworkRenderer: ArtworkRenderer
+    internal val artworkRenderer: ArtworkRenderer,
+    internal val artworkProvider: ArtworkProvider
 ) : ToolkitApp() {
 
     internal var state = MeloState()
@@ -75,6 +79,7 @@ class MeloScreen(
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null
+    internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0

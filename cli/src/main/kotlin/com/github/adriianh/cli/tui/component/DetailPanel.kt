@@ -120,6 +120,13 @@ private fun renderSimilarTab(
     state: MeloState,
     similarArea: ListElement<*>,
 ): StyledElement<*> {
+    if (state.isLoadingSimilar) {
+        return column(
+            spacer(),
+            text("  Loading similar tracks...").dim().centered(),
+            spacer()
+        )
+    }
     if (state.similarTracks.isEmpty()) {
         return column(
             spacer(),
@@ -128,12 +135,10 @@ private fun renderSimilarTab(
         )
     }
     val items = state.similarTracks.map { similar ->
-        val matchPercent = (similar.match * 100).toInt()
         row(
             text("$ICON_BULLET ").fg(PRIMARY_COLOR).length(2),
             text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
-            text("($matchPercent%)").dim().length(6)
         )
     }
     similarArea.elements(*items.toTypedArray())
