@@ -11,11 +11,21 @@ import com.github.adriianh.core.domain.repository.*
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
-import com.github.adriianh.data.provider.*
+import com.github.adriianh.data.remote.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsApiClient
 import com.github.adriianh.data.remote.deezer.DeezerApiClient
+import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
+import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
+import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
+import com.github.adriianh.data.provider.discovery.CompositeDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.DeezerDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.LastFmDiscoveryProvider
+import com.github.adriianh.data.provider.music.ItunesMusicProvider
+import com.github.adriianh.data.provider.music.MergedMusicProvider
+import com.github.adriianh.data.provider.music.PipedMusicProvider
+import com.github.adriianh.data.provider.music.SpotifyMusicProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
@@ -87,7 +97,11 @@ val appModule = module {
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
-    single<ArtworkProvider> { ItunesMusicProvider(get()) }
+    single<ArtworkProvider> {
+        val itunes = ItunesArtworkProvider(get())
+        val deezer = DeezerArtworkProvider(get())
+        CompositeArtworkProvider(itunes, deezer)
+    }
     single<DiscoveryProvider> {
         CompositeDiscoveryProvider(
             listOf(
