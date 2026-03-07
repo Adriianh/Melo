@@ -162,4 +162,7 @@ data class MeloState(
     val statsTopArtists: List<ArtistStat> = emptyList(),
     val statsListening: ListeningStats? = null,
     val statsLoading: Boolean = false,
+
+    // Sidebar cursor — tracks which list the navigation highlight is in
+    val sidebarInUtil: Boolean = false,
 )
