@@ -4,6 +4,8 @@ import com.github.adriianh.cli.tui.*
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 internal fun MeloScreen.playTrack(track: Track) {
     val existingIndex = state.queue.indexOfFirst { it.id == track.id }
@@ -17,7 +19,7 @@ internal fun MeloScreen.playTrack(track: Track) {
         }
     }
     state = state.copy(
-        selectedTrack = track, nowPlaying = track,
+        nowPlaying = track,
         isPlaying = false, isLoadingAudio = true,
         audioError = null, progress = 0.0, marqueeOffset = 0,
         queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
@@ -198,6 +200,39 @@ internal fun MeloScreen.loadSimilarAndPlay() {
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
                 state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = e.message, isRadioMode = false)
+            }
+        }
+    }
+}
+
+internal fun MeloScreen.loadMoreRadioTracks() {
+    if (!state.isRadioMode || state.isLoadingMoreRadio || state.queue.isEmpty()) return
+    
+    val seed = state.queue.last()
+    val alreadyPlayed = state.queue.map { it.id }.toSet()
+    state = state.copy(isLoadingMoreRadio = true)
+    
+    scope.launch {
+        try {
+            val related = resolveSimilarTracks(seed, limit = 10, offset = 0)
+                .filter { it.id !in alreadyPlayed }
+                .distinctBy { it.id }
+                .shuffled()
+                .take(10)
+            
+            if (isActive) appRunner()?.runOnRenderThread {
+                if (related.isNotEmpty()) {
+                    state = state.copy(
+                        queue = state.queue + related,
+                        isLoadingMoreRadio = false
+                    )
+                } else {
+                    state = state.copy(isLoadingMoreRadio = false)
+                }
+            }
+        } catch (_: Exception) {
+            if (isActive) appRunner()?.runOnRenderThread { 
+                state = state.copy(isLoadingMoreRadio = false) 
             }
         }
     }

@@ -5,41 +5,108 @@ import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+private const val SAME_ARTIST_LIMIT = 3
+private const val DISCOVERY_LIMIT = 5
 
 /**
- * Resolves a list of [Track]s similar to [seed] by querying Last.fm for metadata,
- * then resolving each result to a playable Piped video ID via search.
+ * Resolves a list of [Track]s similar to [seed] by merging two parallel sources:
  *
- * Last.fm is used as the primary source because it returns genuinely similar tracks
- * from different artists. Piped's related-streams are used as a fallback when Last.fm
- * returns no results (e.g. API key suspended or unknown track).
+ * 1. **Same-artist** — Piped search for the seed's artist, returning up to
+ *    [SAME_ARTIST_LIMIT] tracks from the same artist (excluding the seed itself).
+ *    These are placed **first** in the result list to prioritise the artist.
+ *
+ * 2. **Discovery** — Last.fm (or Deezer as fallback), resolved to playable Piped
+ *    video IDs. Filter out tracks whose `sourceId` already appeared in source 1.
+ *
+ * [offset] is used for progressive loading. When offset > 0, same-artist checks
+ * are skipped, and discovery results are dropped by `offset * DISCOVERY_LIMIT`
+ * prior to Piped resolution.
  */
-internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 10): List<Track> {
-    val lastFmResults = getSimilarTracks(seed.artist, seed.title)
-
-    if (lastFmResults.isNotEmpty()) {
-        val resolved = coroutineScope {
-            lastFmResults
-                .take(limit * 2)
-                .map { similar ->
-                    async {
-                        val query = "${similar.title} ${similar.artist}"
-                        pipedApiClient.searchTracks(query, limit = 1).firstOrNull()
+internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 10, offset: Int = 0): List<Track> =
+    coroutineScope {
+        // --- parallel fetch ---
+        val sameArtistDeferred = async {
+            if (offset > 0) emptyList() else {
+                pipedApiClient.searchTracks(seed.artist, limit = SAME_ARTIST_LIMIT * 2)
+                    .filter { track ->
+                        val trackId = track.sourceId
+                        val sameTitle = track.title.trim().equals(seed.title.trim(), ignoreCase = true)
+                        val sameSource = trackId != null && trackId == seed.sourceId
+                        !sameTitle && !sameSource
                     }
-                }
-                .awaitAll()
-                .filterNotNull()
-                .distinctBy { it.sourceId }
-                .take(limit)
+                    .take(SAME_ARTIST_LIMIT)
+            }
         }
-        if (resolved.isNotEmpty()) return resolved
+
+        val lastFmDeferred = async {
+            val totalRequired = (offset + limit) * DISCOVERY_LIMIT
+            val similar = getSimilarTracks(seed.artist, seed.title, totalRequired)
+            if (similar.isNotEmpty()) {
+                similar
+                    .drop(offset * DISCOVERY_LIMIT)
+                    .take(limit * DISCOVERY_LIMIT)
+                    .map { s ->
+                        async {
+                            pipedApiClient.searchTracks("${s.title} ${s.artist}", limit = 1).firstOrNull()
+                        }
+                    }
+                    .awaitAll()
+                    .filterNotNull()
+                    .distinctBy { it.sourceId }
+                    .take(limit)
+            } else {
+                emptyList()
+            }
+        }
+
+        val sameArtist = sameArtistDeferred.await()
+        val discovery = lastFmDeferred.await()
+
+        // --- merge: artist-first, then discovery without duplicates ---
+        val seenIds = sameArtist.mapNotNull { it.sourceId }.toMutableSet()
+        val filtered = discovery.filter { track ->
+            val id = track.sourceId
+            id == null || seenIds.add(id)
+        }
+        val merged = (sameArtist + filtered).take(limit)
+
+        if (merged.isNotEmpty()) return@coroutineScope merged
+
+        // --- last resort: Piped related-streams graph ---
+        val videoId = pipedApiClient.resolveVideoId(seed) ?: return@coroutineScope emptyList()
+        if (offset > 0) return@coroutineScope emptyList()
+
+        pipedApiClient.getRelatedTracks(
+            videoId = videoId,
+            limit = limit,
+            fallbackArtist = seed.artist,
+            fallbackTitle = seed.title,
+        )
     }
 
-    val videoId = pipedApiClient.resolveVideoId(seed) ?: return emptyList()
-    return pipedApiClient.getRelatedTracks(
-        videoId       = videoId,
-        limit         = limit,
-        fallbackArtist = seed.artist,
-        fallbackTitle  = seed.title,
-    )
+internal fun MeloScreen.loadMoreSimilar() {
+    val seed = state.selectedTrack ?: return
+    if (state.isLoadingMoreSimilar || !state.hasMoreSimilar) return
+
+    val currentOffset = state.similarTracks.size
+    state = state.copy(isLoadingMoreSimilar = true)
+
+    scope.launch {
+        try {
+            val more = resolveSimilarTracks(seed, limit = 10, offset = currentOffset)
+            if (isActive) appRunner()?.runOnRenderThread {
+                val updatedList = (state.similarTracks + more).distinctBy { it.id }
+                state = state.copy(
+                    similarTracks = updatedList,
+                    isLoadingMoreSimilar = false,
+                    hasMoreSimilar = more.isNotEmpty()
+                )
+            }
+        } catch (_: Exception) {
+            appRunner()?.runOnRenderThread { state = state.copy(isLoadingMoreSimilar = false) }
+        }
+    }
 }
