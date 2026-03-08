@@ -30,7 +30,7 @@ fun renderSearchScreen(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element = when {
-    state.isLoading -> panel(
+    state.search.isLoading -> panel(
         column(
             spacer(),
             text("  Searching...").dim().centered(),
@@ -38,11 +38,11 @@ fun renderSearchScreen(
         )
     ).title("Results").rounded().borderColor(BORDER_DEFAULT)
 
-    state.errorMessage != null -> panel(
-        text(state.errorMessage).fg(MeloTheme.ACCENT_RED)
+    state.search.errorMessage != null -> panel(
+        text(state.search.errorMessage).fg(MeloTheme.ACCENT_RED)
     ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
 
-    state.results.isEmpty() -> panel(
+    state.search.results.isEmpty() -> panel(
         column(
             spacer(),
             text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
@@ -66,10 +66,10 @@ private fun renderResultsArea(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val items = state.results.mapIndexed { index, track ->
+    val items = state.search.results.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
-        val isSelected = index == state.selectedIndex
+        val isSelected = index == state.search.selectedIndex
         val titleText = if (isSelected) marqueeText(track.title, state.marqueeOffset, 40)
                         else track.title
         val isFav = state.favorites.any { it.id == track.id }
@@ -84,7 +84,7 @@ private fun renderResultsArea(
     }
     resultList.elements(*items.toTypedArray())
 
-    val resultsTitle = if (state.isLoadingMore) "Searching... ↓" else "Search Results"
+    val resultsTitle = if (state.search.isLoadingMore) "Searching... ↓" else "Search Results"
 
     val header = row(
         text("").length(2),

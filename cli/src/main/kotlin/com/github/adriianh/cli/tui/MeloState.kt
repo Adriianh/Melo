@@ -97,6 +97,21 @@ data class PlayerState(
 )
 
 /**
+ * Represents the state of a specific screen.
+ */
+sealed interface ScreenState {
+    data class Search(
+        val query: String = "",
+        val results: List<Track> = emptyList(),
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = false,
+        val isLoadingMore: Boolean = false,
+        val hasMore: Boolean = true,
+        val errorMessage: String? = null,
+    ) : ScreenState
+}
+
+/**
  * Unified application state for the Melo TUI.
  */
 data class MeloState(
@@ -106,13 +121,7 @@ data class MeloState(
     val activeSection: SidebarSection = SidebarSection.HOME,
 
     // Search
-    val query: String = "",
-    val results: List<Track> = emptyList(),
-    val selectedIndex: Int = 0,
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val hasMore: Boolean = true,
-    val errorMessage: String? = null,
+    val search: ScreenState.Search = ScreenState.Search(),
 
     // Selected track details
     val selectedTrack: Track? = null,

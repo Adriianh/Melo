@@ -7,7 +7,7 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 
 internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
-    if (state.results.isNotEmpty() &&
+    if (state.search.results.isNotEmpty() &&
         (event.matches(Actions.MOVE_DOWN) || event.matches(Actions.MOVE_UP))
     ) {
         return handleResultsKey(event)
@@ -185,28 +185,28 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         PlaylistInputMode.NONE -> {}
     }
 
-    if (state.results.isEmpty()) return EventResult.UNHANDLED
+    if (state.search.results.isEmpty()) return EventResult.UNHANDLED
     val isFocused = appRunner()?.focusManager()?.focusedId() == "results-panel"
     when {
         event.matches(Actions.MOVE_DOWN) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val newIndex = minOf(state.results.lastIndex, state.selectedIndex + 1)
+            val newIndex = minOf(state.search.results.lastIndex, state.search.selectedIndex + 1)
             resultList.selected(newIndex)
-            state.results.getOrNull(newIndex)?.let { track ->
-                state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
+            state.search.results.getOrNull(newIndex)?.let { track ->
+                state = state.copy(search = state.search.copy(selectedIndex = newIndex), selectedTrack = track, marqueeOffset = 0)
                 marqueeTick = 0
                 debouncedLoadDetails(track)
             }
-            if (newIndex >= state.results.size - 5 && !state.isLoadingMore && state.hasMore) loadMore()
+            if (newIndex >= state.search.results.size - 5 && !state.search.isLoadingMore && state.search.hasMore) loadMore()
             return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_UP) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val newIndex = maxOf(0, state.selectedIndex - 1)
+            val newIndex = maxOf(0, state.search.selectedIndex - 1)
             resultList.selected(newIndex)
-            state.results.getOrNull(newIndex)?.let { track ->
-                state = state.copy(selectedIndex = newIndex, selectedTrack = track, marqueeOffset = 0)
+            state.search.results.getOrNull(newIndex)?.let { track ->
+                state = state.copy(search = state.search.copy(selectedIndex = newIndex), selectedTrack = track, marqueeOffset = 0)
                 marqueeTick = 0
                 debouncedLoadDetails(track)
             }
@@ -215,23 +215,23 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
 
         event.code() == KeyCode.ENTER -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val selected = state.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+            val selected = state.search.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
             playTrack(selected)
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-            state.results.getOrNull(state.selectedIndex)?.let { toggleFavorite(it) }
+            state.search.results.getOrNull(state.search.selectedIndex)?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-            state.results.getOrNull(state.selectedIndex)?.let { addToQueue(it) }
+            state.search.results.getOrNull(state.search.selectedIndex)?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'a' -> {
-            val track = state.results.getOrNull(state.selectedIndex)
+            val track = state.search.results.getOrNull(state.search.selectedIndex)
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }

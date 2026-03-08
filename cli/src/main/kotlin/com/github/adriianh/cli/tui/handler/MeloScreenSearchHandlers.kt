@@ -10,23 +10,23 @@ internal fun MeloScreen.performSearch() {
     lastQuery = query
     loadMoreJob?.cancel()
     loadMoreJob = null
-    state = state.copy(isLoading = true, errorMessage = null, selectedTrack = null,
-        hasMore = true, activeSection = SidebarSection.SEARCH)
+    state = state.copy(search = state.search.copy(isLoading = true, errorMessage = null, hasMore = true), selectedTrack = null,
+        activeSection = SidebarSection.SEARCH)
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
     scope.launch {
         try {
             val results = searchTracks(query)
             val firstTrack = results.firstOrNull()
             appRunner()?.runOnRenderThread {
-                state = state.copy(results = results, isLoading = false, selectedIndex = 0,
-                    selectedTrack = firstTrack, hasMore = loadMoreTracks.hasMore(results.size))
+                state = state.copy(search = state.search.copy(results = results, isLoading = false, selectedIndex = 0,
+                    hasMore = loadMoreTracks.hasMore(results.size)), selectedTrack = firstTrack)
                 resultList.selected(0)
                 focusResults()
             }
             if (firstTrack != null) loadTrackDetails(firstTrack.id)
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
+                state = state.copy(search = state.search.copy(isLoading = false, errorMessage = "Search failed: ${e.message}"))
             }
         }
     }
@@ -35,17 +35,17 @@ internal fun MeloScreen.performSearch() {
 internal fun MeloScreen.loadMore() {
     if (lastQuery.isBlank()) return
     loadMoreJob?.cancel()
-    val offset = state.results.size
-    state = state.copy(isLoadingMore = true)
+    val offset = state.search.results.size
+    state = state.copy(search = state.search.copy(isLoadingMore = true))
     loadMoreJob = scope.launch {
         try {
             val more = loadMoreTracks(lastQuery, offset)
             if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(results = state.results + more, isLoadingMore = false,
-                    hasMore = loadMoreTracks.hasMore(offset + more.size))
+                state = state.copy(search = state.search.copy(results = state.search.results + more, isLoadingMore = false,
+                    hasMore = loadMoreTracks.hasMore(offset + more.size)))
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread { state = state.copy(isLoadingMore = false) }
+            appRunner()?.runOnRenderThread { state = state.copy(search = state.search.copy(isLoadingMore = false)) }
         }
     }
 }
