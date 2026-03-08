@@ -1,0 +1,34 @@
+[
+  {
+    "interfaces": [
+      "org.freedesktop.dbus.interfaces.DBus"
+    ]
+  },
+  {
+    "interfaces": [
+      "org.freedesktop.dbus.interfaces.Introspectable"
+    ]
+  },
+  {
+    "interfaces": [
+      "org.freedesktop.dbus.interfaces.Properties"
+    ]
+  },
+  {
+    "interfaces": [
+      "org.freedesktop.dbus.interfaces.Peer"
+    ]
+  },
+  {
+    "interfaces": [
+      "org.freedesktop.mpris.MediaPlayer2",
+      "org.freedesktop.dbus.interfaces.DBusInterface"
+    ]
+  },
+  {
+    "interfaces": [
+      "org.freedesktop.mpris.MediaPlayer2.Player",
+      "org.freedesktop.dbus.interfaces.DBusInterface"
+    ]
+  }
+]

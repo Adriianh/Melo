@@ -1,0 +1,17 @@
+[
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameAcquired",
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameLost",
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameOwnerChanged",
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true
+  }
+]
