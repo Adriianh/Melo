@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -78,12 +80,12 @@ fun buildPlayerBar(
     }
 
     val centerTop = if (nowPlaying != null) {
-        val currentMs = (state.progress * nowPlaying.durationMs).toLong()
+        val currentMs = (state.player.progress * nowPlaying.durationMs).toLong()
         val elapsed = formatDuration(currentMs)
         val total = formatDuration(nowPlaying.durationMs)
         row(
             text(elapsed).fg(TEXT_DIM).length(6),
-            lineGauge((state.progress * 100).toInt())
+            lineGauge((state.player.progress * 100).toInt())
                 .filledColor(PRIMARY_COLOR)
                 .unfilledColor(TEXT_DIM)
                 .fill(),

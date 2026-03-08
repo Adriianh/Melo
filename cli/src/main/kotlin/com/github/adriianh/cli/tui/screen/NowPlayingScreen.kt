@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
@@ -83,7 +85,7 @@ private fun buildInfoPanel(
 ): Element = panel(
     column(
         spacer(),
-        text(marqueeText(track.title, state.marqueeOffset, 28)).bold().fg(TEXT_PRIMARY).centered(),
+        text(marqueeText(track.title, state.player.marqueeOffset, 28)).bold().fg(TEXT_PRIMARY).centered(),
         text(track.artist).fg(TEXT_SECONDARY).centered(),
         text(track.album).fg(TEXT_DIM).centered(),
         spacer(),

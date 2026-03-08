@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
@@ -73,8 +75,8 @@ private fun renderTrackMetadata(
     state: MeloState,
     marqueeText: (String, Int, Int) -> String,
 ): StyledElement<*> = column(
-    text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
-    text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
+    text(marqueeText(track.title, state.player.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
+    text(marqueeText(track.artist, state.player.marqueeOffset, 30)).fg(TEXT_SECONDARY),
     text(""),
     if (track.sourceId != null) text("$ICON_CHECK Available for streaming").dim().fg(PRIMARY_COLOR)
     else text("$ICON_ERROR Not available for streaming").dim()

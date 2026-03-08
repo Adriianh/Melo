@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -25,7 +27,9 @@ fun renderHomeScreen(
     favoritesList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val recentPanel = if (state.home.recentTracks.isEmpty()) {
+    val s = state.screen as? ScreenState.Home ?: return panel(text("Home not active").centered()).rounded()
+    
+    val recentPanel = if (state.collections.recentTracks.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -35,7 +39,7 @@ fun renderHomeScreen(
             )
         )
     } else {
-        val items = state.home.recentTracks.take(10).map { entry ->
+        val items = state.collections.recentTracks.take(10).map { entry ->
             val track = entry.track
             val isPlaying = track.id == state.player.nowPlaying?.id
             row(
@@ -45,7 +49,7 @@ fun renderHomeScreen(
             )
         }
         recentList.elements(*items.toTypedArray())
-        recentList.selected(state.home.homeRecentCursor)
+        recentList.selected(s.homeRecentCursor)
         panel(recentList.fill())
     }
         .title("$ICON_CLOCK Recently Played")
@@ -56,7 +60,7 @@ fun renderHomeScreen(
         .id("home-recent-panel")
         .onKeyEvent(onKeyEvent)
 
-    val favoritesPanel = if (state.library.favorites.isEmpty()) {
+    val favoritesPanel = if (state.collections.favorites.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -65,7 +69,7 @@ fun renderHomeScreen(
             )
         )
     } else {
-        val items = state.library.favorites.take(10).mapIndexed { index, track ->
+        val items = state.collections.favorites.take(10).mapIndexed { index, track ->
             val isPlaying = track.id == state.player.nowPlaying?.id
             row(
                 text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
@@ -75,7 +79,7 @@ fun renderHomeScreen(
             )
         }
         favoritesList.elements(*items.toTypedArray())
-        favoritesList.selected(state.home.homeFavoritesCursor)
+        favoritesList.selected(s.homeFavoritesCursor)
         panel(favoritesList.fill())
     }
         .title("$ICON_HEART Favorites")
