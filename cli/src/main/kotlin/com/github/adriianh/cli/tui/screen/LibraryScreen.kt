@@ -27,22 +27,22 @@ fun renderLibraryScreen(
     playlistTracksList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val favTab = tabLabel("$ICON_HEART Favorites", state.libraryTab == LibraryTab.FAVORITES)
-    val plTab  = tabLabel("$ICON_LIBRARY Playlists", state.libraryTab == LibraryTab.PLAYLISTS)
+    val favTab = tabLabel("$ICON_HEART Favorites", state.library.libraryTab == LibraryTab.FAVORITES)
+    val plTab  = tabLabel("$ICON_LIBRARY Playlists", state.library.libraryTab == LibraryTab.PLAYLISTS)
     val tabBar = row(favTab, text("  "), plTab, spacer())
         .margin(Margin.horizontal(1))
 
-    val content = when (state.libraryTab) {
+    val content = when (state.library.libraryTab) {
         LibraryTab.FAVORITES  -> buildFavoritesContent(state, favoritesList)
-        LibraryTab.PLAYLISTS  -> if (state.isInPlaylistDetail)
+        LibraryTab.PLAYLISTS  -> if (state.library.isInPlaylistDetail)
             buildPlaylistDetailContent(state, playlistTracksList)
         else
             buildPlaylistsContent(state, playlistsList)
     }
 
-    val hints = when (state.libraryTab) {
+    val hints = when (state.library.libraryTab) {
         LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [1] favorites  [2] playlists"
-        LibraryTab.PLAYLISTS -> if (state.isInPlaylistDetail)
+        LibraryTab.PLAYLISTS -> if (state.library.isInPlaylistDetail)
             "[Enter] play  [Q] queue  [D] remove  [Esc] back"
         else
             "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1] favorites  [2] playlists"
@@ -72,7 +72,7 @@ private fun tabLabel(label: String, active: Boolean): Element =
     text(label).fg(if (active) PRIMARY_COLOR else TEXT_DIM).apply { if (active) bold() }
 
 private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*>): Element {
-    if (state.favorites.isEmpty()) {
+    if (state.library.favorites.isEmpty()) {
         return column(
             spacer(),
             text("  No favorites yet").fg(TEXT_SECONDARY).centered(),
@@ -80,7 +80,7 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
             spacer(),
         )
     }
-    val items = state.favorites.mapIndexed { index, track ->
+    val items = state.library.favorites.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         row(
@@ -109,7 +109,7 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
 }
 
 private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*>): Element {
-    if (state.playlists.isEmpty()) {
+    if (state.library.playlists.isEmpty()) {
         return column(
             spacer(),
             text("  No playlists yet").fg(TEXT_SECONDARY).centered(),
@@ -117,7 +117,7 @@ private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*
             spacer(),
         )
     }
-    val items = state.playlists.map { playlist ->
+    val items = state.library.playlists.map { playlist ->
         val count = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
         row(
             text(playlist.name).fg(TEXT_PRIMARY).ellipsis().fill(),
@@ -139,8 +139,8 @@ private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*
 }
 
 private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement<*>): Element {
-    val playlist = state.selectedPlaylist
-    val tracks   = state.playlistTracks
+    val playlist = state.library.selectedPlaylist
+    val tracks   = state.library.playlistTracks
 
     val titleRow = row(
         text(playlist?.name ?: "Playlist").fg(PRIMARY_COLOR).bold(),

@@ -72,7 +72,7 @@ private fun renderResultsArea(
         val isSelected = index == state.search.selectedIndex
         val titleText = if (isSelected) marqueeText(track.title, state.marqueeOffset, 40)
                         else track.title
-        val isFav = state.favorites.any { it.id == track.id }
+        val isFav = state.library.favorites.any { it.id == track.id }
         row(
             text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),

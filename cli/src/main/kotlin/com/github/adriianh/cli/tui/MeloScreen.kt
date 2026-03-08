@@ -229,17 +229,17 @@ class MeloScreen(
         mediaSession.init()
         scope.launch {
             getFavorites().collect { tracks ->
-                runner()?.runOnRenderThread { state = state.copy(favorites = tracks) }
+                runner()?.runOnRenderThread { state = state.copy(library = state.library.copy(favorites = tracks)) }
             }
         }
         scope.launch {
             getRecentTracks(20).collect { entries ->
-                runner()?.runOnRenderThread { state = state.copy(recentTracks = entries) }
+                runner()?.runOnRenderThread { state = state.copy(home = state.home.copy(recentTracks = entries)) }
             }
         }
         scope.launch {
             getPlaylists().collect { playlists ->
-                runner()?.runOnRenderThread { state = state.copy(playlists = playlists) }
+                runner()?.runOnRenderThread { state = state.copy(library = state.library.copy(playlists = playlists)) }
             }
         }
         scope.launch { restoreLastSession() }
@@ -285,7 +285,7 @@ class MeloScreen(
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
 
-        return when (state.playlistInputMode) {
+        return when (state.library.playlistInputMode) {
             PlaylistInputMode.CREATE,
             PlaylistInputMode.RENAME -> stack(withQueue, playlistInputOverlay)
             PlaylistInputMode.PICKER -> stack(withQueue, playlistPickerOverlay)

@@ -22,51 +22,51 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
             || focusedId == "home-favorites-panel"
     if (!isFocused) return EventResult.UNHANDLED
 
-    if (focusedId == "home-recent-panel" && state.homeSection != HomeSection.RECENT) {
-        state = state.copy(homeSection = HomeSection.RECENT)
-    } else if (focusedId == "home-favorites-panel" && state.homeSection != HomeSection.FAVORITES) {
-        state = state.copy(homeSection = HomeSection.FAVORITES)
+    if (focusedId == "home-recent-panel" && state.home.homeSection != HomeSection.RECENT) {
+        state = state.copy(home = state.home.copy(homeSection = HomeSection.RECENT))
+    } else if (focusedId == "home-favorites-panel" && state.home.homeSection != HomeSection.FAVORITES) {
+        state = state.copy(home = state.home.copy(homeSection = HomeSection.FAVORITES))
     }
 
     if (event.code() == KeyCode.TAB) {
-        val next = if (state.homeSection == HomeSection.RECENT) HomeSection.FAVORITES else HomeSection.RECENT
-        state = state.copy(homeSection = next)
+        val next = if (state.home.homeSection == HomeSection.RECENT) HomeSection.FAVORITES else HomeSection.RECENT
+        state = state.copy(home = state.home.copy(homeSection = next))
         val nextFocusId = if (next == HomeSection.RECENT) "home-recent-panel" else "home-favorites-panel"
         appRunner()?.focusManager()?.setFocus(nextFocusId)
         return EventResult.HANDLED
     }
 
-    when (state.homeSection) {
+    when (state.home.homeSection) {
         HomeSection.RECENT -> {
-            val maxIndex = (state.recentTracks.size - 1).coerceAtLeast(0)
+            val maxIndex = (state.home.recentTracks.size - 1).coerceAtLeast(0)
             when {
                 event.matches(Actions.MOVE_DOWN) -> {
-                    state = state.copy(homeRecentCursor = minOf(maxIndex, state.homeRecentCursor + 1))
+                    state = state.copy(home = state.home.copy(homeRecentCursor = minOf(maxIndex, state.home.homeRecentCursor + 1)))
                     return EventResult.HANDLED
                 }
 
                 event.matches(Actions.MOVE_UP) -> {
-                    state = state.copy(homeRecentCursor = maxOf(0, state.homeRecentCursor - 1))
+                    state = state.copy(home = state.home.copy(homeRecentCursor = maxOf(0, state.home.homeRecentCursor - 1)))
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.ENTER -> {
                     val track =
-                        state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                        state.home.recentTracks.getOrNull(state.home.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.CHAR && event.character() == 'q' -> {
                     val track =
-                        state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                        state.home.recentTracks.getOrNull(state.home.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.CHAR && event.character() == 'f' -> {
                     val track =
-                        state.recentTracks.getOrNull(state.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
+                        state.home.recentTracks.getOrNull(state.home.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
                     toggleFavorite(track)
                     return EventResult.HANDLED
                 }
@@ -74,32 +74,32 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
         }
 
         HomeSection.FAVORITES -> {
-            val maxIndex = (state.favorites.size - 1).coerceAtLeast(0)
+            val maxIndex = (state.library.favorites.size - 1).coerceAtLeast(0)
             when {
                 event.matches(Actions.MOVE_DOWN) -> {
-                    state = state.copy(homeFavoritesCursor = minOf(maxIndex, state.homeFavoritesCursor + 1))
+                    state = state.copy(home = state.home.copy(homeFavoritesCursor = minOf(maxIndex, state.home.homeFavoritesCursor + 1)))
                     return EventResult.HANDLED
                 }
 
                 event.matches(Actions.MOVE_UP) -> {
-                    state = state.copy(homeFavoritesCursor = maxOf(0, state.homeFavoritesCursor - 1))
+                    state = state.copy(home = state.home.copy(homeFavoritesCursor = maxOf(0, state.home.homeFavoritesCursor - 1)))
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.ENTER -> {
-                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    val track = state.library.favorites.getOrNull(state.home.homeFavoritesCursor) ?: return EventResult.UNHANDLED
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    val track = state.library.favorites.getOrNull(state.home.homeFavoritesCursor) ?: return EventResult.UNHANDLED
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-                    val track = state.favorites.getOrNull(state.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                    val track = state.library.favorites.getOrNull(state.home.homeFavoritesCursor) ?: return EventResult.UNHANDLED
                     toggleFavorite(track)
                     return EventResult.HANDLED
                 }
@@ -177,7 +177,7 @@ internal fun MeloScreen.applySidebarSelection(): EventResult {
 
 internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
     // Overlay intercepts keys from any screen
-    when (state.playlistInputMode) {
+    when (state.library.playlistInputMode) {
         PlaylistInputMode.CREATE,
         PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
 
@@ -295,7 +295,7 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
-    when (state.playlistInputMode) {
+    when (state.library.playlistInputMode) {
         PlaylistInputMode.CREATE,
         PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
 
@@ -307,17 +307,17 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
     if (!isFocused) return EventResult.UNHANDLED
 
     if (event.code() == KeyCode.CHAR && event.character() == '1') {
-        state = state.copy(libraryTab = LibraryTab.FAVORITES)
+        state = state.copy(library = state.library.copy(libraryTab = LibraryTab.FAVORITES))
         return EventResult.HANDLED
     }
     if (event.code() == KeyCode.CHAR && event.character() == '2') {
-        state = state.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false)
+        state = state.copy(library = state.library.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false))
         return EventResult.HANDLED
     }
 
-    return when (state.libraryTab) {
+    return when (state.library.libraryTab) {
         LibraryTab.FAVORITES -> handleFavoritesKey(event)
-        LibraryTab.PLAYLISTS -> if (state.isInPlaylistDetail) handlePlaylistDetailKey(event) else handlePlaylistsKey(
+        LibraryTab.PLAYLISTS -> if (state.library.isInPlaylistDetail) handlePlaylistDetailKey(event) else handlePlaylistsKey(
             event
         )
     }
@@ -326,7 +326,7 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
 internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
     when {
         event.matches(Actions.MOVE_DOWN) -> {
-            favoritesList.selected(minOf(state.favorites.lastIndex.coerceAtLeast(0), favoritesList.selected() + 1))
+            favoritesList.selected(minOf(state.library.favorites.lastIndex.coerceAtLeast(0), favoritesList.selected() + 1))
             return EventResult.HANDLED
         }
 
@@ -336,22 +336,22 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            state.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
+            state.library.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-            state.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
+            state.library.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'q' -> {
-            state.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
+            state.library.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == 'a' -> {
-            val track = state.favorites.getOrNull(favoritesList.selected())
+            val track = state.library.favorites.getOrNull(favoritesList.selected())
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }

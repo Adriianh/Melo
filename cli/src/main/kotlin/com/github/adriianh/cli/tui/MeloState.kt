@@ -123,6 +123,27 @@ sealed interface ScreenState {
         val similarCursor: Int = 0,
         val artworkData: ImageData? = null,
     ) : ScreenState
+
+    data class Home(
+        val recentTracks: List<HistoryEntry> = emptyList(),
+        val homeSection: HomeSection = HomeSection.RECENT,
+        val homeRecentCursor: Int = 0,
+        val homeFavoritesCursor: Int = 0,
+    ) : ScreenState
+
+    data class Library(
+        val favorites: List<Track> = emptyList(),
+        val isFavorite: Boolean = false,
+        val libraryTab: LibraryTab = LibraryTab.FAVORITES,
+        val playlists: List<Playlist> = emptyList(),
+        val selectedPlaylist: Playlist? = null,
+        val playlistTracks: List<Track> = emptyList(),
+        val isInPlaylistDetail: Boolean = false,
+        val playlistInput: String = "",
+        val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
+        val playlistPickerTrack: Track? = null,
+        val playlistPickerCursor: Int = 0,
+    ) : ScreenState
 }
 
 /**
@@ -130,7 +151,7 @@ sealed interface ScreenState {
  */
 data class MeloState(
     val player: PlayerState = PlayerState(),
-    
+
     // Sidebar
     val activeSection: SidebarSection = SidebarSection.HOME,
 
@@ -141,25 +162,10 @@ data class MeloState(
     val detail: ScreenState.Detail = ScreenState.Detail(),
 
     // Library
-    val favorites: List<Track> = emptyList(),
-    val isFavorite: Boolean = false,
-    val libraryTab: LibraryTab = LibraryTab.FAVORITES,
-
-    // Playlists
-    val playlists: List<Playlist> = emptyList(),
-    val selectedPlaylist: Playlist? = null,
-    val playlistTracks: List<Track> = emptyList(),
-    val isInPlaylistDetail: Boolean = false,
-    val playlistInput: String = "",
-    val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
-    val playlistPickerTrack: Track? = null,
-    val playlistPickerCursor: Int = 0,
+    val library: ScreenState.Library = ScreenState.Library(),
 
     // Home
-    val recentTracks: List<HistoryEntry> = emptyList(),
-    val homeSection: HomeSection = HomeSection.RECENT,
-    val homeRecentCursor: Int = 0,
-    val homeFavoritesCursor: Int = 0,
+    val home: ScreenState.Home = ScreenState.Home(),
 
     // Marquee scroll animation
     val marqueeOffset: Int = 0,

@@ -25,7 +25,7 @@ fun renderHomeScreen(
     favoritesList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val recentPanel = if (state.recentTracks.isEmpty()) {
+    val recentPanel = if (state.home.recentTracks.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -35,7 +35,7 @@ fun renderHomeScreen(
             )
         )
     } else {
-        val items = state.recentTracks.take(10).map { entry ->
+        val items = state.home.recentTracks.take(10).map { entry ->
             val track = entry.track
             val isPlaying = track.id == state.player.nowPlaying?.id
             row(
@@ -45,7 +45,7 @@ fun renderHomeScreen(
             )
         }
         recentList.elements(*items.toTypedArray())
-        recentList.selected(state.homeRecentCursor)
+        recentList.selected(state.home.homeRecentCursor)
         panel(recentList.fill())
     }
         .title("$ICON_CLOCK Recently Played")
@@ -56,7 +56,7 @@ fun renderHomeScreen(
         .id("home-recent-panel")
         .onKeyEvent(onKeyEvent)
 
-    val favoritesPanel = if (state.favorites.isEmpty()) {
+    val favoritesPanel = if (state.library.favorites.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -65,7 +65,7 @@ fun renderHomeScreen(
             )
         )
     } else {
-        val items = state.favorites.take(10).mapIndexed { index, track ->
+        val items = state.library.favorites.take(10).mapIndexed { index, track ->
             val isPlaying = track.id == state.player.nowPlaying?.id
             row(
                 text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
@@ -75,7 +75,7 @@ fun renderHomeScreen(
             )
         }
         favoritesList.elements(*items.toTypedArray())
-        favoritesList.selected(state.homeFavoritesCursor)
+        favoritesList.selected(state.home.homeFavoritesCursor)
         panel(favoritesList.fill())
     }
         .title("$ICON_HEART Favorites")

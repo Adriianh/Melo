@@ -35,7 +35,7 @@ class PlaylistInputOverlay(private val stateProvider: () -> MeloState) : Element
 
         frame.buffer().clear(overlayArea)
 
-        val title = when (state.playlistInputMode) {
+        val title = when (state.library.playlistInputMode) {
             PlaylistInputMode.CREATE -> "$ICON_LIBRARY New Playlist"
             PlaylistInputMode.RENAME -> "$ICON_LIBRARY Rename Playlist"
             else -> ""
@@ -47,7 +47,7 @@ class PlaylistInputOverlay(private val stateProvider: () -> MeloState) : Element
             spacer(),
             row(
                 text("Name: ").fg(TEXT_SECONDARY).length(7),
-                text(state.playlistInput + cursor).fg(TEXT_PRIMARY).fill(),
+                text(state.library.playlistInput + cursor).fg(TEXT_PRIMARY).fill(),
             ),
             spacer(),
             text(hint).fg(TEXT_DIM).centered(),
@@ -78,8 +78,8 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
-        val playlists = state.playlists
-        val track = state.playlistPickerTrack
+        val playlists = state.library.playlists
+        val track = state.library.playlistPickerTrack
 
         val overlayW = (area.width() * 0.5).toInt().coerceAtLeast(50)
         val overlayH = (playlists.size + 6).coerceIn(8, 20)
@@ -93,7 +93,7 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
         val subtitle = track?.let { "${it.title} — ${it.artist}" } ?: ""
 
         val items = playlists.mapIndexed { index, playlist ->
-            val isSelected = index == state.playlistPickerCursor
+            val isSelected = index == state.library.playlistPickerCursor
             val count = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
             row(
                 text(if (isSelected) "▸ " else "  ").fg(PRIMARY_COLOR).length(2),
