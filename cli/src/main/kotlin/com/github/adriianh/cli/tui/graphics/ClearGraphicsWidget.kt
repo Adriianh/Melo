@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.graphics
 
+import com.github.adriianh.cli.tui.*
+
 import dev.tamboui.buffer.Buffer
 import dev.tamboui.layout.Rect
 import dev.tamboui.widget.RawOutputCapable

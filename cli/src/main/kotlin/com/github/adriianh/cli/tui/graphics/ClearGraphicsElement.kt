@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.graphics
 
+import com.github.adriianh.cli.tui.*
+
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
