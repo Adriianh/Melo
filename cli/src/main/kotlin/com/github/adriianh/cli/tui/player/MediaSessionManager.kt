@@ -106,7 +106,7 @@ class MediaSessionManager(
             )
             instance.playingState = JMTCPlayingState.PLAYING
             instance.updateDisplay()
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
     }
 
     /** Called when playback is paused. */
@@ -114,7 +114,7 @@ class MediaSessionManager(
         try {
             jmtc?.playingState = JMTCPlayingState.PAUSED
             jmtc?.updateDisplay()
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
     }
 
     /** Called when playback is resumed. */
@@ -122,14 +122,14 @@ class MediaSessionManager(
         try {
             jmtc?.playingState = JMTCPlayingState.PLAYING
             jmtc?.updateDisplay()
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
     }
 
     /** Called when playback position changes. [positionMs] in milliseconds. */
     fun updatePosition(positionMs: Long) {
         try {
             jmtc?.setPosition(positionMs * 1_000L) // JMTC uses microseconds
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
     }
 
     /** Called when playback stops entirely. */
@@ -137,13 +137,13 @@ class MediaSessionManager(
         try {
             jmtc?.playingState = JMTCPlayingState.STOPPED
             jmtc?.updateDisplay()
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
     }
 
     fun destroy() {
         try {
             jmtc?.enabled = false
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
         jmtc = null
         initialized = false
         // Clean up temp file

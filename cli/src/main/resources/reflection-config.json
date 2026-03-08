@@ -1,17 +1,128 @@
 [
   {
     "name": "org.freedesktop.dbus.interfaces.DBus$NameAcquired",
+    "allDeclaredConstructors": true,
     "allPublicConstructors": true,
-    "allDeclaredConstructors": true
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   },
   {
     "name": "org.freedesktop.dbus.interfaces.DBus$NameLost",
+    "allDeclaredConstructors": true,
     "allPublicConstructors": true,
-    "allDeclaredConstructors": true
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   },
   {
     "name": "org.freedesktop.dbus.interfaces.DBus$NameOwnerChanged",
+    "allDeclaredConstructors": true,
     "allPublicConstructors": true,
-    "allDeclaredConstructors": true
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTC",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCSettings",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.LinuxJMTC",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.LinuxJMTCCallbacks",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCPlayingState",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCMusicProperties",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCTimelineProperties",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCEnabledButtons",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCCallbacks",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCButtonCallback",
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.freedesktop.mpris.MediaPlayer2",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.mpris.MediaPlayer2$Player",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBusInterface",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Properties",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Introspectable",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Peer",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.types.Variant",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.connections.impl.DBusConnection",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   }
 ]
