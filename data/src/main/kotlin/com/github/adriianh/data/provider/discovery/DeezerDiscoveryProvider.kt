@@ -12,8 +12,8 @@ class DeezerDiscoveryProvider(
     private val apiClient: DeezerApiClient,
 ) : DiscoveryProvider {
 
-    override suspend fun getSimilarTracks(artist: String, title: String): List<SimilarTrack> {
-        return apiClient.getSimilarTracks(artist)
+    override suspend fun getSimilarTracks(artist: String, title: String, limit: Int): List<SimilarTrack> {
+        return apiClient.getSimilarTracks(artist, limit)
     }
 
     override suspend fun getGenres(artist: String): List<String> = emptyList()

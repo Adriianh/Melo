@@ -8,8 +8,8 @@ class LastFmDiscoveryProvider(
     private val apiClient: LastFmApiClient
 ) : DiscoveryProvider {
 
-    override suspend fun getSimilarTracks(artist: String, title: String): List<SimilarTrack> {
-        return apiClient.getSimilarTracks(artist, title)
+    override suspend fun getSimilarTracks(artist: String, title: String, limit: Int): List<SimilarTrack> {
+        return apiClient.getSimilarTracks(artist, title, limit)
     }
 
     override suspend fun getGenres(artist: String): List<String> {

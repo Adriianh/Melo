@@ -8,7 +8,7 @@ class DiscoveryRepositoryImpl(
     private val discoveryProvider: DiscoveryProvider
 ) : DiscoveryRepository {
 
-    override suspend fun getSimilarTracks(artist: String, title: String): List<SimilarTrack> {
-        return discoveryProvider.getSimilarTracks(artist, title)
+    override suspend fun getSimilarTracks(artist: String, title: String, limit: Int): List<SimilarTrack> {
+        return discoveryProvider.getSimilarTracks(artist, title, limit)
     }
 }
