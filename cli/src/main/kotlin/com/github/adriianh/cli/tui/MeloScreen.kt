@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
@@ -86,6 +88,16 @@ class MeloScreen(
     internal var scrobbleSubmitted = false
     internal var trackStartedAt = 0L
 
+    /**
+     * Helper to update the current screen state in a type-safe way.
+     */
+    internal inline fun <reified T : ScreenState> updateScreen(update: (T) -> T) {
+        val current = state.screen
+        if (current is T) {
+            state = state.copy(screen = update(current))
+        }
+    }
+
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
 
@@ -102,7 +114,7 @@ class MeloScreen(
         onStop = {
             runner()?.runOnRenderThread {
                 audioPlayer.stop()
-                state = state.copy(player = state.player.copy(isPlaying = false), progress = 0.0)
+                state = state.copy(player = state.player.copy(isPlaying = false, progress = 0.0))
             }
         },
     )
@@ -113,14 +125,14 @@ class MeloScreen(
             runner()?.runOnRenderThread {
                 val duration = state.player.nowPlaying?.durationMs ?: 0L
                 val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
-                state = state.copy(progress = progress, player = state.player.copy(nowPlayingPositionMs = elapsedMs))
+                state = state.copy(player = state.player.copy(nowPlayingPositionMs = elapsedMs, progress = progress))
                 mediaSession.updatePosition(elapsedMs)
                 state.player.nowPlaying?.let { onTrackProgress(it, elapsedMs, trackStartedAt) }
             }
         },
         onFinish = {
             runner()?.runOnRenderThread {
-                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false), progress = 0.0)
+                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0))
                 seekForward()
             }
         },
@@ -229,17 +241,17 @@ class MeloScreen(
         mediaSession.init()
         scope.launch {
             getFavorites().collect { tracks ->
-                runner()?.runOnRenderThread { state = state.copy(library = state.library.copy(favorites = tracks)) }
+                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(favorites = tracks)) }
             }
         }
         scope.launch {
             getRecentTracks(20).collect { entries ->
-                runner()?.runOnRenderThread { state = state.copy(home = state.home.copy(recentTracks = entries)) }
+                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(recentTracks = entries)) }
             }
         }
         scope.launch {
             getPlaylists().collect { playlists ->
-                runner()?.runOnRenderThread { state = state.copy(library = state.library.copy(playlists = playlists)) }
+                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(playlists = playlists)) }
             }
         }
         scope.launch { restoreLastSession() }
@@ -248,13 +260,13 @@ class MeloScreen(
                 marqueeTick++
                 if (marqueeTick > 10) {
                     val track = state.detail.selectedTrack
-                    val newOffset = state.marqueeOffset + 1
+                    val newOffset = state.player.marqueeOffset + 1
                     if (track != null) {
                         val separator = "   •   "
                         val full = track.title + separator
                         if (newOffset % full.length == 0) marqueeTick = 0
                     }
-                    state = state.copy(marqueeOffset = newOffset)
+                    state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
                 }
             }
         }, Duration.ofMillis(150))
@@ -280,12 +292,12 @@ class MeloScreen(
                 ),
                 Constraint.length(4),
             )
-            .left(buildSidebar(sidebarNavList, sidebarUtilList, state.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
+            .left(buildSidebar(sidebarNavList, sidebarUtilList, state.navigation.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
 
-        return when (state.library.playlistInputMode) {
+        return when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE,
             PlaylistInputMode.RENAME -> stack(withQueue, playlistInputOverlay)
             PlaylistInputMode.PICKER -> stack(withQueue, playlistPickerOverlay)
@@ -295,12 +307,20 @@ class MeloScreen(
 
     private fun renderMainContent(): Element {
         if (state.needsGraphicsClear) {
-            val pending = state.pendingSection
-            val targetSection = pending ?: state.activeSection
+            val pending = state.navigation.pendingSection
+            val targetSection = pending ?: state.navigation.activeSection
+            val targetScreen = when (targetSection) {
+                SidebarSection.HOME -> ScreenState.Home()
+                SidebarSection.SEARCH -> ScreenState.Search()
+                SidebarSection.LIBRARY -> ScreenState.Library()
+                SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
+                SidebarSection.STATS -> ScreenState.Stats()
+                else -> ScreenState.Home() // Should not happen with exhaustive SidebarSection
+            }
             state = state.copy(
                 needsGraphicsClear = false,
-                activeSection = targetSection,
-                pendingSection = null,
+                navigation = state.navigation.copy(activeSection = targetSection, pendingSection = null),
+                screen = targetScreen,
                 detail = state.detail.copy(artworkData = if (targetSection != SidebarSection.SEARCH) null else state.detail.artworkData),
             )
             if (targetSection == SidebarSection.NOW_PLAYING) {
@@ -324,20 +344,20 @@ class MeloScreen(
             return stack(ClearGraphicsElement().fill(), targetContent)
         }
 
-        return when (state.activeSection) {
-            SidebarSection.HOME    -> renderHomeScreen(
+        return when (state.screen) {
+            is ScreenState.Home -> renderHomeScreen(
                 state, homeRecentList, homeFavoritesList,
                 onKeyEvent = ::handleHomeKey,
             )
-            SidebarSection.SEARCH  -> renderSearchScreen(
+            is ScreenState.Search -> renderSearchScreen(
                 state, resultList, lyricsArea, similarArea,
                 ::marqueeText, ::handleResultsKey, ::handleDetailKey,
             )
-            SidebarSection.LIBRARY -> renderLibraryScreen(
+            is ScreenState.Library -> renderLibraryScreen(
                 state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
             )
-            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
-            SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
+            is ScreenState.NowPlaying -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+            is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
         }
     }
 }
