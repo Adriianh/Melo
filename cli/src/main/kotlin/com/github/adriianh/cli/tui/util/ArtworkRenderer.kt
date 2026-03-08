@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.util
 
+import com.github.adriianh.cli.tui.*
+
 import dev.tamboui.image.ImageData
 import io.ktor.client.*
 import io.ktor.client.call.*

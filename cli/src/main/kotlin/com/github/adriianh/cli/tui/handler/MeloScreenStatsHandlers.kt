@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.StatsTimeUnit
 import com.github.adriianh.core.domain.model.StatsPeriod
@@ -8,27 +10,31 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 
-internal fun MeloScreen.loadStats(period: StatsPeriod = state.statsPeriod) {
+internal fun MeloScreen.loadStats(period: StatsPeriod? = null) {
+    val currentPeriod = period ?: (state.screen as? ScreenState.Stats)?.statsPeriod ?: return
     scope.launch {
-        appRunner()?.runOnRenderThread { state = state.copy(statsLoading = true, statsPeriod = period) }
-        val tracks = getTopTracks(period)
-        val artists = getTopArtists(period)
-        val listening = getListeningStats(period)
+        appRunner()?.runOnRenderThread { updateScreen<ScreenState.Stats> { it.copy(statsLoading = true, statsPeriod = currentPeriod) } }
+        val tracks = getTopTracks(currentPeriod)
+        val artists = getTopArtists(currentPeriod)
+        val listening = getListeningStats(currentPeriod)
         appRunner()?.runOnRenderThread {
-            state = state.copy(
-                statsTopTracks = tracks,
-                statsTopArtists = artists,
-                statsListening = listening,
-                statsLoading = false,
-            )
+            updateScreen<ScreenState.Stats> {
+                it.copy(
+                    statsTopTracks = tracks,
+                    statsTopArtists = artists,
+                    statsListening = listening,
+                    statsLoading = false,
+                )
+            }
         }
     }
 }
 
 internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
+    val s = state.screen as? ScreenState.Stats ?: return EventResult.UNHANDLED
     val periods = StatsPeriod.entries
     val units = StatsTimeUnit.entries
-    val current = state.statsPeriod
+    val current = s.statsPeriod
     when {
         event.code() == KeyCode.TAB ||
         event.code() == KeyCode.CHAR && event.character() == 'l' -> {
@@ -42,8 +48,8 @@ internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'u' -> {
-            val next = units[(state.statsTimeUnit.ordinal + 1) % units.size]
-            state = state.copy(statsTimeUnit = next)
+            val next = units[(s.statsTimeUnit.ordinal + 1) % units.size]
+            updateScreen<ScreenState.Stats> { it.copy(statsTimeUnit = next) }
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'r' -> {

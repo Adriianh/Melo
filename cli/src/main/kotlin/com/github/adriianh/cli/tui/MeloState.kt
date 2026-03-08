@@ -75,22 +75,85 @@ enum class StatsTimeUnit(val label: String) {
 }
 
 /**
- * Unified application state for the Melo TUI.
+ * Player-specific state for Melo TUI.
  */
-data class MeloState(
-    // Sidebar
+data class PlayerState(
+    val nowPlaying: Track? = null,
+    val isPlaying: Boolean = false,
+    val isLoadingAudio: Boolean = false,
+    val audioError: String? = null,
+    val queue: List<Track> = emptyList(),
+    val queueIndex: Int = -1,
+    val queueCursor: Int = 0,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val shuffleEnabled: Boolean = false,
+    val isQueueVisible: Boolean = false,
+    val volume: Int = 75,
+    val isRadioMode: Boolean = false,
+    val isLoadingMoreRadio: Boolean = false,
+    val syncedLyrics: List<LrcLine> = emptyList(),
+    val isLoadingSyncedLyrics: Boolean = false,
+    val nowPlayingPositionMs: Long = 0L,
+    val nowPlayingArtwork: ImageData? = null,
+    val marqueeOffset: Int = 0,
+    val progress: Double = 0.0,
+    val isFavorite: Boolean = false,
+)
+
+/**
+ * Global navigation state for the Melo TUI sidebar and focus.
+ */
+data class NavigationState(
     val activeSection: SidebarSection = SidebarSection.HOME,
+    val pendingSection: SidebarSection? = null,
+    val sidebarInUtil: Boolean = false,
+)
 
-    // Search
-    val query: String = "",
-    val results: List<Track> = emptyList(),
-    val selectedIndex: Int = 0,
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val hasMore: Boolean = true,
-    val errorMessage: String? = null,
+/**
+ * Represents the state of a specific screen.
+ */
+sealed interface ScreenState {
+    data class Search(
+        val query: String = "",
+        val results: List<Track> = emptyList(),
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = false,
+        val isLoadingMore: Boolean = false,
+        val hasMore: Boolean = true,
+        val errorMessage: String? = null,
+    ) : ScreenState
 
-    // Selected track details
+    data class Home(
+        val homeSection: HomeSection = HomeSection.RECENT,
+        val homeRecentCursor: Int = 0,
+        val homeFavoritesCursor: Int = 0,
+    ) : ScreenState
+
+    data class Library(
+        val libraryTab: LibraryTab = LibraryTab.FAVORITES,
+        val selectedPlaylist: Playlist? = null,
+        val playlistTracks: List<Track> = emptyList(),
+        val isInPlaylistDetail: Boolean = false,
+    ) : ScreenState
+
+    data class Stats(
+        val statsPeriod: StatsPeriod = StatsPeriod.ALL_TIME,
+        val statsTimeUnit: StatsTimeUnit = StatsTimeUnit.MINUTES,
+        val statsTopTracks: List<TrackStat> = emptyList(),
+        val statsTopArtists: List<ArtistStat> = emptyList(),
+        val statsListening: ListeningStats? = null,
+        val statsLoading: Boolean = false,
+    ) : ScreenState
+
+    data class NowPlaying(
+        val unused: Boolean = true // NowPlaying screen uses mainly global player state for now
+    ) : ScreenState
+}
+
+/**
+ * Persisted state for the detail side-panel.
+ */
+data class DetailState(
     val selectedTrack: Track? = null,
     val detailTab: DetailTab = DetailTab.INFO,
     val lyrics: String? = null,
@@ -101,72 +164,47 @@ data class MeloState(
     val hasMoreSimilar: Boolean = true,
     val similarCursor: Int = 0,
     val artworkData: ImageData? = null,
-    val nowPlayingArtwork: ImageData? = null,
+)
 
-    // Library
-    val favorites: List<Track> = emptyList(),
-    val isFavorite: Boolean = false,
-    val libraryTab: LibraryTab = LibraryTab.FAVORITES,
-
-    // Playlists
-    val playlists: List<Playlist> = emptyList(),
-    val selectedPlaylist: Playlist? = null,
-    val playlistTracks: List<Track> = emptyList(),
-    val isInPlaylistDetail: Boolean = false,
+/**
+ * Global state for playlist interaction overlays.
+ */
+data class PlaylistInteractionState(
     val playlistInput: String = "",
     val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
     val playlistPickerTrack: Track? = null,
     val playlistPickerCursor: Int = 0,
+)
 
-    // Home
+/**
+ * Global persistent collections.
+ */
+data class CollectionsState(
+    val favorites: List<Track> = emptyList(),
+    val playlists: List<Playlist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
-    val homeSection: HomeSection = HomeSection.RECENT,
-    val homeRecentCursor: Int = 0,
-    val homeFavoritesCursor: Int = 0,
+)
 
-    // Now playing (player bar)
-    val nowPlaying: Track? = null,
-    val isPlaying: Boolean = false,
-    val isLoadingAudio: Boolean = false,
-    val audioError: String? = null,
+/**
+ * Unified application state for the Melo TUI.
+ */
+data class MeloState(
+    val player: PlayerState = PlayerState(),
+    val navigation: NavigationState = NavigationState(),
 
-    // Queue
-    val queue: List<Track> = emptyList(),
-    val queueIndex: Int = -1,
-    val queueCursor: Int = 0,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
-    val shuffleEnabled: Boolean = false,
-    val isQueueVisible: Boolean = false,
+    // Current primary screen
+    val screen: ScreenState = ScreenState.Home(),
 
-    // Marquee scroll animation
-    val marqueeOffset: Int = 0,
-    val progress: Double = 0.0,
-    val volume: Int = 75,
+    // Persistent detail side-panel
+    val detail: DetailState = DetailState(),
 
-    // Radio / auto-play
-    val isRadioMode: Boolean = false,
-    val isLoadingMoreRadio: Boolean = false,
+    // Persistent collections
+    val collections: CollectionsState = CollectionsState(),
 
-    // Session restore
+    // Global Playlist interactions (overlays)
+    val playlistInteraction: PlaylistInteractionState = PlaylistInteractionState(),
+
+    // Global UI/System flags
     val isRestoringSession: Boolean = false,
-
-    // Now Playing screen — synced lyrics
-    val syncedLyrics: List<LrcLine> = emptyList(),
-    val isLoadingSyncedLyrics: Boolean = false,
-    val nowPlayingPositionMs: Long = 0L,
-
-    // Graphics
     val needsGraphicsClear: Boolean = false,
-    val pendingSection: SidebarSection? = null,
-
-    // Statistics
-    val statsPeriod: StatsPeriod = StatsPeriod.ALL_TIME,
-    val statsTimeUnit: StatsTimeUnit = StatsTimeUnit.MINUTES,
-    val statsTopTracks: List<TrackStat> = emptyList(),
-    val statsTopArtists: List<ArtistStat> = emptyList(),
-    val statsListening: ListeningStats? = null,
-    val statsLoading: Boolean = false,
-
-    // Sidebar cursor — tracks which list the navigation highlight is in
-    val sidebarInUtil: Boolean = false,
 )

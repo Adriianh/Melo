@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.async
@@ -88,25 +90,27 @@ internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 1
     }
 
 internal fun MeloScreen.loadMoreSimilar() {
-    val seed = state.selectedTrack ?: return
-    if (state.isLoadingMoreSimilar || !state.hasMoreSimilar) return
+    val seed = state.detail.selectedTrack ?: return
+    if (state.detail.isLoadingMoreSimilar || !state.detail.hasMoreSimilar) return
 
-    val currentOffset = state.similarTracks.size
-    state = state.copy(isLoadingMoreSimilar = true)
+    val currentOffset = state.detail.similarTracks.size
+    state = state.copy(detail = state.detail.copy(isLoadingMoreSimilar = true))
 
     scope.launch {
         try {
             val more = resolveSimilarTracks(seed, limit = 10, offset = currentOffset)
             if (isActive) appRunner()?.runOnRenderThread {
-                val updatedList = (state.similarTracks + more).distinctBy { it.id }
+                val updatedList = (state.detail.similarTracks + more).distinctBy { it.id }
                 state = state.copy(
-                    similarTracks = updatedList,
-                    isLoadingMoreSimilar = false,
-                    hasMoreSimilar = more.isNotEmpty()
+                    detail = state.detail.copy(
+                        similarTracks = updatedList,
+                        isLoadingMoreSimilar = false,
+                        hasMoreSimilar = more.isNotEmpty()
+                    )
                 )
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread { state = state.copy(isLoadingMoreSimilar = false) }
+            appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingMoreSimilar = false)) }
         }
     }
 }

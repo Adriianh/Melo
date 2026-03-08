@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -29,36 +31,41 @@ fun renderSearchScreen(
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
-): Element = when {
-    state.isLoading -> panel(
-        column(
-            spacer(),
-            text("  Searching...").dim().centered(),
-            spacer()
+): Element {
+    val s = state.screen as? ScreenState.Search ?: return panel(text("Search screen not active").centered()).rounded()
+    
+    return when {
+        s.isLoading -> panel(
+            column(
+                spacer(),
+                text("  Searching...").dim().centered(),
+                spacer()
+            )
+        ).title("Results").rounded().borderColor(BORDER_DEFAULT)
+
+        s.errorMessage != null -> panel(
+            text(s.errorMessage).fg(MeloTheme.ACCENT_RED)
+        ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
+
+        s.results.isEmpty() -> panel(
+            column(
+                spacer(),
+                text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
+                text("  Press Tab to focus the search bar").fg(TEXT_DIM).centered(),
+                spacer()
+            )
+        ).title("Melo").rounded().borderColor(BORDER_DEFAULT)
+
+        else -> renderResultsArea(
+            state, s, resultList, lyricsArea, similarArea,
+            marqueeText, onResultsKeyEvent, onDetailKeyEvent
         )
-    ).title("Results").rounded().borderColor(BORDER_DEFAULT)
-
-    state.errorMessage != null -> panel(
-        text(state.errorMessage).fg(MeloTheme.ACCENT_RED)
-    ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
-
-    state.results.isEmpty() -> panel(
-        column(
-            spacer(),
-            text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
-            text("  Press Tab to focus the search bar").fg(TEXT_DIM).centered(),
-            spacer()
-        )
-    ).title("Melo").rounded().borderColor(BORDER_DEFAULT)
-
-    else -> renderResultsArea(
-        state, resultList, lyricsArea, similarArea,
-        marqueeText, onResultsKeyEvent, onDetailKeyEvent
-    )
+    }
 }
 
 private fun renderResultsArea(
     state: MeloState,
+    s: ScreenState.Search,
     resultList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
@@ -66,13 +73,13 @@ private fun renderResultsArea(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val items = state.results.mapIndexed { index, track ->
+    val items = s.results.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
-        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
-        val isSelected = index == state.selectedIndex
-        val titleText = if (isSelected) marqueeText(track.title, state.marqueeOffset, 40)
+        val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isSelected = index == s.selectedIndex
+        val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
                         else track.title
-        val isFav = state.favorites.any { it.id == track.id }
+        val isFav = state.collections.favorites.any { it.id == track.id }
         row(
             text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
@@ -84,7 +91,7 @@ private fun renderResultsArea(
     }
     resultList.elements(*items.toTypedArray())
 
-    val resultsTitle = if (state.isLoadingMore) "Searching... ↓" else "Search Results"
+    val resultsTitle = if (s.isLoadingMore) "Searching... ↓" else "Search Results"
 
     val header = row(
         text("").length(2),
@@ -109,7 +116,7 @@ private fun renderResultsArea(
         .id("results-panel")
         .onKeyEvent(onResultsKeyEvent)
 
-    return if (state.selectedTrack != null) {
+    return if (state.detail.selectedTrack != null) {
         dock()
             .center(resultsPanel)
             .right(

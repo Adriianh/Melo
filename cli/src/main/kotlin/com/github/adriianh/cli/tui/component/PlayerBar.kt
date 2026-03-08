@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -44,21 +46,21 @@ fun buildPlayerBar(
     onCycleRepeat: () -> Unit = {},
     onToggleQueue: () -> Unit = {},
 ): Element {
-    val nowPlaying = state.nowPlaying
+    val nowPlaying = state.player.nowPlaying
 
     val statusIcon = when {
         state.isRestoringSession -> ICON_LOADING
-        state.isLoadingAudio -> ICON_LOADING
-        state.audioError != null -> ICON_ERROR
-        state.isPlaying -> ICON_PLAY
+        state.player.isLoadingAudio -> ICON_LOADING
+        state.player.audioError != null -> ICON_ERROR
+        state.player.isPlaying -> ICON_PLAY
         else -> ICON_PAUSE
     }
-    val statusColor = if (state.audioError != null) ACCENT_RED else PRIMARY_COLOR
+    val statusColor = if (state.player.audioError != null) ACCENT_RED else PRIMARY_COLOR
 
     val panelTitle = if (state.isRestoringSession) {
         Line.from(Span.styled("Resuming session…", Style.EMPTY.fg(TEXT_DIM)))
     } else if (nowPlaying != null) {
-        val titleStyle = if (state.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
+        val titleStyle = if (state.player.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
             else Style.EMPTY.fg(TEXT_PRIMARY).bold()
         Line.from(Span.styled(nowPlaying.title, titleStyle))
     } else {
@@ -78,12 +80,12 @@ fun buildPlayerBar(
     }
 
     val centerTop = if (nowPlaying != null) {
-        val currentMs = (state.progress * nowPlaying.durationMs).toLong()
+        val currentMs = (state.player.progress * nowPlaying.durationMs).toLong()
         val elapsed = formatDuration(currentMs)
         val total = formatDuration(nowPlaying.durationMs)
         row(
             text(elapsed).fg(TEXT_DIM).length(6),
-            lineGauge((state.progress * 100).toInt())
+            lineGauge((state.player.progress * 100).toInt())
                 .filledColor(PRIMARY_COLOR)
                 .unfilledColor(TEXT_DIM)
                 .fill(),
@@ -100,14 +102,14 @@ fun buildPlayerBar(
     }
 
     val volumeIcon = when {
-        state.volume == 0 -> ICON_VOL_MUTE
-        state.volume < 50 -> ICON_VOL_LOW
+        state.player.volume == 0 -> ICON_VOL_MUTE
+        state.player.volume < 50 -> ICON_VOL_LOW
         else -> ICON_VOL_HIGH
     }
     val rightTop = row(
         text(volumeIcon).length(2),
         text(" ").length(1),
-        lineGauge(state.volume)
+        lineGauge(state.player.volume)
             .filledColor(TEXT_PRIMARY)
             .unfilledColor(TEXT_DIM)
             .fill()
@@ -118,28 +120,28 @@ fun buildPlayerBar(
                     else -> EventResult.UNHANDLED
                 }
             },
-        text(" ${state.volume}%").fg(TEXT_DIM).length(5),
+        text(" ${state.player.volume}%").fg(TEXT_DIM).length(5),
     ).percent(20)
 
     val topRow = row(leftTop, centerTop, rightTop).length(1)
 
-    val controlColor = if (nowPlaying != null && !state.isLoadingAudio) PRIMARY_COLOR else TEXT_DIM
-    val playPauseIcon = if (state.isPlaying) ICON_PAUSE else ICON_PLAY
+    val controlColor = if (nowPlaying != null && !state.player.isLoadingAudio) PRIMARY_COLOR else TEXT_DIM
+    val playPauseIcon = if (state.player.isPlaying) ICON_PAUSE else ICON_PLAY
 
     val albumText = nowPlaying?.album?.takeIf { it.isNotBlank() } ?: ""
     val leftBottom = row(
         text(albumText).fg(TEXT_DIM).ellipsis().fill(),
     ).percent(20)
 
-    val shuffleColor = if (state.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
-    val repeatIcon = when (state.repeatMode) {
+    val shuffleColor = if (state.player.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
+    val repeatIcon = when (state.player.repeatMode) {
         RepeatMode.OFF -> ICON_REPEAT
         RepeatMode.ALL -> ICON_REPEAT
         RepeatMode.ONE -> ICON_REPEAT1
     }
-    val repeatColor = if (state.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
-    val queueColor = if (state.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
-    val queueCount = if (state.queue.isNotEmpty()) " ${state.queue.size}" else ""
+    val repeatColor = if (state.player.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
+    val queueColor = if (state.player.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
+    val queueCount = if (state.player.queue.isNotEmpty()) " ${state.player.queue.size}" else ""
 
     val centerBottom = row(
         text(ICON_SHUFFLE).fg(shuffleColor).length(2)
@@ -170,7 +172,7 @@ fun buildPlayerBar(
     ).flex(Flex.CENTER).spacing(2).fill()
 
     val rightBottom = row(
-        text(if (state.isRadioMode) ICON_RADIO else " ").fg(if (state.isRadioMode) PRIMARY_COLOR else TEXT_DIM).length(2),
+        text(if (state.player.isRadioMode) ICON_RADIO else " ").fg(if (state.player.isRadioMode) PRIMARY_COLOR else TEXT_DIM).length(2),
         text(" ").length(1),
         text("$ICON_QUEUE$queueCount").fg(queueColor).length(4)
             .onMouseEvent { event ->
@@ -181,7 +183,7 @@ fun buildPlayerBar(
 
     val bottomRow = row(leftBottom, centerBottom, rightBottom).length(1)
 
-    val borderColor = if (state.isPlaying) PRIMARY_COLOR else BORDER_DEFAULT
+    val borderColor = if (state.player.isPlaying) PRIMARY_COLOR else BORDER_DEFAULT
     return panel(topRow, bottomRow)
         .rounded()
         .borderColor(borderColor)

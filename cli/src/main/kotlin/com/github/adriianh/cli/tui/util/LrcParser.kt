@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.util
 
+import com.github.adriianh.cli.tui.*
+
 /**
  * A single line of a synced (LRC) lyrics file.
  * [timeMs] is the timestamp in milliseconds, [text] is the lyric line.

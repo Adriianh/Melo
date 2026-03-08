@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.tui.*
+
 import dev.tamboui.style.Color
 import dev.tamboui.style.Style
 

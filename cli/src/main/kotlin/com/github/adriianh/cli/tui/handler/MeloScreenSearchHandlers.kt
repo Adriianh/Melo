@@ -10,23 +10,27 @@ internal fun MeloScreen.performSearch() {
     lastQuery = query
     loadMoreJob?.cancel()
     loadMoreJob = null
-    state = state.copy(isLoading = true, errorMessage = null, selectedTrack = null,
-        hasMore = true, activeSection = SidebarSection.SEARCH)
+    state = state.copy(
+        screen = ScreenState.Search(isLoading = true, errorMessage = null, hasMore = true), 
+        detail = state.detail.copy(selectedTrack = null),
+        navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
+    )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
     scope.launch {
         try {
             val results = searchTracks(query)
             val firstTrack = results.firstOrNull()
             appRunner()?.runOnRenderThread {
-                state = state.copy(results = results, isLoading = false, selectedIndex = 0,
-                    selectedTrack = firstTrack, hasMore = loadMoreTracks.hasMore(results.size))
+                updateScreen<ScreenState.Search> { it.copy(results = results, isLoading = false, selectedIndex = 0,
+                    hasMore = loadMoreTracks.hasMore(results.size)) }
+                state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack))
                 resultList.selected(0)
                 focusResults()
             }
             if (firstTrack != null) loadTrackDetails(firstTrack.id)
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(isLoading = false, errorMessage = "Search failed: ${e.message}")
+                updateScreen<ScreenState.Search> { it.copy(isLoading = false, errorMessage = "Search failed: ${e.message}") }
             }
         }
     }
@@ -34,18 +38,18 @@ internal fun MeloScreen.performSearch() {
 
 internal fun MeloScreen.loadMore() {
     if (lastQuery.isBlank()) return
-    loadMoreJob?.cancel()
-    val offset = state.results.size
-    state = state.copy(isLoadingMore = true)
+    val currentResults = (state.screen as? ScreenState.Search)?.results ?: return
+    val offset = currentResults.size
+    updateScreen<ScreenState.Search> { it.copy(isLoadingMore = true) }
     loadMoreJob = scope.launch {
         try {
             val more = loadMoreTracks(lastQuery, offset)
             if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(results = state.results + more, isLoadingMore = false,
-                    hasMore = loadMoreTracks.hasMore(offset + more.size))
+                updateScreen<ScreenState.Search> { it.copy(results = it.results + more, isLoadingMore = false,
+                    hasMore = loadMoreTracks.hasMore(offset + more.size)) }
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread { state = state.copy(isLoadingMore = false) }
+            appRunner()?.runOnRenderThread { updateScreen<ScreenState.Search> { it.copy(isLoadingMore = false) } }
         }
     }
 }
@@ -60,7 +64,7 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
 
 internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = null) {
     detailsJob?.cancel()
-    state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null)
+    state = state.copy(detail = state.detail.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null))
     detailsJob = scope.launch {
         val fullTrackDeferred = async { getTrack(trackId) }
         val similarDeferred = async {
@@ -68,7 +72,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
             resolveSimilarTracks(track, limit = 10)
         }
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: run {
-            appRunner()?.runOnRenderThread { state = state.copy(isLoadingSimilar = false) }
+            appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingSimilar = false)) }
             return@launch
         }
         var artworkUrl = fullTrack.artworkUrl
@@ -79,11 +83,11 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
         val artworkData = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
+                state = state.copy(detail = state.detail.copy(selectedTrack = fullTrack, artworkData = artworkData))
             }
             val similar = similarDeferred.await()
             if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(similarTracks = similar, isLoadingSimilar = false)
+                state = state.copy(detail = state.detail.copy(similarTracks = similar, isLoadingSimilar = false))
             }
         }
     }
@@ -98,20 +102,20 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
         }
         val artwork = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) appRunner()?.runOnRenderThread {
-            if (state.nowPlaying?.id == track.id) {
-                state = state.copy(nowPlayingArtwork = artwork)
+            if (state.player.nowPlaying?.id == track.id) {
+                state = state.copy(player = state.player.copy(nowPlayingArtwork = artwork))
             }
         }
     }
 }
 
 internal fun MeloScreen.loadLyrics() {
-    val track = state.selectedTrack ?: return
-    state = state.copy(isLoadingLyrics = true, lyrics = null)
+    val track = state.detail.selectedTrack ?: return
+    state = state.copy(detail = state.detail.copy(isLoadingLyrics = true, lyrics = null))
     scope.launch {
         val lyrics = getLyrics(track.artist, track.title)
         appRunner()?.runOnRenderThread {
-            state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
+            state = state.copy(detail = state.detail.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false))
         }
     }
 }

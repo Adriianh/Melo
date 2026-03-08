@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -39,7 +41,7 @@ class QueueOverlay(
         val state = stateProvider()
 
         val overlayW = (area.width() * 0.6).toInt().coerceAtLeast(60)
-        val overlayH = (state.queue.size + 6).coerceIn(10, 20)
+        val overlayH = (state.player.queue.size + 6).coerceIn(10, 20)
         val overlayX = area.x() + (area.width() - overlayW) / 2
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
@@ -47,7 +49,7 @@ class QueueOverlay(
         frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
-        val content = if (state.queue.isEmpty()) {
+        val content = if (state.player.queue.isEmpty()) {
             column(
                 spacer(),
                 text("Queue is empty").fg(TEXT_DIM).centered(),
@@ -55,8 +57,8 @@ class QueueOverlay(
                 spacer(),
             )
         } else {
-            val items = state.queue.mapIndexed { index, track ->
-                val isPlaying = index == state.queueIndex
+            val items = state.player.queue.mapIndexed { index, track ->
+                val isPlaying = index == state.player.queueIndex
                 val indicator = if (isPlaying) "$ICON_NOTE " else "${index + 1}. "
                 val titleColor = if (isPlaying) PRIMARY_COLOR else TEXT_PRIMARY
                 row(
@@ -67,16 +69,16 @@ class QueueOverlay(
                 )
             }
             queueList.elements(*items.toTypedArray())
-            queueList.selected(state.queueCursor)
+            queueList.selected(state.player.queueCursor)
             queueList.fill()
         }
 
-        val remaining = state.queue.size - (state.queueIndex + 1).coerceAtLeast(0)
-        val radioLabel = if (state.isRadioMode) "  $ICON_RADIO Radio" else ""
-        val title = if (state.queue.isEmpty())
+        val remaining = state.player.queue.size - (state.player.queueIndex + 1).coerceAtLeast(0)
+        val radioLabel = if (state.player.isRadioMode) "  $ICON_RADIO Radio" else ""
+        val title = if (state.player.queue.isEmpty())
             "$ICON_QUEUE Queue  [Q] add  [Del] remove  [C] clear"
         else
-            "$ICON_QUEUE Queue$radioLabel  ${state.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"
+            "$ICON_QUEUE Queue$radioLabel  ${state.player.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"
 
         panel(content)
             .title(title)

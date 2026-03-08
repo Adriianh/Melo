@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -42,15 +44,15 @@ fun renderStatsScreen(
     state: MeloState,
     onKeyEvent: (KeyEvent) -> dev.tamboui.toolkit.event.EventResult,
 ): Element {
-    val listening = state.statsListening
-    val periodTabs = buildPeriodTabs(state.statsPeriod)
-    val unitTabs = buildUnitTabs(state.statsTimeUnit)
+    val listening = (state.screen as ScreenState.Stats).statsListening
+    val periodTabs = buildPeriodTabs((state.screen as ScreenState.Stats).statsPeriod)
+    val unitTabs = buildUnitTabs((state.screen as ScreenState.Stats).statsTimeUnit)
 
     val summaryPanel = if (listening == null) {
         panel(
             column(
                 spacer(),
-                text(if (state.statsLoading) "  Loading…" else "  No listening data yet.")
+                text(if ((state.screen as ScreenState.Stats).statsLoading) "  Loading…" else "  No listening data yet.")
                     .fg(TEXT_SECONDARY).centered(),
                 text("  Start playing music to see your stats.")
                     .fg(TEXT_DIM).centered(),
@@ -85,7 +87,7 @@ fun renderStatsScreen(
         .rounded()
         .borderColor(BORDER_DEFAULT)
 
-    val topTracksPanel = if (state.statsTopTracks.isEmpty()) {
+    val topTracksPanel = if ((state.screen as ScreenState.Stats).statsTopTracks.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -94,7 +96,7 @@ fun renderStatsScreen(
             )
         )
     } else {
-        val unitLabel = state.statsTimeUnit.label
+        val unitLabel = (state.screen as ScreenState.Stats).statsTimeUnit.label
         panel(
             column(
                 row(
@@ -104,13 +106,13 @@ fun renderStatsScreen(
                     text("Plays").fg(TEXT_DIM).length(7),
                     text(unitLabel).fg(PRIMARY_COLOR).bold().length(10),
                 ),
-                *state.statsTopTracks.mapIndexed { i, stat ->
+                *(state.screen as ScreenState.Stats).statsTopTracks.mapIndexed { i, stat ->
                     row(
                         text("  ${i + 1}").fg(TEXT_DIM).length(4),
                         text(stat.track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                         text(stat.track.artist).fg(TEXT_SECONDARY).ellipsis().percent(28),
                         text("${stat.playCount}×").fg(TEXT_SECONDARY).length(7),
-                        text(formatByUnit(stat.totalMs, state.statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
+                        text(formatByUnit(stat.totalMs, (state.screen as ScreenState.Stats).statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
                     )
                 }.toTypedArray()
             ).fill()
@@ -120,7 +122,7 @@ fun renderStatsScreen(
         .rounded()
         .borderColor(BORDER_DEFAULT)
 
-    val topArtistsPanel = if (state.statsTopArtists.isEmpty()) {
+    val topArtistsPanel = if ((state.screen as ScreenState.Stats).statsTopArtists.isEmpty()) {
         panel(
             column(
                 spacer(),
@@ -129,7 +131,7 @@ fun renderStatsScreen(
             )
         )
     } else {
-        val unitLabel = state.statsTimeUnit.label
+        val unitLabel = (state.screen as ScreenState.Stats).statsTimeUnit.label
         panel(
             column(
                 row(
@@ -138,12 +140,12 @@ fun renderStatsScreen(
                     text("Plays").fg(TEXT_DIM).length(7),
                     text(unitLabel).fg(PRIMARY_COLOR).bold().length(10),
                 ),
-                *state.statsTopArtists.mapIndexed { i, stat ->
+                *(state.screen as ScreenState.Stats).statsTopArtists.mapIndexed { i, stat ->
                     row(
                         text("  ${i + 1}").fg(TEXT_DIM).length(4),
                         text(stat.artist).fg(TEXT_PRIMARY).ellipsis().fill(),
                         text("${stat.playCount}×").fg(TEXT_SECONDARY).length(7),
-                        text(formatByUnit(stat.totalMs, state.statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
+                        text(formatByUnit(stat.totalMs, (state.screen as ScreenState.Stats).statsTimeUnit)).fg(PRIMARY_COLOR).length(10),
                     )
                 }.toTypedArray()
             ).fill()

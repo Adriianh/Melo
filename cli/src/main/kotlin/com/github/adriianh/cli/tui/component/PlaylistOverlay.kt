@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LIBRARY
@@ -35,7 +37,7 @@ class PlaylistInputOverlay(private val stateProvider: () -> MeloState) : Element
 
         frame.buffer().clear(overlayArea)
 
-        val title = when (state.playlistInputMode) {
+        val title = when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE -> "$ICON_LIBRARY New Playlist"
             PlaylistInputMode.RENAME -> "$ICON_LIBRARY Rename Playlist"
             else -> ""
@@ -47,7 +49,7 @@ class PlaylistInputOverlay(private val stateProvider: () -> MeloState) : Element
             spacer(),
             row(
                 text("Name: ").fg(TEXT_SECONDARY).length(7),
-                text(state.playlistInput + cursor).fg(TEXT_PRIMARY).fill(),
+                text(state.playlistInteraction.playlistInput + cursor).fg(TEXT_PRIMARY).fill(),
             ),
             spacer(),
             text(hint).fg(TEXT_DIM).centered(),
@@ -78,8 +80,8 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
-        val playlists = state.playlists
-        val track = state.playlistPickerTrack
+        val playlists = state.collections.playlists
+        val track = state.playlistInteraction.playlistPickerTrack
 
         val overlayW = (area.width() * 0.5).toInt().coerceAtLeast(50)
         val overlayH = (playlists.size + 6).coerceIn(8, 20)
@@ -93,7 +95,7 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
         val subtitle = track?.let { "${it.title} — ${it.artist}" } ?: ""
 
         val items = playlists.mapIndexed { index, playlist ->
-            val isSelected = index == state.playlistPickerCursor
+            val isSelected = index == state.playlistInteraction.playlistPickerCursor
             val count = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
             row(
                 text(if (isSelected) "▸ " else "  ").fg(PRIMARY_COLOR).length(2),

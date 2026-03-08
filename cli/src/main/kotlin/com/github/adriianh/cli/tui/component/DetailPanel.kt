@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
@@ -31,20 +33,20 @@ fun buildDetailPanel(
     marqueeText: (String, Int, Int) -> String,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val track = state.selectedTrack ?: return spacer()
+    val track = state.detail.selectedTrack ?: return spacer()
 
     val detailTabs = tabs("Info", "Lyrics", "Similar")
-        .selected(state.detailTab.ordinal)
+        .selected(state.detail.detailTab.ordinal)
         .highlightColor(PRIMARY_COLOR)
         .divider(" │ ")
 
-    val tabContent: StyledElement<*> = when (state.detailTab) {
+    val tabContent: StyledElement<*> = when (state.detail.detailTab) {
         DetailTab.INFO -> renderTrackMetadata(track, state, marqueeText)
         DetailTab.LYRICS -> renderLyricsTab(state, lyricsArea)
         DetailTab.SIMILAR -> renderSimilarTab(state, similarArea)
     }
 
-    val layeredContent = if (state.detailTab != DetailTab.INFO) {
+    val layeredContent = if (state.detail.detailTab != DetailTab.INFO) {
         stack(
             ClearGraphicsElement().fill(),
             tabContent.fill()
@@ -73,18 +75,18 @@ private fun renderTrackMetadata(
     state: MeloState,
     marqueeText: (String, Int, Int) -> String,
 ): StyledElement<*> = column(
-    text(marqueeText(track.title, state.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
-    text(marqueeText(track.artist, state.marqueeOffset, 30)).fg(TEXT_SECONDARY),
+    text(marqueeText(track.title, state.player.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
+    text(marqueeText(track.artist, state.player.marqueeOffset, 30)).fg(TEXT_SECONDARY),
     text(""),
     if (track.sourceId != null) text("$ICON_CHECK Available for streaming").dim().fg(PRIMARY_COLOR)
     else text("$ICON_ERROR Not available for streaming").dim()
 ).flex(Flex.START)
 
 private fun renderArtwork(state: MeloState): StyledElement<*> =
-    if (state.artworkData != null && !state.isQueueVisible) {
+    if (state.detail.artworkData != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
-                .data(state.artworkData)
+                .data(state.detail.artworkData)
                 .scaling(ImageScaling.FIT)
                 .block(
                     dev.tamboui.widgets.block.Block.builder()
@@ -105,13 +107,13 @@ private fun renderLyricsTab(
     state: MeloState,
     lyricsArea: dev.tamboui.toolkit.elements.MarkupTextAreaElement,
 ): StyledElement<*> = when {
-    state.isLoadingLyrics -> column(
+    state.detail.isLoadingLyrics -> column(
         spacer(),
         text("  Loading lyrics...").dim().centered(),
         spacer()
     )
 
-    state.lyrics != null -> lyricsArea.markup(state.lyrics).fill()
+    state.detail.lyrics != null -> lyricsArea.markup(state.detail.lyrics).fill()
     else -> column(
         spacer(),
         text("  Press Enter to load lyrics").fg(TEXT_SECONDARY).centered(),
@@ -123,22 +125,22 @@ private fun renderSimilarTab(
     state: MeloState,
     similarArea: ListElement<*>,
 ): StyledElement<*> {
-    if (state.isLoadingSimilar) {
+    if (state.detail.isLoadingSimilar) {
         return column(
             spacer(),
             text("  Loading similar tracks...").dim().centered(),
             spacer()
         )
     }
-    if (state.similarTracks.isEmpty()) {
+    if (state.detail.similarTracks.isEmpty()) {
         return column(
             spacer(),
             text("  No similar tracks found").fg(TEXT_SECONDARY).centered(),
             spacer()
         )
     }
-    val items = state.similarTracks.mapIndexed { index, similar ->
-        val isSelected = index == state.similarCursor
+    val items = state.detail.similarTracks.mapIndexed { index, similar ->
+        val isSelected = index == state.detail.similarCursor
         val titleColor = if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY
         row(
             text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
@@ -146,7 +148,7 @@ private fun renderSimilarTab(
         )
     }.toMutableList()
 
-    if (state.isLoadingMoreSimilar) {
+    if (state.detail.isLoadingMoreSimilar) {
         items.add(
             row(
                 text("  "),
@@ -157,6 +159,6 @@ private fun renderSimilarTab(
     }
 
     similarArea.elements(*items.toTypedArray())
-    similarArea.selected(state.similarCursor)
+    similarArea.selected(state.detail.similarCursor)
     return similarArea.fill()
 }

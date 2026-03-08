@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.player
 
+import com.github.adriianh.cli.tui.*
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
