@@ -10,7 +10,8 @@ internal fun MeloScreen.performSearch() {
     lastQuery = query
     loadMoreJob?.cancel()
     loadMoreJob = null
-    state = state.copy(search = state.search.copy(isLoading = true, errorMessage = null, hasMore = true), selectedTrack = null,
+    state = state.copy(search = state.search.copy(isLoading = true, errorMessage = null, hasMore = true), 
+        detail = state.detail.copy(selectedTrack = null),
         activeSection = SidebarSection.SEARCH)
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
     scope.launch {
@@ -19,7 +20,8 @@ internal fun MeloScreen.performSearch() {
             val firstTrack = results.firstOrNull()
             appRunner()?.runOnRenderThread {
                 state = state.copy(search = state.search.copy(results = results, isLoading = false, selectedIndex = 0,
-                    hasMore = loadMoreTracks.hasMore(results.size)), selectedTrack = firstTrack)
+                    hasMore = loadMoreTracks.hasMore(results.size)), 
+                    detail = state.detail.copy(selectedTrack = firstTrack))
                 resultList.selected(0)
                 focusResults()
             }
@@ -60,7 +62,7 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
 
 internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = null) {
     detailsJob?.cancel()
-    state = state.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null)
+    state = state.copy(detail = state.detail.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null))
     detailsJob = scope.launch {
         val fullTrackDeferred = async { getTrack(trackId) }
         val similarDeferred = async {
@@ -68,7 +70,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
             resolveSimilarTracks(track, limit = 10)
         }
         val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: run {
-            appRunner()?.runOnRenderThread { state = state.copy(isLoadingSimilar = false) }
+            appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingSimilar = false)) }
             return@launch
         }
         var artworkUrl = fullTrack.artworkUrl
@@ -79,11 +81,11 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
         val artworkData = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(selectedTrack = fullTrack, artworkData = artworkData)
+                state = state.copy(detail = state.detail.copy(selectedTrack = fullTrack, artworkData = artworkData))
             }
             val similar = similarDeferred.await()
             if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(similarTracks = similar, isLoadingSimilar = false)
+                state = state.copy(detail = state.detail.copy(similarTracks = similar, isLoadingSimilar = false))
             }
         }
     }
@@ -99,19 +101,19 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
         val artwork = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) appRunner()?.runOnRenderThread {
             if (state.player.nowPlaying?.id == track.id) {
-                state = state.copy(nowPlayingArtwork = artwork)
+                state = state.copy(player = state.player.copy(nowPlayingArtwork = artwork))
             }
         }
     }
 }
 
 internal fun MeloScreen.loadLyrics() {
-    val track = state.selectedTrack ?: return
-    state = state.copy(isLoadingLyrics = true, lyrics = null)
+    val track = state.detail.selectedTrack ?: return
+    state = state.copy(detail = state.detail.copy(isLoadingLyrics = true, lyrics = null))
     scope.launch {
         val lyrics = getLyrics(track.artist, track.title)
         appRunner()?.runOnRenderThread {
-            state = state.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false)
+            state = state.copy(detail = state.detail.copy(lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false))
         }
     }
 }

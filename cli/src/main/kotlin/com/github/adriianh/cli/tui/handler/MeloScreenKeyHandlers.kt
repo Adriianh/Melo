@@ -193,7 +193,8 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             val newIndex = minOf(state.search.results.lastIndex, state.search.selectedIndex + 1)
             resultList.selected(newIndex)
             state.search.results.getOrNull(newIndex)?.let { track ->
-                state = state.copy(search = state.search.copy(selectedIndex = newIndex), selectedTrack = track, marqueeOffset = 0)
+                state = state.copy(search = state.search.copy(selectedIndex = newIndex), 
+                    detail = state.detail.copy(selectedTrack = track), marqueeOffset = 0)
                 marqueeTick = 0
                 debouncedLoadDetails(track)
             }
@@ -206,7 +207,8 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             val newIndex = maxOf(0, state.search.selectedIndex - 1)
             resultList.selected(newIndex)
             state.search.results.getOrNull(newIndex)?.let { track ->
-                state = state.copy(search = state.search.copy(selectedIndex = newIndex), selectedTrack = track, marqueeOffset = 0)
+                state = state.copy(search = state.search.copy(selectedIndex = newIndex), 
+                    detail = state.detail.copy(selectedTrack = track), marqueeOffset = 0)
                 marqueeTick = 0
                 debouncedLoadDetails(track)
             }
@@ -247,45 +249,45 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
     when {
         event.code() == KeyCode.CHAR && event.character() == '1' -> {
-            state = state.copy(detailTab = DetailTab.INFO)
+            state = state.copy(detail = state.detail.copy(detailTab = DetailTab.INFO))
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == '2' -> {
-            state = state.copy(detailTab = DetailTab.LYRICS)
-            if (state.lyrics == null && !state.isLoadingLyrics) loadLyrics()
+            state = state.copy(detail = state.detail.copy(detailTab = DetailTab.LYRICS))
+            if (state.detail.lyrics == null && !state.detail.isLoadingLyrics) loadLyrics()
             appRunner()?.focusManager()?.setFocus("lyrics-area")
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == '3' -> {
-            state = state.copy(detailTab = DetailTab.SIMILAR)
+            state = state.copy(detail = state.detail.copy(detailTab = DetailTab.SIMILAR))
             appRunner()?.focusManager()?.setFocus("similar-area")
             return EventResult.HANDLED
         }
 
-        event.matches(Actions.SELECT) && state.detailTab == DetailTab.LYRICS -> {
-            if (state.lyrics == null) loadLyrics()
+        event.matches(Actions.SELECT) && state.detail.detailTab == DetailTab.LYRICS -> {
+            if (state.detail.lyrics == null) loadLyrics()
             return EventResult.HANDLED
         }
 
-        event.matches(Actions.MOVE_DOWN) && state.detailTab == DetailTab.SIMILAR -> {
-            val maxIndex = (state.similarTracks.size - 1).coerceAtLeast(0)
-            val newCursor = minOf(maxIndex, state.similarCursor + 1)
-            state = state.copy(similarCursor = newCursor)
-            if (newCursor >= state.similarTracks.size - 3 && state.hasMoreSimilar && !state.isLoadingMoreSimilar) {
+        event.matches(Actions.MOVE_DOWN) && state.detail.detailTab == DetailTab.SIMILAR -> {
+            val maxIndex = (state.detail.similarTracks.size - 1).coerceAtLeast(0)
+            val newCursor = minOf(maxIndex, state.detail.similarCursor + 1)
+            state = state.copy(detail = state.detail.copy(similarCursor = newCursor))
+            if (newCursor >= state.detail.similarTracks.size - 3 && state.detail.hasMoreSimilar && !state.detail.isLoadingMoreSimilar) {
                 loadMoreSimilar()
             }
             return EventResult.HANDLED
         }
 
-        event.matches(Actions.MOVE_UP) && state.detailTab == DetailTab.SIMILAR -> {
-            state = state.copy(similarCursor = maxOf(0, state.similarCursor - 1))
+        event.matches(Actions.MOVE_UP) && state.detail.detailTab == DetailTab.SIMILAR -> {
+            state = state.copy(detail = state.detail.copy(similarCursor = maxOf(0, state.detail.similarCursor - 1)))
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.ENTER && state.detailTab == DetailTab.SIMILAR -> {
-            state.similarTracks.getOrNull(state.similarCursor)?.let { playTrack(it) }
+        event.code() == KeyCode.ENTER && state.detail.detailTab == DetailTab.SIMILAR -> {
+            state.detail.similarTracks.getOrNull(state.detail.similarCursor)?.let { playTrack(it) }
             return EventResult.HANDLED
         }
     }

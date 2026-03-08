@@ -94,6 +94,7 @@ data class PlayerState(
     val syncedLyrics: List<LrcLine> = emptyList(),
     val isLoadingSyncedLyrics: Boolean = false,
     val nowPlayingPositionMs: Long = 0L,
+    val nowPlayingArtwork: ImageData? = null,
 )
 
 /**
@@ -108,6 +109,19 @@ sealed interface ScreenState {
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
         val errorMessage: String? = null,
+    ) : ScreenState
+
+    data class Detail(
+        val selectedTrack: Track? = null,
+        val detailTab: DetailTab = DetailTab.INFO,
+        val lyrics: String? = null,
+        val isLoadingLyrics: Boolean = false,
+        val similarTracks: List<Track> = emptyList(),
+        val isLoadingSimilar: Boolean = false,
+        val isLoadingMoreSimilar: Boolean = false,
+        val hasMoreSimilar: Boolean = true,
+        val similarCursor: Int = 0,
+        val artworkData: ImageData? = null,
     ) : ScreenState
 }
 
@@ -124,17 +138,7 @@ data class MeloState(
     val search: ScreenState.Search = ScreenState.Search(),
 
     // Selected track details
-    val selectedTrack: Track? = null,
-    val detailTab: DetailTab = DetailTab.INFO,
-    val lyrics: String? = null,
-    val isLoadingLyrics: Boolean = false,
-    val similarTracks: List<Track> = emptyList(),
-    val isLoadingSimilar: Boolean = false,
-    val isLoadingMoreSimilar: Boolean = false,
-    val hasMoreSimilar: Boolean = true,
-    val similarCursor: Int = 0,
-    val artworkData: ImageData? = null,
-    val nowPlayingArtwork: ImageData? = null,
+    val detail: ScreenState.Detail = ScreenState.Detail(),
 
     // Library
     val favorites: List<Track> = emptyList(),

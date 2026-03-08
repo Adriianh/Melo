@@ -25,9 +25,9 @@ internal fun MeloScreen.playTrack(track: Track) {
             audioError = null,
             queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
             syncedLyrics = emptyList(), isLoadingSyncedLyrics = true, nowPlayingPositionMs = 0L,
+            nowPlayingArtwork = null,
         ),
         progress = 0.0, marqueeOffset = 0,
-        nowPlayingArtwork = null,
     )
     marqueeTick = 0
     scrobbleSubmitted = false

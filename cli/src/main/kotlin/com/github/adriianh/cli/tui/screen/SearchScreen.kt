@@ -109,7 +109,7 @@ private fun renderResultsArea(
         .id("results-panel")
         .onKeyEvent(onResultsKeyEvent)
 
-    return if (state.selectedTrack != null) {
+    return if (state.detail.selectedTrack != null) {
         dock()
             .center(resultsPanel)
             .right(

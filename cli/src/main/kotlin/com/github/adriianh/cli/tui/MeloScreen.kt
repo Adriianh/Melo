@@ -247,7 +247,7 @@ class MeloScreen(
             runner()?.runOnRenderThread {
                 marqueeTick++
                 if (marqueeTick > 10) {
-                    val track = state.selectedTrack
+                    val track = state.detail.selectedTrack
                     val newOffset = state.marqueeOffset + 1
                     if (track != null) {
                         val separator = "   •   "
@@ -301,7 +301,7 @@ class MeloScreen(
                 needsGraphicsClear = false,
                 activeSection = targetSection,
                 pendingSection = null,
-                artworkData = if (targetSection != SidebarSection.SEARCH) null else state.artworkData,
+                detail = state.detail.copy(artworkData = if (targetSection != SidebarSection.SEARCH) null else state.detail.artworkData),
             )
             if (targetSection == SidebarSection.NOW_PLAYING) {
                 appRunner()?.focusManager()?.setFocus("now-playing-panel")

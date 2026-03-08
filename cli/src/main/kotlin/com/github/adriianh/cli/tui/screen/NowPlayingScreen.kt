@@ -59,10 +59,10 @@ private fun renderNoTrackPlaying(): Element = panel(
     .borderColor(BORDER_DEFAULT)
 
 private fun buildArtworkPanel(state: MeloState): Element =
-    if (state.nowPlayingArtwork != null && !state.player.isQueueVisible) {
+    if (state.player.nowPlayingArtwork != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
-                .data(state.nowPlayingArtwork)
+                .data(state.player.nowPlayingArtwork)
                 .scaling(ImageScaling.FIT)
                 .block(
                     Block.builder()
