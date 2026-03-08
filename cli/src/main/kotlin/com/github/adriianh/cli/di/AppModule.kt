@@ -36,6 +36,8 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
@@ -45,8 +47,18 @@ private fun hasSpotifyKeys() =
 
 val appModule = module {
     // Infrastructure
+    single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
+
     single {
         HttpClient(CIO) {
+            engine {
+                // Use our limited dispatcher for the CIO engine
+                dispatcher = get<CoroutineDispatcher>()
+                endpoint {
+                    maxConnectionsCount = 20
+                    connectTimeout = 5_000
+                }
+            }
             install(ContentNegotiation) {
                 val jsonConfig = Json {
                     ignoreUnknownKeys = true

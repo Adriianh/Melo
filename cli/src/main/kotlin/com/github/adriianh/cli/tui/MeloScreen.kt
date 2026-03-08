@@ -23,6 +23,7 @@ import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
+import io.ktor.client.*
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -35,6 +36,8 @@ import kotlinx.coroutines.*
 import java.time.Duration
 
 class MeloScreen(
+    // Shared infrastructure
+    internal val httpClient: HttpClient,
     // Search
     internal val searchTracks: SearchTracksUseCase,
     internal val loadMoreTracks: LoadMoreTracksUseCase,
@@ -73,11 +76,12 @@ class MeloScreen(
     internal val getListeningStats: GetListeningStatsUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
-    internal val artworkProvider: ArtworkProvider
+    internal val artworkProvider: ArtworkProvider,
+    internal val dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 
     internal var state = MeloState()
-    internal val scope = CoroutineScope(Dispatchers.IO)
+    internal val scope = CoroutineScope(dispatcher)
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null
@@ -87,6 +91,8 @@ class MeloScreen(
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var trackStartedAt = 0L
+    internal var updateNowPlayingJob: Job? = null
+    internal var scrobbleJob: Job? = null
 
     /**
      * Helper to update the current screen state in a type-safe way.
@@ -102,6 +108,7 @@ class MeloScreen(
     internal fun appRunner() = runner()
 
     internal val mediaSession = MediaSessionManager(
+        httpClient = httpClient,
         onPlayPause = {
             runner()?.runOnRenderThread { togglePlayPause() }
         },
@@ -260,12 +267,16 @@ class MeloScreen(
                 marqueeTick++
                 if (marqueeTick > 10) {
                     val track = state.detail.selectedTrack
+                    if (track == null) return@runOnRenderThread
+                    
+                    // Skip state copies if text is short enough to not need a marquee
+                    if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
+
                     val newOffset = state.player.marqueeOffset + 1
-                    if (track != null) {
-                        val separator = "   •   "
-                        val full = track.title + separator
-                        if (newOffset % full.length == 0) marqueeTick = 0
-                    }
+                    val separator = "   •   "
+                    val full = track.title + separator
+                    if (newOffset % full.length == 0) marqueeTick = 0
+                    
                     state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
                 }
             }

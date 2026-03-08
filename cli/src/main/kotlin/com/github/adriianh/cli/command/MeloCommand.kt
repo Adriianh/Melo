@@ -11,6 +11,7 @@ import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
+import io.ktor.client.*
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -18,6 +19,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlin.getValue
 import kotlin.system.exitProcess
 
@@ -76,8 +78,11 @@ class MeloCommand : CliktCommand(
         val artworkRenderer: ArtworkRenderer by inject()
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
+        val httpClient: HttpClient by inject()
+        val dispatcher: CoroutineDispatcher by inject()
         try {
             MeloScreen(
+                httpClient,
                 searchTracks, loadMoreTracks, getTrack, getLyrics, getSyncedLyrics, getSimilarTracks,
                 pipedApiClient,
                 getFavorites, addFavorite, removeFavorite, isFavorite,
@@ -87,7 +92,8 @@ class MeloCommand : CliktCommand(
                 saveSession, restoreSession, clearSession,
                 updateNowPlaying, scrobble,
                 getTopTracks, getTopArtists, getListeningStats,
-                artworkRenderer, artworkProvider
+                artworkRenderer, artworkProvider,
+                dispatcher
             ).run()
         } finally {
             stopKoin()
