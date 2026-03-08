@@ -26,8 +26,8 @@ internal fun MeloScreen.playTrack(track: Track) {
             queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
             syncedLyrics = emptyList(), isLoadingSyncedLyrics = true, nowPlayingPositionMs = 0L,
             nowPlayingArtwork = null,
-        ),
-        progress = 0.0, marqueeOffset = 0,
+            progress = 0.0, marqueeOffset = 0,
+        )
     )
     marqueeTick = 0
     scrobbleSubmitted = false
@@ -91,13 +91,13 @@ internal fun MeloScreen.seekTo(progress: Double) {
     val duration = state.player.nowPlaying?.durationMs ?: return
     if (state.player.isLoadingAudio) return
     val clamped = progress.coerceIn(0.0, 1.0)
-    state = state.copy(progress = clamped)
+    state = state.copy(player = state.player.copy(progress = clamped))
     audioPlayer.seek((clamped * duration).toLong())
 }
 
 internal fun MeloScreen.seekBackward() {
     if (state.player.isLoadingAudio) return
-    val elapsedMs = (state.progress * (state.player.nowPlaying?.durationMs ?: 0L)).toLong()
+    val elapsedMs = (state.player.progress * (state.player.nowPlaying?.durationMs ?: 0L)).toLong()
     if (elapsedMs > 3000L || state.player.queueIndex <= 0) state.player.nowPlaying?.let { playTrack(it) }
     else playFromQueue(state.player.queueIndex - 1)
 }
@@ -153,7 +153,7 @@ internal fun MeloScreen.removeFromQueue(index: Int) {
     )
     if (removingPlaying) {
         audioPlayer.stop()
-        if (newQueue.isEmpty()) state = state.copy(player = state.player.copy(nowPlaying = null, isPlaying = false, isRadioMode = false), progress = 0.0)
+        if (newQueue.isEmpty()) state = state.copy(player = state.player.copy(nowPlaying = null, isPlaying = false, isRadioMode = false, progress = 0.0))
         else playFromQueue(if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0)
     }
 }
@@ -164,8 +164,8 @@ internal fun MeloScreen.clearQueue() {
         player = state.player.copy(
             queue = emptyList(), queueIndex = -1, queueCursor = 0,
             nowPlaying = null, isPlaying = false, isRadioMode = false,
+            progress = 0.0,
         ),
-        progress = 0.0,
     )
 }
 
@@ -192,7 +192,7 @@ internal fun MeloScreen.cycleRepeat() {
 internal fun MeloScreen.loadSimilarAndPlay() {
     val seed = state.player.nowPlaying ?: return
     val alreadyPlayed = state.player.queue.map { it.id }.toSet()
-    state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true), progress = 0.0)
+    state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0))
     scope.launch {
         try {
             val related = resolveSimilarTracks(seed, limit = 15)

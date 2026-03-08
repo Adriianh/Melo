@@ -10,25 +10,27 @@ internal fun MeloScreen.performSearch() {
     lastQuery = query
     loadMoreJob?.cancel()
     loadMoreJob = null
-    state = state.copy(search = state.search.copy(isLoading = true, errorMessage = null, hasMore = true), 
+    state = state.copy(
+        screen = ScreenState.Search(isLoading = true, errorMessage = null, hasMore = true), 
         detail = state.detail.copy(selectedTrack = null),
-        activeSection = SidebarSection.SEARCH)
+        navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
+    )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
     scope.launch {
         try {
             val results = searchTracks(query)
             val firstTrack = results.firstOrNull()
             appRunner()?.runOnRenderThread {
-                state = state.copy(search = state.search.copy(results = results, isLoading = false, selectedIndex = 0,
-                    hasMore = loadMoreTracks.hasMore(results.size)), 
-                    detail = state.detail.copy(selectedTrack = firstTrack))
+                updateScreen<ScreenState.Search> { it.copy(results = results, isLoading = false, selectedIndex = 0,
+                    hasMore = loadMoreTracks.hasMore(results.size)) }
+                state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack))
                 resultList.selected(0)
                 focusResults()
             }
             if (firstTrack != null) loadTrackDetails(firstTrack.id)
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(search = state.search.copy(isLoading = false, errorMessage = "Search failed: ${e.message}"))
+                updateScreen<ScreenState.Search> { it.copy(isLoading = false, errorMessage = "Search failed: ${e.message}") }
             }
         }
     }
@@ -36,18 +38,18 @@ internal fun MeloScreen.performSearch() {
 
 internal fun MeloScreen.loadMore() {
     if (lastQuery.isBlank()) return
-    loadMoreJob?.cancel()
-    val offset = state.search.results.size
-    state = state.copy(search = state.search.copy(isLoadingMore = true))
+    val currentResults = (state.screen as? ScreenState.Search)?.results ?: return
+    val offset = currentResults.size
+    updateScreen<ScreenState.Search> { it.copy(isLoadingMore = true) }
     loadMoreJob = scope.launch {
         try {
             val more = loadMoreTracks(lastQuery, offset)
             if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(search = state.search.copy(results = state.search.results + more, isLoadingMore = false,
-                    hasMore = loadMoreTracks.hasMore(offset + more.size)))
+                updateScreen<ScreenState.Search> { it.copy(results = it.results + more, isLoadingMore = false,
+                    hasMore = loadMoreTracks.hasMore(offset + more.size)) }
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread { state = state.copy(search = state.search.copy(isLoadingMore = false)) }
+            appRunner()?.runOnRenderThread { updateScreen<ScreenState.Search> { it.copy(isLoadingMore = false) } }
         }
     }
 }

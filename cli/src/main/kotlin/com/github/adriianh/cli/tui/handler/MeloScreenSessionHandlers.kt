@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.*
+
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.repository.SavedSession
 import kotlinx.coroutines.delay
@@ -53,7 +55,7 @@ internal suspend fun MeloScreen.persistSession() {
         SavedSession(
             queue = s.player.queue,
             queueIndex = s.player.queueIndex,
-            positionMs = (s.progress * s.player.nowPlaying.durationMs).toLong(),
+            positionMs = (s.player.progress * s.player.nowPlaying.durationMs).toLong(),
         )
     )
 }
