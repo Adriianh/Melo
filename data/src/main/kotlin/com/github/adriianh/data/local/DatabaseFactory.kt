@@ -4,9 +4,15 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import java.io.File
 import java.sql.DriverManager
 import java.util.Properties
+import org.sqlite.JDBC
 
 object DatabaseFactory {
     fun create(): MeloDatabase {
+        try {
+            DriverManager.registerDriver(JDBC())
+        } catch (e: Exception) {
+            // Driver might already be registered
+        }
         val dbDir = File(System.getProperty("user.home"), ".melo")
         dbDir.mkdirs()
         val dbFile = File(dbDir, "melo.db")
@@ -31,7 +37,7 @@ object DatabaseFactory {
     }
 
     private fun readUserVersion(url: String): Long {
-        DriverManager.getConnection(url).use { conn ->
+        getConnection(url).use { conn ->
             conn.createStatement().use { stmt ->
                 val rs = stmt.executeQuery("PRAGMA user_version")
                 return if (rs.next()) rs.getLong(1) else 0L
@@ -40,10 +46,19 @@ object DatabaseFactory {
     }
 
     private fun writeUserVersion(url: String, version: Long) {
-        DriverManager.getConnection(url).use { conn ->
+        getConnection(url).use { conn ->
             conn.createStatement().use { stmt ->
                 stmt.execute("PRAGMA user_version = $version")
             }
+        }
+    }
+
+    private fun getConnection(url: String): java.sql.Connection {
+        return try {
+            DriverManager.getConnection(url)
+        } catch (e: Exception) {
+            // Fallback for GraalVM Native Image where DriverManager discovery might fail
+            org.sqlite.JDBC().connect(url, Properties())
         }
     }
 }
