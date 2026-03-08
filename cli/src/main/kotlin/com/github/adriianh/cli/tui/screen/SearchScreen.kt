@@ -17,6 +17,7 @@ import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
+import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
@@ -59,7 +60,7 @@ fun renderSearchScreen(
 private fun renderResultsArea(
     state: MeloState,
     resultList: ListElement<*>,
-    lyricsArea: dev.tamboui.toolkit.elements.MarkupTextAreaElement,
+    lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,

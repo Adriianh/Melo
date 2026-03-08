@@ -97,6 +97,9 @@ data class MeloState(
     val isLoadingLyrics: Boolean = false,
     val similarTracks: List<Track> = emptyList(),
     val isLoadingSimilar: Boolean = false,
+    val isLoadingMoreSimilar: Boolean = false,
+    val hasMoreSimilar: Boolean = true,
+    val similarCursor: Int = 0,
     val artworkData: ImageData? = null,
     val nowPlayingArtwork: ImageData? = null,
 
@@ -142,6 +145,7 @@ data class MeloState(
 
     // Radio / auto-play
     val isRadioMode: Boolean = false,
+    val isLoadingMoreRadio: Boolean = false,
 
     // Session restore
     val isRestoringSession: Boolean = false,

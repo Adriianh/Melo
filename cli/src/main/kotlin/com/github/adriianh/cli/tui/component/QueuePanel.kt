@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
@@ -32,6 +33,8 @@ class QueueOverlay(
     private val onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
 ) : Element {
 
+    private val clearGraphics = ClearGraphicsWidget()
+
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
 
@@ -41,6 +44,7 @@ class QueueOverlay(
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
+        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val content = if (state.queue.isEmpty()) {

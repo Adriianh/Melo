@@ -206,6 +206,7 @@ class MeloScreen(
     internal val similarArea: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_BULLET} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
         .scrollbar()
         .focusable()
         .id("similar-area")

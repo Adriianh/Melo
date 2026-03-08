@@ -9,6 +9,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_BULLET
 import com.github.adriianh.cli.tui.MeloTheme.ICON_CHECK
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
+import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.core.domain.model.Track
@@ -19,12 +20,13 @@ import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
+import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 fun buildDetailPanel(
     state: MeloState,
-    lyricsArea: dev.tamboui.toolkit.elements.MarkupTextAreaElement,
+    lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
     onKeyEvent: (KeyEvent) -> EventResult,
@@ -37,8 +39,8 @@ fun buildDetailPanel(
         .divider(" │ ")
 
     val tabContent: StyledElement<*> = when (state.detailTab) {
-        DetailTab.INFO    -> renderTrackMetadata(track, state, marqueeText)
-        DetailTab.LYRICS  -> renderLyricsTab(state, lyricsArea)
+        DetailTab.INFO -> renderTrackMetadata(track, state, marqueeText)
+        DetailTab.LYRICS -> renderLyricsTab(state, lyricsArea)
         DetailTab.SIMILAR -> renderSimilarTab(state, similarArea)
     }
 
@@ -79,7 +81,7 @@ private fun renderTrackMetadata(
 ).flex(Flex.START)
 
 private fun renderArtwork(state: MeloState): StyledElement<*> =
-    if (state.artworkData != null) {
+    if (state.artworkData != null && !state.isQueueVisible) {
         widget(
             Image.builder()
                 .data(state.artworkData)
@@ -108,7 +110,8 @@ private fun renderLyricsTab(
         text("  Loading lyrics...").dim().centered(),
         spacer()
     )
-    state.lyrics != null  -> lyricsArea.markup(state.lyrics).fill()
+
+    state.lyrics != null -> lyricsArea.markup(state.lyrics).fill()
     else -> column(
         spacer(),
         text("  Press Enter to load lyrics").fg(TEXT_SECONDARY).centered(),
@@ -134,14 +137,26 @@ private fun renderSimilarTab(
             spacer()
         )
     }
-    val items = state.similarTracks.map { similar ->
+    val items = state.similarTracks.mapIndexed { index, similar ->
+        val isSelected = index == state.similarCursor
+        val titleColor = if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY
         row(
-            text("$ICON_BULLET ").fg(PRIMARY_COLOR).length(2),
-            text(similar.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
         )
+    }.toMutableList()
+
+    if (state.isLoadingMoreSimilar) {
+        items.add(
+            row(
+                text("  "),
+                text("Loading more...").fg(TEXT_DIM).centered().fill(),
+                text("")
+            )
+        )
     }
+
     similarArea.elements(*items.toTypedArray())
+    similarArea.selected(state.similarCursor)
     return similarArea.fill()
 }
-
