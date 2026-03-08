@@ -9,7 +9,8 @@ import kotlinx.coroutines.launch
 private const val SCROBBLE_MIN_MS = 4 * 60 * 1000L
 
 internal fun MeloScreen.onTrackStarted(track: Track) {
-    scope.launch { updateNowPlaying(track) }
+    updateNowPlayingJob?.cancel()
+    updateNowPlayingJob = scope.launch { updateNowPlaying(track) }
 }
 
 internal fun MeloScreen.onTrackProgress(track: Track, elapsedMs: Long, startedAt: Long) {
@@ -17,5 +18,6 @@ internal fun MeloScreen.onTrackProgress(track: Track, elapsedMs: Long, startedAt
     val threshold = minOf(track.durationMs / 2, SCROBBLE_MIN_MS)
     if (elapsedMs < threshold) return
     scrobbleSubmitted = true
-    scope.launch { scrobble(track, startedAt) }
+    scrobbleJob?.cancel()
+    scrobbleJob = scope.launch { scrobble(track, startedAt) }
 }
