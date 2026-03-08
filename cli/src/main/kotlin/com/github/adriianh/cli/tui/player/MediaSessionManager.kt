@@ -12,11 +12,10 @@ import io.github.selemba1000.JMTCMusicProperties
 import io.github.selemba1000.JMTCPlayingState
 import io.github.selemba1000.JMTCSettings
 import io.github.selemba1000.JMTCTimelineProperties
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 import java.io.File
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.nio.file.Files
 
 /**
@@ -29,6 +28,7 @@ import java.nio.file.Files
  * media-key presses from the OS or lock-screen controls.
  */
 class MediaSessionManager(
+    private val httpClient: HttpClient,
     private val onPlayPause: () -> Unit = {},
     private val onNext: () -> Unit = {},
     private val onPrevious: () -> Unit = {},
@@ -36,6 +36,11 @@ class MediaSessionManager(
 ) {
     private var jmtc: JMTC? = null
     private var initialized = false
+
+    /** Single reusable temp file for JMTC artwork — overwritten on each track change. */
+    private val artworkTempFile: File by lazy {
+        Files.createTempFile("melo-art-", ".jpg").toFile().also { it.deleteOnExit() }
+    }
 
     fun init() {
         if (initialized) return
@@ -141,25 +146,25 @@ class MediaSessionManager(
         } catch (_: Exception) {}
         jmtc = null
         initialized = false
+        // Clean up temp file
+        try { artworkTempFile.delete() } catch (_: Exception) {}
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     /**
-     * Downloads the artwork from [url] and writes it to a temp file.
+     * Downloads the artwork from [url] and writes it to the single reusable temp file.
      * JMTC expects a [File] rather than raw bytes for the album art.
-     * Returns null if the download fails.
+     *
+     * Uses the shared Ktor [HttpClient] instead of creating a new java.net.http.HttpClient
+     * per call (which would spin up a dedicated thread pool each time).
      */
     private fun downloadArtworkToTempFile(url: String): File? = try {
-        val client = HttpClient.newHttpClient()
-        val request = HttpRequest.newBuilder(URI.create(url)).GET().build()
-        val response = client.send(request, HttpResponse.BodyHandlers.ofByteArray())
-        if (response.statusCode() == 200) {
-            val tmp = Files.createTempFile("melo-art-", ".jpg").toFile()
-            tmp.deleteOnExit()
-            tmp.writeBytes(response.body())
-            tmp
-        } else null
+        val bytes = kotlinx.coroutines.runBlocking {
+            httpClient.get(url).body<ByteArray>()
+        }
+        artworkTempFile.writeBytes(bytes)
+        artworkTempFile
     } catch (_: Exception) {
         null
     }
