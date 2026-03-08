@@ -82,7 +82,7 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
     }
     val items = state.favorites.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
-        val indicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
@@ -159,7 +159,7 @@ private fun buildPlaylistDetailContent(state: MeloState, tracksList: ListElement
     }
 
     val items = tracks.mapIndexed { index, track ->
-        val indicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),

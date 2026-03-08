@@ -361,16 +361,16 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "queue-panel"
     when {
         event.code() == KeyCode.ESCAPE -> {
-            state = state.copy(isQueueVisible = false)
+            state = state.copy(player = state.player.copy(isQueueVisible = false))
             return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_DOWN) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val newCursor = minOf(state.queue.lastIndex, state.queueCursor + 1)
-            state = state.copy(queueCursor = newCursor)
+            val newCursor = minOf(state.player.queue.lastIndex, state.player.queueCursor + 1)
+            state = state.copy(player = state.player.copy(queueCursor = newCursor))
 
-            if (state.isRadioMode && !state.isLoadingMoreRadio && newCursor >= state.queue.size - 5) {
+            if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && newCursor >= state.player.queue.size - 5) {
                 loadMoreRadioTracks()
             }
             return EventResult.HANDLED
@@ -378,19 +378,19 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
 
         event.matches(Actions.MOVE_UP) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            state = state.copy(queueCursor = maxOf(0, state.queueCursor - 1))
+            state = state.copy(player = state.player.copy(queueCursor = maxOf(0, state.player.queueCursor - 1)))
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.ENTER -> {
             if (!isFocused) return EventResult.UNHANDLED
-            if (state.queue.getOrNull(state.queueCursor) != null) playFromQueue(state.queueCursor)
+            if (state.player.queue.getOrNull(state.player.queueCursor) != null) playFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.DELETE || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
             if (!isFocused) return EventResult.UNHANDLED
-            removeFromQueue(state.queueCursor)
+            removeFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
         }
 

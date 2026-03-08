@@ -146,7 +146,7 @@ internal fun MeloScreen.openPlaylistDetail(index: Int, autoPlay: Boolean = false
             appRunner()?.runOnRenderThread {
                 state = state.copy(playlistTracks = tracks)
                 if (autoPlay && tracks.isNotEmpty()) {
-                    state = state.copy(queue = tracks, queueIndex = -1, isRadioMode = false)
+                    state = state.copy(player = state.player.copy(queue = tracks, queueIndex = -1, isRadioMode = false))
                     playFromQueue(0)
                 }
             }

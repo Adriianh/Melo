@@ -68,7 +68,7 @@ private fun renderResultsArea(
 ): Element {
     val items = state.results.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
-        val nowPlayingIndicator = if (track.id == state.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isSelected = index == state.selectedIndex
         val titleText = if (isSelected) marqueeText(track.title, state.marqueeOffset, 40)
                         else track.title

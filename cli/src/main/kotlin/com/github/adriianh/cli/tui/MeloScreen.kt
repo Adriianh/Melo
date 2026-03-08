@@ -102,7 +102,7 @@ class MeloScreen(
         onStop = {
             runner()?.runOnRenderThread {
                 audioPlayer.stop()
-                state = state.copy(isPlaying = false, progress = 0.0)
+                state = state.copy(player = state.player.copy(isPlaying = false), progress = 0.0)
             }
         },
     )
@@ -111,22 +111,22 @@ class MeloScreen(
         scope = scope,
         onProgress = { elapsedMs ->
             runner()?.runOnRenderThread {
-                val duration = state.nowPlaying?.durationMs ?: 0L
+                val duration = state.player.nowPlaying?.durationMs ?: 0L
                 val progress = if (duration > 0) (elapsedMs.toDouble() / duration).coerceIn(0.0, 1.0) else 0.0
-                state = state.copy(progress = progress, nowPlayingPositionMs = elapsedMs)
+                state = state.copy(progress = progress, player = state.player.copy(nowPlayingPositionMs = elapsedMs))
                 mediaSession.updatePosition(elapsedMs)
-                state.nowPlaying?.let { onTrackProgress(it, elapsedMs, trackStartedAt) }
+                state.player.nowPlaying?.let { onTrackProgress(it, elapsedMs, trackStartedAt) }
             }
         },
         onFinish = {
             runner()?.runOnRenderThread {
-                state = state.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0)
+                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false), progress = 0.0)
                 seekForward()
             }
         },
         onError = { err ->
             runner()?.runOnRenderThread {
-                state = state.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message)
+                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message))
                 mediaSession.notifyStopped()
             }
         },
@@ -283,7 +283,7 @@ class MeloScreen(
             .left(buildSidebar(sidebarNavList, sidebarUtilList, state.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
             .center(renderMainContent())
 
-        val withQueue = if (state.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
+        val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
 
         return when (state.playlistInputMode) {
             PlaylistInputMode.CREATE,

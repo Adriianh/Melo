@@ -98,7 +98,7 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
         }
         val artwork = artworkUrl?.let { artworkRenderer.load(it) }
         if (isActive) appRunner()?.runOnRenderThread {
-            if (state.nowPlaying?.id == track.id) {
+            if (state.player.nowPlaying?.id == track.id) {
                 state = state.copy(nowPlayingArtwork = artwork)
             }
         }

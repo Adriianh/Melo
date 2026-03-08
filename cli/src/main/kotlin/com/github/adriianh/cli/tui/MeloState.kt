@@ -75,9 +75,33 @@ enum class StatsTimeUnit(val label: String) {
 }
 
 /**
+ * Player-specific state for Melo TUI.
+ */
+data class PlayerState(
+    val nowPlaying: Track? = null,
+    val isPlaying: Boolean = false,
+    val isLoadingAudio: Boolean = false,
+    val audioError: String? = null,
+    val queue: List<Track> = emptyList(),
+    val queueIndex: Int = -1,
+    val queueCursor: Int = 0,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val shuffleEnabled: Boolean = false,
+    val isQueueVisible: Boolean = false,
+    val volume: Int = 75,
+    val isRadioMode: Boolean = false,
+    val isLoadingMoreRadio: Boolean = false,
+    val syncedLyrics: List<LrcLine> = emptyList(),
+    val isLoadingSyncedLyrics: Boolean = false,
+    val nowPlayingPositionMs: Long = 0L,
+)
+
+/**
  * Unified application state for the Melo TUI.
  */
 data class MeloState(
+    val player: PlayerState = PlayerState(),
+    
     // Sidebar
     val activeSection: SidebarSection = SidebarSection.HOME,
 
@@ -124,36 +148,12 @@ data class MeloState(
     val homeRecentCursor: Int = 0,
     val homeFavoritesCursor: Int = 0,
 
-    // Now playing (player bar)
-    val nowPlaying: Track? = null,
-    val isPlaying: Boolean = false,
-    val isLoadingAudio: Boolean = false,
-    val audioError: String? = null,
-
-    // Queue
-    val queue: List<Track> = emptyList(),
-    val queueIndex: Int = -1,
-    val queueCursor: Int = 0,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
-    val shuffleEnabled: Boolean = false,
-    val isQueueVisible: Boolean = false,
-
     // Marquee scroll animation
     val marqueeOffset: Int = 0,
     val progress: Double = 0.0,
-    val volume: Int = 75,
-
-    // Radio / auto-play
-    val isRadioMode: Boolean = false,
-    val isLoadingMoreRadio: Boolean = false,
 
     // Session restore
     val isRestoringSession: Boolean = false,
-
-    // Now Playing screen — synced lyrics
-    val syncedLyrics: List<LrcLine> = emptyList(),
-    val isLoadingSyncedLyrics: Boolean = false,
-    val nowPlayingPositionMs: Long = 0L,
 
     // Graphics
     val needsGraphicsClear: Boolean = false,

@@ -26,7 +26,7 @@ fun renderNowPlayingScreen(
     marqueeText: (String, Int, Int) -> String,
     onKeyEvent: (KeyEvent) -> EventResult
 ): Element {
-    val track = state.nowPlaying ?: return renderNoTrackPlaying()
+    val track = state.player.nowPlaying ?: return renderNoTrackPlaying()
 
     val artworkPanel = buildArtworkPanel(state)
     val infoPanel    = buildInfoPanel(state, track, marqueeText)
@@ -59,7 +59,7 @@ private fun renderNoTrackPlaying(): Element = panel(
     .borderColor(BORDER_DEFAULT)
 
 private fun buildArtworkPanel(state: MeloState): Element =
-    if (state.nowPlayingArtwork != null && !state.isQueueVisible) {
+    if (state.nowPlayingArtwork != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
                 .data(state.nowPlayingArtwork)
@@ -93,13 +93,13 @@ private fun buildInfoPanel(
 private fun buildLyricsPanel(state: MeloState): Element {
     val title = "Lyrics"
 
-    if (state.isLoadingSyncedLyrics) {
+    if (state.player.isLoadingSyncedLyrics) {
         return panel(
             column(spacer(), text("  Loading lyrics...").dim().centered(), spacer())
         ).title(title).rounded().borderColor(BORDER_DEFAULT)
     }
 
-    val lines = state.syncedLyrics
+    val lines = state.player.syncedLyrics
     if (lines.isEmpty()) {
         return panel(
             column(
@@ -109,7 +109,7 @@ private fun buildLyricsPanel(state: MeloState): Element {
         ).title(title).rounded().borderColor(BORDER_DEFAULT)
     }
 
-    val currentIndex = LrcParser.currentLineIndex(lines, state.nowPlayingPositionMs)
+    val currentIndex = LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
 
     val windowSize = 20
     val half = windowSize / 2

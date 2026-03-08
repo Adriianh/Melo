@@ -81,7 +81,7 @@ private fun renderTrackMetadata(
 ).flex(Flex.START)
 
 private fun renderArtwork(state: MeloState): StyledElement<*> =
-    if (state.artworkData != null && !state.isQueueVisible) {
+    if (state.artworkData != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
                 .data(state.artworkData)

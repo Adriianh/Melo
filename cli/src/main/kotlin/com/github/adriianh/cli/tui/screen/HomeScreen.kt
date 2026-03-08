@@ -37,7 +37,7 @@ fun renderHomeScreen(
     } else {
         val items = state.recentTracks.take(10).map { entry ->
             val track = entry.track
-            val isPlaying = track.id == state.nowPlaying?.id
+            val isPlaying = track.id == state.player.nowPlaying?.id
             row(
                 text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
                 text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
@@ -66,7 +66,7 @@ fun renderHomeScreen(
         )
     } else {
         val items = state.favorites.take(10).mapIndexed { index, track ->
-            val isPlaying = track.id == state.nowPlaying?.id
+            val isPlaying = track.id == state.player.nowPlaying?.id
             row(
                 text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
                 text("${index + 1}").dim().length(3),
