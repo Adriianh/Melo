@@ -74,6 +74,7 @@ graalvmNative {
                 "--initialize-at-build-time=io.ktor",
                 "--initialize-at-build-time=kotlin",
                 "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
+                "--initialize-at-build-time=io.github.selemba1000.linux.LinuxJMTC",
                 "--initialize-at-build-time=kotlinx.coroutines",
                 "--initialize-at-build-time=kotlinx.serialization",
                 "--initialize-at-build-time=kotlinx.serialization.json.Json",

@@ -35,6 +35,8 @@ class MediaSessionManager(
     private val onStop: () -> Unit = {},
 ) {
     private var jmtc: JMTC? = null
+
+    @Volatile
     private var initialized = false
 
     /** Single reusable temp file for JMTC artwork — overwritten on each track change. */
@@ -44,40 +46,43 @@ class MediaSessionManager(
 
     fun init() {
         if (initialized) return
-        try {
-            jmtc = JMTC.getInstance(JMTCSettings("melo", "melo"))
+        synchronized(this) {
+            if (initialized) return
+            try {
+                jmtc = JMTC.getInstance(JMTCSettings("melo", "melo"))
 
-            val callbacks = JMTCCallbacks()
-            callbacks.onPlay = JMTCButtonCallback {
-                jmtc?.playingState = JMTCPlayingState.PLAYING
-                onPlayPause()
-            }
-            callbacks.onPause = JMTCButtonCallback {
-                jmtc?.playingState = JMTCPlayingState.PAUSED
-                onPlayPause()
-            }
-            callbacks.onStop = JMTCButtonCallback {
+                val callbacks = JMTCCallbacks()
+                callbacks.onPlay = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.PLAYING
+                    onPlayPause()
+                }
+                callbacks.onPause = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.PAUSED
+                    onPlayPause()
+                }
+                callbacks.onStop = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.STOPPED
+                    onStop()
+                }
+                callbacks.onNext = JMTCButtonCallback { onNext() }
+                callbacks.onPrevious = JMTCButtonCallback { onPrevious() }
+
+                jmtc?.setCallbacks(callbacks)
+                jmtc?.mediaType = JMTCMediaType.Music
+                jmtc?.enabledButtons = JMTCEnabledButtons(
+                    /* play     */ true,
+                    /* pause    */ true,
+                    /* stop     */ false,
+                    /* next     */ true,
+                    /* previous */ true,
+                )
+                jmtc?.enabled = true
                 jmtc?.playingState = JMTCPlayingState.STOPPED
-                onStop()
-            }
-            callbacks.onNext = JMTCButtonCallback { onNext() }
-            callbacks.onPrevious = JMTCButtonCallback { onPrevious() }
+                jmtc?.updateDisplay()
 
-            jmtc?.setCallbacks(callbacks)
-            jmtc?.mediaType = JMTCMediaType.Music
-            jmtc?.enabledButtons = JMTCEnabledButtons(
-                /* play     */ true,
-                /* pause    */ true,
-                /* stop     */ false,
-                /* next     */ true,
-                /* previous */ true,
-            )
-            jmtc?.enabled = true
-            jmtc?.playingState = JMTCPlayingState.STOPPED
-            jmtc?.updateDisplay()
-
-            initialized = true
-        } catch (_: Exception) { }
+                initialized = true
+            } catch (_: Throwable) { }
+        }
     }
 
     /** Called when a new track starts playing. */
@@ -146,11 +151,8 @@ class MediaSessionManager(
         } catch (_: Exception) { }
         jmtc = null
         initialized = false
-        // Clean up temp file
         try { artworkTempFile.delete() } catch (_: Exception) {}
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────
 
     /**
      * Downloads the artwork from [url] and writes it to the single reusable temp file.

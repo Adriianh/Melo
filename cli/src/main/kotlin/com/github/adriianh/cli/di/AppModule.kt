@@ -2,6 +2,7 @@ package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -122,6 +123,7 @@ val appModule = module {
         )
     }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
+    single { MediaSessionManager(httpClient = get()) }
 
     // Repositories
     single<MeloDatabase> { DatabaseFactory.create() }
