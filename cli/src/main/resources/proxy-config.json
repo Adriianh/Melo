@@ -22,11 +22,6 @@
   {
     "interfaces": [
       "org.freedesktop.mpris.MediaPlayer2",
-      "org.freedesktop.dbus.interfaces.DBusInterface"
-    ]
-  },
-  {
-    "interfaces": [
       "org.freedesktop.mpris.MediaPlayer2.Player",
       "org.freedesktop.dbus.interfaces.DBusInterface"
     ]
