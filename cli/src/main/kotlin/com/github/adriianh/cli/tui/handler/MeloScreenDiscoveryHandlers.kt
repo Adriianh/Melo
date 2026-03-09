@@ -6,9 +6,10 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import io.ktor.utils.io.CancellationException
 
 private const val SAME_ARTIST_LIMIT = 3
 private const val DISCOVERY_LIMIT = 5
@@ -28,7 +29,7 @@ private const val DISCOVERY_LIMIT = 5
  * prior to Piped resolution.
  */
 internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 10, offset: Int = 0): List<Track> =
-    coroutineScope {
+    supervisorScope {
         // --- parallel fetch ---
         val sameArtistDeferred = async {
             if (offset > 0) emptyList() else {
@@ -67,7 +68,6 @@ internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 1
         val sameArtist = sameArtistDeferred.await()
         val discovery = lastFmDeferred.await()
 
-        // --- merge: artist-first, then discovery without duplicates ---
         val seenIds = sameArtist.mapNotNull { it.sourceId }.toMutableSet()
         val filtered = discovery.filter { track ->
             val id = track.sourceId
@@ -75,11 +75,10 @@ internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 1
         }
         val merged = (sameArtist + filtered).take(limit)
 
-        if (merged.isNotEmpty()) return@coroutineScope merged
+        if (merged.isNotEmpty()) return@supervisorScope merged
 
-        // --- last resort: Piped related-streams graph ---
-        val videoId = pipedApiClient.resolveVideoId(seed) ?: return@coroutineScope emptyList()
-        if (offset > 0) return@coroutineScope emptyList()
+        val videoId = pipedApiClient.resolveVideoId(seed) ?: return@supervisorScope emptyList<Track>()
+        if (offset > 0) return@supervisorScope emptyList()
 
         pipedApiClient.getRelatedTracks(
             videoId = videoId,
@@ -98,17 +97,24 @@ internal fun MeloScreen.loadMoreSimilar() {
 
     scope.launch {
         try {
-            val more = resolveSimilarTracks(seed, limit = 10, offset = currentOffset)
+            var more = resolveSimilarTracks(seed, limit = 10, offset = currentOffset)
+            
+            if (more.isEmpty() && state.detail.similarTracks.isNotEmpty()) {
+                val newSeed = state.detail.similarTracks.random()
+                more = resolveSimilarTracks(newSeed, limit = 10, offset = 0)
+            }
+
             if (isActive) appRunner()?.runOnRenderThread {
                 val updatedList = (state.detail.similarTracks + more).distinctBy { it.id }
                 state = state.copy(
                     detail = state.detail.copy(
                         similarTracks = updatedList,
                         isLoadingMoreSimilar = false,
-                        hasMoreSimilar = more.isNotEmpty()
+                        hasMoreSimilar = more.isNotEmpty() || updatedList.size > state.detail.similarTracks.size
                     )
                 )
             }
+        } catch (_: CancellationException) {
         } catch (_: Exception) {
             appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingMoreSimilar = false)) }
         }
