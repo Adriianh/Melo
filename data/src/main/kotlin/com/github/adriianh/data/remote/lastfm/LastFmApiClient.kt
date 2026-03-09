@@ -5,6 +5,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.utils.io.CancellationException
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
 import java.util.SortedMap
@@ -27,7 +28,7 @@ class LastFmApiClient(
                 parameter("format", "json")
                 parameter("limit", limit)
             }.body<LastFmTopTagsResponse>()
-            response.toptags.tag.map { it.name }
+            response.toptags?.tag?.map { it.name } ?: emptyList()
         } catch (_: Exception) {
             emptyList()
         }
@@ -46,7 +47,7 @@ class LastFmApiClient(
             response.similartracks.track.map {
                 SimilarTrack(title = it.name, artist = it.artist.name, match = it.match)
             }
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             emptyList()
@@ -65,7 +66,7 @@ class LastFmApiClient(
             val sig = sign(params)
             val body = post(params + mapOf("api_sig" to sig, "format" to "json")).bodyAsText()
             json.decodeFromString<LastFmSessionResponse>(body).session.key
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             null
@@ -91,9 +92,9 @@ class LastFmApiClient(
                 parameter("format", "json")
             }.bodyAsText()
             json.decodeFromString<LastFmTokenResponse>(body).token
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -112,7 +113,7 @@ class LastFmApiClient(
             val sig = sign(params)
             val body = post(params + mapOf("api_sig" to sig, "format" to "json")).bodyAsText()
             json.decodeFromString<LastFmSessionResponse>(body).session.key
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
             null
@@ -138,7 +139,7 @@ class LastFmApiClient(
             ).also { if (album.isNotBlank()) it["album"] = album }
             val sig = sign(params)
             post(params + mapOf("api_sig" to sig, "format" to "json"))
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) { }
     }
@@ -162,7 +163,7 @@ class LastFmApiClient(
             ).also { if (album.isNotBlank()) it["album[0]"] = album }
             val sig = sign(params)
             post(params + mapOf("api_sig" to sig, "format" to "json"))
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) { }
     }
