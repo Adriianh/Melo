@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LastFmTopTagsResponse(
-    val toptags: LastFmTagList
+    val toptags: LastFmTagList? = null
 )
 
 @Serializable
