@@ -9,10 +9,10 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 New-Item -ItemType Directory -Force -Path $BinDir   | Out-Null
 New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
 
-Copy-Item -Path "$ScriptDir\melo.jar" -Destination "$InstallDir\melo.jar" -Force
+Copy-Item -Path "$ScriptDir\melo.exe" -Destination "$InstallDir\melo.exe" -Force
 
-Set-Content "$BinDir\melo.bat" "@echo off`r`njava --enable-native-access=ALL-UNNAMED -jar `"$InstallDir\melo.jar`" %*`r`n"
-Set-Content "$BinDir\melo.ps1" "& java --enable-native-access=ALL-UNNAMED -jar `"$InstallDir\melo.jar`" @args`r`n"
+Set-Content "$BinDir\melo.bat" "@echo off`r`n\"$InstallDir\melo.exe\" %*`r`n"
+Set-Content "$BinDir\melo.ps1" "& \"$InstallDir\melo.exe\" @args`r`n"
 
 # Create a .env template only if one doesn't exist yet
 $envFile = "$ConfigDir\.env"
@@ -43,7 +43,7 @@ if ($currentPath -notlike "*$BinDir*") {
 }
 
 Write-Host ""
-Write-Host "✓ Melo installed to $InstallDir"
+Write-Host "✓ Melo native binary installed to $InstallDir"
 Write-Host "✓ Config directory created at $ConfigDir"
 Write-Host ""
 Write-Host "Add your API keys to $ConfigDir\.env before running Melo."
