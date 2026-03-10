@@ -1,84 +1,86 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Melo Logo" width="400">
+  <img src="assets/logo.png" alt="Melo Logo" width="700">
 </p>
 
 <h1 align="center">Melo</h1>
 
 <p align="center">
-  <strong>A modern, powerful, and cross-platform music player.</strong>
+  <strong>Modern, fast, and cross-platform music player</strong>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/Adriianh/Melo/release.yml?style=for-the-badge" alt="Build Status">
-  <img src="https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk" alt="Java Version">
-  <img src="https://img.shields.io/badge/Gradle-9.1.0-blue?style=for-the-badge&logo=gradle" alt="Gradle Version">
+  <img src="https://img.shields.io/github/v/release/Adriianh/Melo?style=for-the-badge" alt="Latest Release">
+  <img src="https://img.shields.io/badge/Java-21+-orange?style=for-the-badge&logo=openjdk" alt="Java Version">
+  <img src="https://img.shields.io/badge/Gradle-9.x-blue?style=for-the-badge&logo=gradle" alt="Gradle Version">
+  <img src="https://img.shields.io/github/license/Adriianh/Melo?style=for-the-badge" alt="License">
 </p>
 
 ---
 
-## 🎶 About Melo
+## 🚀 Quick Start
 
-Melo is a music player designed for speed and versatility. While it currently offers a powerful and intuitive Command-Line Interface (CLI), it is architected with a future-proof mindset to support graphical interfaces across multiple platforms. Melo integrates with Spotify, iTunes, Piped, and Last.fm to provide a unified listening and discovery experience.
+1. **Download** the latest release for your platform from [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest).
+2. **Install** using the provided script for your OS (see below).
+3. **Configure** your API keys in the generated `.env` file.
+4. **Run** `melo` from your terminal and enjoy!
 
-## ✨ Features
+---
 
-- 🚀 **Intuitive TUI**: Full control from your terminal with a rich, keyboard-driven interface.
-- 🔍 **Multi-source Search**: Discover tracks across iTunes and Piped simultaneously, with deduplication.
-- 🎵 **Queue System**: Build a playback queue, shuffle, and cycle through repeat modes (off / all / one).
-- 📻 **Radio Auto-play**: When your queue runs out, Melo automatically fetches similar tracks via Last.fm and keeps playing — just like Spotify Radio.
-- ⏩ **Seek**: Jump forward or backward within a track using keyboard shortcuts.
-- 🎧 **Direct Streaming**: High-quality audio streaming powered by Piped + yt-dlp + ffplay.
-- 🖼️ **Artwork & Lyrics**: Album art rendered inline in the terminal; lyrics fetched on demand.
-- ❤️ **Library**: Save your favourite tracks and access them from the Library screen.
-- 📦 **Cross-platform**: Runs on any system with Java 21+ (**Windows**, **macOS**, **Linux**).
+## 🖼️ Demo
 
-## 🛠️ Tech Stack
+<p align="center">
+  <img src="assets/preview/home_screen.png" alt="Melo Home Screen" width="350">
+  <img src="assets/preview/search_screen.png" alt="Melo Search Screen" width="350">
+  <img src="assets/preview/song_screen.png" alt="Melo Song Screen" width="350">
+  <img src="assets/preview/stats_screen.png" alt="Melo Stats Screen" width="350">
+</p>
+<p align="center">
+  <em>Home</em> &nbsp; | &nbsp; <em>Search</em> &nbsp; | &nbsp; <em>Song</em> &nbsp; | &nbsp; <em>Stats</em>
+</p>
 
-- **Language**: [Kotlin](https://kotlinlang.org/) (JVM)
-- **Build System**: [Gradle 9.0.0](https://gradle.org/) with Kotlin DSL
-- **Architecture**: Clean Architecture (modules: `cli`, `core`, `data`)
-- **CLI Framework**: [Clikt](https://ajalt.github.io/clikt/) · [TamboUI](https://tamboui.dev/)
-- **Dependency Injection**: [Koin](https://insert-koin.io/)
-- **Audio**: [yt-dlp](https://github.com/yt-dlp/yt-dlp) + [ffplay](https://ffmpeg.org/)
-- **Data sources**: Spotify API · iTunes Search API · Piped · Last.fm
+---
 
-## 🎹 Keyboard Shortcuts
+## Features
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Play selected track |
-| `Space` | Play / Pause |
-| `←` / `→` | Seek ±5% within track |
-| `p` / `n` | Previous / Next track in queue |
-| `q` | Add track to queue / Toggle queue panel |
-| `s` | Toggle shuffle |
-| `r` | Cycle repeat mode (off → all → one) |
-| `f` | Toggle favourite |
-| `+` / `-` | Volume up / down |
-| `Tab` | Cycle focus between panels |
-| `1` / `2` / `3` | Switch detail tab (Info / Lyrics / Similar) |
-| `Del` / `d` | Remove track from queue |
-| `c` | Clear queue |
+- **Unified Search**: Find and play music from multiple sources in one place.
+- **Rich Terminal UI**: Intuitive, keyboard-driven interface for efficient navigation.
+- **Flexible Queue**: Manage your playback queue, shuffle, repeat, and favorites.
+- **Continuous Playback**: Automatic radio and recommendations when your queue ends.
+- **Artwork & Lyrics**: Inline album art and lyrics support.
+- **Direct Streaming**: High-quality playback with minimal latency.
+- **Cross-Platform**: Native builds for Windows, macOS, and Linux.
 
-## 🚀 Getting Started
+---
+
+## Configuration
+
+After installation, configuration files are created in your user config directory (e.g., `~/.config/melo` or `%APPDATA%\melo`).
+Add your API keys and credentials to the `.env` file as needed:
+
+```env
+LASTFM_API_KEY=your_lastfm_key
+SPOTIFY_CLIENT_ID=your_spotify_id
+SPOTIFY_CLIENT_SECRET=your_spotify_secret
+```
+
+---
+
+## Installation
 
 ### Prerequisites
-- **Java 21** or higher — [Download Temurin](https://adoptium.net/)
-- **yt-dlp** — [Install guide](https://github.com/yt-dlp/yt-dlp#installation)
-- **ffmpeg** (includes ffplay) — [Download](https://ffmpeg.org/download.html)
+- Java 21+ (for building or running the JAR)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/) (for audio streaming)
 
-### Installation from release
+### From Release
 
-Download the archive for your platform from the [latest release](https://github.com/Adriianh/Melo/releases/latest) and run the installer:
+Download the latest release for your platform from [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest).
 
 **Linux / macOS**
 ```bash
 tar -xzf melo-*-linux.tar.gz   # or macos
 cd melo-*/
-chmod +x install.sh
 ./install.sh
-# Then add ~/.local/bin to your PATH if it isn't already:
-# export PATH="$HOME/.local/bin:$PATH"   # add this to ~/.bashrc or ~/.zshrc
 ```
 
 **Windows** (PowerShell)
@@ -86,13 +88,9 @@ chmod +x install.sh
 Expand-Archive melo-*-windows.zip
 cd melo-*\
 .\install.ps1
-# Open a new terminal — melo is now on your PATH
 ```
 
-After installation, run:
-```
-melo
-```
+After installation, run `melo` from your terminal.
 
 ### Uninstall
 
@@ -110,43 +108,40 @@ cd melo-*\
 
 ---
 
-### Building from source
+## Building from Source
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/Adriianh/Melo.git
    cd Melo
    ```
-2. Build the fat-JAR:
+2. Build the native binary for your platform:
    ```bash
-   ./gradlew :cli:shadowJar
-   # Output: cli/build/libs/melo.jar
+   ./gradlew :cli:nativeCompile
+   # Output: cli/build/native/nativeCompile/melo (or melo.exe on Windows)
    ```
-3. Run directly:
-   ```bash
-   java -jar cli/build/libs/melo.jar
-   ```
-4. Or build a distributable archive for your current OS:
+3. Or build the distributable archive:
    ```bash
    ./gradlew :cli:dist
-   # Output: cli/build/dist/melo-*-<os>.tar.gz (or .zip on Windows)
+   # Output: cli/build/dist/
    ```
 
-## 📈 Roadmap
+---
 
-- [x] Core structure and Clean Architecture setup.
-- [x] API integration with Spotify, iTunes, Piped and Last.fm.
-- [x] Automated cross-platform distribution (fat-JAR + shell wrappers).
-- [x] Full TUI with search, library, home screen and detail panels.
-- [x] Audio playback with queue, shuffle, repeat and seek.
-- [x] Spotify-style radio auto-play via Last.fm similar tracks.
-- [ ] GUI implementation using Compose for Desktop.
-- [ ] Mobile support via Compose Multiplatform.
-- [ ] Local library and playlist management.
+## Contributing
 
-## 📄 License
+We welcome contributions! To collaborate effectively:
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+- Fork the repository and create a feature or fix branch (e.g., `feat/feature-name` or `fix/bug-description`).
+- Follow the [Conventional Commits](https://www.conventionalcommits.org/) style for commit messages.
+- Ensure your code is clean, documented, and tested.
+- Run all tests and verify builds before submitting a pull request.
+- Open a pull request with a clear description of your changes and testing steps.
+- Review the [GitHub Guidelines](.github/copilot-instructions.md) for more details on workflow and code style.
+- If you find a bug or have a feature request, please open an issue with clear steps to reproduce or describe the enhancement.
 
 ---
-<p align="center">Handcrafted with ❤️ by <a href="https://github.com/Adriianh">Adriianh</a></p>
+
+## License
+
+Melo is licensed under the MIT License. See [LICENSE](LICENSE) for details.
