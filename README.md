@@ -64,6 +64,22 @@ SPOTIFY_CLIENT_ID=your_spotify_id
 SPOTIFY_CLIENT_SECRET=your_spotify_secret
 ```
 
+You can also manage configuration directly from the terminal using the built-in `config` command:
+
+```bash
+melo config set <key> <value>      # Set a configuration value
+melo config list                  # List all configuration values
+melo config auth <provider>       # Authenticate with a provider (e.g., Spotify)
+```
+
+For more details, run:
+
+```bash
+melo config --help
+```
+
+You can also use `--help` with any subcommand for more details, e.g., `melo config set --help`.
+
 ---
 
 ## Installation
