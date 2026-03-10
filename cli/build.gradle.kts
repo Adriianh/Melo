@@ -86,6 +86,7 @@ graalvmNative {
                 "--initialize-at-build-time=org.slf4j",
                 "--initialize-at-build-time=org.sqlite",
                 "--initialize-at-build-time=java.sql.DriverManager",
+                "--initialize-at-build-time=java.sql.DriverInfo",
                 // ── Native image housekeeping ───────────────────────────
                 "-H:+InstallExitHandlers",
                 "-H:+ReportUnsupportedElementsAtRuntime",
