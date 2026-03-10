@@ -66,28 +66,44 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
     detailsJob?.cancel()
     state = state.copy(detail = state.detail.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null))
     detailsJob = scope.launch {
-        val fullTrackDeferred = async { getTrack(trackId) }
-        val similarDeferred = async {
-            val track = knownTrack ?: fullTrackDeferred.await() ?: return@async emptyList<Track>()
-            resolveSimilarTracks(track, limit = 10)
-        }
-        val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: run {
-            appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingSimilar = false)) }
-            return@launch
-        }
-        var artworkUrl = fullTrack.artworkUrl
-        if (artworkUrl.isNullOrBlank()) {
-            artworkUrl = artworkProvider.resolveArtwork(fullTrack.title, fullTrack.artist)
-        }
-
-        val artworkData = artworkUrl?.let { artworkRenderer.load(it) }
-        if (isActive) {
-            appRunner()?.runOnRenderThread {
-                state = state.copy(detail = state.detail.copy(selectedTrack = fullTrack, artworkData = artworkData))
+        supervisorScope {
+            val fullTrackDeferred = async { 
+                try {
+                    getTrack(trackId)
+                } catch (_: Exception) { null }
             }
-            val similar = similarDeferred.await()
-            if (isActive) appRunner()?.runOnRenderThread {
-                state = state.copy(detail = state.detail.copy(similarTracks = similar, isLoadingSimilar = false))
+            
+            val similarDeferred = async {
+                try {
+                    val track = knownTrack ?: fullTrackDeferred.await() ?: return@async emptyList<Track>()
+                    resolveSimilarTracks(track, limit = 10)
+                } catch (_: Exception) { emptyList() }
+            }
+
+            val fullTrack = fullTrackDeferred.await() ?: knownTrack ?: run {
+                appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingSimilar = false)) }
+                return@supervisorScope
+            }
+
+            var artworkUrl = fullTrack.artworkUrl
+            if (artworkUrl.isNullOrBlank()) {
+                artworkUrl = artworkProvider.resolveArtwork(fullTrack.title, fullTrack.artist)
+            }
+
+            val artworkData = artworkUrl?.let { 
+                try {
+                    artworkRenderer.load(it)
+                } catch (_: Exception) { null }
+            }
+
+            if (isActive) {
+                appRunner()?.runOnRenderThread {
+                    state = state.copy(detail = state.detail.copy(selectedTrack = fullTrack, artworkData = artworkData))
+                }
+                val similar = similarDeferred.await()
+                if (isActive) appRunner()?.runOnRenderThread {
+                    state = state.copy(detail = state.detail.copy(similarTracks = similar, isLoadingSimilar = false))
+                }
             }
         }
     }

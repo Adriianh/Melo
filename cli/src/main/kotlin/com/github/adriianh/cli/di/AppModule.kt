@@ -2,6 +2,7 @@ package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -36,6 +37,8 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
@@ -45,8 +48,18 @@ private fun hasSpotifyKeys() =
 
 val appModule = module {
     // Infrastructure
+    single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
+
     single {
         HttpClient(CIO) {
+            engine {
+                // Use our limited dispatcher for the CIO engine
+                dispatcher = get<CoroutineDispatcher>()
+                endpoint {
+                    maxConnectionsCount = 20
+                    connectTimeout = 5_000
+                }
+            }
             install(ContentNegotiation) {
                 val jsonConfig = Json {
                     ignoreUnknownKeys = true
@@ -110,6 +123,7 @@ val appModule = module {
         )
     }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
+    single { MediaSessionManager(httpClient = get()) }
 
     // Repositories
     single<MeloDatabase> { DatabaseFactory.create() }

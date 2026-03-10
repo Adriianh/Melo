@@ -18,5 +18,4 @@ if [ -d "$CONFIG_DIR" ]; then
     esac
 fi
 
-echo "✓ Melo uninstalled."
-
+echo "✓ Melo native binary uninstalled."

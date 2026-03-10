@@ -1,0 +1,246 @@
+[
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameAcquired",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameLost",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBus$NameOwnerChanged",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTC",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCSettings",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.LinuxJMTC",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.LinuxJMTCCallbacks",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCPlayingState",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCMusicProperties",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCTimelineProperties",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCEnabledButtons",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCCallbacks",
+    "allPublicConstructors": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.JMTCButtonCallback",
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.mpris.MediaPlayer2",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.mpris.MediaPlayer2$Player",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.MPRISPlayer2",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.MPRISPlayer2Player",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.MPRISPlayer2Player$LoopStatus",
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.github.selemba1000.linux.DBusProperty",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.DBusInterface",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Properties",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Introspectable",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.interfaces.Peer",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.types.Variant",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.freedesktop.dbus.connections.impl.DBusConnection",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+  
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+  
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmImage", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmImage$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSession", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSession$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+
+  { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
+  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true }
+]

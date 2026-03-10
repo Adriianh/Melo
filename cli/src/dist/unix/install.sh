@@ -8,9 +8,10 @@ CONFIG_DIR="${MELO_CONFIG_DIR:-$HOME/.config/melo}"
 mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cp "$SCRIPT_DIR/melo.jar" "$INSTALL_DIR/melo.jar"
+cp "$SCRIPT_DIR/melo" "$INSTALL_DIR/melo"
+chmod +x "$INSTALL_DIR/melo"
 
-printf '#!/usr/bin/env sh\nexec java --enable-native-access=ALL-UNNAMED -jar "%s/melo.jar" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/melo"
+printf '#!/usr/bin/env sh\nexec "%s/melo" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/melo"
 chmod +x "$BIN_DIR/melo"
 
 # Create a .env template only if one doesn't exist yet
@@ -31,7 +32,7 @@ EOF
 fi
 
 echo ""
-echo "✓ Melo installed to $INSTALL_DIR"
+echo "✓ Melo native binary installed to $INSTALL_DIR"
 echo "✓ Launcher placed at $BIN_DIR/melo"
 echo "✓ Config directory created at $CONFIG_DIR"
 echo ""

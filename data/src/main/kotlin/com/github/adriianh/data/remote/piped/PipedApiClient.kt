@@ -10,6 +10,11 @@ import kotlin.math.abs
 class PipedApiClient(
     private val httpClient: HttpClient
 ) {
+    companion object {
+        private val PARENS_RE = Regex("""\s*\(.*?\)""")
+        private val BRACKETS_RE = Regex("""\s*\[.*?]""")
+        private val NON_ALNUM_RE = Regex("[^a-z0-9 ]")
+    }
 
     private val baseUrl = "https://api.piped.private.coffee"
 
@@ -203,8 +208,8 @@ class PipedApiClient(
 
     private fun normalize(text: String): String = text
         .lowercase()
-        .replace(Regex("\\s*\\(.*?\\)"), "")
-        .replace(Regex("\\s*\\[.*?]"), "")
-        .replace(Regex("[^a-z0-9 ]"), "")
+        .replace(PARENS_RE, "")
+        .replace(BRACKETS_RE, "")
+        .replace(NON_ALNUM_RE, "")
         .trim()
 }

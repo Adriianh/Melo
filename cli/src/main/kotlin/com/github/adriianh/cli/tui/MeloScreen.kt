@@ -1,22 +1,11 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.*
-
-import com.github.adriianh.cli.tui.component.buildPlayerBar
-import com.github.adriianh.cli.tui.component.buildSearchBar
-import com.github.adriianh.cli.tui.component.buildSidebar
-import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
-import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
-import com.github.adriianh.cli.tui.component.QueueOverlay
+import com.github.adriianh.cli.tui.component.*
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
-import com.github.adriianh.cli.tui.screen.renderHomeScreen
-import com.github.adriianh.cli.tui.screen.renderLibraryScreen
-import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
-import com.github.adriianh.cli.tui.screen.renderSearchScreen
-import com.github.adriianh.cli.tui.screen.renderStatsScreen
+import com.github.adriianh.cli.tui.screen.*
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -31,10 +20,13 @@ import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
+import io.ktor.client.*
 import kotlinx.coroutines.*
 import java.time.Duration
 
 class MeloScreen(
+    // Shared infrastructure
+    internal val httpClient: HttpClient,
     // Search
     internal val searchTracks: SearchTracksUseCase,
     internal val loadMoreTracks: LoadMoreTracksUseCase,
@@ -73,11 +65,12 @@ class MeloScreen(
     internal val getListeningStats: GetListeningStatsUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
-    internal val artworkProvider: ArtworkProvider
+    internal val artworkProvider: ArtworkProvider,
+    dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 
     internal var state = MeloState()
-    internal val scope = CoroutineScope(Dispatchers.IO)
+    internal val scope = CoroutineScope(dispatcher)
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null
@@ -87,6 +80,8 @@ class MeloScreen(
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var trackStartedAt = 0L
+    internal var updateNowPlayingJob: Job? = null
+    internal var scrobbleJob: Job? = null
 
     /**
      * Helper to update the current screen state in a type-safe way.
@@ -102,6 +97,7 @@ class MeloScreen(
     internal fun appRunner() = runner()
 
     internal val mediaSession = MediaSessionManager(
+        httpClient = httpClient,
         onPlayPause = {
             runner()?.runOnRenderThread { togglePlayPause() }
         },
@@ -259,13 +255,16 @@ class MeloScreen(
             runner()?.runOnRenderThread {
                 marqueeTick++
                 if (marqueeTick > 10) {
-                    val track = state.detail.selectedTrack
+                    val track = state.detail.selectedTrack ?: return@runOnRenderThread
+
+                    // Skip state copies if text is short enough to not need a marquee
+                    if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
+
                     val newOffset = state.player.marqueeOffset + 1
-                    if (track != null) {
-                        val separator = "   •   "
-                        val full = track.title + separator
-                        if (newOffset % full.length == 0) marqueeTick = 0
-                    }
+                    val separator = "   •   "
+                    val full = track.title + separator
+                    if (newOffset % full.length == 0) marqueeTick = 0
+                    
                     state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
                 }
             }
@@ -315,7 +314,7 @@ class MeloScreen(
                 SidebarSection.LIBRARY -> ScreenState.Library()
                 SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
                 SidebarSection.STATS -> ScreenState.Stats()
-                else -> ScreenState.Home() // Should not happen with exhaustive SidebarSection
+                // Should not happen with exhaustive SidebarSection
             }
             state = state.copy(
                 needsGraphicsClear = false,

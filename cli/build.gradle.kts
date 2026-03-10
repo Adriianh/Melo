@@ -61,6 +61,7 @@ tasks {
  * Reference: https://ktor.io/docs/graalvm.html
  */
 graalvmNative {
+    toolchainDetection.set(false)
     binaries {
         named("main") {
             imageName.set(appName)
@@ -72,24 +73,26 @@ graalvmNative {
             buildArgs.addAll(
                 "--initialize-at-build-time=io.ktor",
                 "--initialize-at-build-time=kotlin",
+                "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
+                "--initialize-at-build-time=io.github.selemba1000.linux.LinuxJMTC",
                 "--initialize-at-build-time=kotlinx.coroutines",
                 "--initialize-at-build-time=kotlinx.serialization",
                 "--initialize-at-build-time=kotlinx.serialization.json.Json",
                 "--initialize-at-build-time=kotlinx.serialization.json.JsonImpl",
                 "--initialize-at-build-time=kotlinx.serialization.json.ClassDiscriminatorMode",
                 "--initialize-at-build-time=kotlinx.serialization.modules.SerializersModuleKt",
-                "--initialize-at-build-time=kotlinx.io.bytestring.ByteString",
-                "--initialize-at-build-time=kotlinx.io.SegmentPool",
-                // ── SLF4J / logging ──────────────────────────────────
-                "--initialize-at-build-time=org.slf4j.LoggerFactory",
-                "--initialize-at-build-time=org.slf4j.helpers.Reporter",
-                "--initialize-at-build-time=org.slf4j.simple.SimpleLogger",
+                "--initialize-at-build-time=kotlinx.io",
+                // ── SLF4J / logging / SQLite ─────────────────────────
+                "--initialize-at-build-time=org.slf4j",
+                "--initialize-at-build-time=org.sqlite",
                 // ── Native image housekeeping ───────────────────────────
                 "-H:+InstallExitHandlers",
                 "-H:+ReportUnsupportedElementsAtRuntime",
                 "-H:+ReportExceptionStackTraces",
-                // ── Required for JNA (MediaSessionManager / SMTC) ────────────
+                // ── Required for JNA / DBus (MediaSessionManager / SMTC) ────────────
                 "--enable-native-access=ALL-UNNAMED",
+                "-H:DynamicProxyConfigurationFiles=${projectDir}/src/main/resources/proxy-config.json",
+                "-H:ReflectionConfigurationFiles=${projectDir}/src/main/resources/reflection-config.json",
             )
         }
     }

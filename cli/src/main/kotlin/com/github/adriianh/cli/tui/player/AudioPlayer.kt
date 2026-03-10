@@ -29,6 +29,11 @@ class AudioPlayer(
     private val onFinish: () -> Unit = {},
     private val onError: (Throwable) -> Unit = {},
 ) {
+    companion object {
+        private val CLIENT_HEADER_RE = Regex("""^Client #(\d+)""")
+        private val SINK_INPUT_RE = Regex("""^Sink Input #(\d+)""")
+        private val SINK_CLIENT_RE = Regex("""^\s+Client:\s+(\d+)$""")
+    }
     private var playJob: Job? = null
     private var playerProcess: Process? = null
     private var playerPid: Long? = null
@@ -119,7 +124,7 @@ class AudioPlayer(
         launchPlayback(url, volumePct, seekMs = clampedMs, session = session)
 
         if (wasPaused) {
-            scope.launch(Dispatchers.IO) {
+            scope.launch {
                 delay(300)
                 if (isPaused.get() && sessionId.get() == session) {
                     if (isWindows) suspendProcessWindows(playerPid ?: return@launch)
@@ -143,20 +148,20 @@ class AudioPlayer(
     // ── Internal ───────────────────────────────────────────────────────────────
 
     private fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
-        playJob = scope.launch(Dispatchers.IO) {
+        playJob = scope.launch {
             try {
                 val process = buildFfplayProcess(url, volPct, seekMs)
                 playerProcess = process
                 playerPid = process.pid()
                 startTimeMs = System.currentTimeMillis()
 
-                val progressJob = scope.launch(Dispatchers.IO) {
+                val progressJob = scope.launch {
                     while (isActive && sessionId.get() == session) {
                         if (!isPaused.get()) {
                             val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
                             onProgress(elapsed + seekMs)
                         }
-                        delay(500)
+                        delay(1000)
                     }
                 }
 
@@ -185,7 +190,7 @@ class AudioPlayer(
      * pactl is available.
      */
     private fun applyVolumeViaPactl(pid: Long, pct: Int) {
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             try {
                 val clientsOutput = ProcessBuilder("pactl", "list", "clients")
                     .redirectErrorStream(true).start()
@@ -219,7 +224,7 @@ class AudioPlayer(
         var currentClient: String? = null
         val pidStr = "\"$pid\""
         for (line in output.lines()) {
-            val clientMatch = Regex("""^Client #(\d+)""").find(line.trim())
+            val clientMatch = CLIENT_HEADER_RE.find(line.trim())
             if (clientMatch != null) currentClient = clientMatch.groupValues[1]
             if ((line.contains("application.process.id =") ||
                  line.contains("pipewire.sec.pid =")) && line.contains(pidStr)) {
@@ -241,13 +246,13 @@ class AudioPlayer(
     private fun parseSinkInputByClientId(output: String, clientId: String): String? {
         var currentIndex: String? = null
         for (line in output.lines()) {
-            val indexMatch = Regex("""^Sink Input #(\d+)""").find(line.trim())
+            val indexMatch = SINK_INPUT_RE.find(line.trim())
 
             if (indexMatch != null) {
                 currentIndex = indexMatch.groupValues[1]
             }
 
-            val clientMatch = Regex("""^\s+Client:\s+(\d+)$""").find(line)
+            val clientMatch = SINK_CLIENT_RE.find(line)
             if (clientMatch != null && clientMatch.groupValues[1] == clientId) {
                 return currentIndex
             }

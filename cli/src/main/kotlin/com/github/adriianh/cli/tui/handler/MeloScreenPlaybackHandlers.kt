@@ -234,9 +234,13 @@ internal fun MeloScreen.loadMoreRadioTracks() {
             
             if (isActive) appRunner()?.runOnRenderThread {
                 if (related.isNotEmpty()) {
+                    val combined = state.player.queue + related
+                    val (pruned, newIdx) = pruneQueue(combined, state.player.queueIndex)
                     state = state.copy(
                         player = state.player.copy(
-                            queue = state.player.queue + related,
+                            queue = pruned,
+                            queueIndex = newIdx,
+                            queueCursor = minOf(state.player.queueCursor, (pruned.size - 1).coerceAtLeast(0)),
                             isLoadingMoreRadio = false
                         )
                     )
@@ -250,4 +254,19 @@ internal fun MeloScreen.loadMoreRadioTracks() {
             }
         }
     }
+}
+
+/** Max tracks to keep in the radio queue; older played tracks are evicted. */
+private const val MAX_QUEUE_SIZE = 50
+
+/**
+ * Prunes already-played tracks from the front of the queue when it exceeds [MAX_QUEUE_SIZE].
+ * Returns the pruned list and the adjusted queueIndex.
+ */
+private fun pruneQueue(queue: List<com.github.adriianh.core.domain.model.Track>, currentIndex: Int): Pair<List<com.github.adriianh.core.domain.model.Track>, Int> {
+    if (queue.size <= MAX_QUEUE_SIZE || currentIndex <= 0) return queue to currentIndex
+    // Keep a small buffer of ~5 played tracks for "previous" navigation
+    val dropCount = (currentIndex - 5).coerceAtLeast(0)
+    if (dropCount == 0) return queue to currentIndex
+    return queue.drop(dropCount) to (currentIndex - dropCount)
 }

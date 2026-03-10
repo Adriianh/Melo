@@ -1,5 +1,6 @@
 param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\melo"
+    [string]$InstallDir = "$env:LOCALAPPDATA\melo",
+    [string]$ConfigDir  = "$env:APPDATA\melo"
 )
 
 $BinDir = "$InstallDir\bin"
@@ -10,5 +11,14 @@ $newPath = ($currentPath -split ";" | Where-Object { $_ -ne $BinDir }) -join ";"
 
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $InstallDir
 
-Write-Host "✓ Melo uninstalled."
+if (Test-Path $ConfigDir) {
+    $answer = Read-Host "Remove config directory $ConfigDir? [y/N]"
+    if ($answer -match '^[yY]') {
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $ConfigDir
+        Write-Host "✓ Config removed."
+    } else {
+        Write-Host "  Config kept at $ConfigDir"
+    }
+}
 
+Write-Host "✓ Melo native binary uninstalled."
