@@ -1,20 +1,11 @@
 package com.github.adriianh.cli.tui.player
 
-import com.github.adriianh.cli.tui.*
-
+import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
-import io.github.selemba1000.JMTC
-import io.github.selemba1000.JMTCButtonCallback
-import io.github.selemba1000.JMTCCallbacks
-import io.github.selemba1000.JMTCEnabledButtons
-import io.github.selemba1000.JMTCMediaType
-import io.github.selemba1000.JMTCMusicProperties
-import io.github.selemba1000.JMTCPlayingState
-import io.github.selemba1000.JMTCSettings
-import io.github.selemba1000.JMTCTimelineProperties
+import io.github.selemba1000.*
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import java.io.File
 import java.nio.file.Files
 
@@ -151,7 +142,9 @@ class MediaSessionManager(
         } catch (_: Exception) { }
         jmtc = null
         initialized = false
-        try { artworkTempFile.delete() } catch (_: Exception) {}
+        try {
+            artworkTempFile.delete()
+        } catch (_: Exception) { }
     }
 
     /**
@@ -163,7 +156,8 @@ class MediaSessionManager(
      */
     private fun downloadArtworkToTempFile(url: String): File? = try {
         val bytes = kotlinx.coroutines.runBlocking {
-            httpClient.get(url).body<ByteArray>()
+            val response = httpClient.get(url)
+            response.readRawBytes()
         }
         artworkTempFile.writeBytes(bytes)
         artworkTempFile
