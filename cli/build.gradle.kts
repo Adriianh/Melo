@@ -108,7 +108,7 @@ graalvmNative {
 // ─── distribution tasks ───────────────────────────────────────────────────────────────────
 
 tasks.register("distUnix") {
-    dependsOn(tasks.shadowJar)
+    dependsOn(tasks.named("nativeCompile"))
 
     val osTag    = if (System.getProperty("os.name").lowercase().contains("mac")) "macos" else "linux"
     val distOut  = layout.buildDirectory.dir("dist")
@@ -118,8 +118,7 @@ tasks.register("distUnix") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-$osTag.tar.gz"))
 
     doLast {
-        val jarFile  = tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar")
-                            .get().archiveFile.get().asFile
+        val nativeBin = layout.buildDirectory.file("native/nativeCompile/$appName").get().asFile
         val stageDir = stageOut.get().asFile
         val rootDir  = File(stageDir, "$appName-$appVersion")
         val distDir  = distOut.get().asFile
@@ -127,7 +126,7 @@ tasks.register("distUnix") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        jarFile.copyTo(File(rootDir, "$appName.jar"), overwrite = true)
+        nativeBin.copyTo(File(rootDir, appName), overwrite = true)
 
         distSrc.resolve("unix").walkTopDown().forEach { src ->
             if (src.isFile) {
@@ -151,7 +150,7 @@ tasks.register("distUnix") {
 }
 
 tasks.register("distWindows") {
-    dependsOn(tasks.shadowJar)
+    dependsOn(tasks.named("nativeCompile"))
 
     val distOut  = layout.buildDirectory.dir("dist")
     val stageOut = layout.buildDirectory.dir("dist/stage")
@@ -160,8 +159,7 @@ tasks.register("distWindows") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-windows.zip"))
 
     doLast {
-        val jarFile  = tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar")
-                            .get().archiveFile.get().asFile
+        val nativeBin = layout.buildDirectory.file("native/nativeCompile/$appName.exe").get().asFile
         val stageDir = stageOut.get().asFile
         val rootDir  = File(stageDir, "$appName-$appVersion")
         val distDir  = distOut.get().asFile
@@ -169,7 +167,7 @@ tasks.register("distWindows") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        jarFile.copyTo(File(rootDir, "$appName.jar"), overwrite = true)
+        nativeBin.copyTo(File(rootDir, "$appName.exe"), overwrite = true)
 
         distSrc.resolve("windows").walkTopDown().forEach { src ->
             if (src.isFile) {

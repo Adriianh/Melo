@@ -32,20 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - name: Set up JDKs
-        uses: actions/setup-java@v5.2.0
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
         with:
-          distribution: temurin
-          java-version: |
-            21
-            25
-
-      - name: Set JAVA_HOME for Gradle (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo "JAVA_HOME=$env:JAVA_HOME_25_X64" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "$env:JAVA_HOME_25_X64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-        shell: pwsh
+          java-version: '25'
+          distribution: 'graalvm'
 
       - name: Build distribution
         run: ./gradlew :cli:${{ matrix.task }}
@@ -56,20 +47,11 @@ jobs:
           name: melo-${{ matrix.label }}
           path: ${{ matrix.artifact }}
 
-      - name: Set up GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '25'
-          distribution: 'graalvm'
-
-      - name: Build native image
-        run: ./gradlew :cli:nativeCompile
-
       - name: Upload native image
         uses: actions/upload-artifact@v7.0.0
         with:
           name: melo-native-${{ matrix.label }}
-          path: cli/build/native/nativeCompile/melo
+          path: cli/build/native/nativeCompile/${{ matrix.os == 'windows-latest' && 'melo.exe' || 'melo' }}
 
   release:
     needs: build
