@@ -5,6 +5,7 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.utils.io.CancellationException
 import kotlinx.serialization.json.Json
 import java.security.MessageDigest
@@ -170,14 +171,17 @@ class LastFmApiClient(
 
 
     /**
-     * POST to the Last.fm API with parameters as query string.
-     * Last.fm expects params in the URL query string even for POST requests,
-     * with an empty body
+     * POST to the Last.fm API with parameters as a form-urlencoded body.
+     * Last.fm write services require all parameters in the POST body.
      */
     private suspend fun post(params: Map<String, String>): HttpResponse =
         httpClient.post(BASE_URL) {
-            params.forEach { (k, v) -> parameter(k, v) }
-            setBody("")
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(
+                params.entries.joinToString("&") { (k, v) ->
+                    "${k.encodeURLParameter()}=${v.encodeURLParameter()}"
+                }
+            )
         }
 
     /**
