@@ -32,17 +32,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - name: Set up JDK 21
+      - name: Set up JDKs
         uses: actions/setup-java@v5.2.0
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: |
+            21
+            25
 
       - name: Set JAVA_HOME for Gradle (Windows)
         if: runner.os == 'Windows'
         run: |
-          echo "JAVA_HOME=$env:JAVA_HOME_21_X64" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "$env:JAVA_HOME_21_X64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "JAVA_HOME=$env:JAVA_HOME_25_X64" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "$env:JAVA_HOME_25_X64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
         shell: pwsh
 
       - name: Build distribution
