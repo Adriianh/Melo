@@ -82,6 +82,9 @@ graalvmNative {
                 "--initialize-at-build-time=kotlinx.serialization.json.ClassDiscriminatorMode",
                 "--initialize-at-build-time=kotlinx.serialization.modules.SerializersModuleKt",
                 "--initialize-at-build-time=kotlinx.io",
+                // ── AWT & ImageIO ─────────────────────────
+                "-H:+JNI",
+                "--enable-awt",
                 // ── SLF4J / logging / SQLite ─────────────────────────
                 "--initialize-at-build-time=org.slf4j",
                 "--initialize-at-build-time=org.sqlite",
