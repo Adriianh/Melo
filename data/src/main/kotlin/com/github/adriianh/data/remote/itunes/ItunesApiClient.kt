@@ -57,7 +57,7 @@ class ItunesApiClient(
                 dto.artistName.lowercase().contains(normalizedArtist) &&
                 dto.trackName.lowercase().contains(normalizedTitle) &&
                 dto.artworkUrl100 != null
-            } ?: results.firstOrNull { it.artworkUrl100 != null }
+            }
 
             best?.artworkUrl100?.replace("100x100bb", "300x300bb")
         } catch (e: kotlinx.coroutines.CancellationException) {
