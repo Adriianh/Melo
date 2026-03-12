@@ -178,6 +178,15 @@ data class PlaylistInteractionState(
 )
 
 /**
+ * Global state for track options menu (context menu).
+ */
+data class TrackOptionsMenuState(
+    val track: Track? = null,
+    val selectedIndex: Int = 0,
+    val isVisible: Boolean = false,
+)
+
+/**
  * Global persistent collections.
  */
 data class CollectionsState(
@@ -204,6 +213,9 @@ data class MeloState(
 
     // Global Playlist interactions (overlays)
     val playlistInteraction: PlaylistInteractionState = PlaylistInteractionState(),
+
+    // Global Track options (context menu)
+    val trackOptions: TrackOptionsMenuState = TrackOptionsMenuState(),
 
     // Global UI/System flags
     val isSettingsVisible: Boolean = false,
