@@ -59,13 +59,25 @@ class AudioPlayer(
     // ── Public API ─────────────────────────────────────────────────────────────
 
     fun play(url: String) {
-        stop()
-        currentUrl = url
-        isPaused.set(false)
-        startTimeMs = System.currentTimeMillis()
-        pausedAtMs = 0L
         val session = sessionId.incrementAndGet()
-        launchPlayback(url, volumePct, seekMs = 0L, session = session)
+        val previousJob = playJob
+        val previousProcess = playerProcess
+
+        playJob = scope.launch {
+            // Ensure the previous playback completely stops before starting a new one
+            previousProcess?.destroy()
+            previousJob?.cancel()
+            previousProcess?.waitFor()
+            previousJob?.join()
+            
+            if (sessionId.get() != session) return@launch // another play() was called while we waited
+
+            currentUrl = url
+            isPaused.set(false)
+            startTimeMs = System.currentTimeMillis()
+            pausedAtMs = 0L
+            launchPlayback(url, volumePct, seekMs = 0L, session = session)
+        }
     }
 
     fun pause() {
@@ -108,72 +120,98 @@ class AudioPlayer(
         val clampedMs = ms.coerceAtLeast(0L)
         val wasPaused = isPaused.get()
 
-        playerProcess?.destroy()
-        playerProcess = null
-        playerPid = null
-        playJob?.cancel()
-        playJob = null
-        isPaused.set(false)
-
-        pausedAtMs = if (wasPaused) clampedMs else 0L
-        startTimeMs = System.currentTimeMillis()
-
         val session = sessionId.incrementAndGet()
-        if (wasPaused) isPaused.set(true)
+        val previousJob = playJob
+        val previousProcess = playerProcess
 
-        launchPlayback(url, volumePct, seekMs = clampedMs, session = session)
+        playJob = scope.launch {
+            previousProcess?.destroy()
+            previousJob?.cancel()
+            previousProcess?.waitFor()
+            previousJob?.join()
 
-        if (wasPaused) {
-            scope.launch {
-                delay(300)
-                if (isPaused.get() && sessionId.get() == session) {
-                    if (isWindows) suspendProcessWindows(playerPid ?: return@launch)
-                    else sendUnixSignal("SIGSTOP")
+            if (sessionId.get() != session) return@launch
+
+            playerProcess = null
+            playerPid = null
+            isPaused.set(false)
+
+            pausedAtMs = if (wasPaused) clampedMs else 0L
+            startTimeMs = System.currentTimeMillis()
+
+            if (wasPaused) isPaused.set(true)
+
+            launchPlayback(url, volumePct, seekMs = clampedMs, session = session)
+
+            if (wasPaused) {
+                // We launch another coroutine to suspend the process shortly after it starts
+                scope.launch {
+                    delay(300)
+                    if (isPaused.get() && sessionId.get() == session) {
+                        if (isWindows) suspendProcessWindows(playerPid ?: return@launch)
+                        else sendUnixSignal("SIGSTOP")
+                    }
                 }
             }
         }
     }
     fun stop() {
-        sessionId.incrementAndGet() // invalidate any running job
+        val session = sessionId.incrementAndGet() // invalidate any running job
+        val previousJob = playJob
+        val previousProcess = playerProcess
+        
         isPaused.set(false)
-        playerProcess?.destroy()
-        playerProcess = null
-        playerPid = null
-        playJob?.cancel()
-        playJob = null
         currentUrl = null
         pausedAtMs = 0L
+
+        playJob = scope.launch {
+            previousProcess?.destroy()
+            previousJob?.cancel()
+            previousProcess?.waitFor()
+            previousJob?.join()
+
+            if (sessionId.get() != session) return@launch
+            playerProcess = null
+            playerPid = null
+        }
     }
 
     // ── Internal ───────────────────────────────────────────────────────────────
 
-    private fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
-        playJob = scope.launch {
-            try {
-                val process = buildFfplayProcess(url, volPct, seekMs)
-                playerProcess = process
-                playerPid = process.pid()
-                startTimeMs = System.currentTimeMillis()
+    private suspend fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
+        try {
+            val process = buildFfplayProcess(url, volPct, seekMs)
+            playerProcess = process
+            playerPid = process.pid()
+            startTimeMs = System.currentTimeMillis()
 
-                val progressJob = scope.launch {
-                    while (isActive && sessionId.get() == session) {
-                        if (!isPaused.get()) {
-                            val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
-                            onProgress(elapsed + seekMs)
-                        }
-                        delay(1000)
+            val progressJob = scope.launch {
+                while (isActive && sessionId.get() == session) {
+                    if (!isPaused.get()) {
+                        val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
+                        onProgress(elapsed + seekMs)
                     }
+                    delay(1000)
                 }
-
-                process.waitFor()
-                progressJob.cancel()
-
-                if (sessionId.get() == session) onFinish()
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (sessionId.get() == session) onError(e)
             }
+
+            // Instead of blocking a coroutine thread, use an asynchronous loop to wait
+            // or use Dispatchers.IO if blocking is necessary. 
+            // Process.onExit() is Java 11+, which we can use via CompletableFuture
+            // but for simplicity, we'll wrap the blocking waitFor in Dispatchers.IO
+            kotlinx.coroutines.withContext(Dispatchers.IO) {
+                process.waitFor()
+            }
+            
+            progressJob.cancel()
+
+            if (sessionId.get() == session) onFinish()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            playerProcess?.destroy()
+            throw e
+        } catch (e: Exception) {
+            playerProcess?.destroy()
+            if (sessionId.get() == session) onError(e)
         }
     }
 
