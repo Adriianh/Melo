@@ -117,6 +117,7 @@ val NAV_SECTIONS = listOf(
 )
 private val UTIL_SECTIONS = listOf(
     SidebarSection.STATS,
+    SidebarSection.SETTINGS,
 )
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
@@ -167,6 +168,13 @@ internal fun MeloScreen.applySidebarSelection(): EventResult {
     } else {
         NAV_SECTIONS.getOrNull(sidebarNavList.selected())
     }
+    
+    if (section == SidebarSection.SETTINGS) {
+        state = state.copy(isSettingsVisible = true)
+        appRunner()?.focusManager()?.setFocus("settings-panel")
+        return EventResult.HANDLED
+    }
+
     if (section != null && section != state.navigation.activeSection) {
         state = state.copy(needsGraphicsClear = true, navigation = state.navigation.copy(pendingSection = section))
         if (section == SidebarSection.STATS) loadStats()
