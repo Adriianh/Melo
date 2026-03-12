@@ -29,4 +29,14 @@ interface OfflineRepository {
      * Removes a track from local storage.
      */
     suspend fun removeOfflineTrack(trackId: String)
+
+    /**
+     * Updates the last accessed timestamp for a track.
+     */
+    suspend fun markTrackAsAccessed(trackId: String)
+
+    /**
+     * Deletes tracks to stay under the size limit, prioritizing oldest accessed.
+     */
+    suspend fun cleanupCache(maxSizeMb: Int)
 }

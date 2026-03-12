@@ -41,7 +41,8 @@ data class Settings(
     val volume: Int = 75,
     val searchLanguage: String = "en",
     val artworkResolution: Int = 300,
-    val cacheSizeLimitMb: Int = 500,
+    val autoDownload: Boolean = false,
+    val maxOfflineSizeMb: Int = 1024,
     val offlineMode: Boolean = false,
     val keybindings: Map<MeloAction, MeloKey> = mapOf(
         MeloAction.PLAY_PAUSE to MeloKey(char = ' '),
