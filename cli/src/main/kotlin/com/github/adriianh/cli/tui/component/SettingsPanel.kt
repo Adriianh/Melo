@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_SETTINGS
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
+import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemePreset
 import dev.tamboui.layout.Constraint
@@ -29,6 +30,7 @@ enum class SettingsItem(val label: String) {
     LANGUAGE("Search Language"),
     ARTWORK_RES("Artwork Resolution"),
     CACHE_SIZE("Cache Size Limit (MB)"),
+    KEYBINDINGS("Custom Keybindings"),
 }
 
 /**
@@ -37,6 +39,9 @@ enum class SettingsItem(val label: String) {
 data class SettingsViewState(
     val cursor: Int = 0,
     val isEditing: Boolean = false,
+    val isKeybindingMode: Boolean = false,
+    val keybindingCursor: Int = 0,
+    val isListeningForKey: Boolean = false,
     val currentSettings: Settings = Settings()
 )
 
@@ -65,40 +70,77 @@ class SettingsOverlay(
         frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
-        val items = SettingsItem.entries.mapIndexed { index, item ->
-            val isSelected = index == viewState.cursor
-            val isEditingThis = isSelected && viewState.isEditing
+        val helpText: String
+        val title: String
 
-            val valueStr = when (item) {
-                SettingsItem.THEME -> viewState.currentSettings.theme.displayName
-                SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
-                SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
-                SettingsItem.ARTWORK_RES -> "${viewState.currentSettings.artworkResolution}px"
-                SettingsItem.CACHE_SIZE -> "${viewState.currentSettings.cacheSizeLimitMb} MB"
+        if (viewState.isKeybindingMode) {
+            title = "${MeloTheme.ICON_SETTINGS} Keybindings"
+            val actions = MeloAction.entries
+            val items = actions.mapIndexed { index, action ->
+                val isSelected = index == viewState.keybindingCursor
+                val isListening = isSelected && viewState.isListeningForKey
+                
+                val binding = viewState.currentSettings.keybindings[action]
+                val keyStr = when {
+                    isListening -> "???"
+                    binding?.char != null -> if (binding.char == ' ') "Space" else binding.char.toString()
+                    binding?.code != null -> binding.code
+                    else -> "None"
+                }
+                
+                val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
+                val valueColor = if (isListening) MeloTheme.ACCENT_RED else MeloTheme.TEXT_SECONDARY
+                
+                row(
+                    text("  ${action.displayName}").fg(labelColor).apply { if (isSelected) bold() }.fill(),
+                    text(keyStr).fg(valueColor).apply { if (isListening) bold() }
+                )
             }
+            
+            settingsList.elements(*items.toTypedArray())
+            settingsList.selected(viewState.keybindingCursor)
+            settingsList.length(items.size)
+            
+            helpText = if (viewState.isListeningForKey)
+                "Press any key to bind... [Esc] cancel"
+            else
+                "[↑/↓] navigate  [Enter] change  [Esc] back"
+        } else {
+            title = "${MeloTheme.ICON_SETTINGS} Settings"
+            val items = SettingsItem.entries.mapIndexed { index, item ->
+                val isSelected = index == viewState.cursor
+                val isEditingThis = isSelected && viewState.isEditing
 
-            val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
-            val valueColor = if (isEditingThis) MeloTheme.ACCENT_RED else MeloTheme.TEXT_SECONDARY
-            val indicator = if (isEditingThis) ">" else if (isSelected) " " else " "
+                val valueStr = when (item) {
+                    SettingsItem.THEME -> viewState.currentSettings.theme.displayName
+                    SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
+                    SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
+                    SettingsItem.ARTWORK_RES -> "${viewState.currentSettings.artworkResolution}px"
+                    SettingsItem.CACHE_SIZE -> "${viewState.currentSettings.cacheSizeLimitMb} MB"
+                    SettingsItem.KEYBINDINGS -> "→"
+                }
 
-            row(
-                text("$indicator ${item.label}").fg(labelColor).apply { if (isSelected) bold() }.fill(),
-                text(valueStr).fg(valueColor).apply { if (isEditingThis) bold() }
-            )
+                val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
+                val valueColor = if (isEditingThis) MeloTheme.ACCENT_RED else MeloTheme.TEXT_SECONDARY
+
+                row(
+                    text("  ${item.label}").fg(labelColor).apply { if (isSelected) bold() }.fill(),
+                    text(valueStr).fg(valueColor).apply { if (isEditingThis) bold() }
+                )
+            }
+            
+            settingsList.elements(*items.toTypedArray())
+            settingsList.selected(viewState.cursor)
+            settingsList.length(SettingsItem.entries.size)
+            
+            helpText = if (viewState.isEditing)
+                "[ESC] apply  [←/→] change"
+            else
+                "[↑/↓] navigate  [Enter] edit  [ESC] close"
         }
 
-        settingsList.elements(*items.toTypedArray())
-        settingsList.selected(viewState.cursor)
-        settingsList.length(SettingsItem.entries.size)
-        settingsList.fill()
-
-        val helpText = if (viewState.isEditing)
-            "[ESC] apply/cancel  [←/→] change value"
-        else
-            "[↑/↓] navigate  [Enter] edit  [ESC] close"
-
         panel(settingsList.fill())
-            .title("${MeloTheme.ICON_SETTINGS} Settings")
+            .title(title)
             .bottomTitle(helpText)
             .rounded()
             .borderColor(BORDER_DEFAULT)
