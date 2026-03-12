@@ -251,6 +251,7 @@ class MeloScreen(
     private val playlistPickerOverlay = PlaylistPickerOverlay { state }
     private val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
     private val settingsOverlay = SettingsOverlay({ state }, { settingsViewState }, settingsList, ::handleSettingsKey)
+    private val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
 
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
@@ -336,13 +337,14 @@ class MeloScreen(
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
         val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
+        val withTrackOptions = if (state.trackOptions.isVisible) stack(withSettings, trackOptionsOverlay) else withSettings
 
         return when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE,
-            PlaylistInputMode.RENAME -> stack(withSettings, playlistInputOverlay)
+            PlaylistInputMode.RENAME -> stack(withTrackOptions, playlistInputOverlay)
 
-            PlaylistInputMode.PICKER -> stack(withSettings, playlistPickerOverlay)
-            PlaylistInputMode.NONE -> withSettings
+            PlaylistInputMode.PICKER -> stack(withTrackOptions, playlistPickerOverlay)
+            PlaylistInputMode.NONE -> withTrackOptions
         }
     }
 
