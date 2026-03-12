@@ -97,15 +97,9 @@ class SettingsOverlay(
         else
             "[↑/↓] navigate  [Enter] edit  [ESC] close"
 
-        panel(
-            dock()
-                .center(settingsList.fill())
-                .bottom(
-                    text(helpText).fg(MeloTheme.TEXT_DIM).centered(),
-                    Constraint.length(1)
-                )
-        )
+        panel(settingsList.fill())
             .title("${MeloTheme.ICON_SETTINGS} Settings")
+            .bottomTitle(helpText)
             .rounded()
             .borderColor(BORDER_DEFAULT)
             .focusedBorderColor(BORDER_FOCUSED)

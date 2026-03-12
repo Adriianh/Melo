@@ -212,7 +212,7 @@ class MeloScreen(
     internal val sidebarUtilList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_STATS} Statistics",
-            "${MeloTheme.ICON_SETTINGS} Settings",
+            "${MeloTheme.ICON_SETTINGS}  Settings",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
