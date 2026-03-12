@@ -157,6 +157,8 @@ val appModule = module {
     factory { GetOfflineTracksUseCase(get()) }
     factory { DownloadTrackUseCase(get()) }
     factory { DeleteDownloadedTrackUseCase(get()) }
+    factory { MarkTrackAccessedUseCase(get()) }
+    factory { AutoCleanupUseCase(get()) }
     factory { GetPlaylistsUseCase(get()) }
     factory { GetPlaylistTracksUseCase(get()) }
     factory { CreatePlaylistUseCase(get()) }
