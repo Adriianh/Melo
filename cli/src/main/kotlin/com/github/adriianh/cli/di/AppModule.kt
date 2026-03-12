@@ -136,6 +136,7 @@ val appModule = module {
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
+    single<SettingsRepository> { SettingsRepositoryImpl(java.io.File(configDir), get()) }
 
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
@@ -168,4 +169,6 @@ val appModule = module {
     factory { GetTopTracksUseCase(get()) }
     factory { GetTopArtistsUseCase(get()) }
     factory { GetListeningStatsUseCase(get()) }
+    factory { GetSettingsUseCase(get()) }
+    factory { UpdateSettingsUseCase(get()) }
 }
