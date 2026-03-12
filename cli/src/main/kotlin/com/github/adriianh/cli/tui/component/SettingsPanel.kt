@@ -56,8 +56,8 @@ class SettingsOverlay(
 
         val viewState = settingsViewStateProvider()
 
-        val overlayW = (area.width() * 0.5).toInt().coerceAtLeast(50)
-        val overlayH = (SettingsItem.entries.size + 4).coerceIn(10, 20)
+        val overlayW = (area.width() * 0.6).toInt().coerceAtLeast(60)
+        val overlayH = (SettingsItem.entries.size + 6).coerceIn(12, 15)
         val overlayX = area.x() + (area.width() - overlayW) / 2
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
@@ -89,6 +89,7 @@ class SettingsOverlay(
 
         settingsList.elements(*items.toTypedArray())
         settingsList.selected(viewState.cursor)
+        settingsList.length(SettingsItem.entries.size)
         settingsList.fill()
 
         val helpText = if (viewState.isEditing)
