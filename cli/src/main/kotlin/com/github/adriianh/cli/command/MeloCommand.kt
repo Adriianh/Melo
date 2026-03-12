@@ -80,6 +80,9 @@ class MeloCommand : CliktCommand(
         val artworkRenderer: ArtworkRenderer by inject()
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
+        val getOfflineTracks: GetOfflineTracksUseCase by inject()
+        val downloadTrack: DownloadTrackUseCase by inject()
+        val deleteDownloadedTrack: DeleteDownloadedTrackUseCase by inject()
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
         try {
@@ -95,6 +98,7 @@ class MeloCommand : CliktCommand(
                 updateNowPlaying, scrobble,
                 getTopTracks, getTopArtists, getListeningStats,
                 getSettings, updateSettings,
+                getOfflineTracks, downloadTrack, deleteDownloadedTrack,
                 artworkRenderer, artworkProvider,
                 dispatcher
             ).run()

@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.configDir
+import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
@@ -41,6 +42,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
+import java.io.File
 
 private fun hasSpotifyKeys() =
     resolveEnv("SPOTIFY_CLIENT_ID") != null &&
@@ -71,7 +73,7 @@ val appModule = module {
             install(HttpTimeout) {
                 requestTimeoutMillis = 10_000
                 connectTimeoutMillis = 5_000
-                socketTimeoutMillis  = 10_000
+                socketTimeoutMillis = 10_000
             }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 2)
@@ -85,16 +87,16 @@ val appModule = module {
     single { ItunesApiClient(get()) }
     single {
         SpotifyAuthClient(
-            httpClient    = get(),
-            clientId      = resolveEnv("SPOTIFY_CLIENT_ID")     ?: "",
-            clientSecret  = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
+            httpClient = get(),
+            clientId = resolveEnv("SPOTIFY_CLIENT_ID") ?: "",
+            clientSecret = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
         )
     }
     single { SpotifyApiClient(get(), get()) }
     single {
         LastFmApiClient(
-            httpClient   = get(),
-            apiKey       = resolveEnv("LASTFM_API_KEY")      ?: "",
+            httpClient = get(),
+            apiKey = resolveEnv("LASTFM_API_KEY") ?: "",
             sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
         )
     }
@@ -136,7 +138,8 @@ val appModule = module {
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
-    single<SettingsRepository> { SettingsRepositoryImpl(java.io.File(configDir), get()) }
+    single<SettingsRepository> { SettingsRepositoryImpl(File(configDir), get()) }
+    single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get()) }
 
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
@@ -150,7 +153,10 @@ val appModule = module {
     factory { IsFavoriteUseCase(get()) }
     factory { GetRecentTracksUseCase(get()) }
     factory { RecordPlayUseCase(get()) }
-    factory { GetStreamUseCase(get()) }
+    factory { GetStreamUseCase(get(), get()) }
+    factory { GetOfflineTracksUseCase(get()) }
+    factory { DownloadTrackUseCase(get()) }
+    factory { DeleteDownloadedTrackUseCase(get()) }
     factory { GetPlaylistsUseCase(get()) }
     factory { GetPlaylistTracksUseCase(get()) }
     factory { CreatePlaylistUseCase(get()) }

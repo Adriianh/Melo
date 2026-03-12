@@ -38,3 +38,10 @@ val configDir: String get() {
     }
 }
 
+val shareDir: String get() {
+    val os = System.getProperty("os.name").lowercase()
+    return when {
+        os.contains("win") -> "${System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home")}\\melo"
+        else               -> "${System.getProperty("user.home")}/.local/share/melo"
+    }
+}
