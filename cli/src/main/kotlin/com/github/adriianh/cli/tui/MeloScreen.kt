@@ -75,6 +75,8 @@ class MeloScreen(
     internal val getOfflineTracks: GetOfflineTracksUseCase,
     internal val downloadTrack: DownloadTrackUseCase,
     internal val deleteDownloadedTrack: DeleteDownloadedTrackUseCase,
+    internal val markTrackAccessed: MarkTrackAccessedUseCase,
+    internal val autoCleanup: AutoCleanupUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
     internal val artworkProvider: ArtworkProvider,
@@ -221,8 +223,8 @@ class MeloScreen(
     internal val sidebarUtilList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_STATS} Statistics",
-            "${MeloTheme.ICON_OFFLINE}  Downloads",
-            "${MeloTheme.ICON_SETTINGS} Settings",
+            "${MeloTheme.ICON_OFFLINE} Downloads",
+            "${MeloTheme.ICON_SETTINGS}  Settings",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -493,6 +495,7 @@ class MeloScreen(
                     downloadedAt = System.currentTimeMillis()
                 )
                 downloadTrack.invoke(completedTrack)
+                autoCleanup.invoke(settingsViewState.currentSettings.maxOfflineSizeMb)
 
             } catch (e: Exception) {
                 e.printStackTrace()

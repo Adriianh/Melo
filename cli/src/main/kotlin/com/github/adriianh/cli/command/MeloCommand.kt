@@ -83,24 +83,53 @@ class MeloCommand : CliktCommand(
         val getOfflineTracks: GetOfflineTracksUseCase by inject()
         val downloadTrack: DownloadTrackUseCase by inject()
         val deleteDownloadedTrack: DeleteDownloadedTrackUseCase by inject()
+        val markTrackAccessed: MarkTrackAccessedUseCase by inject()
+        val autoCleanup: AutoCleanupUseCase by inject()
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
+
         try {
             MeloScreen(
-                httpClient,
-                searchTracks, loadMoreTracks, getTrack, getLyrics, getSyncedLyrics, getSimilarTracks,
-                pipedApiClient,
-                getFavorites, addFavorite, removeFavorite, isFavorite,
-                getRecentTracks, recordPlay, getStream,
-                getPlaylists, getPlaylistTracks, createPlaylist, renamePlaylist,
-                deletePlaylist, addTrackToPlaylist, removeTrackFromPlaylist,
-                saveSession, restoreSession, clearSession,
-                updateNowPlaying, scrobble,
-                getTopTracks, getTopArtists, getListeningStats,
-                getSettings, updateSettings,
-                getOfflineTracks, downloadTrack, deleteDownloadedTrack,
-                artworkRenderer, artworkProvider,
-                dispatcher
+                httpClient = httpClient,
+                searchTracks = searchTracks,
+                loadMoreTracks = loadMoreTracks,
+                getTrack = getTrack,
+                getLyrics = getLyrics,
+                getSyncedLyrics = getSyncedLyrics,
+                getSimilarTracks = getSimilarTracks,
+                pipedApiClient = pipedApiClient,
+                getFavorites = getFavorites,
+                addFavorite = addFavorite,
+                removeFavorite = removeFavorite,
+                isFavoriteUseCase = isFavorite,
+                getRecentTracks = getRecentTracks,
+                recordPlay = recordPlay,
+                getStream = getStream,
+                getPlaylists = getPlaylists,
+                getPlaylistTracks = getPlaylistTracks,
+                createPlaylist = createPlaylist,
+                renamePlaylist = renamePlaylist,
+                deletePlaylist = deletePlaylist,
+                addTrackToPlaylist = addTrackToPlaylist,
+                removeTrackFromPlaylist = removeTrackFromPlaylist,
+                saveSession = saveSession,
+                restoreSession = restoreSession,
+                clearSession = clearSession,
+                updateNowPlaying = updateNowPlaying,
+                scrobble = scrobble,
+                getTopTracks = getTopTracks,
+                getTopArtists = getTopArtists,
+                getListeningStats = getListeningStats,
+                getSettings = getSettings,
+                updateSettings = updateSettings,
+                getOfflineTracks = getOfflineTracks,
+                downloadTrack = downloadTrack,
+                deleteDownloadedTrack = deleteDownloadedTrack,
+                markTrackAccessed = markTrackAccessed,
+                autoCleanup = autoCleanup,
+                artworkRenderer = artworkRenderer,
+                artworkProvider = artworkProvider,
+                dispatcher = dispatcher
             ).run()
         } finally {
             stopKoin()
