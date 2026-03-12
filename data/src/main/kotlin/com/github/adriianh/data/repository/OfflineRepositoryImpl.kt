@@ -1,5 +1,6 @@
 package com.github.adriianh.data.repository
 
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -59,6 +60,43 @@ class OfflineRepositoryImpl(
             }
             saveMetadataToDisk(current)
         }
+    }
+
+    override suspend fun markTrackAsAccessed(trackId: String) {
+        val current = _offlineTracksFlow.value.toMutableList()
+        val index = current.indexOfFirst { it.track.id == trackId }
+        if (index != -1) {
+            current[index] = current[index].copy(lastAccessedAt = System.currentTimeMillis())
+            _offlineTracksFlow.value = current
+            saveMetadataToDisk(current)
+        }
+    }
+
+    override suspend fun cleanupCache(maxSizeMb: Int) {
+        val maxSizeBytes = maxSizeMb.toLong() * 1024 * 1024
+        val current = _offlineTracksFlow.value.toMutableList()
+
+        var totalSize = current.sumOf { it.fileSize }
+        if (totalSize <= maxSizeBytes) return
+
+        val sorted = current.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+            .sortedBy { it.lastAccessedAt ?: it.downloadedAt ?: 0L }
+
+        for (track in sorted) {
+            if (totalSize <= maxSizeBytes) break
+
+            track.localFilePath?.let { path ->
+                withContext(dispatcher) {
+                    val file = File(path)
+                    if (file.exists()) file.delete()
+                }
+            }
+            current.remove(track)
+            totalSize -= track.fileSize
+        }
+
+        _offlineTracksFlow.value = current
+        saveMetadataToDisk(current)
     }
 
     private fun loadMetadataSync(): List<OfflineTrack> {
