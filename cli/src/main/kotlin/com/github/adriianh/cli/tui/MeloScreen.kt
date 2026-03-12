@@ -63,6 +63,9 @@ class MeloScreen(
     internal val getTopTracks: GetTopTracksUseCase,
     internal val getTopArtists: GetTopArtistsUseCase,
     internal val getListeningStats: GetListeningStatsUseCase,
+    // Settings
+    internal val getSettings: GetSettingsUseCase,
+    internal val updateSettings: UpdateSettingsUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
     internal val artworkProvider: ArtworkProvider,
@@ -82,6 +85,8 @@ class MeloScreen(
     internal var trackStartedAt = 0L
     internal var updateNowPlayingJob: Job? = null
     internal var scrobbleJob: Job? = null
+
+    internal var settingsViewState = SettingsViewState()
 
     /**
      * Helper to update the current screen state in a type-safe way.
@@ -128,13 +133,20 @@ class MeloScreen(
         },
         onFinish = {
             runner()?.runOnRenderThread {
-                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0))
+                state =
+                    state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, progress = 0.0))
                 seekForward()
             }
         },
         onError = { err ->
             runner()?.runOnRenderThread {
-                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, audioError = err.message))
+                state = state.copy(
+                    player = state.player.copy(
+                        isPlaying = false,
+                        isLoadingAudio = false,
+                        audioError = err.message
+                    )
+                )
                 mediaSession.notifyStopped()
             }
         },
@@ -200,6 +212,7 @@ class MeloScreen(
     internal val sidebarUtilList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_STATS} Statistics",
+            "${MeloTheme.ICON_SETTINGS} Settings",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -227,9 +240,18 @@ class MeloScreen(
         .focusable()
         .id("queue-list")
 
+    internal val settingsList: ListElement<*> = list()
+        .highlightSymbol("> ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("settings-list")
+
     private val playlistInputOverlay = PlaylistInputOverlay { state }
     private val playlistPickerOverlay = PlaylistPickerOverlay { state }
     private val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
+    private val settingsOverlay = SettingsOverlay({ state }, { settingsViewState }, settingsList, ::handleSettingsKey)
+
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
@@ -237,20 +259,35 @@ class MeloScreen(
         mediaSession.init()
         scope.launch {
             getFavorites().collect { tracks ->
-                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(favorites = tracks)) }
+                runner()?.runOnRenderThread {
+                    state = state.copy(collections = state.collections.copy(favorites = tracks))
+                }
             }
         }
         scope.launch {
             getRecentTracks(20).collect { entries ->
-                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(recentTracks = entries)) }
+                runner()?.runOnRenderThread {
+                    state = state.copy(collections = state.collections.copy(recentTracks = entries))
+                }
             }
         }
         scope.launch {
             getPlaylists().collect { playlists ->
-                runner()?.runOnRenderThread { state = state.copy(collections = state.collections.copy(playlists = playlists)) }
+                runner()?.runOnRenderThread {
+                    state = state.copy(collections = state.collections.copy(playlists = playlists))
+                }
             }
         }
         scope.launch { restoreLastSession() }
+        scope.launch {
+            getSettings().collect { settings ->
+                runner()?.runOnRenderThread {
+                    MeloTheme.loadTheme(settings.theme)
+                    audioPlayer.setVolume(settings.volume)
+                    settingsViewState = settingsViewState.copy(currentSettings = settings)
+                }
+            }
+        }
         marqueeJob = runner()?.scheduleRepeating({
             runner()?.runOnRenderThread {
                 marqueeTick++
@@ -264,7 +301,7 @@ class MeloScreen(
                     val separator = "   •   "
                     val full = track.title + separator
                     if (newOffset % full.length == 0) marqueeTick = 0
-                    
+
                     state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
                 }
             }
@@ -291,16 +328,21 @@ class MeloScreen(
                 ),
                 Constraint.length(4),
             )
-            .left(buildSidebar(sidebarNavList, sidebarUtilList, state.navigation.sidebarInUtil, ::handleSidebarKey), Constraint.length(22))
+            .left(
+                buildSidebar(sidebarNavList, sidebarUtilList, state.navigation.sidebarInUtil, ::handleSidebarKey),
+                Constraint.length(22)
+            )
             .center(renderMainContent())
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
+        val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
 
         return when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE,
-            PlaylistInputMode.RENAME -> stack(withQueue, playlistInputOverlay)
-            PlaylistInputMode.PICKER -> stack(withQueue, playlistPickerOverlay)
-            PlaylistInputMode.NONE   -> withQueue
+            PlaylistInputMode.RENAME -> stack(withSettings, playlistInputOverlay)
+
+            PlaylistInputMode.PICKER -> stack(withSettings, playlistPickerOverlay)
+            PlaylistInputMode.NONE -> withSettings
         }
     }
 
@@ -314,7 +356,7 @@ class MeloScreen(
                 SidebarSection.LIBRARY -> ScreenState.Library()
                 SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
                 SidebarSection.STATS -> ScreenState.Stats()
-                // Should not happen with exhaustive SidebarSection
+                SidebarSection.SETTINGS -> state.screen
             }
             state = state.copy(
                 needsGraphicsClear = false,
@@ -326,19 +368,28 @@ class MeloScreen(
                 appRunner()?.focusManager()?.setFocus("now-playing-panel")
             }
             val targetContent = when (targetSection) {
-                SidebarSection.HOME    -> renderHomeScreen(
+                SidebarSection.HOME -> renderHomeScreen(
                     state, homeRecentList, homeFavoritesList,
                     onKeyEvent = ::handleHomeKey,
                 )
-                SidebarSection.SEARCH  -> renderSearchScreen(
+
+                SidebarSection.SEARCH -> renderSearchScreen(
                     state, resultList, lyricsArea, similarArea,
                     ::marqueeText, ::handleResultsKey, ::handleDetailKey,
                 )
+
                 SidebarSection.LIBRARY -> renderLibraryScreen(
                     state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
                 )
+
                 SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
                 SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
+                SidebarSection.SETTINGS -> renderHomeScreen(
+                    state,
+                    homeRecentList,
+                    homeFavoritesList,
+                    onKeyEvent = ::handleHomeKey
+                )
             }
             return stack(ClearGraphicsElement().fill(), targetContent)
         }
@@ -348,13 +399,16 @@ class MeloScreen(
                 state, homeRecentList, homeFavoritesList,
                 onKeyEvent = ::handleHomeKey,
             )
+
             is ScreenState.Search -> renderSearchScreen(
                 state, resultList, lyricsArea, similarArea,
                 ::marqueeText, ::handleResultsKey, ::handleDetailKey,
             )
+
             is ScreenState.Library -> renderLibraryScreen(
                 state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
             )
+
             is ScreenState.NowPlaying -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
             is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
         }
