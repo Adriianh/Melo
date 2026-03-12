@@ -30,6 +30,7 @@ class TrackOptionsOverlay(
         "Add to Queue",
         "Toggle Favorite",
         "Add to Playlist",
+        "Download for Offline",
         "View Similar Tracks"
     )
 
