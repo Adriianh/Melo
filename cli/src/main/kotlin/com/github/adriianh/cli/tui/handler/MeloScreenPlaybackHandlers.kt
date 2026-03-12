@@ -35,6 +35,10 @@ internal fun MeloScreen.playTrack(track: Track) {
     audioPlayer.stop()
     loadNowPlayingMetadata(track)
     scope.launch {
+        markTrackAccessed(track.id)
+        if (settingsViewState.currentSettings.autoDownload) {
+            getNextTrackForAutoDownload()?.let { downloadTrack(it) }
+        }
         recordPlay(track)
         var url: String? = null
         var attempts = 0
@@ -46,7 +50,12 @@ internal fun MeloScreen.playTrack(track: Track) {
         }
         appRunner()?.runOnRenderThread {
             if (url == null) {
-                state = state.copy(player = state.player.copy(isLoadingAudio = false, audioError = "Stream not available, skipping..."))
+                state = state.copy(
+                    player = state.player.copy(
+                        isLoadingAudio = false,
+                        audioError = "Stream not available, skipping..."
+                    )
+                )
                 seekForward()
                 return@runOnRenderThread
             }
@@ -114,7 +123,9 @@ internal fun MeloScreen.seekForward() {
         state.player.shuffleEnabled && queue.size > 1 -> queue.indices.filter { it != state.player.queueIndex }.random()
         else -> {
             val next = state.player.queueIndex + 1
-            if (next >= queue.size) { loadSimilarAndPlay(); return }
+            if (next >= queue.size) {
+                loadSimilarAndPlay(); return
+            }
             next
         }
     }
@@ -153,7 +164,14 @@ internal fun MeloScreen.removeFromQueue(index: Int) {
     )
     if (removingPlaying) {
         audioPlayer.stop()
-        if (newQueue.isEmpty()) state = state.copy(player = state.player.copy(nowPlaying = null, isPlaying = false, isRadioMode = false, progress = 0.0))
+        if (newQueue.isEmpty()) state = state.copy(
+            player = state.player.copy(
+                nowPlaying = null,
+                isPlaying = false,
+                isRadioMode = false,
+                progress = 0.0
+            )
+        )
         else playFromQueue(if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0)
     }
 }
@@ -175,7 +193,9 @@ internal fun MeloScreen.toggleQueue() {
     if (nowVisible) appRunner()?.focusManager()?.setFocus("queue-panel")
 }
 
-internal fun MeloScreen.toggleShuffle() { state = state.copy(player = state.player.copy(shuffleEnabled = !state.player.shuffleEnabled)) }
+internal fun MeloScreen.toggleShuffle() {
+    state = state.copy(player = state.player.copy(shuffleEnabled = !state.player.shuffleEnabled))
+}
 
 internal fun MeloScreen.cycleRepeat() {
     state = state.copy(
@@ -192,7 +212,14 @@ internal fun MeloScreen.cycleRepeat() {
 internal fun MeloScreen.loadSimilarAndPlay() {
     val seed = state.player.nowPlaying ?: return
     val alreadyPlayed = state.player.queue.map { it.id }.toSet()
-    state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = true, isRadioMode = true, progress = 0.0))
+    state = state.copy(
+        player = state.player.copy(
+            isPlaying = false,
+            isLoadingAudio = true,
+            isRadioMode = true,
+            progress = 0.0
+        )
+    )
     scope.launch {
         try {
             val related = resolveSimilarTracks(seed, limit = 15)
@@ -202,16 +229,33 @@ internal fun MeloScreen.loadSimilarAndPlay() {
                 .take(10)
 
             if (related.isEmpty()) {
-                appRunner()?.runOnRenderThread { state = state.copy(player = state.player.copy(isLoadingAudio = false, isRadioMode = false)) }
+                appRunner()?.runOnRenderThread {
+                    state = state.copy(player = state.player.copy(isLoadingAudio = false, isRadioMode = false))
+                }
                 return@launch
             }
             appRunner()?.runOnRenderThread {
-                state = state.copy(player = state.player.copy(queue = related, queueIndex = -1, queueCursor = 0, isLoadingAudio = false, isRadioMode = true))
+                state = state.copy(
+                    player = state.player.copy(
+                        queue = related,
+                        queueIndex = -1,
+                        queueCursor = 0,
+                        isLoadingAudio = false,
+                        isRadioMode = true
+                    )
+                )
                 playFromQueue(0)
             }
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(player = state.player.copy(isPlaying = false, isLoadingAudio = false, audioError = e.message, isRadioMode = false))
+                state = state.copy(
+                    player = state.player.copy(
+                        isPlaying = false,
+                        isLoadingAudio = false,
+                        audioError = e.message,
+                        isRadioMode = false
+                    )
+                )
             }
         }
     }
@@ -219,11 +263,11 @@ internal fun MeloScreen.loadSimilarAndPlay() {
 
 internal fun MeloScreen.loadMoreRadioTracks() {
     if (!state.player.isRadioMode || state.player.isLoadingMoreRadio || state.player.queue.isEmpty()) return
-    
+
     val seed = state.player.queue.last()
     val alreadyPlayed = state.player.queue.map { it.id }.toSet()
     state = state.copy(player = state.player.copy(isLoadingMoreRadio = true))
-    
+
     scope.launch {
         try {
             val related = resolveSimilarTracks(seed, limit = 10, offset = 0)
@@ -231,7 +275,7 @@ internal fun MeloScreen.loadMoreRadioTracks() {
                 .distinctBy { it.id }
                 .shuffled()
                 .take(10)
-            
+
             if (isActive) appRunner()?.runOnRenderThread {
                 if (related.isNotEmpty()) {
                     val combined = state.player.queue + related
@@ -249,8 +293,8 @@ internal fun MeloScreen.loadMoreRadioTracks() {
                 }
             }
         } catch (_: Exception) {
-            if (isActive) appRunner()?.runOnRenderThread { 
-                state = state.copy(player = state.player.copy(isLoadingMoreRadio = false)) 
+            if (isActive) appRunner()?.runOnRenderThread {
+                state = state.copy(player = state.player.copy(isLoadingMoreRadio = false))
             }
         }
     }
@@ -263,10 +307,32 @@ private const val MAX_QUEUE_SIZE = 50
  * Prunes already-played tracks from the front of the queue when it exceeds [MAX_QUEUE_SIZE].
  * Returns the pruned list and the adjusted queueIndex.
  */
-private fun pruneQueue(queue: List<com.github.adriianh.core.domain.model.Track>, currentIndex: Int): Pair<List<com.github.adriianh.core.domain.model.Track>, Int> {
+private fun pruneQueue(
+    queue: List<Track>,
+    currentIndex: Int
+): Pair<List<Track>, Int> {
     if (queue.size <= MAX_QUEUE_SIZE || currentIndex <= 0) return queue to currentIndex
     // Keep a small buffer of ~5 played tracks for "previous" navigation
     val dropCount = (currentIndex - 5).coerceAtLeast(0)
     if (dropCount == 0) return queue to currentIndex
     return queue.drop(dropCount) to (currentIndex - dropCount)
+}
+
+internal fun MeloScreen.getNextTrackForAutoDownload(): Track? {
+    val queue = state.player.queue
+    if (queue.isEmpty()) return null
+
+    val nextIndex = when {
+        state.player.repeatMode == RepeatMode.ONE -> state.player.queueIndex
+        state.player.repeatMode == RepeatMode.ALL -> (state.player.queueIndex + 1) % queue.size
+        state.player.shuffleEnabled && queue.size > 1 -> {
+            queue.indices.filter { it != state.player.queueIndex }.randomOrNull() ?: state.player.queueIndex
+        }
+
+        else -> {
+            val next = state.player.queueIndex + 1
+            if (next >= queue.size) null else next
+        }
+    }
+    return if (nextIndex != null && nextIndex != -1) queue.getOrNull(nextIndex) else null
 }
