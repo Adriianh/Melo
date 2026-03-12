@@ -98,11 +98,12 @@ class SettingsOverlay(
             "[↑/↓] navigate  [Enter] edit  [ESC] close"
 
         panel(
-            column(
-                settingsList,
-                spacer(),
-                text(helpText).fg(MeloTheme.TEXT_DIM).centered()
-            )
+            dock()
+                .center(settingsList.fill())
+                .bottom(
+                    text(helpText).fg(MeloTheme.TEXT_DIM).centered(),
+                    Constraint.length(1)
+                )
         )
             .title("${MeloTheme.ICON_SETTINGS} Settings")
             .rounded()
