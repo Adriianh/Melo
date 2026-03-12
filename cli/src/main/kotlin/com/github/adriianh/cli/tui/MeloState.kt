@@ -28,6 +28,7 @@ enum class SidebarSection {
     LIBRARY,
     NOW_PLAYING,
     STATS,
+    SETTINGS,
 }
 
 /**
@@ -205,6 +206,7 @@ data class MeloState(
     val playlistInteraction: PlaylistInteractionState = PlaylistInteractionState(),
 
     // Global UI/System flags
+    val isSettingsVisible: Boolean = false,
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
 )
