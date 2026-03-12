@@ -10,7 +10,6 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
@@ -22,9 +21,9 @@ fun renderOfflineScreen(
     offlineList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val s = state.screen as? ScreenState.Offline ?: return panel(text("Offline screen not active").centered()).rounded()
+    val screen = state.screen as? ScreenState.Offline ?: return panel(text("Offline screen not active").centered()).rounded()
 
-    val content = if (s.downloads.isEmpty()) {
+    val content = if (screen.downloads.isEmpty()) {
         column(
             spacer(),
             text("No downloaded tracks found").fg(TEXT_SECONDARY).centered(),
@@ -32,7 +31,7 @@ fun renderOfflineScreen(
             spacer()
         )
     } else {
-        val items = s.downloads.map { offlineTrack ->
+        val items = screen.downloads.map { offlineTrack ->
             val track = offlineTrack.track
             val isPlaying = track.id == state.player.nowPlaying?.id
             row(
@@ -43,7 +42,7 @@ fun renderOfflineScreen(
             )
         }
         offlineList.elements(*items.toTypedArray())
-        offlineList.selected(s.selectedIndex)
+        offlineList.selected(screen.selectedIndex)
         offlineList.fill()
     }
 
