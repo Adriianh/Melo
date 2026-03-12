@@ -75,6 +75,8 @@ class MeloCommand : CliktCommand(
         val getTopTracks: GetTopTracksUseCase by inject()
         val getTopArtists: GetTopArtistsUseCase by inject()
         val getListeningStats: GetListeningStatsUseCase by inject()
+        val getSettings: GetSettingsUseCase by inject()
+        val updateSettings: UpdateSettingsUseCase by inject()
         val artworkRenderer: ArtworkRenderer by inject()
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
@@ -92,6 +94,7 @@ class MeloCommand : CliktCommand(
                 saveSession, restoreSession, clearSession,
                 updateNowPlaying, scrobble,
                 getTopTracks, getTopArtists, getListeningStats,
+                getSettings, updateSettings,
                 artworkRenderer, artworkProvider,
                 dispatcher
             ).run()
