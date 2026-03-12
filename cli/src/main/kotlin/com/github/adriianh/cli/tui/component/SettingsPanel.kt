@@ -2,16 +2,13 @@ package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
-import com.github.adriianh.cli.tui.MeloTheme.ICON_SETTINGS
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
-import com.github.adriianh.core.domain.model.ThemePreset
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
-import dev.tamboui.style.Style
 import dev.tamboui.terminal.Frame
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
