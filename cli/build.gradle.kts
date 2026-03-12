@@ -88,7 +88,7 @@ graalvmNative {
                 "--initialize-at-run-time=java.awt.Toolkit",
                 "--initialize-at-run-time=javax.imageio.ImageIO",
                 "--initialize-at-run-time=sun.awt.AppContext",
-                "--initialize-at-run-time=javax.imageio.spi.IIORegistry"
+                "--initialize-at-run-time=javax.imageio.spi.IIORegistry",
                 // ── SLF4J / logging / SQLite ─────────────────────────
                 "--initialize-at-build-time=org.slf4j",
                 "--initialize-at-build-time=org.sqlite",
