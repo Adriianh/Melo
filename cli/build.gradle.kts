@@ -71,6 +71,7 @@ graalvmNative {
 
             // ── Ktor / Kotlin / kotlinx ecosystem ────────────────────────
             buildArgs.addAll(
+                "-H:+JNI",
                 "--initialize-at-build-time=io.ktor",
                 "--initialize-at-build-time=kotlin",
                 "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
@@ -83,8 +84,11 @@ graalvmNative {
                 "--initialize-at-build-time=kotlinx.serialization.modules.SerializersModuleKt",
                 "--initialize-at-build-time=kotlinx.io",
                 // ── AWT & ImageIO ─────────────────────────
-                "-H:+JNI",
-                "--enable-awt",
+                "-J-Dawt.toolkit=sun.awt.HToolkit",
+                "--initialize-at-run-time=java.awt.Toolkit",
+                "--initialize-at-run-time=javax.imageio.ImageIO",
+                "--initialize-at-run-time=sun.awt.AppContext",
+                "--initialize-at-run-time=javax.imageio.spi.IIORegistry"
                 // ── SLF4J / logging / SQLite ─────────────────────────
                 "--initialize-at-build-time=org.slf4j",
                 "--initialize-at-build-time=org.sqlite",
