@@ -11,6 +11,11 @@ New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
 
 Copy-Item -Path "$ScriptDir\melo.exe" -Destination "$InstallDir\melo.exe" -Force
 
+# Copy any shared libraries (e.g., AWT .dll files) if they exist
+if (Test-Path "$ScriptDir\*.dll") {
+    Copy-Item -Path "$ScriptDir\*.dll" -Destination "$InstallDir\" -Force
+}
+
 Set-Content "$BinDir\melo.bat" "@echo off`r`n\"$InstallDir\melo.exe\" %*`r`n"
 Set-Content "$BinDir\melo.ps1" "& \"$InstallDir\melo.exe\" @args`r`n"
 

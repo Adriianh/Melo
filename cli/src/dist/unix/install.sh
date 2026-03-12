@@ -11,7 +11,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cp "$SCRIPT_DIR/melo" "$INSTALL_DIR/melo"
 chmod +x "$INSTALL_DIR/melo"
 
-printf '#!/usr/bin/env sh\nexec "%s/melo" "$@"\n' "$INSTALL_DIR" > "$BIN_DIR/melo"
+# Copy any shared libraries (e.g., AWT .so or .dylib files) if they exist
+find "$SCRIPT_DIR" -maxdepth 1 \( -name "*.so" -o -name "*.dylib" \) -exec cp {} "$INSTALL_DIR/" \;
+
+# Create wrapper script setting library path so the binary finds the copied libraries
+# Use DYLD_LIBRARY_PATH on macOS and LD_LIBRARY_PATH on Linux
+printf '#!/usr/bin/env sh\nif [ "$(uname)" = "Darwin" ]; then\n  export DYLD_LIBRARY_PATH="%s:$DYLD_LIBRARY_PATH"\nelse\n  export LD_LIBRARY_PATH="%s:$LD_LIBRARY_PATH"\nfi\nexec "%s/melo" "$@"\n' "$INSTALL_DIR" "$INSTALL_DIR" "$INSTALL_DIR" > "$BIN_DIR/melo"
 chmod +x "$BIN_DIR/melo"
 
 # Create a .env template only if one doesn't exist yet

@@ -125,7 +125,7 @@ tasks.register("distUnix") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-$osTag.tar.gz"))
 
     doLast {
-        val nativeBin = layout.buildDirectory.file("native/nativeCompile/$appName").get().asFile
+        val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
         val stageDir = stageOut.get().asFile
         val rootDir  = File(stageDir, "$appName-$appVersion")
         val distDir  = distOut.get().asFile
@@ -133,7 +133,11 @@ tasks.register("distUnix") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        nativeBin.copyTo(File(rootDir, appName), overwrite = true)
+        nativeDir.walkTopDown().forEach { file ->
+            if (file.isFile) {
+                file.copyTo(File(rootDir, file.name), overwrite = true)
+            }
+        }
 
         distSrc.resolve("unix").walkTopDown().forEach { src ->
             if (src.isFile) {
@@ -166,7 +170,7 @@ tasks.register("distWindows") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-windows.zip"))
 
     doLast {
-        val nativeBin = layout.buildDirectory.file("native/nativeCompile/$appName.exe").get().asFile
+        val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
         val stageDir = stageOut.get().asFile
         val rootDir  = File(stageDir, "$appName-$appVersion")
         val distDir  = distOut.get().asFile
@@ -174,7 +178,11 @@ tasks.register("distWindows") {
         stageDir.deleteRecursively()
         distDir.mkdirs()
 
-        nativeBin.copyTo(File(rootDir, "$appName.exe"), overwrite = true)
+        nativeDir.walkTopDown().forEach { file ->
+            if (file.isFile) {
+                file.copyTo(File(rootDir, file.name), overwrite = true)
+            }
+        }
 
         distSrc.resolve("windows").walkTopDown().forEach { src ->
             if (src.isFile) {
