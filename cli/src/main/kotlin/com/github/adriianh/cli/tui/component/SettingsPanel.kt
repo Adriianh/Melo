@@ -114,6 +114,9 @@ class SettingsOverlay(
 
     override fun constraint(): Constraint = Constraint.fill()
 
-    override fun handleKeyEvent(event: KeyEvent, focused: Boolean): EventResult =
-        EventResult.UNHANDLED
+    override fun handleKeyEvent(event: KeyEvent, focused: Boolean): EventResult {
+        if (!stateProvider().isSettingsVisible) return EventResult.UNHANDLED
+        val result = onKeyEvent(event)
+        return if (result == EventResult.HANDLED) EventResult.HANDLED else EventResult.HANDLED
+    }
 }

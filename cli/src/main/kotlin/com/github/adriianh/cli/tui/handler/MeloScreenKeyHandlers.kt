@@ -121,6 +121,7 @@ private val UTIL_SECTIONS = listOf(
 )
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
+    if (state.isSettingsVisible) return EventResult.HANDLED
     val isFocused = appRunner()?.focusManager()?.focusedId() == "sidebar-panel"
     if (!isFocused) return EventResult.UNHANDLED
 
@@ -418,6 +419,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
+    if (state.isSettingsVisible) return EventResult.HANDLED
     when {
         event.matches(Actions.MOVE_LEFT) -> {
             seekTo(state.player.progress - 0.05); return EventResult.HANDLED
@@ -433,6 +435,14 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
 
         event.code() == KeyCode.CHAR && event.character() == 'n' -> {
             seekForward(); return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.CHAR && (event.character() == '<' || event.character() == ',') -> {
+            seekTo(state.player.progress - 0.05); return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.CHAR && (event.character() == '>' || event.character() == '.') -> {
+            seekTo(state.player.progress + 0.05); return EventResult.HANDLED
         }
 
         event.code() == KeyCode.CHAR && event.character() == ' ' -> {

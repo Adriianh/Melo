@@ -96,6 +96,9 @@ class QueueOverlay(
 
     override fun constraint(): Constraint = Constraint.fill()
 
-    override fun handleKeyEvent(event: KeyEvent, focused: Boolean): EventResult =
-        EventResult.UNHANDLED
+    override fun handleKeyEvent(event: KeyEvent, focused: Boolean): EventResult {
+        if (!stateProvider().player.isQueueVisible) return EventResult.UNHANDLED
+        onKeyEvent(event)
+        return EventResult.HANDLED
+    }
 }

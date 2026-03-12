@@ -49,7 +49,7 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                 return EventResult.HANDLED
             }
 
-            else -> return EventResult.UNHANDLED
+            else -> return EventResult.HANDLED
         }
     }
 }
