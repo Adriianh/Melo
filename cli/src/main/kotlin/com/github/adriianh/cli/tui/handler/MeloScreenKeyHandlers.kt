@@ -1,10 +1,32 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
+import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.Settings
+import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+
+/**
+ * Checks if a KeyEvent matches a specific MeloAction based on current settings.
+ */
+internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boolean {
+    val binding = settings.keybindings[action] ?: return false
+    
+    // Check by character
+    if (binding.char != null) {
+        return this.code() == KeyCode.CHAR && this.character() == binding.char
+    }
+    
+    // Check by key code
+    if (binding.code != null) {
+        return this.code().name == binding.code
+    }
+    
+    return false
+}
 
 internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
     val s = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
@@ -13,7 +35,7 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
     ) {
         return handleResultsKey(event)
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
@@ -58,15 +80,21 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
-                event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
-                event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track ?: return EventResult.UNHANDLED
                     toggleFavorite(track)
+                    return EventResult.HANDLED
+                }
+                
+                event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
                 }
             }
@@ -91,15 +119,21 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
-                event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+                event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
                     val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor) ?: return EventResult.UNHANDLED
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
-                event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+                event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
                     val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor) ?: return EventResult.UNHANDLED
                     toggleFavorite(track)
+                    return EventResult.HANDLED
+                }
+
+                event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+                    val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                    if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
                 }
             }
@@ -237,28 +271,34 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
             s.results.getOrNull(s.selectedIndex)?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
             s.results.getOrNull(s.selectedIndex)?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'a' -> {
+        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
             val track = s.results.getOrNull(s.selectedIndex)
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'l' -> {
+        event.matchesAction(MeloAction.LYRICS, settingsViewState.currentSettings) -> {
             loadLyrics()
             return EventResult.HANDLED
         }
+
+        event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+            val track = s.results.getOrNull(s.selectedIndex)
+            if (track != null) openTrackOptions(track)
+            return EventResult.HANDLED
+        }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
@@ -354,17 +394,17 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
             state.collections.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
             state.collections.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'a' -> {
+        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
             val track = state.collections.favorites.getOrNull(favoritesList.selected())
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
@@ -404,13 +444,13 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.DELETE || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
+        event.matchesAction(MeloAction.DELETE, settingsViewState.currentSettings) || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
             if (!isFocused) return EventResult.UNHANDLED
             removeFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'c' -> {
+        event.matchesAction(MeloAction.CLEAR_QUEUE, settingsViewState.currentSettings) -> {
             clearQueue()
             return EventResult.HANDLED
         }
@@ -419,7 +459,8 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
-    if (state.isSettingsVisible) return EventResult.HANDLED
+    if (state.isSettingsVisible || state.trackOptions.isVisible) return EventResult.HANDLED
+    val settings = settingsViewState.currentSettings
     when {
         event.matches(Actions.MOVE_LEFT) -> {
             seekTo(state.player.progress - 0.05); return EventResult.HANDLED
@@ -429,11 +470,11 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
             seekTo(state.player.progress + 0.05); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'p' -> {
+        event.matchesAction(MeloAction.PREVIOUS, settings) -> {
             seekBackward(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'n' -> {
+        event.matchesAction(MeloAction.NEXT, settings) -> {
             seekForward(); return EventResult.HANDLED
         }
 
@@ -445,28 +486,107 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
             seekTo(state.player.progress + 0.05); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == ' ' -> {
+        event.matchesAction(MeloAction.PLAY_PAUSE, settings) || event.code() == KeyCode.CHAR && event.character() == ' ' -> {
             togglePlayPause(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+        event.matchesAction(MeloAction.TOGGLE_QUEUE, settings) -> {
             toggleQueue(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'r' -> {
+        event.matchesAction(MeloAction.REPEAT, settings) -> {
             cycleRepeat(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 's' -> {
+        event.matchesAction(MeloAction.SHUFFLE, settings) -> {
             toggleShuffle(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == '+' -> {
+        event.matchesAction(MeloAction.VOLUME_UP, settings) -> {
             adjustVolume(5); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == '-' -> {
+        event.matchesAction(MeloAction.VOLUME_DOWN, settings) -> {
             adjustVolume(-5); return EventResult.HANDLED
+        }
+    }
+    return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
+    val optionsCount = 5
+    when {
+        event.code() == KeyCode.ESCAPE -> {
+            state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_DOWN) -> {
+            val newIndex = (state.trackOptions.selectedIndex + 1) % optionsCount
+            state = state.copy(trackOptions = state.trackOptions.copy(selectedIndex = newIndex))
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_UP) -> {
+            val newIndex = if (state.trackOptions.selectedIndex <= 0) optionsCount - 1 else state.trackOptions.selectedIndex - 1
+            state = state.copy(trackOptions = state.trackOptions.copy(selectedIndex = newIndex))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ENTER -> {
+            val track = state.trackOptions.track ?: return EventResult.UNHANDLED
+            val actionIndex = state.trackOptions.selectedIndex
+            state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
+            
+            when (actionIndex) {
+                0 -> playTrack(track)
+                1 -> addToQueue(track)
+                2 -> toggleFavorite(track)
+                3 -> openPlaylistPicker(track)
+                4 -> {
+                    state = state.copy(detail = state.detail.copy(selectedTrack = track, detailTab = DetailTab.SIMILAR))
+                    appRunner()?.focusManager()?.setFocus("similar-area")
+                    loadMoreSimilar()
+                }
+            }
+            return EventResult.HANDLED
+        }
+    }
+    return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.openTrackOptions(track: Track) {
+    state = state.copy(trackOptions = state.trackOptions.copy(track = track, selectedIndex = 0, isVisible = true))
+    appRunner()?.focusManager()?.setFocus("track-options-panel")
+}
+
+internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
+    if (state.isSettingsVisible || state.trackOptions.isVisible) return EventResult.UNHANDLED
+    
+    // Only handle if NOT in search input
+    val focusedId = appRunner()?.focusManager()?.focusedId()
+    if (focusedId == "search-bar") return EventResult.UNHANDLED
+
+    if (event.code() == KeyCode.CHAR) {
+        val section = when (event.character()) {
+            '1' -> SidebarSection.HOME
+            '2' -> SidebarSection.SEARCH
+            '3' -> SidebarSection.LIBRARY
+            '4' -> SidebarSection.NOW_PLAYING
+            '5' -> SidebarSection.STATS
+            '6' -> SidebarSection.SETTINGS
+            else -> null
+        }
+        
+        if (section != null) {
+            if (section == SidebarSection.SETTINGS) {
+                state = state.copy(isSettingsVisible = true)
+                appRunner()?.focusManager()?.setFocus("settings-panel")
+            } else if (section != state.navigation.activeSection) {
+                state = state.copy(needsGraphicsClear = true, navigation = state.navigation.copy(pendingSection = section))
+                if (section == SidebarSection.STATS) loadStats()
+            }
+            return EventResult.HANDLED
         }
     }
     return EventResult.UNHANDLED
