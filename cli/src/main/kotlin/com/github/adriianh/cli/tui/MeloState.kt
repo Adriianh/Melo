@@ -29,6 +29,7 @@ enum class SidebarSection {
     NOW_PLAYING,
     STATS,
     SETTINGS,
+    OFFLINE,
 }
 
 /**
@@ -147,7 +148,13 @@ sealed interface ScreenState {
     ) : ScreenState
 
     data class NowPlaying(
-        val unused: Boolean = true // NowPlaying screen uses mainly global player state for now
+        val unused: Boolean = true
+    ) : ScreenState
+
+    data class Offline(
+        val downloads: List<com.github.adriianh.core.domain.model.OfflineTrack> = emptyList(),
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = false
     ) : ScreenState
 }
 
@@ -219,6 +226,7 @@ data class MeloState(
 
     // Global UI/System flags
     val isSettingsVisible: Boolean = false,
+    val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
 )

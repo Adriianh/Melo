@@ -14,7 +14,7 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 private const val NAV_ITEMS = 4
-private const val UTIL_ITEMS = 2
+private const val UTIL_ITEMS = 3
 
 fun buildSidebar(
     navList: ListElement<*>,

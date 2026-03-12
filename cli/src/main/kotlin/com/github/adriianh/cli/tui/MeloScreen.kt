@@ -10,8 +10,11 @@ import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
+import com.github.adriianh.core.domain.model.OfflineTrack
+import com.github.adriianh.core.domain.model.DownloadStatus
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -21,6 +24,8 @@ import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.coroutines.*
 import java.time.Duration
 
@@ -66,6 +71,10 @@ class MeloScreen(
     // Settings
     internal val getSettings: GetSettingsUseCase,
     internal val updateSettings: UpdateSettingsUseCase,
+    // Offline
+    internal val getOfflineTracks: GetOfflineTracksUseCase,
+    internal val downloadTrack: DownloadTrackUseCase,
+    internal val deleteDownloadedTrack: DeleteDownloadedTrackUseCase,
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
     internal val artworkProvider: ArtworkProvider,
@@ -213,6 +222,7 @@ class MeloScreen(
         .items(
             "${MeloTheme.ICON_STATS} Statistics",
             "${MeloTheme.ICON_SETTINGS}  Settings",
+            "${MeloTheme.ICON_OFFLINE} Downloads",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -239,6 +249,14 @@ class MeloScreen(
         .scrollbar()
         .focusable()
         .id("queue-list")
+
+    internal val offlineList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("offline-list")
 
     internal val settingsList: ListElement<*> = list()
         .highlightSymbol("> ")
@@ -276,6 +294,13 @@ class MeloScreen(
             getPlaylists().collect { playlists ->
                 runner()?.runOnRenderThread {
                     state = state.copy(collections = state.collections.copy(playlists = playlists))
+                }
+            }
+        }
+        scope.launch {
+            getOfflineTracks().collect { downloads ->
+                runner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
                 }
             }
         }
@@ -337,7 +362,8 @@ class MeloScreen(
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
         val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
-        val withTrackOptions = if (state.trackOptions.isVisible) stack(withSettings, trackOptionsOverlay) else withSettings
+        val withTrackOptions =
+            if (state.trackOptions.isVisible) stack(withSettings, trackOptionsOverlay) else withSettings
 
         return when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE,
@@ -358,6 +384,7 @@ class MeloScreen(
                 SidebarSection.LIBRARY -> ScreenState.Library()
                 SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
                 SidebarSection.STATS -> ScreenState.Stats()
+                SidebarSection.OFFLINE -> ScreenState.Offline()
                 SidebarSection.SETTINGS -> state.screen
             }
             state = state.copy(
@@ -386,6 +413,7 @@ class MeloScreen(
 
                 SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
                 SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
+                SidebarSection.OFFLINE -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
                 SidebarSection.SETTINGS -> renderHomeScreen(
                     state,
                     homeRecentList,
@@ -413,6 +441,68 @@ class MeloScreen(
 
             is ScreenState.NowPlaying -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
             is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
+            is ScreenState.Offline -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
+        }
+    }
+
+    internal fun loadOfflineTracks() {
+        scope.launch {
+            getOfflineTracks().collect { downloads ->
+                runner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
+                }
+            }
+        }
+    }
+
+    internal fun deleteDownloadedTrack(trackId: String) {
+        scope.launch {
+            deleteDownloadedTrack.invoke(trackId)
+        }
+    }
+
+    internal fun downloadTrack(track: Track) {
+        scope.launch {
+            try {
+                val streamUrl = getStream(track) ?: return@launch
+
+                val shareDir = com.github.adriianh.cli.config.shareDir
+                val downloadsDir = java.io.File(shareDir, "downloads")
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                val extension = if (streamUrl.contains(".mp3")) "mp3" else "webm"
+                val file = java.io.File(downloadsDir, "${track.id}.$extension")
+
+                val offlineTrack = OfflineTrack(
+                    track = track,
+                    downloadStatus = DownloadStatus.DOWNLOADING
+                )
+                downloadTrack.invoke(offlineTrack)
+
+                if (streamUrl.startsWith("http")) {
+                    val response = httpClient.get(streamUrl)
+                    val bytes = response.bodyAsBytes()
+                    file.writeBytes(bytes)
+                } else if (streamUrl.startsWith("file://")) {
+                    return@launch
+                }
+
+                val completedTrack = offlineTrack.copy(
+                    localFilePath = file.absolutePath,
+                    downloadStatus = DownloadStatus.COMPLETED,
+                    fileSize = file.length(),
+                    downloadedAt = System.currentTimeMillis()
+                )
+                downloadTrack.invoke(completedTrack)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                downloadTrack.invoke(
+                    OfflineTrack(
+                        track = track,
+                        downloadStatus = DownloadStatus.FAILED
+                    )
+                )
+            }
         }
     }
 }
