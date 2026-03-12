@@ -29,7 +29,8 @@ enum class SettingsItem(val label: String) {
     VOLUME("Default Volume"),
     LANGUAGE("Search Language"),
     ARTWORK_RES("Artwork Resolution"),
-    CACHE_SIZE("Cache Size Limit (MB)"),
+    AUTO_DOWNLOAD("Auto-Download Next"),
+    MAX_OFFLINE_SIZE("Max Offline Size"),
     KEYBINDINGS("Custom Keybindings"),
 }
 
@@ -116,7 +117,8 @@ class SettingsOverlay(
                     SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
                     SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
                     SettingsItem.ARTWORK_RES -> "${viewState.currentSettings.artworkResolution}px"
-                    SettingsItem.CACHE_SIZE -> "${viewState.currentSettings.cacheSizeLimitMb} MB"
+                    SettingsItem.AUTO_DOWNLOAD -> if (viewState.currentSettings.autoDownload) "On" else "Off"
+                    SettingsItem.MAX_OFFLINE_SIZE -> "${viewState.currentSettings.maxOfflineSizeMb} MB"
                     SettingsItem.KEYBINDINGS -> "→"
                 }
 

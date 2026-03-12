@@ -155,11 +155,15 @@ private fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
             current.copy(artworkResolution = steps[newIndex])
         }
 
-        SettingsItem.CACHE_SIZE -> {
-            val steps = listOf(100, 250, 500, 1000, 2048)
-            val currentIndex = steps.indexOf(current.cacheSizeLimitMb).takeIf { it >= 0 } ?: 2
+        SettingsItem.AUTO_DOWNLOAD -> {
+            current.copy(autoDownload = !current.autoDownload)
+        }
+
+        SettingsItem.MAX_OFFLINE_SIZE -> {
+            val steps = listOf(250, 500, 1000, 2000, 5000)
+            val currentIndex = steps.indexOf(current.maxOfflineSizeMb).takeIf { it >= 0 } ?: 1
             val newIndex = (currentIndex + direction).coerceIn(0, steps.lastIndex)
-            current.copy(cacheSizeLimitMb = steps[newIndex])
+            current.copy(maxOfflineSizeMb = steps[newIndex])
         }
 
         SettingsItem.KEYBINDINGS -> current
