@@ -98,6 +98,80 @@ class OfflineRepositoryImpl(
         saveMetadataToDisk(current)
     }
 
+    override suspend fun syncWithFileSystem() {
+        withContext(dispatcher) {
+            val current = _offlineTracksFlow.value.toMutableList()
+            val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
+
+            // Get all audio files in the downloads directory
+            val existingFiles = downloadsDir.listFiles { file ->
+                audioExtensions.any { ext -> file.name.endsWith(".$ext", ignoreCase = true) }
+            }?.associateBy { it.name.lowercase() } ?: emptyMap()
+
+            var hasChanges = false
+
+            for (i in current.indices) {
+                val track = current[i]
+                val localPath = track.localFilePath
+
+                // Check if track has a local file path
+                if (localPath != null) {
+                    val file = File(localPath)
+
+                    // If file exists but status is not COMPLETED, fix it
+                    if (file.exists() && track.downloadStatus != DownloadStatus.COMPLETED) {
+                        current[i] = track.copy(
+                            downloadStatus = DownloadStatus.COMPLETED,
+                            fileSize = file.length(),
+                            downloadedAt = track.downloadedAt ?: file.lastModified()
+                        )
+                        hasChanges = true
+                    }
+                    // If file doesn't exist, reset to PENDING
+                    else if (!file.exists()) {
+                        current[i] = track.copy(
+                            localFilePath = null,
+                            downloadStatus = DownloadStatus.PENDING,
+                            fileSize = 0L
+                        )
+                        hasChanges = true
+                    }
+                } else {
+                    // Try to find a matching file for this track
+                    val matchingFile = findMatchingFile(track.track, existingFiles)
+                    if (matchingFile != null) {
+                        current[i] = track.copy(
+                            localFilePath = matchingFile.absolutePath,
+                            downloadStatus = DownloadStatus.COMPLETED,
+                            fileSize = matchingFile.length(),
+                            downloadedAt = track.downloadedAt ?: matchingFile.lastModified()
+                        )
+                        hasChanges = true
+                    }
+                }
+            }
+
+            if (hasChanges) {
+                _offlineTracksFlow.value = current
+                saveMetadataToDisk(current)
+            }
+        }
+    }
+
+    private fun findMatchingFile(track: com.github.adriianh.core.domain.model.Track, files: Map<String, File>): File? {
+        val title = track.title.lowercase()
+        val artist = track.artist.lowercase()
+
+        // Try to find a file that matches the track
+        return files.values.firstOrNull { file ->
+            val name = file.name.lowercase()
+            // Match if filename contains both artist and title
+            (name.contains(title) && name.contains(artist)) ||
+            // Or if it contains the title (for tracks without clear artist in filename)
+            name.contains(title)
+        }
+    }
+
     private fun loadMetadataSync(): List<OfflineTrack> {
         if (!metadataFile.exists()) return emptyList()
         return try {

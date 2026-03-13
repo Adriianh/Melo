@@ -39,4 +39,10 @@ interface OfflineRepository {
      * Deletes tracks to stay under the size limit, prioritizing oldest accessed.
      */
     suspend fun cleanupCache(maxSizeMb: Int)
+
+    /**
+     * Synchronizes the metadata with actual files on disk.
+     * Updates tracks to COMPLETED if their files exist, or removes entries if files are missing.
+     */
+    suspend fun syncWithFileSystem()
 }
