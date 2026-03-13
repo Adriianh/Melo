@@ -1,12 +1,12 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
-import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
