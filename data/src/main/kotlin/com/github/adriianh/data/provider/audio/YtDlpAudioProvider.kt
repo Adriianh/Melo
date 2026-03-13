@@ -81,7 +81,14 @@ class YtDlpAudioProvider(
 
                 val after = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
                 val newFiles = after - before
-                val downloaded = newFiles.firstOrNull()?.let { File(dir, it) }
+
+                // Filter for audio files only (ignore thumbnails like .webp, .jpg, etc.)
+                val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
+                val downloaded = newFiles
+                    .filter { name -> audioExtensions.any { ext -> name.endsWith(".$ext", ignoreCase = true) } }
+                    .firstOrNull()
+                    ?.let { File(dir, it) }
+
                 if (downloaded != null && downloaded.exists()) downloaded.absolutePath else null
             } catch (_: Exception) {
                 null
