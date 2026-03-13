@@ -1,6 +1,8 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
+import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
@@ -584,7 +586,14 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
                 1 -> addToQueue(track)
                 2 -> toggleFavorite(track)
                 3 -> openPlaylistPicker(track)
-                4 -> downloadTrack(track)
+                4 -> {
+                    val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
+                    if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED) {
+                        deleteDownloadedTrack(track.id)
+                    } else {
+                        downloadTrack(track, DownloadType.MANUAL)
+                    }
+                }
                 5 -> {
                     state = state.copy(detail = state.detail.copy(selectedTrack = track, detailTab = DetailTab.SIMILAR))
                     appRunner()?.focusManager()?.setFocus("similar-area")
