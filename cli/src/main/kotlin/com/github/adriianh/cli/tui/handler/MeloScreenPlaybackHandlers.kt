@@ -1,11 +1,12 @@
 package com.github.adriianh.cli.tui.handler
 
-import com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.RepeatMode
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
-import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 internal fun MeloScreen.playTrack(track: Track) {
     val existingIndex = state.player.queue.indexOfFirst { it.id == track.id }
@@ -37,7 +38,10 @@ internal fun MeloScreen.playTrack(track: Track) {
     scope.launch {
         markTrackAccessed(track.id)
         if (settingsViewState.currentSettings.autoDownload) {
-            getNextTrackForAutoDownload()?.let { downloadTrack(it) }
+            val queue = state.player.queue
+            val currentIndex = state.player.queueIndex
+            (1..2).mapNotNull { offset -> queue.getOrNull(currentIndex + offset) }
+                .forEach { nextTrack -> launch { downloadTrack(nextTrack) } }
         }
         recordPlay(track)
         var url: String? = null
@@ -48,6 +52,7 @@ internal fun MeloScreen.playTrack(track: Track) {
             if (url == null) delay(700L)
             attempts++
         }
+
         appRunner()?.runOnRenderThread {
             if (url == null) {
                 state = state.copy(
@@ -316,23 +321,4 @@ private fun pruneQueue(
     val dropCount = (currentIndex - 5).coerceAtLeast(0)
     if (dropCount == 0) return queue to currentIndex
     return queue.drop(dropCount) to (currentIndex - dropCount)
-}
-
-internal fun MeloScreen.getNextTrackForAutoDownload(): Track? {
-    val queue = state.player.queue
-    if (queue.isEmpty()) return null
-
-    val nextIndex = when {
-        state.player.repeatMode == RepeatMode.ONE -> state.player.queueIndex
-        state.player.repeatMode == RepeatMode.ALL -> (state.player.queueIndex + 1) % queue.size
-        state.player.shuffleEnabled && queue.size > 1 -> {
-            queue.indices.filter { it != state.player.queueIndex }.randomOrNull() ?: state.player.queueIndex
-        }
-
-        else -> {
-            val next = state.player.queueIndex + 1
-            if (next >= queue.size) null else next
-        }
-    }
-    return if (nextIndex != null && nextIndex != -1) queue.getOrNull(nextIndex) else null
 }
