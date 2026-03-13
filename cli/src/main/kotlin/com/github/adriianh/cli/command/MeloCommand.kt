@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import io.ktor.client.*
@@ -81,6 +82,7 @@ class MeloCommand : CliktCommand(
         val artworkRenderer: ArtworkRenderer by inject()
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
+        val offlineRepository: OfflineRepository by inject()
         val getOfflineTracks: GetOfflineTracksUseCase by inject()
         val syncOfflineTracks: SyncOfflineTracksUseCase by inject()
         val downloadTrack: DownloadTrackUseCase by inject()
@@ -125,6 +127,7 @@ class MeloCommand : CliktCommand(
                 getListeningStats = getListeningStats,
                 getSettings = getSettings,
                 updateSettings = updateSettings,
+                offlineRepository = offlineRepository,
                 getOfflineTracks = getOfflineTracks,
                 syncOfflineTracks = syncOfflineTracks,
                 downloadTrack = downloadTrack,

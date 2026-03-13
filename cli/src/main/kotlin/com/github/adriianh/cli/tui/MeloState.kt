@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.ListeningStats
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
@@ -152,7 +153,7 @@ sealed interface ScreenState {
     ) : ScreenState
 
     data class Offline(
-        val downloads: List<com.github.adriianh.core.domain.model.OfflineTrack> = emptyList(),
+        val downloads: List<OfflineTrack> = emptyList(),
         val selectedIndex: Int = 0,
         val isLoading: Boolean = false
     ) : ScreenState
@@ -200,6 +201,7 @@ data class CollectionsState(
     val favorites: List<Track> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
+    val offlineTracks: List<OfflineTrack> = emptyList()
 )
 
 /**

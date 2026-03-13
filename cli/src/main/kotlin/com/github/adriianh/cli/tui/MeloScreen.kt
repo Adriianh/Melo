@@ -17,6 +17,8 @@ import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.repository.OfflineRepository
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -27,6 +29,8 @@ import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import java.time.Duration
 
@@ -73,6 +77,7 @@ class MeloScreen(
     internal val getSettings: GetSettingsUseCase,
     internal val updateSettings: UpdateSettingsUseCase,
     // Offline
+    internal val offlineRepository: OfflineRepository,
     internal val getOfflineTracks: GetOfflineTracksUseCase,
     internal val syncOfflineTracks: SyncOfflineTracksUseCase,
     internal val downloadTrack: DownloadTrackUseCase,
@@ -99,6 +104,7 @@ class MeloScreen(
     internal var trackStartedAt = 0L
     internal var updateNowPlayingJob: Job? = null
     internal var scrobbleJob: Job? = null
+    internal val downloadSemaphore = Semaphore(2)
 
     internal var settingsViewState = SettingsViewState()
 
@@ -263,6 +269,13 @@ class MeloScreen(
         .focusable()
         .id("offline-list")
 
+    internal val settingsSectionList: ListElement<*> = list()
+        .highlightSymbol("> ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("settings-section-list")
+
     internal val settingsList: ListElement<*> = list()
         .highlightSymbol("> ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -273,9 +286,14 @@ class MeloScreen(
     private val playlistInputOverlay = PlaylistInputOverlay { state }
     private val playlistPickerOverlay = PlaylistPickerOverlay { state }
     private val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
-    private val settingsOverlay = SettingsOverlay({ state }, { settingsViewState }, settingsList, ::handleSettingsKey)
+    private val settingsOverlay = SettingsOverlay(
+        { state },
+        { settingsViewState },
+        settingsSectionList,
+        settingsList,
+        ::handleSettingsKey
+    )
     private val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
-
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
@@ -304,11 +322,18 @@ class MeloScreen(
         }
         scope.launch {
             syncOfflineTracks.invoke()
+            autoCleanup.invoke(
+                maxAgeDays = settingsViewState.currentSettings.maxOfflineAgeDays,
+                maxSizeMb = settingsViewState.currentSettings.maxOfflineSizeMb,
+            )
         }
         scope.launch {
             getOfflineTracks().collect { downloads ->
                 runner()?.runOnRenderThread {
                     updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
+                    state = state.copy(
+                        collections = state.collections.copy(offlineTracks = downloads)
+                    )
                 }
             }
         }
@@ -457,6 +482,7 @@ class MeloScreen(
         scope.launch {
             getOfflineTracks().collect { downloads ->
                 runner()?.runOnRenderThread {
+                    scope.launch { syncOfflineTracks }
                     updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
                 }
             }
@@ -469,48 +495,62 @@ class MeloScreen(
         }
     }
 
-    internal fun downloadTrack(track: Track) {
+    internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) {
         scope.launch {
-            try {
-                val sourceId = track.sourceId ?: return@launch
-                val shareDir = shareDir
-                val downloadsDir = File(shareDir, "downloads")
-                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+            downloadSemaphore.withPermit {
+                try {
+                    val existing = offlineRepository.getOfflineTrack(track.id)
+                    if (existing?.downloadStatus == DownloadStatus.COMPLETED ||
+                        existing?.downloadStatus == DownloadStatus.DOWNLOADING) return@launch
 
-                val offlineTrack = OfflineTrack(
-                    track = track,
-                    downloadStatus = DownloadStatus.DOWNLOADING
-                )
-                downloadTrack.invoke(offlineTrack)
-
-                val downloadedPath = audioProvider.downloadAudio(
-                    source = sourceId,
-                    destination = downloadsDir.absolutePath,
-                    format = "mp3" /* TODO Add formats to settings */
-                )
-                if (downloadedPath != null) {
-                    val file = File(downloadedPath)
-                    val completedTrack = offlineTrack.copy(
-                        localFilePath = file.absolutePath,
-                        downloadStatus = DownloadStatus.COMPLETED,
-                        fileSize = file.length(),
-                        downloadedAt = System.currentTimeMillis()
+                    val sourceId = track.sourceId ?: return@launch
+                    val downloadsDir = File(
+                        settingsViewState.currentSettings.downloadPath
+                            ?: File(shareDir, "downloads").absolutePath
                     )
-                    downloadTrack.invoke(completedTrack)
-                    autoCleanup.invoke(settingsViewState.currentSettings.maxOfflineSizeMb)
-                } else {
+                    if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
+                    val offlineTrack = OfflineTrack(
+                        track = track,
+                        downloadStatus = DownloadStatus.DOWNLOADING,
+                        downloadType = downloadType
+                    )
+                    downloadTrack.invoke(offlineTrack)
+
+                    val downloadedPath = audioProvider.downloadAudio(
+                        source = sourceId,
+                        destination = downloadsDir.absolutePath,
+                        format = settingsViewState.currentSettings.downloadFormat.displayName,
+                        quality = settingsViewState.currentSettings.downloadQuality.displayName
+                    )
+                    if (downloadedPath != null) {
+                        val file = File(downloadedPath)
+                        val completedTrack = offlineTrack.copy(
+                            localFilePath = file.absolutePath,
+                            downloadStatus = DownloadStatus.COMPLETED,
+                            fileSize = file.length(),
+                            downloadedAt = System.currentTimeMillis()
+                        )
+                        downloadTrack.invoke(completedTrack)
+                        autoCleanup.invoke(
+                            maxAgeDays = settingsViewState.currentSettings.maxOfflineAgeDays,
+                            maxSizeMb = settingsViewState.currentSettings.maxOfflineSizeMb
+                        )
+                    } else {
+                        downloadTrack.invoke(
+                            offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                     downloadTrack.invoke(
-                        offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
+                        OfflineTrack(
+                            track = track,
+                            downloadStatus = DownloadStatus.FAILED
+                        )
                     )
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                downloadTrack.invoke(
-                    OfflineTrack(
-                        track = track,
-                        downloadStatus = DownloadStatus.FAILED
-                    )
-                )
+
             }
         }
     }
