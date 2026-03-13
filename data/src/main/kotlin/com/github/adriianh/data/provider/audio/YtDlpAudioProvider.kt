@@ -60,19 +60,30 @@ class YtDlpAudioProvider(
      * format (e.g. "mp3", "flac") to the given destination directory.
      * Returns the absolute path of the downloaded file if successful, or null otherwise.
      */
-    override suspend fun downloadAudio(source: String, destination: String, format: String): String? =
+    override suspend fun downloadAudio(source: String, destination: String, format: String, quality: String): String? =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://www.youtube.com/watch?v=$source"
 
                 val dir = File(destination)
                 val before = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+                val resolvedQuality = when (format) {
+                    "flac" -> "0"
+                    "opus" -> quality.replace("k", "").toIntOrNull()
+                        ?.coerceAtMost(192).let { "${it}k" }
+                    else -> quality
+                }
+                val formatArg = when (format) {
+                    "opus" -> "bestaudio[ext=webm]/bestaudio"
+                    else -> "bestaudio"
+                }
+
                 runYtDlp(
                     "-q",
                     "-x",
-                    "-f", "bestaudio",
+                    "-f", formatArg,
                     "--audio-format", format,
-                    "--audio-quality", "0",
+                    "--audio-quality", resolvedQuality,
                     "--embed-thumbnail",
                     "--add-metadata",
                     "-o", "$destination/%(uploader)s - %(title)s.%(ext)s",
