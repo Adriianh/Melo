@@ -35,6 +35,13 @@ interface OfflineRepository {
     suspend fun markTrackAsAccessed(trackId: String)
 
     /**
+     * Deletes tracks that were last accessed or downloaded more than [maxAgeDays] days ago.
+     * This helps to automatically clean up old downloads that haven't been accessed in a while.
+     */
+    suspend fun cleanupExpired(maxAgeDays: Int = 30)
+
+
+    /**
      * Deletes tracks to stay under the size limit, prioritizing oldest accessed.
      */
     suspend fun cleanupCache(maxSizeMb: Int)
