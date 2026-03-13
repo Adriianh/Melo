@@ -82,6 +82,7 @@ class MeloCommand : CliktCommand(
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
         val getOfflineTracks: GetOfflineTracksUseCase by inject()
+        val syncOfflineTracks: SyncOfflineTracksUseCase by inject()
         val downloadTrack: DownloadTrackUseCase by inject()
         val deleteDownloadedTrack: DeleteDownloadedTrackUseCase by inject()
         val markTrackAccessed: MarkTrackAccessedUseCase by inject()
@@ -125,6 +126,7 @@ class MeloCommand : CliktCommand(
                 getSettings = getSettings,
                 updateSettings = updateSettings,
                 getOfflineTracks = getOfflineTracks,
+                syncOfflineTracks = syncOfflineTracks,
                 downloadTrack = downloadTrack,
                 deleteDownloadedTrack = deleteDownloadedTrack,
                 markTrackAccessed = markTrackAccessed,

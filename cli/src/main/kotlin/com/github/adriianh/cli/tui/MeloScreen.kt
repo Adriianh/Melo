@@ -74,6 +74,7 @@ class MeloScreen(
     internal val updateSettings: UpdateSettingsUseCase,
     // Offline
     internal val getOfflineTracks: GetOfflineTracksUseCase,
+    internal val syncOfflineTracks: SyncOfflineTracksUseCase,
     internal val downloadTrack: DownloadTrackUseCase,
     internal val deleteDownloadedTrack: DeleteDownloadedTrackUseCase,
     internal val markTrackAccessed: MarkTrackAccessedUseCase,
@@ -300,6 +301,9 @@ class MeloScreen(
                     state = state.copy(collections = state.collections.copy(playlists = playlists))
                 }
             }
+        }
+        scope.launch {
+            syncOfflineTracks.invoke()
         }
         scope.launch {
             getOfflineTracks().collect { downloads ->
