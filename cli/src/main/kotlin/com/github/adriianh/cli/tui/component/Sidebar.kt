@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
