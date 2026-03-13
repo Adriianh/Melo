@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.DownloadType
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
@@ -23,7 +24,8 @@ fun renderOfflineScreen(
 ): Element {
     val screen = state.screen as? ScreenState.Offline ?: return panel(text("Offline screen not active").centered()).rounded()
 
-    val content = if (screen.downloads.isEmpty()) {
+    val downloads = screen.downloads.filter { it.downloadType != DownloadType.PREFETCH }
+    val content = if (downloads.isEmpty()) {
         column(
             spacer(),
             text("No downloaded tracks found").fg(TEXT_SECONDARY).centered(),
@@ -31,16 +33,17 @@ fun renderOfflineScreen(
             spacer()
         )
     } else {
-        val items = screen.downloads.map { offlineTrack ->
-            val track = offlineTrack.track
-            val isPlaying = track.id == state.player.nowPlaying?.id
-            row(
-                text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
-                text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
-            )
-        }
+        val items = downloads
+            .map { offlineTrack ->
+                val track = offlineTrack.track
+                val isPlaying = track.id == state.player.nowPlaying?.id
+                row(
+                    text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
+                    text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+                    text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+                    text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+                )
+            }
         offlineList.elements(*items.toTypedArray())
         offlineList.selected(screen.selectedIndex)
         offlineList.fill()
