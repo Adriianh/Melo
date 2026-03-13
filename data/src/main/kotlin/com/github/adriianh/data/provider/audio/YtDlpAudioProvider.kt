@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * AudioProvider that combines two backends for best results:
@@ -49,6 +50,39 @@ class YtDlpAudioProvider(
                     "--get-url",
                     url
                 ).lines().firstOrNull { it.startsWith("http") }
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+    /**
+     * Downloads the audio for the given YouTube video ID using yt-dlp with the specified
+     * format (e.g. "mp3", "flac") to the given destination directory.
+     * Returns the absolute path of the downloaded file if successful, or null otherwise.
+     */
+    override suspend fun downloadAudio(source: String, destination: String, format: String): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                val url = "https://www.youtube.com/watch?v=$source"
+
+                val dir = File(destination)
+                val before = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+                runYtDlp(
+                    "-q",
+                    "-x",
+                    "-f", "bestaudio",
+                    "--audio-format", format,
+                    "--audio-quality", "0",
+                    "--embed-thumbnail",
+                    "--add-metadata",
+                    "-o", "$destination/%(uploader)s - %(title)s.%(ext)s",
+                    url
+                )
+
+                val after = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+                val newFiles = after - before
+                val downloaded = newFiles.firstOrNull()?.let { File(dir, it) }
+                if (downloaded != null && downloaded.exists()) downloaded.absolutePath else null
             } catch (_: Exception) {
                 null
             }
