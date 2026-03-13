@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.component.*
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
@@ -10,6 +11,7 @@ import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
@@ -24,9 +26,8 @@ import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
 import kotlinx.coroutines.*
+import java.io.File
 import java.time.Duration
 
 class MeloScreen(
@@ -80,6 +81,7 @@ class MeloScreen(
     // Artwork
     internal val artworkRenderer: ArtworkRenderer,
     internal val artworkProvider: ArtworkProvider,
+    internal val audioProvider: AudioProvider,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 
@@ -466,13 +468,10 @@ class MeloScreen(
     internal fun downloadTrack(track: Track) {
         scope.launch {
             try {
-                val streamUrl = getStream(track) ?: return@launch
-
-                val shareDir = com.github.adriianh.cli.config.shareDir
-                val downloadsDir = java.io.File(shareDir, "downloads")
+                val sourceId = track.sourceId ?: return@launch
+                val shareDir = shareDir
+                val downloadsDir = File(shareDir, "downloads")
                 if (!downloadsDir.exists()) downloadsDir.mkdirs()
-                val extension = if (streamUrl.contains(".mp3")) "mp3" else "webm"
-                val file = java.io.File(downloadsDir, "${track.id}.$extension")
 
                 val offlineTrack = OfflineTrack(
                     track = track,
@@ -480,23 +479,26 @@ class MeloScreen(
                 )
                 downloadTrack.invoke(offlineTrack)
 
-                if (streamUrl.startsWith("http")) {
-                    val response = httpClient.get(streamUrl)
-                    val bytes = response.bodyAsBytes()
-                    file.writeBytes(bytes)
-                } else if (streamUrl.startsWith("file://")) {
-                    return@launch
-                }
-
-                val completedTrack = offlineTrack.copy(
-                    localFilePath = file.absolutePath,
-                    downloadStatus = DownloadStatus.COMPLETED,
-                    fileSize = file.length(),
-                    downloadedAt = System.currentTimeMillis()
+                val downloadedPath = audioProvider.downloadAudio(
+                    source = sourceId,
+                    destination = downloadsDir.absolutePath,
+                    format = "mp3" /* TODO Add formats to settings */
                 )
-                downloadTrack.invoke(completedTrack)
-                autoCleanup.invoke(settingsViewState.currentSettings.maxOfflineSizeMb)
-
+                if (downloadedPath != null) {
+                    val file = File(downloadedPath)
+                    val completedTrack = offlineTrack.copy(
+                        localFilePath = file.absolutePath,
+                        downloadStatus = DownloadStatus.COMPLETED,
+                        fileSize = file.length(),
+                        downloadedAt = System.currentTimeMillis()
+                    )
+                    downloadTrack.invoke(completedTrack)
+                    autoCleanup.invoke(settingsViewState.currentSettings.maxOfflineSizeMb)
+                } else {
+                    downloadTrack.invoke(
+                        offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
+                    )
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 downloadTrack.invoke(

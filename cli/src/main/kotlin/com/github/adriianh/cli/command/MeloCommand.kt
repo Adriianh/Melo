@@ -9,6 +9,7 @@ import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import io.ktor.client.*
@@ -87,6 +88,7 @@ class MeloCommand : CliktCommand(
         val autoCleanup: AutoCleanupUseCase by inject()
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
+        val audioProvider: AudioProvider by inject()
 
         try {
             MeloScreen(
@@ -129,6 +131,7 @@ class MeloCommand : CliktCommand(
                 autoCleanup = autoCleanup,
                 artworkRenderer = artworkRenderer,
                 artworkProvider = artworkProvider,
+                audioProvider = audioProvider,
                 dispatcher = dispatcher
             ).run()
         } finally {
