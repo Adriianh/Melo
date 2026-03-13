@@ -1,8 +1,7 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
@@ -14,6 +13,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.DownloadStatus
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
@@ -61,11 +61,20 @@ class QueueOverlay(
                 val isPlaying = index == state.player.queueIndex
                 val indicator = if (isPlaying) "$ICON_NOTE " else "${index + 1}. "
                 val titleColor = if (isPlaying) PRIMARY_COLOR else TEXT_PRIMARY
+
+                val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
+                val offlineIcon = when (offlineTrack?.downloadStatus) {
+                    DownloadStatus.DOWNLOADING -> MeloTheme.ICON_DOWNLOADING
+                    DownloadStatus.PENDING -> MeloTheme.ICON_DOWNLOADING
+                    else -> " "
+                }
+
                 row(
                     text(indicator).fg(PRIMARY_COLOR).length(4),
                     text(track.title).fg(titleColor).apply { if (isPlaying) bold() }.ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
                     text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6),
+                    text(offlineIcon).fg(TEXT_DIM).length(2),
                 )
             }
             queueList.elements(*items.toTypedArray())
