@@ -11,11 +11,18 @@ enum class DownloadStatus {
 }
 
 @Serializable
+enum class DownloadType {
+    PREFETCH,
+    MANUAL
+}
+
+@Serializable
 data class OfflineTrack(
     val track: Track,
     val localFilePath: String? = null,
     val downloadStatus: DownloadStatus = DownloadStatus.PENDING,
     val downloadedAt: Long? = null,
     val lastAccessedAt: Long? = null,
-    val fileSize: Long = 0L
+    val fileSize: Long = 0L,
+    val downloadType: DownloadType = DownloadType.PREFETCH,
 )

@@ -30,6 +30,23 @@ enum class MeloAction(val displayName: String) {
 }
 
 @Serializable
+enum class DownloadFormat(val displayName: String) {
+    MP3("mp3"),
+    OPUS("opus"),
+    FLAC("flac")
+}
+
+@Serializable
+enum class DownloadQuality(val displayName: String) {
+    LOW("64k"),
+    MEDIUM("96k"),
+    HIGH("128k"),
+    VERY_HIGH("192k"),
+    BEST("320k")
+}
+
+
+@Serializable
 data class MeloKey(
     val char: Char? = null,
     val code: String? = null
@@ -43,6 +60,7 @@ data class Settings(
     val artworkResolution: Int = 300,
     val autoDownload: Boolean = false,
     val maxOfflineSizeMb: Int = 1024,
+    val maxOfflineAgeDays: Int = 30,
     val offlineMode: Boolean = false,
     val keybindings: Map<MeloAction, MeloKey> = mapOf(
         MeloAction.PLAY_PAUSE to MeloKey(char = ' '),
@@ -59,5 +77,8 @@ data class Settings(
         MeloAction.ADD_PLAYLIST to MeloKey(char = 'a'),
         MeloAction.DELETE to MeloKey(code = "DELETE"),
         MeloAction.CLEAR_QUEUE to MeloKey(char = 'c')
-    )
+    ),
+    val downloadFormat: DownloadFormat = DownloadFormat.OPUS,
+    val downloadQuality: DownloadQuality = DownloadQuality.HIGH,
+    val downloadPath: String? = null
 )
