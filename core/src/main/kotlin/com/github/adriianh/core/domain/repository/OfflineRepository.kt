@@ -1,7 +1,6 @@
 package com.github.adriianh.core.domain.repository
 
 import com.github.adriianh.core.domain.model.OfflineTrack
-import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 interface OfflineRepository {
