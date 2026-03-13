@@ -155,6 +155,7 @@ val appModule = module {
     factory { RecordPlayUseCase(get()) }
     factory { GetStreamUseCase(get(), get()) }
     factory { GetOfflineTracksUseCase(get()) }
+    factory { SyncOfflineTracksUseCase(get()) }
     factory { DownloadTrackUseCase(get()) }
     factory { DeleteDownloadedTrackUseCase(get()) }
     factory { MarkTrackAccessedUseCase(get()) }
