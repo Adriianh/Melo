@@ -33,7 +33,11 @@ enum class MeloAction(val displayName: String) {
 enum class DownloadFormat(val displayName: String) {
     MP3("mp3"),
     OPUS("opus"),
-    FLAC("flac")
+    FLAC("flac"),
+    AAC("aac"),
+    M4A("m4a"),
+    OGG("ogg"),
+    WAV("wav")
 }
 
 @Serializable
