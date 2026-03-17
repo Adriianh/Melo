@@ -293,6 +293,10 @@ class MeloScreen(
         settingsList,
         ::handleSettingsKey
     )
+    private val directoryPickerOverlay = DirectoryPickerOverlay(
+        { settingsViewState },
+        ::handleSettingsKey
+    )
     private val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
@@ -395,8 +399,10 @@ class MeloScreen(
 
         val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
         val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
+        val withDirectoryPicker = if (settingsViewState.isPickingDirectory)
+            stack(withSettings, directoryPickerOverlay) else withSettings
         val withTrackOptions =
-            if (state.trackOptions.isVisible) stack(withSettings, trackOptionsOverlay) else withSettings
+            if (state.trackOptions.isVisible) stack(withDirectoryPicker, trackOptionsOverlay) else withDirectoryPicker
 
         return when (state.playlistInteraction.playlistInputMode) {
             PlaylistInputMode.CREATE,
@@ -505,8 +511,12 @@ class MeloScreen(
 
                     val sourceId = track.sourceId ?: return@launch
                     val downloadsDir = File(
-                        settingsViewState.currentSettings.downloadPath
-                            ?: File(shareDir, "downloads").absolutePath
+                        when (downloadType) {
+                            DownloadType.MANUAL -> settingsViewState.currentSettings.downloadPath
+                                ?: File(shareDir, "downloads").absolutePath
+                            DownloadType.PREFETCH -> settingsViewState.currentSettings.cachePath
+                                ?: File(shareDir, "cache").absolutePath
+                        }
                     )
                     if (!downloadsDir.exists()) downloadsDir.mkdirs()
 
