@@ -2,10 +2,7 @@ package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
-import com.github.adriianh.cli.tui.component.SettingsFocus
-import com.github.adriianh.cli.tui.component.SettingsItem
-import com.github.adriianh.cli.tui.component.SettingsSection
-import com.github.adriianh.cli.tui.component.sectionItems
+import com.github.adriianh.cli.tui.component.*
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.MeloAction
@@ -16,12 +13,28 @@ import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.toolkit.event.EventResult
 import kotlinx.coroutines.launch
 import java.io.File
+import java.nio.file.Path
 
 fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
     if (!state.isSettingsVisible) return EventResult.UNHANDLED
 
     if (event.code() == KeyCode.ESCAPE) {
         when {
+            settingsViewState.isPickingDirectory -> {
+                val picker = settingsViewState.directoryPicker
+                when {
+                    picker.isCreatingDir -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.cancelMkdir()
+                    )
+                    picker.isConfirmingDelete -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.cancelDelete()
+                    )
+                    picker.errorMessage != null -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.clearError()
+                    )
+                    else -> settingsViewState = settingsViewState.copy(isPickingDirectory = false)
+                }
+            }
             settingsViewState.isListeningForKey -> {
                 settingsViewState = settingsViewState.copy(isListeningForKey = false)
             }
@@ -85,47 +98,156 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
         return EventResult.HANDLED
     }
 
+    // ── Directory picker mode ─────────────────────────────────────────────
+    if (settingsViewState.isPickingDirectory) {
+        val picker = settingsViewState.directoryPicker
+
+        // Sub-state: creating a new directory (text input mode)
+        if (picker.isCreatingDir) {
+            when (event.code()) {
+                KeyCode.ENTER -> settingsViewState = settingsViewState.copy(
+                    directoryPicker = picker.confirmMkdir()
+                )
+                KeyCode.BACKSPACE -> settingsViewState = settingsViewState.copy(
+                    directoryPicker = picker.backspaceNewDir()
+                )
+                KeyCode.CHAR -> settingsViewState = settingsViewState.copy(
+                    directoryPicker = picker.appendToNewDir(event.character())
+                )
+                // ESC is handled by the top-level ESC block
+                else -> {}
+            }
+            return EventResult.HANDLED
+        }
+
+        // Sub-state: confirming deletion
+        if (picker.isConfirmingDelete) {
+            when {
+                event.isCharIgnoreCase('y') -> settingsViewState = settingsViewState.copy(
+                    directoryPicker = picker.confirmDelete()
+                )
+                event.isCharIgnoreCase('n') || event.code() == KeyCode.ESCAPE -> settingsViewState = settingsViewState.copy(
+                    directoryPicker = picker.cancelDelete()
+                )
+            }
+            return EventResult.HANDLED
+        }
+
+        // Sub-state: error message displayed
+        if (picker.errorMessage != null) {
+            // Any key dismisses the error
+            settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.clearError()
+            )
+            return EventResult.HANDLED
+        }
+
+        // Normal picker navigation
+        when (event.code()) {
+            KeyCode.UP -> settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.cursorUp()
+            )
+            KeyCode.DOWN -> settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.cursorDown()
+            )
+            KeyCode.ENTER -> settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.enter()
+            )
+            KeyCode.BACKSPACE -> settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.navigateUp()
+            )
+            KeyCode.CHAR -> {
+                when (event.character()) {
+                    ' ' -> {
+                        // Select current directory
+                        val path = picker.currentDirectory.toString()
+                        val item = picker.targetItem
+                        val newSettings = when (item) {
+                            SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = path)
+                            SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = path)
+                            else -> settingsViewState.currentSettings
+                        }
+                        settingsViewState = settingsViewState.copy(
+                            isPickingDirectory = false,
+                            currentSettings = newSettings
+                        )
+                        scope.launch { updateSettings(newSettings) }
+                    }
+                    '<' -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.navigateUp()
+                    )
+                    '>' -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.enter()
+                    )
+                    'n', 'N' -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.startMkdir()
+                    )
+                    'd', 'D' -> settingsViewState = settingsViewState.copy(
+                        directoryPicker = picker.startDelete()
+                    )
+                }
+            }
+            // ESC is handled by the top-level ESC block
+            else -> {}
+        }
+        return EventResult.HANDLED
+    }
+
     if (settingsViewState.isEditingText) {
         when (event.code()) {
             KeyCode.ESCAPE -> {
-                settingsViewState = settingsViewState.copy(isEditingText = false, textInput = "")
+                settingsViewState = settingsViewState.copy(isEditingText = false, textInput = "", editingTextItem = null)
             }
             KeyCode.ENTER -> {
                 val path = settingsViewState.textInput.trim()
+                val item = settingsViewState.editingTextItem
                 when {
                     path.isBlank() -> {
-                        val newSettings = settingsViewState.currentSettings.copy(downloadPath = null)
+                        val newSettings = when (item) {
+                            SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = null)
+                            SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = null)
+                            else -> settingsViewState.currentSettings
+                        }
                         settingsViewState = settingsViewState.copy(
                             currentSettings = newSettings,
                             isEditingText = false,
-                            textInput = ""
+                            textInput = "",
+                            editingTextItem = null
                         )
                         scope.launch { updateSettings(newSettings) }
                     }
                     !File(path).exists() -> {
                         settingsViewState = settingsViewState.copy(
                             isEditingText = false,
-                            textInput = ""
+                            textInput = "",
+                            editingTextItem = null
                         )
                     }
                     !File(path).isDirectory -> {
                         settingsViewState = settingsViewState.copy(
                             isEditingText = false,
-                            textInput = ""
+                            textInput = "",
+                            editingTextItem = null
                         )
                     }
                     !File(path).canWrite() -> {
                         settingsViewState = settingsViewState.copy(
                             isEditingText = false,
-                            textInput = ""
+                            textInput = "",
+                            editingTextItem = null
                         )
                     }
                     else -> {
-                        val newSettings = settingsViewState.currentSettings.copy(downloadPath = path)
+                        val newSettings = when (item) {
+                            SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = path)
+                            SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = path)
+                            else -> settingsViewState.currentSettings
+                        }
                         settingsViewState = settingsViewState.copy(
                             currentSettings = newSettings,
                             isEditingText = false,
-                            textInput = ""
+                            textInput = "",
+                            editingTextItem = null
                         )
                         scope.launch { updateSettings(newSettings) }
                     }
@@ -200,15 +322,32 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                 SettingsItem.KEYBINDINGS ->
                     settingsViewState.copy(isKeybindingMode = true, keybindingCursor = 0)
 
+                SettingsItem.CACHE_PATH ->
+                    settingsViewState.copy(
+                        isPickingDirectory = true,
+                        directoryPicker = DirectoryPickerState(
+                            currentDirectory = Path.of(
+                                settingsViewState.currentSettings.cachePath
+                                    ?: System.getProperty("user.home")
+                            ),
+                            targetItem = SettingsItem.CACHE_PATH
+                        ).refresh()
+                    )
                 SettingsItem.DOWNLOAD_PATH ->
                     settingsViewState.copy(
-                        isEditingText = true,
-                        textInput = settingsViewState.currentSettings.downloadPath ?: ""
+                        isPickingDirectory = true,
+                        directoryPicker = DirectoryPickerState(
+                            currentDirectory = Path.of(
+                                settingsViewState.currentSettings.downloadPath
+                                    ?: System.getProperty("user.home")
+                            ),
+                            targetItem = SettingsItem.DOWNLOAD_PATH
+                        ).refresh()
                     )
 
                 else -> settingsViewState.copy(isEditing = true)
             }
-        }        else -> {}
+        } else -> {}
     }
     return EventResult.HANDLED
 }
@@ -267,6 +406,7 @@ private fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
             current.copy(downloadQuality = qualities[newIndex])
         }
         SettingsItem.DOWNLOAD_PATH -> current
+        SettingsItem.CACHE_PATH -> current
     }
 
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
