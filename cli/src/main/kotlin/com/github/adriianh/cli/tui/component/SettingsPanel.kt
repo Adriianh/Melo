@@ -43,6 +43,7 @@ enum class SettingsItem(val label: String) {
     DOWNLOAD_FORMAT("Download Format"),
     DOWNLOAD_QUALITY("Download Quality"),
     DOWNLOAD_PATH("Download Path"),
+    CACHE_PATH("Cache Path"),
     KEYBINDINGS("Custom Keybindings"),
 }
 
@@ -64,7 +65,8 @@ val sectionItems = mapOf(
         SettingsItem.AUTO_DOWNLOAD,
         SettingsItem.DOWNLOAD_FORMAT,
         SettingsItem.DOWNLOAD_QUALITY,
-        SettingsItem.DOWNLOAD_PATH
+        SettingsItem.DOWNLOAD_PATH,
+        SettingsItem.CACHE_PATH
     ),
     SettingsSection.NETWORK to listOf(
         SettingsItem.LANGUAGE
@@ -84,7 +86,10 @@ data class SettingsViewState(
     val isListeningForKey: Boolean = false,
     val currentSettings: Settings = Settings(),
     val isEditingText: Boolean = false,
-    val textInput: String = ""
+    val textInput: String = "",
+    val editingTextItem: SettingsItem? = null,
+    val isPickingDirectory: Boolean = false,
+    val directoryPicker: DirectoryPickerState = DirectoryPickerState()
 )
 
 class SettingsOverlay(
@@ -182,14 +187,10 @@ class SettingsOverlay(
                     SettingsItem.KEYBINDINGS -> "→"
                     SettingsItem.DOWNLOAD_FORMAT -> viewState.currentSettings.downloadFormat.displayName
                     SettingsItem.DOWNLOAD_QUALITY -> viewState.currentSettings.downloadQuality.displayName
-                    SettingsItem.DOWNLOAD_PATH -> when {
-                        viewState.isEditingText &&
-                                items.indexOf(SettingsItem.DOWNLOAD_PATH) == viewState.cursor ->
-                            "${viewState.textInput}▌"
-                        viewState.currentSettings.downloadPath != null ->
-                            viewState.currentSettings.downloadPath
-                        else -> "Default"
-                    }
+                    SettingsItem.DOWNLOAD_PATH ->
+                        viewState.currentSettings.downloadPath ?: "Default"
+                    SettingsItem.CACHE_PATH ->
+                        viewState.currentSettings.cachePath ?: "Default"
                 }
 
                 val labelColor = if (isSelected && isFocused) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
