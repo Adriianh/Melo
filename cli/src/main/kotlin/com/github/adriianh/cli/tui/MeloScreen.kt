@@ -358,6 +358,7 @@ class MeloScreen(
                     MeloTheme.loadTheme(settings.theme)
                     audioPlayer.setVolume(settings.volume)
                     settingsViewState = settingsViewState.copy(currentSettings = settings)
+                    state = state.copy(isOfflineMode = settings.offlineMode)
                 }
             }
         }

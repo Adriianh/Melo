@@ -95,10 +95,11 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
     val items = state.collections.favorites.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(duration).fg(TEXT_DIM).length(6),
         )
@@ -172,10 +173,11 @@ private fun buildPlaylistDetailContent(state: MeloState, actualState: ScreenStat
 
     val items = tracks.mapIndexed { index, track ->
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6),
         )
@@ -255,10 +257,11 @@ private fun buildLocalContent(
     val items = filtered.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(duration).fg(TEXT_DIM).length(6),
         )

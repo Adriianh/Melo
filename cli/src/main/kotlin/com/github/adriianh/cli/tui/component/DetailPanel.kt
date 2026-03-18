@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.cli.tui.isPlayable
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
@@ -134,7 +135,8 @@ private fun renderSimilarTab(
     }
     val items = state.detail.similarTracks.mapIndexed { index, similar ->
         val isSelected = index == state.detail.similarCursor
-        val titleColor = if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY
+        val isPlayable = state.isPlayable(similar)
+        val titleColor = if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
         row(
             text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
