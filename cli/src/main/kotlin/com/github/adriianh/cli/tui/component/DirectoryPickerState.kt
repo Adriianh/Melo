@@ -29,7 +29,7 @@ data class DirectoryPickerState(
     val scrollOffset: Int = 0,
     val visibleRows: Int = 15,
     val targetItem: SettingsItem? = null,
-    val markedPaths: Set<Path> = emptySet(),
+    val markedPaths: Set<String> = emptySet(),
     val isCreatingDir: Boolean = false,
     val newDirName: String = "",
     val isConfirmingDelete: Boolean = false,
@@ -117,7 +117,7 @@ fun DirectoryPickerState.toggleMark(): DirectoryPickerState {
     val entry = entries.getOrNull(cursor) ?: return this
     if (entry.name == "..") return this
     
-    val path = currentDirectory.resolve(entry.name).toAbsolutePath().normalize()
+    val path = currentDirectory.resolve(entry.name).toAbsolutePath().normalize().toString()
     return if (markedPaths.contains(path)) {
         copy(markedPaths = markedPaths - path)
     } else {
