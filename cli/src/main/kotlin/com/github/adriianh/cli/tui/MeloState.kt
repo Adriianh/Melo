@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.ListeningStats
 import com.github.adriianh.core.domain.model.OfflineTrack
@@ -251,3 +252,25 @@ data class MeloState(
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
 )
+
+/**
+ * Checks if a track can be played given the current offline mode state.
+ */
+fun MeloState.isPlayable(track: Track): Boolean {
+    if (!isOfflineMode) return true
+    if (track.id.startsWith("local:")) return true
+
+    val byId = collections.offlineTracks.any {
+        it.track.id == track.id && it.downloadStatus == DownloadStatus.COMPLETED
+    }
+    if (byId) return true
+
+    val sourceId = track.sourceId
+    if (sourceId != null) {
+        return collections.offlineTracks.any {
+            it.track.sourceId == sourceId && it.downloadStatus == DownloadStatus.COMPLETED
+        }
+    }
+
+    return false
+}
