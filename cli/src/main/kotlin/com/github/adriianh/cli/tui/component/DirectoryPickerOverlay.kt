@@ -68,7 +68,7 @@ class DirectoryPickerOverlay(
             }
 
             else -> {
-                text("[Enter] open/save  [Space] mark  [Bksp] up  [n] mkdir  [d] delete  [Esc] cancel")
+                text("[Enter] enter  [Space] mark  [Bksp] up  [n] mkdir  [d] delete  [Esc] save & exit")
                     .fg(MeloTheme.TEXT_SECONDARY).dim().fill()
             }
         }
@@ -90,8 +90,8 @@ class DirectoryPickerOverlay(
                 val icon = if (entry.name == "..") MeloTheme.ICON_FOLDER else MeloTheme.ICON_FOLDER_OPENED
                 val displayName = if (entry.name == "..") ".." else "${entry.name}/"
 
-                val path = picker.currentDirectory.resolve(entry.name).toAbsolutePath().normalize()
-                val isMarked = picker.markedPaths.contains(path)
+                val path = picker.currentDirectory.resolve(entry.name).toAbsolutePath().normalize().toString()
+                val isMarked = if (entry.name == "..") false else picker.markedPaths.contains(path)
                 val markPrefix = if (isMarked) "[*] " else ""
                 val prefix = if (isSelected) " ${MeloTheme.ICON_ARROW} " else "   "
                 val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
