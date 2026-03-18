@@ -165,6 +165,14 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                         val newSettings = when (item) {
                             SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = path)
                             SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = path)
+                            SettingsItem.LOCAL_FOLDERS -> {
+                                val current = settingsViewState.currentSettings.localLibraryPaths
+                                if (path !in current) {
+                                    settingsViewState.currentSettings.copy(localLibraryPaths = current + path)
+                                } else {
+                                    settingsViewState.currentSettings
+                                }
+                            }
                             else -> settingsViewState.currentSettings
                         }
                         settingsViewState = settingsViewState.copy(
@@ -312,6 +320,18 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
         KeyCode.DOWN -> settingsViewState = settingsViewState.copy(
             cursor = (settingsViewState.cursor + 1) % items.size
         )
+
+        KeyCode.CHAR -> {
+            val item = items.getOrNull(settingsViewState.cursor)
+            if (item == SettingsItem.LOCAL_FOLDERS && (event.character() == 'd' || event.character() == 'D')) {
+                val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = emptyList())
+                settingsViewState = settingsViewState.copy(currentSettings = newSettings)
+                scope.launch { updateSettings(newSettings) }
+                return EventResult.HANDLED
+            }
+            return EventResult.UNHANDLED
+        }
+
         KeyCode.LEFT -> settingsViewState = settingsViewState.copy(
             focus = SettingsFocus.SECTION,
             cursor = 0
@@ -333,17 +353,26 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                             targetItem = SettingsItem.CACHE_PATH
                         ).refresh()
                     )
-                SettingsItem.DOWNLOAD_PATH ->
-                    settingsViewState.copy(
-                        isPickingDirectory = true,
-                        directoryPicker = DirectoryPickerState(
-                            currentDirectory = Path.of(
-                                settingsViewState.currentSettings.downloadPath
-                                    ?: System.getProperty("user.home")
-                            ),
-                            targetItem = SettingsItem.DOWNLOAD_PATH
-                        ).refresh()
-                    )
+                            SettingsItem.DOWNLOAD_PATH ->
+                                settingsViewState.copy(
+                                    isPickingDirectory = true,
+                                    directoryPicker = DirectoryPickerState(
+                                        currentDirectory = Path.of(
+                                            settingsViewState.currentSettings.downloadPath
+                                                ?: System.getProperty("user.home")
+                                        ),
+                                        targetItem = SettingsItem.DOWNLOAD_PATH
+                                    ).refresh()
+                                )
+
+                            SettingsItem.LOCAL_FOLDERS ->
+                                settingsViewState.copy(
+                                    isPickingDirectory = true,
+                                    directoryPicker = DirectoryPickerState(
+                                        currentDirectory = Path.of(System.getProperty("user.home")),
+                                        targetItem = SettingsItem.LOCAL_FOLDERS
+                                    ).refresh()
+                                )
 
                 else -> settingsViewState.copy(isEditing = true)
             }
@@ -407,6 +436,7 @@ private fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         }
         SettingsItem.DOWNLOAD_PATH -> current
         SettingsItem.CACHE_PATH -> current
+        SettingsItem.LOCAL_FOLDERS -> current
     }
 
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
