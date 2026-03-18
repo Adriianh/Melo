@@ -259,34 +259,34 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         PlaylistInputMode.NONE -> {}
     }
 
-    val s = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
-    if (s.results.isEmpty()) return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
+    if (actualState.results.isEmpty()) return EventResult.UNHANDLED
     val isFocused = appRunner()?.focusManager()?.focusedId() == "results-panel"
     when {
         event.matches(Actions.MOVE_DOWN) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val newIndex = minOf(s.results.lastIndex, s.selectedIndex + 1)
+            val newIndex = minOf(actualState.results.lastIndex, actualState.selectedIndex + 1)
             resultList.selected(newIndex)
-            s.results.getOrNull(newIndex)?.let { track ->
+            actualState.results.getOrNull(newIndex)?.let { track ->
                 state = state.copy(
-                    screen = s.copy(selectedIndex = newIndex),
+                    screen = actualState.copy(selectedIndex = newIndex),
                     detail = state.detail.copy(selectedTrack = track),
                     player = state.player.copy(marqueeOffset = 0)
                 )
                 marqueeTick = 0
                 debouncedLoadDetails(track)
             }
-            if (newIndex >= s.results.size - 5 && !s.isLoadingMore && s.hasMore) loadMore()
+            if (newIndex >= actualState.results.size - 5 && !actualState.isLoadingMore && actualState.hasMore) loadMore()
             return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_UP) -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val newIndex = maxOf(0, s.selectedIndex - 1)
+            val newIndex = maxOf(0, actualState.selectedIndex - 1)
             resultList.selected(newIndex)
-            s.results.getOrNull(newIndex)?.let { track ->
+            actualState.results.getOrNull(newIndex)?.let { track ->
                 state = state.copy(
-                    screen = s.copy(selectedIndex = newIndex),
+                    screen = actualState.copy(selectedIndex = newIndex),
                     detail = state.detail.copy(selectedTrack = track),
                     player = state.player.copy(marqueeOffset = 0)
                 )
@@ -298,23 +298,24 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
 
         event.code() == KeyCode.ENTER -> {
             if (!isFocused) return EventResult.UNHANDLED
-            val selected = s.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+            val selected = actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+            downloadTrack(selected, DownloadType.PREFETCH)
             playTrack(selected)
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-            s.results.getOrNull(s.selectedIndex)?.let { toggleFavorite(it) }
+            actualState.results.getOrNull(actualState.selectedIndex)?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-            s.results.getOrNull(s.selectedIndex)?.let { addToQueue(it) }
+            actualState.results.getOrNull(actualState.selectedIndex)?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            val track = s.results.getOrNull(s.selectedIndex)
+            val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }
@@ -325,7 +326,7 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
-            val track = s.results.getOrNull(s.selectedIndex)
+            val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED
         }
@@ -752,4 +753,3 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
     }
     return handleGlobalShortcuts(event)
 }
-
