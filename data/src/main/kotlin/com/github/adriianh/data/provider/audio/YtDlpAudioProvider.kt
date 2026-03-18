@@ -60,7 +60,13 @@ class YtDlpAudioProvider(
      * format (e.g. "mp3", "flac") to the given destination directory.
      * Returns the absolute path of the downloaded file if successful, or null otherwise.
      */
-    override suspend fun downloadAudio(source: String, destination: String, format: String, quality: String): String? =
+    override suspend fun downloadAudio(
+        source: String,
+        destination: String,
+        format: String,
+        quality: String,
+        embedMetadata: Boolean
+    ): String? =
         withContext(Dispatchers.IO) {
             try {
                 val url = "https://www.youtube.com/watch?v=$source"
@@ -78,17 +84,23 @@ class YtDlpAudioProvider(
                     else -> "bestaudio"
                 }
 
-                runYtDlp(
+                val args = mutableListOf(
                     "-q",
                     "-x",
                     "-f", formatArg,
                     "--audio-format", format,
-                    "--audio-quality", resolvedQuality,
-                    "--embed-thumbnail",
-                    "--add-metadata",
+                    "--audio-quality", resolvedQuality
+                )
+                if (embedMetadata) {
+                    args.add("--embed-thumbnail")
+                    args.add("--add-metadata")
+                }
+                args.addAll(listOf(
                     "-o", "$destination/%(uploader)s - %(title)s.%(ext)s",
                     url
-                )
+                ))
+
+                runYtDlp(*args.toTypedArray())
 
                 val afterFiles = dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
                 val modifiedOrNewFiles = afterFiles.filter { (name, lastMod) -> beforeFiles[name] != lastMod }.keys
