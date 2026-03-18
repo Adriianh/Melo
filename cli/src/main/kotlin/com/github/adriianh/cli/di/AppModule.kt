@@ -139,7 +139,7 @@ val appModule = module {
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<SettingsRepository> { SettingsRepositoryImpl(File(configDir), get()) }
-    single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get()) }
+    single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
 
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
