@@ -24,7 +24,7 @@ fun renderOfflineScreen(
 ): Element {
     val screen = state.screen as? ScreenState.Offline ?: return panel(text("Offline screen not active").centered()).rounded()
 
-    val downloads = screen.downloads.filter { it.downloadType != DownloadType.PREFETCH }
+    val downloads = screen.downloads
     val content = if (downloads.isEmpty()) {
         column(
             spacer(),
@@ -37,7 +37,9 @@ fun renderOfflineScreen(
             .map { offlineTrack ->
                 val track = offlineTrack.track
                 val isPlaying = track.id == state.player.nowPlaying?.id
+                val typeLabel = if (offlineTrack.downloadType == DownloadType.MANUAL) " [M]" else " [C]"
                 row(
+                    text("$typeLabel ").fg(TEXT_DIM).length(4),
                     text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
                     text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
