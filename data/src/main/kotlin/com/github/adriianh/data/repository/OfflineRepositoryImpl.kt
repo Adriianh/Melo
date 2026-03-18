@@ -3,14 +3,12 @@ package com.github.adriianh.data.repository
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
-import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -138,15 +136,15 @@ class OfflineRepositoryImpl(
                         else -> track
                     }
                 } else {
-                    when {
-                        track.downloadStatus == DownloadStatus.FAILED &&
-                                track.downloadType == DownloadType.PREFETCH -> null
-                        track.downloadStatus == DownloadStatus.FAILED ->
+                    when (track.downloadStatus) {
+                        DownloadStatus.FAILED if track.downloadType == DownloadType.PREFETCH -> null
+                        DownloadStatus.FAILED ->
                             track.copy(downloadStatus = DownloadStatus.PENDING)
-                        track.downloadStatus == DownloadStatus.DOWNLOADING &&
-                                track.downloadType == DownloadType.PREFETCH -> null
-                        track.downloadStatus == DownloadStatus.DOWNLOADING ->
+
+                        DownloadStatus.DOWNLOADING if track.downloadType == DownloadType.PREFETCH -> null
+                        DownloadStatus.DOWNLOADING ->
                             track.copy(downloadStatus = DownloadStatus.PENDING)
+
                         else -> track
                     }
                 }
@@ -165,7 +163,6 @@ class OfflineRepositoryImpl(
             val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
             val metadataExtensions = setOf("webp", "png", "jpg", "jpeg")
 
-            // ONLY clean up the cache directory to prevent deleting personal files
             if (customCacheDir.exists()) {
                 customCacheDir.listFiles()?.forEach { file ->
                     val isAudio = audioExtensions.any { ext ->
