@@ -476,6 +476,6 @@ private fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
     }
 
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
-    state = state.copy() 
+    state = state.copy(isOfflineMode = newSettings.offlineMode) 
     scope.launch { updateSettings(newSettings) }
 }
