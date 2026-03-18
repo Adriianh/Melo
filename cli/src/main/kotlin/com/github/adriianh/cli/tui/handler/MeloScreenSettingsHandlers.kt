@@ -150,36 +150,31 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
             KeyCode.DOWN -> settingsViewState = settingsViewState.copy(
                 directoryPicker = picker.cursorDown()
             )
-            KeyCode.ENTER -> settingsViewState = settingsViewState.copy(
-                directoryPicker = picker.enter()
-            )
-            KeyCode.BACKSPACE -> settingsViewState = settingsViewState.copy(
-                directoryPicker = picker.navigateUp()
-            )
             KeyCode.CHAR -> {
                 when (event.character()) {
                     ' ' -> {
-                        // Select current directory
-                        val path = picker.currentDirectory.toString()
-                        val item = picker.targetItem
-                        val newSettings = when (item) {
-                            SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = path)
-                            SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = path)
-                            SettingsItem.LOCAL_FOLDERS -> {
-                                val current = settingsViewState.currentSettings.localLibraryPaths
-                                if (path !in current) {
-                                    settingsViewState.currentSettings.copy(localLibraryPaths = current + path)
-                                } else {
-                                    settingsViewState.currentSettings
-                                }
+                        // Toggle mark for multi-select, or select for single-select
+                        val pickerState = settingsViewState.directoryPicker
+                        val item = pickerState.targetItem
+                        
+                        if (item == SettingsItem.LOCAL_FOLDERS) {
+                            settingsViewState = settingsViewState.copy(
+                                directoryPicker = pickerState.toggleMark()
+                            )
+                        } else {
+                            // Single-select mode (DOWNLOAD_PATH, CACHE_PATH)
+                            val path = pickerState.currentDirectory.toString()
+                            val newSettings = when (item) {
+                                SettingsItem.CACHE_PATH -> settingsViewState.currentSettings.copy(cachePath = path)
+                                SettingsItem.DOWNLOAD_PATH -> settingsViewState.currentSettings.copy(downloadPath = path)
+                                else -> settingsViewState.currentSettings
                             }
-                            else -> settingsViewState.currentSettings
+                            settingsViewState = settingsViewState.copy(
+                                isPickingDirectory = false,
+                                currentSettings = newSettings
+                            )
+                            scope.launch { updateSettings(newSettings) }
                         }
-                        settingsViewState = settingsViewState.copy(
-                            isPickingDirectory = false,
-                            currentSettings = newSettings
-                        )
-                        scope.launch { updateSettings(newSettings) }
                     }
                     '<' -> settingsViewState = settingsViewState.copy(
                         directoryPicker = picker.navigateUp()
@@ -195,6 +190,27 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                     )
                 }
             }
+            KeyCode.ENTER -> {
+                val pickerState = settingsViewState.directoryPicker
+                if (pickerState.targetItem == SettingsItem.LOCAL_FOLDERS) {
+                    // Confirm selection
+                    val newPaths = pickerState.markedPaths.map { it.toString() }
+                    val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = newPaths)
+                    settingsViewState = settingsViewState.copy(
+                        isPickingDirectory = false,
+                        currentSettings = newSettings
+                    )
+                    scope.launch { updateSettings(newSettings) }
+                } else {
+                    // Navigation
+                    settingsViewState = settingsViewState.copy(
+                        directoryPicker = pickerState.enter()
+                    )
+                }
+            }
+            KeyCode.BACKSPACE -> settingsViewState = settingsViewState.copy(
+                directoryPicker = picker.navigateUp()
+            )
             // ESC is handled by the top-level ESC block
             else -> {}
         }
@@ -370,7 +386,15 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                                     isPickingDirectory = true,
                                     directoryPicker = DirectoryPickerState(
                                         currentDirectory = Path.of(System.getProperty("user.home")),
-                                        targetItem = SettingsItem.LOCAL_FOLDERS
+                                        targetItem = SettingsItem.LOCAL_FOLDERS,
+                                        markedPaths = settingsViewState.currentSettings.localLibraryPaths
+                                            .mapNotNull {
+                                                try {
+                                                    Path.of(it).toAbsolutePath().normalize()
+                                                } catch (_: Exception) {
+                                                    null
+                                                }
+                                            }.toSet()
                                     ).refresh()
                                 )
 
