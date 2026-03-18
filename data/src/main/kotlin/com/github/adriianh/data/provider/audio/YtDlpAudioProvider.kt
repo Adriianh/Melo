@@ -46,7 +46,11 @@ class YtDlpAudioProvider(
                     "--no-warnings",
                     "--no-playlist",
                     "--skip-download",
-                    "-f", "bestaudio",
+                    "--no-check-certificates",
+                    "--ignore-config",
+                    "--js-runtime", "node",
+                    "--extractor-args", "youtube:player-client=ios,web,android",
+                    "-f", "bestaudio/best",
                     "--get-url",
                     url
                 ).lines().firstOrNull { it.startsWith("http") }
@@ -77,15 +81,21 @@ class YtDlpAudioProvider(
                     "flac" -> "0"
                     "opus" -> quality.replace("k", "").toIntOrNull()
                         ?.coerceAtMost(192).let { "${it}k" }
+
                     else -> quality
                 }
                 val formatArg = when (format) {
-                    "opus" -> "bestaudio[ext=webm]/bestaudio"
-                    else -> "bestaudio"
+                    "opus" -> "bestaudio[ext=webm]/bestaudio/best"
+                    else -> "bestaudio/best"
                 }
 
                 val args = mutableListOf(
                     "-q",
+                    "--no-warnings",
+                    "--no-check-certificates",
+                    "--ignore-config",
+                    "--js-runtime", "node",
+                    "--extractor-args", "youtube:player-client=ios,web,android",
                     "-x",
                     "-f", formatArg,
                     "--audio-format", format,
