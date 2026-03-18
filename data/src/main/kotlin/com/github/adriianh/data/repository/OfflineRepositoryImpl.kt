@@ -3,6 +3,7 @@ package com.github.adriianh.data.repository
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -137,13 +138,13 @@ class OfflineRepositoryImpl(
                     }
                 } else {
                     when (track.downloadStatus) {
-                        DownloadStatus.FAILED if track.downloadType == DownloadType.PREFETCH -> null
                         DownloadStatus.FAILED ->
-                            track.copy(downloadStatus = DownloadStatus.PENDING)
+                            if (track.downloadType == DownloadType.PREFETCH) null
+                            else track.copy(downloadStatus = DownloadStatus.PENDING)
 
-                        DownloadStatus.DOWNLOADING if track.downloadType == DownloadType.PREFETCH -> null
                         DownloadStatus.DOWNLOADING ->
-                            track.copy(downloadStatus = DownloadStatus.PENDING)
+                            if (track.downloadType == DownloadType.PREFETCH) null
+                            else track.copy(downloadStatus = DownloadStatus.PENDING)
 
                         else -> track
                     }
@@ -176,6 +177,50 @@ class OfflineRepositoryImpl(
                     if (isOrphanedAudio || isMetadata) file.delete()
                 }
             }
+        }
+    }
+
+    override suspend fun scanLocalTracks(paths: List<String>): List<Track> {
+        val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
+        val results = mutableListOf<Track>()
+
+        return withContext(dispatcher) {
+            paths.forEach { path ->
+                val dir = File(path)
+                if (dir.exists() && dir.isDirectory) {
+                    dir.walkTopDown()
+                        .maxDepth(10)
+                        .filter { it.isFile && it.extension.lowercase() in audioExtensions }
+                        .forEach { file ->
+                            val existing = _offlineTracksFlow.value.find { it.localFilePath == file.absolutePath }
+                            if (existing != null) {
+                                results.add(existing.track)
+                            } else {
+                                val name = file.nameWithoutExtension
+                                val parts = name.split(" - ", limit = 2)
+                                val (artist, title) = if (parts.size == 2) {
+                                    parts[0] to parts[1]
+                                } else {
+                                    "Unknown Artist" to parts[0]
+                                }
+
+                                results.add(
+                                    Track(
+                                        id = "local:${file.absolutePath}",
+                                        title = title,
+                                        artist = artist,
+                                        album = "",
+                                        durationMs = 0,
+                                        genres = emptyList(),
+                                        artworkUrl = null,
+                                        sourceId = null
+                                    )
+                                )
+                            }
+                        }
+                }
+            }
+            results.distinctBy { it.id }
         }
     }
 

@@ -1,6 +1,7 @@
 package com.github.adriianh.core.domain.repository
 
 import com.github.adriianh.core.domain.model.OfflineTrack
+import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.flow.Flow
 
 interface OfflineRepository {
@@ -51,4 +52,9 @@ interface OfflineRepository {
      * Updates tracks to COMPLETED if their files exist, or removes entries if files are missing.
      */
     suspend fun syncWithFileSystem()
+
+    /**
+     * Scans the provided paths for audio files and returns them as Tracks.
+     */
+    suspend fun scanLocalTracks(paths: List<String>): List<Track>
 }
