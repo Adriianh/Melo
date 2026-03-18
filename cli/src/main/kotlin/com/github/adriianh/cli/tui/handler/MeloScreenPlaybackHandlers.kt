@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.RepeatMode
+import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.delay
@@ -9,6 +10,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.playTrack(track: Track) {
+    if (!state.isPlayable(track)) return
     val existingIndex = state.player.queue.indexOfFirst { it.id == track.id }
     val (newQueue, newIndex, newRadioMode) = when {
         existingIndex >= 0 -> Triple(state.player.queue, existingIndex, state.player.isRadioMode)
@@ -152,14 +154,21 @@ internal fun MeloScreen.seekForward() {
 
 internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
     if (tracks.isEmpty() || startIndex !in tracks.indices) return
+    val targetTrack = tracks[startIndex]
+    if (!state.isPlayable(targetTrack)) return
+    
+    val playableTracks = tracks.filter { state.isPlayable(it) }
+    val newStartIndex = playableTracks.indexOfFirst { it.id == targetTrack.id }
+    if (newStartIndex < 0) return
+
     state = state.copy(
         player = state.player.copy(
-            queue = tracks,
+            queue = playableTracks,
             queueIndex = -1,
             isRadioMode = false
         )
     )
-    playFromQueue(startIndex)
+    playFromQueue(newStartIndex)
 }
 
 internal fun MeloScreen.playFromQueue(index: Int) {
@@ -169,6 +178,7 @@ internal fun MeloScreen.playFromQueue(index: Int) {
 }
 
 internal fun MeloScreen.addToQueue(track: Track) {
+    if (!state.isPlayable(track)) return
     val newQueue = state.player.queue + track
     val newIndex = if (state.player.queueIndex < 0 && state.player.nowPlaying == null) 0 else state.player.queueIndex
     val newRadioMode = state.player.isRadioMode && state.player.nowPlaying != null
@@ -241,6 +251,7 @@ internal fun MeloScreen.cycleRepeat() {
 }
 
 internal fun MeloScreen.loadSimilarAndPlay() {
+    if (state.isOfflineMode) return
     val seed = state.player.nowPlaying ?: return
     val alreadyPlayed = state.player.queue.map { it.id }.toSet()
     state = state.copy(
@@ -293,6 +304,7 @@ internal fun MeloScreen.loadSimilarAndPlay() {
 }
 
 internal fun MeloScreen.loadMoreRadioTracks() {
+    if (state.isOfflineMode) return
     if (!state.player.isRadioMode || state.player.isLoadingMoreRadio || state.player.queue.isEmpty()) return
 
     val seed = state.player.queue.last()
