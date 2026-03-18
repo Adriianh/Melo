@@ -35,7 +35,8 @@ internal fun MeloScreen.playTrack(track: Track) {
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
     loadNowPlayingMetadata(track)
-    scope.launch {
+    resolveStreamJob?.cancel()
+    resolveStreamJob = scope.launch {
         markTrackAccessed(track.id)
         if (settingsViewState.currentSettings.autoDownload) {
             val queue = state.player.queue

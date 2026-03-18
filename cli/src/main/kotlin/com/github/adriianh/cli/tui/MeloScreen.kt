@@ -140,6 +140,8 @@ class MeloScreen(
         },
     )
 
+    internal var resolveStreamJob: Job? = null
+
     internal val audioPlayer: AudioPlayer = AudioPlayer(
         scope = scope,
         onProgress = { elapsedMs ->
