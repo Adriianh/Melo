@@ -19,6 +19,12 @@ class GetStreamUseCase(
      * @return the stream URL, or null if resolution failed.
      */
     suspend operator fun invoke(track: Track): String? {
+        if (track.id.startsWith("local:")) {
+            val path = track.id.removePrefix("local:")
+            val file = File(path)
+            if (file.exists()) return "file://${file.absolutePath}"
+        }
+
         val offlineTrack = offlineRepository.getOfflineTrack(track.id)
         if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.localFilePath != null) {
             val file = File(offlineTrack.localFilePath)
