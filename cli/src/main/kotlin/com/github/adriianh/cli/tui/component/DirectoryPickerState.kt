@@ -29,6 +29,7 @@ data class DirectoryPickerState(
     val scrollOffset: Int = 0,
     val visibleRows: Int = 15,
     val targetItem: SettingsItem? = null,
+    val markedPaths: Set<Path> = emptySet(),
     val isCreatingDir: Boolean = false,
     val newDirName: String = "",
     val isConfirmingDelete: Boolean = false,
@@ -108,6 +109,28 @@ fun DirectoryPickerState.enter(): DirectoryPickerState {
         this
     }
 }
+
+/**
+ * Toggles whether the directory under the cursor is "marked" (selected for multi-select).
+ */
+fun DirectoryPickerState.toggleMark(): DirectoryPickerState {
+    val entry = entries.getOrNull(cursor) ?: return this
+    if (entry.name == "..") return this
+    
+    val path = currentDirectory.resolve(entry.name).toAbsolutePath().normalize()
+    return if (markedPaths.contains(path)) {
+        copy(markedPaths = markedPaths - path)
+    } else {
+        copy(markedPaths = markedPaths + path)
+    }
+}
+
+/**
+ * Clears all currently marked paths.
+ */
+fun DirectoryPickerState.clearMarks(): DirectoryPickerState =
+    copy(markedPaths = emptySet())
+
 
 /**
  * Navigates to the parent directory, placing the cursor on the directory we came from.
