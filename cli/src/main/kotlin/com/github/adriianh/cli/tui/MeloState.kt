@@ -69,6 +69,15 @@ enum class PlaylistInputMode {
 }
 
 /**
+ * Filter types for the offline screen.
+ */
+enum class OfflineFilterType(val label: String) {
+    ALL("All"),
+    MANUAL("Manual"),
+    CACHE("Cache"),
+}
+
+/**
  * Unit used to display listening time in the statistics screen.
  */
 enum class StatsTimeUnit(val label: String) {
@@ -155,6 +164,9 @@ sealed interface ScreenState {
     data class Offline(
         val downloads: List<OfflineTrack> = emptyList(),
         val selectedIndex: Int = 0,
+        val filterType: OfflineFilterType = OfflineFilterType.ALL,
+        val searchQuery: String = "",
+        val isTyping: Boolean = false,
         val isLoading: Boolean = false
     ) : ScreenState
 }

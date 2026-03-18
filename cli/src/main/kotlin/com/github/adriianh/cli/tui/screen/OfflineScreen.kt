@@ -22,18 +22,37 @@ fun renderOfflineScreen(
     offlineList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val screen = state.screen as? ScreenState.Offline ?: return panel(text("Offline screen not active").centered()).rounded()
+    val screen = state.screen as? ScreenState.Offline
+        ?: return panel(text("Offline screen not active").centered()).rounded()
 
-    val downloads = screen.downloads
-    val content = if (downloads.isEmpty()) {
+    val filterTabs = buildOfflineFilterTabs(screen.filterType)
+
+    val filteredDownloads = screen.downloads.filter { offlineTrack ->
+        val matchesType = when (screen.filterType) {
+            OfflineFilterType.ALL -> true
+            OfflineFilterType.MANUAL -> offlineTrack.downloadType == DownloadType.MANUAL
+            OfflineFilterType.CACHE -> offlineTrack.downloadType == DownloadType.PREFETCH
+        }
+        val matchesQuery = if (screen.searchQuery.isEmpty()) true else {
+            val q = screen.searchQuery.lowercase()
+            offlineTrack.track.title.lowercase().contains(q) ||
+                    offlineTrack.track.artist.lowercase().contains(q)
+        }
+        matchesType && matchesQuery
+    }
+
+    val content = if (filteredDownloads.isEmpty()) {
         column(
+            row(filterTabs),
+            if (screen.searchQuery.isNotEmpty())
+                text("  Filter: ${screen.searchQuery}").fg(PRIMARY_COLOR).bold()
+            else text(""),
             spacer(),
-            text("No downloaded tracks found").fg(TEXT_SECONDARY).centered(),
-            text("Download tracks from the options menu to listen offline").fg(TEXT_DIM).centered(),
+            text("No tracks match the filter").fg(TEXT_SECONDARY).centered(),
             spacer()
         )
     } else {
-        val items = downloads
+        val items = filteredDownloads
             .map { offlineTrack ->
                 val track = offlineTrack.track
                 val isPlaying = track.id == state.player.nowPlaying?.id
@@ -47,14 +66,29 @@ fun renderOfflineScreen(
                 )
             }
         offlineList.elements(*items.toTypedArray())
-        offlineList.selected(screen.selectedIndex)
-        offlineList.fill()
+        offlineList.selected(screen.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)))
+
+        column(
+            row(filterTabs),
+            if (screen.searchQuery.isNotEmpty())
+                text("  Filter: ${screen.searchQuery} ").fg(PRIMARY_COLOR).bold()
+            else text(""),
+            text(""),
+            offlineList.fill()
+        )
     }
 
-    val helpText = "[↑/↓] navigate  [Enter] play  [m/o] options  [d] delete"
+    val helpText = if (screen.isTyping) {
+        "[Enter] finish search  [Esc] clear/cancel  [Backspace] delete"
+    } else {
+        "[Tab/f] filter type  [Type] search  [Esc] clear search  [Enter] play  [m/o] options  [d] delete"
+    }
+    val countTitle = if (filteredDownloads.size != screen.downloads.size)
+        "(${filteredDownloads.size}/${screen.downloads.size})"
+    else "(${screen.downloads.size})"
 
     return panel(content)
-        .title("$ICON_OFFLINE Downloaded Tracks")
+        .title("$ICON_OFFLINE Offline Tracks $countTitle")
         .bottomTitle(helpText)
         .rounded()
         .borderColor(BORDER_DEFAULT)
@@ -63,4 +97,14 @@ fun renderOfflineScreen(
         .id("offline-panel")
         .onKeyEvent(onKeyEvent)
         .fill()
+}
+
+private fun buildOfflineFilterTabs(current: OfflineFilterType): Element {
+    val tabs = OfflineFilterType.entries.map { type ->
+        val selected = type == current
+        val label = "  ${type.label}  "
+        if (selected) text(label).fg(PRIMARY_COLOR).bold()
+        else text(label).fg(TEXT_DIM)
+    }
+    return row(*tabs.toTypedArray())
 }

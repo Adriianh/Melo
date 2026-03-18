@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.*
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
@@ -647,39 +648,96 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
-    val s = state.screen as? ScreenState.Offline ?: return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Offline ?: return EventResult.UNHANDLED
     val isFocused = appRunner()?.focusManager()?.focusedId() == "offline-panel"
     if (!isFocused) return EventResult.UNHANDLED
 
+    fun updateOffline(block: (ScreenState.Offline) -> ScreenState.Offline) {
+        state = state.copy(screen = block(actualState))
+    }
+
+    fun filterDownloads(): List<OfflineTrack> = actualState.downloads.filter { offlineTrack ->
+        val matchesType = when (actualState.filterType) {
+            OfflineFilterType.ALL -> true
+            OfflineFilterType.MANUAL -> offlineTrack.downloadType == DownloadType.MANUAL
+            OfflineFilterType.CACHE -> offlineTrack.downloadType == DownloadType.PREFETCH
+        }
+        val matchesQuery = if (actualState.searchQuery.isEmpty()) true else {
+            val q = actualState.searchQuery.lowercase()
+            offlineTrack.track.title.lowercase().contains(q) ||
+                    offlineTrack.track.artist.lowercase().contains(q)
+        }
+        matchesType && matchesQuery
+    }
+
+    fun selectedFilteredTrack(): OfflineTrack? = filterDownloads().getOrNull(actualState.selectedIndex)
+
     when {
+        !actualState.isTyping && (event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'l')) -> {
+            val next = OfflineFilterType.entries[(actualState.filterType.ordinal + 1) % OfflineFilterType.entries.size]
+            updateOffline { it.copy(filterType = next, selectedIndex = 0) }
+            return EventResult.HANDLED
+        }
+        !actualState.isTyping && (event.code() == KeyCode.CHAR && event.character() == 'f') -> {
+            val prev = if (actualState.filterType.ordinal == 0) OfflineFilterType.entries.last()
+                else OfflineFilterType.entries[actualState.filterType.ordinal - 1]
+            updateOffline { it.copy(filterType = prev, selectedIndex = 0) }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.BACKSPACE || event.matches(Actions.DELETE_BACKWARD) -> {
+            if (actualState.searchQuery.isNotEmpty()) {
+                updateOffline { it.copy(searchQuery = it.searchQuery.dropLast(1), selectedIndex = 0, isTyping = it.searchQuery.length > 1) }
+                return EventResult.HANDLED
+            }
+        }
+        event.code() == KeyCode.ESCAPE -> {
+            if (actualState.isTyping || actualState.searchQuery.isNotEmpty()) {
+                updateOffline { it.copy(searchQuery = "", selectedIndex = 0, isTyping = false) }
+                return EventResult.HANDLED
+            }
+        }
+        event.code() == KeyCode.ENTER && actualState.isTyping -> {
+            updateOffline { it.copy(isTyping = false) }
+            return EventResult.HANDLED
+        }
+        event.code() == KeyCode.CHAR && !event.hasCtrl() && !event.hasAlt() -> {
+            val c = event.character()
+            if (Character.isLetterOrDigit(c) || c == ' ' || c == '-' || c == '_') {
+                updateOffline { it.copy(searchQuery = it.searchQuery + c, selectedIndex = 0, isTyping = true) }
+                return EventResult.HANDLED
+            }
+        }
+
         event.matches(Actions.MOVE_DOWN) -> {
-            val newIndex = minOf(s.downloads.lastIndex.coerceAtLeast(0), s.selectedIndex + 1)
+            val filteredCount = filterDownloads().size
+            val newIndex = minOf((filteredCount - 1).coerceAtLeast(0), actualState.selectedIndex + 1)
             offlineList.selected(newIndex)
-            state = state.copy(screen = s.copy(selectedIndex = newIndex))
+            updateOffline { it.copy(selectedIndex = newIndex) }
             return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_UP) -> {
-            val newIndex = maxOf(0, s.selectedIndex - 1)
+            val newIndex = maxOf(0, actualState.selectedIndex - 1)
             offlineList.selected(newIndex)
-            state = state.copy(screen = s.copy(selectedIndex = newIndex))
+            updateOffline { it.copy(selectedIndex = newIndex) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.ENTER -> {
-            val selected = s.downloads.getOrNull(s.selectedIndex) ?: return EventResult.UNHANDLED
+        event.code() == KeyCode.ENTER && !actualState.isTyping -> {
+            val selected = selectedFilteredTrack() ?: return EventResult.UNHANDLED
             playTrack(selected.track)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'd' -> {
-            val selected = s.downloads.getOrNull(s.selectedIndex) ?: return EventResult.UNHANDLED
+        !actualState.isTyping && event.code() == KeyCode.CHAR && event.character() == 'd' -> {
+            val selected = selectedFilteredTrack() ?: return EventResult.UNHANDLED
             deleteDownloadedTrack(selected.track.id)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
-            val track = s.downloads.getOrNull(s.selectedIndex)?.track
+        !actualState.isTyping && event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+            val track = selectedFilteredTrack()?.track
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED
         }
