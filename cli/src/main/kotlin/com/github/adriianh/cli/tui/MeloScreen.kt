@@ -457,7 +457,13 @@ class MeloScreen(
                 )
 
                 SidebarSection.LIBRARY -> renderLibraryScreen(
-                    state, settingsViewState, favoritesList, playlistsList, playlistTracksList, localLibraryList, ::handleLibraryKey,
+                    state,
+                    settingsViewState,
+                    favoritesList,
+                    playlistsList,
+                    playlistTracksList,
+                    localLibraryList,
+                    ::handleLibraryKey,
                 )
 
                 SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
@@ -517,7 +523,7 @@ class MeloScreen(
         scope.launch {
             getOfflineTracks().collect { downloads ->
                 runner()?.runOnRenderThread {
-                    scope.launch { syncOfflineTracks }
+                    scope.launch { syncOfflineTracks.invoke() }
                     updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
                 }
             }
@@ -535,11 +541,16 @@ class MeloScreen(
             downloadSemaphore.withPermit {
                 try {
                     val existing = offlineRepository.getOfflineTrack(track.id)
-                    val sourceId = track.sourceId ?: return@launch
+                    val sourceId = track.sourceId ?: audioProvider.getSourceId(
+                        artist = track.artist,
+                        title = track.title,
+                        durationMs = track.durationMs,
+                    ) ?: return@launch
                     val downloadsDir = File(
                         when (downloadType) {
                             DownloadType.MANUAL -> settingsViewState.currentSettings.downloadPath
                                 ?: File(shareDir, "downloads").absolutePath
+
                             DownloadType.PREFETCH -> settingsViewState.currentSettings.cachePath
                                 ?: File(shareDir, "cache").absolutePath
                         }
