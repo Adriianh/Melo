@@ -15,7 +15,7 @@ graalvm = "0.10.6"
 sqldelight = "2.0.2"
 sqlite-jdbc = "3.45.2.0"
 jmtc = "0.0.3"
-jaudiotagger = "3.0.1"
+jaudiotagger = "2.0.18"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -45,7 +45,7 @@ sqldelightSqliteDriver = { module = "app.cash.sqldelight:sqlite-driver", version
 sqldelightGradlePlugin = { module = "app.cash.sqldelight:gradle-plugin", version.ref = "sqldelight" }
 sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 jmtc = { module = "io.github.selemba1000:JavaMediaTransportControls", version.ref = "jmtc" }
-jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger" }
+jaudiotagger = { module = "com.github.RouHim:jaudiotagger", version.ref = "jaudiotagger" }
 
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
@@ -53,6 +53,4 @@ ktor = ["ktorClientCore", "ktorClientCio", "ktorClientContentNegotiation", "ktor
 tamboui = ["tambouiTui", "tambouiToolkit", "tamboouiJline", "tambouiImage"]
 
 [plugins]
-kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 graalvmNative = { id = "org.graalvm.buildtools.native", version.ref = "graalvm" }
-sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
