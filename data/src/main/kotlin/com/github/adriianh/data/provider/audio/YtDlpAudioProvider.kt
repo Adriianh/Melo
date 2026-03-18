@@ -96,7 +96,7 @@ class YtDlpAudioProvider(
                     args.add("--add-metadata")
                 }
                 args.addAll(listOf(
-                    "-o", "$destination/%(uploader)s - %(title)s.%(ext)s",
+                    "-o", "$destination/%(id)s - %(uploader)s - %(title)s.%(ext)s",
                     url
                 ))
 
@@ -108,14 +108,19 @@ class YtDlpAudioProvider(
                 // Filter for audio files only (ignore thumbnails like .webp, .jpg, etc.)
                 val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
                 val downloaded = modifiedOrNewFiles
-                    .filter { name -> audioExtensions.any { ext -> name.endsWith(".$ext", ignoreCase = true) } }
+                    .filter { name ->
+                        name.startsWith("$source ") && audioExtensions.any { ext -> name.endsWith(".$ext", ignoreCase = true) }
+                    }
                     .firstOrNull()
                     ?.let { File(dir, it) }
 
                 modifiedOrNewFiles.forEach { fileName ->
                     val file = File(dir, fileName)
                     if (file.absolutePath != downloaded?.absolutePath) {
-                        file.delete()
+                        val isMetadata = setOf("webp", "png", "jpg", "jpeg", "json", "temp", "part").any { ext ->
+                            fileName.endsWith(".$ext", ignoreCase = true)
+                        }
+                        if (isMetadata) file.delete()
                     }
                 }
 
