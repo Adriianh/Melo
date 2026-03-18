@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
@@ -30,8 +31,12 @@ class TrackOptionsOverlay(
         val track = state.trackOptions.track
         val offlineTrack = state.collections.offlineTracks.find { it.track.id == track?.id }
         val downloadLabel = when (offlineTrack?.downloadStatus) {
-            DownloadStatus.COMPLETED -> "Remove from Offline"
-            DownloadStatus.DOWNLOADING, DownloadStatus.PENDING -> "Downloading..."
+            DownloadStatus.COMPLETED
+                if offlineTrack.downloadType == DownloadType.MANUAL -> "Remove from Offline"
+
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.PENDING -> "Downloading..."
+
             else -> "Download for Offline"
         }
         return listOf(
