@@ -150,6 +150,7 @@ sealed interface ScreenState {
         val localTracks: List<Track> = emptyList(),
         val searchQuery: String = "",
         val isTyping: Boolean = false,
+        val localFilterIndex: Int = 0,
         val selectedIndex: Int = 0,
         val isLoading: Boolean = false
     ) : ScreenState

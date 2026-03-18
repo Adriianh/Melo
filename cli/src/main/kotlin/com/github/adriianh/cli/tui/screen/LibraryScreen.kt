@@ -15,6 +15,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import java.io.File
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
@@ -56,7 +57,7 @@ fun renderLibraryScreen(
         else
             "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
         LibraryTab.LOCAL -> if (actualState.isTyping) "[Enter] finish  [Esc] clear  [Bksp] del"
-            else "[/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
+            else "[Tab/f/l] directory  [/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
     }
 
     val body = column(
@@ -204,20 +205,46 @@ private fun buildLocalContent(
     actualState: ScreenState.Library,
     localLibraryList: ListElement<*>
 ): Element {
+    val allPaths = settingsViewState.currentSettings.localLibraryPaths
+    val filterTabs = if (allPaths.size > 1) {
+        val tabNames = listOf("All") + allPaths.map { File(it).name }
+        val tabs = tabNames.mapIndexed { index, name ->
+            val active = index == actualState.localFilterIndex
+            val label = "  $name  "
+            if (active) text(label).fg(PRIMARY_COLOR).bold()
+            else text(label).fg(TEXT_DIM)
+        }
+        row(*tabs.toTypedArray())
+    } else null
+
     val filtered = actualState.localTracks.filter { track ->
-        if (actualState.searchQuery.isEmpty()) true else {
+        val matchesTab = if (actualState.localFilterIndex == 0) true else {
+            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
+            selectedPath != null && track.id.startsWith("local:$selectedPath")
+        }
+
+        val matchesSearch = if (actualState.searchQuery.isEmpty()) true else {
             val q = actualState.searchQuery.lowercase()
             track.title.lowercase().contains(q) || track.artist.lowercase().contains(q)
         }
+        matchesTab && matchesSearch
     }
 
     if (actualState.isLoading) {
-        return column(spacer(), text("Scanning local files...").dim().centered(), spacer())
+        return column(
+            filterTabs ?: text(""),
+            text("").length(1),
+            spacer(),
+            text("Scanning local files...").dim().centered(),
+            spacer()
+        )
     }
 
     if (actualState.localTracks.isEmpty()) {
-        val hasPaths = settingsViewState.currentSettings.localLibraryPaths.isNotEmpty()
+        val hasPaths = allPaths.isNotEmpty()
         return column(
+            filterTabs ?: text(""),
+            text("").length(1),
             spacer(),
             text(if (hasPaths) "  No audio files found in configured folders" else "  No local folders configured").fg(TEXT_SECONDARY).centered(),
             text("  Configure folders in Settings -> Storage").fg(TEXT_DIM).centered(),
@@ -248,6 +275,8 @@ private fun buildLocalContent(
     ).margin(Margin.horizontal(1))
 
     return column(
+        filterTabs ?: text(""),
+        if (filterTabs != null) text("").length(1) else text(""),
         header,
         text("").length(1),
         localLibraryList.fill(),

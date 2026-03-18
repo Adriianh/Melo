@@ -418,11 +418,19 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
 
 internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
     val actualState = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
+    val allPaths = settingsViewState.currentSettings.localLibraryPaths
+    
     val filtered = actualState.localTracks.filter { track ->
-        if (actualState.searchQuery.isEmpty()) true else {
+        val matchesTab = if (actualState.localFilterIndex == 0) true else {
+            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
+            selectedPath != null && track.id.startsWith("local:$selectedPath")
+        }
+
+        val matchesSearch = if (actualState.searchQuery.isEmpty()) true else {
             val q = actualState.searchQuery.lowercase()
             track.title.lowercase().contains(q) || track.artist.lowercase().contains(q)
         }
+        matchesTab && matchesSearch
     }
 
     if (actualState.isTyping) {
@@ -449,6 +457,18 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
     }
 
     when {
+        event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'l') -> {
+            val next = (actualState.localFilterIndex + 1) % (allPaths.size + 1)
+            updateScreen<ScreenState.Library> { it.copy(localFilterIndex = next, selectedIndex = 0) }
+            localLibraryList.selected(0)
+            return EventResult.HANDLED
+        }
+        event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+            val prev = if (actualState.localFilterIndex == 0) allPaths.size else actualState.localFilterIndex - 1
+            updateScreen<ScreenState.Library> { it.copy(localFilterIndex = prev, selectedIndex = 0) }
+            localLibraryList.selected(0)
+            return EventResult.HANDLED
+        }
         event.code() == KeyCode.CHAR && event.character() == '/' -> {
             updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
             return EventResult.HANDLED
@@ -458,11 +478,15 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.matches(Actions.MOVE_DOWN) -> {
-            localLibraryList.selected(minOf(filtered.lastIndex.coerceAtLeast(0), localLibraryList.selected() + 1))
+            val newIndex = minOf(filtered.lastIndex.coerceAtLeast(0), localLibraryList.selected() + 1)
+            localLibraryList.selected(newIndex)
+            updateScreen<ScreenState.Library> { it.copy(selectedIndex = newIndex) }
             return EventResult.HANDLED
         }
         event.matches(Actions.MOVE_UP) -> {
-            localLibraryList.selected(maxOf(0, localLibraryList.selected() - 1))
+            val newIndex = maxOf(0, localLibraryList.selected() - 1)
+            localLibraryList.selected(newIndex)
+            updateScreen<ScreenState.Library> { it.copy(selectedIndex = newIndex) }
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
