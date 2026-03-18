@@ -10,15 +10,15 @@ import com.github.adriianh.cli.tui.screen.*
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import com.github.adriianh.core.domain.provider.ArtworkProvider
-import com.github.adriianh.core.domain.provider.AudioProvider
-import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.usecase.*
-import com.github.adriianh.data.remote.piped.PipedApiClient
-import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.OfflineTrack
+import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.layout.Constraint
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.app.ToolkitApp
@@ -219,6 +219,14 @@ class MeloScreen(
         .scrollbar()
         .focusable()
         .id("playlist-tracks-list")
+
+    internal val localLibraryList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("local-library-list")
 
     internal val sidebarNavList: ListElement<*> = list()
         .items(
@@ -449,7 +457,7 @@ class MeloScreen(
                 )
 
                 SidebarSection.LIBRARY -> renderLibraryScreen(
-                    state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+                    state, settingsViewState, favoritesList, playlistsList, playlistTracksList, localLibraryList, ::handleLibraryKey,
                 )
 
                 SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
@@ -477,12 +485,31 @@ class MeloScreen(
             )
 
             is ScreenState.Library -> renderLibraryScreen(
-                state, favoritesList, playlistsList, playlistTracksList, ::handleLibraryKey,
+                state,
+                settingsViewState,
+                favoritesList,
+                playlistsList,
+                playlistTracksList,
+                localLibraryList,
+                ::handleLibraryKey,
             )
 
             is ScreenState.NowPlaying -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
             is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
             is ScreenState.Offline -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
+        }
+    }
+
+    internal fun loadLocalTracks() {
+        scope.launch {
+            updateScreen<ScreenState.Library> { it.copy(isLoading = true) }
+            val paths = settingsViewState.currentSettings.localLibraryPaths
+            val tracks = offlineRepository.scanLocalTracks(paths)
+            runner()?.runOnRenderThread {
+                updateScreen<ScreenState.Library> {
+                    it.copy(localTracks = tracks, isLoading = false)
+                }
+            }
         }
     }
 
@@ -584,7 +611,6 @@ class MeloScreen(
                         )
                     )
                 }
-
             }
         }
     }
