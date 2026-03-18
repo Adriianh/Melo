@@ -66,7 +66,7 @@ class YtDlpAudioProvider(
                 val url = "https://www.youtube.com/watch?v=$source"
 
                 val dir = File(destination)
-                val before = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+                val beforeFiles = dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
                 val resolvedQuality = when (format) {
                     "flac" -> "0"
                     "opus" -> quality.replace("k", "").toIntOrNull()
@@ -90,15 +90,22 @@ class YtDlpAudioProvider(
                     url
                 )
 
-                val after = dir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
-                val newFiles = after - before
+                val afterFiles = dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
+                val modifiedOrNewFiles = afterFiles.filter { (name, lastMod) -> beforeFiles[name] != lastMod }.keys
 
                 // Filter for audio files only (ignore thumbnails like .webp, .jpg, etc.)
                 val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
-                val downloaded = newFiles
+                val downloaded = modifiedOrNewFiles
                     .filter { name -> audioExtensions.any { ext -> name.endsWith(".$ext", ignoreCase = true) } }
                     .firstOrNull()
                     ?.let { File(dir, it) }
+
+                modifiedOrNewFiles.forEach { fileName ->
+                    val file = File(dir, fileName)
+                    if (file.absolutePath != downloaded?.absolutePath) {
+                        file.delete()
+                    }
+                }
 
                 if (downloaded != null && downloaded.exists()) downloaded.absolutePath else null
             } catch (_: Exception) {

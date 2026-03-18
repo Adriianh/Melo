@@ -5,21 +5,24 @@ import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
 
 class OfflineRepositoryImpl(
     dataDir: File,
+    private val settingsRepository: SettingsRepository,
     private val dispatcher: CoroutineDispatcher
 ) : OfflineRepository {
 
-    private val downloadsDir = File(dataDir, "downloads")
-    private val metadataFile = File(downloadsDir, "downloads.json")
+    private val defaultDownloadsDir = File(dataDir, "cache")
+    private val metadataFile = File(defaultDownloadsDir, "downloads.json")
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -110,12 +113,9 @@ class OfflineRepositoryImpl(
 
     override suspend fun syncWithFileSystem() {
         withContext(dispatcher) {
+            val settings = settingsRepository.getSettings()
+            val customCacheDir = settings.cachePath?.let { File(it) } ?: File(defaultDownloadsDir.parentFile, "cache")
             val current = _offlineTracksFlow.value.toMutableList()
-            val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
-
-            val existingFiles = downloadsDir.listFiles { file ->
-                audioExtensions.any { ext -> file.name.endsWith(".$ext", ignoreCase = true) }
-            }?.associateBy { it.name.lowercase() } ?: emptyMap()
 
             val updated = current.mapNotNull { track ->
                 val localPath = track.localFilePath
@@ -129,7 +129,7 @@ class OfflineRepositoryImpl(
                                 fileSize = file.length(),
                                 downloadedAt = track.downloadedAt ?: file.lastModified()
                             )
-                        !file.exists() ->
+                        !file.exists() && track.downloadStatus == DownloadStatus.COMPLETED ->
                             track.copy(
                                 localFilePath = null,
                                 downloadStatus = DownloadStatus.PENDING,
@@ -138,15 +138,7 @@ class OfflineRepositoryImpl(
                         else -> track
                     }
                 } else {
-                    val matchingFile = findMatchingFile(track.track, existingFiles)
                     when {
-                        matchingFile != null ->
-                            track.copy(
-                                localFilePath = matchingFile.absolutePath,
-                                downloadStatus = DownloadStatus.COMPLETED,
-                                fileSize = matchingFile.length(),
-                                downloadedAt = track.downloadedAt ?: matchingFile.lastModified()
-                            )
                         track.downloadStatus == DownloadStatus.FAILED &&
                                 track.downloadType == DownloadType.PREFETCH -> null
                         track.downloadStatus == DownloadStatus.FAILED ->
@@ -170,29 +162,23 @@ class OfflineRepositoryImpl(
                 .map { it.lowercase() }
                 .toSet()
 
+            val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
             val metadataExtensions = setOf("webp", "png", "jpg", "jpeg")
 
-            downloadsDir.listFiles()?.forEach { file ->
-                val isAudio = audioExtensions.any { ext ->
-                    file.name.endsWith(".$ext", ignoreCase = true)
-                }
-                val isOrphanedAudio = isAudio && file.absolutePath.lowercase() !in validPaths
-                val isMetadata = metadataExtensions.any { ext ->
-                    file.name.endsWith(".$ext", ignoreCase = true)
-                }
+            // ONLY clean up the cache directory to prevent deleting personal files
+            if (customCacheDir.exists()) {
+                customCacheDir.listFiles()?.forEach { file ->
+                    val isAudio = audioExtensions.any { ext ->
+                        file.name.endsWith(".$ext", ignoreCase = true)
+                    }
+                    val isOrphanedAudio = isAudio && file.absolutePath.lowercase() !in validPaths
+                    val isMetadata = metadataExtensions.any { ext ->
+                        file.name.endsWith(".$ext", ignoreCase = true)
+                    }
 
-                if (isOrphanedAudio || isMetadata) file.delete()
+                    if (isOrphanedAudio || isMetadata) file.delete()
+                }
             }
-        }
-    }
-
-    private fun findMatchingFile(track: Track, files: Map<String, File>): File? {
-        val title = track.title.lowercase()
-        val artist = track.artist.lowercase()
-
-        return files.values.firstOrNull { file ->
-            val name = file.name.lowercase()
-            name.contains(title) && name.contains(artist)
         }
     }
 
@@ -209,7 +195,7 @@ class OfflineRepositoryImpl(
     private suspend fun saveMetadataToDisk(tracks: List<OfflineTrack>) {
         withContext(dispatcher) {
             try {
-                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                if (!defaultDownloadsDir.exists()) defaultDownloadsDir.mkdirs()
                 val jsonString = json.encodeToString(tracks)
                 metadataFile.writeText(jsonString)
             } catch (e: Exception) {
