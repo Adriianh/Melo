@@ -93,7 +93,7 @@ class OfflineRepositoryImpl(
             .filter {
                 it.downloadType == DownloadType.PREFETCH &&
                         it.downloadStatus == DownloadStatus.COMPLETED &&
-                        (it.lastAccessedAt ?: it.downloadedAt ?: 0L) < cutoff
+                        (it.lastAccessedAt ?: it.downloadedAt ?: Long.MAX_VALUE) < cutoff
             }
         current.forEach { removeOfflineTrack(it.track.id) }
     }
@@ -129,6 +129,7 @@ class OfflineRepositoryImpl(
         withContext(dispatcher) {
             val settings = settingsRepository.getSettings()
             val customCacheDir = settings.cachePath?.let { File(it) } ?: File(defaultDownloadsDir.parentFile, "cache")
+            val customDownloadDir = settings.downloadPath?.let { File(it) }
             val current = _offlineTracksFlow.value.toMutableList()
 
             val updated = current.mapNotNull { track ->
@@ -143,12 +144,14 @@ class OfflineRepositoryImpl(
                                 fileSize = file.length(),
                                 downloadedAt = track.downloadedAt ?: file.lastModified()
                             )
+
                         !file.exists() && track.downloadStatus == DownloadStatus.COMPLETED ->
                             track.copy(
                                 localFilePath = null,
                                 downloadStatus = DownloadStatus.PENDING,
                                 fileSize = 0L
                             )
+
                         else -> track
                     }
                 } else {
@@ -179,8 +182,9 @@ class OfflineRepositoryImpl(
             val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
             val metadataExtensions = setOf("webp", "png", "jpg", "jpeg")
 
-            if (customCacheDir.exists()) {
-                customCacheDir.listFiles()?.forEach { file ->
+            val dirsToClean = listOfNotNull(customCacheDir, customDownloadDir).filter { it.exists() }
+            dirsToClean.forEach { dir ->
+                dir.listFiles()?.forEach { file ->
                     val isAudio = audioExtensions.any { ext ->
                         file.name.endsWith(".$ext", ignoreCase = true)
                     }
