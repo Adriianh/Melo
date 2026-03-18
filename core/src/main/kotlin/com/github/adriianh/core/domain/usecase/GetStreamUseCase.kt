@@ -26,6 +26,12 @@ class GetStreamUseCase(
         }
 
         val offlineTrack = offlineRepository.getOfflineTrack(track.id)
+            ?: track.sourceId?.let { sid -> 
+                offlineRepository.getOfflineTracks().find { 
+                    it.track.sourceId == sid && it.downloadStatus == DownloadStatus.COMPLETED 
+                }
+            }
+            
         if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.localFilePath != null) {
             val file = File(offlineTrack.localFilePath)
             if (file.exists()) return "file://${file.absolutePath}"
