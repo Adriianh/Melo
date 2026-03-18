@@ -508,9 +508,6 @@ class MeloScreen(
             downloadSemaphore.withPermit {
                 try {
                     val existing = offlineRepository.getOfflineTrack(track.id)
-                    if (existing?.downloadStatus == DownloadStatus.COMPLETED ||
-                        existing?.downloadStatus == DownloadStatus.DOWNLOADING) return@launch
-
                     val sourceId = track.sourceId ?: return@launch
                     val downloadsDir = File(
                         when (downloadType) {
@@ -521,6 +518,30 @@ class MeloScreen(
                         }
                     )
                     if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
+                    if (existing != null && (existing.downloadStatus == DownloadStatus.COMPLETED || existing.downloadStatus == DownloadStatus.DOWNLOADING)) {
+                        // If it's completed as cache and user wants manual, just copy the file
+                        if (existing.downloadStatus == DownloadStatus.COMPLETED &&
+                            existing.downloadType == DownloadType.PREFETCH &&
+                            downloadType == DownloadType.MANUAL &&
+                            existing.localFilePath != null
+                        ) {
+                            val cachedFile = File(existing.localFilePath!!)
+                            if (cachedFile.exists()) {
+                                val newFile = File(downloadsDir, cachedFile.name)
+                                cachedFile.copyTo(newFile, overwrite = true)
+
+                                val upgradedTrack = existing.copy(
+                                    localFilePath = newFile.absolutePath,
+                                    downloadType = DownloadType.MANUAL,
+                                    downloadedAt = System.currentTimeMillis()
+                                )
+                                downloadTrack.invoke(upgradedTrack)
+                                return@launch
+                            }
+                        }
+                        return@launch
+                    }
 
                     val offlineTrack = OfflineTrack(
                         track = track,
@@ -533,7 +554,8 @@ class MeloScreen(
                         source = sourceId,
                         destination = downloadsDir.absolutePath,
                         format = settingsViewState.currentSettings.downloadFormat.displayName,
-                        quality = settingsViewState.currentSettings.downloadQuality.displayName
+                        quality = settingsViewState.currentSettings.downloadQuality.displayName,
+                        embedMetadata = (downloadType == DownloadType.MANUAL)
                     )
                     if (downloadedPath != null) {
                         val file = File(downloadedPath)
