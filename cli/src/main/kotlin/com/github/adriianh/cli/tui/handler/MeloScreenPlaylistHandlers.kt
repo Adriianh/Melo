@@ -63,7 +63,9 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
-            screen.playlistTracks.getOrNull(playlistTracksList.selected())?.let { playTrack(it) }
+            val tracks = screen.playlistTracks
+            val idx = playlistTracksList.selected()
+            if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'q' -> {

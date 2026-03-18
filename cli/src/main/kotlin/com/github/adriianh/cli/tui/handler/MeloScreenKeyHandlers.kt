@@ -490,7 +490,8 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
-            filtered.getOrNull(localLibraryList.selected())?.let { playTrack(it) }
+            val idx = localLibraryList.selected()
+            if (idx in filtered.indices) playList(filtered, idx)
             return EventResult.HANDLED
         }
         event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
@@ -519,7 +520,9 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            state.collections.favorites.getOrNull(favoritesList.selected())?.let { playTrack(it) }
+            val tracks = state.collections.favorites
+            val idx = favoritesList.selected()
+            if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
 
@@ -649,7 +652,7 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
-    val optionsCount = 7
+    val optionsCount = 6
     when {
         event.code() == KeyCode.ESCAPE -> {
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
@@ -676,17 +679,10 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
 
             when (actionIndex) {
                 0 -> playTrack(track)
-                1 -> {
-                    clearQueue()
-                    addToQueue(track)
-                    playFromQueue(0)
-                    state = state.copy(player = state.player.copy(isRadioMode = true))
-                    loadMoreRadioTracks()
-                }
-                2 -> addToQueue(track)
-                3 -> toggleFavorite(track)
-                4 -> openPlaylistPicker(track)
-                5 -> {
+                1 -> addToQueue(track)
+                2 -> toggleFavorite(track)
+                3 -> openPlaylistPicker(track)
+                4 -> {
                     val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
                     if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.downloadType == DownloadType.MANUAL) {
                         this@handleTrackOptionsKey.deleteDownloadedTrack(track.id)
@@ -694,7 +690,7 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
                         downloadTrack(track, DownloadType.MANUAL)
                     }
                 }
-                6 -> {
+                5 -> {
                     state = state.copy(detail = state.detail.copy(selectedTrack = track, detailTab = DetailTab.SIMILAR))
                     appRunner()?.focusManager()?.setFocus("similar-area")
                     loadMoreSimilar()
@@ -832,8 +828,9 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER && !actualState.isTyping -> {
-            val selected = selectedFilteredTrack() ?: return EventResult.UNHANDLED
-            playTrack(selected.track)
+            val tracks = filterDownloads().map { it.track }
+            val idx = offlineList.selected()
+            if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
 

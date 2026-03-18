@@ -11,13 +11,8 @@ import kotlinx.coroutines.launch
 internal fun MeloScreen.playTrack(track: Track) {
     val existingIndex = state.player.queue.indexOfFirst { it.id == track.id }
     val (newQueue, newIndex, newRadioMode) = when {
-        state.player.isRadioMode && existingIndex < 0 -> Triple(listOf(track), 0, false)
         existingIndex >= 0 -> Triple(state.player.queue, existingIndex, state.player.isRadioMode)
-        else -> {
-            val insertAt = (state.player.queueIndex + 1).coerceAtLeast(0)
-            val q = state.player.queue.toMutableList().also { it.add(insertAt, track) }
-            Triple(q, insertAt, false)
-        }
+        else -> Triple(listOf(track), 0, true)
     }
     state = state.copy(
         player = state.player.copy(
@@ -155,6 +150,18 @@ internal fun MeloScreen.seekForward() {
     playFromQueue(nextIndex)
 }
 
+internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
+    if (tracks.isEmpty() || startIndex !in tracks.indices) return
+    state = state.copy(
+        player = state.player.copy(
+            queue = tracks,
+            queueIndex = -1,
+            isRadioMode = false
+        )
+    )
+    playFromQueue(startIndex)
+}
+
 internal fun MeloScreen.playFromQueue(index: Int) {
     val track = state.player.queue.getOrNull(index) ?: return
     state = state.copy(player = state.player.copy(queueIndex = index))
@@ -164,7 +171,8 @@ internal fun MeloScreen.playFromQueue(index: Int) {
 internal fun MeloScreen.addToQueue(track: Track) {
     val newQueue = state.player.queue + track
     val newIndex = if (state.player.queueIndex < 0 && state.player.nowPlaying == null) 0 else state.player.queueIndex
-    state = state.copy(player = state.player.copy(queue = newQueue, queueIndex = newIndex, isRadioMode = false))
+    val newRadioMode = state.player.isRadioMode && state.player.nowPlaying != null
+    state = state.copy(player = state.player.copy(queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode))
     if (state.player.nowPlaying == null && !state.player.isLoadingAudio) playFromQueue(0)
 }
 

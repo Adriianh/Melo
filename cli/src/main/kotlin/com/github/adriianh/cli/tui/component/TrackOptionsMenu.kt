@@ -37,7 +37,6 @@ class TrackOptionsOverlay(
         }
         return listOf(
             "Play Now",
-            "Start Radio",
             "Add to Queue",
             "Toggle Favorite",
             "Add to Playlist",
