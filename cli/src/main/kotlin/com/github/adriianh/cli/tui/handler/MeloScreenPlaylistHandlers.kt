@@ -9,7 +9,6 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
-    val screen = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
     val playlists = state.collections.playlists
     when {
         event.matches(Actions.MOVE_DOWN) -> {
