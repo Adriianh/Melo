@@ -43,7 +43,7 @@ class DirectoryPickerOverlay(
         frame.buffer().clear(overlayArea)
 
         // ── Current path bar ────────────────────────────────────────
-        val pathText = text("  📂 ${picker.currentDirectory}")
+        val pathText = text("  ${MeloTheme.ICON_FOLDER_OPENED} ${picker.currentDirectory}")
             .fg(MeloTheme.TEXT_SECONDARY)
             .fill()
 
@@ -87,7 +87,7 @@ class DirectoryPickerOverlay(
                 val entry = entries[entryIndex]
                 val isSelected = entryIndex == picker.cursor
 
-                val icon = if (entry.name == "..") "📁" else "📂"
+                val icon = if (entry.name == "..") MeloTheme.ICON_FOLDER else MeloTheme.ICON_FOLDER_OPENED
                 val displayName = if (entry.name == "..") ".." else "${entry.name}/"
 
                 val prefix = if (isSelected) " ${MeloTheme.ICON_ARROW} " else "   "
@@ -107,9 +107,9 @@ class DirectoryPickerOverlay(
 
         // ── Title ───────────────────────────────────────────────────
         val title = when (picker.targetItem) {
-            SettingsItem.DOWNLOAD_PATH -> "📂 Select Download Path"
-            SettingsItem.CACHE_PATH -> "📂 Select Cache Path"
-            else -> "📂 Select Directory"
+            SettingsItem.DOWNLOAD_PATH -> "${MeloTheme.ICON_FOLDER_OPENED} Select Download Path"
+            SettingsItem.CACHE_PATH -> "${MeloTheme.ICON_FOLDER_OPENED} Select Cache Path"
+            else -> "${MeloTheme.ICON_FOLDER_OPENED} Select Directory"
         }
 
         // ── Compose overlay ─────────────────────────────────────────
