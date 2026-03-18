@@ -81,7 +81,7 @@ fun renderOfflineScreen(
     val helpText = if (screen.isTyping) {
         "[Enter] finish search  [Esc] clear/cancel  [Backspace] delete"
     } else {
-        "[Tab/f] filter type  [Type] search  [Esc] clear search  [Enter] play  [m/o] options  [d] delete"
+        "[Tab/f] filter type  [/] search  [Esc] clear search  [Enter] play  [m/o] options  [d] delete"
     }
     val countTitle = if (filteredDownloads.size != screen.downloads.size)
         "(${filteredDownloads.size}/${screen.downloads.size})"

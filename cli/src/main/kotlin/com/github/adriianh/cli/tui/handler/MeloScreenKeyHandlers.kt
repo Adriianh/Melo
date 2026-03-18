@@ -685,26 +685,34 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.BACKSPACE || event.matches(Actions.DELETE_BACKWARD) -> {
-            if (actualState.searchQuery.isNotEmpty()) {
-                updateOffline { it.copy(searchQuery = it.searchQuery.dropLast(1), selectedIndex = 0, isTyping = it.searchQuery.length > 1) }
-                return EventResult.HANDLED
-            }
+        !actualState.isTyping && event.code() == KeyCode.CHAR && event.character() == '/' -> {
+            updateOffline { it.copy(isTyping = true, selectedIndex = 0) }
+            return EventResult.HANDLED
         }
+
+        actualState.isTyping && (event.code() == KeyCode.BACKSPACE || event.matches(Actions.DELETE_BACKWARD)) -> {
+            if (actualState.searchQuery.isNotEmpty()) {
+                updateOffline { it.copy(searchQuery = it.searchQuery.dropLast(1), selectedIndex = 0) }
+            }
+            return EventResult.HANDLED
+        }
+
         event.code() == KeyCode.ESCAPE -> {
             if (actualState.isTyping || actualState.searchQuery.isNotEmpty()) {
                 updateOffline { it.copy(searchQuery = "", selectedIndex = 0, isTyping = false) }
                 return EventResult.HANDLED
             }
         }
-        event.code() == KeyCode.ENTER && actualState.isTyping -> {
+
+        actualState.isTyping && event.code() == KeyCode.ENTER -> {
             updateOffline { it.copy(isTyping = false) }
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && !event.hasCtrl() && !event.hasAlt() -> {
+        
+        actualState.isTyping && event.code() == KeyCode.CHAR && !event.hasCtrl() && !event.hasAlt() -> {
             val c = event.character()
             if (Character.isLetterOrDigit(c) || c == ' ' || c == '-' || c == '_') {
-                updateOffline { it.copy(searchQuery = it.searchQuery + c, selectedIndex = 0, isTyping = true) }
+                updateOffline { it.copy(searchQuery = it.searchQuery + c, selectedIndex = 0) }
                 return EventResult.HANDLED
             }
         }
