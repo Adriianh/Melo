@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.*
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.*
 
@@ -10,6 +11,32 @@ internal fun MeloScreen.performSearch() {
     lastQuery = query
     loadMoreJob?.cancel()
     loadMoreJob = null
+
+    if (state.isOfflineMode) {
+        val q = query.lowercase()
+        val filtered = state.collections.offlineTracks
+            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+            .map { it.track }
+            .filter { it.title.lowercase().contains(q) || it.artist.lowercase().contains(q) }
+            .distinctBy { it.id }
+
+        state = state.copy(
+            screen = ScreenState.Search(
+                query = query,
+                results = filtered,
+                isLoading = false,
+                selectedIndex = 0,
+                hasMore = false
+            ),
+            detail = state.detail.copy(selectedTrack = filtered.firstOrNull()),
+            navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
+        )
+        sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
+        resultList.selected(0)
+        focusResults()
+        return
+    }
+
     state = state.copy(
         screen = ScreenState.Search(isLoading = true, errorMessage = null, hasMore = true), 
         detail = state.detail.copy(selectedTrack = null),
@@ -37,7 +64,7 @@ internal fun MeloScreen.performSearch() {
 }
 
 internal fun MeloScreen.loadMore() {
-    if (lastQuery.isBlank()) return
+    if (state.isOfflineMode || lastQuery.isBlank()) return
     val currentResults = (state.screen as? ScreenState.Search)?.results ?: return
     val offset = currentResults.size
     updateScreen<ScreenState.Search> { it.copy(isLoadingMore = true) }
@@ -65,6 +92,10 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
 internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = null) {
     detailsJob?.cancel()
     state = state.copy(detail = state.detail.copy(lyrics = null, isLoadingLyrics = false, similarTracks = emptyList(), isLoadingSimilar = true, artworkData = null))
+    if (state.isOfflineMode) {
+        state = state.copy(detail = state.detail.copy(isLoadingSimilar = false))
+        return
+    }
     detailsJob = scope.launch {
         supervisorScope {
             val fullTrackDeferred = async { 
@@ -111,6 +142,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
 
 internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
     nowPlayingMetadataJob?.cancel()
+    if (state.isOfflineMode) return
     nowPlayingMetadataJob = scope.launch {
         var artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
         if (artworkUrl.isNullOrBlank()) {
@@ -127,6 +159,10 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
 
 internal fun MeloScreen.loadLyrics() {
     val track = state.detail.selectedTrack ?: return
+    if (state.isOfflineMode) {
+        state = state.copy(detail = state.detail.copy(lyrics = "Lyrics are unavailable in Offline Mode", isLoadingLyrics = false))
+        return
+    }
     state = state.copy(detail = state.detail.copy(isLoadingLyrics = true, lyrics = null))
     scope.launch {
         val lyrics = getLyrics(track.artist, track.title)
