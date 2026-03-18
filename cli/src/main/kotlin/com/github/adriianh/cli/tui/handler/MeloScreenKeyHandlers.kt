@@ -681,7 +681,7 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
                 3 -> openPlaylistPicker(track)
                 4 -> {
                     val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
-                    if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED) {
+                    if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.downloadType == DownloadType.MANUAL) {
                         this@handleTrackOptionsKey.deleteDownloadedTrack(track.id)
                     } else {
                         downloadTrack(track, DownloadType.MANUAL)
