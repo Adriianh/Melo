@@ -34,6 +34,9 @@ internal fun MeloScreen.playTrack(track: Track) {
     scrobbleSubmitted = false
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
+    if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && state.player.queueIndex >= state.player.queue.size - 3) {
+        loadMoreRadioTracks()
+    }
     loadNowPlayingMetadata(track)
     resolveStreamJob?.cancel()
     resolveStreamJob = scope.launch {
@@ -130,7 +133,21 @@ internal fun MeloScreen.seekForward() {
         else -> {
             val next = state.player.queueIndex + 1
             if (next >= queue.size) {
-                loadSimilarAndPlay(); return
+                if (state.player.isRadioMode) {
+                    loadSimilarAndPlay()
+                } else {
+                    audioPlayer.stop()
+                    state = state.copy(
+                        player = state.player.copy(
+                            nowPlaying = null,
+                            isPlaying = false,
+                            progress = 0.0,
+                            syncedLyrics = emptyList(),
+                            isLoadingSyncedLyrics = false
+                        )
+                    )
+                }
+                return
             }
             next
         }

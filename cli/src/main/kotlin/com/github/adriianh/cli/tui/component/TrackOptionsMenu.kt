@@ -31,16 +31,13 @@ class TrackOptionsOverlay(
         val track = state.trackOptions.track
         val offlineTrack = state.collections.offlineTracks.find { it.track.id == track?.id }
         val downloadLabel = when (offlineTrack?.downloadStatus) {
-            DownloadStatus.COMPLETED
-                if offlineTrack.downloadType == DownloadType.MANUAL -> "Remove from Offline"
-
-            DownloadStatus.DOWNLOADING,
-            DownloadStatus.PENDING -> "Downloading..."
-
+            DownloadStatus.COMPLETED if offlineTrack.downloadType == DownloadType.MANUAL -> "Remove from Offline"
+            DownloadStatus.DOWNLOADING, DownloadStatus.PENDING -> "Downloading..."
             else -> "Download for Offline"
         }
         return listOf(
             "Play Now",
+            "Start Radio",
             "Add to Queue",
             "Toggle Favorite",
             "Add to Playlist",

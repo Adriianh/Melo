@@ -649,7 +649,7 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
-    val optionsCount = 6
+    val optionsCount = 7
     when {
         event.code() == KeyCode.ESCAPE -> {
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
@@ -676,10 +676,17 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
 
             when (actionIndex) {
                 0 -> playTrack(track)
-                1 -> addToQueue(track)
-                2 -> toggleFavorite(track)
-                3 -> openPlaylistPicker(track)
-                4 -> {
+                1 -> {
+                    clearQueue()
+                    addToQueue(track)
+                    playFromQueue(0)
+                    state = state.copy(player = state.player.copy(isRadioMode = true))
+                    loadMoreRadioTracks()
+                }
+                2 -> addToQueue(track)
+                3 -> toggleFavorite(track)
+                4 -> openPlaylistPicker(track)
+                5 -> {
                     val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
                     if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.downloadType == DownloadType.MANUAL) {
                         this@handleTrackOptionsKey.deleteDownloadedTrack(track.id)
@@ -687,7 +694,7 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
                         downloadTrack(track, DownloadType.MANUAL)
                     }
                 }
-                5 -> {
+                6 -> {
                     state = state.copy(detail = state.detail.copy(selectedTrack = track, detailTab = DetailTab.SIMILAR))
                     appRunner()?.focusManager()?.setFocus("similar-area")
                     loadMoreSimilar()
