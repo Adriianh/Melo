@@ -44,6 +44,7 @@ enum class SettingsItem(val label: String) {
     DOWNLOAD_QUALITY("Download Quality"),
     DOWNLOAD_PATH("Download Path"),
     CACHE_PATH("Cache Path"),
+    LOCAL_FOLDERS("Local Library Folders"),
     KEYBINDINGS("Custom Keybindings"),
 }
 
@@ -59,7 +60,8 @@ val sectionItems = mapOf(
     SettingsSection.STORAGE to listOf(
         SettingsItem.MAX_OFFLINE_SIZE,
         SettingsItem.MAX_OFFLINE_AGE,
-        SettingsItem.OFFLINE_MODE
+        SettingsItem.OFFLINE_MODE,
+        SettingsItem.LOCAL_FOLDERS
     ),
     SettingsSection.DOWNLOADS to listOf(
         SettingsItem.AUTO_DOWNLOAD,
@@ -191,6 +193,8 @@ class SettingsOverlay(
                         viewState.currentSettings.downloadPath ?: "Default"
                     SettingsItem.CACHE_PATH ->
                         viewState.currentSettings.cachePath ?: "Default"
+                    SettingsItem.LOCAL_FOLDERS ->
+                        "${viewState.currentSettings.localLibraryPaths.size} folders"
                 }
 
                 val labelColor = if (isSelected && isFocused) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY

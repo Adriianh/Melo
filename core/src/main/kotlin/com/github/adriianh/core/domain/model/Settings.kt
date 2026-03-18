@@ -85,5 +85,6 @@ data class Settings(
     val downloadFormat: DownloadFormat = DownloadFormat.OPUS,
     val downloadQuality: DownloadQuality = DownloadQuality.HIGH,
     val downloadPath: String? = null,
-    val cachePath: String? = null
+    val cachePath: String? = null,
+    val localLibraryPaths: List<String> = emptyList()
 )
