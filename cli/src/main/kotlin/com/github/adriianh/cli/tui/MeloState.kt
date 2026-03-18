@@ -48,6 +48,7 @@ enum class DetailTab {
 enum class LibraryTab {
     FAVORITES,
     PLAYLISTS,
+    LOCAL,
 }
 
 /**
@@ -146,6 +147,11 @@ sealed interface ScreenState {
         val selectedPlaylist: Playlist? = null,
         val playlistTracks: List<Track> = emptyList(),
         val isInPlaylistDetail: Boolean = false,
+        val localTracks: List<Track> = emptyList(),
+        val searchQuery: String = "",
+        val isTyping: Boolean = false,
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = false
     ) : ScreenState
 
     data class Stats(
