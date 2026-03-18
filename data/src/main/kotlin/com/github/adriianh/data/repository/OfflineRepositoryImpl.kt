@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.audio.AudioHeader
 import java.io.File
 
 class OfflineRepositoryImpl(
@@ -29,6 +31,19 @@ class OfflineRepositoryImpl(
     }
 
     private val _offlineTracksFlow = MutableStateFlow(loadMetadataSync())
+
+    /**
+     * Returns the duration of the audio file in milliseconds, or 0 if it cannot be determined.
+     */
+    private fun getAudioDurationMs(file: File): Int {
+        return try {
+            val audioFile = AudioFileIO.read(file)
+            val header: AudioHeader = audioFile.audioHeader
+            header.trackLength * 1000 // seconds to ms
+        } catch (_: Exception) {
+            0
+        }
+    }
 
     override fun getOfflineTracksFlow(): Flow<List<OfflineTrack>> = _offlineTracksFlow.asStateFlow()
 
@@ -203,6 +218,7 @@ class OfflineRepositoryImpl(
                                 } else {
                                     "Unknown Artist" to parts[0]
                                 }
+                                val durationMs = getAudioDurationMs(file).toLong()
 
                                 results.add(
                                     Track(
@@ -210,7 +226,7 @@ class OfflineRepositoryImpl(
                                         title = title,
                                         artist = artist,
                                         album = "",
-                                        durationMs = 0,
+                                        durationMs = durationMs,
                                         genres = emptyList(),
                                         artworkUrl = null,
                                         sourceId = null
