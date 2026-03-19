@@ -290,5 +290,40 @@
   { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
   { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
   { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true }
+  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
+  
+  { "name": "org.jaudiotagger.audio.AudioFileIO", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.generic.AudioFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.mp3.MP3FileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.flac.FlacFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.ogg.OggFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.mp4.Mp4FileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.wav.WavFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.AsfFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.aiff.AiffFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  
+  { "name": "org.jaudiotagger.tag.id3.ID3v24Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.id3.ID3v23Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.id3.ID3v22Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.id3.ID3v1Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.flac.FlacTag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.mp4.Mp4Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  
+  { "name": "org.jaudiotagger.audio.asf.io.ContentBrandingReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.ContentDescriptionReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.LanguageListReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.MetadataReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.FileHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.StreamChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.EncodingChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.EncryptionChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.StreamBitratePropertiesReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.ChunkHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.AsfHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.AsfStreamer", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.audio.asf.io.FullStructureReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  
+  { "name": "org.jaudiotagger.tag.id3.ID3v23Frame", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
+  { "name": "org.jaudiotagger.tag.id3.ID3v24Frame", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true }
 ]
