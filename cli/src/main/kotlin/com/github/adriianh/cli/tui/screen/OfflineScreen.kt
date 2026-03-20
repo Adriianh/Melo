@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
@@ -38,7 +39,7 @@ fun renderOfflineScreen(
             offlineTrack.track.title.lowercase().contains(q) ||
                     offlineTrack.track.artist.lowercase().contains(q)
         }
-        matchesType && matchesQuery
+        matchesType && matchesQuery && offlineTrack.downloadStatus != DownloadStatus.PENDING
     }
 
     val content = if (filteredDownloads.isEmpty()) {
