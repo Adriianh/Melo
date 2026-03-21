@@ -35,10 +35,9 @@ class PipedApiClient(
                     val titleMatches = itemTitle.contains(cleanTitle) || cleanTitle.contains(itemTitle)
                     val artistMatches = itemUploader.contains(cleanArtist) || cleanArtist.contains(itemUploader)
                     val durationMatches = durationMs == 0L ||
-                        abs(item.duration * 1000 - durationMs) < 10_000
+                            abs(item.duration * 1000 - durationMs) < 10_000
                     titleMatches && artistMatches && durationMatches
                 }
-                ?: response.items.firstOrNull { it.type == "stream" }
 
             best?.url?.substringAfter("v=")
         } catch (e: CancellationException) {
@@ -63,21 +62,6 @@ class PipedApiClient(
                 artworkUrl = null,
                 sourceId = videoId
             )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    suspend fun getStreamUrl(videoId: String): String? {
-        return try {
-            val response = httpClient.get("$baseUrl/streams/$videoId")
-                .body<PipedStreamsResponse>()
-            response.audioStreams
-                .filter { it.url.isNotBlank() }
-                .maxByOrNull { it.bitrate }
-                ?.url
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {

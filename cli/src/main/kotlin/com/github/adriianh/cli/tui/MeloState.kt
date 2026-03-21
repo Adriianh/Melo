@@ -2,8 +2,10 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.ListeningStats
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
@@ -29,6 +31,7 @@ enum class SidebarSection {
     NOW_PLAYING,
     STATS,
     SETTINGS,
+    OFFLINE,
 }
 
 /**
@@ -46,6 +49,7 @@ enum class DetailTab {
 enum class LibraryTab {
     FAVORITES,
     PLAYLISTS,
+    LOCAL,
 }
 
 /**
@@ -64,6 +68,15 @@ enum class PlaylistInputMode {
     CREATE,
     RENAME,
     PICKER,
+}
+
+/**
+ * Filter types for the offline screen.
+ */
+enum class OfflineFilterType(val label: String) {
+    ALL("All"),
+    MANUAL("Manual"),
+    CACHE("Cache"),
 }
 
 /**
@@ -135,6 +148,12 @@ sealed interface ScreenState {
         val selectedPlaylist: Playlist? = null,
         val playlistTracks: List<Track> = emptyList(),
         val isInPlaylistDetail: Boolean = false,
+        val localTracks: List<Track> = emptyList(),
+        val searchQuery: String = "",
+        val isTyping: Boolean = false,
+        val localFilterIndex: Int = 0,
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = false
     ) : ScreenState
 
     data class Stats(
@@ -147,7 +166,16 @@ sealed interface ScreenState {
     ) : ScreenState
 
     data class NowPlaying(
-        val unused: Boolean = true // NowPlaying screen uses mainly global player state for now
+        val unused: Boolean = true
+    ) : ScreenState
+
+    data class Offline(
+        val downloads: List<OfflineTrack> = emptyList(),
+        val selectedIndex: Int = 0,
+        val filterType: OfflineFilterType = OfflineFilterType.ALL,
+        val searchQuery: String = "",
+        val isTyping: Boolean = false,
+        val isLoading: Boolean = false
     ) : ScreenState
 }
 
@@ -193,6 +221,7 @@ data class CollectionsState(
     val favorites: List<Track> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
+    val offlineTracks: List<OfflineTrack> = emptyList()
 )
 
 /**
@@ -219,6 +248,29 @@ data class MeloState(
 
     // Global UI/System flags
     val isSettingsVisible: Boolean = false,
+    val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
 )
+
+/**
+ * Checks if a track can be played given the current offline mode state.
+ */
+fun MeloState.isPlayable(track: Track): Boolean {
+    if (!isOfflineMode) return true
+    if (track.id.startsWith("local:")) return true
+
+    val byId = collections.offlineTracks.any {
+        it.track.id == track.id && it.downloadStatus == DownloadStatus.COMPLETED
+    }
+    if (byId) return true
+
+    val sourceId = track.sourceId
+    if (sourceId != null) {
+        return collections.offlineTracks.any {
+            it.track.sourceId == sourceId && it.downloadStatus == DownloadStatus.COMPLETED
+        }
+    }
+
+    return false
+}

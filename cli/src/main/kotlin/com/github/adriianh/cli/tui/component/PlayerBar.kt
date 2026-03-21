@@ -59,12 +59,15 @@ fun buildPlayerBar(
 
     val panelTitle = if (state.isRestoringSession) {
         Line.from(Span.styled("Resuming session…", Style.EMPTY.fg(TEXT_DIM)))
-    } else if (nowPlaying != null) {
-        val titleStyle = if (state.player.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
-            else Style.EMPTY.fg(TEXT_PRIMARY).bold()
-        Line.from(Span.styled(nowPlaying.title, titleStyle))
     } else {
-        Line.from(Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
+        val offlinePrefix = if (state.isOfflineMode) Span.styled("${MeloTheme.ICON_OFFLINE} OFFLINE ", Style.EMPTY.fg(ACCENT_RED).bold()) else Span.styled("", Style.EMPTY)
+        if (nowPlaying != null) {
+            val titleStyle = if (state.player.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
+                else Style.EMPTY.fg(TEXT_PRIMARY).bold()
+            Line.from(offlinePrefix, Span.styled(nowPlaying.title, titleStyle))
+        } else {
+            Line.from(offlinePrefix, Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
+        }
     }
 
     val leftTop = if (nowPlaying != null) {

@@ -1,7 +1,7 @@
 package com.github.adriianh.cli.tui.screen
 
 import com.github.adriianh.cli.tui.*
-
+import com.github.adriianh.cli.tui.component.SettingsViewState
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloState
@@ -15,6 +15,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import java.io.File
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.*
 import dev.tamboui.toolkit.element.Element
@@ -24,32 +25,39 @@ import dev.tamboui.tui.event.KeyEvent
 
 fun renderLibraryScreen(
     state: MeloState,
+    settingsViewState: SettingsViewState,
     favoritesList: ListElement<*>,
     playlistsList: ListElement<*>,
     playlistTracksList: ListElement<*>,
+    localLibraryList: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val s = state.screen as? ScreenState.Library ?: return panel(text("Library not active").centered()).rounded()
+    val actualState = state.screen as? ScreenState.Library ?: return panel(text("Library not active").centered()).rounded()
     
-    val favTab = tabLabel("$ICON_HEART Favorites", s.libraryTab == LibraryTab.FAVORITES)
-    val plTab  = tabLabel("$ICON_LIBRARY Playlists", s.libraryTab == LibraryTab.PLAYLISTS)
-    val tabBar = row(favTab, text("  "), plTab, spacer())
+    val favTab = tabLabel("$ICON_HEART Favorites", actualState.libraryTab == LibraryTab.FAVORITES)
+    val plTab  = tabLabel("$ICON_LIBRARY Playlists", actualState.libraryTab == LibraryTab.PLAYLISTS)
+    val locTab = tabLabel("${MeloTheme.ICON_SEARCH} Local", actualState.libraryTab == LibraryTab.LOCAL)
+    val tabBar = row(favTab, text("  "), plTab, text("  "), locTab, spacer())
         .margin(Margin.horizontal(1))
 
-    val content = when (s.libraryTab) {
-        LibraryTab.FAVORITES  -> buildFavoritesContent(state, favoritesList)
-        LibraryTab.PLAYLISTS  -> if (s.isInPlaylistDetail)
-            buildPlaylistDetailContent(state, s, playlistTracksList)
+    val content = when (actualState.libraryTab) {
+        LibraryTab.FAVORITES -> buildFavoritesContent(state, favoritesList)
+        LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
+            buildPlaylistDetailContent(state, actualState, playlistTracksList)
         else
             buildPlaylistsContent(state, playlistsList)
+
+        LibraryTab.LOCAL -> buildLocalContent(state, settingsViewState, actualState, localLibraryList)
     }
 
-    val hints = when (s.libraryTab) {
-        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [1] favorites  [2] playlists"
-        LibraryTab.PLAYLISTS -> if (s.isInPlaylistDetail)
+    val hints = when (actualState.libraryTab) {
+        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [1..3] tabs"
+        LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
             "[Enter] play  [Q] queue  [D] remove  [Esc] back"
         else
-            "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1] favorites  [2] playlists"
+            "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
+        LibraryTab.LOCAL -> if (actualState.isTyping) "[Enter] finish  [Esc] clear  [Bksp] del"
+            else "[Tab/f/l] directory  [/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
     }
 
     val body = column(
@@ -87,10 +95,11 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
     val items = state.collections.favorites.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(duration).fg(TEXT_DIM).length(6),
         )
@@ -142,9 +151,9 @@ private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*
     )
 }
 
-private fun buildPlaylistDetailContent(state: MeloState, s: ScreenState.Library, tracksList: ListElement<*>): Element {
-    val playlist = s.selectedPlaylist
-    val tracks   = s.playlistTracks
+private fun buildPlaylistDetailContent(state: MeloState, actualState: ScreenState.Library, tracksList: ListElement<*>): Element {
+    val playlist = actualState.selectedPlaylist
+    val tracks   = actualState.playlistTracks
 
     val titleRow = row(
         text(playlist?.name ?: "Playlist").fg(PRIMARY_COLOR).bold(),
@@ -164,10 +173,11 @@ private fun buildPlaylistDetailContent(state: MeloState, s: ScreenState.Library,
 
     val items = tracks.mapIndexed { index, track ->
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6),
         )
@@ -188,5 +198,90 @@ private fun buildPlaylistDetailContent(state: MeloState, s: ScreenState.Library,
         header,
         text("").length(1),
         tracksList.fill(),
+    )
+}
+
+private fun buildLocalContent(
+    state: MeloState,
+    settingsViewState: SettingsViewState,
+    actualState: ScreenState.Library,
+    localLibraryList: ListElement<*>
+): Element {
+    val allPaths = settingsViewState.currentSettings.localLibraryPaths
+    val filterTabs = if (allPaths.size > 1) {
+        val tabNames = listOf("All") + allPaths.map { File(it).name }
+        val tabs = tabNames.mapIndexed { index, name ->
+            val active = index == actualState.localFilterIndex
+            val label = "  $name  "
+            if (active) text(label).fg(PRIMARY_COLOR).bold()
+            else text(label).fg(TEXT_DIM)
+        }
+        row(*tabs.toTypedArray())
+    } else null
+
+    val filtered = actualState.localTracks.filter { track ->
+        val matchesTab = if (actualState.localFilterIndex == 0) true else {
+            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
+            selectedPath != null && track.id.startsWith("local:$selectedPath")
+        }
+
+        val matchesSearch = if (actualState.searchQuery.isEmpty()) true else {
+            val q = actualState.searchQuery.lowercase()
+            track.title.lowercase().contains(q) || track.artist.lowercase().contains(q)
+        }
+        matchesTab && matchesSearch
+    }
+
+    if (actualState.isLoading) {
+        return column(
+            filterTabs ?: text(""),
+            text("").length(1),
+            spacer(),
+            text("Scanning local files...").dim().centered(),
+            spacer()
+        )
+    }
+
+    if (actualState.localTracks.isEmpty()) {
+        val hasPaths = allPaths.isNotEmpty()
+        return column(
+            filterTabs ?: text(""),
+            text("").length(1),
+            spacer(),
+            text(if (hasPaths) "  No audio files found in configured folders" else "  No local folders configured").fg(TEXT_SECONDARY).centered(),
+            text("  Configure folders in Settings -> Storage").fg(TEXT_DIM).centered(),
+            spacer(),
+        )
+    }
+
+    val items = filtered.mapIndexed { index, track ->
+        val duration = formatDuration(track.durationMs)
+        val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+        val isPlayable = state.isPlayable(track)
+        row(
+            text(indicator).fg(PRIMARY_COLOR).length(2),
+            text("${index + 1}").dim().length(3),
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
+            text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+            text(duration).fg(TEXT_DIM).length(6),
+        )
+    }
+    localLibraryList.elements(*items.toTypedArray())
+
+    val queryText = if (actualState.searchQuery.isNotEmpty()) " (Search: ${actualState.searchQuery})" else ""
+    val header = row(
+        text("").length(2),
+        text("#").dim().length(3),
+        text("Title$queryText").dim().fill(),
+        text("Artist").dim().percent(25),
+        text("Time").dim().length(6),
+    ).margin(Margin.horizontal(1))
+
+    return column(
+        filterTabs ?: text(""),
+        if (filterTabs != null) text("").length(1) else text(""),
+        header,
+        text("").length(1),
+        localLibraryList.fill(),
     )
 }

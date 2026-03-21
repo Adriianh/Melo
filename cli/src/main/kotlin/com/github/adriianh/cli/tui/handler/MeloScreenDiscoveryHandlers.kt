@@ -1,15 +1,9 @@
 package com.github.adriianh.cli.tui.handler
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import io.ktor.utils.io.CancellationException
+import kotlinx.coroutines.*
 
 private const val SAME_ARTIST_LIMIT = 3
 private const val DISCOVERY_LIMIT = 5
@@ -19,7 +13,7 @@ private const val DISCOVERY_LIMIT = 5
  *
  * 1. **Same-artist** — Piped search for the seed's artist, returning up to
  *    [SAME_ARTIST_LIMIT] tracks from the same artist (excluding the seed itself).
- *    These are placed **first** in the result list to prioritise the artist.
+ *    These are placed **first** in the result list to prioritize the artist.
  *
  * 2. **Discovery** — Last.fm (or Deezer as fallback), resolved to playable Piped
  *    video IDs. Filter out tracks whose `sourceId` already appeared in source 1.
@@ -30,7 +24,6 @@ private const val DISCOVERY_LIMIT = 5
  */
 internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 10, offset: Int = 0): List<Track> =
     supervisorScope {
-        // --- parallel fetch ---
         val sameArtistDeferred = async {
             if (offset > 0) emptyList() else {
                 pipedApiClient.searchTracks(seed.artist, limit = SAME_ARTIST_LIMIT * 2)

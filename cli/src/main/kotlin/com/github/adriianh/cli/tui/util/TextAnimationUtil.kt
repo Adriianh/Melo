@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.util
 
-import com.github.adriianh.cli.tui.*
-
 object TextAnimationUtil {
     fun marqueeText(text: String, offset: Int, maxWidth: Int): String {
         if (text.length <= maxWidth) return text
@@ -11,5 +9,4 @@ object TextAnimationUtil {
         val start = offset % full.length
         return loop.substring(start, start + maxWidth)
     }
-
 }

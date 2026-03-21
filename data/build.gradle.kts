@@ -4,6 +4,11 @@ plugins {
     id("app.cash.sqldelight")
 }
 
+repositories {
+    mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+}
+
 dependencies {
     implementation(project(":core"))
     implementation(libs.bundles.ktor)
@@ -12,7 +17,10 @@ dependencies {
     implementation(libs.sqldelightRuntime)
     implementation(libs.sqldelightCoroutinesExtensions)
     implementation(libs.sqldelightSqliteDriver)
-    implementation("org.xerial:sqlite-jdbc:3.45.2.0")
+    implementation(libs.sqliteJdbc)
+
+    // For audio metadata extraction
+    implementation(libs.jaudiotagger)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.mockk)

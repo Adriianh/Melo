@@ -1,7 +1,7 @@
 package com.github.adriianh.core.usecase
 
 import com.github.adriianh.core.domain.repository.LyricsRepository
-import com.github.adriianh.core.domain.usecase.GetLyricsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

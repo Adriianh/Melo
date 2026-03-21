@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.util
 
-import com.github.adriianh.cli.tui.*
-
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock

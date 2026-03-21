@@ -26,16 +26,16 @@ import dev.tamboui.tui.event.KeyEvent
 fun renderSearchScreen(
     state: MeloState,
     resultList: ListElement<*>,
-    lyricsArea: dev.tamboui.toolkit.elements.MarkupTextAreaElement,
+    lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val s = state.screen as? ScreenState.Search ?: return panel(text("Search screen not active").centered()).rounded()
+    val actualState = state.screen as? ScreenState.Search ?: return panel(text("Search screen not active").centered()).rounded()
     
     return when {
-        s.isLoading -> panel(
+        actualState.isLoading -> panel(
             column(
                 spacer(),
                 text("  Searching...").dim().centered(),
@@ -43,21 +43,29 @@ fun renderSearchScreen(
             )
         ).title("Results").rounded().borderColor(BORDER_DEFAULT)
 
-        s.errorMessage != null -> panel(
-            text(s.errorMessage).fg(MeloTheme.ACCENT_RED)
+        actualState.errorMessage != null -> panel(
+            text(actualState.errorMessage).fg(MeloTheme.ACCENT_RED)
         ).title("Error").rounded().borderColor(MeloTheme.ACCENT_RED)
 
-        s.results.isEmpty() -> panel(
-            column(
-                spacer(),
-                text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
-                text("  Press Tab to focus the search bar").fg(TEXT_DIM).centered(),
-                spacer()
-            )
-        ).title("Melo").rounded().borderColor(BORDER_DEFAULT)
+        actualState.results.isEmpty() -> {
+            val isOffline = state.isOfflineMode
+            val query = actualState.query
+            panel(
+                column(
+                    spacer(),
+                    if (isOffline && query.isNotBlank()) {
+                        text("  No offline tracks found matching \"$query\"").fg(TEXT_SECONDARY).centered()
+                    } else {
+                        text("  Search for music to get started").fg(TEXT_SECONDARY).centered()
+                    },
+                    text("  Press Tab to focus the search bar").fg(TEXT_DIM).centered(),
+                    spacer()
+                )
+            ).title(if (isOffline) "Offline Search" else "Melo").rounded().borderColor(BORDER_DEFAULT)
+        }
 
         else -> renderResultsArea(
-            state, s, resultList, lyricsArea, similarArea,
+            state, actualState, resultList, lyricsArea, similarArea,
             marqueeText, onResultsKeyEvent, onDetailKeyEvent
         )
     }
@@ -65,7 +73,7 @@ fun renderSearchScreen(
 
 private fun renderResultsArea(
     state: MeloState,
-    s: ScreenState.Search,
+    actualState: ScreenState.Search,
     resultList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
@@ -73,17 +81,18 @@ private fun renderResultsArea(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
-    val items = s.results.mapIndexed { index, track ->
+    val items = actualState.results.mapIndexed { index, track ->
         val duration = formatDuration(track.durationMs)
         val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
-        val isSelected = index == s.selectedIndex
+        val isSelected = index == actualState.selectedIndex
         val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
                         else track.title
         val isFav = state.collections.favorites.any { it.id == track.id }
+        val isPlayable = state.isPlayable(track)
         row(
             text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text(titleText).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+            text(titleText).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).apply { if (!isSelected) ellipsisMiddle() }.fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
             text(duration).fg(TEXT_DIM).length(6),
@@ -91,7 +100,7 @@ private fun renderResultsArea(
     }
     resultList.elements(*items.toTypedArray())
 
-    val resultsTitle = if (s.isLoadingMore) "Searching... ↓" else "Search Results"
+    val resultsTitle = if (actualState.isLoadingMore) "Searching... ↓" else "Search Results"
 
     val header = row(
         text("").length(2),

@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -14,7 +12,7 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 private const val NAV_ITEMS = 4
-private const val UTIL_ITEMS = 2
+private const val UTIL_ITEMS = 3
 
 fun buildSidebar(
     navList: ListElement<*>,

@@ -1,13 +1,6 @@
 package com.github.adriianh.cli.tui.player
 
-import com.github.adriianh.cli.tui.*
-
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -15,12 +8,12 @@ import java.util.concurrent.atomic.AtomicLong
  * Audio player backed by ffplay (bundled with ffmpeg).
  *
  * ffplay uses SDL2 for audio output, which auto-selects the best backend per OS:
- *   Linux  → PipeWire / PulseAudio / ALSA
- *   macOS  → CoreAudio
+ *   Linux → PipeWire / PulseAudio / ALSA
+ *   macOS → CoreAudio
  *   Windows → DirectSound / WASAPI
  *
- * Pause  : SIGSTOP / SIGCONT — instantaneous, no buffer delay.
- * Volume : pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
+ * Pause: SIGSTOP / SIGCONT — instantaneous, no buffer delay.
+ * Volume: pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
  *          fallback: stored and applied on next play() via -af volume= filter.
  */
 class AudioPlayer(
@@ -195,18 +188,13 @@ class AudioPlayer(
                 }
             }
 
-            // Instead of blocking a coroutine thread, use an asynchronous loop to wait
-            // or use Dispatchers.IO if blocking is necessary. 
-            // Process.onExit() is Java 11+, which we can use via CompletableFuture
-            // but for simplicity, we'll wrap the blocking waitFor in Dispatchers.IO
-            kotlinx.coroutines.withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 process.waitFor()
             }
-            
-            progressJob.cancel()
 
+            progressJob.cancel()
             if (sessionId.get() == session) onFinish()
-        } catch (e: kotlinx.coroutines.CancellationException) {
+        } catch (e: CancellationException) {
             playerProcess?.destroy()
             throw e
         } catch (e: Exception) {
@@ -305,7 +293,7 @@ class AudioPlayer(
             ffplayBinary(),
             "-nodisp",
             "-autoexit",
-            "-loglevel", "quiet",
+            "-loglevel", "error",
             "-af", "volume=$volume",
         )
 
@@ -313,16 +301,19 @@ class AudioPlayer(
             cmd += listOf("-ss", (seekMs / 1000.0).toString())
         }
 
-        cmd += listOf(
-            "-reconnect", "1",
-            "-reconnect_streamed", "1",
-            "-reconnect_delay_max", "5",
-            "-i", url,
-        )
+        // Only add reconnect options for HTTP/HTTPS streams, not local files
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            cmd += listOf(
+                "-reconnect", "1",
+                "-reconnect_streamed", "1",
+                "-reconnect_delay_max", "5",
+            )
+        }
+
+        cmd += listOf("-i", url)
 
         return ProcessBuilder(cmd)
             .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .start()
     }
 

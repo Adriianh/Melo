@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.graphics
 
-import com.github.adriianh.cli.tui.*
-
 import dev.tamboui.buffer.Buffer
 import dev.tamboui.layout.Rect
 import dev.tamboui.widget.RawOutputCapable
@@ -21,7 +19,7 @@ class ClearGraphicsWidget : Widget, RawOutputCapable {
     }
 
     override fun render(area: Rect, buffer: Buffer) {
-        if (!area.isEmpty()) {
+        if (!area.isEmpty) {
             buffer.set(area.x(), area.y(), dev.tamboui.buffer.Cell.EMPTY)
         }
     }

@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.handler
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.launch

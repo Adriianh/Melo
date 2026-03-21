@@ -1,19 +1,15 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.ICON_BULLET
-import com.github.adriianh.cli.tui.MeloTheme.ICON_CHECK
-import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
+import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
@@ -25,6 +21,9 @@ import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
+import dev.tamboui.widgets.block.Block
+import dev.tamboui.widgets.block.BorderType
+import dev.tamboui.widgets.block.Borders
 
 fun buildDetailPanel(
     state: MeloState,
@@ -77,9 +76,7 @@ private fun renderTrackMetadata(
 ): StyledElement<*> = column(
     text(marqueeText(track.title, state.player.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
     text(marqueeText(track.artist, state.player.marqueeOffset, 30)).fg(TEXT_SECONDARY),
-    text(""),
-    if (track.sourceId != null) text("$ICON_CHECK Available for streaming").dim().fg(PRIMARY_COLOR)
-    else text("$ICON_ERROR Not available for streaming").dim()
+    text("")
 ).flex(Flex.START)
 
 private fun renderArtwork(state: MeloState): StyledElement<*> =
@@ -89,9 +86,9 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
                 .data(state.detail.artworkData)
                 .scaling(ImageScaling.FIT)
                 .block(
-                    dev.tamboui.widgets.block.Block.builder()
-                        .borders(dev.tamboui.widgets.block.Borders.ALL)
-                        .borderType(dev.tamboui.widgets.block.BorderType.ROUNDED)
+                    Block.builder()
+                        .borders(Borders.ALL)
+                        .borderType(BorderType.ROUNDED)
                         .build()
                 )
                 .build()
@@ -105,7 +102,7 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
 
 private fun renderLyricsTab(
     state: MeloState,
-    lyricsArea: dev.tamboui.toolkit.elements.MarkupTextAreaElement,
+    lyricsArea: MarkupTextAreaElement,
 ): StyledElement<*> = when {
     state.detail.isLoadingLyrics -> column(
         spacer(),
@@ -141,7 +138,8 @@ private fun renderSimilarTab(
     }
     val items = state.detail.similarTracks.mapIndexed { index, similar ->
         val isSelected = index == state.detail.similarCursor
-        val titleColor = if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY
+        val isPlayable = state.isPlayable(similar)
+        val titleColor = if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
         row(
             text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),

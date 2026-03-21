@@ -2,14 +2,27 @@ package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.*
-import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.core.domain.usecase.library.*
+import com.github.adriianh.core.domain.usecase.offline.*
+import com.github.adriianh.core.domain.usecase.playback.*
+import com.github.adriianh.core.domain.usecase.search.*
+import com.github.adriianh.core.domain.usecase.session.ClearSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.core.domain.usecase.stats.GetListeningStatsUseCase
+import com.github.adriianh.core.domain.usecase.stats.GetTopArtistsUseCase
+import com.github.adriianh.core.domain.usecase.stats.GetTopTracksUseCase
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
@@ -41,6 +54,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
+import java.io.File
 
 private fun hasSpotifyKeys() =
     resolveEnv("SPOTIFY_CLIENT_ID") != null &&
@@ -58,6 +72,7 @@ val appModule = module {
                 endpoint {
                     maxConnectionsCount = 20
                     connectTimeout = 5_000
+                    connectTimeout = 5_000
                 }
             }
             install(ContentNegotiation) {
@@ -71,7 +86,7 @@ val appModule = module {
             install(HttpTimeout) {
                 requestTimeoutMillis = 10_000
                 connectTimeoutMillis = 5_000
-                socketTimeoutMillis  = 10_000
+                socketTimeoutMillis = 10_000
             }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 2)
@@ -85,16 +100,16 @@ val appModule = module {
     single { ItunesApiClient(get()) }
     single {
         SpotifyAuthClient(
-            httpClient    = get(),
-            clientId      = resolveEnv("SPOTIFY_CLIENT_ID")     ?: "",
-            clientSecret  = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
+            httpClient = get(),
+            clientId = resolveEnv("SPOTIFY_CLIENT_ID") ?: "",
+            clientSecret = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
         )
     }
     single { SpotifyApiClient(get(), get()) }
     single {
         LastFmApiClient(
-            httpClient   = get(),
-            apiKey       = resolveEnv("LASTFM_API_KEY")      ?: "",
+            httpClient = get(),
+            apiKey = resolveEnv("LASTFM_API_KEY") ?: "",
             sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
         )
     }
@@ -136,7 +151,8 @@ val appModule = module {
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
-    single<SettingsRepository> { SettingsRepositoryImpl(java.io.File(configDir), get()) }
+    single<SettingsRepository> { SettingsRepositoryImpl(File(configDir), get()) }
+    single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
 
     factory { SearchTracksUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
@@ -150,7 +166,13 @@ val appModule = module {
     factory { IsFavoriteUseCase(get()) }
     factory { GetRecentTracksUseCase(get()) }
     factory { RecordPlayUseCase(get()) }
-    factory { GetStreamUseCase(get()) }
+    factory { GetStreamUseCase(get(), get()) }
+    factory { GetOfflineTracksUseCase(get()) }
+    factory { SyncOfflineTracksUseCase(get()) }
+    factory { DownloadTrackUseCase(get()) }
+    factory { DeleteDownloadedTrackUseCase(get()) }
+    factory { MarkTrackAccessedUseCase(get()) }
+    factory { AutoCleanupUseCase(get()) }
     factory { GetPlaylistsUseCase(get()) }
     factory { GetPlaylistTracksUseCase(get()) }
     factory { CreatePlaylistUseCase(get()) }
@@ -171,4 +193,13 @@ val appModule = module {
     factory { GetListeningStatsUseCase(get()) }
     factory { GetSettingsUseCase(get()) }
     factory { UpdateSettingsUseCase(get()) }
+
+    // Interactors
+    factory { SearchInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
+    factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { StatsInteractors(get(), get(), get()) }
+    factory { SessionInteractors(get(), get(), get()) }
+    factory { SettingsInteractors(get(), get()) }
 }

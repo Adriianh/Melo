@@ -1,6 +1,11 @@
 package com.github.adriianh.cli.tui.handler
 
-import com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.PlaylistInputMode
+import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.playFromQueue
+import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
@@ -9,7 +14,6 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
-    val screen = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
     val playlists = state.collections.playlists
     when {
         event.matches(Actions.MOVE_DOWN) -> {
@@ -63,7 +67,9 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
-            screen.playlistTracks.getOrNull(playlistTracksList.selected())?.let { playTrack(it) }
+            val tracks = screen.playlistTracks
+            val idx = playlistTracksList.selected()
+            if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'q' -> {

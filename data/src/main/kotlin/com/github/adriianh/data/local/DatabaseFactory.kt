@@ -1,16 +1,16 @@
 package com.github.adriianh.data.local
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import org.sqlite.JDBC
 import java.io.File
 import java.sql.DriverManager
-import java.util.Properties
-import org.sqlite.JDBC
+import java.util.*
 
 object DatabaseFactory {
     fun create(): MeloDatabase {
         try {
             DriverManager.registerDriver(JDBC())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Driver might already be registered
         }
         val dbDir = File(System.getProperty("user.home"), ".melo")
@@ -58,7 +58,7 @@ object DatabaseFactory {
             DriverManager.getConnection(url)
         } catch (e: Exception) {
             // Fallback for GraalVM Native Image where DriverManager discovery might fail
-            org.sqlite.JDBC().connect(url, Properties())
+            JDBC().connect(url, Properties())
         }
     }
 }

@@ -8,6 +8,7 @@ dependencyResolutionManagement {
                 snapshotsOnly()
             }
         }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 

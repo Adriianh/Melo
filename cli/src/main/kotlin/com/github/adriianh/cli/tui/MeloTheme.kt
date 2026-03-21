@@ -68,6 +68,10 @@ object MeloTheme {
     val ICON_STATS: String get() = if (supportsUnicode) "📊" else "[#]"
     val ICON_NOW_PLAYING: String get() = if (supportsUnicode) "🎵" else "[N]"
     val ICON_SETTINGS: String get() = if (supportsUnicode) "⚙️" else "[S]"
+    val ICON_OFFLINE: String get() = if (supportsUnicode) "📥" else "[D]"
+    val ICON_DOWNLOADING: String get() = if (supportsUnicode) "⏬" else "~"
+    val ICON_FOLDER: String get() = if (supportsUnicode) "📁" else ""
+    val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "📂" else ""
 
     // Brand
     var PRIMARY_COLOR: Color = Color.hex("#8b2eb9")
