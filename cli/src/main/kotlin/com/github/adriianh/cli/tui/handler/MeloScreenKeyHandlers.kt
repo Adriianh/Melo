@@ -32,12 +32,10 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
 }
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
-    val isFocused = appRunner()?.focusManager()?.focusedId() == "sidebar-panel"
-    if (!isFocused) return EventResult.UNHANDLED
-
     when {
         event.matches(Actions.MOVE_DOWN) -> {
-            val nextIndex = (NAV_SECTIONS.indexOf(state.navigation.activeSection) + 1) % NAV_SECTIONS.size
+            val currentIndex = NAV_SECTIONS.indexOf(state.navigation.activeSection)
+            val nextIndex = (currentIndex + 1) % NAV_SECTIONS.size
             applySidebarSelection(NAV_SECTIONS[nextIndex])
             return EventResult.HANDLED
         }
@@ -50,56 +48,94 @@ internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val section = state.navigation.activeSection
-            when (section) {
-                SidebarSection.HOME -> appRunner()?.focusManager()?.setFocus("home-panel")
-                SidebarSection.SEARCH -> appRunner()?.focusManager()?.setFocus("search-bar")
-                SidebarSection.LIBRARY -> appRunner()?.focusManager()?.setFocus("library-panel")
-                SidebarSection.STATS -> appRunner()?.focusManager()?.setFocus("stats-panel")
-                SidebarSection.OFFLINE -> appRunner()?.focusManager()?.setFocus("offline-panel")
-                SidebarSection.SETTINGS -> appRunner()?.focusManager()?.setFocus("settings-panel")
-                else -> {}
-            }
+            activateSidebarSelection(state.navigation.activeSection)
             return EventResult.HANDLED
         }
     }
     return EventResult.UNHANDLED
 }
 
+internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
+    if (item == SidebarSection.SETTINGS) {
+        state = state.copy(isSettingsVisible = true)
+        appRunner()?.focusManager()?.setFocus("settings-panel")
+        return
+    }
+
+    state = state.copy(
+        needsGraphicsClear = true,
+        navigation = state.navigation.copy(pendingSection = item)
+    )
+
+    when (item) {
+        SidebarSection.HOME -> appRunner()?.focusManager()?.setFocus("home-panel")
+        SidebarSection.SEARCH -> appRunner()?.focusManager()?.setFocus("search-bar")
+        SidebarSection.LIBRARY -> appRunner()?.focusManager()?.setFocus("library-panel")
+        SidebarSection.STATS -> appRunner()?.focusManager()?.setFocus("stats-panel")
+        SidebarSection.OFFLINE -> appRunner()?.focusManager()?.setFocus("offline-panel")
+        else -> {}
+    }
+}
+
 internal fun MeloScreen.applySidebarSelection(item: SidebarSection) {
     state = state.copy(navigation = state.navigation.copy(activeSection = item))
 
-    when (item) {
-        SidebarSection.HOME -> updateScreen<ScreenState.Home> { it }
-        SidebarSection.SEARCH -> updateScreen<ScreenState.Search> { it }
-        SidebarSection.LIBRARY -> updateScreen<ScreenState.Library> { it }
-        SidebarSection.STATS -> updateScreen<ScreenState.Stats> { it }
-        SidebarSection.OFFLINE -> updateScreen<ScreenState.Offline> { it }
-        SidebarSection.SETTINGS -> state = state.copy(isSettingsVisible = true)
-        else -> {}
+    // Synchronize visual list selections
+    val index = NAV_SECTIONS.indexOf(item)
+    if (index < 4) {
+        sidebarNavList.selected(index)
+        sidebarUtilList.selected(-1)
+        state = state.copy(navigation = state.navigation.copy(sidebarInUtil = false))
+    } else {
+        sidebarNavList.selected(-1)
+        sidebarUtilList.selected(index - 4)
+        state = state.copy(navigation = state.navigation.copy(sidebarInUtil = true))
     }
+}
+
+internal fun MeloScreen.isTyping(): Boolean {
+    // Search bar is focused
+    if (appRunner()?.focusManager()?.focusedId() == "search-bar") return true
+
+    // Library/Offline "typing mode" (isTyping flag in screen state)
+    val libraryState = state.screen as? ScreenState.Library
+    if (libraryState?.isTyping == true) return true
+
+    val offlineState = state.screen as? ScreenState.Offline
+    if (offlineState?.isTyping == true) return true
+
+    return false
 }
 
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
 
-    val handled = handlePlayerBarKey(event)
-    if (handled == EventResult.HANDLED) return EventResult.HANDLED
+    val isTyping = isTyping()
+    val isCharacter = event.code() == KeyCode.CHAR
 
-    when (KeyCode.CHAR) {
-        event.code() if event.character() == '/' -> {
-            applySidebarSelection(SidebarSection.SEARCH)
-            appRunner()?.focusManager()?.setFocus("search-bar")
-            return EventResult.HANDLED
+    // Skip playback keys if typing a character in an input
+    if (!(isTyping && isCharacter)) {
+        val handled = handlePlayerBarKey(event)
+        if (handled == EventResult.HANDLED) return EventResult.HANDLED
+    }
+
+    // If we're typing, we don't want global navigation shortcuts to trigger
+    if (isTyping && isCharacter) return EventResult.UNHANDLED
+
+    when (event.code()) {
+        KeyCode.CHAR -> {
+            if (event.character() == '/') {
+                applySidebarSelection(SidebarSection.SEARCH)
+                activateSidebarSelection(SidebarSection.SEARCH)
+                return EventResult.HANDLED
+            }
+            if (event.character() == 'L') {
+                applySidebarSelection(SidebarSection.LIBRARY)
+                activateSidebarSelection(SidebarSection.LIBRARY)
+                return EventResult.HANDLED
+            }
         }
-
-        event.code() if event.character() == 'L' -> {
-            applySidebarSelection(SidebarSection.LIBRARY)
-            appRunner()?.focusManager()?.setFocus("library-panel")
-            return EventResult.HANDLED
-        }
-
         else -> {}
     }
 
