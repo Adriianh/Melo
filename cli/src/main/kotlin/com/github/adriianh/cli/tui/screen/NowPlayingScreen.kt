@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.screen
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
