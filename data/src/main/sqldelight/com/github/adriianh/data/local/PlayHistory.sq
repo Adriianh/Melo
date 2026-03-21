@@ -28,7 +28,7 @@ LIMIT :limit;
 deleteOldHistory:
 DELETE FROM play_history
 WHERE id NOT IN (
-    SELECT id FROM play_history ORDER BY played_at DESC LIMIT 200
+    SELECT id FROM play_history ORDER BY played_at DESC LIMIT 5000
 );
 
 selectTopTracks:
