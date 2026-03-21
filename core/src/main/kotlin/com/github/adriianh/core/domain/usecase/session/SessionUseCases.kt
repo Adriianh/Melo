@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.session
 
 import com.github.adriianh.core.domain.repository.SavedSession
 import com.github.adriianh.core.domain.repository.SessionRepository

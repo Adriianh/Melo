@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.offline
 
 import com.github.adriianh.core.domain.repository.OfflineRepository
 

@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.stats
 
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.ListeningStats

@@ -1,6 +1,6 @@
 package com.github.adriianh.core.domain.interactor
 
-import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.core.domain.usecase.library.*
 
 data class LibraryInteractors(
     val getFavorites: GetFavoritesUseCase,

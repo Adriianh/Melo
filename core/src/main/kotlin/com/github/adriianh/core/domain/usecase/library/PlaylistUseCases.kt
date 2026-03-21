@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.library
 
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track

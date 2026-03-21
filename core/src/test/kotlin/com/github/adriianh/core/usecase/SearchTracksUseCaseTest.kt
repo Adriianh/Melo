@@ -2,7 +2,7 @@ package com.github.adriianh.core.usecase
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.MusicRepository
-import com.github.adriianh.core.domain.usecase.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

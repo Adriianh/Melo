@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.search
 
 import com.github.adriianh.core.domain.model.SimilarTrack
 import com.github.adriianh.core.domain.repository.DiscoveryRepository

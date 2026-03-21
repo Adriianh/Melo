@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.playback
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.ScrobblingRepository

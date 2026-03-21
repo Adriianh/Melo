@@ -1,9 +1,9 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.playback
 
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
-import com.github.adriianh.core.domain.model.DownloadStatus
 import java.io.File
 
 class GetStreamUseCase(

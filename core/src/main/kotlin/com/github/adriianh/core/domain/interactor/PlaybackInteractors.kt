@@ -1,6 +1,6 @@
 package com.github.adriianh.core.domain.interactor
 
-import com.github.adriianh.core.domain.usecase.*
+import com.github.adriianh.core.domain.usecase.playback.*
 
 data class PlaybackInteractors(
     val getRecentTracks: GetRecentTracksUseCase,

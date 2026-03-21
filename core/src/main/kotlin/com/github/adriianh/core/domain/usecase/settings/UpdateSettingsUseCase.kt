@@ -1,4 +1,4 @@
-package com.github.adriianh.core.domain.usecase
+package com.github.adriianh.core.domain.usecase.settings
 
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.repository.SettingsRepository
