@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.util
 
-import com.github.adriianh.cli.tui.*
-
+import com.github.adriianh.cli.tui.util.ArtworkRenderer.Companion.MAX_CACHE_SIZE
 import dev.tamboui.image.ImageData
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -36,10 +35,5 @@ class ArtworkRenderer(private val httpClient: HttpClient) {
         } catch (_: Exception) {
             null
         }
-    }
-
-    /** Removes all cached artwork, freeing memory immediately. */
-    fun clearCache() {
-        cache.clear()
     }
 }

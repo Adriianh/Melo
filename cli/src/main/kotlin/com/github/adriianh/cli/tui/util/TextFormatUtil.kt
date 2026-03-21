@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.util
 
-import com.github.adriianh.cli.tui.*
-
 object TextFormatUtil {
     fun formatDuration(ms: Long): String {
         val totalSeconds = ms / 1000
