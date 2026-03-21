@@ -1,10 +1,11 @@
 package com.github.adriianh.cli.di
 
 import com.github.adriianh.cli.config.configDir
-import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.config.resolveEnv
+import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
@@ -59,6 +60,7 @@ val appModule = module {
                 dispatcher = get<CoroutineDispatcher>()
                 endpoint {
                     maxConnectionsCount = 20
+                    connectTimeout = 5_000
                     connectTimeout = 5_000
                 }
             }
@@ -180,4 +182,13 @@ val appModule = module {
     factory { GetListeningStatsUseCase(get()) }
     factory { GetSettingsUseCase(get()) }
     factory { UpdateSettingsUseCase(get()) }
+
+    // Interactors
+    factory { SearchInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
+    factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { StatsInteractors(get(), get(), get()) }
+    factory { SessionInteractors(get(), get(), get()) }
+    factory { SettingsInteractors(get(), get()) }
 }

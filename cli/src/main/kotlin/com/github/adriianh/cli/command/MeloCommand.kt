@@ -8,21 +8,20 @@ import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
-import com.github.adriianh.core.domain.usecase.*
 import com.github.adriianh.data.remote.piped.PipedApiClient
-import io.ktor.client.*
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
+import io.ktor.client.*
+import kotlinx.coroutines.CoroutineDispatcher
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlin.getValue
 import kotlin.system.exitProcess
 
 class MeloCommand : CliktCommand(
@@ -49,46 +48,17 @@ class MeloCommand : CliktCommand(
 
         startKoin { modules(appModule) }
 
-        val searchTracks: SearchTracksUseCase by inject()
-        val loadMoreTracks: LoadMoreTracksUseCase by inject()
-        val getTrack: GetTrackUseCase by inject()
-        val getLyrics: GetLyricsUseCase by inject()
-        val getSyncedLyrics: GetSyncedLyricsUseCase by inject()
-        val getSimilarTracks: GetSimilarTracksUseCase by inject()
-        val getFavorites: GetFavoritesUseCase by inject()
-        val addFavorite: AddFavoriteUseCase by inject()
-        val removeFavorite: RemoveFavoriteUseCase by inject()
-        val isFavorite: IsFavoriteUseCase by inject()
-        val getRecentTracks: GetRecentTracksUseCase by inject()
-        val recordPlay: RecordPlayUseCase by inject()
-        val getStream: GetStreamUseCase by inject()
-        val getPlaylists: GetPlaylistsUseCase by inject()
-        val getPlaylistTracks: GetPlaylistTracksUseCase by inject()
-        val createPlaylist: CreatePlaylistUseCase by inject()
-        val renamePlaylist: RenamePlaylistUseCase by inject()
-        val deletePlaylist: DeletePlaylistUseCase by inject()
-        val addTrackToPlaylist: AddTrackToPlaylistUseCase by inject()
-        val removeTrackFromPlaylist: RemoveTrackFromPlaylistUseCase by inject()
-        val saveSession: SaveSessionUseCase by inject()
-        val restoreSession: RestoreSessionUseCase by inject()
-        val clearSession: ClearSessionUseCase by inject()
-        val updateNowPlaying: UpdateNowPlayingUseCase by inject()
-        val scrobble: ScrobbleUseCase by inject()
-        val getTopTracks: GetTopTracksUseCase by inject()
-        val getTopArtists: GetTopArtistsUseCase by inject()
-        val getListeningStats: GetListeningStatsUseCase by inject()
-        val getSettings: GetSettingsUseCase by inject()
-        val updateSettings: UpdateSettingsUseCase by inject()
+        val searchInteractors: SearchInteractors by inject()
+        val libraryInteractors: LibraryInteractors by inject()
+        val playbackInteractors: PlaybackInteractors by inject()
+        val offlineInteractors: OfflineInteractors by inject()
+        val statsInteractors: StatsInteractors by inject()
+        val sessionInteractors: SessionInteractors by inject()
+        val settingsInteractors: SettingsInteractors by inject()
         val artworkRenderer: ArtworkRenderer by inject()
         val artworkProvider: ArtworkProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
         val offlineRepository: OfflineRepository by inject()
-        val getOfflineTracks: GetOfflineTracksUseCase by inject()
-        val syncOfflineTracks: SyncOfflineTracksUseCase by inject()
-        val downloadTrack: DownloadTrackUseCase by inject()
-        val deleteDownloadedTrack: DeleteDownloadedTrackUseCase by inject()
-        val markTrackAccessed: MarkTrackAccessedUseCase by inject()
-        val autoCleanup: AutoCleanupUseCase by inject()
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
         val audioProvider: AudioProvider by inject()
@@ -96,44 +66,15 @@ class MeloCommand : CliktCommand(
         try {
             MeloScreen(
                 httpClient = httpClient,
-                searchTracks = searchTracks,
-                loadMoreTracks = loadMoreTracks,
-                getTrack = getTrack,
-                getLyrics = getLyrics,
-                getSyncedLyrics = getSyncedLyrics,
-                getSimilarTracks = getSimilarTracks,
                 pipedApiClient = pipedApiClient,
-                getFavorites = getFavorites,
-                addFavorite = addFavorite,
-                removeFavorite = removeFavorite,
-                isFavoriteUseCase = isFavorite,
-                getRecentTracks = getRecentTracks,
-                recordPlay = recordPlay,
-                getStream = getStream,
-                getPlaylists = getPlaylists,
-                getPlaylistTracks = getPlaylistTracks,
-                createPlaylist = createPlaylist,
-                renamePlaylist = renamePlaylist,
-                deletePlaylist = deletePlaylist,
-                addTrackToPlaylist = addTrackToPlaylist,
-                removeTrackFromPlaylist = removeTrackFromPlaylist,
-                saveSession = saveSession,
-                restoreSession = restoreSession,
-                clearSession = clearSession,
-                updateNowPlaying = updateNowPlaying,
-                scrobble = scrobble,
-                getTopTracks = getTopTracks,
-                getTopArtists = getTopArtists,
-                getListeningStats = getListeningStats,
-                getSettings = getSettings,
-                updateSettings = updateSettings,
+                searchInteractors = searchInteractors,
+                libraryInteractors = libraryInteractors,
+                playbackInteractors = playbackInteractors,
+                offlineInteractors = offlineInteractors,
+                statsInteractors = statsInteractors,
+                sessionInteractors = sessionInteractors,
+                settingsInteractors = settingsInteractors,
                 offlineRepository = offlineRepository,
-                getOfflineTracks = getOfflineTracks,
-                syncOfflineTracks = syncOfflineTracks,
-                downloadTrack = downloadTrack,
-                deleteDownloadedTrack = deleteDownloadedTrack,
-                markTrackAccessed = markTrackAccessed,
-                autoCleanup = autoCleanup,
                 artworkRenderer = artworkRenderer,
                 artworkProvider = artworkProvider,
                 audioProvider = audioProvider,
