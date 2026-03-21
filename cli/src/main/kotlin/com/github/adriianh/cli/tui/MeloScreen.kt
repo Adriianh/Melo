@@ -4,6 +4,12 @@ import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.component.*
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.*
+import com.github.adriianh.cli.tui.handler.playback.*
+import com.github.adriianh.cli.tui.handler.search.handleDetailKey
+import com.github.adriianh.cli.tui.handler.search.handleResultsKey
+import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
+import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.screen.*

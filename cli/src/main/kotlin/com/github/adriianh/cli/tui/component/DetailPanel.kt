@@ -9,8 +9,8 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
-import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.cli.tui.isPlayable
+import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
@@ -21,6 +21,9 @@ import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
+import dev.tamboui.widgets.block.Block
+import dev.tamboui.widgets.block.BorderType
+import dev.tamboui.widgets.block.Borders
 
 fun buildDetailPanel(
     state: MeloState,
@@ -83,9 +86,9 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
                 .data(state.detail.artworkData)
                 .scaling(ImageScaling.FIT)
                 .block(
-                    dev.tamboui.widgets.block.Block.builder()
-                        .borders(dev.tamboui.widgets.block.Borders.ALL)
-                        .borderType(dev.tamboui.widgets.block.BorderType.ROUNDED)
+                    Block.builder()
+                        .borders(Borders.ALL)
+                        .borderType(BorderType.ROUNDED)
                         .build()
                 )
                 .build()
