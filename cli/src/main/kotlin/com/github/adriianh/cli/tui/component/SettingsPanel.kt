@@ -147,7 +147,6 @@ class SettingsOverlay(
             .focusable()
             .id("settings-section-list")
 
-        // ── Items panel ─────────────────────────────────────────────────────
         val content = if (viewState.isKeybindingMode) {
             val actions = MeloAction.entries
             val keybindingItems = actions.mapIndexed { index, action ->
@@ -226,7 +225,6 @@ class SettingsOverlay(
             .focusable()
             .id("settings-list")
 
-        // ── Help text ────────────────────────────────────────────────────────
         val helpText = when {
             viewState.isListeningForKey -> "Press any key to bind... [Esc] cancel"
             viewState.isKeybindingMode -> "[↑↓] navigate  [Enter] change  [Esc] back"
@@ -236,7 +234,6 @@ class SettingsOverlay(
             else -> "[↑↓] navigate  [Enter] edit  [←] back  [Esc] close"
         }
 
-        // ── Layout ───────────────────────────────────────────────────────────
         val layout = dock()
             .left(sectionsPanel, Constraint.length(24))
             .center(itemsPanel)

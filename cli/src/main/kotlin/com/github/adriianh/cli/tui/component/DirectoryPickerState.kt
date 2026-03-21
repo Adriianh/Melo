@@ -36,10 +36,6 @@ data class DirectoryPickerState(
     val errorMessage: String? = null
 )
 
-// ══════════════════════════════════════════════════════════════
-// Navigation functions
-// ══════════════════════════════════════════════════════════════
-
 /**
  * Refreshes the directory listing, showing only directories and a parent entry.
  */

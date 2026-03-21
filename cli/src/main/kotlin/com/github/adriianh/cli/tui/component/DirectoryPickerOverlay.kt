@@ -32,7 +32,6 @@ class DirectoryPickerOverlay(
 
         val picker = viewState.directoryPicker
 
-        // ── Overlay dimensions ──────────────────────────────────────
         val overlayW = (area.width() * 0.6).toInt().coerceAtLeast(50)
         val overlayH = (area.height() * 0.6).toInt().coerceIn(12, 30)
         val overlayX = area.x() + (area.width() - overlayW) / 2
@@ -42,12 +41,10 @@ class DirectoryPickerOverlay(
         frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
-        // ── Current path bar ────────────────────────────────────────
         val pathText = text("  ${MeloTheme.ICON_FOLDER_OPENED} ${picker.currentDirectory}")
             .fg(MeloTheme.TEXT_SECONDARY)
             .fill()
 
-        // ── Bottom bar (help text, error, mkdir input, or delete confirm) ──
         val bottomElement = when {
             picker.errorMessage != null -> {
                 text("  ⚠ ${picker.errorMessage}  [any key to dismiss]")
@@ -73,7 +70,6 @@ class DirectoryPickerOverlay(
             }
         }
 
-        // ── Directory entries ───────────────────────────────────────
         val entries = picker.entries
         val offset = picker.scrollOffset
         val visibleCount = (overlayH - 6).coerceAtLeast(1)
@@ -107,14 +103,12 @@ class DirectoryPickerOverlay(
 
         val fileList = column(*entryElements).fill()
 
-        // ── Title ───────────────────────────────────────────────────
         val title = when (picker.targetItem) {
             SettingsItem.DOWNLOAD_PATH -> "${MeloTheme.ICON_FOLDER_OPENED} Select Download Path"
             SettingsItem.CACHE_PATH -> "${MeloTheme.ICON_FOLDER_OPENED} Select Cache Path"
             else -> "${MeloTheme.ICON_FOLDER_OPENED} Select Directory"
         }
 
-        // ── Compose overlay ─────────────────────────────────────────
         val content = dock()
             .top(pathText, Constraint.length(1))
             .bottom(bottomElement, Constraint.length(1))

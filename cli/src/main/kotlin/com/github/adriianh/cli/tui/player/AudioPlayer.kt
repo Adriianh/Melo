@@ -8,12 +8,12 @@ import java.util.concurrent.atomic.AtomicLong
  * Audio player backed by ffplay (bundled with ffmpeg).
  *
  * ffplay uses SDL2 for audio output, which auto-selects the best backend per OS:
- *   Linux  → PipeWire / PulseAudio / ALSA
- *   macOS  → CoreAudio
+ *   Linux → PipeWire / PulseAudio / ALSA
+ *   macOS → CoreAudio
  *   Windows → DirectSound / WASAPI
  *
- * Pause  : SIGSTOP / SIGCONT — instantaneous, no buffer delay.
- * Volume : pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
+ * Pause: SIGSTOP / SIGCONT — instantaneous, no buffer delay.
+ * Volume: pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
  *          fallback: stored and applied on next play() via -af volume= filter.
  */
 class AudioPlayer(
