@@ -37,6 +37,7 @@ internal fun MeloScreen.playTrack(track: Track) {
     )
     marqueeTick = 0
     scrobbleSubmitted = false
+    playRecorded = false
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
     if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && state.player.queueIndex >= state.player.queue.size - 3) {
@@ -52,7 +53,6 @@ internal fun MeloScreen.playTrack(track: Track) {
             (1..2).mapNotNull { offset -> queue.getOrNull(currentIndex + offset) }
                 .forEach { nextTrack -> launch { downloadTrack(nextTrack) } }
         }
-        recordPlay(track)
         var url: String? = null
         var attempts = 0
         val maxAttempts = 3

@@ -104,6 +104,7 @@ class MeloScreen(
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
+    internal var playRecorded = false
     internal var trackStartedAt = 0L
     internal var updateNowPlayingJob: Job? = null
     internal var scrobbleJob: Job? = null
