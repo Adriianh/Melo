@@ -440,7 +440,7 @@ class MeloScreen(
                 SidebarSection.LIBRARY -> ScreenState.Library()
                 SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
                 SidebarSection.STATS -> ScreenState.Stats()
-                SidebarSection.OFFLINE -> ScreenState.Offline()
+                SidebarSection.OFFLINE -> ScreenState.Offline(downloads = state.collections.offlineTracks)
                 SidebarSection.SETTINGS -> state.screen
             }
             state = state.copy(
@@ -521,17 +521,6 @@ class MeloScreen(
             runner()?.runOnRenderThread {
                 updateScreen<ScreenState.Library> {
                     it.copy(localTracks = tracks, isLoading = false)
-                }
-            }
-        }
-    }
-
-    internal fun loadOfflineTracks() {
-        scope.launch {
-            getOfflineTracks().collect { downloads ->
-                runner()?.runOnRenderThread {
-                    scope.launch { syncOfflineTracks.invoke() }
-                    updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
                 }
             }
         }

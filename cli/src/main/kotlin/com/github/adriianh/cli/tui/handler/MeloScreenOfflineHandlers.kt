@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.OfflineFilterType
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
@@ -44,6 +45,17 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
     when {
         event.code() == KeyCode.CHAR && event.character() == '/' -> {
             updateScreen<ScreenState.Offline> { it.copy(isTyping = true) }
+            return EventResult.HANDLED
+        }
+
+        (event.code() == KeyCode.CHAR && (event.character() == 'f' || event.character() == 'F')) ||
+                (event.code() == KeyCode.TAB) -> {
+            val nextFilter = when (actualState.filterType) {
+                OfflineFilterType.ALL -> OfflineFilterType.MANUAL
+                OfflineFilterType.MANUAL -> OfflineFilterType.CACHE
+                OfflineFilterType.CACHE -> OfflineFilterType.ALL
+            }
+            updateScreen<ScreenState.Offline> { it.copy(filterType = nextFilter) }
             return EventResult.HANDLED
         }
 
