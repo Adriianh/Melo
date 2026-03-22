@@ -233,7 +233,7 @@ class OfflineRepositoryImpl(
                         .maxDepth(10)
                         .filter { it.isFile && it.extension.lowercase() in audioExtensions }
                         .forEach { file ->
-                            val existing = _offlineTracksFlow.value.find { it.localFilePath == file.absolutePath }
+                            _offlineTracksFlow.value.find { it.localFilePath == file.absolutePath }
                                 val metadata = getFileMetadata(file)
 
                                 results.add(
