@@ -4,6 +4,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.player.MediaSessionManager
+import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.provider.ArtworkProvider
@@ -139,6 +140,7 @@ val appModule = module {
     }
     single<AudioProvider> { YtDlpAudioProvider(get()) }
     single { MediaSessionManager(httpClient = get()) }
+    single { DiscordRpcManager() }
 
     // Repositories
     single<MeloDatabase> { DatabaseFactory.create() }
