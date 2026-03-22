@@ -1,6 +1,6 @@
 .gradle
 .serena
-.github/copilot-instructions.md
+/.github/**.md
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
