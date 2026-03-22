@@ -87,6 +87,13 @@ graalvmNative {
                 "-J-Dawt.toolkit=sun.awt.HToolkit",
                 "--initialize-at-run-time=java.awt.Toolkit",
                 "--initialize-at-run-time=javax.imageio.ImageIO",
+                "--initialize-at-run-time=java.awt.color.ColorSpace",
+                "--initialize-at-run-time=java.awt.color.ICC_Profile",
+                "--initialize-at-run-time=sun.java2d.cmm.lcms.LCMS",
+                "--initialize-at-run-time=sun.java2d.cmm.lcms.LCMSProfile",
+                "--initialize-at-run-time=sun.java2d.cmm.lcms.LCMSTransform",
+                "--initialize-at-run-time=com.twelvemonkeys.imageio.color.ColorProfiles",
+                "--initialize-at-run-time=com.twelvemonkeys.imageio.color.ColorSpaces",
                 "--initialize-at-run-time=sun.awt.AppContext",
                 "--initialize-at-run-time=javax.imageio.spi.IIORegistry",
                 // ── SLF4J / logging / SQLite ─────────────────────────
@@ -102,6 +109,7 @@ graalvmNative {
                 "--enable-native-access=ALL-UNNAMED",
                 "-H:DynamicProxyConfigurationFiles=${projectDir}/src/main/resources/proxy-config.json",
                 "-H:ReflectionConfigurationFiles=${projectDir}/src/main/resources/reflection-config.json",
+                "-H:ResourceConfigurationFiles=${projectDir}/src/main/resources/resource-config.json",
             )
         }
     }
