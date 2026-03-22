@@ -12,6 +12,9 @@ import java.time.Duration
 
 internal fun MeloScreen.onStartLifecycle() {
     mediaSession.init()
+    if (settingsViewState.currentSettings.discordRpcEnabled) {
+        discordRpcManager.connect()
+    }
     scope.launch {
         getFavorites().collect { tracks ->
             appRunner()?.runOnRenderThread {
@@ -86,6 +89,7 @@ internal fun MeloScreen.onStopLifecycle() {
     playlistTracksJob?.cancel()
     audioPlayer.stop()
     mediaSession.destroy()
+    discordRpcManager.disconnect()
     runBlocking { persistSession() }
     scope.cancel()
 }
