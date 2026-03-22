@@ -7,6 +7,7 @@ import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
+import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.model.DownloadType
@@ -46,6 +47,7 @@ class MeloScreen(
     internal val artworkRenderer: ArtworkRenderer,
     internal val artworkProvider: ArtworkProvider,
     internal val audioProvider: AudioProvider,
+    internal val discordRpcManager: DiscordRpcManager,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 

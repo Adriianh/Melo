@@ -7,6 +7,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.provider.ArtworkProvider
@@ -62,6 +63,7 @@ class MeloCommand : CliktCommand(
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
         val audioProvider: AudioProvider by inject()
+        val discordRpcManager: DiscordRpcManager by inject()
 
         try {
             MeloScreen(
@@ -78,6 +80,7 @@ class MeloCommand : CliktCommand(
                 artworkRenderer = artworkRenderer,
                 artworkProvider = artworkProvider,
                 audioProvider = audioProvider,
+                discordRpcManager = discordRpcManager,
                 dispatcher = dispatcher
             ).run()
         } finally {
