@@ -8,9 +8,11 @@ import dev.cbyrne.kdiscordipc.data.activity.largeImage
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.time.Instant
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Manages Discord Rich Presence using KDiscordIPC.
@@ -28,6 +30,7 @@ class DiscordRpcManager(
     private var isPlaying: Boolean = false
     private var startTime: Instant? = null
     private var isConnected: Boolean = false
+    private var activityJob: Job? = null
 
     init {
         try {
@@ -35,7 +38,9 @@ class DiscordRpcManager(
             scope.launch {
                 ipc?.on<ReadyEvent> {
                     isConnected = true
-                    updateActivity(currentTrack, isPlaying, 0)
+                    if (currentTrack != null) {
+                        updateActivity(currentTrack, isPlaying)
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -54,29 +59,38 @@ class DiscordRpcManager(
         }
     }
 
-    fun updateActivity(track: Track?, playing: Boolean, positionMs: Long = 0) {
+    fun updateActivity(track: Track?, playing: Boolean, positionMs: Long? = null) {
+        val trackChanged = track?.id != currentTrack?.id
+        if (trackChanged) {
+            startTime = null
+        }
+
         this.currentTrack = track
         this.isPlaying = playing
 
         if (track == null || !playing) {
             startTime = null
-            scope.launch {
+            activityJob?.cancel()
+            activityJob = scope.launch {
                 try {
                     if (isConnected) {
                         ipc?.activityManager?.clearActivity()
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    if (e !is CancellationException) {
+                        e.printStackTrace()
+                    }
                 }
             }
             return
         }
 
-        if (startTime == null) {
-            startTime = Instant.now().minusMillis(positionMs)
+        if (startTime == null || positionMs != null) {
+            startTime = Instant.now().minusMillis(positionMs ?: 0L)
         }
 
-        scope.launch {
+        activityJob?.cancel()
+        activityJob = scope.launch {
             try {
                 if (isConnected) {
                     ipc?.activityManager?.setActivity(
@@ -92,18 +106,19 @@ class DiscordRpcManager(
                             largeImage("melo_logo", "Melo")
                         }
 
-                        val startMillis = startTime?.toEpochMilli()
-                        if (startMillis != null) {
-                            if (track.durationMs > 0) {
-                                timestamps(startMillis, startMillis + track.durationMs)
-                            } else {
-                                timestamps(startMillis)
-                            }
+                        val currentStartTime = startTime ?: return@setActivity
+                        val startMillis = currentStartTime.toEpochMilli()
+                        if (track.durationMs > 0) {
+                            timestamps(startMillis, startMillis + track.durationMs)
+                        } else {
+                            timestamps(startMillis)
                         }
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                if (e !is CancellationException) {
+                    e.printStackTrace()
+                }
             }
         }
     }
