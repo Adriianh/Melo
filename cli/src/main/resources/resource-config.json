@@ -3,6 +3,9 @@
     "includes": [
       {
         "pattern": ".*\\.icc$"
+      },
+      {
+        "pattern": "org/newsclub/net/unix/lib/.*"
       }
     ]
   }

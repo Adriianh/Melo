@@ -193,137 +193,1594 @@
     "allDeclaredMethods": true,
     "allPublicMethods": true
   },
-  
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-  
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-  
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmImage", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmImage$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSession", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmSession$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-
-  { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse", "fields": [{ "name": "Companion" }], "allPublicConstructors": true, "allPublicMethods": true },
-  { "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse$Companion", "methods": [{ "name": "serializer", "parameterTypes": [] }], "allPublicMethods": true },
-  
-  { "name": "org.jaudiotagger.audio.AudioFileIO", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.generic.AudioFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.mp3.MP3FileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.flac.FlacFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.ogg.OggFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.mp4.Mp4FileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.wav.WavFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.AsfFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.aiff.AiffFileReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  
-  { "name": "org.jaudiotagger.tag.id3.ID3v24Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.id3.ID3v23Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.id3.ID3v22Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.id3.ID3v1Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.flac.FlacTag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.mp4.Mp4Tag", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  
-  { "name": "org.jaudiotagger.audio.asf.io.ContentBrandingReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.ContentDescriptionReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.LanguageListReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.MetadataReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.FileHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.StreamChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.EncodingChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.EncryptionChunkReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.StreamBitratePropertiesReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.ChunkHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.AsfHeaderReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.AsfStreamer", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.audio.asf.io.FullStructureReader", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  
-  { "name": "org.jaudiotagger.tag.id3.ID3v23Frame", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true },
-  { "name": "org.jaudiotagger.tag.id3.ID3v24Frame", "allDeclaredConstructors": true, "allPublicConstructors": true, "allDeclaredMethods": true, "allPublicMethods": true }
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerSearchResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerArtistDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerTrackDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerTrackArtistDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.deezer.DeezerAlbumDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTracksResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackList$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarTrackDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmStreamable$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmImage",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmImage$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSimilarArtistDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTopTagsResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTagList$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTagDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmTokenResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSessionResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSession",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmSession$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbleResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobbles$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lastfm.LastFmScrobblesAttr$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.itunes.ItunesSearchResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.itunes.ItunesTrackDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.lyrics.LyricsResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifySearchResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackPaging$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyTrackDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyArtistDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyAlbumDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.spotify.SpotifyImageDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedStreamsResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedRelatedStreamDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedAudioStreamDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.piped.PipedSearchResponse$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.AudioFileIO",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.generic.AudioFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.mp3.MP3FileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.flac.FlacFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.ogg.OggFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.mp4.Mp4FileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.wav.WavFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.AsfFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.aiff.AiffFileReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v24Tag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v23Tag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v22Tag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v1Tag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.flac.FlacTag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.mp4.Mp4Tag",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.ContentBrandingReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.ContentDescriptionReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.LanguageListReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.MetadataReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.FileHeaderReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.StreamChunkReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.EncodingChunkReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.EncryptionChunkReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.StreamBitratePropertiesReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.ChunkHeaderReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.AsfHeaderReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.AsfStreamer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.audio.asf.io.FullStructureReader",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v23Frame",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.jaudiotagger.tag.id3.ID3v24Frame",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Timestamps",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Assets",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Party",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Party$PartySize",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Party$PartySize$PartySizeSerializer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Secrets",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.Activity$Button",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.ActivityType",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.ActivityType$ActivityTypeSerializer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.InboundActivity",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.InboundActivity$Party",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.activity.InboundActivity$Timestamps",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.SetActivityPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.SetActivityPacket$Arguments",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.HandshakePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.SubscribePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.CommandPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.AuthenticatePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.AuthorizePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.AcceptActivityInvitePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.GetUserPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.GetRelationshipsPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.impl.VoiceSettingsPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.SetActivityPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.AuthenticatePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.AuthorizePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.AcceptActivityInvitePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.ErrorPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.GetRelationshipsPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.GetUserPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.SubscribePacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.VoiceSettingsPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.CommandPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ReadyEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ErrorEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityJoinEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityInviteEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.VoiceChannelSelectEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.user.User",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.user.PremiumType",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.user.PremiumType$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.user.PremiumType$Companion$PremiumTypeSerializer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.relationship.Relationship",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.application.Application",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.voiceSettings.VoiceSettings",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.voiceSettings.InputOutput",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.voiceSettings.InputOutput$Device",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.voiceSettings.Mode",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.data.voiceSettings.Mode$ShortCutKeyCombo",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.socket.RawPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.serialization.InboundPacketSerializer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.serialization.OutboundPacketSerializer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.manager.impl.ActivityManager",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.KDiscordIPC",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.newsclub.net.unix.AFUNIXSocket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.newsclub.net.unix.AFUNIXSocketAddress",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.newsclub.net.unix.NativeUnixSocket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.newsclub.net.unix.AFUNIXSocketFactory",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.OutboundPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.OutboundPacket$Arguments",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.outbound.IrregularOutboundPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.InboundPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.InboundPacket$Data",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.CommandPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$Ready",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$UserUpdate",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$VoiceChannelSelect",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$VoiceSettingsUpdate",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$ActivityJoin",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$ActivityInvite",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$Error",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.EventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ReadyEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ReadyEventData$Configuration",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ErrorEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityJoinEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityInviteEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "dev.cbyrne.kdiscordipc.core.event.data.VoiceChannelSelectEventData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  }
 ]
