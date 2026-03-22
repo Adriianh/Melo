@@ -43,7 +43,8 @@ class OfflineRepositoryImpl(
             val header: AudioHeader = audioFile.audioHeader
             
             val title = tag?.getFirst(FieldKey.TITLE)?.takeIf { it.isNotBlank() }
-            val artist = tag?.getFirst(FieldKey.ARTIST)?.takeIf { it.isNotBlank() }
+            val artist =
+                tag?.getFields(FieldKey.ARTIST)?.joinToString(", ") { it.toString() }?.takeIf { it.isNotBlank() }
             val album = tag?.getFirst(FieldKey.ALBUM)?.ifBlank { null }
             
             if (title != null && artist != null) {
