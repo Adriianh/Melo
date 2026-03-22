@@ -7,10 +7,11 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
-import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
@@ -56,12 +57,13 @@ class MeloCommand : CliktCommand(
         val sessionInteractors: SessionInteractors by inject()
         val settingsInteractors: SettingsInteractors by inject()
         val artworkRenderer: ArtworkRenderer by inject()
-        val artworkProvider: ArtworkProvider by inject()
+        val metadataProvider: MetadataProvider by inject()
         val pipedApiClient: PipedApiClient by inject()
         val offlineRepository: OfflineRepository by inject()
         val httpClient: HttpClient by inject()
         val dispatcher: CoroutineDispatcher by inject()
         val audioProvider: AudioProvider by inject()
+        val discordRpcManager: DiscordRpcManager by inject()
 
         try {
             MeloScreen(
@@ -76,8 +78,9 @@ class MeloCommand : CliktCommand(
                 settingsInteractors = settingsInteractors,
                 offlineRepository = offlineRepository,
                 artworkRenderer = artworkRenderer,
-                artworkProvider = artworkProvider,
+                metadataProvider = metadataProvider,
                 audioProvider = audioProvider,
+                discordRpcManager = discordRpcManager,
                 dispatcher = dispatcher
             ).run()
         } finally {

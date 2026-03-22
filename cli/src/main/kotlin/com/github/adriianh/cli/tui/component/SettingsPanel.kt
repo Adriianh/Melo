@@ -46,6 +46,7 @@ enum class SettingsItem(val label: String) {
     CACHE_PATH("Cache Path"),
     LOCAL_FOLDERS("Local Library Folders"),
     KEYBINDINGS("Custom Keybindings"),
+    DISCORD_RPC("Discord Rich Presence")
 }
 
 enum class SettingsFocus { SECTION, ITEMS }
@@ -55,6 +56,7 @@ val sectionItems = mapOf(
         SettingsItem.THEME,
         SettingsItem.VOLUME,
         SettingsItem.ARTWORK_RES,
+        SettingsItem.DISCORD_RPC,
         SettingsItem.KEYBINDINGS
     ),
     SettingsSection.STORAGE to listOf(
@@ -194,6 +196,7 @@ class SettingsOverlay(
                         viewState.currentSettings.cachePath ?: "Default"
                     SettingsItem.LOCAL_FOLDERS ->
                         "${viewState.currentSettings.localLibraryPaths.size} folders"
+                    SettingsItem.DISCORD_RPC -> if (viewState.currentSettings.discordRpcEnabled) "On" else "Off"
                 }
 
                 val labelColor = if (isSelected && isFocused) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY

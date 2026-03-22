@@ -76,6 +76,9 @@ internal fun MeloScreen.playTrack(track: Track) {
             state = state.copy(player = state.player.copy(isPlaying = true, isLoadingAudio = false))
             audioPlayer.play(url)
             mediaSession.updateTrack(track, track.durationMs)
+            if (settingsViewState.currentSettings.discordRpcEnabled) {
+                discordRpcManager.updateActivity(track, true)
+            }
             onTrackStarted(track)
         }
         val lrc = getSyncedLyrics(track.artist, track.title)
@@ -97,10 +100,17 @@ internal fun MeloScreen.togglePlayPause() {
         audioPlayer.pause()
         state = state.copy(player = state.player.copy(isPlaying = false))
         mediaSession.notifyPaused()
+        if (settingsViewState.currentSettings.discordRpcEnabled) {
+            discordRpcManager.updateActivity(state.player.nowPlaying, false)
+        }
     } else {
         audioPlayer.resume()
         state = state.copy(player = state.player.copy(isPlaying = true))
         mediaSession.notifyResumed()
+        if (settingsViewState.currentSettings.discordRpcEnabled) {
+            val elapsedMs = (state.player.progress * (state.player.nowPlaying?.durationMs ?: 0L)).toLong()
+            discordRpcManager.updateActivity(state.player.nowPlaying, true, elapsedMs)
+        }
     }
 }
 
@@ -116,6 +126,9 @@ internal fun MeloScreen.seekTo(progress: Double) {
     val clamped = progress.coerceIn(0.0, 1.0)
     state = state.copy(player = state.player.copy(progress = clamped))
     audioPlayer.seek((clamped * duration).toLong())
+    if (settingsViewState.currentSettings.discordRpcEnabled) {
+        discordRpcManager.updateActivity(state.player.nowPlaying, state.player.isPlaying, (clamped * duration).toLong())
+    }
 }
 
 internal fun MeloScreen.seekBackward() {

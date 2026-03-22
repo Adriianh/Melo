@@ -60,6 +60,7 @@ data class MeloKey(
 data class Settings(
     val theme: ThemePreset = ThemePreset.DEFAULT,
     val volume: Int = 75,
+    val discordRpcEnabled: Boolean = true,
     val searchLanguage: String = "en",
     val artworkResolution: Int = 300,
     val autoDownload: Boolean = false,

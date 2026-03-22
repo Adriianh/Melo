@@ -16,6 +16,7 @@ sqldelight = "2.0.2"
 sqlite-jdbc = "3.45.2.0"
 jmtc = "0.0.3"
 jaudiotagger = "2.0.18"
+kdiscordipc = "5041c5b036"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -38,6 +39,7 @@ tambouiToolkit = { module = "dev.tamboui:tamboui-toolkit", version.ref = "tambou
 tamboouiJline = { module = "dev.tamboui:tamboui-jline3-backend", version.ref = "tamboui" }
 tambouiImage = { module = "dev.tamboui:tamboui-image", version.ref = "tamboui" }
 scrimageCore = { module = "com.sksamuel.scrimage:scrimage-core", version.ref = "scrimage" }
+slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 sqldelightRuntime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelightCoroutinesExtensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
@@ -46,6 +48,7 @@ sqldelightGradlePlugin = { module = "app.cash.sqldelight:gradle-plugin", version
 sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 jmtc = { module = "io.github.selemba1000:JavaMediaTransportControls", version.ref = "jmtc" }
 jaudiotagger = { module = "com.github.RouHim:jaudiotagger", version.ref = "jaudiotagger" }
+kdiscordipc = { module = "com.github.Adriianh:KDiscordIPC", version.ref = "kdiscordipc" }
 
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]

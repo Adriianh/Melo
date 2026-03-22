@@ -1,7 +1,6 @@
 package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.itunes.toDomain

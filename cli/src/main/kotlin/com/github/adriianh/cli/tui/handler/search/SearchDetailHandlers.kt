@@ -62,9 +62,15 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
             }
 
             var artworkUrl = fullTrack.artworkUrl
-            if (artworkUrl.isNullOrBlank()) {
-                artworkUrl = artworkProvider.resolveArtwork(fullTrack.title, fullTrack.artist)
+            var album = fullTrack.album
+            
+            if (artworkUrl.isNullOrBlank() || album.isBlank()) {
+                val resolved = metadataProvider.resolveMetadata(fullTrack.title, fullTrack.artist)
+                if (artworkUrl.isNullOrBlank()) artworkUrl = resolved?.artworkUrl
+                if (album.isBlank()) album = resolved?.album ?: ""
             }
+            
+            val updatedTrack = fullTrack.copy(artworkUrl = artworkUrl, album = album)
 
             val artworkData = artworkUrl?.let {
                 try {
@@ -76,7 +82,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
 
             if (isActive) {
                 appRunner()?.runOnRenderThread {
-                    state = state.copy(detail = state.detail.copy(selectedTrack = fullTrack, artworkData = artworkData))
+                    state = state.copy(detail = state.detail.copy(selectedTrack = updatedTrack, artworkData = artworkData))
                 }
                 val similar = similarDeferred.await()
                 if (isActive) appRunner()?.runOnRenderThread {
@@ -91,14 +97,29 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
     nowPlayingMetadataJob?.cancel()
     if (state.isOfflineMode) return
     nowPlayingMetadataJob = scope.launch {
-        var artworkUrl = track.artworkUrl ?: getTrack(track.id)?.artworkUrl
-        if (artworkUrl.isNullOrBlank()) {
-            artworkUrl = artworkProvider.resolveArtwork(track.title, track.artist)
-        }
+        val resolvedMetadata = if (track.artworkUrl == null || track.album.isBlank()) {
+            metadataProvider.resolveMetadata(track.title, track.artist)
+        } else null
+
+        val artworkUrl = resolvedMetadata?.artworkUrl ?: track.artworkUrl
+        val album = resolvedMetadata?.album ?: track.album
         val artwork = artworkUrl?.let { artworkRenderer.load(it) }
+
         if (isActive) appRunner()?.runOnRenderThread {
             if (state.player.nowPlaying?.id == track.id) {
-                state = state.copy(player = state.player.copy(nowPlayingArtwork = artwork))
+                state = state.copy(
+                    player = state.player.copy(
+                        nowPlaying = state.player.nowPlaying?.copy(
+                            artworkUrl = artworkUrl,
+                            album = album
+                        ),
+                        nowPlayingArtwork = artwork
+                    )
+                )
+
+                if (settingsViewState.currentSettings.discordRpcEnabled) {
+                    discordRpcManager.updateActivity(state.player.nowPlaying, state.player.isPlaying)
+                }
             }
         }
     }

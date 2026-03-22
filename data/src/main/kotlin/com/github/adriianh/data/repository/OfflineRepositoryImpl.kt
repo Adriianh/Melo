@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.audio.AudioHeader
+import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
 class OfflineRepositoryImpl(
@@ -33,17 +34,38 @@ class OfflineRepositoryImpl(
     private val _offlineTracksFlow = MutableStateFlow(loadMetadataSync())
 
     /**
-     * Returns the duration of the audio file in milliseconds, or 0 if it cannot be determined.
+     * Extracts metadata from the audio file tags.
      */
-    private fun getAudioDurationMs(file: File): Int {
+    private fun getFileMetadata(file: File): TrackMetadata {
         return try {
             val audioFile = AudioFileIO.read(file)
+            val tag = audioFile.tag
             val header: AudioHeader = audioFile.audioHeader
-            header.trackLength * 1000 // seconds to ms
+            
+            val title = tag?.getFirst(FieldKey.TITLE)?.takeIf { it.isNotBlank() }
+            val artist =
+                tag?.getFields(FieldKey.ARTIST)?.joinToString(", ") { it.toString() }?.takeIf { it.isNotBlank() }
+            val album = tag?.getFirst(FieldKey.ALBUM)?.ifBlank { null }
+            
+            if (title != null && artist != null) {
+                TrackMetadata(title, artist, album ?: "", header.trackLength * 1000L)
+            } else {
+                // Fallback to filename parsing
+                val name = file.nameWithoutExtension
+                val parts = name.split(" - ", limit = 2)
+                val (artistPart, titlePart) = if (parts.size == 2) {
+                    parts[0] to parts[1]
+                } else {
+                    "Unknown Artist" to parts[0]
+                }
+                TrackMetadata(titlePart, artistPart, album ?: "", header.trackLength * 1000L)
+            }
         } catch (_: Exception) {
-            0
+            TrackMetadata(file.nameWithoutExtension, "Unknown Artist", "", 0L)
         }
     }
+
+    private data class TrackMetadata(val title: String, val artist: String, val album: String, val durationMs: Long)
 
     override fun getOfflineTracksFlow(): Flow<List<OfflineTrack>> = _offlineTracksFlow.asStateFlow()
 
@@ -211,32 +233,21 @@ class OfflineRepositoryImpl(
                         .maxDepth(10)
                         .filter { it.isFile && it.extension.lowercase() in audioExtensions }
                         .forEach { file ->
-                            val existing = _offlineTracksFlow.value.find { it.localFilePath == file.absolutePath }
-                            if (existing != null) {
-                                results.add(existing.track)
-                            } else {
-                                val name = file.nameWithoutExtension
-                                val parts = name.split(" - ", limit = 2)
-                                val (artist, title) = if (parts.size == 2) {
-                                    parts[0] to parts[1]
-                                } else {
-                                    "Unknown Artist" to parts[0]
-                                }
-                                val durationMs = getAudioDurationMs(file).toLong()
+                            _offlineTracksFlow.value.find { it.localFilePath == file.absolutePath }
+                                val metadata = getFileMetadata(file)
 
                                 results.add(
                                     Track(
                                         id = "local:${file.absolutePath}",
-                                        title = title,
-                                        artist = artist,
-                                        album = "",
-                                        durationMs = durationMs,
+                                        title = metadata.title,
+                                        artist = metadata.artist,
+                                        album = metadata.album,
+                                        durationMs = metadata.durationMs,
                                         genres = emptyList(),
                                         artworkUrl = null,
                                         sourceId = null
                                     )
                                 )
-                            }
                         }
                 }
             }

@@ -21,6 +21,8 @@ dependencies {
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)
     implementation(libs.jmtc)
+    implementation(libs.kdiscordipc)
+    implementation(libs.slf4jApi)
 }
 
 val appVersion = "1.0.0"
@@ -101,6 +103,7 @@ graalvmNative {
                 "--initialize-at-build-time=org.sqlite",
                 "--initialize-at-build-time=java.sql.DriverManager",
                 "--initialize-at-build-time=java.sql.DriverInfo",
+                "--initialize-at-run-time=org.newsclub.net.unix",
                 // ── Native image housekeeping ───────────────────────────
                 "-H:+InstallExitHandlers",
                 "-H:+ReportUnsupportedElementsAtRuntime",
