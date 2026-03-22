@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.service
 
 import com.github.adriianh.core.domain.model.Track
 import dev.cbyrne.kdiscordipc.KDiscordIPC
+import dev.cbyrne.kdiscordipc.core.event.impl.DisconnectedEvent
 import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
@@ -28,29 +29,29 @@ class DiscordRpcManager(
     private var isConnected: Boolean = false
     private var activityJob: Job? = null
 
-    init {
-        try {
-            ipc = KDiscordIPC(clientId)
-            scope.launch {
-                ipc?.on<ReadyEvent> {
-                    isConnected = true
-                    if (currentTrack != null) {
-                        updateActivity(currentTrack, isPlaying)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     fun connect() {
         scope.launch {
             try {
-                if (isConnected) return@launch
-                ipc?.connect()
-            } catch (e: Exception) {
-                e.printStackTrace()
+                if (isConnected || ipc != null) return@launch
+                
+                val newIpc = KDiscordIPC(clientId).also { ipc = it }
+                newIpc.on<ReadyEvent> {
+                    isConnected = true
+                    currentTrack?.let { updateActivity(it, isPlaying) }
+                }
+                
+                newIpc.on<DisconnectedEvent> {
+                    isConnected = false
+                    ipc = null
+                }
+
+                newIpc.connect()
+            } catch (e: Throwable) {
+                if (e !is CancellationException) {
+                    e.printStackTrace()
+                }
+                ipc = null
+                isConnected = false
             }
         }
     }
@@ -72,11 +73,7 @@ class DiscordRpcManager(
                     if (isConnected) {
                         ipc?.activityManager?.clearActivity()
                     }
-                } catch (e: Exception) {
-                    if (e !is CancellationException) {
-                        e.printStackTrace()
-                    }
-                }
+                } catch (_: Exception) { }
             }
             return
         }
@@ -112,24 +109,17 @@ class DiscordRpcManager(
                         }
                     }
                 }
-            } catch (e: Exception) {
-                if (e !is CancellationException) {
-                    e.printStackTrace()
-                }
-            }
+            } catch (_: Exception) { }
         }
     }
 
     fun disconnect() {
         scope.launch {
             try {
-                if (isConnected) {
-                    ipc?.activityManager?.clearActivity()
-                    ipc?.disconnect()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                ipc?.disconnect()
+            } catch (_: Throwable) {
             } finally {
+                ipc = null
                 isConnected = false
             }
         }
