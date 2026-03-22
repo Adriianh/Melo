@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS play_history (
     played_at   INTEGER NOT NULL  -- epoch millis
 );
 
+CREATE INDEX IF NOT EXISTS idx_play_history_played_at ON play_history(played_at);
+
 insertPlay:
 INSERT INTO play_history (track_id, title, artist, album, duration_ms, artwork_url, source_id, played_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
@@ -28,7 +30,7 @@ LIMIT :limit;
 deleteOldHistory:
 DELETE FROM play_history
 WHERE id NOT IN (
-    SELECT id FROM play_history ORDER BY played_at DESC LIMIT 200
+    SELECT id FROM play_history ORDER BY played_at DESC LIMIT 5000
 );
 
 selectTopTracks:
