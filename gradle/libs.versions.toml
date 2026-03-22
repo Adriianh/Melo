@@ -16,7 +16,7 @@ sqldelight = "2.0.2"
 sqlite-jdbc = "3.45.2.0"
 jmtc = "0.0.3"
 jaudiotagger = "2.0.18"
-kdiscordipc = "main-SNAPSHOT"
+kdiscordipc = "5041c5b036"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
