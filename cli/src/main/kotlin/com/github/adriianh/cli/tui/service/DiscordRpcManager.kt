@@ -6,11 +6,7 @@ import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -95,9 +91,10 @@ class DiscordRpcManager(
                 if (isConnected) {
                     ipc?.activityManager?.setActivity(
                         details = track.title,
-                        state = "by ${track.artist}"
+                        state = track.artist,
                     ) {
                         type = ActivityType.Listening
+                        statusDisplayType = 1
 
                         val imageUrl = track.artworkUrl
                         if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
