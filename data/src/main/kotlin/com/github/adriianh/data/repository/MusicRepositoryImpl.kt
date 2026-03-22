@@ -2,8 +2,8 @@ package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
-import com.github.adriianh.core.domain.provider.ArtworkProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.MusicRepository
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +17,7 @@ class MusicRepositoryImpl(
     private val musicProvider: MusicProvider,
     private val audioProvider: AudioProvider?,
     private val discoveryProvider: DiscoveryProvider?,
-    private val artworkProvider: ArtworkProvider? = null
+    private val metadataProvider: MetadataProvider? = null
 ) : MusicRepository {
 
     private val pageSize = 20
@@ -75,15 +75,17 @@ class MusicRepositoryImpl(
         } else {
             async { audioProvider?.getSourceId(track.title, track.artist, track.durationMs) }
         }
-        val artwork = if (track.artworkUrl != null) {
-            async { track.artworkUrl }
+        val metadata = if (track.artworkUrl != null && track.album.isNotBlank()) {
+            async { null }
         } else {
-            async { artworkProvider?.resolveArtwork(track.title, track.artist) }
+            async { metadataProvider?.resolveMetadata(track.title, track.artist) }
         }
+        val resolved = metadata.await()
         track.copy(
             genres     = genres.await(),
             sourceId   = sourceId.await(),
-            artworkUrl = artwork.await()
+            artworkUrl = resolved?.artworkUrl ?: track.artworkUrl,
+            album      = if (track.album.isBlank()) resolved?.album ?: "" else track.album
         )
     }
 

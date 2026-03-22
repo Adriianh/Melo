@@ -7,7 +7,7 @@ import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
-import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -125,7 +125,7 @@ val appModule = module {
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
-    single<ArtworkProvider> {
+    single<MetadataProvider> {
         val itunes = ItunesArtworkProvider(get())
         val deezer = DeezerArtworkProvider(get())
         CompositeArtworkProvider(itunes, deezer)

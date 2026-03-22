@@ -101,7 +101,7 @@ class DiscordRpcManager(
 
                         val imageUrl = track.artworkUrl
                         if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
-                            largeImage(imageUrl, track.album.takeIf { it.isNotBlank() } ?: "Melo")
+                            largeImage(imageUrl, track.album.takeIf { it.isNotBlank() })
                         } else {
                             largeImage("melo_logo", "Melo")
                         }

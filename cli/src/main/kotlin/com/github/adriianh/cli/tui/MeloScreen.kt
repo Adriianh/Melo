@@ -12,7 +12,7 @@ import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.*
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.provider.ArtworkProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
@@ -45,7 +45,7 @@ class MeloScreen(
     // Additional dependencies
     internal val offlineRepository: OfflineRepository,
     internal val artworkRenderer: ArtworkRenderer,
-    internal val artworkProvider: ArtworkProvider,
+    internal val metadataProvider: MetadataProvider,
     internal val audioProvider: AudioProvider,
     internal val discordRpcManager: DiscordRpcManager,
     dispatcher: CoroutineDispatcher
