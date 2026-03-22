@@ -72,6 +72,19 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         SettingsItem.DOWNLOAD_PATH -> current
         SettingsItem.CACHE_PATH -> current
         SettingsItem.LOCAL_FOLDERS -> current
+        SettingsItem.DISCORD_RPC -> {
+            val next = !current.discordRpcEnabled
+            if (next) {
+                discordRpcManager.connect()
+                state.player.nowPlaying?.let {
+                    val elapsedMs = (state.player.progress * it.durationMs).toLong()
+                    discordRpcManager.updateActivity(it, state.player.isPlaying, elapsedMs)
+                }
+            } else {
+                discordRpcManager.disconnect()
+            }
+            current.copy(discordRpcEnabled = next)
+        }
     }
 
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
