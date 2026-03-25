@@ -160,4 +160,5 @@ We welcome contributions! To collaborate effectively:
 
 ## License
 
-Melo is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Melo is licensed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE) for
+details.
