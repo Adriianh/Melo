@@ -5,6 +5,7 @@ import com.github.adriianh.data.remote.piped.PipedApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * AudioProvider that combines two backends for best results:
@@ -25,6 +26,8 @@ class YtDlpAudioProvider(
 ) : AudioProvider {
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
+    private val streamUrlCache = ConcurrentHashMap<String, Pair<String, Long>>()
+    private val cacheExpiryMs = 6 * 60 * 60 * 1000L
 
     /**
      * Uses Piped's `music_songs` filter to find the correct YouTube Music video ID
@@ -37,11 +40,18 @@ class YtDlpAudioProvider(
      * Resolves a direct audio-stream URL for the given YouTube video ID using a
      * single yt-dlp subprocess (~2-4 s). Returns null on failure.
      */
-    override suspend fun getStreamUrl(sourceId: String): String? =
-        withContext(Dispatchers.IO) {
+    override suspend fun getStreamUrl(sourceId: String): String? {
+        streamUrlCache[sourceId]?.let { (url, timestamp) ->
+            if (System.currentTimeMillis() - timestamp < cacheExpiryMs) {
+                return url
+            }
+            streamUrlCache.remove(sourceId)
+        }
+
+        return withContext(Dispatchers.IO) {
             try {
                 val url = "https://www.youtube.com/watch?v=$sourceId"
-                runYtDlp(
+                val streamUrl = runYtDlp(
                     "--quiet",
                     "--no-warnings",
                     "--no-playlist",
@@ -54,10 +64,15 @@ class YtDlpAudioProvider(
                     "--get-url",
                     url
                 ).lines().firstOrNull { it.startsWith("http") }
+
+                streamUrl?.also {
+                    streamUrlCache[sourceId] = Pair(it, System.currentTimeMillis())
+                }
             } catch (_: Exception) {
                 null
             }
         }
+    }
 
     /**
      * Downloads the audio for the given YouTube video ID using yt-dlp with the specified
