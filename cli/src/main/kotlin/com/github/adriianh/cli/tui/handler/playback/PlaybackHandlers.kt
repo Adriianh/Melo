@@ -22,7 +22,12 @@ import kotlinx.coroutines.launch
 internal fun MeloScreen.playTrack(track: Track) {
     if (!state.isPlayable(track)) return
 
-    val existingIndex = state.player.queue.indexOfFirst { it.id == track.id }
+    val currentIndex = state.player.queueIndex
+    val isCurrentTrack =
+        currentIndex in state.player.queue.indices && state.player.queue[currentIndex].id == track.id
+    val existingIndex =
+        if (isCurrentTrack) currentIndex else state.player.queue.indexOfFirst { it.id == track.id }
+
     val (newQueue, newIndex, newRadioMode) = when {
         existingIndex >= 0 -> Triple(state.player.queue, existingIndex, state.player.isRadioMode)
         else -> Triple(listOf(track), 0, true)
