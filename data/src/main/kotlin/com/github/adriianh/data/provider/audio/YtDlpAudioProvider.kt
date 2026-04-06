@@ -26,8 +26,18 @@ class YtDlpAudioProvider(
 ) : AudioProvider {
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
-    private val streamUrlCache = ConcurrentHashMap<String, Pair<String, Long>>()
-    private val cacheExpiryMs = 6 * 60 * 60 * 1000L
+    private val streamUrlCache = ConcurrentHashMap<String, String>()
+
+    /**
+     * Extracts the exact expiration time from a YouTube stream URL's "expire=" query parameter.
+     * Returns null if not found.
+     */
+    private fun getUrlExpiryTimeMs(url: String): Long? {
+        // e.g. ...&expire=1711099234&...
+        val regex = Regex("""[?&]expire=(\d+)""")
+        val match = regex.find(url) ?: return null
+        return match.groupValues[1].toLongOrNull()?.times(1000L)
+    }
 
     /**
      * Uses Piped's `music_songs` filter to find the correct YouTube Music video ID
@@ -41,8 +51,9 @@ class YtDlpAudioProvider(
      * single yt-dlp subprocess (~2-4 s). Returns null on failure.
      */
     override suspend fun getStreamUrl(sourceId: String): String? {
-        streamUrlCache[sourceId]?.let { (url, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < cacheExpiryMs) {
+        streamUrlCache[sourceId]?.let { url ->
+            val expiryTimeMs = getUrlExpiryTimeMs(url)
+            if (expiryTimeMs == null || System.currentTimeMillis() < (expiryTimeMs - 5 * 60 * 1000L)) {
                 return url
             }
             streamUrlCache.remove(sourceId)
@@ -66,7 +77,7 @@ class YtDlpAudioProvider(
                 ).lines().firstOrNull { it.startsWith("http") }
 
                 streamUrl?.also {
-                    streamUrlCache[sourceId] = Pair(it, System.currentTimeMillis())
+                    streamUrlCache[sourceId] = it
                 }
             } catch (_: Exception) {
                 null
