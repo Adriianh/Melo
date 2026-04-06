@@ -28,16 +28,21 @@ internal fun MeloScreen.playTrack(track: Track) {
     val existingIndex =
         if (isCurrentTrack) currentIndex else state.player.queue.indexOfFirst { it.id == track.id }
 
-    val (newQueue, newIndex, newRadioMode) = when {
-        existingIndex >= 0 -> Triple(state.player.queue, existingIndex, state.player.isRadioMode)
-        else -> Triple(listOf(track), 0, true)
+    val (newQueue, newIndex, newRadioMode, newUserQueueCount) = when {
+        existingIndex >= 0 -> listOf(state.player.queue, existingIndex, state.player.isRadioMode, state.player.userQueueCount)
+        else -> listOf(listOf(track), 0, true, 0)
     }
+
+    @Suppress("UNCHECKED_CAST")
     state = state.copy(
         player = state.player.copy(
             nowPlaying = track,
             isPlaying = false, isLoadingAudio = true,
             audioError = null,
-            queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
+            queue = newQueue as List<Track>,
+            queueIndex = newIndex as Int,
+            isRadioMode = newRadioMode as Boolean,
+            userQueueCount = newUserQueueCount as Int,
             syncedLyrics = emptyList(), isLoadingSyncedLyrics = true, nowPlayingPositionMs = 0L,
             nowPlayingArtwork = null,
             progress = 0.0, marqueeOffset = 0,
@@ -195,6 +200,19 @@ internal fun MeloScreen.seekForward() {
             next
         }
     }
+
+    val previousIndex = state.player.queueIndex
+    val diff = nextIndex - previousIndex
+    val newUserQueueCount = if (diff == 1 && state.player.userQueueCount > 0) {
+        state.player.userQueueCount - 1
+    } else if (diff != 0) {
+        0
+    } else {
+        state.player.userQueueCount
+    }
+
+    state = state.copy(player = state.player.copy(userQueueCount = newUserQueueCount))
+
     playFromQueue(nextIndex)
 }
 
@@ -211,7 +229,8 @@ internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
         player = state.player.copy(
             queue = playableTracks,
             queueIndex = -1,
-            isRadioMode = false
+            isRadioMode = false,
+            userQueueCount = 0
         )
     )
     playFromQueue(newStartIndex)
