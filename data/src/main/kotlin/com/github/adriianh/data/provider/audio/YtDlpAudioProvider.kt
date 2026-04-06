@@ -27,6 +27,7 @@ class YtDlpAudioProvider(
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
     private val streamUrlCache = ConcurrentHashMap<String, String>()
+    private val sourceIdCache = ConcurrentHashMap<String, String>()
 
     /**
      * Extracts the exact expiration time from a YouTube stream URL's "expire=" query parameter.
@@ -43,8 +44,16 @@ class YtDlpAudioProvider(
      * Uses Piped's `music_songs` filter to find the correct YouTube Music video ID
      * for the given track. Returns the ID (e.g. `"4NRXx6U8ABQ"`) or null on failure.
      */
-    override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? =
-        pipedApiClient.search(title, title, artist, durationMs)
+    override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? {
+        val cacheKey = "$artist|$title|$durationMs"
+        sourceIdCache[cacheKey]?.let { return it }
+
+        val id = pipedApiClient.search(title, title, artist, durationMs)
+        if (id != null) {
+            sourceIdCache[cacheKey] = id
+        }
+        return id
+    }
 
     /**
      * Resolves a direct audio-stream URL for the given YouTube video ID using a

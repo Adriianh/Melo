@@ -73,7 +73,6 @@ internal fun MeloScreen.playTrack(track: Track) {
         }
 
         nextTracks
-            .filter { it.sourceId != null }
             .filter { offlineRepository.getOfflineTrack(it.id)?.downloadStatus != DownloadStatus.COMPLETED }
             .forEach { nextTrack ->
                 launch(Dispatchers.IO) {
