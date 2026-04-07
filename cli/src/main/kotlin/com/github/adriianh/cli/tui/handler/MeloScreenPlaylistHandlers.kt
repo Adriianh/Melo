@@ -112,8 +112,11 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
             state = state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput.dropLast(1)))
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput + event.character()))
+        event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt() -> {
+            val c = event.character()
+            if (c >= ' ') {
+                state = state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput + c))
+            }
             return EventResult.HANDLED
         }
     }
