@@ -112,6 +112,14 @@ internal fun MeloScreen.focusResults() {
 }
 
 internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
+    if (event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt()) {
+        val c = event.character()
+        if (c >= '\u007F') {
+            searchInputState.insert(c)
+            return EventResult.HANDLED
+        }
+    }
+
     val s = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
     if (s.results.isNotEmpty() &&
         (event.matches(Actions.MOVE_DOWN) || event.matches(Actions.MOVE_UP))
