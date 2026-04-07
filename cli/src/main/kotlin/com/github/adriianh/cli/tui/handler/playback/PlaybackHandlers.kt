@@ -8,51 +8,78 @@ import com.github.adriianh.cli.tui.handler.onTrackStarted
 import com.github.adriianh.cli.tui.handler.search.loadNowPlayingMetadata
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.playTrack(track: Track) {
     if (!state.isPlayable(track)) return
-    val existingIndex = state.player.queue.indexOfFirst { it.id == track.id }
-    val (newQueue, newIndex, newRadioMode) = when {
-        existingIndex >= 0 -> Triple(state.player.queue, existingIndex, state.player.isRadioMode)
-        else -> Triple(listOf(track), 0, true)
+
+    val currentIndex = state.player.queueIndex
+    val isCurrentTrack =
+        currentIndex in state.player.queue.indices && state.player.queue[currentIndex].id == track.id
+    val existingIndex =
+        if (isCurrentTrack) currentIndex else state.player.queue.indexOfFirst { it.id == track.id }
+
+    val (newQueue, newIndex, newRadioMode, newUserQueueCount) = when {
+        existingIndex >= 0 -> listOf(state.player.queue, existingIndex, state.player.isRadioMode, state.player.userQueueCount)
+        else -> listOf(listOf(track), 0, true, 0)
     }
+
+    @Suppress("UNCHECKED_CAST")
     state = state.copy(
         player = state.player.copy(
             nowPlaying = track,
             isPlaying = false, isLoadingAudio = true,
             audioError = null,
-            queue = newQueue, queueIndex = newIndex, isRadioMode = newRadioMode,
+            queue = newQueue as List<Track>,
+            queueIndex = newIndex as Int,
+            isRadioMode = newRadioMode as Boolean,
+            userQueueCount = newUserQueueCount as Int,
             syncedLyrics = emptyList(), isLoadingSyncedLyrics = true, nowPlayingPositionMs = 0L,
             nowPlayingArtwork = null,
             progress = 0.0, marqueeOffset = 0,
         )
     )
+
     marqueeTick = 0
     scrobbleSubmitted = false
     playRecorded = false
     trackStartedAt = System.currentTimeMillis()
     audioPlayer.stop()
+
     if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && state.player.queueIndex >= state.player.queue.size - 3) {
         loadMoreRadioTracks()
     }
     loadNowPlayingMetadata(track)
+
     resolveStreamJob?.cancel()
     resolveStreamJob = scope.launch {
+        val queue = state.player.queue
+        val nextTracks =
+            (1..2).mapNotNull { offset -> queue.getOrNull(state.player.queueIndex + offset) }
+
         markTrackAccessed(track.id)
+
         if (settingsViewState.currentSettings.autoDownload) {
-            val queue = state.player.queue
-            val currentIndex = state.player.queueIndex
-            (1..2).mapNotNull { offset -> queue.getOrNull(currentIndex + offset) }
-                .forEach { nextTrack -> launch { downloadTrack(nextTrack) } }
+            nextTracks.forEach { nextTrack -> launch(Dispatchers.IO) { downloadTrack(nextTrack) } }
         }
+
+        nextTracks
+            .filter { offlineRepository.getOfflineTrack(it.id)?.downloadStatus != DownloadStatus.COMPLETED }
+            .forEach { nextTrack ->
+                launch(Dispatchers.IO) {
+                    getStream(nextTrack)
+                }
+            }
+
         var url: String? = null
         var attempts = 0
         val maxAttempts = 3
@@ -81,6 +108,7 @@ internal fun MeloScreen.playTrack(track: Track) {
             }
             onTrackStarted(track)
         }
+
         val lrc = getSyncedLyrics(track.artist, track.title)
         appRunner()?.runOnRenderThread {
             state = state.copy(
@@ -91,6 +119,7 @@ internal fun MeloScreen.playTrack(track: Track) {
             )
         }
     }
+
     checkIsFavorite(track.id)
 }
 
@@ -170,6 +199,19 @@ internal fun MeloScreen.seekForward() {
             next
         }
     }
+
+    val previousIndex = state.player.queueIndex
+    val diff = nextIndex - previousIndex
+    val newUserQueueCount = if (diff == 1 && state.player.userQueueCount > 0) {
+        state.player.userQueueCount - 1
+    } else if (diff != 0) {
+        0
+    } else {
+        state.player.userQueueCount
+    }
+
+    state = state.copy(player = state.player.copy(userQueueCount = newUserQueueCount))
+
     playFromQueue(nextIndex)
 }
 
@@ -186,7 +228,8 @@ internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
         player = state.player.copy(
             queue = playableTracks,
             queueIndex = -1,
-            isRadioMode = false
+            isRadioMode = false,
+            userQueueCount = 0
         )
     )
     playFromQueue(newStartIndex)
