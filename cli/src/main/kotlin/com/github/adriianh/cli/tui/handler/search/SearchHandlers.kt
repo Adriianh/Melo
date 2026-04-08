@@ -3,11 +3,18 @@ package com.github.adriianh.cli.tui.handler.search
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.SidebarSection
-import com.github.adriianh.cli.tui.handler.*
+import com.github.adriianh.cli.tui.handler.NAV_SECTIONS
+import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
+import com.github.adriianh.cli.tui.handler.handlePlaylistInput
+import com.github.adriianh.cli.tui.handler.handlePlaylistPicker
+import com.github.adriianh.cli.tui.handler.matchesAction
+import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playTrack
+import com.github.adriianh.cli.tui.handler.toggleFavorite
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.MeloAction
@@ -25,7 +32,7 @@ internal fun MeloScreen.performSearch() {
     loadMoreJob?.cancel()
     loadMoreJob = null
 
-    val currentTab = (state.screen as? ScreenState.Search)?.tab ?: com.github.adriianh.cli.tui.SearchTab.SONGS
+    val currentTab = (state.screen as? ScreenState.Search)?.tab ?: SearchTab.SONGS
 
     if (state.isOfflineMode) {
         val q = query.lowercase()
@@ -54,7 +61,13 @@ internal fun MeloScreen.performSearch() {
     }
 
     state = state.copy(
-        screen = ScreenState.Search(query = query, tab = currentTab, isLoading = true, errorMessage = null, hasMore = currentTab == com.github.adriianh.cli.tui.SearchTab.SONGS),
+        screen = ScreenState.Search(
+            query = query,
+            tab = currentTab,
+            isLoading = true,
+            errorMessage = null,
+            hasMore = currentTab == SearchTab.SONGS
+        ),
         detail = state.detail.copy(selectedTrack = null),
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
     )
@@ -62,7 +75,7 @@ internal fun MeloScreen.performSearch() {
     scope.launch {
         try {
             when (currentTab) {
-                com.github.adriianh.cli.tui.SearchTab.SONGS -> {
+                SearchTab.SONGS -> {
                     val results = searchTracks(query)
                     val firstTrack = results.firstOrNull()
                     appRunner()?.runOnRenderThread {
@@ -78,31 +91,49 @@ internal fun MeloScreen.performSearch() {
                     }
                     if (firstTrack != null) loadTrackDetails(firstTrack.id)
                 }
-                com.github.adriianh.cli.tui.SearchTab.ALBUMS -> {
+
+                SearchTab.ALBUMS -> {
                     val results = searchAlbums(query)
                     appRunner()?.runOnRenderThread {
                         updateScreen<ScreenState.Search> {
-                            it.copy(albumResults = results, isLoading = false, selectedIndex = 0, hasMore = false)
+                            it.copy(
+                                albumResults = results,
+                                isLoading = false,
+                                selectedIndex = 0,
+                                hasMore = false
+                            )
                         }
                         resultList.selected(0)
                         focusResults()
                     }
                 }
-                com.github.adriianh.cli.tui.SearchTab.ARTISTS -> {
+
+                SearchTab.ARTISTS -> {
                     val results = searchArtists(query)
                     appRunner()?.runOnRenderThread {
                         updateScreen<ScreenState.Search> {
-                            it.copy(artistResults = results, isLoading = false, selectedIndex = 0, hasMore = false)
+                            it.copy(
+                                artistResults = results,
+                                isLoading = false,
+                                selectedIndex = 0,
+                                hasMore = false
+                            )
                         }
                         resultList.selected(0)
                         focusResults()
                     }
                 }
-                com.github.adriianh.cli.tui.SearchTab.PLAYLISTS -> {
+
+                SearchTab.PLAYLISTS -> {
                     val results = searchPlaylists(query)
                     appRunner()?.runOnRenderThread {
                         updateScreen<ScreenState.Search> {
-                            it.copy(playlistResults = results, isLoading = false, selectedIndex = 0, hasMore = false)
+                            it.copy(
+                                playlistResults = results,
+                                isLoading = false,
+                                selectedIndex = 0,
+                                hasMore = false
+                            )
                         }
                         resultList.selected(0)
                         focusResults()
@@ -139,7 +170,13 @@ internal fun MeloScreen.loadMore() {
                 }
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread { updateScreen<ScreenState.Search> { it.copy(isLoadingMore = false) } }
+            appRunner()?.runOnRenderThread {
+                updateScreen<ScreenState.Search> {
+                    it.copy(
+                        isLoadingMore = false
+                    )
+                }
+            }
         }
     }
 }
@@ -181,13 +218,14 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "results-panel"
     if (isFocused) {
         if (event.code() == KeyCode.TAB || event.matches(Actions.MOVE_RIGHT)) {
-            val nextTab = com.github.adriianh.cli.tui.SearchTab.entries[(actualState.tab.ordinal + 1) % com.github.adriianh.cli.tui.SearchTab.entries.size]
+            val nextTab = SearchTab.entries[(actualState.tab.ordinal + 1) % SearchTab.entries.size]
             state = state.copy(screen = actualState.copy(tab = nextTab, selectedIndex = 0))
             if (actualState.query.isNotBlank()) performSearch()
             return EventResult.HANDLED
         }
         if (event.matches(Actions.MOVE_LEFT)) {
-            val prevTab = com.github.adriianh.cli.tui.SearchTab.entries[(actualState.tab.ordinal - 1 + com.github.adriianh.cli.tui.SearchTab.entries.size) % com.github.adriianh.cli.tui.SearchTab.entries.size]
+            val prevTab =
+                SearchTab.entries[(actualState.tab.ordinal - 1 + SearchTab.entries.size) % SearchTab.entries.size]
             state = state.copy(screen = actualState.copy(tab = prevTab, selectedIndex = 0))
             if (actualState.query.isNotBlank()) performSearch()
             return EventResult.HANDLED
@@ -195,10 +233,10 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
     }
 
     val listSize = when (actualState.tab) {
-        com.github.adriianh.cli.tui.SearchTab.SONGS -> actualState.results.size
-        com.github.adriianh.cli.tui.SearchTab.ALBUMS -> actualState.albumResults.size
-        com.github.adriianh.cli.tui.SearchTab.ARTISTS -> actualState.artistResults.size
-        com.github.adriianh.cli.tui.SearchTab.PLAYLISTS -> actualState.playlistResults.size
+        SearchTab.SONGS -> actualState.results.size
+        SearchTab.ALBUMS -> actualState.albumResults.size
+        SearchTab.ARTISTS -> actualState.artistResults.size
+        SearchTab.PLAYLISTS -> actualState.playlistResults.size
     }
 
     if (listSize == 0) return EventResult.UNHANDLED
@@ -208,9 +246,12 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             if (!isFocused) return EventResult.UNHANDLED
             val newIndex = minOf(listSize - 1, actualState.selectedIndex + 1)
             resultList.selected(newIndex)
-            state = state.copy(screen = actualState.copy(selectedIndex = newIndex), player = state.player.copy(marqueeOffset = 0))
+            state = state.copy(
+                screen = actualState.copy(selectedIndex = newIndex),
+                player = state.player.copy(marqueeOffset = 0)
+            )
             marqueeTick = 0
-            if (actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS) {
+            if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
                     state = state.copy(detail = state.detail.copy(selectedTrack = track))
                     debouncedLoadDetails(track)
@@ -224,9 +265,12 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             if (!isFocused) return EventResult.UNHANDLED
             val newIndex = maxOf(0, actualState.selectedIndex - 1)
             resultList.selected(newIndex)
-            state = state.copy(screen = actualState.copy(selectedIndex = newIndex), player = state.player.copy(marqueeOffset = 0))
+            state = state.copy(
+                screen = actualState.copy(selectedIndex = newIndex),
+                player = state.player.copy(marqueeOffset = 0)
+            )
             marqueeTick = 0
-            if (actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS) {
+            if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
                     state = state.copy(detail = state.detail.copy(selectedTrack = track))
                     debouncedLoadDetails(track)
@@ -236,35 +280,48 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            if (!isFocused || actualState.tab != com.github.adriianh.cli.tui.SearchTab.SONGS) return EventResult.UNHANDLED
-            val selected = actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+            if (!isFocused || actualState.tab != SearchTab.SONGS) return EventResult.UNHANDLED
+            val selected =
+                actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
             downloadTrack(selected, DownloadType.PREFETCH)
             playTrack(selected)
             return EventResult.HANDLED
         }
 
-        actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS && event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+        actualState.tab == SearchTab.SONGS && event.matchesAction(
+            MeloAction.FAVORITE,
+            settingsViewState.currentSettings
+        ) -> {
             actualState.results.getOrNull(actualState.selectedIndex)?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
-        actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS && event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
+        actualState.tab == SearchTab.SONGS && event.matchesAction(
+            MeloAction.ADD_TO_QUEUE,
+            settingsViewState.currentSettings
+        ) -> {
             actualState.results.getOrNull(actualState.selectedIndex)?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
-        actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS && event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+        actualState.tab == SearchTab.SONGS && event.matchesAction(
+            MeloAction.ADD_PLAYLIST,
+            settingsViewState.currentSettings
+        ) -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }
 
-        actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS && event.matchesAction(MeloAction.LYRICS, settingsViewState.currentSettings) -> {
+        actualState.tab == SearchTab.SONGS && event.matchesAction(
+            MeloAction.LYRICS,
+            settingsViewState.currentSettings
+        ) -> {
             loadLyrics()
             return EventResult.HANDLED
         }
 
-        actualState.tab == com.github.adriianh.cli.tui.SearchTab.SONGS && event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED
