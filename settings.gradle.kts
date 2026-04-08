@@ -17,3 +17,4 @@ rootProject.name = "Melo"
 include(":core")
 include(":data")
 include(":cli")
+include(":innertube")
