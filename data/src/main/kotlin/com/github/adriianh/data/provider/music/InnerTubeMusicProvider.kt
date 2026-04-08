@@ -124,7 +124,7 @@ class InnerTubeMusicProvider(
                 durationMs = song.duration?.times(1000L) ?: 0L,
                 album = albumItem.title,
                 genres = emptyList(),
-                artworkUrl = song.thumbnail ?: albumItem.thumbnail,
+                artworkUrl = song.thumbnail,
                 sourceId = song.id
             )
         }
@@ -159,7 +159,7 @@ class InnerTubeMusicProvider(
                 durationMs = song.duration?.times(1000L) ?: 0L,
                 album = song.album?.name ?: "",
                 genres = emptyList(),
-                artworkUrl = song.thumbnail ?: result.artist.thumbnail,
+                artworkUrl = song.thumbnail,
                 sourceId = song.id
             )
         }
