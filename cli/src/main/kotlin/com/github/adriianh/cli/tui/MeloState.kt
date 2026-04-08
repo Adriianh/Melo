@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackStat
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.ImageData
 
 /**
@@ -124,13 +125,19 @@ data class NavigationState(
     val sidebarInUtil: Boolean = false,
 )
 
+enum class SearchTab { SONGS, ALBUMS, ARTISTS, PLAYLISTS }
+
 /**
  * Represents the state of a specific screen.
  */
 sealed interface ScreenState {
     data class Search(
         val query: String = "",
+        val tab: SearchTab = SearchTab.SONGS,
         val results: List<Track> = emptyList(),
+        val albumResults: List<SearchResult.Album> = emptyList(),
+        val artistResults: List<SearchResult.Artist> = emptyList(),
+        val playlistResults: List<SearchResult.Playlist> = emptyList(),
         val selectedIndex: Int = 0,
         val isLoading: Boolean = false,
         val isLoadingMore: Boolean = false,

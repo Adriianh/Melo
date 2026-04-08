@@ -170,6 +170,9 @@ val appModule = module {
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
 
     factory { SearchTracksUseCase(get()) }
+    factory { SearchAlbumsUseCase(get()) }
+    factory { SearchArtistsUseCase(get()) }
+    factory { SearchPlaylistsUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
     factory { GetTrackUseCase(get()) }
     factory { GetLyricsUseCase(get()) }
@@ -210,7 +213,7 @@ val appModule = module {
     factory { UpdateSettingsUseCase(get()) }
 
     // Interactors
-    factory { SearchInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }

@@ -53,6 +53,9 @@ class MeloScreen(
 
     // Bridging properties to keep existing code working during refactor
     internal val searchTracks get() = searchInteractors.searchTracks
+    internal val searchAlbums get() = searchInteractors.searchAlbums
+    internal val searchArtists get() = searchInteractors.searchArtists
+    internal val searchPlaylists get() = searchInteractors.searchPlaylists
     internal val loadMoreTracks get() = searchInteractors.loadMoreTracks
     internal val getTrack get() = searchInteractors.getTrack
     internal val getLyrics get() = searchInteractors.getLyrics
