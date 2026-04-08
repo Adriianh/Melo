@@ -11,10 +11,20 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.layout.Margin
+import dev.tamboui.style.Overflow
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.stack
+import dev.tamboui.toolkit.Toolkit.tabs
+import dev.tamboui.toolkit.Toolkit.text
+import dev.tamboui.toolkit.Toolkit.widget
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
@@ -24,8 +34,6 @@ import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.block.Block
 import dev.tamboui.widgets.block.BorderType
 import dev.tamboui.widgets.block.Borders
-import com.github.adriianh.core.domain.model.search.SearchResult
-import dev.tamboui.layout.Margin
 
 fun buildDetailPanel(
     state: MeloState,
@@ -90,53 +98,66 @@ fun buildEntityDetailPanel(
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
+                            text(entity.description!!).dim()
+                                .overflow(Overflow.WRAP_WORD)
                         )
                     } else spacer(),
                     if (!entity.otherVersions.isNullOrEmpty()) {
                         column(
                             text(""),
                             text("Other versions:").fg(TEXT_SECONDARY),
-                            *entity.otherVersions!!.map { text("• ${it.title}").dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD) }.toTypedArray()
+                            *entity.otherVersions!!.map {
+                                text("• ${it.title}").dim()
+                                    .overflow(Overflow.WRAP_WORD)
+                            }.toTypedArray()
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
+
             is SearchResult.Artist -> {
                 column(
                     text(" Artist ").fg(PRIMARY_COLOR),
                     text(""),
-                    text(entity.name).fg(TEXT_PRIMARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
+                    text(entity.name).fg(TEXT_PRIMARY)
+                        .overflow(Overflow.WRAP_WORD),
                     if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else spacer(),
                     if (state.detail.entityGenres.isNotEmpty()) {
                         column(
                             text(""),
-                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD)
+                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                                .overflow(Overflow.WRAP_WORD)
                         )
                     } else spacer(),
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
+                            text(entity.description!!).dim()
+                                .overflow(Overflow.WRAP_WORD)
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
+
             is SearchResult.Playlist -> {
                 column(
                     text(" Playlist ").fg(PRIMARY_COLOR),
                     text(""),
-                    text(entity.title).fg(TEXT_PRIMARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
-                    text(entity.author).fg(TEXT_SECONDARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
+                    text(entity.title).fg(TEXT_PRIMARY)
+                        .overflow(Overflow.WRAP_WORD),
+                    text(entity.author).fg(TEXT_SECONDARY)
+                        .overflow(Overflow.WRAP_WORD),
                     if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer(),
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
+                            text(entity.description!!).dim()
+                                .overflow(Overflow.WRAP_WORD)
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
+
             else -> spacer()
         }
     )
@@ -218,9 +239,11 @@ private fun renderSimilarTab(
     val items = state.detail.similarTracks.mapIndexed { index, similar ->
         val isSelected = index == state.detail.similarCursor
         val isPlayable = state.isPlayable(similar)
-        val titleColor = if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
+        val titleColor =
+            if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
         row(
-            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
+            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle()
+                .fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
         )
     }.toMutableList()
