@@ -86,14 +86,40 @@ fun buildEntityDetailPanel(
                     text(""),
                     text(entity.title).fg(TEXT_PRIMARY),
                     text(entity.author).fg(TEXT_SECONDARY),
-                    if (entity.year != null) text(entity.year!!).dim() else spacer()
+                    if (entity.year != null) text(entity.year!!).dim() else spacer(),
+                    if (!entity.description.isNullOrEmpty()) {
+                        column(
+                            text(""),
+                            text(entity.description!!).dim()
+                        )
+                    } else spacer(),
+                    if (!entity.otherVersions.isNullOrEmpty()) {
+                        column(
+                            text(""),
+                            text("Other versions:").fg(TEXT_SECONDARY),
+                            *entity.otherVersions!!.map { text("• ${it.title}").dim() }.toTypedArray()
+                        )
+                    } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
             is SearchResult.Artist -> {
                 column(
                     text(" Artist ").fg(PRIMARY_COLOR),
                     text(""),
-                    text(entity.name).fg(TEXT_PRIMARY)
+                    text(entity.name).fg(TEXT_PRIMARY),
+                    if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else spacer(),
+                    if (state.detail.entityGenres.isNotEmpty()) {
+                        column(
+                            text(""),
+                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                        )
+                    } else spacer(),
+                    if (!entity.description.isNullOrEmpty()) {
+                        column(
+                            text(""),
+                            text(entity.description!!).dim()
+                        )
+                    } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
             is SearchResult.Playlist -> {
@@ -102,7 +128,13 @@ fun buildEntityDetailPanel(
                     text(""),
                     text(entity.title).fg(TEXT_PRIMARY),
                     text(entity.author).fg(TEXT_SECONDARY),
-                    if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer()
+                    if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer(),
+                    if (!entity.description.isNullOrEmpty()) {
+                        column(
+                            text(""),
+                            text(entity.description!!).dim()
+                        )
+                    } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
             }
             else -> spacer()
