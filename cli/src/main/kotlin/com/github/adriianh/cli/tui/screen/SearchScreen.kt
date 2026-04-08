@@ -63,7 +63,7 @@ fun renderSearchScreen(
                         )
                     },
                     text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
-                    text("  Press Tab to focus the search bar, Right/Left to change category").fg(TEXT_DIM).centered(),
+                    text("  Press Tab to focus the search bar, Alt+Right/Left to change category").fg(TEXT_DIM).centered(),
                     spacer()
                 )
             ).title(if (isOffline) "Offline Search" else "Melo").rounded().borderColor(BORDER_DEFAULT)

@@ -153,6 +153,18 @@ internal fun MeloScreen.performSearch() {
     }
 }
 
+internal fun MeloScreen.switchSearchTab(forward: Boolean) {
+    val actualState = state.screen as? ScreenState.Search ?: return
+    val entries = SearchTab.entries
+    val newOrdinal = if (forward) {
+        (actualState.tab.ordinal + 1) % entries.size
+    } else {
+        (actualState.tab.ordinal - 1 + entries.size) % entries.size
+    }
+    state = state.copy(screen = actualState.copy(tab = entries[newOrdinal], selectedIndex = 0))
+    if (actualState.query.isNotBlank()) performSearch()
+}
+
 internal fun MeloScreen.loadMore() {
     if (state.isOfflineMode || lastQuery.isBlank()) return
     val currentResults = (state.screen as? ScreenState.Search)?.results ?: return
@@ -186,6 +198,17 @@ internal fun MeloScreen.focusResults() {
 }
 
 internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
+    if (event.modifiers().alt()) {
+        if (event.code() == KeyCode.RIGHT) {
+            switchSearchTab(true)
+            return EventResult.HANDLED
+        }
+        if (event.code() == KeyCode.LEFT) {
+            switchSearchTab(false)
+            return EventResult.HANDLED
+        }
+    }
+
     if (event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt()) {
         val c = event.character()
         if (c >= '\u007F') {
@@ -215,19 +238,25 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
 
     val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
 
+    if (event.modifiers().alt()) {
+        if (event.code() == KeyCode.RIGHT) {
+            switchSearchTab(true)
+            return EventResult.HANDLED
+        }
+        if (event.code() == KeyCode.LEFT) {
+            switchSearchTab(false)
+            return EventResult.HANDLED
+        }
+    }
+
     val isFocused = appRunner()?.focusManager()?.focusedId() == "results-panel"
     if (isFocused) {
-        if (event.code() == KeyCode.TAB || event.matches(Actions.MOVE_RIGHT)) {
-            val nextTab = SearchTab.entries[(actualState.tab.ordinal + 1) % SearchTab.entries.size]
-            state = state.copy(screen = actualState.copy(tab = nextTab, selectedIndex = 0))
-            if (actualState.query.isNotBlank()) performSearch()
+        if (event.matches(Actions.MOVE_RIGHT)) {
+            switchSearchTab(true)
             return EventResult.HANDLED
         }
         if (event.matches(Actions.MOVE_LEFT)) {
-            val prevTab =
-                SearchTab.entries[(actualState.tab.ordinal - 1 + SearchTab.entries.size) % SearchTab.entries.size]
-            state = state.copy(screen = actualState.copy(tab = prevTab, selectedIndex = 0))
-            if (actualState.query.isNotBlank()) performSearch()
+            switchSearchTab(false)
             return EventResult.HANDLED
         }
     }
