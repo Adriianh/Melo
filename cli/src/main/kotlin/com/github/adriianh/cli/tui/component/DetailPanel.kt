@@ -24,6 +24,8 @@ import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.block.Block
 import dev.tamboui.widgets.block.BorderType
 import dev.tamboui.widgets.block.Borders
+import com.github.adriianh.core.domain.model.search.SearchResult
+import dev.tamboui.layout.Margin
 
 fun buildDetailPanel(
     state: MeloState,
@@ -64,9 +66,66 @@ fun buildDetailPanel(
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
         .id("detail-panel")
+        .focusable()
         .onKeyEvent(onKeyEvent)
+}
+
+fun buildEntityDetailPanel(
+    state: MeloState
+): Element {
+    val entity = state.detail.selectedEntity ?: return spacer()
+
+    val tabContent = when (entity) {
+        is SearchResult.Album -> {
+            column(
+                text(" Album ").fg(PRIMARY_COLOR),
+                text(""),
+                text(entity.title).fg(TEXT_PRIMARY),
+                text(entity.author).fg(TEXT_SECONDARY),
+                if (entity.year != null) text(entity.year!!).dim() else spacer()
+            ).margin(Margin.horizontal(2))
+        }
+        is SearchResult.Artist -> {
+            val metaCol = column(
+                text(" Artist ").fg(PRIMARY_COLOR),
+                text(""),
+                text(entity.name).fg(TEXT_PRIMARY)
+            )
+            if (state.detail.isLoadingEntityMeta) {
+                metaCol.elements(spacer(), text(" Loading details...").dim())
+            } else if (state.detail.entityGenres.isNotEmpty()) {
+                metaCol.elements(spacer(), text(" Tags").fg(TEXT_SECONDARY))
+                state.detail.entityGenres.take(5).forEach { tag ->
+                    metaCol.elements(text(" • $tag").dim())
+                }
+            }
+            metaCol.margin(Margin.horizontal(2))
+        }
+        is SearchResult.Playlist -> {
+            column(
+                text(" Playlist ").fg(PRIMARY_COLOR),
+                text(""),
+                text(entity.title).fg(TEXT_PRIMARY),
+                text(entity.author).fg(TEXT_SECONDARY),
+                if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer()
+            ).margin(Margin.horizontal(2))
+        }
+        else -> spacer()
+    }
+
+    val layeredContent = column(
+        renderArtwork(state),
+        tabContent.fill()
+    )
+
+    return panel(
+        spacer().length(1),
+        layeredContent.fill()
+    ).title("Details")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .id("entity-detail-panel")
 }
 
 private fun renderTrackMetadata(
