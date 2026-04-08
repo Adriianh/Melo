@@ -1,9 +1,14 @@
 package com.github.adriianh.core.domain.provider
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 
 interface MusicProvider {
     suspend fun search(query: String): List<Track>
+    suspend fun searchAlbums(query: String): List<SearchResult.Album> = emptyList()
+    suspend fun searchArtists(query: String): List<SearchResult.Artist> = emptyList()
+    suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = emptyList()
+
     suspend fun searchAll(query: String): List<Track> = search(query)
     suspend fun getTrack(id: String): Track?
 }

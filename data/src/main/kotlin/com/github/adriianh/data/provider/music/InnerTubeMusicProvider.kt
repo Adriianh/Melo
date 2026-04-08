@@ -1,6 +1,7 @@
 package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.YouTubeClient
@@ -33,6 +34,43 @@ class InnerTubeMusicProvider(
                 )
             }
             ?: (fallback?.search(query) ?: emptyList())
+    }
+
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
+        return result?.items?.filterIsInstance<com.github.adriianh.innertube.models.AlbumItem>()?.map { item ->
+            SearchResult.Album(
+                id = item.playlistId,
+                title = item.title,
+                author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
+                year = item.year?.toString(),
+                artworkUrl = item.thumbnail
+            )
+        } ?: fallback?.searchAlbums(query) ?: emptyList()
+    }
+
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
+        return result?.items?.filterIsInstance<com.github.adriianh.innertube.models.ArtistItem>()?.map { item ->
+            SearchResult.Artist(
+                id = item.id,
+                name = item.title,
+                artworkUrl = item.thumbnail
+            )
+        } ?: fallback?.searchArtists(query) ?: emptyList()
+    }
+
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_COMMUNITY_PLAYLIST).getOrNull()
+        return result?.items?.filterIsInstance<com.github.adriianh.innertube.models.PlaylistItem>()?.map { item ->
+            SearchResult.Playlist(
+                id = item.id,
+                title = item.title,
+                author = item.author?.name ?: "Unknown",
+                trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                artworkUrl = item.thumbnail
+            )
+        } ?: fallback?.searchPlaylists(query) ?: emptyList()
     }
 
     override suspend fun searchAll(query: String): List<Track> {

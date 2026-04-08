@@ -1,6 +1,7 @@
 package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -43,6 +44,10 @@ class MusicRepositoryImpl(
 
         return initial.take(pageSize)
     }
+
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> = musicProvider.searchAlbums(query)
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> = musicProvider.searchArtists(query)
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = musicProvider.searchPlaylists(query)
 
     override suspend fun loadMore(query: String, offset: Int): List<Track> {
         backgroundFetch?.join()
