@@ -234,6 +234,9 @@ val appModule = module {
     factory { SearchArtistsUseCase(get()) }
     factory { SearchPlaylistsUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
+    factory { LoadMoreAlbumsUseCase(get()) }
+    factory { LoadMoreArtistsUseCase(get()) }
+    factory { LoadMorePlaylistsUseCase(get()) }
     factory { GetTrackUseCase(get()) }
     factory { GetLyricsUseCase(get()) }
     factory { GetSyncedLyricsUseCase(get()) }
@@ -275,7 +278,7 @@ val appModule = module {
     factory { UpdateSettingsUseCase(get()) }
 
     // Interactors
-    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }

@@ -11,5 +11,15 @@ interface MusicRepository {
 
     suspend fun loadMore(query: String, offset: Int): List<Track>
     fun hasMore(offset: Int): Boolean
+
+    suspend fun loadMoreAlbums(query: String, offset: Int): List<SearchResult.Album>
+    fun hasMoreAlbums(offset: Int): Boolean
+
+    suspend fun loadMoreArtists(query: String, offset: Int): List<SearchResult.Artist>
+    fun hasMoreArtists(offset: Int): Boolean
+
+    suspend fun loadMorePlaylists(query: String, offset: Int): List<SearchResult.Playlist>
+    fun hasMorePlaylists(offset: Int): Boolean
+
     suspend fun getTrack(id: String): Track?
 }

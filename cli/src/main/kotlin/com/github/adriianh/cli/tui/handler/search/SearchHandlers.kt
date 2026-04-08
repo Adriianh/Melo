@@ -71,7 +71,7 @@ internal fun MeloScreen.performSearch() {
             tab = currentTab,
             isLoading = true,
             errorMessage = null,
-            hasMore = currentTab == SearchTab.SONGS
+            hasMore = false
         ),
         detail = state.detail.copy(selectedTrack = null),
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
@@ -93,6 +93,13 @@ internal fun MeloScreen.performSearch() {
 
                 if (!isActive) return@coroutineScope
 
+                val initialHasMore = when (currentTab) {
+                    SearchTab.SONGS -> loadMoreTracks.hasMore(tracks.size)
+                    SearchTab.ALBUMS -> loadMoreAlbums.hasMore(albums.size)
+                    SearchTab.ARTISTS -> loadMoreArtists.hasMore(artists.size)
+                    SearchTab.PLAYLISTS -> loadMorePlaylists.hasMore(playlists.size)
+                }
+
                 appRunner()?.runOnRenderThread {
                     updateScreen<ScreenState.Search> {
                         it.copy(
@@ -102,7 +109,7 @@ internal fun MeloScreen.performSearch() {
                             playlistResults = playlists,
                             isLoading = false,
                             selectedIndex = 0,
-                            hasMore = loadMoreTracks.hasMore(tracks.size)
+                            hasMore = initialHasMore
                         )
                     }
                     if (currentTab == SearchTab.SONGS) {
@@ -137,11 +144,20 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
     } else {
         (actualState.tab.ordinal - 1 + entries.size) % entries.size
     }
-    state = state.copy(screen = actualState.copy(tab = entries[newOrdinal], selectedIndex = 0))
+
+    val nextTab = entries[newOrdinal]
+    val nextHasMore = when (nextTab) {
+        SearchTab.SONGS -> loadMoreTracks.hasMore(actualState.results.size)
+        SearchTab.ALBUMS -> loadMoreAlbums.hasMore(actualState.albumResults.size)
+        SearchTab.ARTISTS -> loadMoreArtists.hasMore(actualState.artistResults.size)
+        SearchTab.PLAYLISTS -> loadMorePlaylists.hasMore(actualState.playlistResults.size)
+    }
+
+    state = state.copy(screen = actualState.copy(tab = nextTab, selectedIndex = 0, hasMore = nextHasMore))
     resultList.selected(0)
 
     val updatedState = state.screen as ScreenState.Search
-    if (entries[newOrdinal] == SearchTab.SONGS) {
+    if (nextTab == SearchTab.SONGS) {
         val firstTrack = updatedState.results.firstOrNull()
         state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack, selectedEntity = null))
         if (firstTrack != null) debouncedLoadDetails(firstTrack)
@@ -159,26 +175,64 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
 
 internal fun MeloScreen.loadMore() {
     if (state.isOfflineMode || lastQuery.isBlank()) return
-    val currentResults = (state.screen as? ScreenState.Search)?.results ?: return
-    val offset = currentResults.size
+    val searchState = state.screen as? ScreenState.Search ?: return
     updateScreen<ScreenState.Search> { it.copy(isLoadingMore = true) }
     loadMoreJob = scope.launch {
         try {
-            val more = loadMoreTracks(lastQuery, offset)
-            if (isActive) appRunner()?.runOnRenderThread {
-                updateScreen<ScreenState.Search> {
-                    it.copy(
-                        results = it.results + more, isLoadingMore = false,
-                        hasMore = loadMoreTracks.hasMore(offset + more.size)
-                    )
+            when (searchState.tab) {
+                SearchTab.SONGS -> {
+                    val offset = searchState.results.size
+                    val more = loadMoreTracks(lastQuery, offset)
+                    if (isActive) appRunner()?.runOnRenderThread {
+                        updateScreen<ScreenState.Search> {
+                            it.copy(
+                                results = it.results + more, isLoadingMore = false,
+                                hasMore = loadMoreTracks.hasMore(offset + more.size)
+                            )
+                        }
+                    }
+                }
+                SearchTab.ALBUMS -> {
+                    val offset = searchState.albumResults.size
+                    val more = loadMoreAlbums(lastQuery, offset)
+                    if (isActive) appRunner()?.runOnRenderThread {
+                        updateScreen<ScreenState.Search> {
+                            it.copy(
+                                albumResults = it.albumResults + more, isLoadingMore = false,
+                                hasMore = loadMoreAlbums.hasMore(offset + more.size)
+                            )
+                        }
+                    }
+                }
+                SearchTab.ARTISTS -> {
+                    val offset = searchState.artistResults.size
+                    val more = loadMoreArtists(lastQuery, offset)
+                    if (isActive) appRunner()?.runOnRenderThread {
+                        updateScreen<ScreenState.Search> {
+                            it.copy(
+                                artistResults = it.artistResults + more, isLoadingMore = false,
+                                hasMore = loadMoreArtists.hasMore(offset + more.size)
+                            )
+                        }
+                    }
+                }
+                SearchTab.PLAYLISTS -> {
+                    val offset = searchState.playlistResults.size
+                    val more = loadMorePlaylists(lastQuery, offset)
+                    if (isActive) appRunner()?.runOnRenderThread {
+                        updateScreen<ScreenState.Search> {
+                            it.copy(
+                                playlistResults = it.playlistResults + more, isLoadingMore = false,
+                                hasMore = loadMorePlaylists.hasMore(offset + more.size)
+                            )
+                        }
+                    }
                 }
             }
         } catch (_: Exception) {
-            appRunner()?.runOnRenderThread {
+            if (isActive) appRunner()?.runOnRenderThread {
                 updateScreen<ScreenState.Search> {
-                    it.copy(
-                        isLoadingMore = false
-                    )
+                    it.copy(isLoadingMore = false)
                 }
             }
         }
@@ -283,11 +337,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
                     SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
                     SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
                     SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
+                    else -> null
                 }
                 if (entity != null) {
                     state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))
                     debouncedLoadEntityDetails(entity)
                 }
+                if (newIndex >= listSize - 5 && !actualState.isLoadingMore && actualState.hasMore) loadMore()
             }
             return EventResult.HANDLED
         }

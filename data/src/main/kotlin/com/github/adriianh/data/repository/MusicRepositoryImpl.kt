@@ -27,6 +27,15 @@ class MusicRepositoryImpl(
     private var cachedResults: List<Track> = emptyList()
     private var backgroundFetch: Job? = null
 
+    private var cachedAlbums: List<SearchResult.Album> = emptyList()
+    private var backgroundFetchAlbums: Job? = null
+
+    private var cachedArtists: List<SearchResult.Artist> = emptyList()
+    private var backgroundFetchArtists: Job? = null
+
+    private var cachedPlaylists: List<SearchResult.Playlist> = emptyList()
+    private var backgroundFetchPlaylists: Job? = null
+
     override suspend fun search(query: String): List<Track> {
         backgroundFetch?.cancel()
         cachedResults = emptyList()
@@ -45,9 +54,26 @@ class MusicRepositoryImpl(
         return initial.take(pageSize)
     }
 
-    override suspend fun searchAlbums(query: String): List<SearchResult.Album> = musicProvider.searchAlbums(query)
-    override suspend fun searchArtists(query: String): List<SearchResult.Artist> = musicProvider.searchArtists(query)
-    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = musicProvider.searchPlaylists(query)
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> {
+        backgroundFetchAlbums?.cancel()
+        val initial = musicProvider.searchAlbums(query)
+        cachedAlbums = initial
+        return initial.take(pageSize)
+    }
+
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> {
+        backgroundFetchArtists?.cancel()
+        val initial = musicProvider.searchArtists(query)
+        cachedArtists = initial
+        return initial.take(pageSize)
+    }
+
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> {
+        backgroundFetchPlaylists?.cancel()
+        val initial = musicProvider.searchPlaylists(query)
+        cachedPlaylists = initial
+        return initial.take(pageSize)
+    }
 
     override suspend fun loadMore(query: String, offset: Int): List<Track> {
         backgroundFetch?.join()
@@ -57,6 +83,36 @@ class MusicRepositoryImpl(
     override fun hasMore(offset: Int): Boolean {
         if (backgroundFetch?.isActive == true) return true
         return offset < cachedResults.size
+    }
+
+    override suspend fun loadMoreAlbums(query: String, offset: Int): List<SearchResult.Album> {
+        backgroundFetchAlbums?.join()
+        return cachedAlbums.drop(offset).take(pageSize)
+    }
+
+    override fun hasMoreAlbums(offset: Int): Boolean {
+        if (backgroundFetchAlbums?.isActive == true) return true
+        return offset < cachedAlbums.size
+    }
+
+    override suspend fun loadMoreArtists(query: String, offset: Int): List<SearchResult.Artist> {
+        backgroundFetchArtists?.join()
+        return cachedArtists.drop(offset).take(pageSize)
+    }
+
+    override fun hasMoreArtists(offset: Int): Boolean {
+        if (backgroundFetchArtists?.isActive == true) return true
+        return offset < cachedArtists.size
+    }
+
+    override suspend fun loadMorePlaylists(query: String, offset: Int): List<SearchResult.Playlist> {
+        backgroundFetchPlaylists?.join()
+        return cachedPlaylists.drop(offset).take(pageSize)
+    }
+
+    override fun hasMorePlaylists(offset: Int): Boolean {
+        if (backgroundFetchPlaylists?.isActive == true) return true
+        return offset < cachedPlaylists.size
     }
 
     private fun deduplicate(tracks: List<Track>): List<Track> {
