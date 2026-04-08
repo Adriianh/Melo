@@ -7,6 +7,8 @@ import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.AlbumItem
 import com.github.adriianh.innertube.models.ArtistItem
 import com.github.adriianh.innertube.models.PlaylistItem
+import com.github.adriianh.innertube.models.SongItem
+import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.YouTubeClient
 
 /**
@@ -23,7 +25,7 @@ class InnerTubeMusicProvider(
     override suspend fun search(query: String): List<Track> {
         val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
 
-        return result?.items?.filterIsInstance<com.github.adriianh.innertube.models.SongItem>()
+        return result?.items?.filterIsInstance<SongItem>()
             ?.map { item ->
                 Track(
                     id = "piped:${item.id}",
@@ -77,9 +79,116 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun searchAll(query: String): List<Track> {
-        // We could use continuation to get more results, but for now we delegate to search()
-        // just like the old provider did with a different limit
-        return search(query)
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull() ?: return fallback?.searchAll(query) ?: emptyList()
+        val pages = mutableListOf<Track>()
+        var continuation: String? = result.continuation
+
+        fun mapItems(items: List<YTItem>) {
+            pages.addAll(items.filterIsInstance<SongItem>().map { item ->
+                Track(
+                    id = "piped:${item.id}",
+                    title = item.title,
+                    artist = item.artists.firstOrNull()?.name ?: "Unknown",
+                    durationMs = item.duration?.times(1000L) ?: 0L,
+                    album = item.album?.name ?: "",
+                    genres = emptyList(),
+                    artworkUrl = item.thumbnail,
+                    sourceId = item.id
+                )
+            })
+        }
+
+        mapItems(result.items)
+        var count = 0
+        while (continuation != null && count < 3) {
+            val next = YouTube.searchContinuation(continuation).getOrNull() ?: break
+            mapItems(next.items)
+            continuation = next.continuation
+            count++
+        }
+        return pages.ifEmpty { fallback?.searchAll(query) ?: emptyList() }
+    }
+
+    override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull() ?: return fallback?.searchAllAlbums(query) ?: emptyList()
+        val pages = mutableListOf<SearchResult.Album>()
+        var continuation: String? = result.continuation
+
+        fun mapItems(items: List<YTItem>) {
+            pages.addAll(items.filterIsInstance<AlbumItem>().map { item ->
+                SearchResult.Album(
+                    id = item.playlistId,
+                    title = item.title,
+                    author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
+                    year = item.year?.toString(),
+                    artworkUrl = item.thumbnail
+                )
+            })
+        }
+
+        mapItems(result.items)
+        var count = 0
+        while (continuation != null && count < 3) {
+            val next = YouTube.searchContinuation(continuation).getOrNull() ?: break
+            mapItems(next.items)
+            continuation = next.continuation
+            count++
+        }
+        return pages.ifEmpty { fallback?.searchAllAlbums(query) ?: emptyList() }
+    }
+
+    override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ARTIST).getOrNull() ?: return fallback?.searchAllArtists(query) ?: emptyList()
+        val pages = mutableListOf<SearchResult.Artist>()
+        var continuation: String? = result.continuation
+
+        fun mapItems(items: List<YTItem>) {
+            pages.addAll(items.filterIsInstance<ArtistItem>().map { item ->
+                SearchResult.Artist(
+                    id = item.id,
+                    name = item.title,
+                    artworkUrl = item.thumbnail
+                )
+            })
+        }
+
+        mapItems(result.items)
+        var count = 0
+        while (continuation != null && count < 3) {
+            val next = YouTube.searchContinuation(continuation).getOrNull() ?: break
+            mapItems(next.items)
+            continuation = next.continuation
+            count++
+        }
+        return pages.ifEmpty { fallback?.searchAllArtists(query) ?: emptyList() }
+    }
+
+    override suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_COMMUNITY_PLAYLIST).getOrNull() ?: return fallback?.searchAllPlaylists(query) ?: emptyList()
+        val pages = mutableListOf<SearchResult.Playlist>()
+        var continuation: String? = result.continuation
+
+        fun mapItems(items: List<YTItem>) {
+            pages.addAll(items.filterIsInstance<PlaylistItem>().map { item ->
+                SearchResult.Playlist(
+                    id = item.id,
+                    title = item.title,
+                    author = item.author?.name ?: "Unknown",
+                    trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                    artworkUrl = item.thumbnail
+                )
+            })
+        }
+
+        mapItems(result.items)
+        var count = 0
+        while (continuation != null && count < 3) {
+            val next = YouTube.searchContinuation(continuation).getOrNull() ?: break
+            mapItems(next.items)
+            continuation = next.continuation
+            count++
+        }
+        return pages.ifEmpty { fallback?.searchAllPlaylists(query) ?: emptyList() }
     }
 
     override suspend fun getTrack(id: String): Track? {
@@ -150,7 +259,7 @@ class InnerTubeMusicProvider(
 
     override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
         val result = YouTube.artist(id).getOrNull() ?: return fallback?.getArtistDetails(id)
-        val topSongs = result.sections.find { it.title.equals("Songs", ignoreCase = true) }?.items?.filterIsInstance<com.github.adriianh.innertube.models.SongItem>()
+        val topSongs = result.sections.find { it.title.equals("Songs", ignoreCase = true) }?.items?.filterIsInstance<SongItem>()
         val tracks = topSongs?.map { song ->
             Track(
                 id = "piped:${song.id}",
