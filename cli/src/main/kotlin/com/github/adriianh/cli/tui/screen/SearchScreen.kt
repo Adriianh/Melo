@@ -13,6 +13,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.component.buildDetailPanel
+import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
@@ -213,6 +214,13 @@ private fun renderResultsArea(
             .center(resultsPanel)
             .right(
                 buildDetailPanel(state, lyricsArea, similarArea, marqueeText, onDetailKeyEvent),
+                Constraint.percentage(35)
+            )
+    } else if (!isPlayable && state.detail.selectedEntity != null) {
+        dock()
+            .center(resultsPanel)
+            .right(
+                buildEntityDetailPanel(state),
                 Constraint.percentage(35)
             )
     } else {

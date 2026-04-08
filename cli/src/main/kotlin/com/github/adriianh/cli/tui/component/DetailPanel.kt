@@ -76,53 +76,41 @@ fun buildEntityDetailPanel(
 ): Element {
     val entity = state.detail.selectedEntity ?: return spacer()
 
-    val tabContent = when (entity) {
-        is SearchResult.Album -> {
-            column(
-                text(" Album ").fg(PRIMARY_COLOR),
-                text(""),
-                text(entity.title).fg(TEXT_PRIMARY),
-                text(entity.author).fg(TEXT_SECONDARY),
-                if (entity.year != null) text(entity.year!!).dim() else spacer()
-            ).margin(Margin.horizontal(2))
-        }
-        is SearchResult.Artist -> {
-            val metaCol = column(
-                text(" Artist ").fg(PRIMARY_COLOR),
-                text(""),
-                text(entity.name).fg(TEXT_PRIMARY)
-            )
-            if (state.detail.isLoadingEntityMeta) {
-                metaCol.elements(spacer(), text(" Loading details...").dim())
-            } else if (state.detail.entityGenres.isNotEmpty()) {
-                metaCol.elements(spacer(), text(" Tags").fg(TEXT_SECONDARY))
-                state.detail.entityGenres.take(5).forEach { tag ->
-                    metaCol.elements(text(" • $tag").dim())
-                }
-            }
-            metaCol.margin(Margin.horizontal(2))
-        }
-        is SearchResult.Playlist -> {
-            column(
-                text(" Playlist ").fg(PRIMARY_COLOR),
-                text(""),
-                text(entity.title).fg(TEXT_PRIMARY),
-                text(entity.author).fg(TEXT_SECONDARY),
-                if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer()
-            ).margin(Margin.horizontal(2))
-        }
-        else -> spacer()
-    }
-
-    val layeredContent = column(
+    val infoTab = column(
         renderArtwork(state),
-        tabContent.fill()
+        text(""),
+        when (entity) {
+            is SearchResult.Album -> {
+                column(
+                    text(" Album ").fg(PRIMARY_COLOR),
+                    text(""),
+                    text(entity.title).fg(TEXT_PRIMARY),
+                    text(entity.author).fg(TEXT_SECONDARY),
+                    if (entity.year != null) text(entity.year!!).dim() else spacer()
+                ).margin(Margin.horizontal(2)).fill()
+            }
+            is SearchResult.Artist -> {
+                column(
+                    text(" Artist ").fg(PRIMARY_COLOR),
+                    text(""),
+                    text(entity.name).fg(TEXT_PRIMARY)
+                ).margin(Margin.horizontal(2)).fill()
+            }
+            is SearchResult.Playlist -> {
+                column(
+                    text(" Playlist ").fg(PRIMARY_COLOR),
+                    text(""),
+                    text(entity.title).fg(TEXT_PRIMARY),
+                    text(entity.author).fg(TEXT_SECONDARY),
+                    if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer()
+                ).margin(Margin.horizontal(2)).fill()
+            }
+            else -> spacer()
+        }
     )
 
-    return panel(
-        spacer().length(1),
-        layeredContent.fill()
-    ).title("Details")
+    return panel(infoTab.fill())
+        .title("Details")
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .id("entity-detail-panel")

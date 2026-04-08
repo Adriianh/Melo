@@ -140,12 +140,20 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
     state = state.copy(screen = actualState.copy(tab = entries[newOrdinal], selectedIndex = 0))
     resultList.selected(0)
 
+    val updatedState = state.screen as ScreenState.Search
     if (entries[newOrdinal] == SearchTab.SONGS) {
-        val firstTrack = actualState.results.firstOrNull()
-        state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack))
-        if (firstTrack != null) loadTrackDetails(firstTrack.id)
+        val firstTrack = updatedState.results.firstOrNull()
+        state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack, selectedEntity = null))
+        if (firstTrack != null) debouncedLoadDetails(firstTrack)
     } else {
-        state = state.copy(detail = state.detail.copy(selectedTrack = null))
+        val firstEntity = when (updatedState.tab) {
+            SearchTab.ALBUMS -> updatedState.albumResults.firstOrNull()
+            SearchTab.ARTISTS -> updatedState.artistResults.firstOrNull()
+            SearchTab.PLAYLISTS -> updatedState.playlistResults.firstOrNull()
+            else -> null
+        }
+        state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = firstEntity))
+        if (firstEntity != null) debouncedLoadEntityDetails(firstEntity)
     }
 }
 
@@ -266,10 +274,20 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             marqueeTick = 0
             if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(detail = state.detail.copy(selectedTrack = track))
+                    state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
                     debouncedLoadDetails(track)
                 }
                 if (newIndex >= listSize - 5 && !actualState.isLoadingMore && actualState.hasMore) loadMore()
+            } else {
+                val entity = when (actualState.tab) {
+                    SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
+                    SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
+                    SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
+                }
+                if (entity != null) {
+                    state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))
+                    debouncedLoadEntityDetails(entity)
+                }
             }
             return EventResult.HANDLED
         }
@@ -285,8 +303,18 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             marqueeTick = 0
             if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(detail = state.detail.copy(selectedTrack = track))
+                    state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
                     debouncedLoadDetails(track)
+                }
+            } else {
+                val entity = when (actualState.tab) {
+                    SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
+                    SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
+                    SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
+                }
+                if (entity != null) {
+                    state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))
+                    debouncedLoadEntityDetails(entity)
                 }
             }
             return EventResult.HANDLED

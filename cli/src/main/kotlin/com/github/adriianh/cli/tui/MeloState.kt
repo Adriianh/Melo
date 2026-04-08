@@ -192,6 +192,7 @@ sealed interface ScreenState {
  */
 data class DetailState(
     val selectedTrack: Track? = null,
+    val selectedEntity: SearchResult? = null,
     val detailTab: DetailTab = DetailTab.INFO,
     val lyrics: String? = null,
     val isLoadingLyrics: Boolean = false,
@@ -201,6 +202,8 @@ data class DetailState(
     val hasMoreSimilar: Boolean = true,
     val similarCursor: Int = 0,
     val artworkData: ImageData? = null,
+    val entityGenres: List<String> = emptyList(),
+    val isLoadingEntityMeta: Boolean = false,
 )
 
 /**

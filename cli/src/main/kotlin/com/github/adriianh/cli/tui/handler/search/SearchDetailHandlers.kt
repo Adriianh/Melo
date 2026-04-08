@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -17,6 +18,46 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
     detailsJob = scope.launch {
         delay(150)
         if (isActive) loadTrackDetails(track.id, track)
+    }
+}
+
+internal fun MeloScreen.debouncedLoadEntityDetails(entity: SearchResult) {
+    detailsJob?.cancel()
+    detailsJob = scope.launch {
+        delay(150)
+        if (isActive) loadEntityDetails(entity)
+    }
+}
+
+internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
+    detailsJob?.cancel()
+    state = state.copy(
+        detail = state.detail.copy(
+            artworkData = null
+        )
+    )
+    if (state.isOfflineMode) return
+
+    val url = when (entity) {
+        is SearchResult.Album -> entity.artworkUrl
+        is SearchResult.Artist -> entity.artworkUrl
+        is SearchResult.Playlist -> entity.artworkUrl
+        is SearchResult.Song -> return
+    }
+
+    detailsJob = scope.launch {
+        val artworkData = url?.let {
+            try {
+                artworkRenderer.load(it.replace("w120-h120", "w512-h512")) // Request higher res if possible
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (isActive) {
+            appRunner()?.runOnRenderThread {
+                state = state.copy(detail = state.detail.copy(selectedEntity = entity, artworkData = artworkData))
+            }
+        }
     }
 }
 
