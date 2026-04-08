@@ -13,4 +13,3 @@ class LoadMorePlaylistsUseCase(
 
     fun hasMore(offset: Int): Boolean = repository.hasMorePlaylists(offset)
 }
-

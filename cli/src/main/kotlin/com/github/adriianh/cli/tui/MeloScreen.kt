@@ -1,7 +1,25 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.component.*
-import com.github.adriianh.cli.tui.component.screen.*
+import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
+import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
+import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.component.QueueOverlay
+import com.github.adriianh.cli.tui.component.SettingsOverlay
+import com.github.adriianh.cli.tui.component.SettingsViewState
+import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
+import com.github.adriianh.cli.tui.component.screen.deleteDownloadedTrackAction
+import com.github.adriianh.cli.tui.component.screen.downloadTrackAction
+import com.github.adriianh.cli.tui.component.screen.handleAudioError
+import com.github.adriianh.cli.tui.component.screen.handleAudioFinish
+import com.github.adriianh.cli.tui.component.screen.handleAudioProgress
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPlayPause
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionStop
+import com.github.adriianh.cli.tui.component.screen.loadLocalTracksAction
+import com.github.adriianh.cli.tui.component.screen.onStartLifecycle
+import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
+import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
@@ -9,11 +27,17 @@ import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.interactor.*
+import com.github.adriianh.core.domain.interactor.LibraryInteractors
+import com.github.adriianh.core.domain.interactor.OfflineInteractors
+import com.github.adriianh.core.domain.interactor.PlaybackInteractors
+import com.github.adriianh.core.domain.interactor.SearchInteractors
+import com.github.adriianh.core.domain.interactor.SessionInteractors
+import com.github.adriianh.core.domain.interactor.SettingsInteractors
+import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.Toolkit.list
@@ -24,7 +48,7 @@ import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -57,6 +81,9 @@ class MeloScreen(
     internal val searchArtists get() = searchInteractors.searchArtists
     internal val searchPlaylists get() = searchInteractors.searchPlaylists
     internal val loadMoreTracks get() = searchInteractors.loadMoreTracks
+    internal val loadMoreArtists get() = searchInteractors.loadMoreArtists
+    internal val loadMoreAlbums get() = searchInteractors.loadMoreAlbums
+    internal val loadMorePlaylists get() = searchInteractors.loadMorePlaylists
     internal val getTrack get() = searchInteractors.getTrack
     internal val getLyrics get() = searchInteractors.getLyrics
     internal val getSyncedLyrics get() = searchInteractors.getSyncedLyrics

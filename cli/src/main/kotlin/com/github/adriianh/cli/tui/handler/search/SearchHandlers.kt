@@ -22,10 +22,10 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 internal fun MeloScreen.performSearch() {
     val query = searchInputState.text()
@@ -337,7 +337,6 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
                     SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
                     SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
                     SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
-                    else -> null
                 }
                 if (entity != null) {
                     state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))

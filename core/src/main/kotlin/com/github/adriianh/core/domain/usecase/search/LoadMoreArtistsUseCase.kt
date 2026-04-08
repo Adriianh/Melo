@@ -13,4 +13,3 @@ class LoadMoreArtistsUseCase(
 
     fun hasMore(offset: Int): Boolean = repository.hasMoreArtists(offset)
 }
-
