@@ -1640,24 +1640,6 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.CommandPacket",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true,
-    "allDeclaredMethods": true,
-    "allPublicMethods": true
-  },
-  {
-    "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true,
-    "allDeclaredMethods": true,
-    "allPublicMethods": true
-  },
-  {
     "name": "dev.cbyrne.kdiscordipc.core.packet.inbound.impl.DispatchEventPacket$Ready",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
@@ -1730,15 +1712,6 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.event.data.ReadyEventData",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true,
-    "allDeclaredMethods": true,
-    "allPublicMethods": true
-  },
-  {
     "name": "dev.cbyrne.kdiscordipc.core.event.data.ReadyEventData$Configuration",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
@@ -1748,7 +1721,7 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.event.data.ErrorEventData",
+    "name": "com.github.adriianh.innertube.models.LikedMusicPlaylistFragments",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredFields": true,
@@ -1757,7 +1730,7 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityJoinEventData",
+    "name": "com.github.adriianh.innertube.models.LikedMusicPlaylistFragments$Companion",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredFields": true,
@@ -1766,7 +1739,7 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.event.data.ActivityInviteEventData",
+    "name": "com.github.adriianh.innertube.models.Client",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredFields": true,
@@ -1775,7 +1748,3409 @@
     "allPublicMethods": true
   },
   {
-    "name": "dev.cbyrne.kdiscordipc.core.event.data.VoiceChannelSelectEventData",
+    "name": "com.github.adriianh.innertube.models.Client$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Context",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Context$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ThirdParty",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ThirdParty$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.User",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.User$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpointContextMusicConfig",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpointContextMusicConfig$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpointContextSupportedConfigs",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.BrowseEndpointContextSupportedConfigs$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.DefaultServiceEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.DefaultServiceEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Endpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Endpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.FeedbackEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.FeedbackEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.QueueAddEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.QueueAddEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.QueueTarget",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.QueueTarget$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ShareEntityEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ShareEntityEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscribeEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscribeEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpointMusicConfig",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpointMusicConfig$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpointMusicSupportedConfigs",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.WatchEndpointMusicSupportedConfigs$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Album",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Album$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AlbumItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AlbumItem$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Artist",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Artist$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ArtistItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ArtistItem$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistItem$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SongItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SongItem$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YTItem",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YTItem$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Param",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Param$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ResponseContext",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ResponseContext$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ServiceTrackingParam",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ServiceTrackingParam$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Content",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Content$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistPanelRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistPanelRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Thumbnail",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Thumbnail$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Thumbnails",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Thumbnails$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestions",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestions$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.IconStyle",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.IconStyle$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicNavigationButtonRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicNavigationButtonRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Solid",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Solid$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestionRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestionRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestionsSectionRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SearchSuggestionsSectionRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.FlexColumn",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.FlexColumn$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicItemThumbnailOverlayRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicItemThumbnailOverlayRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicPlayButtonRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicPlayButtonRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicResponsiveListItemFlexColumnRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicResponsiveListItemFlexColumnRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Overlay",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Overlay$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistItemData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistItemData$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.UrlEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.UrlEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Contents",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Contents$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ContinuationContents",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ContinuationContents$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.NextResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.NextResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SingleColumnMusicWatchNextResultsRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SingleColumnMusicWatchNextResultsRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TabbedRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TabbedRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.WatchNextTabbedResultsRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.WatchNextTabbedResultsRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Content",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Content$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicShelfContinuation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicShelfContinuation$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SearchResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SearchResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AtrUrl",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AtrUrl$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AudioConfig",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AudioConfig$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AudioTrack",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AudioTrack$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Format",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Format$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayabilityStatus",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayabilityStatus$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaybackTracking",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaybackTracking$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayerConfig",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayerConfig$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayerResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlayerResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.StreamingData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.StreamingData$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideoDetails",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideoDetails$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideostatsPlaybackUrl",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideostatsPlaybackUrl$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideostatsWatchtimeUrl",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.VideostatsWatchtimeUrl$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Action",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Action$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Body",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Body$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Cue",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Cue$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.CueGroup",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.CueGroup$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetTranscriptResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetTranscriptResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SimpleText",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SimpleText$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptBodyRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptBodyRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptCueGroupRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptCueGroupRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptCueRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptCueRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TranscriptRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.UpdateEngagementPanelAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.UpdateEngagementPanelAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AccountMenuResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AccountMenuResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ActiveAccountHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ActiveAccountHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Header",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Header$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MultiPageMenuRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MultiPageMenuRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.OpenPopupAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.OpenPopupAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Popup",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Popup$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AddItemYouTubePlaylistResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.AddItemYouTubePlaylistResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaylistEditResult",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaylistEditResult$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaylistEditVideoAddedResultData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.PlaylistEditVideoAddedResultData$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.BrowseResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.BrowseResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Buttons",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Buttons$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ContinuationItems",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ContinuationItems$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GridContinuation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GridContinuation$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Microformat",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Microformat$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MicroformatDataRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MicroformatDataRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicDetailHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicDetailHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicEditablePlaylistDetailHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicEditablePlaylistDetailHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicImmersiveHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicImmersiveHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicPlaylistShelfContinuation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicPlaylistShelfContinuation$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicThumbnail",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicThumbnail$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicThumbnailRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicThumbnailRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicVisualHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.MusicVisualHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ResponseAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.ResponseAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SecondaryContents",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SecondaryContents$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SectionListContinuation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SectionListContinuation$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SubscribeButtonRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SubscribeButtonRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SubscriptionButton2",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.SubscriptionButton2$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TwoColumnBrowseResultsRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.TwoColumnBrowseResultsRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetQueueResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetQueueResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.QueueData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.QueueData$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.CreatePlaylistResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.CreatePlaylistResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.FeedbackResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.FeedbackResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Status",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.Status$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetSearchSuggestionsResponse",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.response.GetSearchSuggestionsResponse$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Badges",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Badges$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicInlineBadgeRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicInlineBadgeRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Header",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Header$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicQueueHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicQueueHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicQueueRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicQueueRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AutomixPlaylistVideoRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AutomixPlaylistVideoRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AutomixPreviewVideoRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AutomixPreviewVideoRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YouTubeClient",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YouTubeClient$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationCommand",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationCommand$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationItemRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ContinuationItemRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.Action",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.Action$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AddPlaylistAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AddPlaylistAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AddVideoAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AddVideoAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.EditPlaylistBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.EditPlaylistBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.MoveVideoAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.MoveVideoAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.RemoveVideoAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.RemoveVideoAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.RenamePlaylistAction",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.RenamePlaylistAction$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.ContentPlaybackContext",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.ContentPlaybackContext$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaybackContext",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaybackContext$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlayerBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlayerBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.ServiceIntegrityDimensions",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.ServiceIntegrityDimensions$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetQueueBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetQueueBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.CreatePlaylistBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.CreatePlaylistBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.SearchBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.SearchBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.FeedbackBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.FeedbackBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaylistDeleteBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaylistDeleteBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.BrowseBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.BrowseBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.SubscribeBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.SubscribeBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetTranscriptBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetTranscriptBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.NextBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.NextBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AccountMenuBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.AccountMenuBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetSearchSuggestionsBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.GetSearchSuggestionsBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.LikeBody",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.LikeBody$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaylistTarget",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.PlaylistTarget$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.Target",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.Target$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.VideoTarget",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.body.VideoTarget$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.NavigationEndpoint",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.NavigationEndpoint$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicAnimatedThumbnailRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicAnimatedThumbnailRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicThumbnailRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicThumbnailRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ThumbnailRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ThumbnailRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Tab",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Tab$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.TabRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.TabRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Tabs",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Tabs$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscribeButtonRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscribeButtonRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscriptionButton",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SubscriptionButton$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Chip",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Chip$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ChipCloudChipRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ChipCloudChipRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ChipCloudRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ChipCloudRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SectionListRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.SectionListRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ButtonRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ButtonRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Item",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Item$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Menu",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Menu$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuNavigationItemRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuNavigationItemRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuServiceItemRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MenuServiceItemRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ToggleMenuServiceRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.ToggleMenuServiceRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.TopLevelButton",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.TopLevelButton$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Run",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Run$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Runs",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Runs$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicDescriptionShelfRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicDescriptionShelfRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCarouselShelfBasicHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCarouselShelfBasicHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCarouselShelfRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCarouselShelfRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.GridHeaderRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.GridHeaderRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.GridRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.GridRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YouTubeLocale",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.YouTubeLocale$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicPlaylistShelfRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicPlaylistShelfRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCardShelfHeaderBasicRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCardShelfHeaderBasicRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCardShelfRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicCardShelfRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AccountInfo",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.AccountInfo$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistPanelVideoRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.PlaylistPanelVideoRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicTwoRowItemRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicTwoRowItemRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Button",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Button$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicShelfRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.MusicShelfRenderer$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Icon",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Icon$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Continuation",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.Continuation$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.NextContinuationData",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.innertube.models.NextContinuationData$Companion",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredFields": true,
