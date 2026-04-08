@@ -44,6 +44,30 @@ class MergedMusicProvider(
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
+    override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
+        for (provider in providers) {
+            val result = runCatching { provider.getAlbumDetails(id) }.getOrNull()
+            if (result != null && result.songs != null) return result
+        }
+        return null
+    }
+
+    override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
+        for (provider in providers) {
+            val result = runCatching { provider.getArtistDetails(id) }.getOrNull()
+            if (result != null && (result.topSongs != null || result.description != null)) return result
+        }
+        return null
+    }
+
+    override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
+        for (provider in providers) {
+            val result = runCatching { provider.getPlaylistDetails(id) }.getOrNull()
+            if (result != null && result.trackCount != null) return result
+        }
+        return null
+    }
+
     override suspend fun getTrack(id: String): Track? {
         val provider = when {
             id.startsWith("itunes:") -> providers.filterIsInstance<ItunesMusicProvider>().firstOrNull()
