@@ -90,14 +90,14 @@ fun buildEntityDetailPanel(
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim()
+                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
                         )
                     } else spacer(),
                     if (!entity.otherVersions.isNullOrEmpty()) {
                         column(
                             text(""),
                             text("Other versions:").fg(TEXT_SECONDARY),
-                            *entity.otherVersions!!.map { text("• ${it.title}").dim() }.toTypedArray()
+                            *entity.otherVersions!!.map { text("• ${it.title}").dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD) }.toTypedArray()
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
@@ -106,18 +106,18 @@ fun buildEntityDetailPanel(
                 column(
                     text(" Artist ").fg(PRIMARY_COLOR),
                     text(""),
-                    text(entity.name).fg(TEXT_PRIMARY),
+                    text(entity.name).fg(TEXT_PRIMARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
                     if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else spacer(),
                     if (state.detail.entityGenres.isNotEmpty()) {
                         column(
                             text(""),
-                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD)
                         )
                     } else spacer(),
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim()
+                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
@@ -126,13 +126,13 @@ fun buildEntityDetailPanel(
                 column(
                     text(" Playlist ").fg(PRIMARY_COLOR),
                     text(""),
-                    text(entity.title).fg(TEXT_PRIMARY),
-                    text(entity.author).fg(TEXT_SECONDARY),
+                    text(entity.title).fg(TEXT_PRIMARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
+                    text(entity.author).fg(TEXT_SECONDARY).overflow(dev.tamboui.style.Overflow.WRAP_WORD),
                     if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer(),
                     if (!entity.description.isNullOrEmpty()) {
                         column(
                             text(""),
-                            text(entity.description!!).dim()
+                            text(entity.description!!).dim().overflow(dev.tamboui.style.Overflow.WRAP_WORD)
                         )
                     } else spacer()
                 ).margin(Margin.horizontal(2)).fill()
