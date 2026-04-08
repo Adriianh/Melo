@@ -90,7 +90,7 @@ class MusicRepositoryImpl(
             genres     = genres.await(),
             sourceId   = sourceId.await(),
             artworkUrl = resolved?.artworkUrl ?: track.artworkUrl,
-            album      = if (track.album.isBlank()) resolved?.album ?: "" else track.album
+            album = track.album.ifBlank { resolved?.album ?: "" }
         )
     }
 
