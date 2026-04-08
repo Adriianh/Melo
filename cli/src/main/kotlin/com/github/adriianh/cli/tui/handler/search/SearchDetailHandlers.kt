@@ -33,10 +33,15 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
     detailsJob?.cancel()
     state = state.copy(
         detail = state.detail.copy(
-            artworkData = null
+            artworkData = null,
+            isLoadingEntityMeta = true,
+            entityGenres = emptyList()
         )
     )
-    if (state.isOfflineMode) return
+    if (state.isOfflineMode) {
+        state = state.copy(detail = state.detail.copy(isLoadingEntityMeta = false))
+        return
+    }
 
     val url = when (entity) {
         is SearchResult.Album -> entity.artworkUrl
@@ -46,16 +51,50 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
     }
 
     detailsJob = scope.launch {
-        val artworkData = url?.let {
-            try {
-                artworkRenderer.load(it.replace("w120-h120", "w512-h512")) // Request higher res if possible
-            } catch (_: Exception) {
-                null
+        val artworkDeferred = async {
+            url?.let {
+                try {
+                    artworkRenderer.load(it.replace("w120-h120", "w512-h512")) // Request higher res if possible
+                } catch (_: Exception) {
+                    null
+                }
             }
         }
+
+        val detailsDeferred = async {
+            try {
+                getEntityDetails(entity)
+            } catch (_: Exception) {
+                entity
+            }
+        }
+
+        val tagsDeferred = async {
+            if (entity is SearchResult.Artist) {
+                try {
+                    getArtistTags(entity.name)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+        }
+
+        val artworkData = artworkDeferred.await()
+        val detailedEntity = detailsDeferred.await()
+        val genres = tagsDeferred.await()
+
         if (isActive) {
             appRunner()?.runOnRenderThread {
-                state = state.copy(detail = state.detail.copy(selectedEntity = entity, artworkData = artworkData))
+                state = state.copy(
+                    detail = state.detail.copy(
+                        selectedEntity = detailedEntity,
+                        artworkData = artworkData,
+                        entityGenres = genres,
+                        isLoadingEntityMeta = false
+                    )
+                )
             }
         }
     }

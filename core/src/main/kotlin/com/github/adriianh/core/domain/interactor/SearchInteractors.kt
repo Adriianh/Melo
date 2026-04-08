@@ -12,4 +12,6 @@ data class SearchInteractors(
     val getLyrics: GetLyricsUseCase,
     val getSyncedLyrics: GetSyncedLyricsUseCase,
     val getSimilarTracks: GetSimilarTracksUseCase,
+    val getEntityDetails: GetEntityDetailsUseCase,
+    val getArtistTags: GetArtistTagsUseCase,
 )

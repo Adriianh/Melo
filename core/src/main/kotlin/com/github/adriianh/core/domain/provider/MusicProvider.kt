@@ -11,4 +11,8 @@ interface MusicProvider {
 
     suspend fun searchAll(query: String): List<Track> = search(query)
     suspend fun getTrack(id: String): Track?
+
+    suspend fun getAlbumDetails(id: String): SearchResult.Album? = null
+    suspend fun getArtistDetails(id: String): SearchResult.Artist? = null
+    suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? = null
 }

@@ -112,4 +112,77 @@ class InnerTubeMusicProvider(
             fallback?.getTrack(id)
         }
     }
+
+    override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
+        val result = YouTube.album(id).getOrNull() ?: return fallback?.getAlbumDetails(id)
+        val albumItem = result.album
+        val tracks = result.songs.map { song ->
+            Track(
+                id = "piped:${song.id}",
+                title = song.title,
+                artist = song.artists.firstOrNull()?.name ?: "Unknown",
+                durationMs = song.duration?.times(1000L) ?: 0L,
+                album = albumItem.title,
+                genres = emptyList(),
+                artworkUrl = song.thumbnail ?: albumItem.thumbnail,
+                sourceId = song.id
+            )
+        }
+        val otherVersions = result.otherVersions.map {
+            SearchResult.Album(
+                id = it.playlistId,
+                title = it.title,
+                author = it.artists?.joinToString(", ") { a -> a.name } ?: "Unknown",
+                year = it.year?.toString(),
+                artworkUrl = it.thumbnail
+            )
+        }
+        return SearchResult.Album(
+            id = albumItem.playlistId,
+            title = albumItem.title,
+            author = albumItem.artists?.joinToString(", ") { it.name } ?: "Unknown",
+            year = albumItem.year?.toString(),
+            artworkUrl = albumItem.thumbnail,
+            songs = tracks,
+            otherVersions = otherVersions
+        )
+    }
+
+    override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
+        val result = YouTube.artist(id).getOrNull() ?: return fallback?.getArtistDetails(id)
+        val topSongs = result.sections.find { it.title.equals("Songs", ignoreCase = true) }?.items?.filterIsInstance<com.github.adriianh.innertube.models.SongItem>()
+        val tracks = topSongs?.map { song ->
+            Track(
+                id = "piped:${song.id}",
+                title = song.title,
+                artist = song.artists.firstOrNull()?.name ?: result.artist.title,
+                durationMs = song.duration?.times(1000L) ?: 0L,
+                album = song.album?.name ?: "",
+                genres = emptyList(),
+                artworkUrl = song.thumbnail ?: result.artist.thumbnail,
+                sourceId = song.id
+            )
+        }
+        return SearchResult.Artist(
+            id = result.artist.id,
+            name = result.artist.title,
+            artworkUrl = result.artist.thumbnail,
+            description = result.description,
+            subscriberCountText = result.subscriberCountText,
+            topSongs = tracks
+        )
+    }
+
+    override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
+        val result = YouTube.playlist(id).getOrNull() ?: return fallback?.getPlaylistDetails(id)
+
+        return SearchResult.Playlist(
+            id = result.playlist.id,
+            title = result.playlist.title,
+            author = result.playlist.author?.name ?: "Unknown",
+            trackCount = result.songs.size,
+            artworkUrl = result.playlist.thumbnail,
+            description = null
+        )
+    }
 }
