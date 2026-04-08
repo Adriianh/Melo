@@ -29,10 +29,13 @@ import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
+import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.provider.discovery.CompositeDiscoveryProvider
 import com.github.adriianh.data.provider.discovery.DeezerDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.discovery.LastFmDiscoveryProvider
+import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
 import com.github.adriianh.data.provider.music.ItunesMusicProvider
 import com.github.adriianh.data.provider.music.MergedMusicProvider
 import com.github.adriianh.data.provider.music.PipedMusicProvider
@@ -121,7 +124,12 @@ val appModule = module {
     // Providers
     single<MusicProvider> {
         val itunes = ItunesMusicProvider(get())
-        val providers = mutableListOf(itunes, PipedMusicProvider(get()))
+        val providers = mutableListOf(
+            itunes,
+            InnerTubeMusicProvider(
+                fallback = PipedMusicProvider(get())
+            )
+        )
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
@@ -133,12 +141,17 @@ val appModule = module {
     single<DiscoveryProvider> {
         CompositeDiscoveryProvider(
             listOf(
+                InnerTubeDiscoveryProvider(),
                 LastFmDiscoveryProvider(get()),
                 DeezerDiscoveryProvider(get()),
             )
         )
     }
-    single<AudioProvider> { YtDlpAudioProvider(get()) }
+    single<AudioProvider> {
+        InnerTubeAudioProvider(
+            fallback = YtDlpAudioProvider(get())
+        )
+    }
     single { MediaSessionManager(httpClient = get()) }
     single { DiscordRpcManager() }
 
