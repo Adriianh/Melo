@@ -56,22 +56,49 @@ class MusicRepositoryImpl(
 
     override suspend fun searchAlbums(query: String): List<SearchResult.Album> {
         backgroundFetchAlbums?.cancel()
+        cachedAlbums = emptyList()
+
         val initial = musicProvider.searchAlbums(query)
         cachedAlbums = initial
+
+        backgroundFetchAlbums = scope.launch {
+            val full = musicProvider.searchAllAlbums(query)
+            if (full.size > cachedAlbums.size) {
+                cachedAlbums = full.take(MAX_CACHE_SIZE)
+            }
+        }
         return initial.take(pageSize)
     }
 
     override suspend fun searchArtists(query: String): List<SearchResult.Artist> {
         backgroundFetchArtists?.cancel()
+        cachedArtists = emptyList()
+
         val initial = musicProvider.searchArtists(query)
         cachedArtists = initial
+
+        backgroundFetchArtists = scope.launch {
+            val full = musicProvider.searchAllArtists(query)
+            if (full.size > cachedArtists.size) {
+                cachedArtists = full.take(MAX_CACHE_SIZE)
+            }
+        }
         return initial.take(pageSize)
     }
 
     override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> {
         backgroundFetchPlaylists?.cancel()
+        cachedPlaylists = emptyList()
+
         val initial = musicProvider.searchPlaylists(query)
         cachedPlaylists = initial
+
+        backgroundFetchPlaylists = scope.launch {
+            val full = musicProvider.searchAllPlaylists(query)
+            if (full.size > cachedPlaylists.size) {
+                cachedPlaylists = full.take(MAX_CACHE_SIZE)
+            }
+        }
         return initial.take(pageSize)
     }
 

@@ -44,6 +44,21 @@ class MergedMusicProvider(
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
+    override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllAlbums(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllArtists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllPlaylists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
         for (provider in providers) {
             val result = runCatching { provider.getAlbumDetails(id) }.getOrNull()
