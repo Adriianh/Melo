@@ -59,6 +59,9 @@ import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMoreAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMoreArtistsUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMorePlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMoreTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
