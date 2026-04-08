@@ -90,77 +90,83 @@ fun buildEntityDetailPanel(
         when (entity) {
             is SearchResult.Album -> {
                 column(
-                    text(" Album ").fg(PRIMARY_COLOR),
-                    text(""),
-                    text(entity.title).fg(TEXT_PRIMARY),
-                    text(entity.author).fg(TEXT_SECONDARY),
-                    if (entity.year != null) text(entity.year!!).dim() else spacer(),
-                    if (!entity.description.isNullOrEmpty()) {
-                        column(
-                            text(""),
-                            text(entity.description!!).dim()
-                                .overflow(Overflow.WRAP_WORD)
-                        )
-                    } else spacer(),
-                    if (!entity.otherVersions.isNullOrEmpty()) {
-                        column(
-                            text(""),
-                            text("Other versions:").fg(TEXT_SECONDARY),
-                            *entity.otherVersions!!.map {
-                                text("• ${it.title}").dim()
+                    *listOfNotNull(
+                        text(" Album ").fg(PRIMARY_COLOR),
+                        text(""),
+                        text(entity.title).fg(TEXT_PRIMARY),
+                        text(entity.author).fg(TEXT_SECONDARY),
+                        if (entity.year != null) text(entity.year!!).dim() else null,
+                        if (!entity.description.isNullOrEmpty()) {
+                            column(
+                                text(""),
+                                text(entity.description!!).dim()
                                     .overflow(Overflow.WRAP_WORD)
-                            }.toTypedArray()
-                        )
-                    } else spacer()
-                ).margin(Margin.horizontal(2)).fill()
+                            )
+                        } else null,
+                        if (!entity.otherVersions.isNullOrEmpty()) {
+                            column(
+                                text(""),
+                                text("Other versions:").fg(TEXT_SECONDARY),
+                                *entity.otherVersions!!.map {
+                                    text("• ${it.title}").dim()
+                                        .overflow(Overflow.WRAP_WORD)
+                                }.toTypedArray()
+                            )
+                        } else null
+                    ).toTypedArray()
+                ).margin(Margin.horizontal(2)).flex(Flex.START)
             }
 
             is SearchResult.Artist -> {
                 column(
-                    text(" Artist ").fg(PRIMARY_COLOR),
-                    text(""),
-                    text(entity.name).fg(TEXT_PRIMARY)
-                        .overflow(Overflow.WRAP_WORD),
-                    if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else spacer(),
-                    if (state.detail.entityGenres.isNotEmpty()) {
-                        column(
-                            text(""),
-                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
-                                .overflow(Overflow.WRAP_WORD)
-                        )
-                    } else spacer(),
-                    if (!entity.description.isNullOrEmpty()) {
-                        column(
-                            text(""),
-                            text(entity.description!!).dim()
-                                .overflow(Overflow.WRAP_WORD)
-                        )
-                    } else spacer()
-                ).margin(Margin.horizontal(2)).fill()
+                    *listOfNotNull(
+                        text(" Artist ").fg(PRIMARY_COLOR),
+                        text(""),
+                        text(entity.name).fg(TEXT_PRIMARY)
+                            .overflow(Overflow.WRAP_WORD),
+                        if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else null,
+                        if (state.detail.entityGenres.isNotEmpty()) {
+                            column(
+                                text(""),
+                                text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                                    .overflow(Overflow.WRAP_WORD)
+                            )
+                        } else null,
+                        if (!entity.description.isNullOrEmpty()) {
+                            column(
+                                text(""),
+                                text(entity.description!!).dim()
+                                    .overflow(Overflow.WRAP_WORD)
+                            )
+                        } else null
+                    ).toTypedArray()
+                ).margin(Margin.horizontal(2)).flex(Flex.START)
             }
 
             is SearchResult.Playlist -> {
                 column(
-                    text(" Playlist ").fg(PRIMARY_COLOR),
-                    text(""),
-                    text(entity.title).fg(TEXT_PRIMARY)
-                        .overflow(Overflow.WRAP_WORD),
-                    text(entity.author).fg(TEXT_SECONDARY)
-                        .overflow(Overflow.WRAP_WORD),
-                    if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else spacer(),
-                    if (!entity.description.isNullOrEmpty()) {
-                        column(
-                            text(""),
-                            text(entity.description!!).dim()
-                                .overflow(Overflow.WRAP_WORD)
-                        )
-                    } else spacer()
-                ).margin(Margin.horizontal(2)).fill()
+                    *listOfNotNull(
+                        text(" Playlist ").fg(PRIMARY_COLOR),
+                        text(""),
+                        text(entity.title).fg(TEXT_PRIMARY)
+                            .overflow(Overflow.WRAP_WORD),
+                        text(entity.author).fg(TEXT_SECONDARY)
+                            .overflow(Overflow.WRAP_WORD),
+                        if (entity.trackCount != null) text("${entity.trackCount} tracks").dim() else null,
+                        if (!entity.description.isNullOrEmpty()) {
+                            column(
+                                text(""),
+                                text(entity.description!!).dim()
+                                    .overflow(Overflow.WRAP_WORD)
+                            )
+                        } else null
+                    ).toTypedArray()
+                ).margin(Margin.horizontal(2)).flex(Flex.START)
             }
 
             else -> spacer()
         }
-    )
+    ).flex(Flex.START)
 
     return panel(infoTab.fill())
         .title("Details")
