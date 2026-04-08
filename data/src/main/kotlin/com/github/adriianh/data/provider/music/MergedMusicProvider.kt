@@ -1,6 +1,7 @@
 package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,12 +21,27 @@ class MergedMusicProvider(
 
     override suspend fun search(query: String): List<Track> = coroutineScope {
         val jobs = providers.map { async { runCatching { it.search(query) }.getOrDefault(emptyList()) } }
-        deduplicate(merge(jobs.awaitAll()))
+        deduplicate(mergeLists(jobs.awaitAll()))
+    }
+
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAlbums(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchArtists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchPlaylists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
     override suspend fun searchAll(query: String): List<Track> = coroutineScope {
         val jobs = providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }
-        deduplicate(merge(jobs.awaitAll()))
+        deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun getTrack(id: String): Track? {
@@ -46,8 +62,8 @@ class MergedMusicProvider(
     }
 
     /** Round-robin interleave: [A1,A2,A3] + [B1,B2] → [A1,B1,A2,B2,A3] */
-    private fun merge(lists: List<List<Track>>): List<Track> {
-        val result = mutableListOf<Track>()
+    private fun <T> mergeLists(lists: List<List<T>>): List<T> {
+        val result = mutableListOf<T>()
         val iterators = lists.map { it.iterator() }
         var anyHasNext = true
         while (anyHasNext) {
