@@ -24,6 +24,8 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 internal fun MeloScreen.performSearch() {
     val query = searchInputState.text()
@@ -47,6 +49,9 @@ internal fun MeloScreen.performSearch() {
                 query = query,
                 tab = currentTab,
                 results = filtered,
+                albumResults = emptyList(),
+                artistResults = emptyList(),
+                playlistResults = emptyList(),
                 isLoading = false,
                 selectedIndex = 0,
                 hasMore = false
@@ -72,72 +77,43 @@ internal fun MeloScreen.performSearch() {
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
     )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
+
     scope.launch {
         try {
-            when (currentTab) {
-                SearchTab.SONGS -> {
-                    val results = searchTracks(query)
-                    val firstTrack = results.firstOrNull()
-                    appRunner()?.runOnRenderThread {
-                        updateScreen<ScreenState.Search> {
-                            it.copy(
-                                results = results, isLoading = false, selectedIndex = 0,
-                                hasMore = loadMoreTracks.hasMore(results.size)
-                            )
-                        }
-                        state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack))
-                        resultList.selected(0)
-                        focusResults()
+            coroutineScope {
+                val tracksDeferred = async { searchTracks(query) }
+                val albumsDeferred = async { searchAlbums(query) }
+                val artistsDeferred = async { searchArtists(query) }
+                val playlistsDeferred = async { searchPlaylists(query) }
+
+                val tracks = tracksDeferred.await()
+                val albums = albumsDeferred.await()
+                val artists = artistsDeferred.await()
+                val playlists = playlistsDeferred.await()
+
+                if (!isActive) return@coroutineScope
+
+                appRunner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Search> {
+                        it.copy(
+                            results = tracks,
+                            albumResults = albums,
+                            artistResults = artists,
+                            playlistResults = playlists,
+                            isLoading = false,
+                            selectedIndex = 0,
+                            hasMore = loadMoreTracks.hasMore(tracks.size)
+                        )
                     }
-                    if (firstTrack != null) loadTrackDetails(firstTrack.id)
+                    if (currentTab == SearchTab.SONGS) {
+                        state = state.copy(detail = state.detail.copy(selectedTrack = tracks.firstOrNull()))
+                    }
+                    resultList.selected(0)
+                    focusResults()
                 }
 
-                SearchTab.ALBUMS -> {
-                    val results = searchAlbums(query)
-                    appRunner()?.runOnRenderThread {
-                        updateScreen<ScreenState.Search> {
-                            it.copy(
-                                albumResults = results,
-                                isLoading = false,
-                                selectedIndex = 0,
-                                hasMore = false
-                            )
-                        }
-                        resultList.selected(0)
-                        focusResults()
-                    }
-                }
-
-                SearchTab.ARTISTS -> {
-                    val results = searchArtists(query)
-                    appRunner()?.runOnRenderThread {
-                        updateScreen<ScreenState.Search> {
-                            it.copy(
-                                artistResults = results,
-                                isLoading = false,
-                                selectedIndex = 0,
-                                hasMore = false
-                            )
-                        }
-                        resultList.selected(0)
-                        focusResults()
-                    }
-                }
-
-                SearchTab.PLAYLISTS -> {
-                    val results = searchPlaylists(query)
-                    appRunner()?.runOnRenderThread {
-                        updateScreen<ScreenState.Search> {
-                            it.copy(
-                                playlistResults = results,
-                                isLoading = false,
-                                selectedIndex = 0,
-                                hasMore = false
-                            )
-                        }
-                        resultList.selected(0)
-                        focusResults()
-                    }
+                if (currentTab == SearchTab.SONGS) {
+                    tracks.firstOrNull()?.let { loadTrackDetails(it.id) }
                 }
             }
         } catch (e: Exception) {
@@ -162,7 +138,15 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
         (actualState.tab.ordinal - 1 + entries.size) % entries.size
     }
     state = state.copy(screen = actualState.copy(tab = entries[newOrdinal], selectedIndex = 0))
-    if (actualState.query.isNotBlank()) performSearch()
+    resultList.selected(0)
+
+    if (entries[newOrdinal] == SearchTab.SONGS) {
+        val firstTrack = actualState.results.firstOrNull()
+        state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack))
+        if (firstTrack != null) loadTrackDetails(firstTrack.id)
+    } else {
+        state = state.copy(detail = state.detail.copy(selectedTrack = null))
+    }
 }
 
 internal fun MeloScreen.loadMore() {

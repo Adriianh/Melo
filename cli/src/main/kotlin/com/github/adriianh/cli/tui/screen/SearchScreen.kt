@@ -216,6 +216,8 @@ private fun renderResultsArea(
                 Constraint.percentage(35)
             )
     } else {
-        dock().center(resultsPanel)
+        dock()
+            .center(resultsPanel)
+            .bottom(com.github.adriianh.cli.tui.graphics.ClearGraphicsElement(), Constraint.length(1))
     }
 }
