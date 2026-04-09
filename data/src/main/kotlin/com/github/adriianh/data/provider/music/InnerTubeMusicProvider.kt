@@ -45,7 +45,7 @@ class InnerTubeMusicProvider(
         val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
         return result?.items?.filterIsInstance<AlbumItem>()?.map { item ->
             SearchResult.Album(
-                id = item.playlistId,
+                id = item.browseId,
                 title = item.title,
                 author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
                 year = item.year?.toString(),
@@ -117,7 +117,7 @@ class InnerTubeMusicProvider(
         fun mapItems(items: List<YTItem>) {
             pages.addAll(items.filterIsInstance<AlbumItem>().map { item ->
                 SearchResult.Album(
-                    id = item.playlistId,
+                    id = item.browseId,
                     title = item.title,
                     author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
                     year = item.year?.toString(),
@@ -223,7 +223,7 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
-        val result = YouTube.album(id).getOrNull() ?: return fallback?.getAlbumDetails(id)
+        val r = YouTube.album(id); if(r.isFailure) println("ERR: ${r.exceptionOrNull()?.stackTraceToString()}"); val result = r.getOrNull() ?: return fallback?.getAlbumDetails(id)
         val albumItem = result.album
         val tracks = result.songs.map { song ->
             Track(
@@ -239,7 +239,7 @@ class InnerTubeMusicProvider(
         }
         val otherVersions = result.otherVersions.map {
             SearchResult.Album(
-                id = it.playlistId,
+                id = it.browseId,
                 title = it.title,
                 author = it.artists?.joinToString(", ") { a -> a.name } ?: "Unknown",
                 year = it.year?.toString(),
@@ -247,7 +247,7 @@ class InnerTubeMusicProvider(
             )
         }
         return SearchResult.Album(
-            id = albumItem.playlistId,
+            id = albumItem.browseId,
             title = albumItem.title,
             author = albumItem.artists?.joinToString(", ") { it.name } ?: "Unknown",
             year = albumItem.year?.toString(),
@@ -285,12 +285,27 @@ class InnerTubeMusicProvider(
     override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
         val result = YouTube.playlist(id).getOrNull() ?: return fallback?.getPlaylistDetails(id)
 
+        val tracks = result.songs.map { song ->
+            val albumName = song.album?.name
+            Track(
+                id = "piped:${song.id}",
+                title = song.title,
+                artist = song.artists.firstOrNull()?.name ?: "Unknown",
+                durationMs = song.duration?.times(1000L) ?: 0L,
+                album = albumName ?: "",
+                genres = emptyList(),
+                artworkUrl = song.thumbnail,
+                sourceId = song.id
+            )
+        }
+
         return SearchResult.Playlist(
             id = result.playlist.id,
             title = result.playlist.title,
             author = result.playlist.author?.name ?: "Unknown",
             trackCount = result.songs.size,
             artworkUrl = result.playlist.thumbnail,
+            songs = tracks,
             description = null
         )
     }

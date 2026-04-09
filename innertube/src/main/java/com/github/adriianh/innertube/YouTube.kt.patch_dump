@@ -1,0 +1,24 @@
+--- innertube/src/main/java/com/github/adriianh/innertube/YouTube.kt
++++ innertube/src/main/java/com/github/adriianh/innertube/YouTube.kt
+@@ -19,6 +19,7 @@
+ import com.github.adriianh.innertube.pages.NextPage
+ import com.github.adriianh.innertube.pages.PodcastPage
+ import com.github.adriianh.innertube.pages.SearchPage
++import io.ktor.client.statement.bodyAsText
+ import java.util.Locale
+ object YouTube {
+@@ -176,6 +177,14 @@
+         )
+     }
++    suspend fun dumpAlbum(browseId: String) {
++        val response = innerTube.browse(WEB_REMIX, browseId).bodyAsText()
++        java.io.File("dump_album.json").writeText(response)
++        
++        val playlistId = innerTube.browse(WEB_REMIX, browseId).body<BrowseResponse>().microformat?.microformatDataRenderer?.urlCanonical?.substringAfterLast('=') ?: browseId
++        val songsResponse = innerTube.browse(WEB_REMIX, "VL$playlistId").bodyAsText()
++        java.io.File("dump_album_songs.json").writeText(songsResponse)
++    }
++
+     suspend fun album(browseId: String, withSongs: Boolean = true): Result<AlbumPage> = runCatching {
+         val response = innerTube.browse(WEB_REMIX, browseId).body<BrowseResponse>()
+         val playlistId = response.microformat?.microformatDataRenderer?.urlCanonical?.substringAfterLast('=') ?: browseId

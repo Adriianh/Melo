@@ -376,12 +376,30 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            if (!isFocused || actualState.tab != SearchTab.SONGS) return EventResult.UNHANDLED
-            val selected =
-                actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
-            downloadTrack(selected, DownloadType.PREFETCH)
-            playTrack(selected)
-            return EventResult.HANDLED
+            if (!isFocused) return EventResult.UNHANDLED
+            when (actualState.tab) {
+                SearchTab.SONGS -> {
+                    val selected = actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    downloadTrack(selected, DownloadType.PREFETCH)
+                    playTrack(selected)
+                    return EventResult.HANDLED
+                }
+                SearchTab.ALBUMS -> {
+                    val selected = actualState.albumResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    openEntityDetails(selected)
+                    return EventResult.HANDLED
+                }
+                SearchTab.ARTISTS -> {
+                    val selected = actualState.artistResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    openEntityDetails(selected)
+                    return EventResult.HANDLED
+                }
+                SearchTab.PLAYLISTS -> {
+                    val selected = actualState.playlistResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    openEntityDetails(selected)
+                    return EventResult.HANDLED
+                }
+            }
         }
 
         actualState.tab == SearchTab.SONGS && event.matchesAction(

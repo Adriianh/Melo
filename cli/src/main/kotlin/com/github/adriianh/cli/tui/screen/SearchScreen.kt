@@ -27,10 +27,12 @@ import dev.tamboui.tui.event.KeyEvent
 fun renderSearchScreen(
     state: MeloState,
     resultList: ListElement<*>,
+    entityTracksList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val actualState = state.screen as? ScreenState.Search ?: return panel(text("Search screen not active").centered()).rounded()
@@ -71,8 +73,8 @@ fun renderSearchScreen(
         }
 
         else -> renderResultsArea(
-            state, actualState, resultList, lyricsArea, similarArea,
-            marqueeText, onResultsKeyEvent, onDetailKeyEvent
+            state, actualState, resultList, entityTracksList, lyricsArea, similarArea,
+            marqueeText, onResultsKeyEvent, onEntityDetailKeyEvent, onDetailKeyEvent
         )
     }
 }
@@ -92,10 +94,12 @@ private fun renderResultsArea(
     state: MeloState,
     actualState: ScreenState.Search,
     resultList: ListElement<*>,
+    entityTracksList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val headerItems: Element
@@ -189,6 +193,62 @@ private fun renderResultsArea(
                 text("Tracks").dim().length(10),
             ).margin(Margin.horizontal(1))
         }
+    }
+
+    if (actualState.isInEntityDetail) {
+        val tracks = actualState.entityTracks
+        val items = tracks.mapIndexed { index, track ->
+            val duration = formatDuration(track.durationMs)
+            val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+            val isSelected = index == entityTracksList.selected()
+            val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
+            else track.title
+            val isFav = state.collections.favorites.any { it.id == track.id }
+            val isTrackPlayable = state.isPlayable(track)
+            row(
+                text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
+                text("${index + 1}").dim().length(3),
+                text(titleText).fg(if (isTrackPlayable) TEXT_PRIMARY else TEXT_DIM).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+                text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
+                text(duration).fg(TEXT_DIM).length(6),
+            )
+        }
+        entityTracksList.elements(*items.toTypedArray())
+
+        val p = panel(
+            column(
+                row(
+                    text("  Tracks").fg(PRIMARY_COLOR).bold(),
+                    spacer(),
+                    text("${tracks.size} total  ").dim()
+                ),
+                text(""),
+                row(
+                    text("").length(2),
+                    text("#").dim().length(3),
+                    text("Title").dim().fill(),
+                    text("Artist").dim().percent(25),
+                    text(ICON_HEART).dim().length(2),
+                    text("Time").dim().length(6),
+                ).margin(Margin.horizontal(1)),
+                text("").length(1),
+                entityTracksList.fill()
+            )
+        ).title(actualState.entityTitle ?: "Entity Details")
+            .rounded()
+            .borderColor(BORDER_DEFAULT)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .focusable()
+            .id("entity-details-panel")
+            .onKeyEvent(onEntityDetailKeyEvent)
+
+        return dock()
+            .center(p)
+            .right(
+                buildEntityDetailPanel(state),
+                Constraint.percentage(35)
+            )
     }
 
     val resultsTitle = if (actualState.isLoadingMore) "Searching... ↓" else "Search Results"

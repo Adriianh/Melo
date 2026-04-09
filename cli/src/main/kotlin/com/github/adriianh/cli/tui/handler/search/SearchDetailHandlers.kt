@@ -2,9 +2,17 @@ package com.github.adriianh.cli.tui.handler.search
 
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
+import com.github.adriianh.cli.tui.handler.matchesAction
+import com.github.adriianh.cli.tui.handler.openPlaylistPicker
+import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
+import com.github.adriianh.cli.tui.handler.toggleFavorite
+import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.toolkit.event.EventResult
@@ -26,6 +34,47 @@ internal fun MeloScreen.debouncedLoadEntityDetails(entity: SearchResult) {
     detailsJob = scope.launch {
         delay(150)
         if (isActive) loadEntityDetails(entity)
+    }
+}
+
+internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
+    val actualState = state.screen as? ScreenState.Search ?: return
+
+    state = state.copy(
+        screen = actualState.copy(
+            isInEntityDetail = true,
+            entityTitle = when (entity) {
+                is SearchResult.Album -> entity.title
+                is SearchResult.Artist -> entity.name
+                is SearchResult.Playlist -> entity.title
+                else -> "Entity Details"
+            },
+            entityTracks = emptyList()
+        )
+    )
+    entityTracksList.selected(0)
+    appRunner()?.focusManager()?.setFocus("entity-tracks-list")
+
+    scope.launch {
+        val loaded = try { com.github.adriianh.cli.tui.logDebug("Fetching details for ${entity.toString()}");
+            getEntityDetails(entity)
+        } catch (_: Exception) {
+            return@launch
+        }
+
+        com.github.adriianh.cli.tui.logDebug("Loaded tracks size: ${(loaded as? com.github.adriianh.core.domain.model.search.SearchResult.Album)?.songs?.size}"); val tracks = when (loaded) {
+            is SearchResult.Album -> loaded.songs.orEmpty()
+            is SearchResult.Artist -> loaded.topSongs.orEmpty()
+            is SearchResult.Playlist -> loaded.songs.orEmpty()
+            else -> emptyList()
+        }
+
+        if (isActive) appRunner()?.runOnRenderThread {
+            val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+            if (s.isInEntityDetail) {
+                state = state.copy(screen = s.copy(entityTracks = tracks))
+            }
+        }
     }
 }
 
@@ -272,4 +321,66 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
         }
     }
     return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
+    val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
+    if (!actualState.isInEntityDetail) return EventResult.UNHANDLED
+
+    val tracks = actualState.entityTracks
+    val listSize = tracks.size
+
+    when {
+        event.code() == KeyCode.ESCAPE || (event.modifiers().alt() && event.code() == KeyCode.LEFT) -> {
+            state = state.copy(screen = actualState.copy(isInEntityDetail = false, entityTitle = null, entityTracks = emptyList()))
+            appRunner()?.focusManager()?.setFocus("results-panel")
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_DOWN) && listSize > 0 -> {
+            val newIndex = minOf(listSize - 1, entityTracksList.selected() + 1)
+            entityTracksList.selected(newIndex)
+            val track = tracks.getOrNull(newIndex)
+            if (track != null) {
+                state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
+                debouncedLoadDetails(track)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_UP) && listSize > 0 -> {
+            val newIndex = maxOf(0, entityTracksList.selected() - 1)
+            entityTracksList.selected(newIndex)
+            val track = tracks.getOrNull(newIndex)
+            if (track != null) {
+                state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
+                debouncedLoadDetails(track)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ENTER && listSize > 0 -> {
+            val track = tracks.getOrNull(entityTracksList.selected()) ?: return EventResult.UNHANDLED
+            downloadTrack(track, DownloadType.PREFETCH)
+            playTrack(track)
+            return EventResult.HANDLED
+        }
+
+        listSize > 0 && event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+            tracks.getOrNull(entityTracksList.selected())?.let { toggleFavorite(it) }
+            return EventResult.HANDLED
+        }
+
+        listSize > 0 && event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
+            tracks.getOrNull(entityTracksList.selected())?.let { addToQueue(it) }
+            return EventResult.HANDLED
+        }
+
+        listSize > 0 && event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+            tracks.getOrNull(entityTracksList.selected())?.let { openPlaylistPicker(it) }
+            return EventResult.HANDLED
+        }
+    }
+
+    return handleGlobalShortcuts(event)
 }

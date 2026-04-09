@@ -222,6 +222,14 @@ class MeloScreen(
         .focusable()
         .id("playlist-tracks-list")
 
+    internal val entityTracksList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("entity-tracks-list")
+
     internal val localLibraryList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
