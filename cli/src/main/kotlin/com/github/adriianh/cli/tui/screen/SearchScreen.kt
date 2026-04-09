@@ -216,7 +216,7 @@ private fun renderResultsArea(
         }
         entityTracksList.elements(*items.toTypedArray())
 
-        val p = panel(
+        val entityPanel = panel(
             column(
                 row(
                     text("  Tracks").fg(PRIMARY_COLOR).bold(),
@@ -240,11 +240,11 @@ private fun renderResultsArea(
             .borderColor(BORDER_DEFAULT)
             .focusedBorderColor(BORDER_FOCUSED)
             .focusable()
-            .id("entity-details-panel")
+            .id("entity-tracks-list")
             .onKeyEvent(onEntityDetailKeyEvent)
 
         return dock()
-            .center(p)
+            .center(entityPanel)
             .right(
                 buildEntityDetailPanel(state),
                 Constraint.percentage(35)
