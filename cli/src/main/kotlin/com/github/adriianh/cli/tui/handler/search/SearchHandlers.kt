@@ -31,7 +31,9 @@ internal fun MeloScreen.performSearch() {
     val query = searchInputState.text()
     if (query.isBlank()) return
     lastQuery = query
-    loadMoreJob?.cancel()
+    try {
+        loadMoreJob?.cancel()
+    } catch (_: Exception) {}
     loadMoreJob = null
 
     val currentTab = (state.screen as? ScreenState.Search)?.tab ?: SearchTab.SONGS

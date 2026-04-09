@@ -19,10 +19,16 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 internal fun MeloScreen.debouncedLoadDetails(track: Track) {
-    detailsJob?.cancel()
+    try {
+        detailsJob?.cancel()
+    } catch (_: Exception) {}
     detailsJob = scope.launch {
         delay(150)
         if (isActive) loadTrackDetails(track.id, track)
@@ -30,7 +36,9 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
 }
 
 internal fun MeloScreen.debouncedLoadEntityDetails(entity: SearchResult) {
-    detailsJob?.cancel()
+    try {
+        detailsJob?.cancel()
+    } catch (_: Exception) {}
     detailsJob = scope.launch {
         delay(150)
         if (isActive) loadEntityDetails(entity)
@@ -56,13 +64,13 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
     appRunner()?.focusManager()?.setFocus("entity-tracks-list")
 
     scope.launch {
-        val loaded = try { com.github.adriianh.cli.tui.logDebug("Fetching details for ${entity.toString()}");
+        val loaded = try {
             getEntityDetails(entity)
         } catch (_: Exception) {
             return@launch
         }
 
-        com.github.adriianh.cli.tui.logDebug("Loaded tracks size: ${(loaded as? com.github.adriianh.core.domain.model.search.SearchResult.Album)?.songs?.size}"); val tracks = when (loaded) {
+        val tracks = when (loaded) {
             is SearchResult.Album -> loaded.songs.orEmpty()
             is SearchResult.Artist -> loaded.topSongs.orEmpty()
             is SearchResult.Playlist -> loaded.songs.orEmpty()
@@ -79,7 +87,9 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
 }
 
 internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
-    detailsJob?.cancel()
+    try {
+        detailsJob?.cancel()
+    } catch (_: Exception) {}
     state = state.copy(
         detail = state.detail.copy(
             artworkData = null,
@@ -150,7 +160,9 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
 }
 
 internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = null) {
-    detailsJob?.cancel()
+    try {
+        detailsJob?.cancel()
+    } catch (_: Exception) {}
     state = state.copy(
         detail = state.detail.copy(
             lyrics = null,
@@ -223,7 +235,9 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
 }
 
 internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
-    nowPlayingMetadataJob?.cancel()
+    try {
+        nowPlayingMetadataJob?.cancel()
+    } catch (_: Exception) {}
     if (state.isOfflineMode) return
     nowPlayingMetadataJob = scope.launch {
         val resolvedMetadata = if (track.artworkUrl == null || track.album.isBlank()) {
