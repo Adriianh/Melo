@@ -371,14 +371,24 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             }
 
             event.matches(Actions.MOVE_DOWN) && listSize > 0 -> {
-                val newIndex = minOf(listSize - 1, artistDashboardList.selected() + 1)
-                artistDashboardList.selected(newIndex)
+                var newIndex = minOf(listSize - 1, artistDashboardList.selected() + 1)
+                while (newIndex < listSize - 1 && items[newIndex] is String) {
+                    newIndex++
+                }
+                if (items[newIndex] !is String) {
+                    artistDashboardList.selected(newIndex)
+                }
                 return EventResult.HANDLED
             }
 
             event.matches(Actions.MOVE_UP) && listSize > 0 -> {
-                val newIndex = maxOf(0, artistDashboardList.selected() - 1)
-                artistDashboardList.selected(newIndex)
+                var newIndex = maxOf(0, artistDashboardList.selected() - 1)
+                while (newIndex > 0 && items[newIndex] is String) {
+                    newIndex--
+                }
+                if (items[newIndex] !is String) {
+                    artistDashboardList.selected(newIndex)
+                }
                 return EventResult.HANDLED
             }
 
@@ -388,6 +398,10 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                         downloadTrack(item, DownloadType.PREFETCH)
                         playTrack(item)
                     }
+                    is SearchResult.Song -> {
+                        downloadTrack(item.track, DownloadType.PREFETCH)
+                        playTrack(item.track)
+                    }
                     is SearchResult -> {
                         openEntityDetails(item)
                     }
@@ -396,17 +410,20 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             }
 
             listSize > 0 && event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { toggleFavorite(it) }
+                val item = items.getOrNull(artistDashboardList.selected())
+                (item as? Track ?: (item as? SearchResult.Song)?.track)?.let { toggleFavorite(it) }
                 return EventResult.HANDLED
             }
 
             listSize > 0 && event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { addToQueue(it) }
+                val item = items.getOrNull(artistDashboardList.selected())
+                (item as? Track ?: (item as? SearchResult.Song)?.track)?.let { addToQueue(it) }
                 return EventResult.HANDLED
             }
 
             listSize > 0 && event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { openPlaylistPicker(it) }
+                val item = items.getOrNull(artistDashboardList.selected())
+                (item as? Track ?: (item as? SearchResult.Song)?.track)?.let { openPlaylistPicker(it) }
                 return EventResult.HANDLED
             }
         }

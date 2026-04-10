@@ -33,6 +33,7 @@ import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.block.BorderType
+import dev.tamboui.toolkit.Toolkit.stack
 
 fun renderSearchScreen(
     state: MeloState,
@@ -331,32 +332,30 @@ private fun buildArtistDashboardPanel(
 ): Element {
     val artist = state.detail.selectedEntity as SearchResult.Artist
 
-    val items = mutableListOf<StyledElement<*>>()
-
-    // Header
-    items.add(
-        panel(
-            column(
-                text(artist.name).bold().fg(PRIMARY_COLOR),
+    val headerPanel = panel(
+        column(
+            text(artist.name).bold().fg(PRIMARY_COLOR),
+            if (artist.subscriberCountText.isNullOrBlank() && artist.monthlyListenerCount.isNullOrBlank()) null else
                 text("${artist.subscriberCountText ?: ""} • ${artist.monthlyListenerCount ?: ""}").fg(TEXT_DIM),
-                text(artist.description?.replace("\n", " ") ?: "").fg(TEXT_SECONDARY).ellipsis()
-            ).margin(Margin.symmetric(1, 1))
-        ).borderType(BorderType.ROUNDED)
-    )
+            if (artist.description.isNullOrBlank()) null else
+                text(artist.description!!.replace("\n", " ")).fg(TEXT_SECONDARY).ellipsis()
+        ).margin(Margin.symmetric(1, 1))
+    ).borderType(BorderType.ROUNDED)
 
-    // Items from actualState.artistDashboardItems
+    val listItems = mutableListOf<StyledElement<*>>()
+
     actualState.artistDashboardItems.forEachIndexed { index, item ->
         val isSelected = index == artistDashboardList.selected()
         val indicator = if (isSelected) "$ICON_NOTE " else "  "
 
         when (item) {
-            is String -> items.add(
+            is String -> listItems.add(
                 text("\n  $item").bold().fg(PRIMARY_COLOR)
             )
             is com.github.adriianh.core.domain.model.Track -> {
                 val nowPlayingIndicator = if (item.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
                 val titleText = if (isSelected) marqueeText(item.title, state.player.marqueeOffset, 40) else item.title
-                items.add(
+                listItems.add(
                     row(
                         text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
                         text(titleText).fg(if (state.isPlayable(item)) TEXT_PRIMARY else TEXT_DIM).apply { if (!isSelected) ellipsisMiddle() }.fill(),
@@ -365,8 +364,21 @@ private fun buildArtistDashboardPanel(
                     )
                 )
             }
+            is SearchResult.Song -> {
+                val track = item.track
+                val nowPlayingIndicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+                val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40) else track.title
+                listItems.add(
+                    row(
+                        text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
+                        text(titleText).fg(if (state.isPlayable(track)) TEXT_PRIMARY else TEXT_DIM).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                        text(track.artist).fg(TEXT_SECONDARY).percent(30).ellipsis(),
+                        text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+                    )
+                )
+            }
             is SearchResult.Album -> {
-                items.add(
+                listItems.add(
                     row(
                         text(indicator).fg(PRIMARY_COLOR).length(2),
                         text("[Album] ${item.title}").fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
@@ -375,7 +387,7 @@ private fun buildArtistDashboardPanel(
                 )
             }
             is SearchResult.Playlist -> {
-                items.add(
+                listItems.add(
                     row(
                         text(indicator).fg(PRIMARY_COLOR).length(2),
                         text("[Playlist] ${item.title}").fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
@@ -383,15 +395,29 @@ private fun buildArtistDashboardPanel(
                     )
                 )
             }
+            is SearchResult.Artist -> {
+                listItems.add(
+                    row(
+                        text(indicator).fg(PRIMARY_COLOR).length(2),
+                        text("[Artist] ${item.name}").fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill()
+                    )
+                )
+            }
             else -> {
-                items.add(text("Unknown item").dim())
+                listItems.add(text("Unknown item").dim())
             }
         }
     }
 
-    artistDashboardList.elements(*items.toTypedArray())
+    artistDashboardList.elements(*listItems.toTypedArray())
 
-    return panel(artistDashboardList)
+    val dashboardPanel = panel(
+        column(
+            headerPanel,
+            text(""),
+            artistDashboardList.fill()
+        )
+    )
         .title("Artist Details: ${artist.name}")
         .rounded()
         .borderColor(BORDER_DEFAULT)
@@ -399,4 +425,9 @@ private fun buildArtistDashboardPanel(
         .focusable()
         .id("artist-dashboard-list")
         .onKeyEvent(onEntityDetailKeyEvent)
+
+    return stack(
+        ClearGraphicsElement().fill(),
+        dashboardPanel
+    )
 }
