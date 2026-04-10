@@ -62,11 +62,35 @@ internal fun MeloScreen.playTrack(track: Track) {
 
     resolveStreamJob?.cancel()
     resolveStreamJob = scope.launch {
+        var resolvedTrack = track
+        if (resolvedTrack.durationMs <= 0L) {
+            try {
+                getTrack(resolvedTrack.id)?.let { fetched ->
+                    resolvedTrack = fetched
+                    appRunner()?.runOnRenderThread {
+                        val currentQ = state.player.queue.toMutableList()
+                        if (state.player.queueIndex in currentQ.indices) {
+                            currentQ[state.player.queueIndex] = fetched
+                        }
+                        if (state.player.nowPlaying?.id == fetched.id) {
+                            state = state.copy(
+                                player = state.player.copy(
+                                    nowPlaying = fetched,
+                                    queue = currentQ
+                                )
+                            )
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+
         val queue = state.player.queue
         val nextTracks =
             (1..2).mapNotNull { offset -> queue.getOrNull(state.player.queueIndex + offset) }
 
-        markTrackAccessed(track.id)
+        markTrackAccessed(resolvedTrack.id)
 
         if (settingsViewState.currentSettings.autoDownload) {
             nextTracks.forEach { nextTrack -> launch(Dispatchers.IO) { downloadTrack(nextTrack) } }
@@ -84,7 +108,7 @@ internal fun MeloScreen.playTrack(track: Track) {
         var attempts = 0
         val maxAttempts = 3
         while (attempts < maxAttempts && url == null) {
-            url = getStream(track)
+            url = getStream(resolvedTrack)
             if (url == null) delay(700L)
             attempts++
         }
@@ -102,14 +126,14 @@ internal fun MeloScreen.playTrack(track: Track) {
             }
             state = state.copy(player = state.player.copy(isPlaying = true, isLoadingAudio = false))
             audioPlayer.play(url)
-            mediaSession.updateTrack(track, track.durationMs)
+            mediaSession.updateTrack(resolvedTrack, resolvedTrack.durationMs)
             if (settingsViewState.currentSettings.discordRpcEnabled) {
-                discordRpcManager.updateActivity(track, true)
+                discordRpcManager.updateActivity(resolvedTrack, true)
             }
-            onTrackStarted(track)
+            onTrackStarted(resolvedTrack)
         }
 
-        val lrc = getSyncedLyrics(track.artist, track.title)
+        val lrc = getSyncedLyrics(resolvedTrack.artist, resolvedTrack.title)
         appRunner()?.runOnRenderThread {
             state = state.copy(
                 player = state.player.copy(

@@ -268,7 +268,7 @@ class InnerTubeMusicProvider(
     override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
         val result = YouTube.artist(id).getOrNull() ?: return fallback?.getArtistDetails(id)
         val sections = result.sections.map { section ->
-            val mappedItems = section.items.mapNotNull { item ->
+            val mappedItems = section.items.map { item ->
                 when (item) {
                     is SongItem -> SearchResult.Song(Track(
                         id = "piped:${item.id}",

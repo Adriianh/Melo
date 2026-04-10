@@ -316,17 +316,15 @@ private fun buildArtistDashboardPanel(
 
     val headerPanel = panel(
         column(
-            text(artist.name).bold().fg(PRIMARY_COLOR),
-            if (artist.subscriberCountText.isNullOrBlank() && artist.monthlyListenerCount.isNullOrBlank()) null else text(
-                "${artist.subscriberCountText ?: ""} • ${artist.monthlyListenerCount ?: ""}"
-            ).fg(
-                TEXT_DIM
-            ),
-            if (artist.description.isNullOrBlank()) null else text(
-                artist.description!!.replace(
-                    "\n", " "
-                )
-            ).fg(TEXT_SECONDARY).ellipsis()
+            *listOfNotNull(
+                text(artist.name).bold().fg(PRIMARY_COLOR),
+                if (artist.subscriberCountText.isNullOrBlank() && artist.monthlyListenerCount.isNullOrBlank()) null else text(
+                    "${artist.subscriberCountText ?: ""} • ${artist.monthlyListenerCount ?: ""}"
+                ).fg(TEXT_DIM),
+                if (artist.description.isNullOrBlank()) null else text(
+                    artist.description!!.replace("\n", " ")
+                ).fg(TEXT_SECONDARY).ellipsis()
+            ).toTypedArray()
         ).margin(Margin.symmetric(1, 1))
     ).borderType(BorderType.ROUNDED)
 
