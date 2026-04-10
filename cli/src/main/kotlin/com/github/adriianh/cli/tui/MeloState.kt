@@ -132,21 +132,29 @@ enum class SearchTab { SONGS, ALBUMS, ARTISTS, PLAYLISTS }
  */
 sealed interface ScreenState {
     data class Search(
-        val query: String = "",
         val tab: SearchTab = SearchTab.SONGS,
+        val query: String = "",
         val results: List<Track> = emptyList(),
         val albumResults: List<SearchResult.Album> = emptyList(),
         val artistResults: List<SearchResult.Artist> = emptyList(),
         val playlistResults: List<SearchResult.Playlist> = emptyList(),
+        val cursor: Int = 0,
         val selectedIndex: Int = 0,
+        val localCursor: Int = 0,
+        val localResults: List<Track> = emptyList(),
+        val isLoadingSearch: Boolean = false,
+        val searchError: String? = null,
         val isInEntityDetail: Boolean = false,
         val entityTitle: String? = null,
         val entityTracks: List<Track> = emptyList(),
         val artistDashboardItems: List<Any> = emptyList(),
+        val artistDashboardX: Int = 0,
+        val artistDashboardY: Int = 0,
+        val artistDashboardPositions: Map<String, Int> = emptyMap(),
         val isLoading: Boolean = false,
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
-        val errorMessage: String? = null,
+        val errorMessage: String? = null
     ) : ScreenState
 
     data class Home(
