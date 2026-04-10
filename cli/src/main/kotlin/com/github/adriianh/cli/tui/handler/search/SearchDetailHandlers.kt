@@ -72,15 +72,33 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
 
         val tracks = when (loaded) {
             is SearchResult.Album -> loaded.songs.orEmpty()
-            is SearchResult.Artist -> loaded.topSongs.orEmpty()
             is SearchResult.Playlist -> loaded.songs.orEmpty()
             else -> emptyList()
         }
 
+        val dashboardItems = mutableListOf<Any>()
+        if (loaded is SearchResult.Artist) {
+            loaded.topSongs?.let {
+                if (it.isNotEmpty()) {
+                    dashboardItems.add("Top Songs")
+                    dashboardItems.addAll(it)
+                }
+            }
+            loaded.sections.forEach { section ->
+                if (section.items.isNotEmpty()) {
+                    dashboardItems.add(section.title)
+                    dashboardItems.addAll(section.items)
+                }
+            }
+        }
+
         if (isActive) appRunner()?.runOnRenderThread {
-            val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
-            if (s.isInEntityDetail) {
-                state = state.copy(screen = s.copy(entityTracks = tracks))
+            val actualScreen = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+            if (actualScreen.isInEntityDetail) {
+                state = state.copy(screen = actualScreen.copy(
+                    entityTracks = tracks,
+                    artistDashboardItems = dashboardItems
+                ))
             }
         }
     }
@@ -340,6 +358,61 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
 internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
     val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
     if (!actualState.isInEntityDetail) return EventResult.UNHANDLED
+
+    if (state.detail.selectedEntity is SearchResult.Artist) {
+        val items = actualState.artistDashboardItems
+        val listSize = items.size
+
+        when {
+            event.code() == KeyCode.ESCAPE || (event.modifiers().alt() && event.code() == KeyCode.LEFT) -> {
+                state = state.copy(screen = actualState.copy(isInEntityDetail = false, entityTitle = null, entityTracks = emptyList(), artistDashboardItems = emptyList()))
+                appRunner()?.focusManager()?.setFocus("results-panel")
+                return EventResult.HANDLED
+            }
+
+            event.matches(Actions.MOVE_DOWN) && listSize > 0 -> {
+                val newIndex = minOf(listSize - 1, artistDashboardList.selected() + 1)
+                artistDashboardList.selected(newIndex)
+                return EventResult.HANDLED
+            }
+
+            event.matches(Actions.MOVE_UP) && listSize > 0 -> {
+                val newIndex = maxOf(0, artistDashboardList.selected() - 1)
+                artistDashboardList.selected(newIndex)
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ENTER && listSize > 0 -> {
+                when (val item = items.getOrNull(artistDashboardList.selected())) {
+                    is Track -> {
+                        downloadTrack(item, DownloadType.PREFETCH)
+                        playTrack(item)
+                    }
+                    is SearchResult -> {
+                        openEntityDetails(item)
+                    }
+                }
+                return EventResult.HANDLED
+            }
+
+            listSize > 0 && event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { toggleFavorite(it) }
+                return EventResult.HANDLED
+            }
+
+            listSize > 0 && event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
+                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { addToQueue(it) }
+                return EventResult.HANDLED
+            }
+
+            listSize > 0 && event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+                (items.getOrNull(artistDashboardList.selected()) as? Track)?.let { openPlaylistPicker(it) }
+                return EventResult.HANDLED
+            }
+        }
+
+        return handleGlobalShortcuts(event)
+    }
 
     val tracks = actualState.entityTracks
     val listSize = tracks.size

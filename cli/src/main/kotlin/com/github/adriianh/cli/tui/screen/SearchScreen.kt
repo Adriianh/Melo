@@ -17,6 +17,7 @@ import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
@@ -26,15 +27,18 @@ import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
+import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
+import dev.tamboui.widgets.block.BorderType
 
 fun renderSearchScreen(
     state: MeloState,
     resultList: ListElement<*>,
     entityTracksList: ListElement<*>,
+    artistDashboardList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
@@ -85,7 +89,7 @@ fun renderSearchScreen(
         }
 
         else -> renderResultsArea(
-            state, actualState, resultList, entityTracksList, lyricsArea, similarArea,
+            state, actualState, resultList, entityTracksList, artistDashboardList, lyricsArea, similarArea,
             marqueeText, onResultsKeyEvent, onEntityDetailKeyEvent, onDetailKeyEvent
         )
     }
@@ -107,6 +111,7 @@ private fun renderResultsArea(
     actualState: ScreenState.Search,
     resultList: ListElement<*>,
     entityTracksList: ListElement<*>,
+    artistDashboardList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
     marqueeText: (String, Int, Int) -> String,
@@ -217,6 +222,10 @@ private fun renderResultsArea(
     }
 
     if (actualState.isInEntityDetail) {
+        if (state.detail.selectedEntity is SearchResult.Artist) {
+            return buildArtistDashboardPanel(state, actualState, artistDashboardList, onEntityDetailKeyEvent, marqueeText)
+        }
+
         val tracks = actualState.entityTracks
         val items = tracks.mapIndexed { index, track ->
             val duration = formatDuration(track.durationMs)
@@ -311,4 +320,83 @@ private fun renderResultsArea(
             .center(resultsPanel)
             .bottom(ClearGraphicsElement(), Constraint.length(1))
     }
+}
+
+private fun buildArtistDashboardPanel(
+    state: MeloState,
+    actualState: ScreenState.Search,
+    artistDashboardList: ListElement<*>,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
+    marqueeText: (String, Int, Int) -> String
+): Element {
+    val artist = state.detail.selectedEntity as SearchResult.Artist
+
+    val items = mutableListOf<StyledElement<*>>()
+
+    // Header
+    items.add(
+        panel(
+            column(
+                text(artist.name).bold().fg(PRIMARY_COLOR),
+                text("${artist.subscriberCountText ?: ""} • ${artist.monthlyListenerCount ?: ""}").fg(TEXT_DIM),
+                text(artist.description?.replace("\n", " ") ?: "").fg(TEXT_SECONDARY).ellipsis()
+            ).margin(Margin.symmetric(1, 1))
+        ).borderType(BorderType.ROUNDED)
+    )
+
+    // Items from actualState.artistDashboardItems
+    actualState.artistDashboardItems.forEachIndexed { index, item ->
+        val isSelected = index == artistDashboardList.selected()
+        val indicator = if (isSelected) "$ICON_NOTE " else "  "
+
+        when (item) {
+            is String -> items.add(
+                text("\n  $item").bold().fg(PRIMARY_COLOR)
+            )
+            is com.github.adriianh.core.domain.model.Track -> {
+                val nowPlayingIndicator = if (item.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
+                val titleText = if (isSelected) marqueeText(item.title, state.player.marqueeOffset, 40) else item.title
+                items.add(
+                    row(
+                        text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
+                        text(titleText).fg(if (state.isPlayable(item)) TEXT_PRIMARY else TEXT_DIM).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                        text(item.artist).fg(TEXT_SECONDARY).percent(30).ellipsis(),
+                        text(formatDuration(item.durationMs)).fg(TEXT_DIM).length(6)
+                    )
+                )
+            }
+            is SearchResult.Album -> {
+                items.add(
+                    row(
+                        text(indicator).fg(PRIMARY_COLOR).length(2),
+                        text("[Album] ${item.title}").fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                        text(item.year ?: "").dim().length(6)
+                    )
+                )
+            }
+            is SearchResult.Playlist -> {
+                items.add(
+                    row(
+                        text(indicator).fg(PRIMARY_COLOR).length(2),
+                        text("[Playlist] ${item.title}").fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }.fill(),
+                        text("${item.trackCount ?: 0} tracks").dim().length(10)
+                    )
+                )
+            }
+            else -> {
+                items.add(text("Unknown item").dim())
+            }
+        }
+    }
+
+    artistDashboardList.elements(*items.toTypedArray())
+
+    return panel(artistDashboardList)
+        .title("Artist Details: ${artist.name}")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("artist-dashboard-list")
+        .onKeyEvent(onEntityDetailKeyEvent)
 }

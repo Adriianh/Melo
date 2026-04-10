@@ -14,6 +14,11 @@ sealed interface SearchResult {
         val description: String? = null,
         val otherVersions: List<Album>? = null
     ) : SearchResult
+    data class ArtistSection(
+        val title: String,
+        val items: List<SearchResult>
+    )
+
     data class Artist(
         val id: String,
         val name: String,
@@ -21,7 +26,8 @@ sealed interface SearchResult {
         val description: String? = null,
         val subscriberCountText: String? = null,
         val monthlyListenerCount: String? = null,
-        val topSongs: List<Track>? = null
+        val topSongs: List<Track>? = null,
+        val sections: List<ArtistSection> = emptyList()
     ) : SearchResult
     data class Playlist(
         val id: String,

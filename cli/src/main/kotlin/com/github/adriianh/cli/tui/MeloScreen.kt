@@ -226,9 +226,16 @@ class MeloScreen(
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
-        .scrollbar()
         .focusable()
         .id("entity-tracks-list")
+
+    internal val artistDashboardList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("artist-dashboard-list")
 
     internal val localLibraryList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")

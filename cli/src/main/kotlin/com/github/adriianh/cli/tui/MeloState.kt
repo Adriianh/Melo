@@ -142,6 +142,7 @@ sealed interface ScreenState {
         val isInEntityDetail: Boolean = false,
         val entityTitle: String? = null,
         val entityTracks: List<Track> = emptyList(),
+        val artistDashboardItems: List<Any> = emptyList(),
         val isLoading: Boolean = false,
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
