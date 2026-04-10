@@ -90,15 +90,6 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
         val dashboardItems = mutableListOf<Any>()
         if (loaded is SearchResult.Artist) {
             val sections = buildList {
-                loaded.topSongs?.let {
-                    if (it.isNotEmpty()) {
-                        add(
-                            SearchResult.ArtistSection(
-                                "Top Songs",
-                                it.map { track -> SearchResult.Song(track) })
-                        )
-                    }
-                }
                 addAll(loaded.sections)
             }
             val chunkedSections = sections.filter { it.items.isNotEmpty() }.chunked(2)
