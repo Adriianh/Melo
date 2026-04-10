@@ -125,6 +125,7 @@ fun buildEntityDetailPanel(
                         text(entity.name).fg(TEXT_PRIMARY)
                             .overflow(Overflow.WRAP_WORD),
                         if (entity.subscriberCountText != null) text(entity.subscriberCountText!!).dim() else null,
+                        if (entity.monthlyListenerCount != null) text(entity.monthlyListenerCount!!).dim() else null,
                         if (state.detail.entityGenres.isNotEmpty()) {
                             column(
                                 text(""),
