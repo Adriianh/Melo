@@ -8,6 +8,7 @@ import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContext
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_PLAYLIST
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.JsonNames
 
 /**
@@ -49,9 +50,14 @@ data class MusicResponsiveListItemRenderer(
 
     @Serializable
     data class FlexColumn(
-        @JsonNames("musicResponsiveListItemFixedColumnRenderer")
-        val musicResponsiveListItemFlexColumnRenderer: MusicResponsiveListItemFlexColumnRenderer,
+        @SerialName("musicResponsiveListItemFixedColumnRenderer")
+        private val _musicResponsiveListItemFixedColumnRenderer: MusicResponsiveListItemFlexColumnRenderer? = null,
+        @SerialName("musicResponsiveListItemFlexColumnRenderer")
+        private val _musicResponsiveListItemFlexColumnRenderer: MusicResponsiveListItemFlexColumnRenderer? = null,
     ) {
+        val musicResponsiveListItemFlexColumnRenderer: MusicResponsiveListItemFlexColumnRenderer?
+            get() = _musicResponsiveListItemFixedColumnRenderer ?: _musicResponsiveListItemFlexColumnRenderer
+
         @Serializable
         data class MusicResponsiveListItemFlexColumnRenderer(
             val text: Runs?,

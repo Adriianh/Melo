@@ -305,7 +305,7 @@ class InnerTubeMusicProvider(
         }
 
         val topSongs = result.sections.find {
-            it.title.equals("Songs", ignoreCase = true)
+            it.title.equals("Songs", ignoreCase = true) || it.title.equals("Top songs", ignoreCase = true)
         }?.items?.filterIsInstance<SongItem>()
         val tracks = topSongs?.map { song ->
             Track(

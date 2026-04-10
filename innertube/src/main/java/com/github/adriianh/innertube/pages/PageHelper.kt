@@ -7,7 +7,7 @@ object PageHelper {
     fun extractRuns(columns: List<MusicResponsiveListItemRenderer.FlexColumn>, typeLike: String): List<Run> {
         val filteredRuns = mutableListOf<Run>()
         for (column in columns) {
-            val runs = column.musicResponsiveListItemFlexColumnRenderer.text?.runs
+            val runs = column.musicResponsiveListItemFlexColumnRenderer?.text?.runs
                 ?: continue
 
             for (run in runs) {

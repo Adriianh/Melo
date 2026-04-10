@@ -94,7 +94,8 @@ fun parseCookieString(cookie: String): Map<String, String> =
 
 fun String.parseTime(): Int? {
     try {
-        val parts = split(":").map { it.toInt() }
+        val cleaned = this.replace(Regex("[^0-9:]"), "")
+        val parts = cleaned.split(":").map { it.toInt() }
         if (parts.size == 2) {
             return parts[0] * 60 + parts[1]
         }

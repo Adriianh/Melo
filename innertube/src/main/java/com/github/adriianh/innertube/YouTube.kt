@@ -184,8 +184,11 @@ object YouTube {
     java.io.File("dump_album_songs.json").writeText(songsResponse)
 }
     suspend fun album(browseId: String, withSongs: Boolean = true): Result<AlbumPage> = runCatching {
-        val response = innerTube.browse(WEB_REMIX, browseId).body<BrowseResponse>()
+        var response = innerTube.browse(WEB_REMIX, browseId).body<BrowseResponse>()
         val playlistId = response.microformat?.microformatDataRenderer?.urlCanonical?.substringAfterLast('=') ?: browseId
+
+        response = innerTube.browse(WEB_REMIX, "VL$playlistId").body<BrowseResponse>()
+
         AlbumPage(
             album = AlbumItem(
                 browseId = browseId,
@@ -200,7 +203,30 @@ object YouTube {
                 year = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
                 thumbnail = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url ?: "",
             ),
-            songs = if (withSongs) albumSongs(playlistId).getOrDefault(emptyList()) else emptyList(),
+            songs = if (withSongs) {
+                val songs = response.contents?.twoColumnBrowseResultsRenderer
+                    ?.secondaryContents?.sectionListRenderer
+                    ?.contents?.firstOrNull()
+                    ?.musicPlaylistShelfRenderer?.contents?.getItems()
+                    ?.mapNotNull {
+                        AlbumPage.getSong(it)
+                    }?.toMutableList() ?: mutableListOf()
+                var continuation = response.contents?.twoColumnBrowseResultsRenderer?.secondaryContents?.sectionListRenderer
+                    ?.contents?.firstOrNull()?.musicPlaylistShelfRenderer?.contents?.getContinuation()
+                while (continuation != null) {
+                    val continuationResponse = innerTube.browse(
+                        client = WEB_REMIX,
+                        continuation = continuation,
+                    ).body<BrowseResponse>()
+                    val continuationItems = continuationResponse.onResponseReceivedActions?.firstOrNull()
+                        ?.appendContinuationItemsAction?.continuationItems
+                    if (continuationItems != null) {
+                        songs += continuationItems.getItems().mapNotNull { AlbumPage.getSong(it) }
+                    }
+                    continuation = continuationResponse.continuationContents?.musicPlaylistShelfContinuation?.continuations?.getContinuation()
+                }
+                songs
+            } else emptyList(),
             otherVersions = response.contents?.twoColumnBrowseResultsRenderer?.secondaryContents?.sectionListRenderer?.contents?.getOrNull(1)?.musicCarouselShelfRenderer?.contents
                 ?.mapNotNull { it.musicTwoRowItemRenderer }
                 ?.mapNotNull(NewReleaseAlbumPage::fromMusicTwoRowItemRenderer)

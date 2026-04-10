@@ -51,6 +51,11 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
     val actualState = state.screen as? ScreenState.Search ?: return
 
     state = state.copy(
+        detail = state.detail.copy(
+            selectedEntity = entity,
+            selectedTrack = null,
+            isLoadingEntityMeta = true
+        ),
         screen = actualState.copy(
             isInEntityDetail = true, entityTitle = when (entity) {
                 is SearchResult.Album -> entity.title
@@ -104,6 +109,10 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
             val actualScreen = state.screen as? ScreenState.Search ?: return@runOnRenderThread
             if (actualScreen.isInEntityDetail) {
                 state = state.copy(
+                    detail = state.detail.copy(
+                        selectedEntity = loaded,
+                        isLoadingEntityMeta = true
+                    ),
                     screen = actualScreen.copy(
                         entityTracks = tracks,
                         artistDashboardItems = dashboardItems,
@@ -112,7 +121,7 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
                     )
                 )
                 if (loaded is SearchResult.Artist) {
-                    val firstItemIndex = dashboardItems.indexOfFirst { it !is String }
+                    val firstItemIndex = dashboardItems.indexOfFirst {it !is String }
                     if (firstItemIndex != -1) {
                         artistDashboardList.selected(firstItemIndex)
                     }
