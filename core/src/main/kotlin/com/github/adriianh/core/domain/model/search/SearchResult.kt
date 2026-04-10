@@ -20,6 +20,7 @@ sealed interface SearchResult {
         val artworkUrl: String?,
         val description: String? = null,
         val subscriberCountText: String? = null,
+        val monthlyListenerCount: String? = null,
         val topSongs: List<Track>? = null
     ) : SearchResult
     data class Playlist(
