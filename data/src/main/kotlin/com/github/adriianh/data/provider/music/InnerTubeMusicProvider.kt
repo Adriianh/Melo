@@ -229,12 +229,8 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
-        val r = YouTube.album(id); if (r.isFailure) println(
-            "ERR: ${
-                r.exceptionOrNull()?.stackTraceToString()
-            }"
-        );
-        val result = r.getOrNull() ?: return fallback?.getAlbumDetails(id)
+        val response = YouTube.album(id)
+        val result = response.getOrNull() ?: return fallback?.getAlbumDetails(id)
         val albumItem = result.album
         val tracks = result.songs.map { song ->
             Track(
@@ -257,6 +253,7 @@ class InnerTubeMusicProvider(
                 artworkUrl = it.thumbnail
             )
         }
+
         return SearchResult.Album(
             id = albumItem.browseId,
             title = albumItem.title,
