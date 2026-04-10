@@ -26,6 +26,7 @@ import dev.tamboui.toolkit.Toolkit.dock
 import dev.tamboui.toolkit.Toolkit.panel
 import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.stack
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
@@ -34,7 +35,6 @@ import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 import dev.tamboui.widgets.block.BorderType
-import dev.tamboui.toolkit.Toolkit.stack
 
 fun renderSearchScreen(
     state: MeloState,
@@ -365,7 +365,7 @@ private fun buildArtistDashboardPanel(
                     is SearchResult.Artist -> {
                         row(
                             text(itemIndicator).fg(PRIMARY_COLOR).length(2),
-                            text("[Artist] ${entity.name}").fg(if (isItemSelected) PRIMARY_COLOR else TEXT_PRIMARY)
+                            text(entity.name).fg(if (isItemSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                                 .apply { if (!isItemSelected) ellipsisMiddle() }.fill()
                         )
                     }
