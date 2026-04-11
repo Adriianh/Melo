@@ -186,8 +186,8 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
     }
 
     detailsJob = scope.launch {
-        val artworkDeferred = async {
-            url?.let {
+        launch {
+            val data = url?.let {
                 try {
                     artworkRenderer.load(
                         it.replace(
@@ -196,6 +196,15 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
                     ) // Request higher res if possible
                 } catch (_: Exception) {
                     null
+                }
+            }
+            if (isActive) {
+                appRunner()?.runOnRenderThread {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            artworkData = data
+                        )
+                    )
                 }
             }
         }
@@ -220,7 +229,6 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
             }
         }
 
-        val artworkData = artworkDeferred.await()
         val detailedEntity = detailsDeferred.await()
         val genres = tagsDeferred.await()
 
@@ -229,7 +237,6 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
                 state = state.copy(
                     detail = state.detail.copy(
                         selectedEntity = detailedEntity,
-                        artworkData = artworkData,
                         entityGenres = genres,
                         isLoadingEntityMeta = false
                     )
@@ -295,22 +302,36 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
 
             val updatedTrack = fullTrack.copy(artworkUrl = artworkUrl, album = album)
 
-            val artworkData = artworkUrl?.let {
-                try {
-                    artworkRenderer.load(it)
-                } catch (_: Exception) {
-                    null
-                }
-            }
-
             if (isActive) {
                 appRunner()?.runOnRenderThread {
                     state = state.copy(
                         detail = state.detail.copy(
-                            selectedTrack = updatedTrack, artworkData = artworkData
+                            selectedTrack = updatedTrack, artworkData = null
                         )
                     )
                 }
+            }
+
+            launch {
+                val artworkData = artworkUrl?.let {
+                    try {
+                        artworkRenderer.load(it)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+                if (isActive) {
+                    appRunner()?.runOnRenderThread {
+                        state = state.copy(
+                            detail = state.detail.copy(
+                                artworkData = artworkData
+                            )
+                        )
+                    }
+                }
+            }
+
+            if (isActive) {
                 val similar = similarDeferred.await()
                 if (isActive) appRunner()?.runOnRenderThread {
                     state = state.copy(
@@ -337,7 +358,6 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
 
         val artworkUrl = resolvedMetadata?.artworkUrl ?: track.artworkUrl
         val album = resolvedMetadata?.album ?: track.album
-        val artwork = artworkUrl?.let { artworkRenderer.load(it) }
 
         if (isActive) appRunner()?.runOnRenderThread {
             if (state.player.nowPlaying?.id == track.id) {
@@ -345,14 +365,28 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
                     player = state.player.copy(
                         nowPlaying = state.player.nowPlaying?.copy(
                             artworkUrl = artworkUrl, album = album
-                        ), nowPlayingArtwork = artwork
+                        )
                     )
                 )
+            }
+        }
 
-                if (settingsViewState.currentSettings.discordRpcEnabled) {
-                    discordRpcManager.updateActivity(
-                        state.player.nowPlaying, state.player.isPlaying
+        launch {
+            val artwork = artworkUrl?.let { artworkRenderer.load(it) }
+
+            if (isActive) appRunner()?.runOnRenderThread {
+                if (state.player.nowPlaying?.id == track.id) {
+                    state = state.copy(
+                        player = state.player.copy(
+                            nowPlayingArtwork = artwork
+                        )
                     )
+
+                    if (settingsViewState.currentSettings.discordRpcEnabled) {
+                        discordRpcManager.updateActivity(
+                            state.player.nowPlaying, state.player.isPlaying
+                        )
+                    }
                 }
             }
         }

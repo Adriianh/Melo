@@ -2,9 +2,11 @@ package com.github.adriianh.cli.tui.util
 
 import com.github.adriianh.cli.tui.util.ArtworkRenderer.Companion.MAX_CACHE_SIZE
 import dev.tamboui.image.ImageData
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Loads remote artwork images for display in the TUI.
@@ -27,11 +29,13 @@ class ArtworkRenderer(private val httpClient: HttpClient) {
             size > MAX_CACHE_SIZE
     }
 
-    suspend fun load(artworkUrl: String): ImageData? {
-        cache[artworkUrl]?.let { return it }
-        return try {
+    suspend fun load(artworkUrl: String): ImageData? = withContext(Dispatchers.IO) {
+        cache[artworkUrl]?.let { return@withContext it }
+        try {
             val bytes = httpClient.get(artworkUrl).body<ByteArray>()
-            ImageData.fromBytes(bytes)?.also { cache[artworkUrl] = it }
+            withContext(Dispatchers.Default) {
+                ImageData.fromBytes(bytes)?.also { cache[artworkUrl] = it }
+            }
         } catch (_: Exception) {
             null
         }
