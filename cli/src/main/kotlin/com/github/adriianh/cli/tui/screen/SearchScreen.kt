@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_BULLET
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
@@ -332,7 +333,7 @@ private fun buildArtistDashboardPanel(
 
     actualState.artistDashboardItems.forEachIndexed { index, item ->
         val isSelected = index == artistDashboardList.selected()
-        val indicator = if (isSelected) "$ICON_NOTE " else "  "
+        val indicator = if (isSelected) "$ICON_BULLET " else "  "
         val isLeftSelected = isSelected && actualState.artistDashboardX == 0
         val isRightSelected = isSelected && actualState.artistDashboardX == 1
 
@@ -340,7 +341,7 @@ private fun buildArtistDashboardPanel(
             { entity: Any?, sectionTitle: String, itemIndex: Int, isSectionSelected: Boolean ->
                 val yForSection = actualState.artistDashboardPositions[sectionTitle] ?: 0
                 val isItemSelected = isSectionSelected && itemIndex == yForSection
-                val itemIndicator = if (isItemSelected) "$ICON_NOTE " else "  "
+                val itemIndicator = if (isItemSelected) "$ICON_BULLET " else "  "
                 when (entity) {
                     is SearchResult.Album -> {
                         row(
