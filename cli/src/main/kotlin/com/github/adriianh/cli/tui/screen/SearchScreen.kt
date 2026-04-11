@@ -44,6 +44,7 @@ fun renderSearchScreen(
     artistDashboardList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
+    entityDescriptionArea: MarkupTextAreaElement,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
@@ -95,10 +96,11 @@ fun renderSearchScreen(
             artistDashboardList,
             lyricsArea,
             similarArea,
+            entityDescriptionArea,
             marqueeText,
             onResultsKeyEvent,
             onEntityDetailKeyEvent,
-            onDetailKeyEvent
+            onDetailKeyEvent,
         )
     }
 }
@@ -122,6 +124,7 @@ private fun renderResultsArea(
     artistDashboardList: ListElement<*>,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
+    entityDescriptionArea: MarkupTextAreaElement,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
@@ -275,7 +278,7 @@ private fun renderResultsArea(
             .onKeyEvent(onEntityDetailKeyEvent)
 
         return dock().center(entityPanel).right(
-            buildEntityDetailPanel(state), Constraint.percentage(35)
+            buildEntityDetailPanel(state, entityDescriptionArea), Constraint.percentage(35)
         )
     }
 
@@ -299,7 +302,7 @@ private fun renderResultsArea(
         )
     } else if (!isPlayable && state.detail.selectedEntity != null) {
         dock().center(resultsPanel).right(
-            buildEntityDetailPanel(state), Constraint.percentage(35)
+            buildEntityDetailPanel(state, entityDescriptionArea), Constraint.percentage(35)
         )
     } else {
         dock().center(resultsPanel).bottom(ClearGraphicsElement(), Constraint.length(1))

@@ -80,95 +80,91 @@ fun buildDetailPanel(
 }
 
 fun buildEntityDetailPanel(
-    state: MeloState
+    state: MeloState,
+    entityDescriptionArea: MarkupTextAreaElement
 ): Element {
     val entity = state.detail.selectedEntity ?: return spacer()
 
+    val headerElements = mutableListOf<Element>()
+    when (entity) {
+        is SearchResult.Album -> {
+            headerElements.add(text(" Album ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.title).fg(TEXT_PRIMARY))
+            headerElements.add(text(entity.author).fg(TEXT_SECONDARY))
+            if (entity.year != null) headerElements.add(text(entity.year.toString()).dim())
+            if (!entity.songs.isNullOrEmpty()) headerElements.add(text("${entity.songs!!.size} tracks").dim())
+            if (!entity.otherVersions.isNullOrEmpty()) {
+                val versionElements = mutableListOf<Element>()
+                versionElements.add(text(""))
+                versionElements.add(text("Other versions:").fg(TEXT_SECONDARY))
+                entity.otherVersions!!.forEach {
+                    versionElements.add(text("• ${it.title}").dim().overflow(Overflow.WRAP_WORD))
+                }
+                headerElements.add(column(*versionElements.toTypedArray()))
+            }
+        }
+
+        is SearchResult.Artist -> {
+            headerElements.add(text(" Artist ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.name).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            if (entity.subscriberCountText != null) headerElements.add(text(entity.subscriberCountText!!).dim())
+            if (entity.monthlyListenerCount != null) headerElements.add(text(entity.monthlyListenerCount!!).dim())
+            if (state.detail.entityGenres.isNotEmpty()) {
+                headerElements.add(
+                    column(
+                        text(""),
+                        text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                            .overflow(Overflow.WRAP_WORD)
+                    )
+                )
+            }
+        }
+
+        is SearchResult.Playlist -> {
+            headerElements.add(text(" Playlist ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            headerElements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
+            if (!entity.songs.isNullOrEmpty()) {
+                headerElements.add(text("${entity.songs!!.size} tracks").dim())
+            } else if (entity.trackCount != null) {
+                headerElements.add(text("${entity.trackCount} tracks").dim())
+            }
+        }
+
+        else -> return spacer()
+    }
+
+    val headerColumn =
+        column(*headerElements.toTypedArray()).margin(Margin.horizontal(2)).flex(Flex.START)
+
+    val description = when (entity) {
+        is SearchResult.Album -> entity.description
+        is SearchResult.Artist -> entity.description
+        is SearchResult.Playlist -> entity.description
+    }
+
+    val contentPart = if (!description.isNullOrEmpty()) {
+        column(
+            headerColumn,
+            column(
+                text("").length(1),
+                entityDescriptionArea.markup(description).dim().fill()
+            ).margin(Margin.horizontal(2)).fill()
+        ).fill()
+    } else {
+        headerColumn
+    }
+
     val infoTab = column(
         renderArtwork(state),
-        text(""),
-        when (entity) {
-            is SearchResult.Album -> {
-                val elements = mutableListOf<Element>()
-                elements.add(text(" Album ").fg(PRIMARY_COLOR))
-                elements.add(text(""))
-                elements.add(text(entity.title).fg(TEXT_PRIMARY))
-                elements.add(text(entity.author).fg(TEXT_SECONDARY))
-                if (entity.year != null) elements.add(text(entity.year.toString()).dim())
-                if (!entity.songs.isNullOrEmpty()) elements.add(text("${entity.songs!!.size} tracks").dim())
-                if (!entity.description.isNullOrEmpty()) {
-                    elements.add(
-                        column(
-                            text(""),
-                            text(entity.description!!).dim().overflow(Overflow.WRAP_WORD)
-                        )
-                    )
-                }
-                if (!entity.otherVersions.isNullOrEmpty()) {
-                    val versionElements = mutableListOf<Element>()
-                    versionElements.add(text(""))
-                    versionElements.add(text("Other versions:").fg(TEXT_SECONDARY))
-                    entity.otherVersions!!.forEach {
-                        versionElements.add(text("• ${it.title}").dim().overflow(Overflow.WRAP_WORD))
-                    }
-                    elements.add(column(*versionElements.toTypedArray()))
-                }
-                column(*elements.toTypedArray()).margin(Margin.horizontal(2)).flex(Flex.START)
-            }
+        text("").length(1),
+        contentPart
+    ).fill()
 
-            is SearchResult.Artist -> {
-                val elements = mutableListOf<Element>()
-                elements.add(text(" Artist ").fg(PRIMARY_COLOR))
-                elements.add(text(""))
-                elements.add(text(entity.name).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
-                if (entity.subscriberCountText != null) elements.add(text(entity.subscriberCountText!!).dim())
-                if (entity.monthlyListenerCount != null) elements.add(text(entity.monthlyListenerCount!!).dim())
-                if (state.detail.entityGenres.isNotEmpty()) {
-                    elements.add(
-                        column(
-                            text(""),
-                            text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD)
-                        )
-                    )
-                }
-                if (!entity.description.isNullOrEmpty()) {
-                    elements.add(
-                        column(
-                            text(""),
-                            text(entity.description!!).dim().overflow(Overflow.WRAP_WORD)
-                        )
-                    )
-                }
-                column(*elements.toTypedArray()).margin(Margin.horizontal(2)).flex(Flex.START)
-            }
-
-            is SearchResult.Playlist -> {
-                val elements = mutableListOf<Element>()
-                elements.add(text(" Playlist ").fg(PRIMARY_COLOR))
-                elements.add(text(""))
-                elements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
-                elements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
-                if (!entity.songs.isNullOrEmpty()) {
-                    elements.add(text("${entity.songs!!.size} tracks").dim())
-                } else if (entity.trackCount != null) {
-                    elements.add(text("${entity.trackCount} tracks").dim())
-                }
-                if (!entity.description.isNullOrEmpty()) {
-                    elements.add(
-                        column(
-                            text(""),
-                            text(entity.description!!).dim().overflow(Overflow.WRAP_WORD)
-                        )
-                    )
-                }
-                column(*elements.toTypedArray()).margin(Margin.horizontal(2)).flex(Flex.START)
-            }
-
-            else -> spacer()
-        }
-    ).flex(Flex.START)
-
-    return panel(infoTab.fill())
+    return panel(infoTab)
         .title("Details")
         .rounded()
         .borderColor(BORDER_DEFAULT)

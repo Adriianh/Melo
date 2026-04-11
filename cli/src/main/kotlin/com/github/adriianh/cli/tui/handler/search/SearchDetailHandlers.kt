@@ -580,6 +580,19 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 }
             }
 
+            event.code() == KeyCode.TAB && listSize > 0 -> {
+                val desc = when (val e = state.detail.selectedEntity) {
+                    is SearchResult.Artist -> e.description
+                    is SearchResult.Album -> e.description
+                    is SearchResult.Playlist -> e.description
+                    else -> null
+                }
+                if (!desc.isNullOrEmpty()) {
+                    appRunner()?.focusManager()?.setFocus("entity-desc-area")
+                    return EventResult.HANDLED
+                }
+            }
+
             event.code() == KeyCode.ENTER && listSize > 0 -> {
                 val arrayItem = items.getOrNull(artistDashboardList.selected())
                 var targetItem = if (arrayItem is Pair<*, *>) {
@@ -702,6 +715,19 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 debouncedLoadDetails(track)
             }
             return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.TAB && listSize > 0 -> {
+            val desc = when (val e = state.detail.selectedEntity) {
+                is SearchResult.Artist -> e.description
+                is SearchResult.Album -> e.description
+                is SearchResult.Playlist -> e.description
+                else -> null
+            }
+            if (!desc.isNullOrEmpty()) {
+                appRunner()?.focusManager()?.setFocus("entity-desc-area")
+                return EventResult.HANDLED
+            }
         }
 
         event.code() == KeyCode.ENTER && listSize > 0 -> {

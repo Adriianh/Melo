@@ -8,14 +8,30 @@ import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
-import com.github.adriianh.cli.tui.handler.*
-import com.github.adriianh.cli.tui.handler.playback.*
+import com.github.adriianh.cli.tui.handler.handleHomeKey
+import com.github.adriianh.cli.tui.handler.handleLibraryKey
+import com.github.adriianh.cli.tui.handler.handleOfflineKey
+import com.github.adriianh.cli.tui.handler.handleSidebarKey
+import com.github.adriianh.cli.tui.handler.handleStatsKey
+import com.github.adriianh.cli.tui.handler.playback.adjustVolume
+import com.github.adriianh.cli.tui.handler.playback.cycleRepeat
+import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
+import com.github.adriianh.cli.tui.handler.playback.seekBackward
+import com.github.adriianh.cli.tui.handler.playback.seekForward
+import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
+import com.github.adriianh.cli.tui.handler.playback.toggleQueue
+import com.github.adriianh.cli.tui.handler.playback.toggleShuffle
 import com.github.adriianh.cli.tui.handler.search.handleDetailKey
 import com.github.adriianh.cli.tui.handler.search.handleEntityDetailKey
 import com.github.adriianh.cli.tui.handler.search.handleResultsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
 import com.github.adriianh.cli.tui.handler.search.performSearch
-import com.github.adriianh.cli.tui.screen.*
+import com.github.adriianh.cli.tui.screen.renderHomeScreen
+import com.github.adriianh.cli.tui.screen.renderLibraryScreen
+import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
+import com.github.adriianh.cli.tui.screen.renderOfflineScreen
+import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.screen.renderStatsScreen
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Constraint
@@ -99,7 +115,13 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             )
 
             SidebarSection.SEARCH -> renderSearchScreen(
-                state, resultList, entityTracksList, artistDashboardList, lyricsArea, similarArea,
+                state,
+                resultList,
+                entityTracksList,
+                artistDashboardList,
+                lyricsArea,
+                similarArea,
+                entityDescriptionArea,
                 ::marqueeText,
                 ::handleResultsKey,
                 ::handleEntityDetailKey,
@@ -141,7 +163,13 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         )
 
         is ScreenState.Search -> renderSearchScreen(
-            state, resultList, entityTracksList, artistDashboardList, lyricsArea, similarArea,
+            state,
+            resultList,
+            entityTracksList,
+            artistDashboardList,
+            lyricsArea,
+            similarArea,
+            entityDescriptionArea,
             ::marqueeText,
             ::handleResultsKey,
             ::handleEntityDetailKey,
