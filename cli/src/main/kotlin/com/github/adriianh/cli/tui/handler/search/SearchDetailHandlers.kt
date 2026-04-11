@@ -25,6 +25,37 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 
+private fun mergeEntityDetails(original: SearchResult, loaded: SearchResult): SearchResult {
+    return when (original) {
+        is SearchResult.Album if loaded is SearchResult.Album -> {
+            loaded.copy(
+                title = loaded.title.ifBlank { original.title },
+                author = loaded.author.ifBlank { original.author },
+                year = loaded.year ?: original.year,
+                artworkUrl = loaded.artworkUrl ?: original.artworkUrl
+            )
+        }
+
+        is SearchResult.Playlist if loaded is SearchResult.Playlist -> {
+            loaded.copy(
+                title = loaded.title.ifBlank { original.title },
+                author = loaded.author.ifBlank { original.author },
+                trackCount = loaded.trackCount ?: original.trackCount,
+                artworkUrl = loaded.artworkUrl ?: original.artworkUrl
+            )
+        }
+
+        is SearchResult.Artist if loaded is SearchResult.Artist -> {
+            loaded.copy(
+                name = loaded.name.ifBlank { original.name },
+                artworkUrl = loaded.artworkUrl ?: original.artworkUrl
+            )
+        }
+
+        else -> loaded
+    }
+}
+
 internal fun MeloScreen.debouncedLoadDetails(track: Track) {
     try {
         detailsJob?.cancel()
@@ -171,7 +202,7 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
 
         val detailsDeferred = async {
             try {
-                getEntityDetails(entity)
+                mergeEntityDetails(entity, getEntityDetails(entity))
             } catch (_: Exception) {
                 entity
             }
