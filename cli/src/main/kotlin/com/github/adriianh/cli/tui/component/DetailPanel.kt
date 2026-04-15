@@ -81,7 +81,8 @@ fun buildDetailPanel(
 
 fun buildEntityDetailPanel(
     state: MeloState,
-    entityDescriptionArea: MarkupTextAreaElement
+    entityDescriptionArea: MarkupTextAreaElement,
+    onKeyEvent: (KeyEvent) -> EventResult
 ): Element {
     val entity = state.detail.selectedEntity ?: return spacer()
 
@@ -137,38 +138,48 @@ fun buildEntityDetailPanel(
         else -> return spacer()
     }
 
-    val headerColumn =
-        column(*headerElements.toTypedArray()).margin(Margin.horizontal(2)).flex(Flex.START)
+    val headerColumn = column(*headerElements.toTypedArray())
+        .margin(Margin.horizontal(2))
+        .flex(Flex.START)
 
-    val description = when (entity) {
+    val descriptionRaw = when (entity) {
         is SearchResult.Album -> entity.description
         is SearchResult.Artist -> entity.description
         is SearchResult.Playlist -> entity.description
     }
 
-    val contentPart = if (!description.isNullOrEmpty()) {
-        column(
-            headerColumn,
-            column(
-                text("").length(1),
-                entityDescriptionArea.markup(description).dim().fill()
-            ).margin(Margin.horizontal(2)).fill()
-        ).fill()
-    } else {
-        headerColumn
-    }
+    val description = wrapText(descriptionRaw, 60)
 
-    val infoTab = column(
+    val artworkLines =
+        if (state.detail.artworkData != null && !state.player.isQueueVisible) 18 else 5
+    val headerLines = headerElements.size
+    val topHeight = artworkLines + 1 + headerLines + (if (description.isNotEmpty()) 1 else 0)
+
+    val topPart = column(
         renderArtwork(state),
         text("").length(1),
-        contentPart
-    ).fill()
+        headerColumn,
+        if (description.isNotEmpty()) text("").length(1) else text("")
+    ).flex(Flex.START).length(topHeight)
 
-    return panel(infoTab)
+    val contentPart = if (description.isNotEmpty()) {
+        column(
+            topPart,
+            entityDescriptionArea.markup(description).fill()
+        ).fill()
+    } else {
+        column(topPart, spacer()).fill()
+    }
+
+    return panel(contentPart)
         .title("Details")
+        .id("desc-area")
+        .focusable()
         .rounded()
         .borderColor(BORDER_DEFAULT)
-        .id("entity-detail-panel")
+        .focusedBorderColor(BORDER_FOCUSED)
+        .onKeyEvent(onKeyEvent)
+        .fill()
 }
 
 private fun renderTrackMetadata(
@@ -197,9 +208,9 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
         ).length(18)
     } else {
         stack(
-            ClearGraphicsElement().fill(),
-            panel(text(" [ No Artwork ] ").dim().centered()).rounded().fit().length(5)
-        )
+            ClearGraphicsElement(),
+            panel(text(" [ No Artwork ] ").dim().centered()).rounded().length(5)
+        ).length(5)
     }
 
 private fun renderLyricsTab(
@@ -263,4 +274,27 @@ private fun renderSimilarTab(
     similarArea.elements(*items.toTypedArray())
     similarArea.selected(state.detail.similarCursor)
     return similarArea.fill()
+}
+
+private fun wrapText(text: String?, maxWidth: Int): String {
+    if (text.isNullOrEmpty()) return ""
+    return text.split("\n").joinToString("\n") { paragraph ->
+        val words = paragraph.split(Regex("\\s+"))
+        val sb = java.lang.StringBuilder()
+        var currentLineLength = 0
+        for (word in words) {
+            if (word.isEmpty()) continue
+            val plainWordLength = word.replace(Regex("\\[/?.*?]"), "").length
+            if (currentLineLength + plainWordLength > maxWidth && currentLineLength > 0) {
+                sb.append("\n")
+                currentLineLength = 0
+            } else if (currentLineLength > 0) {
+                sb.append(" ")
+                currentLineLength += 1
+            }
+            sb.append(word)
+            currentLineLength += plainWordLength
+        }
+        sb.toString()
+    }
 }

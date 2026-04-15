@@ -474,6 +474,19 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
     val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
     if (!actualState.isInEntityDetail) return EventResult.UNHANDLED
 
+    val isDescFocused = appRunner()?.focusManager()?.focusedId() == "desc-area"
+    if (isDescFocused) {
+        if (event.code() == KeyCode.ESCAPE || (event.modifiers()
+                .alt() && event.code() == KeyCode.LEFT)
+        ) {
+            val targetFocus =
+                if (state.detail.selectedEntity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+            appRunner()?.focusManager()?.setFocus(targetFocus)
+            return EventResult.HANDLED
+        }
+        return EventResult.UNHANDLED
+    }
+
     if (state.detail.selectedEntity is SearchResult.Artist) {
         val items = actualState.artistDashboardItems
         val listSize = items.size
@@ -580,15 +593,16 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 }
             }
 
-            event.code() == KeyCode.TAB && listSize > 0 -> {
+            event.code() == KeyCode.CHAR && event.character() == 'd' && listSize > 0 -> {
                 val desc = when (val e = state.detail.selectedEntity) {
                     is SearchResult.Artist -> e.description
                     is SearchResult.Album -> e.description
                     is SearchResult.Playlist -> e.description
                     else -> null
                 }
+
                 if (!desc.isNullOrEmpty()) {
-                    appRunner()?.focusManager()?.setFocus("entity-desc-area")
+                    appRunner()?.focusManager()?.setFocus("desc-area")
                     return EventResult.HANDLED
                 }
             }
@@ -717,15 +731,16 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.TAB && listSize > 0 -> {
+        (event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'd')) && listSize > 0 -> {
             val desc = when (val e = state.detail.selectedEntity) {
                 is SearchResult.Artist -> e.description
                 is SearchResult.Album -> e.description
                 is SearchResult.Playlist -> e.description
                 else -> null
             }
-            if (!desc.isNullOrEmpty()) {
-                appRunner()?.focusManager()?.setFocus("entity-desc-area")
+
+            if (!desc.isNullOrBlank()) {
+                appRunner()?.focusManager()?.setFocus("desc-area")
                 return EventResult.HANDLED
             }
         }

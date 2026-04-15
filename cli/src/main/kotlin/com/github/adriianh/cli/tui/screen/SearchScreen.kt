@@ -278,7 +278,8 @@ private fun renderResultsArea(
             .onKeyEvent(onEntityDetailKeyEvent)
 
         return dock().center(entityPanel).right(
-            buildEntityDetailPanel(state, entityDescriptionArea), Constraint.percentage(35)
+            buildEntityDetailPanel(state, entityDescriptionArea, onEntityDetailKeyEvent),
+            Constraint.percentage(35)
         )
     }
 
@@ -301,9 +302,15 @@ private fun renderResultsArea(
             Constraint.percentage(35)
         )
     } else if (!isPlayable && state.detail.selectedEntity != null) {
-        dock().center(resultsPanel).right(
-            buildEntityDetailPanel(state, entityDescriptionArea), Constraint.percentage(35)
-        )
+        dock()
+            .center(resultsPanel)
+            .right(
+                buildEntityDetailPanel(
+                    state, entityDescriptionArea,
+                    onEntityDetailKeyEvent
+                ),
+                Constraint.percentage(35)
+            )
     } else {
         dock().center(resultsPanel).bottom(ClearGraphicsElement(), Constraint.length(1))
     }

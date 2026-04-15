@@ -36,7 +36,6 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -47,10 +46,7 @@ import dev.tamboui.toolkit.app.ToolkitApp
 import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
-import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.TuiConfig
-import dev.tamboui.tui.bindings.Actions
-import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -280,20 +276,7 @@ class MeloScreen(
         .scrollbar()
         .wrapWord()
         .focusable()
-        .id("entity-desc-area")
-        .onKeyEvent { event ->
-            if (event.matches(Actions.MOVE_LEFT) || event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB) {
-                val targetList = if (state.detail.selectedEntity is SearchResult.Artist) {
-                    "artist-dashboard-list"
-                } else {
-                    "entity-tracks-list"
-                }
-                appRunner()?.focusManager()?.setFocus(targetList)
-                EventResult.HANDLED
-            } else {
-                EventResult.UNHANDLED
-            }
-        }
+        .id("desc-area")
 
     internal val similarArea: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_BULLET} ")
