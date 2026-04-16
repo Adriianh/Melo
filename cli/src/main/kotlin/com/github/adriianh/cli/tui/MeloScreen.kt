@@ -182,17 +182,19 @@ class MeloScreen(
 
     internal val searchInputState = TextInputState()
 
+    @Volatile
+    internal var lastObservedSearchQuery = ""
+
     init {
         observeSearchInput()
     }
 
     private fun observeSearchInput() {
         scope.launch {
-            var lastQuery = ""
             while (isActive) {
                 val currentQuery = searchInputState.text()
-                if (currentQuery != lastQuery) {
-                    lastQuery = currentQuery
+                if (currentQuery != lastObservedSearchQuery) {
+                    lastObservedSearchQuery = currentQuery
                     handleSearchQueryChange(currentQuery)
                 }
                 kotlinx.coroutines.delay(100)

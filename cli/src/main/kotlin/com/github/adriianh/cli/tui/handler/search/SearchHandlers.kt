@@ -54,7 +54,9 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
 
     scope.launch {
         try {
-            val suggestions = searchInteractors.getSearchHistory(query).firstOrNull() ?: emptyList()
+            val rawSuggestions =
+                searchInteractors.getSearchHistory(query).firstOrNull() ?: emptyList()
+            val suggestions = rawSuggestions.ifEmpty { listOf("No recent queries for '$query'") }
             if (isActive) {
                 appRunner()?.runOnRenderThread {
                     val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
@@ -80,6 +82,8 @@ internal fun MeloScreen.performSearch() {
     } else {
         searchInputState.text()
     }
+
+    lastObservedSearchQuery = query
 
     if (query.isBlank()) return
     lastQuery = query
