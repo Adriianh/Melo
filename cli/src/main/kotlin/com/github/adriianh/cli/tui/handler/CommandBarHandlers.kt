@@ -157,6 +157,16 @@ object CommandBarHandlers {
                 }
             }
 
+            "pause" -> {
+                state = state.copy(player = state.player.copy(isPlaying = false))
+                audioPlayer.pause()
+            }
+
+            "play", "resume" -> {
+                state = state.copy(player = state.player.copy(isPlaying = true))
+                audioPlayer.resume()
+            }
+
             "goto" -> {
                 when (arg) {
                     "home" -> {
