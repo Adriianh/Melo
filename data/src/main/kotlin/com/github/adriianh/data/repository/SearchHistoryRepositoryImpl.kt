@@ -21,4 +21,8 @@ class SearchHistoryRepositoryImpl(database: MeloDatabase) : SearchHistoryReposit
         queries.insertQuery(query, System.currentTimeMillis())
         queries.deleteOldestItems()
     }
+
+    override suspend fun deleteQuery(query: String) = withContext(Dispatchers.IO) {
+        queries.deleteQuery(query)
+    }
 }

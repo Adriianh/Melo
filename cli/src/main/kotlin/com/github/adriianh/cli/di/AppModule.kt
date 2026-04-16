@@ -54,9 +54,12 @@ import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.playback.ScrobbleUseCase
 import com.github.adriianh.core.domain.usecase.playback.StartWebAuthUseCase
 import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
+import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
@@ -64,6 +67,7 @@ import com.github.adriianh.core.domain.usecase.search.LoadMoreAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMoreArtistsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMorePlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMoreTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
@@ -284,9 +288,32 @@ val appModule = module {
     factory { UpdateSettingsUseCase(get()) }
 
     // Interactors
-    factory { com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase(get()) }
-    factory { com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase(get()) }
-    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { GetSearchHistoryUseCase(get()) }
+    factory { GetSearchSuggestionsUseCase(get()) }
+    factory { SaveSearchQueryUseCase(get()) }
+    factory { DeleteSearchQueryUseCase(get()) }
+    factory {
+        SearchInteractors(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }

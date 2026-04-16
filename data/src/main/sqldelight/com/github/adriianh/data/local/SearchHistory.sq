@@ -7,6 +7,10 @@ insertQuery:
 INSERT OR REPLACE INTO search_history (query, searched_at)
 VALUES (?, ?);
 
+deleteQuery:
+DELETE FROM search_history
+WHERE query = ?;
+
 getRecentQueries:
 SELECT query
 FROM search_history
