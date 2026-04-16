@@ -169,7 +169,7 @@ internal fun MeloScreen.performSearch() {
             isShowingSuggestions = false,
             selectedSuggestionIndex = null
         ),
-        detail = state.detail.copy(selectedTrack = null),
+        detail = state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null),
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
     )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
@@ -210,6 +210,13 @@ internal fun MeloScreen.performSearch() {
                     }
                     if (currentTab == SearchTab.SONGS) {
                         state = state.copy(detail = state.detail.copy(selectedTrack = tracks.firstOrNull()))
+                    } else {
+                        val firstEntity = when (currentTab) {
+                            SearchTab.ALBUMS -> albums.firstOrNull()
+                            SearchTab.ARTISTS -> artists.firstOrNull()
+                            SearchTab.PLAYLISTS -> playlists.firstOrNull()
+                        }
+                        state = state.copy(detail = state.detail.copy(selectedEntity = firstEntity))
                     }
                     resultList.selected(0)
                     focusResults()
@@ -217,6 +224,13 @@ internal fun MeloScreen.performSearch() {
 
                 if (currentTab == SearchTab.SONGS) {
                     tracks.firstOrNull()?.let { loadTrackDetails(it.id) }
+                } else {
+                    val firstEntity = when (currentTab) {
+                        SearchTab.ALBUMS -> albums.firstOrNull()
+                        SearchTab.ARTISTS -> artists.firstOrNull()
+                        SearchTab.PLAYLISTS -> playlists.firstOrNull()
+                    }
+                    firstEntity?.let { debouncedLoadEntityDetails(it) }
                 }
             }
         } catch (e: Exception) {
@@ -255,7 +269,13 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
     val updatedState = state.screen as ScreenState.Search
     if (nextTab == SearchTab.SONGS) {
         val firstTrack = updatedState.results.firstOrNull()
-        state = state.copy(detail = state.detail.copy(selectedTrack = firstTrack, selectedEntity = null))
+        state = state.copy(
+            detail = state.detail.copy(
+                selectedTrack = firstTrack,
+                selectedEntity = null,
+                artworkData = null
+            )
+        )
         if (firstTrack != null) debouncedLoadDetails(firstTrack)
     } else {
         val firstEntity = when (updatedState.tab) {
@@ -264,7 +284,13 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
             SearchTab.PLAYLISTS -> updatedState.playlistResults.firstOrNull()
             else -> null
         }
-        state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = firstEntity))
+        state = state.copy(
+            detail = state.detail.copy(
+                selectedTrack = null,
+                selectedEntity = firstEntity,
+                artworkData = null
+            )
+        )
         if (firstEntity != null) debouncedLoadEntityDetails(firstEntity)
     }
 }
@@ -442,7 +468,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             marqueeTick = 0
             if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            selectedTrack = track,
+                            selectedEntity = null,
+                            artworkData = null
+                        )
+                    )
                     debouncedLoadDetails(track)
                 }
                 if (newIndex >= listSize - 5 && !actualState.isLoadingMore && actualState.hasMore) loadMore()
@@ -453,7 +485,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
                     SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
                 }
                 if (entity != null) {
-                    state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            selectedTrack = null,
+                            selectedEntity = entity,
+                            artworkData = null
+                        )
+                    )
                     debouncedLoadEntityDetails(entity)
                 }
                 if (newIndex >= listSize - 5 && !actualState.isLoadingMore && actualState.hasMore) loadMore()
@@ -472,7 +510,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             marqueeTick = 0
             if (actualState.tab == SearchTab.SONGS) {
                 actualState.results.getOrNull(newIndex)?.let { track ->
-                    state = state.copy(detail = state.detail.copy(selectedTrack = track, selectedEntity = null))
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            selectedTrack = track,
+                            selectedEntity = null,
+                            artworkData = null
+                        )
+                    )
                     debouncedLoadDetails(track)
                 }
             } else {
@@ -482,7 +526,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
                     SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
                 }
                 if (entity != null) {
-                    state = state.copy(detail = state.detail.copy(selectedTrack = null, selectedEntity = entity))
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            selectedTrack = null,
+                            selectedEntity = entity,
+                            artworkData = null
+                        )
+                    )
                     debouncedLoadEntityDetails(entity)
                 }
             }
