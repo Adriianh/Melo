@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
 import com.github.adriianh.cli.tui.handler.toggleFavorite
@@ -746,10 +747,10 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER && listSize > 0 -> {
-            val track =
-                tracks.getOrNull(entityTracksList.selected()) ?: return EventResult.UNHANDLED
+            val selectedIndex = entityTracksList.selected()
+            val track = tracks.getOrNull(selectedIndex) ?: return EventResult.UNHANDLED
             downloadTrack(track, DownloadType.PREFETCH)
-            playTrack(track)
+            playList(tracks, selectedIndex)
             return EventResult.HANDLED
         }
 
