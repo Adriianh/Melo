@@ -1,9 +1,11 @@
 package com.github.adriianh.core.domain.interactor
 
+import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
@@ -27,7 +29,9 @@ data class SearchInteractors(
     val loadMoreArtists: LoadMoreArtistsUseCase,
     val loadMorePlaylists: LoadMorePlaylistsUseCase,
     val getSearchHistory: GetSearchHistoryUseCase,
+    val getSearchSuggestions: GetSearchSuggestionsUseCase,
     val saveSearchQuery: SaveSearchQueryUseCase,
+    val deleteSearchQuery: DeleteSearchQueryUseCase,
     val getTrack: GetTrackUseCase,
     val getLyrics: GetLyricsUseCase,
     val getSyncedLyrics: GetSyncedLyricsUseCase,
