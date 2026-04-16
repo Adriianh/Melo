@@ -85,15 +85,46 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
 
     scope.launch {
         try {
-            val rawSuggestions =
-                searchInteractors.getSearchHistory(query).firstOrNull() ?: emptyList()
-            val suggestions = rawSuggestions.ifEmpty { listOf("No recent queries for '$query'") }
+            val localHistory = searchInteractors.getSearchHistory(query, limit = 5)
+                .firstOrNull() ?: emptyList()
+
             if (isActive) {
                 appRunner()?.runOnRenderThread {
                     val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
                     if (s.query == query) {
+                        val visualLocal = localHistory.map { "🕒 $it" }
                         updateScreen<ScreenState.Search> {
-                            it.copy(searchSuggestions = suggestions)
+                            it.copy(searchSuggestions = visualLocal.ifEmpty { listOf("Loading network suggestions...") })
+                        }
+                    }
+                }
+            }
+
+            val networkSuggestions = try {
+                searchInteractors.getSearchSuggestions(query)
+            } catch (_: Exception) {
+                emptyList()
+            }
+
+            if (isActive) {
+                appRunner()?.runOnRenderThread {
+                    val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+                    if (s.query == query) {
+                        val visualLocal = localHistory.map { "🕒 $it" }
+                        val filteredNetwork = networkSuggestions
+                            .filter { net ->
+                                localHistory.none { loc ->
+                                    net.equals(loc, ignoreCase = true)
+                                }
+                            }
+                            .take(10 - visualLocal.size)
+                            .map { "🔍 $it" }
+
+                        val finalSuggestions = (visualLocal + filteredNetwork)
+                            .ifEmpty { listOf("No recent queries for '$query'") }
+
+                        updateScreen<ScreenState.Search> {
+                            it.copy(searchSuggestions = finalSuggestions)
                         }
                     }
                 }
@@ -105,14 +136,17 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
 
 internal fun MeloScreen.performSearch() {
     val searchState = state.screen as? ScreenState.Search
-    val query = if (searchState?.selectedSuggestionIndex != null && searchState.searchSuggestions.isNotEmpty()) {
-        val suggestion = searchState.searchSuggestions[searchState.selectedSuggestionIndex]
-        searchInputState.clear()
-        for (c in suggestion) searchInputState.insert(c)
-        suggestion
-    } else {
-        searchInputState.text()
-    }
+    val query =
+        if (searchState?.selectedSuggestionIndex != null && searchState.searchSuggestions.isNotEmpty()) {
+            val suggestion = searchState.searchSuggestions[searchState.selectedSuggestionIndex]
+                .removePrefix("🕒 ")
+                .removePrefix("🔍 ")
+            searchInputState.clear()
+            for (c in suggestion) searchInputState.insert(c)
+            suggestion
+        } else {
+            searchInputState.text()
+        }
 
     lastObservedSearchQuery = query
 
@@ -122,7 +156,8 @@ internal fun MeloScreen.performSearch() {
 
     try {
         loadMoreJob?.cancel()
-    } catch (_: Exception) {}
+    } catch (_: Exception) {
+    }
     loadMoreJob = null
 
     val currentTab = (state.screen as? ScreenState.Search)?.tab ?: SearchTab.SONGS
@@ -220,7 +255,9 @@ internal fun MeloScreen.performSearch() {
                         )
                     }
                     if (currentTab == SearchTab.SONGS) {
-                        state = state.copy(detail = state.detail.copy(selectedTrack = tracks.firstOrNull()))
+                        state = state.copy(
+                            detail = state.detail.copy(selectedTrack = tracks.firstOrNull())
+                        )
                     } else {
                         val firstEntity = when (currentTab) {
                             SearchTab.ALBUMS -> albums.firstOrNull()
@@ -274,7 +311,13 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
         SearchTab.PLAYLISTS -> loadMorePlaylists.hasMore(actualState.playlistResults.size)
     }
 
-    state = state.copy(screen = actualState.copy(tab = nextTab, selectedIndex = 0, hasMore = nextHasMore))
+    state = state.copy(
+        screen = actualState.copy(
+            tab = nextTab,
+            selectedIndex = 0,
+            hasMore = nextHasMore
+        )
+    )
     resultList.selected(0)
 
     val updatedState = state.screen as ScreenState.Search
@@ -325,6 +368,7 @@ internal fun MeloScreen.loadMore() {
                         }
                     }
                 }
+
                 SearchTab.ALBUMS -> {
                     val offset = searchState.albumResults.size
                     val more = loadMoreAlbums(lastQuery, offset)
@@ -337,6 +381,7 @@ internal fun MeloScreen.loadMore() {
                         }
                     }
                 }
+
                 SearchTab.ARTISTS -> {
                     val offset = searchState.artistResults.size
                     val more = loadMoreArtists(lastQuery, offset)
@@ -349,6 +394,7 @@ internal fun MeloScreen.loadMore() {
                         }
                     }
                 }
+
                 SearchTab.PLAYLISTS -> {
                     val offset = searchState.playlistResults.size
                     val more = loadMorePlaylists(lastQuery, offset)
@@ -384,14 +430,51 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         if (event.code() == KeyCode.DOWN) {
-            val nextIndex = if (searchState.selectedSuggestionIndex == null) 0 else minOf(searchState.searchSuggestions.size - 1, searchState.selectedSuggestionIndex + 1)
+            val nextIndex = if (searchState.selectedSuggestionIndex == null) 0 else minOf(
+                searchState.searchSuggestions.size - 1,
+                searchState.selectedSuggestionIndex + 1
+            )
             updateScreen<ScreenState.Search> { it.copy(selectedSuggestionIndex = nextIndex) }
             return EventResult.HANDLED
         }
         if (event.code() == KeyCode.UP) {
-            val prevIndex = if (searchState.selectedSuggestionIndex == null) -1 else maxOf(-1, searchState.selectedSuggestionIndex - 1)
+            val prevIndex = if (searchState.selectedSuggestionIndex == null) -1 else maxOf(
+                -1,
+                searchState.selectedSuggestionIndex - 1
+            )
             updateScreen<ScreenState.Search> { it.copy(selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex) }
             return EventResult.HANDLED
+        }
+        if (event.matchesAction(MeloAction.DELETE, settingsViewState.currentSettings)) {
+            if (searchState.selectedSuggestionIndex != null) {
+                val suggestionToDeleteRaw =
+                    searchState.searchSuggestions[searchState.selectedSuggestionIndex]
+                val isLocalHistory = suggestionToDeleteRaw.startsWith("🕒 ")
+                if (isLocalHistory) {
+                    val suggestionToDelete = suggestionToDeleteRaw.removePrefix("🕒 ")
+                    scope.launch {
+                        searchInteractors.deleteSearchQuery(suggestionToDelete)
+                        val newSuggestions =
+                            searchState.searchSuggestions.filterIndexed { index, _ ->
+                                index != searchState.selectedSuggestionIndex
+                            }
+                        val newIndex = if (newSuggestions.isEmpty()) null else minOf(
+                            searchState.selectedSuggestionIndex,
+                            newSuggestions.size - 1
+                        )
+                        appRunner()?.runOnRenderThread {
+                            updateScreen<ScreenState.Search> {
+                                it.copy(
+                                    searchSuggestions = newSuggestions,
+                                    selectedSuggestionIndex = newIndex,
+                                    isShowingSuggestions = newSuggestions.isNotEmpty()
+                                )
+                            }
+                        }
+                    }
+                    return EventResult.HANDLED
+                }
+            }
         }
     }
 
@@ -554,23 +637,30 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             if (!isFocused) return EventResult.UNHANDLED
             when (actualState.tab) {
                 SearchTab.SONGS -> {
-                    val selected = actualState.results.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    val selected = actualState.results.getOrNull(resultList.selected())
+                        ?: return EventResult.UNHANDLED
                     downloadTrack(selected, DownloadType.PREFETCH)
                     playTrack(selected)
                     return EventResult.HANDLED
                 }
+
                 SearchTab.ALBUMS -> {
-                    val selected = actualState.albumResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    val selected = actualState.albumResults.getOrNull(resultList.selected())
+                        ?: return EventResult.UNHANDLED
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
+
                 SearchTab.ARTISTS -> {
-                    val selected = actualState.artistResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    val selected = actualState.artistResults.getOrNull(resultList.selected())
+                        ?: return EventResult.UNHANDLED
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
+
                 SearchTab.PLAYLISTS -> {
-                    val selected = actualState.playlistResults.getOrNull(resultList.selected()) ?: return EventResult.UNHANDLED
+                    val selected = actualState.playlistResults.getOrNull(resultList.selected())
+                        ?: return EventResult.UNHANDLED
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
