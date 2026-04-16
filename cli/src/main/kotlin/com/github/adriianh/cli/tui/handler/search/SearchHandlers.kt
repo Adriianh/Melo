@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.handler.search
 
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
@@ -55,8 +56,9 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
                     appRunner()?.runOnRenderThread {
                         val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
                         if (s.query.isBlank()) {
+                            val visualLocal = rawSuggestions.map { "${MeloTheme.ICON_HISTORY} $it" }
                             updateScreen<ScreenState.Search> {
-                                it.copy(searchSuggestions = rawSuggestions)
+                                it.copy(searchSuggestions = visualLocal)
                             }
                         }
                     }
@@ -92,9 +94,11 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
                 appRunner()?.runOnRenderThread {
                     val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
                     if (s.query == query) {
-                        val visualLocal = localHistory.map { "🕒 $it" }
+                        val visualLocal = localHistory.map { "${MeloTheme.ICON_HISTORY} $it" }
                         updateScreen<ScreenState.Search> {
-                            it.copy(searchSuggestions = visualLocal.ifEmpty { listOf("Loading network suggestions...") })
+                            it.copy(searchSuggestions = visualLocal.ifEmpty {
+                                listOf("Loading network suggestions...")
+                            })
                         }
                     }
                 }
@@ -110,7 +114,7 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
                 appRunner()?.runOnRenderThread {
                     val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
                     if (s.query == query) {
-                        val visualLocal = localHistory.map { "🕒 $it" }
+                        val visualLocal = localHistory.map { "${MeloTheme.ICON_HISTORY} $it" }
                         val filteredNetwork = networkSuggestions
                             .filter { net ->
                                 localHistory.none { loc ->
@@ -118,7 +122,7 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
                                 }
                             }
                             .take(10 - visualLocal.size)
-                            .map { "🔍 $it" }
+                            .map { "${MeloTheme.ICON_SEARCH} $it" }
 
                         val finalSuggestions = (visualLocal + filteredNetwork)
                             .ifEmpty { listOf("No recent queries for '$query'") }
@@ -139,8 +143,8 @@ internal fun MeloScreen.performSearch() {
     val query =
         if (searchState?.selectedSuggestionIndex != null && searchState.searchSuggestions.isNotEmpty()) {
             val suggestion = searchState.searchSuggestions[searchState.selectedSuggestionIndex]
-                .removePrefix("🕒 ")
-                .removePrefix("🔍 ")
+                .removePrefix("${MeloTheme.ICON_HISTORY} ")
+                .removePrefix("${MeloTheme.ICON_SEARCH} ")
             searchInputState.clear()
             for (c in suggestion) searchInputState.insert(c)
             suggestion
@@ -449,9 +453,10 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
             if (searchState.selectedSuggestionIndex != null) {
                 val suggestionToDeleteRaw =
                     searchState.searchSuggestions[searchState.selectedSuggestionIndex]
-                val isLocalHistory = suggestionToDeleteRaw.startsWith("🕒 ")
+                val isLocalHistory = suggestionToDeleteRaw.startsWith("${MeloTheme.ICON_HISTORY} ")
                 if (isLocalHistory) {
-                    val suggestionToDelete = suggestionToDeleteRaw.removePrefix("🕒 ")
+                    val suggestionToDelete =
+                        suggestionToDeleteRaw.removePrefix("${MeloTheme.ICON_HISTORY} ")
                     scope.launch {
                         searchInteractors.deleteSearchQuery(suggestionToDelete)
                         val newSuggestions =
