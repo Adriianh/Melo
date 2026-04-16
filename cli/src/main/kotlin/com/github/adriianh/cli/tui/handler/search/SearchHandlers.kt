@@ -24,13 +24,67 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+internal fun MeloScreen.handleSearchQueryChange(query: String) {
+    if (query.isBlank()) {
+        updateScreen<ScreenState.Search> {
+            it.copy(searchSuggestions = emptyList(), isShowingSuggestions = false)
+        }
+        return
+    }
+
+    val currentScreen = state.screen
+    if (currentScreen !is ScreenState.Search) {
+        state = state.copy(
+            screen = ScreenState.Search(
+                query = query,
+                isShowingSuggestions = true
+            ),
+            navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
+        )
+        sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
+    } else {
+        updateScreen<ScreenState.Search> {
+            it.copy(query = query, isShowingSuggestions = true, selectedSuggestionIndex = null)
+        }
+    }
+
+    scope.launch {
+        try {
+            val suggestions = searchInteractors.getSearchHistory(query).firstOrNull() ?: emptyList()
+            if (isActive) {
+                appRunner()?.runOnRenderThread {
+                    val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+                    if (s.query == query) {
+                        updateScreen<ScreenState.Search> {
+                            it.copy(searchSuggestions = suggestions)
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+}
+
 internal fun MeloScreen.performSearch() {
-    val query = searchInputState.text()
+    val searchState = state.screen as? ScreenState.Search
+    val query = if (searchState?.selectedSuggestionIndex != null && searchState.searchSuggestions.isNotEmpty()) {
+        val suggestion = searchState.searchSuggestions[searchState.selectedSuggestionIndex]
+        searchInputState.clear()
+        for (c in suggestion) searchInputState.insert(c)
+        suggestion
+    } else {
+        searchInputState.text()
+    }
+
     if (query.isBlank()) return
     lastQuery = query
+    scope.launch { searchInteractors.saveSearchQuery(query) }
+
     try {
         loadMoreJob?.cancel()
     } catch (_: Exception) {}
@@ -51,6 +105,9 @@ internal fun MeloScreen.performSearch() {
                 query = query,
                 tab = currentTab,
                 results = filtered,
+                searchSuggestions = emptyList(),
+                isShowingSuggestions = false,
+                selectedSuggestionIndex = null,
                 albumResults = emptyList(),
                 artistResults = emptyList(),
                 playlistResults = emptyList(),
@@ -73,7 +130,10 @@ internal fun MeloScreen.performSearch() {
             tab = currentTab,
             isLoading = true,
             errorMessage = null,
-            hasMore = false
+            hasMore = false,
+            searchSuggestions = emptyList(),
+            isShowingSuggestions = false,
+            selectedSuggestionIndex = null
         ),
         detail = state.detail.copy(selectedTrack = null),
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
@@ -246,6 +306,24 @@ internal fun MeloScreen.focusResults() {
 }
 
 internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
+    val searchState = state.screen as? ScreenState.Search
+    if (searchState != null && searchState.isShowingSuggestions && searchState.searchSuggestions.isNotEmpty()) {
+        if (event.code() == KeyCode.ESCAPE) {
+            updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+            return EventResult.HANDLED
+        }
+        if (event.code() == KeyCode.DOWN) {
+            val nextIndex = if (searchState.selectedSuggestionIndex == null) 0 else minOf(searchState.searchSuggestions.size - 1, searchState.selectedSuggestionIndex + 1)
+            updateScreen<ScreenState.Search> { it.copy(selectedSuggestionIndex = nextIndex) }
+            return EventResult.HANDLED
+        }
+        if (event.code() == KeyCode.UP) {
+            val prevIndex = if (searchState.selectedSuggestionIndex == null) -1 else maxOf(-1, searchState.selectedSuggestionIndex - 1)
+            updateScreen<ScreenState.Search> { it.copy(selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex) }
+            return EventResult.HANDLED
+        }
+    }
+
     if (event.modifiers().alt()) {
         if (event.code() == KeyCode.RIGHT) {
             switchSearchTab(true)

@@ -22,6 +22,7 @@ import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
 import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
@@ -52,6 +53,8 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 
 class MeloScreen(
@@ -177,6 +180,25 @@ class MeloScreen(
     )
 
     internal val searchInputState = TextInputState()
+    private var searchInputJob: Job? = null
+
+    init {
+        observeSearchInput()
+    }
+
+    private fun observeSearchInput() {
+        scope.launch {
+            var lastQuery = ""
+            while (isActive) {
+                val currentQuery = searchInputState.text()
+                if (currentQuery != lastQuery) {
+                    lastQuery = currentQuery
+                    handleSearchQueryChange(currentQuery)
+                }
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
 
     internal val homeRecentList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")

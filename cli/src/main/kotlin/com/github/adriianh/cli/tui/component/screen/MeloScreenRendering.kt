@@ -42,7 +42,12 @@ import dev.tamboui.toolkit.element.Element
 internal fun MeloScreen.renderRoot(): Element {
     val mainLayout = dock()
         .top(
-            buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey),
+            buildSearchBar(
+                searchInputState,
+                state.screen as? ScreenState.Search,
+                ::performSearch,
+                ::handleSearchBarKey
+            ),
             Constraint.length(3)
         )
         .bottom(

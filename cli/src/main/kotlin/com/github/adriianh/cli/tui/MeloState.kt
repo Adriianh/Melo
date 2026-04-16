@@ -134,6 +134,9 @@ sealed interface ScreenState {
     data class Search(
         val tab: SearchTab = SearchTab.SONGS,
         val query: String = "",
+        val searchSuggestions: List<String> = emptyList(),
+        val selectedSuggestionIndex: Int? = null,
+        val isShowingSuggestions: Boolean = false,
         val results: List<Track> = emptyList(),
         val albumResults: List<SearchResult.Album> = emptyList(),
         val artistResults: List<SearchResult.Artist> = emptyList(),

@@ -25,6 +25,7 @@ import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
+import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.repository.StatsRepository
@@ -106,6 +107,7 @@ import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
 import com.github.adriianh.data.repository.ScrobblingRepositoryImpl
+import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.data.repository.StatsRepositoryImpl
@@ -225,6 +227,7 @@ val appModule = module {
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
+    single<SearchHistoryRepository> { SearchHistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
@@ -281,7 +284,9 @@ val appModule = module {
     factory { UpdateSettingsUseCase(get()) }
 
     // Interactors
-    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase(get()) }
+    factory { com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase(get()) }
+    factory { SearchInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }
