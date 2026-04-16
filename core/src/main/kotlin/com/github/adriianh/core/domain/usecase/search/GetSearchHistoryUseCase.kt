@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 class GetSearchHistoryUseCase(
     private val repository: SearchHistoryRepository
 ) {
-    operator fun invoke(query: String): Flow<List<String>> {
-        return repository.getRecentQueries(query)
+    operator fun invoke(query: String, limit: Long = 5): Flow<List<String>> {
+        return repository.getRecentQueries(query, limit)
     }
 }

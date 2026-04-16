@@ -30,8 +30,38 @@ import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handleSearchQueryChange(query: String) {
     if (query.isBlank()) {
-        updateScreen<ScreenState.Search> {
-            it.copy(searchSuggestions = emptyList(), isShowingSuggestions = false)
+        val currentScreen = state.screen
+        if (currentScreen !is ScreenState.Search) {
+            state = state.copy(
+                screen = ScreenState.Search(
+                    query = query,
+                    isShowingSuggestions = true
+                ),
+                navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
+            )
+            sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
+        } else {
+            updateScreen<ScreenState.Search> {
+                it.copy(query = query, isShowingSuggestions = true, selectedSuggestionIndex = null)
+            }
+        }
+        scope.launch {
+            try {
+                val rawSuggestions =
+                    searchInteractors.getSearchHistory(query, limit = 10).firstOrNull()
+                        ?: emptyList()
+                if (isActive) {
+                    appRunner()?.runOnRenderThread {
+                        val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+                        if (s.query.isBlank()) {
+                            updateScreen<ScreenState.Search> {
+                                it.copy(searchSuggestions = rawSuggestions)
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
         }
         return
     }

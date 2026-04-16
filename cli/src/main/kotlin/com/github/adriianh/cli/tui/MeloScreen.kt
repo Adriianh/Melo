@@ -191,12 +191,21 @@ class MeloScreen(
 
     private fun observeSearchInput() {
         scope.launch {
+            var lastObservedFocus = false
             while (isActive) {
                 val currentQuery = searchInputState.text()
+                val isFocused = appRunner()?.focusManager()?.focusedId() == "search-bar"
+
                 if (currentQuery != lastObservedSearchQuery) {
                     lastObservedSearchQuery = currentQuery
                     handleSearchQueryChange(currentQuery)
+                } else if (isFocused && !lastObservedFocus) {
+                    handleSearchQueryChange(currentQuery)
+                } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
+                    updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
                 }
+
+                lastObservedFocus = isFocused
                 kotlinx.coroutines.delay(100)
             }
         }
