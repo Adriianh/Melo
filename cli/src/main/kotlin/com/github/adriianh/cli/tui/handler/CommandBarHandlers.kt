@@ -76,6 +76,11 @@ object CommandBarHandlers {
                 exitProcess(0)
             }
 
+            "settings" -> {
+                applySidebarSelection(SidebarSection.SETTINGS)
+                activateSidebarSelection(SidebarSection.SETTINGS)
+            }
+
             "vol" -> {
                 val vol = arg?.toIntOrNull()
                 if (vol != null && vol in 0..100) {
@@ -159,10 +164,58 @@ object CommandBarHandlers {
                         )
                     }
 
+                    "statistics" -> {
+                        applySidebarSelection(SidebarSection.STATS); activateSidebarSelection(
+                            SidebarSection.STATS
+                        )
+                    }
+
+                    "downloads" -> {
+                        applySidebarSelection(SidebarSection.OFFLINE); activateSidebarSelection(
+                            SidebarSection.OFFLINE
+                        )
+                    }
+
                     else -> {
                         errorMessage = "Usage: goto <home|search|library|nowplaying>"
                         isVisible = true
                     }
+                }
+            }
+
+            "search", "track", "song" -> {
+                if (!arg.isNullOrBlank()) {
+                    applySidebarSelection(SidebarSection.SEARCH)
+                    activateSidebarSelection(SidebarSection.SEARCH)
+                    state = state.copy(
+                        screen = ScreenState.Search(
+                            query = arg,
+                            tab = SearchTab.SONGS
+                        )
+                    )
+                    searchInputState.setText(arg)
+                    performSearch()
+                } else {
+                    errorMessage = "Usage: track <name>"
+                    isVisible = true
+                }
+            }
+
+            "album" -> {
+                if (!arg.isNullOrBlank()) {
+                    applySidebarSelection(SidebarSection.SEARCH)
+                    activateSidebarSelection(SidebarSection.SEARCH)
+                    state = state.copy(
+                        screen = ScreenState.Search(
+                            query = arg,
+                            tab = SearchTab.ALBUMS
+                        )
+                    )
+                    searchInputState.setText(arg)
+                    performSearch()
+                } else {
+                    errorMessage = "Usage: album <name>"
+                    isVisible = true
                 }
             }
 
@@ -180,6 +233,24 @@ object CommandBarHandlers {
                     performSearch()
                 } else {
                     errorMessage = "Usage: artist <name>"
+                    isVisible = true
+                }
+            }
+
+            "playlist" -> {
+                if (!arg.isNullOrBlank()) {
+                    applySidebarSelection(SidebarSection.SEARCH)
+                    activateSidebarSelection(SidebarSection.SEARCH)
+                    state = state.copy(
+                        screen = ScreenState.Search(
+                            query = arg,
+                            tab = SearchTab.PLAYLISTS
+                        )
+                    )
+                    searchInputState.setText(arg)
+                    performSearch()
+                } else {
+                    errorMessage = "Usage: playlist <name>"
                     isVisible = true
                 }
             }
