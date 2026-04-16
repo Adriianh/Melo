@@ -8,13 +8,30 @@ import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
-import com.github.adriianh.cli.tui.handler.*
-import com.github.adriianh.cli.tui.handler.playback.*
+import com.github.adriianh.cli.tui.handler.handleHomeKey
+import com.github.adriianh.cli.tui.handler.handleLibraryKey
+import com.github.adriianh.cli.tui.handler.handleOfflineKey
+import com.github.adriianh.cli.tui.handler.handleSidebarKey
+import com.github.adriianh.cli.tui.handler.handleStatsKey
+import com.github.adriianh.cli.tui.handler.playback.adjustVolume
+import com.github.adriianh.cli.tui.handler.playback.cycleRepeat
+import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
+import com.github.adriianh.cli.tui.handler.playback.seekBackward
+import com.github.adriianh.cli.tui.handler.playback.seekForward
+import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
+import com.github.adriianh.cli.tui.handler.playback.toggleQueue
+import com.github.adriianh.cli.tui.handler.playback.toggleShuffle
 import com.github.adriianh.cli.tui.handler.search.handleDetailKey
+import com.github.adriianh.cli.tui.handler.search.handleEntityDetailKey
 import com.github.adriianh.cli.tui.handler.search.handleResultsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
 import com.github.adriianh.cli.tui.handler.search.performSearch
-import com.github.adriianh.cli.tui.screen.*
+import com.github.adriianh.cli.tui.screen.renderHomeScreen
+import com.github.adriianh.cli.tui.screen.renderLibraryScreen
+import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
+import com.github.adriianh.cli.tui.screen.renderOfflineScreen
+import com.github.adriianh.cli.tui.screen.renderSearchScreen
+import com.github.adriianh.cli.tui.screen.renderStatsScreen
 import com.github.adriianh.cli.tui.util.TextAnimationUtil.marqueeText
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Constraint
@@ -24,7 +41,15 @@ import dev.tamboui.toolkit.element.Element
 
 internal fun MeloScreen.renderRoot(): Element {
     val mainLayout = dock()
-        .top(buildSearchBar(searchInputState, ::performSearch, ::handleSearchBarKey), Constraint.length(3))
+        .top(
+            buildSearchBar(
+                searchInputState,
+                state.screen as? ScreenState.Search,
+                ::performSearch,
+                ::handleSearchBarKey
+            ),
+            Constraint.length(3)
+        )
         .bottom(
             buildPlayerBar(
                 state, ::formatDuration, ::handlePlayerBarKey,
@@ -34,7 +59,12 @@ internal fun MeloScreen.renderRoot(): Element {
             Constraint.length(4),
         )
         .left(
-            buildSidebar(sidebarNavList, sidebarUtilList, state.navigation.sidebarInUtil, ::handleSidebarKey),
+            buildSidebar(
+                sidebarNavList,
+                sidebarUtilList,
+                state.navigation.sidebarInUtil,
+                ::handleSidebarKey
+            ),
             Constraint.length(22)
         )
         .center(renderMainContentInternal())
@@ -44,14 +74,22 @@ internal fun MeloScreen.renderRoot(): Element {
     val withDirectoryPicker = if (settingsViewState.isPickingDirectory)
         stack(withSettings, directoryPickerOverlay) else withSettings
     val withTrackOptions =
-        if (state.trackOptions.isVisible) stack(withDirectoryPicker, trackOptionsOverlay) else withDirectoryPicker
+        if (state.trackOptions.isVisible) stack(
+            withDirectoryPicker,
+            trackOptionsOverlay
+        ) else withDirectoryPicker
+
+    val withSearchSuggestions =
+        if (state.screen is ScreenState.Search && (state.screen as ScreenState.Search).isShowingSuggestions && (state.screen as ScreenState.Search).searchSuggestions.isNotEmpty())
+            stack(withTrackOptions, searchSuggestionsOverlay)
+        else withTrackOptions
 
     return when (state.playlistInteraction.playlistInputMode) {
         PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> stack(withTrackOptions, playlistInputOverlay)
+        PlaylistInputMode.RENAME -> stack(withSearchSuggestions, playlistInputOverlay)
 
-        PlaylistInputMode.PICKER -> stack(withTrackOptions, playlistPickerOverlay)
-        PlaylistInputMode.NONE -> withTrackOptions
+        PlaylistInputMode.PICKER -> stack(withSearchSuggestions, playlistPickerOverlay)
+        PlaylistInputMode.NONE -> withSearchSuggestions
     }
 }
 
@@ -70,7 +108,10 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         }
         state = state.copy(
             needsGraphicsClear = false,
-            navigation = state.navigation.copy(activeSection = targetSection, pendingSection = null),
+            navigation = state.navigation.copy(
+                activeSection = targetSection,
+                pendingSection = null
+            ),
             screen = targetScreen,
             detail = state.detail.copy(artworkData = if (targetSection != SidebarSection.SEARCH) null else state.detail.artworkData),
         )
@@ -84,8 +125,17 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             )
 
             SidebarSection.SEARCH -> renderSearchScreen(
-                state, resultList, lyricsArea, similarArea,
-                ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+                state,
+                resultList,
+                entityTracksList,
+                artistDashboardList,
+                lyricsArea,
+                similarArea,
+                entityDescriptionArea,
+                ::marqueeText,
+                ::handleResultsKey,
+                ::handleEntityDetailKey,
+                ::handleDetailKey,
             )
 
             SidebarSection.LIBRARY -> renderLibraryScreen(
@@ -98,7 +148,12 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
                 ::handleLibraryKey,
             )
 
-            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(
+                state,
+                ::marqueeText,
+                ::handlePlayerBarKey
+            )
+
             SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
             SidebarSection.OFFLINE -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
             SidebarSection.SETTINGS -> renderHomeScreen(
@@ -118,8 +173,17 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         )
 
         is ScreenState.Search -> renderSearchScreen(
-            state, resultList, lyricsArea, similarArea,
-            ::marqueeText, ::handleResultsKey, ::handleDetailKey,
+            state,
+            resultList,
+            entityTracksList,
+            artistDashboardList,
+            lyricsArea,
+            similarArea,
+            entityDescriptionArea,
+            ::marqueeText,
+            ::handleResultsKey,
+            ::handleEntityDetailKey,
+            ::handleDetailKey,
         )
 
         is ScreenState.Library -> renderLibraryScreen(
@@ -132,7 +196,12 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             ::handleLibraryKey,
         )
 
-        is ScreenState.NowPlaying -> renderNowPlayingScreen(state, ::marqueeText, ::handlePlayerBarKey)
+        is ScreenState.NowPlaying -> renderNowPlayingScreen(
+            state,
+            ::marqueeText,
+            ::handlePlayerBarKey
+        )
+
         is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
         is ScreenState.Offline -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
     }

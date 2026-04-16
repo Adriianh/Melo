@@ -13,8 +13,10 @@ data class PipedStreamDto(
     val url: String = "",
     val type: String = "",
     val title: String = "",
+    val name: String = "",
     val uploaderName: String = "",
     val duration: Long = 0L,
+    val videos: Int = 0,
     val thumbnail: String? = null
 )
 
@@ -50,7 +52,7 @@ fun PipedStreamDto.toDomain(): Track {
     val videoId = url.substringAfter("v=").substringBefore("&")
     return Track(
         id         = "piped:$videoId",
-        title      = title,
+        title      = title.ifBlank { name },
         artist     = uploaderName,
         album      = "",
         durationMs = duration * 1_000L,

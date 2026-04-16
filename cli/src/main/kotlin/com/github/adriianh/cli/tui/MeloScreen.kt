@@ -1,19 +1,45 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.component.*
-import com.github.adriianh.cli.tui.component.screen.*
+import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
+import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
+import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
+import com.github.adriianh.cli.tui.component.QueueOverlay
+import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
+import com.github.adriianh.cli.tui.component.SettingsOverlay
+import com.github.adriianh.cli.tui.component.SettingsViewState
+import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
+import com.github.adriianh.cli.tui.component.screen.deleteDownloadedTrackAction
+import com.github.adriianh.cli.tui.component.screen.downloadTrackAction
+import com.github.adriianh.cli.tui.component.screen.handleAudioError
+import com.github.adriianh.cli.tui.component.screen.handleAudioFinish
+import com.github.adriianh.cli.tui.component.screen.handleAudioProgress
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPlayPause
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
+import com.github.adriianh.cli.tui.component.screen.handleMediaSessionStop
+import com.github.adriianh.cli.tui.component.screen.loadLocalTracksAction
+import com.github.adriianh.cli.tui.component.screen.onStartLifecycle
+import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
+import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.interactor.*
+import com.github.adriianh.core.domain.interactor.LibraryInteractors
+import com.github.adriianh.core.domain.interactor.OfflineInteractors
+import com.github.adriianh.core.domain.interactor.PlaybackInteractors
+import com.github.adriianh.core.domain.interactor.SearchInteractors
+import com.github.adriianh.core.domain.interactor.SessionInteractors
+import com.github.adriianh.core.domain.interactor.SettingsInteractors
+import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.Toolkit.list
@@ -24,10 +50,12 @@ import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 
 class MeloScreen(
@@ -53,11 +81,19 @@ class MeloScreen(
 
     // Bridging properties to keep existing code working during refactor
     internal val searchTracks get() = searchInteractors.searchTracks
+    internal val searchAlbums get() = searchInteractors.searchAlbums
+    internal val searchArtists get() = searchInteractors.searchArtists
+    internal val searchPlaylists get() = searchInteractors.searchPlaylists
     internal val loadMoreTracks get() = searchInteractors.loadMoreTracks
+    internal val loadMoreArtists get() = searchInteractors.loadMoreArtists
+    internal val loadMoreAlbums get() = searchInteractors.loadMoreAlbums
+    internal val loadMorePlaylists get() = searchInteractors.loadMorePlaylists
     internal val getTrack get() = searchInteractors.getTrack
     internal val getLyrics get() = searchInteractors.getLyrics
     internal val getSyncedLyrics get() = searchInteractors.getSyncedLyrics
     internal val getSimilarTracks get() = searchInteractors.getSimilarTracks
+    internal val getEntityDetails get() = searchInteractors.getEntityDetails
+    internal val getArtistTags get() = searchInteractors.getArtistTags
 
     internal val getFavorites get() = libraryInteractors.getFavorites
     internal val addFavorite get() = libraryInteractors.addFavorite
@@ -146,6 +182,35 @@ class MeloScreen(
 
     internal val searchInputState = TextInputState()
 
+    @Volatile
+    internal var lastObservedSearchQuery = ""
+
+    init {
+        observeSearchInput()
+    }
+
+    private fun observeSearchInput() {
+        scope.launch {
+            var lastObservedFocus = false
+            while (isActive) {
+                val currentQuery = searchInputState.text()
+                val isFocused = appRunner()?.focusManager()?.focusedId() == "search-bar"
+
+                if (currentQuery != lastObservedSearchQuery) {
+                    lastObservedSearchQuery = currentQuery
+                    handleSearchQueryChange(currentQuery)
+                } else if (isFocused && !lastObservedFocus) {
+                    handleSearchQueryChange(currentQuery)
+                } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
+                    updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+                }
+
+                lastObservedFocus = isFocused
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
+
     internal val homeRecentList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -190,6 +255,21 @@ class MeloScreen(
         .focusable()
         .id("playlist-tracks-list")
 
+    internal val entityTracksList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .focusable()
+        .id("entity-tracks-list")
+
+    internal val artistDashboardList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("artist-dashboard-list")
+
     internal val localLibraryList: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -224,6 +304,12 @@ class MeloScreen(
         .wrapWord()
         .focusable()
         .id("lyrics-area")
+
+    internal val entityDescriptionArea = markupTextArea()
+        .scrollbar()
+        .wrapWord()
+        .focusable()
+        .id("desc-area")
 
     internal val similarArea: ListElement<*> = list()
         .highlightSymbol("${MeloTheme.ICON_BULLET} ")
@@ -264,6 +350,7 @@ class MeloScreen(
         .id("settings-list")
 
     internal val playlistInputOverlay = PlaylistInputOverlay { state }
+    internal val searchSuggestionsOverlay = SearchSuggestionsOverlay { state }
     internal val playlistPickerOverlay = PlaylistPickerOverlay { state }
     internal val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
     internal val settingsOverlay = SettingsOverlay(

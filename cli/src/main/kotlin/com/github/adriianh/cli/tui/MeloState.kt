@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackStat
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.ImageData
 
 /**
@@ -124,18 +125,39 @@ data class NavigationState(
     val sidebarInUtil: Boolean = false,
 )
 
+enum class SearchTab { SONGS, ALBUMS, ARTISTS, PLAYLISTS }
+
 /**
  * Represents the state of a specific screen.
  */
 sealed interface ScreenState {
     data class Search(
+        val tab: SearchTab = SearchTab.SONGS,
         val query: String = "",
+        val searchSuggestions: List<String> = emptyList(),
+        val selectedSuggestionIndex: Int? = null,
+        val isShowingSuggestions: Boolean = false,
         val results: List<Track> = emptyList(),
+        val albumResults: List<SearchResult.Album> = emptyList(),
+        val artistResults: List<SearchResult.Artist> = emptyList(),
+        val playlistResults: List<SearchResult.Playlist> = emptyList(),
+        val cursor: Int = 0,
         val selectedIndex: Int = 0,
+        val localCursor: Int = 0,
+        val localResults: List<Track> = emptyList(),
+        val isLoadingSearch: Boolean = false,
+        val searchError: String? = null,
+        val isInEntityDetail: Boolean = false,
+        val entityTitle: String? = null,
+        val entityTracks: List<Track> = emptyList(),
+        val artistDashboardItems: List<Any> = emptyList(),
+        val artistDashboardX: Int = 0,
+        val artistDashboardY: Int = 0,
+        val artistDashboardPositions: Map<String, Int> = emptyMap(),
         val isLoading: Boolean = false,
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
-        val errorMessage: String? = null,
+        val errorMessage: String? = null
     ) : ScreenState
 
     data class Home(
@@ -185,6 +207,7 @@ sealed interface ScreenState {
  */
 data class DetailState(
     val selectedTrack: Track? = null,
+    val selectedEntity: SearchResult? = null,
     val detailTab: DetailTab = DetailTab.INFO,
     val lyrics: String? = null,
     val isLoadingLyrics: Boolean = false,
@@ -194,6 +217,8 @@ data class DetailState(
     val hasMoreSimilar: Boolean = true,
     val similarCursor: Int = 0,
     val artworkData: ImageData? = null,
+    val entityGenres: List<String> = emptyList(),
+    val isLoadingEntityMeta: Boolean = false,
 )
 
 /**

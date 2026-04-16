@@ -75,16 +75,36 @@ class PipedApiClient(
      * Duration comes from Piped in **seconds**; it is converted to milliseconds here.
      */
     suspend fun searchTracks(query: String, limit: Int = 20): List<Track> {
+        return searchEntities(query, "music_songs", "stream", limit).map { it.toDomain() }
+    }
+
+    suspend fun searchAlbums(query: String, limit: Int = 20): List<PipedStreamDto> {
+        return searchEntities(query, "music_albums", "playlist", limit)
+    }
+
+    suspend fun searchArtists(query: String, limit: Int = 20): List<PipedStreamDto> {
+        return searchEntities(query, "music_artists", "channel", limit)
+    }
+
+    suspend fun searchPlaylists(query: String, limit: Int = 20): List<PipedStreamDto> {
+        return searchEntities(query, "music_playlists", "playlist", limit)
+    }
+
+    private suspend fun searchEntities(
+        query: String,
+        filter: String,
+        expectedType: String,
+        limit: Int
+    ): List<PipedStreamDto> {
         return try {
             val response = httpClient.get("$baseUrl/search") {
                 parameter("q", query)
-                parameter("filter", "music_songs")
+                parameter("filter", filter)
             }.body<PipedSearchResponse>()
 
             response.items
-                .filter { it.type == "stream" }
+                .filter { it.type == expectedType }
                 .take(limit)
-                .map { it.toDomain() }
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {

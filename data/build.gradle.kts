@@ -18,12 +18,10 @@ dependencies {
     implementation(libs.sqldelightCoroutinesExtensions)
     implementation(libs.sqldelightSqliteDriver)
     implementation(libs.sqliteJdbc)
-
-    // For audio metadata extraction
     implementation(libs.jaudiotagger)
 
-    testImplementation(kotlin("test"))
-    testImplementation(libs.mockk)
+    implementation(project(":core"))
+    implementation(project(":innertube"))
     testImplementation(libs.kotlinxCoroutinesTest)
 }
 
@@ -36,4 +34,3 @@ sqldelight {
         }
     }
 }
-

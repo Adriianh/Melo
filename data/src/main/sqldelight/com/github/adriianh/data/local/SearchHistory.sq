@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS search_history (
+    query TEXT NOT NULL PRIMARY KEY,
+    searched_at INTEGER NOT NULL
+);
+
+insertQuery:
+INSERT OR REPLACE INTO search_history (query, searched_at)
+VALUES (?, ?);
+
+deleteQuery:
+DELETE FROM search_history
+WHERE query = ?;
+
+getRecentQueries:
+SELECT query
+FROM search_history
+WHERE query LIKE ('%' || :queryPattern || '%')
+ORDER BY searched_at DESC
+LIMIT :limit;
+
+deleteOldestItems:
+DELETE FROM search_history
+WHERE query IN (
+    SELECT query
+    FROM search_history
+    ORDER BY searched_at DESC
+    LIMIT -1 OFFSET 100
+);

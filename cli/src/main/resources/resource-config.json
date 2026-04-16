@@ -5,6 +5,9 @@
         "pattern": ".*\\.icc$"
       },
       {
+        "pattern": ".*\\.pf$"
+      },
+      {
         "pattern": "org/newsclub/net/unix/lib/.*"
       }
     ]

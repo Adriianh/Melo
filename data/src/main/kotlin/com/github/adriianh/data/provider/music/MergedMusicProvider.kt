@@ -1,6 +1,7 @@
 package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,12 +21,74 @@ class MergedMusicProvider(
 
     override suspend fun search(query: String): List<Track> = coroutineScope {
         val jobs = providers.map { async { runCatching { it.search(query) }.getOrDefault(emptyList()) } }
-        deduplicate(merge(jobs.awaitAll()))
+        deduplicate(mergeLists(jobs.awaitAll()))
+    }
+
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAlbums(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchArtists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchPlaylists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
     override suspend fun searchAll(query: String): List<Track> = coroutineScope {
         val jobs = providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }
-        deduplicate(merge(jobs.awaitAll()))
+        deduplicate(mergeLists(jobs.awaitAll()))
+    }
+
+    override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllAlbums(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllArtists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
+        val jobs = providers.map { async { runCatching { it.searchAllPlaylists(query) }.getOrDefault(emptyList()) } }
+        mergeLists(jobs.awaitAll()).distinctBy { it.id }
+    }
+
+    override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
+        for (provider in providers) {
+            val result = runCatching { provider.getAlbumDetails(id) }.getOrNull()
+            if (result != null && !result.songs.isNullOrEmpty()) return result
+        }
+        return null
+    }
+
+    override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
+        for (provider in providers) {
+            val result = runCatching { provider.getArtistDetails(id) }.getOrNull()
+            if (result != null && (!result.topSongs.isNullOrEmpty() || result.description != null)) return result
+        }
+        return null
+    }
+
+    override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
+        for (provider in providers) {
+            val result = runCatching { provider.getPlaylistDetails(id) }.getOrNull()
+            if (result != null) return result
+        }
+        return null
+    }
+
+    override suspend fun getSearchSuggestions(query: String): List<String> {
+        for (provider in providers) {
+            val result = runCatching { provider.getSearchSuggestions(query) }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
     }
 
     override suspend fun getTrack(id: String): Track? {
@@ -46,8 +109,8 @@ class MergedMusicProvider(
     }
 
     /** Round-robin interleave: [A1,A2,A3] + [B1,B2] → [A1,B1,A2,B2,A3] */
-    private fun merge(lists: List<List<Track>>): List<Track> {
-        val result = mutableListOf<Track>()
+    private fun <T> mergeLists(lists: List<List<T>>): List<T> {
+        val result = mutableListOf<T>()
         val iterators = lists.map { it.iterator() }
         var anyHasNext = true
         while (anyHasNext) {

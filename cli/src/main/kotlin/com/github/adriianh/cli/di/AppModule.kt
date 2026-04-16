@@ -6,16 +6,72 @@ import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.interactor.*
-import com.github.adriianh.core.domain.provider.MetadataProvider
+import com.github.adriianh.core.domain.interactor.LibraryInteractors
+import com.github.adriianh.core.domain.interactor.OfflineInteractors
+import com.github.adriianh.core.domain.interactor.PlaybackInteractors
+import com.github.adriianh.core.domain.interactor.SearchInteractors
+import com.github.adriianh.core.domain.interactor.SessionInteractors
+import com.github.adriianh.core.domain.interactor.SettingsInteractors
+import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
+import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
-import com.github.adriianh.core.domain.repository.*
-import com.github.adriianh.core.domain.usecase.library.*
-import com.github.adriianh.core.domain.usecase.offline.*
-import com.github.adriianh.core.domain.usecase.playback.*
-import com.github.adriianh.core.domain.usecase.search.*
+import com.github.adriianh.core.domain.repository.DiscoveryRepository
+import com.github.adriianh.core.domain.repository.FavoritesRepository
+import com.github.adriianh.core.domain.repository.HistoryRepository
+import com.github.adriianh.core.domain.repository.LyricsRepository
+import com.github.adriianh.core.domain.repository.MusicRepository
+import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.repository.PlaylistRepository
+import com.github.adriianh.core.domain.repository.ScrobblingRepository
+import com.github.adriianh.core.domain.repository.SearchHistoryRepository
+import com.github.adriianh.core.domain.repository.SessionRepository
+import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.domain.repository.StatsRepository
+import com.github.adriianh.core.domain.usecase.library.AddFavoriteUseCase
+import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.GetFavoritesUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.IsFavoriteUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
+import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
+import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.playback.AuthenticateLastFmUseCase
+import com.github.adriianh.core.domain.usecase.playback.CompleteWebAuthUseCase
+import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
+import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
+import com.github.adriianh.core.domain.usecase.playback.ScrobbleUseCase
+import com.github.adriianh.core.domain.usecase.playback.StartWebAuthUseCase
+import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
+import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMoreAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMoreArtistsUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMorePlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.search.LoadMoreTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.session.ClearSessionUseCase
 import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
 import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
@@ -29,10 +85,13 @@ import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
+import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.provider.discovery.CompositeDiscoveryProvider
 import com.github.adriianh.data.provider.discovery.DeezerDiscoveryProvider
+import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.discovery.LastFmDiscoveryProvider
+import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
 import com.github.adriianh.data.provider.music.ItunesMusicProvider
 import com.github.adriianh.data.provider.music.MergedMusicProvider
 import com.github.adriianh.data.provider.music.PipedMusicProvider
@@ -44,13 +103,26 @@ import com.github.adriianh.data.remote.lyrics.LyricsApiClient
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
-import com.github.adriianh.data.repository.*
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
+import com.github.adriianh.data.repository.FavoritesRepositoryImpl
+import com.github.adriianh.data.repository.HistoryRepositoryImpl
+import com.github.adriianh.data.repository.LyricsRepositoryImpl
+import com.github.adriianh.data.repository.MusicRepositoryImpl
+import com.github.adriianh.data.repository.OfflineRepositoryImpl
+import com.github.adriianh.data.repository.PlaylistRepositoryImpl
+import com.github.adriianh.data.repository.ScrobblingRepositoryImpl
+import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
+import com.github.adriianh.data.repository.SessionRepositoryImpl
+import com.github.adriianh.data.repository.SettingsRepositoryImpl
+import com.github.adriianh.data.repository.StatsRepositoryImpl
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.endpoint
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
@@ -121,7 +193,12 @@ val appModule = module {
     // Providers
     single<MusicProvider> {
         val itunes = ItunesMusicProvider(get())
-        val providers = mutableListOf(itunes, PipedMusicProvider(get()))
+        val providers = mutableListOf(
+            itunes,
+            InnerTubeMusicProvider(
+                fallback = PipedMusicProvider(get())
+            )
+        )
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
     }
@@ -133,12 +210,17 @@ val appModule = module {
     single<DiscoveryProvider> {
         CompositeDiscoveryProvider(
             listOf(
+                InnerTubeDiscoveryProvider(),
                 LastFmDiscoveryProvider(get()),
                 DeezerDiscoveryProvider(get()),
             )
         )
     }
-    single<AudioProvider> { YtDlpAudioProvider(get()) }
+    single<AudioProvider> {
+        InnerTubeAudioProvider(
+            fallback = YtDlpAudioProvider(get())
+        )
+    }
     single { MediaSessionManager(httpClient = get()) }
     single { DiscordRpcManager() }
 
@@ -149,6 +231,7 @@ val appModule = module {
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
+    single<SearchHistoryRepository> { SearchHistoryRepositoryImpl(get()) }
     single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
@@ -157,11 +240,19 @@ val appModule = module {
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
 
     factory { SearchTracksUseCase(get()) }
+    factory { SearchAlbumsUseCase(get()) }
+    factory { SearchArtistsUseCase(get()) }
+    factory { SearchPlaylistsUseCase(get()) }
     factory { LoadMoreTracksUseCase(get()) }
+    factory { LoadMoreAlbumsUseCase(get()) }
+    factory { LoadMoreArtistsUseCase(get()) }
+    factory { LoadMorePlaylistsUseCase(get()) }
     factory { GetTrackUseCase(get()) }
     factory { GetLyricsUseCase(get()) }
     factory { GetSyncedLyricsUseCase(get()) }
     factory { GetSimilarTracksUseCase(get()) }
+    factory { GetEntityDetailsUseCase(get()) }
+    factory { GetArtistTagsUseCase(get()) }
     factory { GetFavoritesUseCase(get()) }
     factory { AddFavoriteUseCase(get()) }
     factory { RemoveFavoriteUseCase(get()) }
@@ -197,7 +288,32 @@ val appModule = module {
     factory { UpdateSettingsUseCase(get()) }
 
     // Interactors
-    factory { SearchInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { GetSearchHistoryUseCase(get()) }
+    factory { GetSearchSuggestionsUseCase(get()) }
+    factory { SaveSearchQueryUseCase(get()) }
+    factory { DeleteSearchQueryUseCase(get()) }
+    factory {
+        SearchInteractors(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }

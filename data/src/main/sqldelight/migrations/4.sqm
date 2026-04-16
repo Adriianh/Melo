@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS search_history (
+    query TEXT NOT NULL PRIMARY KEY,
+    searched_at INTEGER NOT NULL
+);

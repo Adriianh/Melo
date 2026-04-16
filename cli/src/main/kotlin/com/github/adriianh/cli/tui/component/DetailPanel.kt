@@ -11,10 +11,20 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.layout.Margin
+import dev.tamboui.style.Overflow
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.stack
+import dev.tamboui.toolkit.Toolkit.tabs
+import dev.tamboui.toolkit.Toolkit.text
+import dev.tamboui.toolkit.Toolkit.widget
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
@@ -64,9 +74,112 @@ fun buildDetailPanel(
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
         .id("detail-panel")
+        .focusable()
         .onKeyEvent(onKeyEvent)
+}
+
+fun buildEntityDetailPanel(
+    state: MeloState,
+    entityDescriptionArea: MarkupTextAreaElement,
+    onKeyEvent: (KeyEvent) -> EventResult
+): Element {
+    val entity = state.detail.selectedEntity ?: return spacer()
+
+    val headerElements = mutableListOf<Element>()
+    when (entity) {
+        is SearchResult.Album -> {
+            headerElements.add(text(" Album ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.title).fg(TEXT_PRIMARY))
+            headerElements.add(text(entity.author).fg(TEXT_SECONDARY))
+            if (entity.year != null) headerElements.add(text(entity.year.toString()).dim())
+            if (!entity.songs.isNullOrEmpty()) headerElements.add(text("${entity.songs!!.size} tracks").dim())
+            if (!entity.otherVersions.isNullOrEmpty()) {
+                val versionElements = mutableListOf<Element>()
+                versionElements.add(text(""))
+                versionElements.add(text("Other versions:").fg(TEXT_SECONDARY))
+                entity.otherVersions!!.forEach {
+                    versionElements.add(text("• ${it.title}").dim().overflow(Overflow.WRAP_WORD))
+                }
+                headerElements.add(column(*versionElements.toTypedArray()))
+            }
+        }
+
+        is SearchResult.Artist -> {
+            headerElements.add(text(" Artist ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.name).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            if (entity.subscriberCountText != null) headerElements.add(text(entity.subscriberCountText!!).dim())
+            if (entity.monthlyListenerCount != null) headerElements.add(text(entity.monthlyListenerCount!!).dim())
+            if (state.detail.entityGenres.isNotEmpty()) {
+                headerElements.add(
+                    column(
+                        text(""),
+                        text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                            .overflow(Overflow.WRAP_WORD)
+                    )
+                )
+            }
+        }
+
+        is SearchResult.Playlist -> {
+            headerElements.add(text(" Playlist ").fg(PRIMARY_COLOR))
+            headerElements.add(text(""))
+            headerElements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            headerElements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
+            if (!entity.songs.isNullOrEmpty()) {
+                headerElements.add(text("${entity.songs!!.size} tracks").dim())
+            } else if (entity.trackCount != null) {
+                headerElements.add(text("${entity.trackCount} tracks").dim())
+            }
+        }
+
+        else -> return spacer()
+    }
+
+    val headerColumn = column(*headerElements.toTypedArray())
+        .margin(Margin.horizontal(2))
+        .flex(Flex.START)
+
+    val descriptionRaw = when (entity) {
+        is SearchResult.Album -> entity.description
+        is SearchResult.Artist -> entity.description
+        is SearchResult.Playlist -> entity.description
+    }
+
+    val description = wrapText(descriptionRaw, 60)
+
+    val artworkLines =
+        if (state.detail.artworkData != null && !state.player.isQueueVisible) 18 else 5
+    val headerLines = headerElements.size
+    val topHeight = artworkLines + 1 + headerLines + (if (description.isNotEmpty()) 1 else 0)
+
+    val topPart = column(
+        renderArtwork(state),
+        text("").length(1),
+        headerColumn,
+        if (description.isNotEmpty()) text("").length(1) else text("")
+    ).flex(Flex.START).length(topHeight)
+
+    val contentPart = if (description.isNotEmpty()) {
+        column(
+            topPart,
+            entityDescriptionArea.markup(description).fill()
+        ).fill()
+    } else {
+        column(topPart, spacer()).fill()
+    }
+
+    return panel(contentPart)
+        .title("Details")
+        .id("desc-area")
+        .focusable()
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .onKeyEvent(onKeyEvent)
+        .fill()
 }
 
 private fun renderTrackMetadata(
@@ -95,9 +208,9 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
         ).length(18)
     } else {
         stack(
-            ClearGraphicsElement().fill(),
-            panel(text(" [ No Artwork ] ").dim().centered()).rounded().fit().length(5)
-        )
+            ClearGraphicsElement(),
+            panel(text(" [ No Artwork ] ").dim().centered()).rounded().length(5)
+        ).length(5)
     }
 
 private fun renderLyricsTab(
@@ -139,9 +252,11 @@ private fun renderSimilarTab(
     val items = state.detail.similarTracks.mapIndexed { index, similar ->
         val isSelected = index == state.detail.similarCursor
         val isPlayable = state.isPlayable(similar)
-        val titleColor = if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
+        val titleColor =
+            if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
         row(
-            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
+            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle()
+                .fill(),
             text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
         )
     }.toMutableList()
@@ -159,4 +274,27 @@ private fun renderSimilarTab(
     similarArea.elements(*items.toTypedArray())
     similarArea.selected(state.detail.similarCursor)
     return similarArea.fill()
+}
+
+private fun wrapText(text: String?, maxWidth: Int): String {
+    if (text.isNullOrEmpty()) return ""
+    return text.split("\n").joinToString("\n") { paragraph ->
+        val words = paragraph.split(Regex("\\s+"))
+        val sb = java.lang.StringBuilder()
+        var currentLineLength = 0
+        for (word in words) {
+            if (word.isEmpty()) continue
+            val plainWordLength = word.replace(Regex("\\[/?.*?]"), "").length
+            if (currentLineLength + plainWordLength > maxWidth && currentLineLength > 0) {
+                sb.append("\n")
+                currentLineLength = 0
+            } else if (currentLineLength > 0) {
+                sb.append(" ")
+                currentLineLength += 1
+            }
+            sb.append(word)
+            currentLineLength += plainWordLength
+        }
+        sb.toString()
+    }
 }
