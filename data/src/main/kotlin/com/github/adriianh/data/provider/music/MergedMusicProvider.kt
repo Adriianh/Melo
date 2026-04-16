@@ -78,9 +78,17 @@ class MergedMusicProvider(
     override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
         for (provider in providers) {
             val result = runCatching { provider.getPlaylistDetails(id) }.getOrNull()
-            if (result != null && !result.songs.isNullOrEmpty()) return result
+            if (result != null) return result
         }
         return null
+    }
+
+    override suspend fun getSearchSuggestions(query: String): List<String> {
+        for (provider in providers) {
+            val result = runCatching { provider.getSearchSuggestions(query) }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
     }
 
     override suspend fun getTrack(id: String): Track? {

@@ -359,4 +359,10 @@ class InnerTubeMusicProvider(
             description = null
         )
     }
+
+    override suspend fun getSearchSuggestions(query: String): List<String> {
+        val remoteSuggestions = YouTube.searchSuggestions(query).getOrNull()?.queries
+            ?: return fallback?.getSearchSuggestions(query) ?: emptyList()
+        return remoteSuggestions
+    }
 }

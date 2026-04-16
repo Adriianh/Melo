@@ -18,4 +18,5 @@ interface MusicProvider {
     suspend fun getAlbumDetails(id: String): SearchResult.Album? = null
     suspend fun getArtistDetails(id: String): SearchResult.Artist? = null
     suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? = null
+    suspend fun getSearchSuggestions(query: String): List<String> = emptyList()
 }
