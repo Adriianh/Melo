@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.handler.search
 
+import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
@@ -127,11 +128,13 @@ internal fun MeloScreen.performSearch() {
     val currentTab = (state.screen as? ScreenState.Search)?.tab ?: SearchTab.SONGS
 
     if (state.isOfflineMode) {
-        val q = query.lowercase()
         val filtered = state.collections.offlineTracks
             .filter { it.downloadStatus == DownloadStatus.COMPLETED }
             .map { it.track }
-            .filter { it.title.lowercase().contains(q) || it.artist.lowercase().contains(q) }
+            .filter {
+                it.title.lowercase().contains(query.lowercase()) || it.artist.lowercase()
+                    .contains(query.lowercase())
+            }
             .distinctBy { it.id }
 
         state = state.copy(
@@ -149,7 +152,10 @@ internal fun MeloScreen.performSearch() {
                 selectedIndex = 0,
                 hasMore = false
             ),
-            detail = state.detail.copy(selectedTrack = filtered.firstOrNull()),
+            detail = state.detail.copy(
+                selectedTrack = filtered.firstOrNull(),
+                detailTab = DetailTab.INFO
+            ),
             navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
         )
         sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
@@ -169,7 +175,12 @@ internal fun MeloScreen.performSearch() {
             isShowingSuggestions = false,
             selectedSuggestionIndex = null
         ),
-        detail = state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null),
+        detail = state.detail.copy(
+            selectedTrack = null,
+            selectedEntity = null,
+            artworkData = null,
+            detailTab = DetailTab.INFO
+        ),
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
     )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
