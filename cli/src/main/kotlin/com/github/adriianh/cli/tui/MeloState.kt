@@ -249,7 +249,8 @@ data class CommandBarState(
     val errorMessage: String? = null,
     val history: List<String> = emptyList(),
     val historyIndex: Int = -1,
-    val cursorPosition: Int = 0
+    val cursorPosition: Int = 0,
+    val previousFocusId: String? = null
 )
 
 /**

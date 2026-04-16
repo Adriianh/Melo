@@ -20,7 +20,7 @@ object CommandBarHandlers {
         val barState = state.commandBar
         when (event.code()) {
             KeyCode.ESCAPE -> {
-                state = state.copy(commandBar = barState.copy(isVisible = false))
+                closeCommandBar()
                 return EventResult.HANDLED
             }
 
@@ -29,7 +29,7 @@ object CommandBarHandlers {
                 if (input.isNotEmpty()) {
                     executeCommand(input)
                 } else {
-                    state = state.copy(commandBar = barState.copy(isVisible = false))
+                    closeCommandBar()
                 }
                 return EventResult.HANDLED
             }
@@ -64,6 +64,23 @@ object CommandBarHandlers {
         return EventResult.HANDLED
     }
 
+    private fun MeloScreen.closeCommandBar(restoreFocus: Boolean = true) {
+        val prevFocus = state.commandBar.previousFocusId
+        state = state.copy(
+            commandBar = state.commandBar.copy(
+                isVisible = false,
+                previousFocusId = null
+            )
+        )
+        if (restoreFocus) {
+            if (prevFocus != null) {
+                appRunner()?.focusManager()?.setFocus(prevFocus)
+            } else {
+                appRunner()?.focusManager()?.setFocus("home-panel")
+            }
+        }
+    }
+
     private fun MeloScreen.executeCommand(input: String) {
         val parts = input.split(" ", limit = 2)
         val command = parts[0]
@@ -71,12 +88,14 @@ object CommandBarHandlers {
         val newHistory = (state.commandBar.history + input).takeLast(50)
         var errorMessage: String? = null
         var isVisible = false
+        var restoreFocus = true
         when (command) {
             "q", "quit" -> {
                 exitProcess(0)
             }
 
             "settings" -> {
+                restoreFocus = false
                 applySidebarSelection(SidebarSection.SETTINGS)
                 activateSidebarSelection(SidebarSection.SETTINGS)
             }
@@ -141,39 +160,43 @@ object CommandBarHandlers {
             "goto" -> {
                 when (arg) {
                     "home" -> {
+                        restoreFocus = false
                         applySidebarSelection(SidebarSection.HOME); activateSidebarSelection(
                             SidebarSection.HOME
                         )
                     }
 
                     "search" -> {
+                        restoreFocus = false
                         applySidebarSelection(SidebarSection.SEARCH); activateSidebarSelection(
                             SidebarSection.SEARCH
                         )
                     }
 
                     "library" -> {
+                        restoreFocus = false
                         applySidebarSelection(SidebarSection.LIBRARY); activateSidebarSelection(
                             SidebarSection.LIBRARY
                         )
                     }
 
                     "nowplaying" -> {
+                        restoreFocus = false
                         applySidebarSelection(SidebarSection.NOW_PLAYING); activateSidebarSelection(
                             SidebarSection.NOW_PLAYING
                         )
                     }
 
                     "statistics" -> {
-                        applySidebarSelection(SidebarSection.STATS); activateSidebarSelection(
-                            SidebarSection.STATS
-                        )
+                        restoreFocus = false
+                        applySidebarSelection(SidebarSection.STATS)
+                        activateSidebarSelection(SidebarSection.STATS)
                     }
 
                     "downloads" -> {
-                        applySidebarSelection(SidebarSection.OFFLINE); activateSidebarSelection(
-                            SidebarSection.OFFLINE
-                        )
+                        restoreFocus = false
+                        applySidebarSelection(SidebarSection.OFFLINE)
+                        activateSidebarSelection(SidebarSection.OFFLINE)
                     }
 
                     else -> {
@@ -185,6 +208,7 @@ object CommandBarHandlers {
 
             "search", "track", "song" -> {
                 if (!arg.isNullOrBlank()) {
+                    restoreFocus = false
                     applySidebarSelection(SidebarSection.SEARCH)
                     activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
@@ -203,6 +227,7 @@ object CommandBarHandlers {
 
             "album" -> {
                 if (!arg.isNullOrBlank()) {
+                    restoreFocus = false
                     applySidebarSelection(SidebarSection.SEARCH)
                     activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
@@ -221,6 +246,7 @@ object CommandBarHandlers {
 
             "artist" -> {
                 if (!arg.isNullOrBlank()) {
+                    restoreFocus = false
                     applySidebarSelection(SidebarSection.SEARCH)
                     activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
@@ -239,6 +265,7 @@ object CommandBarHandlers {
 
             "playlist" -> {
                 if (!arg.isNullOrBlank()) {
+                    restoreFocus = false
                     applySidebarSelection(SidebarSection.SEARCH)
                     activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
@@ -266,8 +293,18 @@ object CommandBarHandlers {
                 input = if (isVisible) state.commandBar.input else "",
                 history = newHistory,
                 historyIndex = newHistory.size,
-                errorMessage = errorMessage
+                errorMessage = errorMessage,
+                previousFocusId = if (isVisible) state.commandBar.previousFocusId else null
             )
         )
+
+        if (!isVisible && restoreFocus) {
+            val prevFocus = state.commandBar.previousFocusId
+            if (prevFocus != null) {
+                appRunner()?.focusManager()?.setFocus(prevFocus)
+            } else {
+                appRunner()?.focusManager()?.setFocus("home-panel")
+            }
+        }
     }
 }

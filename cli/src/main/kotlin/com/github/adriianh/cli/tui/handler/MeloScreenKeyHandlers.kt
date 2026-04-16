@@ -3,10 +3,10 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
+import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
-import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import dev.tamboui.toolkit.event.EventResult
@@ -129,14 +129,17 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     when (event.code()) {
         KeyCode.CHAR -> {
             if (event.character() == ':') {
+                val currentFocus = appRunner()?.focusManager()?.focusedId()
                 state = state.copy(
                     commandBar = state.commandBar.copy(
                         isVisible = true,
                         input = "",
                         errorMessage = null,
-                        cursorPosition = 0
+                        cursorPosition = 0,
+                        previousFocusId = currentFocus
                     )
                 )
+                appRunner()?.focusManager()?.setFocus("command-bar")
                 return EventResult.HANDLED
             }
             if (event.character() == '/') {

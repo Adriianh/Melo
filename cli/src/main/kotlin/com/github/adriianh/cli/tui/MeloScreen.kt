@@ -6,9 +6,8 @@ import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.component.QueueOverlay
 import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.SettingsOverlay
-import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
-import com.github.adriianh.cli.tui.component.CommandBarOverlay
 import com.github.adriianh.cli.tui.component.SettingsViewState
+import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
 import com.github.adriianh.cli.tui.component.screen.deleteDownloadedTrackAction
 import com.github.adriianh.cli.tui.component.screen.downloadTrackAction
 import com.github.adriianh.cli.tui.component.screen.handleAudioError
@@ -354,7 +353,6 @@ class MeloScreen(
     internal val searchSuggestionsOverlay = SearchSuggestionsOverlay { state }
     internal val playlistPickerOverlay = PlaylistPickerOverlay { state }
     internal val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
-    internal val commandBarOverlay = CommandBarOverlay { state }
     internal val settingsOverlay = SettingsOverlay(
         { state },
         { settingsViewState },

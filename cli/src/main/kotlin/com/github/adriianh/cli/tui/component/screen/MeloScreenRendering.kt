@@ -4,10 +4,12 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
+import com.github.adriianh.cli.tui.component.buildCommandBar
 import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
+import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.handleHomeKey
 import com.github.adriianh.cli.tui.handler.handleLibraryKey
 import com.github.adriianh.cli.tui.handler.handleOfflineKey
@@ -40,6 +42,24 @@ import dev.tamboui.toolkit.Toolkit.stack
 import dev.tamboui.toolkit.element.Element
 
 internal fun MeloScreen.renderRoot(): Element {
+    val playerBar = buildPlayerBar(
+        state, ::formatDuration, ::handlePlayerBarKey,
+        ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
+        ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
+    )
+
+    val bottomContent = if (state.commandBar.isVisible) {
+        dock()
+            .top(playerBar, Constraint.length(4))
+            .bottom(
+                buildCommandBar(state) {
+                    handleCommandBarKey(it)
+                }, Constraint.length(1)
+            )
+    } else {
+        playerBar
+    }
+
     val mainLayout = dock()
         .top(
             buildSearchBar(
@@ -51,12 +71,8 @@ internal fun MeloScreen.renderRoot(): Element {
             Constraint.length(3)
         )
         .bottom(
-            buildPlayerBar(
-                state, ::formatDuration, ::handlePlayerBarKey,
-                ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
-                ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
-            ),
-            Constraint.length(4),
+            bottomContent,
+            Constraint.length(if (state.commandBar.isVisible) 5 else 4),
         )
         .left(
             buildSidebar(
@@ -84,17 +100,12 @@ internal fun MeloScreen.renderRoot(): Element {
             stack(withTrackOptions, searchSuggestionsOverlay)
         else withTrackOptions
 
-    val withCommandBar = if (state.commandBar.isVisible) stack(
-        withSearchSuggestions,
-        commandBarOverlay
-    ) else withSearchSuggestions
-
     return when (state.playlistInteraction.playlistInputMode) {
         PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> stack(withCommandBar, playlistInputOverlay)
+        PlaylistInputMode.RENAME -> stack(withSearchSuggestions, playlistInputOverlay)
 
-        PlaylistInputMode.PICKER -> stack(withCommandBar, playlistPickerOverlay)
-        PlaylistInputMode.NONE -> withCommandBar
+        PlaylistInputMode.PICKER -> stack(withSearchSuggestions, playlistPickerOverlay)
+        PlaylistInputMode.NONE -> withSearchSuggestions
     }
 }
 
