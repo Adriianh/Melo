@@ -14,7 +14,7 @@ import dev.tamboui.tui.event.KeyEvent
  * Handles key events for the Offline (Downloads) screen.
  */
 internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
-    val actualState = state.screen as? ScreenState.Offline ?: return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Offline ?: return handleGlobalShortcuts(event)
 
     if (actualState.isTyping) {
         when {
@@ -93,5 +93,5 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }

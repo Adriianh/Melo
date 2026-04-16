@@ -30,7 +30,7 @@ internal fun MeloScreen.loadStats(period: StatsPeriod? = null) {
 }
 
 internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
-    val s = state.screen as? ScreenState.Stats ?: return EventResult.UNHANDLED
+    val s = state.screen as? ScreenState.Stats ?: return handleGlobalShortcuts(event)
     val periods = StatsPeriod.entries
     val units = StatsTimeUnit.entries
     val current = s.statsPeriod
@@ -56,5 +56,5 @@ internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }

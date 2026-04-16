@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.handler.playback
 
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.toggleFavorite
@@ -35,7 +36,7 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val track = state.trackOptions.track ?: return EventResult.UNHANDLED
+            val track = state.trackOptions.track ?: return handleGlobalShortcuts(event)
             val actionIndex = state.trackOptions.selectedIndex
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
 
@@ -62,7 +63,7 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.openTrackOptions(track: Track) {

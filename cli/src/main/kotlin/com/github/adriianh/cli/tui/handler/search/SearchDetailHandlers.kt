@@ -468,12 +468,12 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
-    val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
-    if (!actualState.isInEntityDetail) return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Search ?: return handleGlobalShortcuts(event)
+    if (!actualState.isInEntityDetail) return handleGlobalShortcuts(event)
 
     val isDescFocused = appRunner()?.focusManager()?.focusedId() == "desc-area"
     if (isDescFocused) {
@@ -485,7 +485,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             appRunner()?.focusManager()?.setFocus(targetFocus)
             return EventResult.HANDLED
         }
-        return EventResult.UNHANDLED
+        return handleGlobalShortcuts(event)
     }
 
     if (state.detail.selectedEntity is SearchResult.Artist) {
@@ -748,7 +748,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
 
         event.code() == KeyCode.ENTER && listSize > 0 -> {
             val selectedIndex = entityTracksList.selected()
-            val track = tracks.getOrNull(selectedIndex) ?: return EventResult.UNHANDLED
+            val track = tracks.getOrNull(selectedIndex) ?: return handleGlobalShortcuts(event)
             downloadTrack(track, DownloadType.PREFETCH)
             playList(tracks, selectedIndex)
             return EventResult.HANDLED

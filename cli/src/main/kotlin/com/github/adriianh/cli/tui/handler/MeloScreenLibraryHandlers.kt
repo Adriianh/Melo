@@ -24,9 +24,9 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
         PlaylistInputMode.NONE -> {}
     }
 
-    val actualState = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
     val isFocused = appRunner()?.focusManager()?.focusedId() == "library-panel"
-    if (!isFocused) return EventResult.UNHANDLED
+    if (!isFocused) return handleGlobalShortcuts(event)
 
     if (event.code() == KeyCode.CHAR && event.character() == '1') {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.FAVORITES) }
@@ -53,7 +53,7 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
-    val actualState = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
     val allPaths = settingsViewState.currentSettings.localLibraryPaths
 
     val filtered = actualState.localTracks.filter { track ->
@@ -145,7 +145,7 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
@@ -188,5 +188,5 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
