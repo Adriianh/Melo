@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.component.QueueOverlay
+import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.SettingsOverlay
 import com.github.adriianh.cli.tui.component.SettingsViewState
 import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
@@ -180,7 +181,6 @@ class MeloScreen(
     )
 
     internal val searchInputState = TextInputState()
-    private var searchInputJob: Job? = null
 
     init {
         observeSearchInput()
@@ -339,6 +339,7 @@ class MeloScreen(
         .id("settings-list")
 
     internal val playlistInputOverlay = PlaylistInputOverlay { state }
+    internal val searchSuggestionsOverlay = SearchSuggestionsOverlay { state }
     internal val playlistPickerOverlay = PlaylistPickerOverlay { state }
     internal val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
     internal val settingsOverlay = SettingsOverlay(
