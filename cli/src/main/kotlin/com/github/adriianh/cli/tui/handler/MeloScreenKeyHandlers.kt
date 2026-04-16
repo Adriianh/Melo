@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
+import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import dev.tamboui.toolkit.event.EventResult
@@ -94,6 +95,8 @@ internal fun MeloScreen.applySidebarSelection(item: SidebarSection) {
 }
 
 internal fun MeloScreen.isTyping(): Boolean {
+    if (state.commandBar.isVisible) return true
+
     // Search bar is focused
     if (appRunner()?.focusManager()?.focusedId() == "search-bar") return true
 
@@ -102,14 +105,14 @@ internal fun MeloScreen.isTyping(): Boolean {
     if (libraryState?.isTyping == true) return true
 
     val offlineState = state.screen as? ScreenState.Offline
-    if (offlineState?.isTyping == true) return true
 
-    return false
+    return offlineState?.isTyping == true
 }
 
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
+    if (state.commandBar.isVisible) return handleCommandBarKey(event)
 
     val isTyping = isTyping()
     val isCharacter = event.code() == KeyCode.CHAR
@@ -125,6 +128,17 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
 
     when (event.code()) {
         KeyCode.CHAR -> {
+            if (event.character() == ':') {
+                state = state.copy(
+                    commandBar = state.commandBar.copy(
+                        isVisible = true,
+                        input = "",
+                        errorMessage = null,
+                        cursorPosition = 0
+                    )
+                )
+                return EventResult.HANDLED
+            }
             if (event.character() == '/') {
                 applySidebarSelection(SidebarSection.SEARCH)
                 activateSidebarSelection(SidebarSection.SEARCH)
