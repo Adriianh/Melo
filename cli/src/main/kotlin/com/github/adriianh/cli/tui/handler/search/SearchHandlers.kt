@@ -167,12 +167,29 @@ internal fun MeloScreen.performSearch() {
     val currentTab = (state.screen as? ScreenState.Search)?.tab ?: SearchTab.SONGS
 
     if (state.isOfflineMode) {
+        val queryTokens = query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
+
+        fun fuzzyMatch(token: String, text: String): Boolean {
+            var i = 0
+            for (c in text) {
+                if (i < token.length && c == token[i]) i++
+            }
+            return i == token.length
+        }
+
         val filtered = state.collections.offlineTracks
             .filter { it.downloadStatus == DownloadStatus.COMPLETED }
             .map { it.track }
-            .filter {
-                it.title.lowercase().contains(query.lowercase()) || it.artist.lowercase()
-                    .contains(query.lowercase())
+            .filter { track ->
+                val title = track.title.lowercase()
+                val artist = track.artist.lowercase()
+                // Require all query tokens to match somewhere (exactly or fuzzy)
+                queryTokens.all { token ->
+                    token in title || token in artist || fuzzyMatch(token, title) || fuzzyMatch(
+                        token,
+                        artist
+                    )
+                }
             }
             .distinctBy { it.id }
 
@@ -708,6 +725,28 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openTrackOptions(track)
+            return EventResult.HANDLED
+        }
+
+        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && event.character() == 'A' -> {
+            val track = actualState.results.getOrNull(actualState.selectedIndex)
+            if (track != null && track.artist.isNotBlank()) {
+                searchInputState.clear()
+                for (c in track.artist) searchInputState.insert(c)
+                updateScreen<ScreenState.Search> { it.copy(tab = SearchTab.ARTISTS) }
+                performSearch()
+            }
+            return EventResult.HANDLED
+        }
+
+        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && event.character() == 'B' -> {
+            val track = actualState.results.getOrNull(actualState.selectedIndex)
+            if (track != null && track.album.isNotBlank()) {
+                searchInputState.clear()
+                for (c in track.album) searchInputState.insert(c)
+                updateScreen<ScreenState.Search> { it.copy(tab = SearchTab.ALBUMS) }
+                performSearch()
+            }
             return EventResult.HANDLED
         }
     }
