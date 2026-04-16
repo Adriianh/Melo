@@ -1,15 +1,16 @@
 package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
-import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -40,18 +41,25 @@ class SearchSuggestionsOverlay(
         val items = searchState.searchSuggestions.mapIndexed { index, suggestion ->
             val isSelected = index == searchState.selectedSuggestionIndex
             row(
-                text(if (isSelected) " > " else "   ").fg(PRIMARY_COLOR),
-                text(suggestion).fg(if (isSelected) PRIMARY_COLOR else SECONDARY_COLOR).fill()
+                text(if (isSelected) " > " else "   ")
+                    .fg(MeloTheme.TEXT_PRIMARY),
+                text(suggestion)
+                    .fg(if (isSelected) MeloTheme.TEXT_PRIMARY else MeloTheme.TEXT_SECONDARY)
+                    .fill()
             ).length(1)
         }
 
         panel(column(*items.toTypedArray()))
             .rounded()
-            .borderColor(BORDER_FOCUSED)
+            .borderColor(MeloTheme.BORDER_FOCUSED)
             .render(frame, overlayArea, context)
     }
 
-    override fun preferredSize(availableWidth: Int, availableHeight: Int, context: RenderContext): Size =
+    override fun preferredSize(
+        availableWidth: Int,
+        availableHeight: Int,
+        context: RenderContext
+    ): Size =
         Size.UNKNOWN
 
     override fun constraint(): Constraint = Constraint.fill()
