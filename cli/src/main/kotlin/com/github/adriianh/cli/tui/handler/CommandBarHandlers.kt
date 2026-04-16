@@ -210,7 +210,8 @@ object CommandBarHandlers {
                     }
 
                     else -> {
-                        errorMessage = "Usage: goto <home|search|library|nowplaying>"
+                        errorMessage =
+                            "Usage: goto <home|search|library|nowplaying|statistics|downloads>"
                         isVisible = true
                     }
                 }
