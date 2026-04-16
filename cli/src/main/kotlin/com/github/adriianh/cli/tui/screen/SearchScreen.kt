@@ -159,8 +159,8 @@ private fun renderResultsArea(
             headerItems = row(
                 text("").length(2),
                 text("#").dim().length(3),
-                text("Title").dim().fill(),
-                text("Artist").dim().percent(25),
+                text("Title (Shift+B for Album)").dim().fill(),
+                text("Artist (Shift+A)").dim().percent(25),
                 text(ICON_HEART).dim().length(2),
                 text("Time").dim().length(6),
             ).margin(Margin.horizontal(1))
