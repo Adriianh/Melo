@@ -33,12 +33,14 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'r' -> {
-            val pl = playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
+            val pl =
+                playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
             state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.RENAME, playlistInput = pl.name))
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
-            val pl = playlists.getOrNull(playlistsList.selected()) ?: return EventResult.UNHANDLED
+            val pl =
+                playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
             scope.launch { deletePlaylist(pl.id) }
             return EventResult.HANDLED
         }
@@ -47,11 +49,11 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
-    val screen = state.screen as? ScreenState.Library ?: return EventResult.UNHANDLED
+    val screen = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
     when {
         event.code() == KeyCode.ESCAPE -> {
             updateScreen<ScreenState.Library> { it.copy(isInPlaylistDetail = false, selectedPlaylist = null, playlistTracks = emptyList()) }
@@ -77,13 +79,14 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
-            val pl = screen.selectedPlaylist ?: return EventResult.UNHANDLED
-            val track = screen.playlistTracks.getOrNull(playlistTracksList.selected()) ?: return EventResult.UNHANDLED
+            val pl = screen.selectedPlaylist ?: return handleGlobalShortcuts(event)
+            val track = screen.playlistTracks.getOrNull(playlistTracksList.selected())
+                ?: return handleGlobalShortcuts(event)
             scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
@@ -120,7 +123,7 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
@@ -140,14 +143,15 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
-            val pl = playlists.getOrNull(interaction.playlistPickerCursor) ?: return EventResult.UNHANDLED
-            val track = interaction.playlistPickerTrack ?: return EventResult.UNHANDLED
+            val pl = playlists.getOrNull(interaction.playlistPickerCursor)
+                ?: return handleGlobalShortcuts(event)
+            val track = interaction.playlistPickerTrack ?: return handleGlobalShortcuts(event)
             scope.launch { addTrackToPlaylist(pl.id, track) }
             state = state.copy(playlistInteraction = interaction.copy(playlistInputMode = PlaylistInputMode.NONE, playlistPickerTrack = null))
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }
 
 // ─── Playlist Actions ─────────────────────────────────────────────────────────

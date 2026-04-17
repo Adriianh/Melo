@@ -241,6 +241,21 @@ data class TrackOptionsMenuState(
 )
 
 /**
+ * Global UI/System flags
+ */
+data class CommandBarState(
+    val isVisible: Boolean = false,
+    val input: String = "",
+    val errorMessage: String? = null,
+    val history: List<String> = emptyList(),
+    val historyIndex: Int = -1,
+    val cursorPosition: Int = 0,
+    val previousFocusId: String? = null,
+    val suggestions: List<String> = emptyList(),
+    val selectedSuggestionIndex: Int? = null
+)
+
+/**
  * Global persistent collections.
  */
 data class CollectionsState(
@@ -271,6 +286,9 @@ data class MeloState(
 
     // Global Track options (context menu)
     val trackOptions: TrackOptionsMenuState = TrackOptionsMenuState(),
+
+    // Global command bar
+    val commandBar: CommandBarState = CommandBarState(),
 
     // Global UI/System flags
     val isSettingsVisible: Boolean = false,

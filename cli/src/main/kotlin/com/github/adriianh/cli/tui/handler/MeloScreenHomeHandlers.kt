@@ -16,12 +16,12 @@ import dev.tamboui.tui.event.KeyEvent
  * Handles key events for the Home screen, including Recent and Favorites sections.
  */
 internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
-    val s = state.screen as? ScreenState.Home ?: return EventResult.UNHANDLED
+    val s = state.screen as? ScreenState.Home ?: return handleGlobalShortcuts(event)
     val focusedId = appRunner()?.focusManager()?.focusedId()
     val isFocused = focusedId == "home-panel"
             || focusedId == "home-recent-panel"
             || focusedId == "home-favorites-panel"
-    if (!isFocused) return EventResult.UNHANDLED
+    if (!isFocused) return handleGlobalShortcuts(event)
 
     if (focusedId == "home-recent-panel" && s.homeSection != HomeSection.RECENT) {
         updateScreen<ScreenState.Home> { it.copy(homeSection = HomeSection.RECENT) }
@@ -60,21 +60,21 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
 
                 event.code() == KeyCode.ENTER -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     toggleFavorite(track)
                     return EventResult.HANDLED
                 }
@@ -116,21 +116,24 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
 
                 event.code() == KeyCode.ENTER -> {
                     val track =
-                        state.collections.favorites.getOrNull(s.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                        state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                            ?: return handleGlobalShortcuts(event)
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
                     val track =
-                        state.collections.favorites.getOrNull(s.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                        state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                            ?: return handleGlobalShortcuts(event)
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
                     val track =
-                        state.collections.favorites.getOrNull(s.homeFavoritesCursor) ?: return EventResult.UNHANDLED
+                        state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                            ?: return handleGlobalShortcuts(event)
                     toggleFavorite(track)
                     return EventResult.HANDLED
                 }
@@ -144,5 +147,5 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
         }
     }
 
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }

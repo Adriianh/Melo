@@ -519,7 +519,7 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
         }
     }
 
-    val s = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
+    val s = state.screen as? ScreenState.Search ?: return handleGlobalShortcuts(event)
     if (s.results.isNotEmpty() &&
         (event.matches(Actions.MOVE_DOWN) || event.matches(Actions.MOVE_UP))
     ) {
@@ -538,7 +538,7 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         PlaylistInputMode.NONE -> {}
     }
 
-    val actualState = state.screen as? ScreenState.Search ?: return EventResult.UNHANDLED
+    val actualState = state.screen as? ScreenState.Search ?: return handleGlobalShortcuts(event)
 
     if (event.modifiers().alt()) {
         if (event.code() == KeyCode.RIGHT) {
@@ -570,11 +570,11 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         SearchTab.PLAYLISTS -> actualState.playlistResults.size
     }
 
-    if (listSize == 0) return EventResult.UNHANDLED
+    if (listSize == 0) return handleGlobalShortcuts(event)
 
     when {
         event.matches(Actions.MOVE_DOWN) -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             val newIndex = minOf(listSize - 1, actualState.selectedIndex + 1)
             resultList.selected(newIndex)
             state = state.copy(
@@ -616,7 +616,7 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
 
         event.matches(Actions.MOVE_UP) -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             val newIndex = maxOf(0, actualState.selectedIndex - 1)
             resultList.selected(newIndex)
             state = state.copy(
@@ -656,11 +656,11 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             when (actualState.tab) {
                 SearchTab.SONGS -> {
                     val selected = actualState.results.getOrNull(resultList.selected())
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     downloadTrack(selected, DownloadType.PREFETCH)
                     playTrack(selected)
                     return EventResult.HANDLED
@@ -668,21 +668,21 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
 
                 SearchTab.ALBUMS -> {
                     val selected = actualState.albumResults.getOrNull(resultList.selected())
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
 
                 SearchTab.ARTISTS -> {
                     val selected = actualState.artistResults.getOrNull(resultList.selected())
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
 
                 SearchTab.PLAYLISTS -> {
                     val selected = actualState.playlistResults.getOrNull(resultList.selected())
-                        ?: return EventResult.UNHANDLED
+                        ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }

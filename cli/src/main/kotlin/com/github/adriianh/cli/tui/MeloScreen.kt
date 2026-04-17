@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
@@ -365,6 +366,7 @@ class MeloScreen(
         ::handleSettingsKey
     )
     internal val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
+    internal val commandBarSuggestionsOverlay = CommandBarSuggestionsOverlay { state }
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 

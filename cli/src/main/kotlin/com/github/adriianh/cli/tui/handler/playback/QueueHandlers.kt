@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.handler.playback
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.core.domain.model.MeloAction
@@ -105,7 +106,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
         }
 
         event.matches(Actions.MOVE_DOWN) -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             val newCursor = minOf(state.player.queue.lastIndex, state.player.queueCursor + 1)
             state = state.copy(player = state.player.copy(queueCursor = newCursor))
 
@@ -116,7 +117,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
         }
 
         event.matches(Actions.MOVE_UP) -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             state = state.copy(
                 player = state.player.copy(
                     queueCursor = maxOf(
@@ -129,7 +130,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             if (state.player.queue.getOrNull(state.player.queueCursor) != null) playFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
         }
@@ -138,7 +139,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
             MeloAction.DELETE,
             settingsViewState.currentSettings
         ) || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
-            if (!isFocused) return EventResult.UNHANDLED
+            if (!isFocused) return handleGlobalShortcuts(event)
             removeFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
         }
@@ -148,5 +149,5 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
     }
-    return EventResult.UNHANDLED
+    return handleGlobalShortcuts(event)
 }

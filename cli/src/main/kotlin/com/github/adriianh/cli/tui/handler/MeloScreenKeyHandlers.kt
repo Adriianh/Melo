@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
+import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
@@ -94,6 +95,8 @@ internal fun MeloScreen.applySidebarSelection(item: SidebarSection) {
 }
 
 internal fun MeloScreen.isTyping(): Boolean {
+    if (state.commandBar.isVisible) return true
+
     // Search bar is focused
     if (appRunner()?.focusManager()?.focusedId() == "search-bar") return true
 
@@ -102,29 +105,43 @@ internal fun MeloScreen.isTyping(): Boolean {
     if (libraryState?.isTyping == true) return true
 
     val offlineState = state.screen as? ScreenState.Offline
-    if (offlineState?.isTyping == true) return true
 
-    return false
+    return offlineState?.isTyping == true
 }
 
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
+    if (state.commandBar.isVisible) return handleCommandBarKey(event)
 
     val isTyping = isTyping()
     val isCharacter = event.code() == KeyCode.CHAR
 
-    // Skip playback keys if typing a character in an input
     if (!(isTyping && isCharacter)) {
         val handled = handlePlayerBarKey(event)
         if (handled == EventResult.HANDLED) return EventResult.HANDLED
     }
 
-    // If we're typing, we don't want global navigation shortcuts to trigger
     if (isTyping && isCharacter) return EventResult.UNHANDLED
 
     when (event.code()) {
         KeyCode.CHAR -> {
+            if (event.character() == ':') {
+                val currentFocus = appRunner()?.focusManager()?.focusedId()
+                state = state.copy(
+                    commandBar = state.commandBar.copy(
+                        isVisible = true,
+                        input = "",
+                        errorMessage = null,
+                        cursorPosition = 0,
+                        previousFocusId = currentFocus,
+                        suggestions = CommandBarHandlers.computeSuggestions(""),
+                        selectedSuggestionIndex = null
+                    )
+                )
+                appRunner()?.focusManager()?.setFocus("command-bar")
+                return EventResult.HANDLED
+            }
             if (event.character() == '/') {
                 applySidebarSelection(SidebarSection.SEARCH)
                 activateSidebarSelection(SidebarSection.SEARCH)
