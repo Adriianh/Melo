@@ -117,13 +117,11 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     val isTyping = isTyping()
     val isCharacter = event.code() == KeyCode.CHAR
 
-    // Skip playback keys if typing a character in an input
     if (!(isTyping && isCharacter)) {
         val handled = handlePlayerBarKey(event)
         if (handled == EventResult.HANDLED) return EventResult.HANDLED
     }
 
-    // If we're typing, we don't want global navigation shortcuts to trigger
     if (isTyping && isCharacter) return EventResult.UNHANDLED
 
     when (event.code()) {
@@ -136,7 +134,9 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
                         input = "",
                         errorMessage = null,
                         cursorPosition = 0,
-                        previousFocusId = currentFocus
+                        previousFocusId = currentFocus,
+                        suggestions = CommandBarHandlers.computeSuggestions(""),
+                        selectedSuggestionIndex = null
                     )
                 )
                 appRunner()?.focusManager()?.setFocus("command-bar")

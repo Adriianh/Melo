@@ -100,12 +100,17 @@ internal fun MeloScreen.renderRoot(): Element {
             stack(withTrackOptions, searchSuggestionsOverlay)
         else withTrackOptions
 
+    val withCommandBarSuggestions =
+        if (state.commandBar.isVisible && state.commandBar.suggestions.isNotEmpty())
+            stack(withSearchSuggestions, commandBarSuggestionsOverlay)
+        else withSearchSuggestions
+
     return when (state.playlistInteraction.playlistInputMode) {
         PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> stack(withSearchSuggestions, playlistInputOverlay)
+        PlaylistInputMode.RENAME -> stack(withCommandBarSuggestions, playlistInputOverlay)
 
-        PlaylistInputMode.PICKER -> stack(withSearchSuggestions, playlistPickerOverlay)
-        PlaylistInputMode.NONE -> withSearchSuggestions
+        PlaylistInputMode.PICKER -> stack(withCommandBarSuggestions, playlistPickerOverlay)
+        PlaylistInputMode.NONE -> withCommandBarSuggestions
     }
 }
 

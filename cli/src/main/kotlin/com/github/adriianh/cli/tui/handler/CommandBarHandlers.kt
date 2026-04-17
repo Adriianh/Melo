@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
 import com.github.adriianh.cli.tui.handler.playback.clearQueue
+import com.github.adriianh.cli.tui.handler.playback.toggleQueue
 import com.github.adriianh.cli.tui.handler.search.performSearch
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
@@ -15,6 +16,33 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlin.system.exitProcess
 
 object CommandBarHandlers {
+    private val ALL_COMMANDS = listOf(
+        "q", "quit", "settings", "vol <0-100>", "skip", "next", "prev", "queue clear", "queue open",
+        "shuffle on", "shuffle off", "repeat off", "repeat one", "repeat all",
+        "pause", "play", "resume", "goto home", "goto search", "goto library",
+        "goto nowplaying", "goto statistics", "goto downloads", "search <name>",
+        "track <name>", "song <name>", "album <name>", "artist <name>", "playlist <name>"
+    )
+
+    fun computeSuggestions(input: String): List<String> {
+        val normalized = input.trim()
+        if (normalized.isBlank()) return ALL_COMMANDS
+        val parts = normalized.split(" ", limit = 2)
+        if (parts.size > 1) {
+            val cmd = parts[0]
+            val rest = parts[1]
+            val subCommands = ALL_COMMANDS.filter { it.startsWith("$cmd ", ignoreCase = true) }
+            if (subCommands.isNotEmpty()) {
+                val matches = subCommands.filter {
+                    it.substringAfter(" ").startsWith(rest, ignoreCase = true)
+                }
+                return matches.ifEmpty { subCommands }
+            }
+            return emptyList()
+        }
+        return ALL_COMMANDS.filter { it.startsWith(normalized, ignoreCase = true) }.take(5)
+    }
+
     fun MeloScreen.handleCommandBarKey(event: KeyEvent): EventResult {
         if (!state.commandBar.isVisible) return EventResult.UNHANDLED
         val barState = state.commandBar
@@ -26,6 +54,22 @@ object CommandBarHandlers {
 
             KeyCode.ENTER -> {
                 val input = barState.input.trim()
+                if (barState.selectedSuggestionIndex != null && barState.suggestions.isNotEmpty() && input.isBlank()) {
+                    val sug = barState.suggestions[barState.selectedSuggestionIndex]
+                    val parts = sug.split(" ")
+                    val word =
+                        if (parts.size > 1 && parts[1].startsWith("<")) parts[0] + " " else sug
+                    state = state.copy(
+                        commandBar = barState.copy(
+                            input = word,
+                            cursorPosition = word.length,
+                            suggestions = computeSuggestions(word),
+                            selectedSuggestionIndex = null
+                        )
+                    )
+                    return EventResult.HANDLED
+                }
+
                 if (input.isNotEmpty()) {
                     executeCommand(input)
                 } else {
@@ -34,13 +78,64 @@ object CommandBarHandlers {
                 return EventResult.HANDLED
             }
 
-            KeyCode.BACKSPACE -> {
-                if (barState.input.isNotEmpty()) {
+            KeyCode.UP -> {
+                if (barState.suggestions.isNotEmpty()) {
+                    val prevIndex = if (barState.selectedSuggestionIndex == null) -1 else maxOf(
+                        -1,
+                        barState.selectedSuggestionIndex - 1
+                    )
                     state = state.copy(
                         commandBar = barState.copy(
-                            input = barState.input.substring(0, barState.input.length - 1),
+                            selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            KeyCode.DOWN -> {
+                if (barState.suggestions.isNotEmpty()) {
+                    val nextIndex = if (barState.selectedSuggestionIndex == null) 0 else minOf(
+                        barState.suggestions.size - 1,
+                        barState.selectedSuggestionIndex + 1
+                    )
+                    state = state.copy(
+                        commandBar = barState.copy(
+                            selectedSuggestionIndex = nextIndex
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            KeyCode.TAB -> {
+                if (barState.selectedSuggestionIndex != null && barState.suggestions.isNotEmpty()) {
+                    val sug = barState.suggestions[barState.selectedSuggestionIndex]
+                    val parts = sug.split(" ")
+                    val word =
+                        if (parts.size > 1 && parts[1].startsWith("<")) parts[0] + " " else sug
+                    state = state.copy(
+                        commandBar = barState.copy(
+                            input = word,
+                            cursorPosition = word.length,
+                            suggestions = computeSuggestions(word),
+                            selectedSuggestionIndex = null
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            KeyCode.BACKSPACE -> {
+                if (barState.input.isNotEmpty()) {
+                    val newInput = barState.input.substring(0, barState.input.length - 1)
+                    state = state.copy(
+                        commandBar = barState.copy(
+                            input = newInput,
                             cursorPosition = maxOf(0, barState.cursorPosition - 1),
-                            errorMessage = null
+                            errorMessage = null,
+                            suggestions = computeSuggestions(newInput),
+                            selectedSuggestionIndex = null
                         )
                     )
                 }
@@ -49,11 +144,14 @@ object CommandBarHandlers {
 
             KeyCode.CHAR -> {
                 val c = event.character()
+                val newInput = barState.input + c
                 state = state.copy(
                     commandBar = barState.copy(
-                        input = barState.input + c,
+                        input = newInput,
                         cursorPosition = barState.cursorPosition + 1,
-                        errorMessage = null
+                        errorMessage = null,
+                        suggestions = computeSuggestions(newInput),
+                        selectedSuggestionIndex = null
                     )
                 )
                 return EventResult.HANDLED
@@ -120,11 +218,13 @@ object CommandBarHandlers {
             }
 
             "queue" -> {
-                if (arg == "clear") {
-                    clearQueue()
-                } else {
-                    errorMessage = "Usage: queue clear"
-                    isVisible = true
+                when (arg) {
+                    "clear" -> clearQueue()
+                    "open" -> toggleQueue()
+                    else -> {
+                        errorMessage = "Usage: queue <clear>"
+                        isVisible = true
+                    }
                 }
             }
 

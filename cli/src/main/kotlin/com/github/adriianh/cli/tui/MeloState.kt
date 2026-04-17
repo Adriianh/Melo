@@ -250,7 +250,9 @@ data class CommandBarState(
     val history: List<String> = emptyList(),
     val historyIndex: Int = -1,
     val cursorPosition: Int = 0,
-    val previousFocusId: String? = null
+    val previousFocusId: String? = null,
+    val suggestions: List<String> = emptyList(),
+    val selectedSuggestionIndex: Int? = null
 )
 
 /**
