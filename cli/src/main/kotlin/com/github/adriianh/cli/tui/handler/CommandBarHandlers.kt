@@ -250,16 +250,15 @@ object CommandBarHandlers {
 
         val parts = trimmed.split(Regex("\\s+"), limit = 2)
         val cmdInput = parts[0]
-        val argInput = parts.getOrNull(1)
+        val hasSpace = trimmed.length > cmdInput.length
 
-        val matchingCommands = COMMANDS.filter { cmd ->
-            cmd.names.any { it.contains(cmdInput, ignoreCase = true) }
-        }
-
-        if (argInput != null) {
+        if (hasSpace) {
+            val matchingCommands = COMMANDS.filter { cmd ->
+                cmd.names.any { it.equals(cmdInput, ignoreCase = true) }
+            }
             return matchingCommands.flatMap { cmd ->
                 if (cmd.requiresArgument) {
-                    cmd.names.filter { it.contains(cmdInput, ignoreCase = true) }
+                    cmd.names.filter { it.equals(cmdInput, ignoreCase = true) }
                         .map { "$it ${cmd.argumentDescription ?: ""}" }
                 } else {
                     emptyList()
@@ -267,13 +266,16 @@ object CommandBarHandlers {
             }
         }
 
-        return matchingCommands.flatMap { cmd ->
+        return COMMANDS.flatMap { cmd ->
             cmd.names.filter { it.contains(cmdInput, ignoreCase = true) }
                 .map { if (cmd.requiresArgument) "$it ${cmd.argumentDescription ?: ""}" else it }
-        }.sortedByDescending {
-            val baseName = it.split(" ").first()
-            baseName.startsWith(cmdInput, ignoreCase = true)
-        }.take(8)
+        }.sortedWith(
+            compareByDescending<String> {
+                it.split(" ").first().equals(cmdInput, ignoreCase = true)
+            }
+                .thenByDescending { it.split(" ").first().startsWith(cmdInput, ignoreCase = true) }
+                .thenBy { it }
+        ).take(8)
     }
 
     fun MeloScreen.handleCommandBarKey(event: KeyEvent): EventResult {
@@ -413,11 +415,11 @@ object CommandBarHandlers {
 
         val newHistory = (state.commandBar.history + input).takeLast(50)
 
-        val result = if (command != null) {
-            command.run { execute(arg) }
-        } else {
-            CommandResult(errorMessage = "Unrecognized command: $commandName", keepBarOpen = true)
-        }
+        val result = command?.run { execute(arg) }
+            ?: CommandResult(
+                errorMessage = "Unrecognized command: $commandName",
+                keepBarOpen = true
+            )
 
         state = state.copy(
             commandBar = state.commandBar.copy(
