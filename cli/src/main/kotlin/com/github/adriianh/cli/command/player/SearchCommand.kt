@@ -6,6 +6,7 @@ import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
@@ -31,6 +32,7 @@ import com.varabyte.kotter.foundation.session
 import com.varabyte.kotter.foundation.text.cyan
 import com.varabyte.kotter.foundation.text.text
 import com.varabyte.kotter.foundation.text.textLine
+import com.varabyte.kotter.foundation.text.white
 import com.varabyte.kotter.foundation.text.yellow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
@@ -93,6 +95,7 @@ class SearchCommand : CliktCommand(
             val searchAlbums: SearchAlbumsUseCase by inject()
             val searchArtists: SearchArtistsUseCase by inject()
             val searchPlaylists: SearchPlaylistsUseCase by inject()
+            val getEntityDetails: GetEntityDetailsUseCase by inject()
             val getSimilarTracks: GetSimilarTracksUseCase by inject()
             val getLyrics: GetLyricsUseCase by inject()
 
@@ -116,7 +119,7 @@ class SearchCommand : CliktCommand(
                             echo(Messages.get("search.no_results", "query" to query))
                             return@runBlocking
                         }
-                        outputPlainAlbums(results)
+                        outputPlainAlbums(results, getEntityDetails)
                     }
 
                     "artist" -> {
@@ -125,7 +128,7 @@ class SearchCommand : CliktCommand(
                             echo(Messages.get("search.no_results", "query" to query))
                             return@runBlocking
                         }
-                        outputPlainArtists(results)
+                        outputPlainArtists(results, getEntityDetails)
                     }
 
                     "playlist" -> {
@@ -134,7 +137,7 @@ class SearchCommand : CliktCommand(
                             echo(Messages.get("search.no_results", "query" to query))
                             return@runBlocking
                         }
-                        outputPlainPlaylists(results)
+                        outputPlainPlaylists(results, getEntityDetails)
                     }
                 }
             }
@@ -153,6 +156,7 @@ class SearchCommand : CliktCommand(
         session {
             var selectedIndex by liveVarOf(0)
             var accepted by liveVarOf(false)
+            val maxVisible = 15
 
             section {
                 cyan {
@@ -166,23 +170,37 @@ class SearchCommand : CliktCommand(
                 }
                 textLine()
 
-                tracks.forEachIndexed { index, track ->
-                    val isSelected = index == selectedIndex
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, tracks.size - maxVisible))
+                val visibleTracks = tracks.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visibleTracks.forEachIndexed { index, track ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
                     val duration = formatDuration(track.durationMs)
                     val genres =
                         if (track.genres.isNotEmpty()) " [${track.genres.joinToString(", ")}]" else ""
 
                     if (isSelected) {
                         text("> ")
-                        yellow { text("${index + 1}. ${track.title} — ${track.artist}") }
+                        yellow { text("${actualIndex + 1}. ${track.title} — ${track.artist}") }
                         textLine(" (${track.album}) $duration$genres")
                     } else {
                         text("  ")
-                        textLine("${index + 1}. ${track.title} — ${track.artist} (${track.album}) $duration$genres")
+                        textLine("${actualIndex + 1}. ${track.title} — ${track.artist} (${track.album}) $duration$genres")
                     }
                 }
+
+                if (windowStart + maxVisible < tracks.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
                 textLine()
-                textLine("Use UP/DOWN to pick, ENTER to select, ESC to exit")
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
             }.runUntilSignal {
                 onKeyPressed {
                     when (key) {
@@ -205,6 +223,7 @@ class SearchCommand : CliktCommand(
                 section {
                     textLine()
                     cyan { textLine("You selected: ${selectedTrack.title} — ${selectedTrack.artist}") }
+                    textLine("Hint: Next we will implement Play/Download here!")
                 }.run()
             }
         }
@@ -253,32 +272,50 @@ class SearchCommand : CliktCommand(
         }
     }
 
-    private fun outputPlainAlbums(albums: List<SearchResult.Album>) {
-        var selectedAlbum: SearchResult.Album?
+    private suspend fun outputPlainAlbums(
+        albums: List<SearchResult.Album>,
+        getEntityDetails: GetEntityDetailsUseCase
+    ) {
+        var selectedAlbum: SearchResult.Album? = null
 
         session {
             var selectedIndex by liveVarOf(0)
             var accepted by liveVarOf(false)
+            val maxVisible = 15
 
             section {
                 cyan { textLine("Search Results for '$query' ($type): ${albums.size}") }
                 textLine()
 
-                albums.forEachIndexed { index, album ->
-                    val isSelected = index == selectedIndex
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, albums.size - maxVisible))
+                val visibleAlbums = albums.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visibleAlbums.forEachIndexed { index, album ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
                     val yearStr = if (album.year != null) " [${album.year}]" else ""
 
                     if (isSelected) {
                         text("> ")
-                        yellow { text("${index + 1}. ${album.title} — ${album.author}") }
+                        yellow { text("${actualIndex + 1}. ${album.title} — ${album.author}") }
                         textLine(yearStr)
                     } else {
                         text("  ")
-                        textLine("${index + 1}. ${album.title} — ${album.author}$yearStr")
+                        textLine("${actualIndex + 1}. ${album.title} — ${album.author}$yearStr")
                     }
                 }
+
+                if (windowStart + maxVisible < albums.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
                 textLine()
-                textLine("Use UP/DOWN to pick, ENTER to select, ESC to exit")
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
             }.runUntilSignal {
                 onKeyPressed {
                     when (key) {
@@ -300,38 +337,62 @@ class SearchCommand : CliktCommand(
                 selectedAlbum = albums[selectedIndex]
                 section {
                     textLine()
-                    cyan { textLine("You selected Album: ${selectedAlbum.title} — ${selectedAlbum.author}") }
+                    cyan { textLine("Loading tracks for ${selectedAlbum.title}...") }
                 }.run()
             }
         }
+
+        if (selectedAlbum != null) {
+            val detailedAlbum = getEntityDetails(selectedAlbum) as? SearchResult.Album
+            val songs = detailedAlbum?.songs ?: emptyList()
+            showTrackListPicker(songs, "Tracks in ${detailedAlbum?.title}")
+        }
     }
 
-    private fun outputPlainArtists(artists: List<SearchResult.Artist>) {
-        var selectedArtist: SearchResult.Artist?
+    private suspend fun outputPlainArtists(
+        artists: List<SearchResult.Artist>,
+        getEntityDetails: GetEntityDetailsUseCase
+    ) {
+        var selectedArtist: SearchResult.Artist? = null
 
         session {
             var selectedIndex by liveVarOf(0)
             var accepted by liveVarOf(false)
+            val maxVisible = 15
 
             section {
                 cyan { textLine("Search Results for '$query' ($type): ${artists.size}") }
                 textLine()
 
-                artists.forEachIndexed { index, artist ->
-                    val isSelected = index == selectedIndex
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, artists.size - maxVisible))
+                val visibleArtists = artists.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visibleArtists.forEachIndexed { index, artist ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
                     val subscribers = artist.subscriberCountText?.let { " ($it)" } ?: ""
 
                     if (isSelected) {
                         text("> ")
-                        yellow { text("${index + 1}. ${artist.name}") }
+                        yellow { text("${actualIndex + 1}. ${artist.name}") }
                         textLine(subscribers)
                     } else {
                         text("  ")
-                        textLine("${index + 1}. ${artist.name}$subscribers")
+                        textLine("${actualIndex + 1}. ${artist.name}$subscribers")
                     }
                 }
+
+                if (windowStart + maxVisible < artists.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
                 textLine()
-                textLine("Use UP/DOWN to pick, ENTER to select, ESC to exit")
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
             }.runUntilSignal {
                 onKeyPressed {
                     when (key) {
@@ -353,38 +414,188 @@ class SearchCommand : CliktCommand(
                 selectedArtist = artists[selectedIndex]
                 section {
                     textLine()
-                    cyan { textLine("You selected Artist: ${selectedArtist.name}") }
+                    cyan { textLine("Loading details for ${selectedArtist.name}...") }
                 }.run()
             }
         }
+
+        if (selectedArtist != null) {
+            val detailedArtist = getEntityDetails(selectedArtist) as? SearchResult.Artist
+            val allItems = detailedArtist?.sections?.flatMap { it.items } ?: emptyList()
+
+            if (allItems.isEmpty()) {
+                echo("No extra information found for ${detailedArtist?.name}")
+                return
+            }
+
+            showEntityListPicker(allItems, "Details for ${detailedArtist?.name}", getEntityDetails)
+        }
     }
 
-    private fun outputPlainPlaylists(playlists: List<SearchResult.Playlist>) {
-        var selectedPlaylist: SearchResult.Playlist?
+    private suspend fun showEntityListPicker(
+        items: List<SearchResult>,
+        title: String,
+        getEntityDetails: GetEntityDetailsUseCase
+    ) {
+        var selectedItem: SearchResult? = null
 
         session {
             var selectedIndex by liveVarOf(0)
             var accepted by liveVarOf(false)
+            val maxVisible = 15
+
+            section {
+                cyan { textLine("== $title ==") }
+                textLine()
+
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, items.size - maxVisible))
+                val visibleItems = items.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visibleItems.forEachIndexed { index, item ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
+
+                    val typeStr = when (item) {
+                        is SearchResult.Song -> "[Song]"
+                        is SearchResult.Album -> "[Album]"
+                        is SearchResult.Playlist -> "[Playlist]"
+                        is SearchResult.Artist -> "[Artist]"
+                    }.padEnd(10)
+
+                    val nameStr = when (item) {
+                        is SearchResult.Song -> "${item.track.title} — ${item.track.artist}"
+                        is SearchResult.Album -> "${item.title} — ${item.author}"
+                        is SearchResult.Playlist -> "${item.title} — ${item.author}"
+                        is SearchResult.Artist -> item.name
+                    }
+
+                    if (isSelected) {
+                        text("> ")
+                        yellow { text("$typeStr $nameStr") }
+                        textLine()
+                    } else {
+                        text("  ")
+                        textLine("$typeStr $nameStr")
+                    }
+                }
+
+                if (windowStart + maxVisible < items.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
+                textLine()
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
+            }.runUntilSignal {
+                onKeyPressed {
+                    when (key) {
+                        Keys.UP -> selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
+                        Keys.DOWN -> selectedIndex =
+                            (selectedIndex + 1).coerceAtMost(items.size - 1)
+
+                        Keys.ENTER -> {
+                            accepted = true
+                            signal()
+                        }
+
+                        Keys.ESC -> signal()
+                    }
+                }
+            }
+
+            if (accepted) {
+                selectedItem = items[selectedIndex]
+                section {
+                    textLine()
+                    cyan { textLine("Loading selection...") }
+                }.run()
+            }
+        }
+
+        when (val item = selectedItem) {
+            is SearchResult.Song -> {
+                echo(magenta("You selected Song: ${item.track.title}"))
+                echo("Hint: Next we will implement Play/Download here!")
+            }
+
+            is SearchResult.Album -> {
+                val detailedAlbum = getEntityDetails(item) as? SearchResult.Album
+                val songs = detailedAlbum?.songs ?: emptyList()
+                showTrackListPicker(songs, "Tracks in ${detailedAlbum?.title}")
+            }
+
+            is SearchResult.Playlist -> {
+                val detailedPlaylist = getEntityDetails(item) as? SearchResult.Playlist
+                val songs = detailedPlaylist?.songs ?: emptyList()
+                showTrackListPicker(songs, "Tracks in ${detailedPlaylist?.title}")
+            }
+
+            is SearchResult.Artist -> {
+                val detailedArtist = getEntityDetails(item) as? SearchResult.Artist
+                val allItems = detailedArtist?.sections?.flatMap { it.items } ?: emptyList()
+                if (allItems.isNotEmpty()) {
+                    showEntityListPicker(
+                        allItems,
+                        "Details for ${detailedArtist?.name}",
+                        getEntityDetails
+                    )
+                } else {
+                    echo("No details found for artist ${detailedArtist?.name}")
+                }
+            }
+
+            else -> {}
+        }
+    }
+
+    private suspend fun outputPlainPlaylists(
+        playlists: List<SearchResult.Playlist>,
+        getEntityDetails: GetEntityDetailsUseCase
+    ) {
+        var selectedPlaylist: SearchResult.Playlist? = null
+
+        session {
+            var selectedIndex by liveVarOf(0)
+            var accepted by liveVarOf(false)
+            val maxVisible = 15
 
             section {
                 cyan { textLine("Search Results for '$query' ($type): ${playlists.size}") }
                 textLine()
 
-                playlists.forEachIndexed { index, playlist ->
-                    val isSelected = index == selectedIndex
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, playlists.size - maxVisible))
+                val visiblePlaylists = playlists.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visiblePlaylists.forEachIndexed { index, playlist ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
                     val tCount = playlist.trackCount?.let { " [$it tracks]" } ?: ""
 
                     if (isSelected) {
                         text("> ")
-                        yellow { text("${index + 1}. ${playlist.title} — ${playlist.author}") }
+                        yellow { text("${actualIndex + 1}. ${playlist.title} — ${playlist.author}") }
                         textLine(tCount)
                     } else {
                         text("  ")
-                        textLine("${index + 1}. ${playlist.title} — ${playlist.author}$tCount")
+                        textLine("${actualIndex + 1}. ${playlist.title} — ${playlist.author}$tCount")
                     }
                 }
+
+                if (windowStart + maxVisible < playlists.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
                 textLine()
-                textLine("Use UP/DOWN to pick, ENTER to select, ESC to exit")
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
             }.runUntilSignal {
                 onKeyPressed {
                     when (key) {
@@ -406,7 +617,87 @@ class SearchCommand : CliktCommand(
                 selectedPlaylist = playlists[selectedIndex]
                 section {
                     textLine()
-                    cyan { textLine("You selected Playlist: ${selectedPlaylist.title} — ${selectedPlaylist.author}") }
+                    cyan { textLine("Loading tracks for ${selectedPlaylist.title}...") }
+                }.run()
+            }
+        }
+
+        if (selectedPlaylist != null) {
+            val detailedPlaylist = getEntityDetails(selectedPlaylist) as? SearchResult.Playlist
+            val songs = detailedPlaylist?.songs ?: emptyList()
+            showTrackListPicker(songs, "Tracks in ${detailedPlaylist?.title}")
+        }
+    }
+
+    private fun showTrackListPicker(tracks: List<Track>, title: String) {
+        if (tracks.isEmpty()) {
+            echo("No tracks found.")
+            return
+        }
+
+        var selectedTrack: Track?
+
+        session {
+            var selectedIndex by liveVarOf(0)
+            var accepted by liveVarOf(false)
+            val maxVisible = 15
+
+            section {
+                cyan { textLine("== $title ==") }
+                textLine()
+
+                val windowStart =
+                    maxOf(0, minOf(selectedIndex - maxVisible / 2, tracks.size - maxVisible))
+                val visibleTracks = tracks.drop(windowStart).take(maxVisible)
+
+                if (windowStart > 0) {
+                    white { textLine("  ↑ ... ") }
+                }
+
+                visibleTracks.forEachIndexed { index, track ->
+                    val actualIndex = windowStart + index
+                    val isSelected = actualIndex == selectedIndex
+                    val duration = formatDuration(track.durationMs)
+
+                    if (isSelected) {
+                        text("> ")
+                        yellow { text("${actualIndex + 1}. ${track.title}") }
+                        textLine(" $duration")
+                    } else {
+                        text("  ")
+                        textLine("${actualIndex + 1}. ${track.title} $duration")
+                    }
+                }
+
+                if (windowStart + maxVisible < tracks.size) {
+                    white { textLine("  ↓ ... ") }
+                }
+
+                textLine()
+                textLine("Use UP/DOWN to scroll & pick, ENTER to select, ESC to exit")
+            }.runUntilSignal {
+                onKeyPressed {
+                    when (key) {
+                        Keys.UP -> selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
+                        Keys.DOWN -> selectedIndex =
+                            (selectedIndex + 1).coerceAtMost(tracks.size - 1)
+
+                        Keys.ENTER -> {
+                            accepted = true
+                            signal()
+                        }
+
+                        Keys.ESC -> signal()
+                    }
+                }
+            }
+
+            if (accepted) {
+                selectedTrack = tracks[selectedIndex]
+                section {
+                    textLine()
+                    cyan { textLine("You selected: ${selectedTrack.title} — ${selectedTrack.artist}") }
+                    textLine("Hint: Next we will implement Play/Download here!")
                 }.run()
             }
         }
@@ -464,3 +755,4 @@ class SearchCommand : CliktCommand(
         return "%d:%02d".format(minutes, seconds)
     }
 }
+
