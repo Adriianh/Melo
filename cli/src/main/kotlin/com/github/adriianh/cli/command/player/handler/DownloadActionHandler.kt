@@ -31,25 +31,28 @@ import java.io.File
 import java.net.URI
 
 object DownloadActionHandler : KoinComponent {
-
     suspend fun downloadTrack(
         track: Track,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
         downloadTrackUseCase: DownloadTrackUseCase,
-        terminal: Terminal = Terminal()
+        terminal: Terminal = Terminal(),
+        customPath: String? = null
     ) {
-        terminal.println(cyan("Fetching direct stream for downloading ${track.title}..."))
+        terminal.println(cyan($$"Fetching direct stream for downloading ${track.title}..."))
+
         val url = getStream(track)
         if (url != null) {
             val settings = getSettings.getSnapshot()
             val fallbackPath = File(System.getProperty("user.home"), "Downloads/Melo")
-            val downloadFolder = settings.downloadPath?.let { File(it) } ?: fallbackPath
+            val downloadFolder =
+                customPath?.let { File(it) } ?: settings.downloadPath?.let { File(it) }
+                ?: fallbackPath
             if (!downloadFolder.exists()) downloadFolder.mkdirs()
-            val safeFileName = "${track.artist} - ${track.title}".replace(
+            val safeFileName = $$"${track.artist} - ${track.title}".replace(
                 Regex("[\\\\/:*?\"<>|]"),
                 "_"
-            ) + ".${settings.downloadFormat.displayName}"
+            ) + $$".${settings.downloadFormat.displayName}"
             val file = File(downloadFolder, safeFileName)
             val offlineTrack = OfflineTrack(
                 track = track,
@@ -58,7 +61,7 @@ object DownloadActionHandler : KoinComponent {
                 downloadType = DownloadType.MANUAL
             )
             downloadTrackUseCase(offlineTrack)
-            terminal.println(magenta("Downloading into ${file.absolutePath} ..."))
+            terminal.println(magenta($$"Downloading into ${file.absolutePath} ..."))
             withContext(Dispatchers.IO) {
                 try {
                     val connection = URI(url).toURL().openConnection()
@@ -96,14 +99,97 @@ object DownloadActionHandler : KoinComponent {
                         )
                     )
                     terminal.println(yellow("Download complete!"))
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     downloadTrackUseCase(offlineTrack.copy(downloadStatus = DownloadStatus.FAILED))
-                    terminal.println(gray("Failed to download. Error: ${e.message}"))
+                    terminal.println(gray($$"Failed to download. Error: ${e.message}"))
                     if (file.exists()) file.delete()
                 }
             }
         } else {
-            terminal.println(gray("Failed to resolve stream for ${track.title}."))
+            terminal.println(gray($$"Failed to resolve stream for ${track.title}."))
         }
+    }
+
+    suspend fun downloadMultiple(
+        entityTitle: String,
+        tracks: List<Track>,
+        customPath: String? = null,
+        getStream: GetStreamUseCase,
+        getSettings: GetSettingsUseCase,
+        downloadTrackUseCase: DownloadTrackUseCase,
+        terminal: Terminal = Terminal()
+    ) {
+        val settings = getSettings.getSnapshot()
+        val fallbackPath = File(System.getProperty("user.home"), "Downloads/Melo")
+        val baseDownloadFolder =
+            customPath?.let { File(it) } ?: settings.downloadPath?.let { File(it) } ?: fallbackPath
+        val safeTitleName = entityTitle.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        val downloadFolder = File(baseDownloadFolder, safeTitleName)
+        if (!downloadFolder.exists()) downloadFolder.mkdirs()
+        terminal.println(cyan($$"Downloading $entityTitle (${tracks.size} tracks) into ${downloadFolder.absolutePath}..."))
+        for ((_, track) in tracks.withIndex()) {
+            terminal.println(gray($$"[${index + 1}/${tracks.size}] Fetching stream for ${track.title}..."))
+            val url = getStream(track)
+            if (url != null) {
+                val safeFileName = $$"${track.artist} - ${track.title}".replace(
+                    Regex("[\\\\/:*?\"<>|]"),
+                    "_"
+                ) + $$".${settings.downloadFormat.displayName}"
+                val file = File(downloadFolder, safeFileName)
+                val offlineTrack = OfflineTrack(
+                    track = track,
+                    localFilePath = file.absolutePath,
+                    downloadStatus = DownloadStatus.DOWNLOADING,
+                    downloadType = DownloadType.MANUAL
+                )
+                downloadTrackUseCase(offlineTrack)
+                withContext(Dispatchers.IO) {
+                    try {
+                        val connection = URI(url).toURL().openConnection()
+                        val totalBytes = connection.contentLengthLong
+                        val progress = progressBarLayout {
+                            text(safeFileName)
+                            percentage()
+                            progressBar()
+                            completed()
+                            speed()
+                            timeRemaining()
+                        }.animateOnThread(
+                            terminal,
+                            total = if (totalBytes > 0) totalBytes else null
+                        )
+                        val progressJob = CoroutineScope(Dispatchers.Default).launch {
+                            progress.execute()
+                        }
+                        connection.getInputStream().use { input ->
+                            file.outputStream().use { output ->
+                                val buffer = ByteArray(8192)
+                                var bytesRead: Int
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    output.write(buffer, 0, bytesRead)
+                                    progress.advance(bytesRead.toLong())
+                                }
+                            }
+                        }
+                        progressJob.cancel()
+                        downloadTrackUseCase(
+                            offlineTrack.copy(
+                                downloadStatus = DownloadStatus.COMPLETED,
+                                downloadedAt = System.currentTimeMillis(),
+                                fileSize = file.length()
+                            )
+                        )
+                        terminal.println(yellow($$"Done: ${track.title}"))
+                    } catch (_: Exception) {
+                        downloadTrackUseCase(offlineTrack.copy(downloadStatus = DownloadStatus.FAILED))
+                        terminal.println(gray($$"Failed: ${track.title} - ${e.message}"))
+                        if (file.exists()) file.delete()
+                    }
+                }
+            } else {
+                terminal.println(gray($$"Failed to resolve stream for ${track.title}."))
+            }
+        }
+        terminal.println(yellow($$"Finished downloading $entityTitle!"))
     }
 }
