@@ -45,12 +45,8 @@ class LyricsCommand : CliktCommand(
             runBlocking {
                 if (current) {
                     val process = ProcessBuilder(
-                        "playerctl",
-                        "-p",
-                        "melo,melo*",
-                        "metadata",
-                        "--format",
-                        "{{title}}|||{{artist}}"
+                        "sh", "-c",
+                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
                     )
                         .redirectErrorStream(true)
                         .start()

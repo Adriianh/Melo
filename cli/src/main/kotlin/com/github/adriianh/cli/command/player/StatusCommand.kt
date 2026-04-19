@@ -8,6 +8,12 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.mordant.rendering.TextColors.cyan
+import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.github.ajalt.mordant.table.horizontalLayout
+import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.widgets.ProgressBar
+import com.github.ajalt.mordant.widgets.Text
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -27,6 +33,8 @@ class StatusCommand : CliktCommand(
         help = "Fetch and display the lyrics for the currently playing track"
     ).flag(default = false)
 
+    private val terminal = Terminal()
+
     override fun help(context: Context): String =
         "Show current playing status from MPRIS (Linux) and optionally its lyrics"
 
@@ -37,12 +45,8 @@ class StatusCommand : CliktCommand(
             val getLyrics: GetLyricsUseCase by inject()
 
             val process = ProcessBuilder(
-                "playerctl",
-                "-p",
-                "melo,melo*",
-                "metadata",
-                "--format",
-                "{{title}}|||{{artist}}|||{{album}}"
+                "sh", "-c",
+                "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\""
             )
                 .redirectErrorStream(true)
                 .start()
@@ -54,7 +58,7 @@ class StatusCommand : CliktCommand(
                 if (format == "json") {
                     echo("{}")
                 } else {
-                    echo("No Melo player is currently running.")
+                    terminal.println(gray("No Melo player is currently running."))
                 }
                 return
             }
@@ -63,6 +67,16 @@ class StatusCommand : CliktCommand(
             val title = parts.getOrNull(0)?.trim() ?: "Unknown"
             val artist = parts.getOrNull(1)?.trim() ?: "Unknown"
             val album = parts.getOrNull(2)?.trim() ?: "Unknown"
+            val positionRaw = parts.getOrNull(3)?.trim() ?: "0"
+            val lengthRaw = parts.getOrNull(4)?.trim() ?: "0"
+
+            val positionUs = positionRaw.toLongOrNull() ?: 0L
+            val lengthUs = lengthRaw.toLongOrNull() ?: 0L
+            val posSec = positionUs / 1000000L
+            val lenSec = lengthUs / 1000000L
+
+            val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
+            val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
 
             if (lyrics) {
                 runBlocking {
@@ -76,6 +90,8 @@ class StatusCommand : CliktCommand(
                                 "title": "$title",
                                 "artist": "$artist",
                                 "album": "$album",
+                                "position_ms": ${positionUs / 1000},
+                                "duration_ms": ${lengthUs / 1000},
                                 "lyrics": "$escapedLyrics"
                             }
                             """.trimIndent()
@@ -83,9 +99,9 @@ class StatusCommand : CliktCommand(
                         )
                     } else {
                         if (!lyricsText.isNullOrBlank()) {
-                            echo("Lyrics for $title by $artist:\n\n$lyricsText")
+                            terminal.println("Lyrics for " + cyan(title) + " by " + cyan(artist) + ":\n\n$lyricsText")
                         } else {
-                            echo("No lyrics found for $title by $artist.")
+                            terminal.println(gray("No lyrics found for $title by $artist."))
                         }
                     }
                 }
@@ -96,16 +112,24 @@ class StatusCommand : CliktCommand(
                         {
                             "title": "$title",
                             "artist": "$artist",
-                            "album": "$album"
+                            "album": "$album",
+                            "position_ms": ${positionUs / 1000},
+                            "duration_ms": ${lengthUs / 1000}
                         }
                         """.trimIndent()
                     )
                 } else {
-                    echo("Playing: $title - $artist ($album)")
+                    terminal.println("Playing: " + cyan(title) + " - " + gray("$artist ($album)"))
+                    if (lengthUs > 0) {
+                        terminal.println(horizontalLayout {
+                            cell(ProgressBar(total = lengthUs, completed = positionUs, width = 30))
+                            cell(Text(gray(" $posStr / $lenStr")))
+                        })
+                    }
                 }
             }
         } catch (e: Exception) {
-            echo("Failed to get status via playerctl: ${e.message}", err = true)
+            terminal.println(gray("Failed to get status via playerctl: ${e.message}"))
         } finally {
             stopKoin()
         }
