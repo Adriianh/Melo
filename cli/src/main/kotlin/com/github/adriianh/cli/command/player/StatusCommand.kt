@@ -8,12 +8,21 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
+import com.github.ajalt.mordant.animation.progress.animateOnThread
+import com.github.ajalt.mordant.animation.progress.execute
 import com.github.ajalt.mordant.rendering.TextColors.cyan
 import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.table.horizontalLayout
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.widgets.ProgressBar
 import com.github.ajalt.mordant.widgets.Text
+import com.github.ajalt.mordant.widgets.progress.progressBar
+import com.github.ajalt.mordant.widgets.progress.progressBarLayout
+import com.github.ajalt.mordant.widgets.progress.text
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -32,6 +41,11 @@ class StatusCommand : CliktCommand(
         "-l", "--lyrics",
         help = "Fetch and display the lyrics for the currently playing track"
     ).flag(default = false)
+
+    private val live by option(
+        "--live",
+        help = "Live updating progress bar (runs continuously until stopped)"
+    ).flag(default = true)
 
     private val terminal = Terminal()
 
@@ -121,10 +135,78 @@ class StatusCommand : CliktCommand(
                 } else {
                     terminal.println("Playing: " + cyan(title) + " - " + gray("$artist ($album)"))
                     if (lengthUs > 0) {
-                        terminal.println(horizontalLayout {
-                            cell(ProgressBar(total = lengthUs, completed = positionUs, width = 30))
-                            cell(Text(gray(" $posStr / $lenStr")))
-                        })
+                        val isInteractive = terminal.terminalInfo.interactive || live
+                        if (isInteractive) {
+                            val activeProgressTask = progressBarLayout {
+                                text {
+                                    val currentSec = completed / 1000000L
+                                    val tlSec = (total ?: 0L) / 1000000L
+                                    val currentStr =
+                                        String.format("%02d:%02d", currentSec / 60, currentSec % 60)
+                                    val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
+                                    gray("$currentStr / $tlStr")
+                                }
+                                progressBar()
+                            }.animateOnThread(terminal, total = lengthUs)
+
+                            val job = CoroutineScope(Dispatchers.IO).launch {
+                                activeProgressTask.execute()
+                            }
+
+                            runBlocking {
+                                while (true) {
+                                    try {
+                                        val stateProcess = ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status"
+                                        )
+                                            .start()
+                                        val stateStr =
+                                            InputStreamReader(stateProcess.inputStream).readText()
+                                                .trim()
+                                        stateProcess.waitFor()
+                                        if (stateStr != "Playing" && stateStr != "Paused") break
+
+                                        val posProcess = ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position"
+                                        )
+                                            .start()
+                                        val posOutput =
+                                            InputStreamReader(posProcess.inputStream).readText()
+                                                .trim()
+                                        posProcess.waitFor()
+
+                                        val posSec = posOutput.toDoubleOrNull()
+                                        if (posSec != null) {
+                                            val currentPosUs = (posSec * 1000000.0).toLong()
+                                            activeProgressTask.update { completed = currentPosUs }
+                                            if (currentPosUs >= lengthUs && stateStr != "Paused") break
+                                        } else {
+                                            break
+                                        }
+                                    } catch (_: Exception) {
+                                        break
+                                    }
+                                    delay(500)
+                                }
+                            }
+                            job.cancel()
+                            activeProgressTask.clear()
+                        } else {
+                            terminal.println(horizontalLayout {
+                                cell(
+                                    ProgressBar(
+                                        total = lengthUs,
+                                        completed = positionUs,
+                                        width = 30
+                                    )
+                                )
+                                cell(Text(gray(" $posStr / $lenStr")))
+                            })
+                        }
                     }
                 }
             }

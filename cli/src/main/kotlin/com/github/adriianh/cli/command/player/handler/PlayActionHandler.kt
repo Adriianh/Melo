@@ -6,15 +6,22 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
+import com.github.ajalt.mordant.animation.progress.ThreadProgressTaskAnimator
+import com.github.ajalt.mordant.animation.progress.animateOnThread
+import com.github.ajalt.mordant.animation.progress.execute
 import com.github.ajalt.mordant.rendering.TextColors.cyan
 import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.rendering.TextColors.green
 import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
+import com.github.ajalt.mordant.widgets.progress.progressBar
+import com.github.ajalt.mordant.widgets.progress.progressBarLayout
+import com.github.ajalt.mordant.widgets.progress.text
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -72,12 +79,9 @@ object PlayActionHandler : KoinComponent {
         var prevAction: (() -> Unit)? = null
         var stopAction: (() -> Unit)? = null
         val playerScope = CoroutineScope(Dispatchers.IO)
-        val player = AudioPlayer(
-            scope = playerScope,
-            onProgress = { /* MPRIS handles progress via interval if configured, otherwise ignore CLI output */ },
-            onFinish = { nextAction?.invoke() },
-            onError = { _ -> nextAction?.invoke() }
-        )
+        var activeProgressJob: Job? = null
+        var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
+
         val sessionManager = MediaSessionManager(
             httpClient = httpClient,
             onPlayPause = { playPauseAction?.invoke() },
@@ -85,11 +89,36 @@ object PlayActionHandler : KoinComponent {
             onPrevious = { prevAction?.invoke() },
             onStop = { stopAction?.invoke() }
         )
+
+        val player = AudioPlayer(
+            scope = playerScope,
+            onProgress = { posMs ->
+                sessionManager.updatePosition(posMs)
+                activeProgressTask?.update { completed = posMs }
+            },
+            onFinish = { nextAction?.invoke() },
+            onError = { _ -> nextAction?.invoke() }
+        )
+
         sessionManager.init()
         val playCurrentTrackFromQueue = suspend {
             val url = getStream(currentTrack)
             if (url != null) {
                 terminal.println(green("▶ Playing: ") + currentTrack.title + gray(" by ") + currentTrack.artist)
+                activeProgressJob?.cancel()
+                activeProgressTask = progressBarLayout {
+                    text {
+                        val posSec = completed / 1000L
+                        val lenSec = (total ?: 0L) / 1000L
+                        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
+                        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
+                        gray("$posStr / $lenStr")
+                    }
+                    progressBar()
+                }.animateOnThread(terminal, total = currentTrack.durationMs)
+                activeProgressJob = playerScope.launch {
+                    activeProgressTask?.execute()
+                }
                 player.play(url)
                 isPlaying = true
                 sessionManager.updateTrack(currentTrack, currentTrack.durationMs)
@@ -156,6 +185,7 @@ object PlayActionHandler : KoinComponent {
             }
         }
         stopAction = {
+            activeProgressJob?.cancel()
             player.stop()
             sessionManager.notifyStopped()
             sessionManager.destroy()
@@ -170,6 +200,7 @@ object PlayActionHandler : KoinComponent {
         try {
             stopSignal.await()
         } finally {
+            activeProgressJob?.cancel()
             player.stop()
             sessionManager.destroy()
         }
