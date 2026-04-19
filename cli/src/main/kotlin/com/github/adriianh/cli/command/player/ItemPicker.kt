@@ -9,8 +9,9 @@ import com.varabyte.kotter.foundation.text.cyan
 import com.varabyte.kotter.foundation.text.textLine
 import com.varabyte.kotter.foundation.text.white
 import com.varabyte.kotter.runtime.render.RenderScope
+import kotlin.system.exitProcess
 
-object SearchPickers {
+object ItemPicker {
     fun <T> pickItem(
         items: List<T>,
         title: String,
@@ -59,6 +60,8 @@ object SearchPickers {
             }
             if (accepted) {
                 selectedItem = items[selectedIndex]
+            } else {
+                exitProcess(0)
             }
         }
         return selectedItem
