@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.command.player
+package com.github.adriianh.cli.command.player.handler
 
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import java.io.File
+import java.net.URI
 
 object DownloadActionHandler : KoinComponent {
 
@@ -60,7 +61,7 @@ object DownloadActionHandler : KoinComponent {
             terminal.println(magenta("Downloading into ${file.absolutePath} ..."))
             withContext(Dispatchers.IO) {
                 try {
-                    val connection = java.net.URI(url).toURL().openConnection()
+                    val connection = URI(url).toURL().openConnection()
                     val totalBytes = connection.contentLengthLong
                     val progress = progressBarLayout {
                         text(safeFileName)

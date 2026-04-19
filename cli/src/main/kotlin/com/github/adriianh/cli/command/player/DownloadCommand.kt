@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.command.player
 
+import com.github.adriianh.cli.command.player.handler.DownloadActionHandler
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv

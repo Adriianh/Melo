@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.command.player
+package com.github.adriianh.cli.command.player.handler
 
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager

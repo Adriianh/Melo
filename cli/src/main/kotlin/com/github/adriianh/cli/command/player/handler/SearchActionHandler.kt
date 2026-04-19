@@ -1,5 +1,6 @@
-package com.github.adriianh.cli.command.player
+package com.github.adriianh.cli.command.player.handler
 
+import com.github.adriianh.cli.command.player.SearchPickers
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
