@@ -22,90 +22,21 @@ import com.github.ajalt.mordant.widgets.progress.progressBarLayout
 import com.github.ajalt.mordant.widgets.progress.speed
 import com.github.ajalt.mordant.widgets.progress.text
 import com.github.ajalt.mordant.widgets.progress.timeRemaining
-import com.varabyte.kotter.foundation.text.textLine
-import com.varabyte.kotter.foundation.text.yellow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.component.KoinComponent
 import java.io.File
-import java.net.URL
 
-object SearchActionHandler {
-    suspend fun handleTrackAction(
-        track: Track,
-        getStream: GetStreamUseCase,
-        getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase,
-        terminal: Terminal = Terminal()
-    ) {
-        val actions = listOf("Play with ffplay", "Download", "Cancel")
-        val selectedAction = SearchPickers.pickItem(
-            actions,
-            "What would you like to do with '${track.title}'?"
-        ) { _, action, isSelected ->
-            if (isSelected) {
-                yellow { textLine("> $action") }
-            } else {
-                textLine("  $action")
-            }
-        }
-        when (selectedAction) {
-            "Play with ffplay" -> playTrack(track, getStream, terminal)
-            "Download" -> downloadTrack(track, getStream, getSettings, downloadTrack, terminal)
-            else -> terminal.println("Action cancelled.")
-        }
-    }
+object DownloadActionHandler : KoinComponent {
 
-    private suspend fun playTrack(track: Track, getStream: GetStreamUseCase, terminal: Terminal) {
-        terminal.println(cyan("Fetching stream URL for ${track.title}..."))
-        val url = getStream(track)
-        if (url != null) {
-            terminal.println(magenta("Playing with ffplay..."))
-            try {
-                val process = withContext(Dispatchers.IO) {
-                    Runtime.getRuntime().exec(arrayOf("ffplay", "-nodisp", "-autoexit", url))
-                }
-                val durationSec = track.durationMs / 1000
-                var elapsedSec = 0L
-                val progress = progressBarLayout {
-                    text("${track.title} - ${track.artist}")
-                    percentage()
-                    progressBar()
-                    text { SearchOutputFormatter.formatDuration(elapsedSec * 1000) }
-                    text("/")
-                    text(SearchOutputFormatter.formatDuration(track.durationMs))
-                }.animateOnThread(
-                    terminal,
-                    total = if (durationSec > 0) durationSec else null
-                )
-                val progressJob = CoroutineScope(Dispatchers.Default).launch {
-                    progress.execute()
-                    while (process.isAlive) {
-                        delay(1000)
-                        elapsedSec++
-                        progress.advance(1)
-                    }
-                }
-                withContext(Dispatchers.IO) {
-                    process.waitFor()
-                }
-                progressJob.cancel()
-            } catch (e: Exception) {
-                terminal.println(gray("Failed to launch ffplay. Is it installed? Error: ${e.message}"))
-            }
-        } else {
-            terminal.println(gray("Failed to resolve stream for ${track.title}."))
-        }
-    }
-
-    private suspend fun downloadTrack(
+    suspend fun downloadTrack(
         track: Track,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
         downloadTrackUseCase: DownloadTrackUseCase,
-        terminal: Terminal
+        terminal: Terminal = Terminal()
     ) {
         terminal.println(cyan("Fetching direct stream for downloading ${track.title}..."))
         val url = getStream(track)
@@ -129,7 +60,7 @@ object SearchActionHandler {
             terminal.println(magenta("Downloading into ${file.absolutePath} ..."))
             withContext(Dispatchers.IO) {
                 try {
-                    val connection = URL(url).openConnection()
+                    val connection = java.net.URI(url).toURL().openConnection()
                     val totalBytes = connection.contentLengthLong
                     val progress = progressBarLayout {
                         text(safeFileName)
