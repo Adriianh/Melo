@@ -24,29 +24,53 @@ object PlayActionHandler : KoinComponent {
     private val httpClient: HttpClient by inject()
     private val getSimilarTracks: GetSimilarTracksUseCase by inject()
     private val searchTracks: SearchTracksUseCase by inject()
-
     suspend fun playTrack(
         seedTrack: Track,
         getStream: GetStreamUseCase,
         terminal: Terminal = Terminal()
     ) {
-        terminal.println(cyan("Starting playback... Press Ctrl+C to stop."))
+        startPlayback(
+            contextName = seedTrack.title,
+            initialTracks = listOf(seedTrack),
+            getStream = getStream,
+            terminal = terminal,
+            shouldFetchSimilar = true
+        )
+    }
+
+    suspend fun playMultiple(
+        contextName: String,
+        tracks: List<Track>,
+        getStream: GetStreamUseCase,
+        terminal: Terminal = Terminal()
+    ) {
+        startPlayback(
+            contextName = contextName,
+            initialTracks = tracks,
+            getStream = getStream,
+            terminal = terminal,
+            shouldFetchSimilar = false
+        )
+    }
+
+    private suspend fun startPlayback(
+        contextName: String,
+        initialTracks: List<Track>,
+        getStream: GetStreamUseCase,
+        terminal: Terminal,
+        shouldFetchSimilar: Boolean
+    ) {
+        terminal.println(cyan("Starting playback for $contextName... Press Ctrl+C to stop."))
         terminal.println(gray("Media keys (Play/Pause, Next, Prev) are supported in background."))
-
-        var currentTrack = seedTrack
+        var currentTrack = initialTracks.first()
         var isPlaying = true
-
-        val radioQueue = mutableListOf(seedTrack)
+        val radioQueue = initialTracks.toMutableList()
         var queueIndex = 0
-        val shouldFetchSimilar = true
-
         val stopSignal = CompletableDeferred<Unit>()
-
         var playPauseAction: (() -> Unit)? = null
         var nextAction: (() -> Unit)? = null
         var prevAction: (() -> Unit)? = null
         var stopAction: (() -> Unit)? = null
-
         val playerScope = CoroutineScope(Dispatchers.IO)
         val player = AudioPlayer(
             scope = playerScope,
@@ -54,7 +78,6 @@ object PlayActionHandler : KoinComponent {
             onFinish = { nextAction?.invoke() },
             onError = { _ -> nextAction?.invoke() }
         )
-
         val sessionManager = MediaSessionManager(
             httpClient = httpClient,
             onPlayPause = { playPauseAction?.invoke() },
@@ -63,7 +86,6 @@ object PlayActionHandler : KoinComponent {
             onStop = { stopAction?.invoke() }
         )
         sessionManager.init()
-
         val playCurrentTrackFromQueue = suspend {
             val url = getStream(currentTrack)
             if (url != null) {
@@ -76,7 +98,6 @@ object PlayActionHandler : KoinComponent {
                 nextAction?.invoke()
             }
         }
-
         playPauseAction = {
             if (isPlaying) {
                 player.pause()
@@ -89,7 +110,6 @@ object PlayActionHandler : KoinComponent {
             }
             isPlaying = !isPlaying
         }
-
         nextAction = {
             playerScope.launch {
                 if (queueIndex + 1 < radioQueue.size) {
@@ -105,7 +125,6 @@ object PlayActionHandler : KoinComponent {
                             val similarTracksResolved = similarRaw.mapNotNull { sim ->
                                 searchTracks("${sim.title} ${sim.artist}").firstOrNull()
                             }.filter { track -> radioQueue.none { it.id == track.id } }
-
                             if (similarTracksResolved.isNotEmpty()) {
                                 radioQueue.addAll(similarTracksResolved)
                                 queueIndex++
@@ -116,7 +135,7 @@ object PlayActionHandler : KoinComponent {
                                 stopAction?.invoke()
                             }
                         } catch (e: Exception) {
-                            terminal.println(gray("Failed to fetch similar tracks: ${e.message}"))
+                            terminal.println(gray("Failed to fetch similar tracks: \${e.message}"))
                             stopAction?.invoke()
                         }
                     } else {
@@ -125,7 +144,6 @@ object PlayActionHandler : KoinComponent {
                 }
             }
         }
-
         prevAction = {
             playerScope.launch {
                 if (queueIndex > 0) {
@@ -137,7 +155,6 @@ object PlayActionHandler : KoinComponent {
                 }
             }
         }
-
         stopAction = {
             player.stop()
             sessionManager.notifyStopped()
@@ -146,11 +163,9 @@ object PlayActionHandler : KoinComponent {
             stopSignal.complete(Unit)
             terminal.println(cyan("Playback stopped."))
         }
-
         playerScope.launch {
             playCurrentTrackFromQueue()
         }
-
         // Keep running until stopAction is invoked (e.g. by session manager directly or error)
         try {
             stopSignal.await()
@@ -158,7 +173,6 @@ object PlayActionHandler : KoinComponent {
             player.stop()
             sessionManager.destroy()
         }
-
         exitProcess(0)
     }
 }
