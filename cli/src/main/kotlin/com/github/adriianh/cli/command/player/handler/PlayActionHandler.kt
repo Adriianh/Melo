@@ -117,7 +117,7 @@ object PlayActionHandler : KoinComponent {
                     progressBar()
                 }.animateOnThread(terminal, total = currentTrack.durationMs)
                 activeProgressJob = playerScope.launch {
-                    activeProgressTask?.execute()
+                    activeProgressTask.execute()
                 }
                 player.play(url)
                 isPlaying = true
