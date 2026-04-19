@@ -129,6 +129,7 @@ class StatusCommand : CliktCommand(
                     }
 
                     terminal.println("\nPlaying: ${cyan(title)} - ${gray("$artist ($album)")}")
+                    terminal.println(gray("Press Ctrl+C to stop."))
 
                     val lrcLines = mutableListOf<Pair<Long, String>>()
                     if (lyricsText != null) {
