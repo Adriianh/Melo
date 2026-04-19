@@ -84,7 +84,6 @@ class LyricsCommand : CliktCommand(
                         val lengthUs = lengthRaw.toLongOrNull() ?: 0L
 
                         terminal.println(cyan("Fetching lyrics for currently playing: $title by $artist..."))
-                        terminal.println(gray("Press Ctrl+C to stop."))
 
                         val lyricsText =
                             if (synced) getSyncedLyrics(artist, title) else getLyrics(artist, title)
@@ -121,6 +120,7 @@ class LyricsCommand : CliktCommand(
                                     gray("$currentStr / $tlStr")
                                 }
                                     text("Progress"); progressBar()
+                                    text(""); text(gray("Press Ctrl+C to stop."))
                                 }.animateOnThread(
                                     terminal,
                                     total = lengthUs,

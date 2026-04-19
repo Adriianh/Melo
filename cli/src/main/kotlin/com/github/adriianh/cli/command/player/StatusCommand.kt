@@ -129,7 +129,6 @@ class StatusCommand : CliktCommand(
                     }
 
                     terminal.println("\nPlaying: ${cyan(title)} - ${gray("$artist ($album)")}")
-                    terminal.println(gray("Press Ctrl+C to stop."))
 
                     val lrcLines = mutableListOf<Pair<Long, String>>()
                     if (lyricsText != null) {
@@ -171,6 +170,7 @@ class StatusCommand : CliktCommand(
                                 gray("$currentStr / $tlStr")
                             }
                                 text("Progress"); progressBar()
+                                text(""); text(gray("Press Ctrl+C to stop."))
                             }.animateOnThread(
                                 terminal,
                                 total = lengthUs,
