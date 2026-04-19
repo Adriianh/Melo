@@ -161,7 +161,7 @@ class SearchCommand : CliktCommand(
         val title = Messages.get(
             "search.results_header", "query" to query, "count" to tracks.size.toString()
         )
-        val selectedTrack = SearchPickers.pickItem(tracks, title) { _, track, isSelected ->
+        val selectedTrack = ItemPicker.pickItem(tracks, title) { _, track, isSelected ->
             val duration = SearchOutputFormatter.formatDuration(track.durationMs)
             val genres =
                 if (track.genres.isNotEmpty()) " [${track.genres.joinToString(", ")}]" else ""
@@ -224,7 +224,7 @@ class SearchCommand : CliktCommand(
         downloadTrack: DownloadTrackUseCase
     ) {
         val title = "Search Results for '$query' ($type): ${albums.size}"
-        val selectedAlbum = SearchPickers.pickItem(albums, title) { _, album, isSelected ->
+        val selectedAlbum = ItemPicker.pickItem(albums, title) { _, album, isSelected ->
             val yearStr = if (album.year != null) " [${album.year}]" else ""
             if (isSelected) {
                 yellow { textLine("> ${album.title} — ${album.author}$yearStr") }
@@ -249,7 +249,7 @@ class SearchCommand : CliktCommand(
         downloadTrack: DownloadTrackUseCase
     ) {
         val title = "Search Results for '$query' ($type): ${artists.size}"
-        val selectedArtist = SearchPickers.pickItem(artists, title) { _, artist, isSelected ->
+        val selectedArtist = ItemPicker.pickItem(artists, title) { _, artist, isSelected ->
             val subscribers = artist.subscriberCountText?.let { " ($it)" } ?: ""
             if (isSelected) {
                 yellow { textLine("> ${artist.name}$subscribers") }
@@ -283,7 +283,7 @@ class SearchCommand : CliktCommand(
         downloadTrack: DownloadTrackUseCase
     ) {
         val title = "Search Results for '$query' ($type): ${playlists.size}"
-        val selectedPlaylist = SearchPickers.pickItem(playlists, title) { _, playlist, isSelected ->
+        val selectedPlaylist = ItemPicker.pickItem(playlists, title) { _, playlist, isSelected ->
             val tCount = playlist.trackCount?.let { " [$it tracks]" } ?: ""
             if (isSelected) {
                 yellow { textLine("> ${playlist.title} — ${playlist.author}$tCount") }
@@ -308,7 +308,7 @@ class SearchCommand : CliktCommand(
         getSettings: GetSettingsUseCase,
         downloadTrack: DownloadTrackUseCase
     ) {
-        val selectedItem = SearchPickers.pickItem(items, "== $title ==") { _, item, isSelected ->
+        val selectedItem = ItemPicker.pickItem(items, "== $title ==") { _, item, isSelected ->
             val typeStr = when (item) {
                 is SearchResult.Song -> "[Song]"
                 is SearchResult.Album -> "[Album]"
@@ -389,7 +389,7 @@ class SearchCommand : CliktCommand(
             echo("No tracks found.")
             return
         }
-        val selectedTrack = SearchPickers.pickItem(tracks, "== $title ==") { _, track, isSelected ->
+        val selectedTrack = ItemPicker.pickItem(tracks, "== $title ==") { _, track, isSelected ->
             val duration = SearchOutputFormatter.formatDuration(track.durationMs)
             if (isSelected) {
                 yellow { textLine("> ${track.title} $duration") }

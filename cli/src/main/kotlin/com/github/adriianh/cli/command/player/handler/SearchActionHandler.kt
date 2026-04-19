@@ -1,6 +1,6 @@
 package com.github.adriianh.cli.command.player.handler
 
-import com.github.adriianh.cli.command.player.SearchPickers
+import com.github.adriianh.cli.command.player.ItemPicker
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -20,7 +20,7 @@ object SearchActionHandler : KoinComponent {
         terminal: Terminal = Terminal()
     ) {
         val actions = listOf("Play with ffplay", "Download", "Cancel")
-        val selectedAction = SearchPickers.pickItem(
+        val selectedAction = ItemPicker.pickItem(
             actions,
             "What would you like to do with '${track.title}'?"
         ) { _, action, isSelected ->
