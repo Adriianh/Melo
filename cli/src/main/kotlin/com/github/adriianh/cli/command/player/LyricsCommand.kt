@@ -61,117 +61,161 @@ class LyricsCommand : CliktCommand(
             val searchTracks: SearchTracksUseCase by inject()
             runBlocking {
                 if (current) {
-                    val process = ProcessBuilder(
-                        "sh", "-c",
-                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{mpris:length}}\""
-                    )
-                        .redirectErrorStream(true)
-                        .start()
+                    while (true) {
+                        val process = ProcessBuilder(
+                            "sh", "-c",
+                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{mpris:length}}\""
+                        )
+                            .redirectErrorStream(true)
+                            .start()
 
-                    val output = InputStreamReader(process.inputStream).readText().trim()
-                    process.waitFor()
+                        val output = InputStreamReader(process.inputStream).readText().trim()
+                        process.waitFor()
 
-                    if (process.exitValue() != 0 || output.isBlank() || output == "No players found") {
-                        terminal.println(gray("No Melo player is currently running."))
-                        return@runBlocking
-                    }
-
-                    val parts = output.split("|||")
-                    val title = parts.getOrNull(0)?.trim() ?: "Unknown"
-                    val artist = parts.getOrNull(1)?.trim() ?: "Unknown"
-                    val lengthRaw = parts.getOrNull(2)?.trim() ?: "0"
-                    val lengthUs = lengthRaw.toLongOrNull() ?: 0L
-
-                    terminal.println(cyan("Fetching lyrics for currently playing: $title by $artist..."))
-
-                    val lyricsText =
-                        if (synced) getSyncedLyrics(artist, title) else getLyrics(artist, title)
-                    if (!lyricsText.isNullOrBlank()) {
-                        val lrcLines = mutableListOf<Pair<Long, String>>()
-                        if (synced && lyricsText.contains(Regex("""\[\d{2}:\d{2}\.\d{2,3}]"""))) {
-                            val regex = Regex("""\[(\d{2}):(\d{2})\.(\d{2,3})](.*)""")
-                            lyricsText.lines().forEach { line ->
-                                val match = regex.find(line.trim())
-                                if (match != null) {
-                                    val m = match.groupValues[1].toLong()
-                                    val s = match.groupValues[2].toLong()
-                                    val msStr = match.groupValues[3]
-                                    val ms =
-                                        if (msStr.length == 2) msStr.toLong() * 10 else msStr.toLong()
-                                    val timeUs = (m * 60000000L) + (s * 1000000L) + (ms * 1000L)
-                                    lrcLines.add(timeUs to match.groupValues[4].trim())
-                                }
-                            }
+                        if (process.exitValue() != 0 || output.isBlank() || output == "No players found") {
+                            terminal.println(gray("No Melo player is currently running."))
+                            return@runBlocking
                         }
 
-                        if (lrcLines.isNotEmpty() && lengthUs > 0) {
-                            var currentLyric = "..."
-                            val activeProgressTask = progressBarLayout {
-                                text(cyan("♪")); text {
-                                cyan(currentLyric)
+                        val parts = output.split("|||")
+                        val title = parts.getOrNull(0)?.trim() ?: "Unknown"
+                        val artist = parts.getOrNull(1)?.trim() ?: "Unknown"
+                        val lengthRaw = parts.getOrNull(2)?.trim() ?: "0"
+                        val lengthUs = lengthRaw.toLongOrNull() ?: 0L
+
+                        terminal.println(cyan("Fetching lyrics for currently playing: $title by $artist..."))
+
+                        val lyricsText =
+                            if (synced) getSyncedLyrics(artist, title) else getLyrics(artist, title)
+                        if (!lyricsText.isNullOrBlank()) {
+                            val lrcLines = mutableListOf<Pair<Long, String>>()
+                            if (synced && lyricsText.contains(Regex("""\[\d{2}:\d{2}\.\d{2,3}]"""))) {
+                                val regex = Regex("""\[(\d{2}):(\d{2})\.(\d{2,3})](.*)""")
+                                lyricsText.lines().forEach { line ->
+                                    val match = regex.find(line.trim())
+                                    if (match != null) {
+                                        val m = match.groupValues[1].toLong()
+                                        val s = match.groupValues[2].toLong()
+                                        val msStr = match.groupValues[3]
+                                        val ms =
+                                            if (msStr.length == 2) msStr.toLong() * 10 else msStr.toLong()
+                                        val timeUs = (m * 60000000L) + (s * 1000000L) + (ms * 1000L)
+                                        lrcLines.add(timeUs to match.groupValues[4].trim())
+                                    }
+                                }
                             }
-                                text("Time"); text {
-                                val currentSec = completed / 1000000L
-                                val tlSec = (total ?: 0L) / 1000000L
-                                val currentStr =
-                                    String.format("%02d:%02d", currentSec / 60, currentSec % 60)
-                                val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
-                                gray("$currentStr / $tlStr")
-                            }
-                                text("Progress"); progressBar()
-                            }.animateOnThread(
-                                terminal,
-                                total = lengthUs,
-                                maker = VerticalProgressBarMaker
-                            )
 
-                            val job = CoroutineScope(Dispatchers.IO).launch {
-                                activeProgressTask.execute()
-                            }
+                            if (lrcLines.isNotEmpty() && lengthUs > 0) {
+                                var currentLyric = "..."
+                                val activeProgressTask = progressBarLayout {
+                                    text(cyan("♪")); text {
+                                    cyan(currentLyric)
+                                }
+                                    text("Time"); text {
+                                    val currentSec = completed / 1000000L
+                                    val tlSec = (total ?: 0L) / 1000000L
+                                    val currentStr =
+                                        String.format("%02d:%02d", currentSec / 60, currentSec % 60)
+                                    val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
+                                    gray("$currentStr / $tlStr")
+                                }
+                                    text("Progress"); progressBar()
+                                }.animateOnThread(
+                                    terminal,
+                                    total = lengthUs,
+                                    maker = VerticalProgressBarMaker
+                                )
 
-                            while (true) {
-                                try {
-                                    val stateProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status"
-                                    ).start()
-                                    val stateStr =
-                                        InputStreamReader(stateProcess.inputStream).readText()
-                                            .trim()
-                                    stateProcess.waitFor()
-                                    if (stateStr != "Playing" && stateStr != "Paused") break
+                                val job = CoroutineScope(Dispatchers.IO).launch {
+                                    activeProgressTask.execute()
+                                }
 
-                                    val posProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position"
-                                    ).start()
-                                    val posOutput =
-                                        InputStreamReader(posProcess.inputStream).readText().trim()
-                                    posProcess.waitFor()
+                                while (true) {
+                                    try {
+                                        val curTrackProcess = ProcessBuilder(
+                                            "sh", "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
+                                        ).start()
+                                        val curTrackStr =
+                                            InputStreamReader(curTrackProcess.inputStream).readText()
+                                                .trim()
+                                        curTrackProcess.waitFor()
 
-                                    val posSecResult = posOutput.toDoubleOrNull()
-                                    if (posSecResult != null) {
-                                        val currentPosUs = (posSecResult * 1000000.0).toLong()
-                                        val activeLine =
-                                            lrcLines.lastOrNull { it.first <= currentPosUs }
-                                        currentLyric = activeLine?.second ?: "..."
-                                        activeProgressTask.update { completed = currentPosUs }
-                                        if (currentPosUs >= lengthUs && stateStr != "Paused") break
-                                    } else {
+                                        if (curTrackStr != "$title|||$artist" && curTrackStr.isNotBlank() && curTrackStr != "No players found") {
+                                            break
+                                        }
+
+                                        val stateProcess = ProcessBuilder(
+                                            "sh", "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status"
+                                        ).start()
+                                        val stateStr =
+                                            InputStreamReader(stateProcess.inputStream).readText()
+                                                .trim()
+                                        stateProcess.waitFor()
+                                        if (stateStr != "Playing" && stateStr != "Paused") return@runBlocking
+
+                                        val posProcess = ProcessBuilder(
+                                            "sh", "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position"
+                                        ).start()
+                                        val posOutput =
+                                            InputStreamReader(posProcess.inputStream).readText()
+                                                .trim()
+                                        posProcess.waitFor()
+
+                                        val posSecResult = posOutput.toDoubleOrNull()
+                                        if (posSecResult != null) {
+                                            val currentPosUs = (posSecResult * 1000000.0).toLong()
+                                            val activeLine =
+                                                lrcLines.lastOrNull { it.first <= currentPosUs }
+                                            currentLyric = activeLine?.second ?: "..."
+                                            activeProgressTask.update { completed = currentPosUs }
+                                        } else {
+                                            break
+                                        }
+                                    } catch (_: Exception) {
                                         break
                                     }
-                                } catch (_: Exception) {
-                                    break
+                                    delay(500)
                                 }
-                                delay(500)
+                                job.cancel()
+                                activeProgressTask.clear()
+                            } else {
+                                terminal.println("\n$lyricsText\n")
+                                if (synced) {
+                                    while (true) {
+                                        val curTrackProcess = ProcessBuilder(
+                                            "sh", "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
+                                        ).start()
+                                        val curTrackStr =
+                                            InputStreamReader(curTrackProcess.inputStream).readText()
+                                                .trim()
+                                        curTrackProcess.waitFor()
+                                        if (curTrackStr != "$title|||$artist") break
+                                        delay(2000)
+                                    }
+                                }
                             }
-                            job.cancel()
-                            activeProgressTask.clear()
                         } else {
-                            terminal.println("\n$lyricsText\n")
+                            terminal.println(gray("No lyrics found for currently playing track."))
+                            if (synced) {
+                                while (true) {
+                                    val curTrackProcess = ProcessBuilder(
+                                        "sh", "-c",
+                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
+                                    ).start()
+                                    val curTrackStr =
+                                        InputStreamReader(curTrackProcess.inputStream).readText()
+                                            .trim()
+                                    curTrackProcess.waitFor()
+                                    if (curTrackStr != "$title|||$artist") break
+                                    delay(2000)
+                                }
+                            }
                         }
-                    } else {
-                        terminal.println(gray("No lyrics found for currently playing track."))
+                        if (!synced) break
                     }
                 } else if (!query.isNullOrBlank()) {
                     terminal.println(gray("Searching for track '$query'..."))
