@@ -134,7 +134,7 @@ object PlayActionHandler : KoinComponent {
                                 terminal.println(gray("No more related tracks found."))
                                 stopAction?.invoke()
                             }
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             terminal.println(gray("Failed to fetch similar tracks: \${e.message}"))
                             stopAction?.invoke()
                         }

@@ -19,16 +19,16 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.mordant.rendering.TextColors.cyan
 import com.github.ajalt.mordant.rendering.TextColors.gray
-import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
+import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
+import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
 class DownloadCommand : CliktCommand(
     name = "download"
@@ -73,9 +73,12 @@ class DownloadCommand : CliktCommand(
                 when (type.lowercase()) {
                     "album" -> {
                         val albums = searchAlbums(query)
-                        val album = selectInteractive(albums) { "${it.title} by ${it.author}" }
+                        val album = selectInteractive(
+                            albums,
+                            "Select Album"
+                        ) { "${it.title} by ${it.author}" }
                         if (album == null) {
-                            terminal.println("No album found for '$query'.")
+                            terminal.println("No album found or selection cancelled for '$query'.")
                             return@runBlocking
                         }
                         val detailedAlbum = getEntityDetails(album) as SearchResult.Album
@@ -98,9 +101,12 @@ class DownloadCommand : CliktCommand(
                     "playlist" -> {
                         val playlists = searchPlaylists(query)
                         val playlist =
-                            selectInteractive(playlists) { "${it.title} by ${it.author}" }
+                            selectInteractive(
+                                playlists,
+                                "Select Playlist"
+                            ) { "${it.title} by ${it.author}" }
                         if (playlist == null) {
-                            terminal.println("No playlist found for '$query'.")
+                            terminal.println("No playlist found or selection cancelled for '$query'.")
                             return@runBlocking
                         }
                         val detailedPlaylist = getEntityDetails(playlist) as SearchResult.Playlist
@@ -122,9 +128,12 @@ class DownloadCommand : CliktCommand(
 
                     else -> {
                         val tracks = searchTracks(query)
-                        val track = selectInteractive(tracks) { "${it.title} by ${it.artist}" }
+                        val track = selectInteractive(
+                            tracks,
+                            "Select Track"
+                        ) { "${it.title} by ${it.artist}" }
                         if (track == null) {
-                            terminal.println("No track results found for '$query'.")
+                            terminal.println("No track results found or selection cancelled for '$query'.")
                             return@runBlocking
                         }
                         DownloadActionHandler.downloadTrack(
@@ -143,23 +152,26 @@ class DownloadCommand : CliktCommand(
         }
     }
 
-    private fun <T> selectInteractive(results: List<T>, titleSelector: (T) -> String): T? {
+    private fun <T> selectInteractive(
+        results: List<T>,
+        title: String,
+        titleSelector: (T) -> String
+    ): T? {
         if (results.isEmpty()) return null
         if (!interactive || results.size == 1) return results.first()
 
-        val limited = results.take(10)
-        terminal.println(cyan("Please select an option:"))
-        limited.forEachIndexed { index, item ->
-            terminal.println(yellow("${index + 1}.") + " " + titleSelector(item))
-        }
-        terminal.print(cyan("Enter number (1-${limited.size}): "))
-
-        val input = readlnOrNull()?.toIntOrNull()
-        if (input != null && input in 1..limited.size) {
-            return limited[input - 1]
+        val limited = results.take(15)
+        val selected = ItemPicker.pickItem(limited, title) { _, item, isSelected ->
+            if (isSelected) {
+                kotterYellow { textLine("> " + titleSelector(item)) }
+            } else {
+                textLine("  " + titleSelector(item))
+            }
         }
 
-        terminal.println(gray("Invalid or empty input, defaulting to first option."))
-        return limited.first()
+        if (selected == null) {
+            terminal.println(gray("Selection cancelled."))
+        }
+        return selected
     }
 }
