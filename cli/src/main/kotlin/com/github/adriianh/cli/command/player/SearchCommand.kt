@@ -42,36 +42,37 @@ class SearchCommand : CliktCommand(
 ), KoinComponent {
     val query by argument(name = "query", help = "Track name to search for")
     val format by option(
-        names = arrayOf("-f", "--format"),
-        help = "Output format: json or plain (default: plain)"
-    )
-        .choice("json", "plain", ignoreCase = true)
-        .default("plain")
+        names = arrayOf("-f", "--format"), help = "Output format: json or plain (default: plain)"
+    ).choice("json", "plain", ignoreCase = true).default("plain")
     val type by option(
         names = arrayOf("-t", "--type"),
         help = "Type of resource to search: track, album, artist, playlist (default: track)"
-    )
-        .choice("track", "album", "artist", "playlist", ignoreCase = true)
-        .default("track")
+    ).choice("track", "album", "artist", "playlist", ignoreCase = true).default("track")
     val limit by option(
-        names = arrayOf("-l", "--limit"),
-        help = "Maximum number of results to show (default: 10)"
-    )
-        .int()
-        .default(10)
-    val similar by option("-s", "--similar", help = "Show similar tracks for the first result")
-        .flag(default = false)
-    val lyrics by option("--lyrics", help = "Show lyrics for the first result")
-        .flag(default = false)
+        names = arrayOf("-l", "--limit"), help = "Maximum number of results to show (default: 10)"
+    ).int().default(10)
+    val similar by option(
+        "-s",
+        "--similar",
+        help = "Show similar tracks for the first result"
+    ).flag(default = false)
+    val lyrics by option(
+        "--lyrics",
+        help = "Show lyrics for the first result"
+    ).flag(default = false)
 
     override fun help(context: Context): String = Messages.get("help.search_command")
+
     private val terminal = Terminal()
+
     override fun run() {
         if (resolveEnv("LASTFM_API_KEY") == null) {
             echo(Messages.get("error.missing_lastfm_key", "configDir" to configDir), err = true)
             exitProcess(1)
         }
+
         startKoin { modules(appModule) }
+
         try {
             val searchTracks: SearchTracksUseCase by inject()
             val searchAlbums: SearchAlbumsUseCase by inject()
@@ -94,12 +95,7 @@ class SearchCommand : CliktCommand(
                         when (format) {
                             "json" -> echo(
                                 SearchOutputFormatter.outputJsonTracks(
-                                    results,
-                                    query,
-                                    similar,
-                                    lyrics,
-                                    getSimilarTracks,
-                                    getLyrics
+                                    results, query, similar, lyrics, getSimilarTracks, getLyrics
                                 )
                             )
 
@@ -121,11 +117,7 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainAlbums(
-                            results,
-                            getEntityDetails,
-                            getStream,
-                            getSettings,
-                            downloadTrack
+                            results, getEntityDetails, getStream, getSettings, downloadTrack
                         )
                     }
 
@@ -136,11 +128,7 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainArtists(
-                            results,
-                            getEntityDetails,
-                            getStream,
-                            getSettings,
-                            downloadTrack
+                            results, getEntityDetails, getStream, getSettings, downloadTrack
                         )
                     }
 
@@ -151,11 +139,7 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainPlaylists(
-                            results,
-                            getEntityDetails,
-                            getStream,
-                            getSettings,
-                            downloadTrack
+                            results, getEntityDetails, getStream, getSettings, downloadTrack
                         )
                     }
                 }
@@ -174,9 +158,7 @@ class SearchCommand : CliktCommand(
         downloadTrack: DownloadTrackUseCase
     ) {
         val title = Messages.get(
-            "search.results_header",
-            "query" to query,
-            "count" to tracks.size.toString()
+            "search.results_header", "query" to query, "count" to tracks.size.toString()
         )
         val selectedTrack = SearchPickers.pickItem(tracks, title) { _, track, isSelected ->
             val duration = SearchOutputFormatter.formatDuration(track.durationMs)
@@ -190,11 +172,7 @@ class SearchCommand : CliktCommand(
         }
         if (selectedTrack == null) return
         SearchActionHandler.handleTrackAction(
-            selectedTrack,
-            getStream,
-            getSettings,
-            downloadTrack,
-            terminal
+            selectedTrack, getStream, getSettings, downloadTrack, terminal
         )
         if (similar) {
             echo("")
@@ -257,11 +235,7 @@ class SearchCommand : CliktCommand(
             val detailedAlbum = getEntityDetails(selectedAlbum) as? SearchResult.Album
             val songs = detailedAlbum?.songs ?: emptyList()
             showTrackListPicker(
-                songs,
-                "Tracks in ${detailedAlbum?.title}",
-                getStream,
-                getSettings,
-                downloadTrack
+                songs, "Tracks in ${detailedAlbum?.title}", getStream, getSettings, downloadTrack
             )
         }
     }
@@ -320,11 +294,7 @@ class SearchCommand : CliktCommand(
             val detailedPlaylist = getEntityDetails(selectedPlaylist) as? SearchResult.Playlist
             val songs = detailedPlaylist?.songs ?: emptyList()
             showTrackListPicker(
-                songs,
-                "Tracks in ${detailedPlaylist?.title}",
-                getStream,
-                getSettings,
-                downloadTrack
+                songs, "Tracks in ${detailedPlaylist?.title}", getStream, getSettings, downloadTrack
             )
         }
     }
@@ -360,11 +330,7 @@ class SearchCommand : CliktCommand(
             is SearchResult.Song -> {
                 echo(magenta("You selected Song: ${selectedItem.track.title}"))
                 SearchActionHandler.handleTrackAction(
-                    selectedItem.track,
-                    getStream,
-                    getSettings,
-                    downloadTrack,
-                    terminal
+                    selectedItem.track, getStream, getSettings, downloadTrack, terminal
                 )
             }
 
@@ -432,11 +398,7 @@ class SearchCommand : CliktCommand(
         }
         selectedTrack?.let {
             SearchActionHandler.handleTrackAction(
-                it,
-                getStream,
-                getSettings,
-                downloadTrack,
-                terminal
+                it, getStream, getSettings, downloadTrack, terminal
             )
         }
     }
