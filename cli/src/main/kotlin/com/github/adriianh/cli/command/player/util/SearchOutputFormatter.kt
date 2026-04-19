@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.command.player
+package com.github.adriianh.cli.command.player.util
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase

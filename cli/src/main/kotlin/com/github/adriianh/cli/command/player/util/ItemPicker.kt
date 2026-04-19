@@ -1,4 +1,4 @@
-package com.github.adriianh.cli.command.player
+package com.github.adriianh.cli.command.player.util
 
 import com.varabyte.kotter.foundation.input.Keys
 import com.varabyte.kotter.foundation.input.onKeyPressed

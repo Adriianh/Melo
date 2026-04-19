@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.handler.DownloadActionHandler
+import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
