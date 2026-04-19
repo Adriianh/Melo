@@ -1,6 +1,8 @@
 package com.github.adriianh.cli.command
 
 import com.github.adriianh.cli.command.config.ConfigCommand
+import com.github.adriianh.cli.command.player.DownloadCommand
+import com.github.adriianh.cli.command.player.PlayCommand
 import com.github.adriianh.cli.command.player.SearchCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.config.configDir
@@ -9,7 +11,13 @@ import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.interactor.*
+import com.github.adriianh.core.domain.interactor.LibraryInteractors
+import com.github.adriianh.core.domain.interactor.OfflineInteractors
+import com.github.adriianh.core.domain.interactor.PlaybackInteractors
+import com.github.adriianh.core.domain.interactor.SearchInteractors
+import com.github.adriianh.core.domain.interactor.SessionInteractors
+import com.github.adriianh.core.domain.interactor.SettingsInteractors
+import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -17,7 +25,7 @@ import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -32,6 +40,8 @@ class MeloCommand : CliktCommand(
         subcommands(
             SearchCommand(),
             ConfigCommand(),
+            PlayCommand(),
+            DownloadCommand(),
         )
     }
 
