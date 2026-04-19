@@ -1,9 +1,6 @@
 package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
-import com.github.adriianh.cli.config.Messages
-import com.github.adriianh.cli.config.configDir
-import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -25,7 +22,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
 class PlayCommand : CliktCommand(
@@ -49,11 +45,6 @@ class PlayCommand : CliktCommand(
         "Play the best matching track, album, or playlist for the given query directly"
 
     override fun run() {
-        if (resolveEnv("LASTFM_API_KEY") == null) {
-            echo(Messages.get("error.missing_lastfm_key", "configDir" to configDir), err = true)
-            exitProcess(1)
-        }
-
         startKoin { modules(appModule) }
 
         try {

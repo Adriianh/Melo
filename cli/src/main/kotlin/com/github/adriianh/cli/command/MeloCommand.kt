@@ -5,8 +5,6 @@ import com.github.adriianh.cli.command.player.DownloadCommand
 import com.github.adriianh.cli.command.player.PlayCommand
 import com.github.adriianh.cli.command.player.SearchCommand
 import com.github.adriianh.cli.config.Messages
-import com.github.adriianh.cli.config.configDir
-import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
@@ -31,15 +29,14 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlin.system.exitProcess
 
 class MeloCommand : CliktCommand(
     name = "melo"
 ), KoinComponent {
     init {
         subcommands(
-            SearchCommand(),
             ConfigCommand(),
+            SearchCommand(),
             PlayCommand(),
             DownloadCommand(),
         )
@@ -51,11 +48,6 @@ class MeloCommand : CliktCommand(
 
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
-
-        if (resolveEnv("LASTFM_API_KEY") == null) {
-            echo(Messages.get("error.missing_lastfm_key", "configDir" to configDir), err = true)
-            exitProcess(1)
-        }
 
         startKoin { modules(appModule) }
 

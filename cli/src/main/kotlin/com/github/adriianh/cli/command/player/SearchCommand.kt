@@ -2,8 +2,6 @@ package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.handler.SearchActionHandler
 import com.github.adriianh.cli.config.Messages
-import com.github.adriianh.cli.config.configDir
-import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -36,7 +34,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlin.system.exitProcess
 
 class SearchCommand : CliktCommand(
     name = "search"
@@ -67,11 +64,6 @@ class SearchCommand : CliktCommand(
     private val terminal = Terminal()
 
     override fun run() {
-        if (resolveEnv("LASTFM_API_KEY") == null) {
-            echo(Messages.get("error.missing_lastfm_key", "configDir" to configDir), err = true)
-            exitProcess(1)
-        }
-
         startKoin { modules(appModule) }
 
         try {
