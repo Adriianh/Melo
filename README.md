@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/logo.png" alt="Melo Logo" width="700">
-</p>
-
 <h1 align="center">Melo</h1>
 
 <p align="center">
@@ -18,12 +14,14 @@
 
 ---
 
-## 🚀 Quick Start
+Melo is a versatile music player designed for efficiency and aesthetics. It provides a seamless experience by combining a rich **Terminal User Interface (TUI)** for immersive listening with a robust **Command Line Interface (CLI)** and background **Daemon** for lightweight control.
 
-1. **Download** the latest release for your platform from [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest).
-2. **Install** using the provided script for your OS (see below).
-3. **Configure** your API keys in the generated `.env` file.
-4. **Run** `melo` from your terminal and enjoy!
+## 🚀 Dual Experience
+
+Melo adapts to your workflow with two primary modes of operation:
+
+- **Interactive TUI**: A beautiful, keyboard-driven interface to browse, search, and manage your library. Best for discovery and focused listening. Simply run `melo`.
+- **Powerful CLI**: Control playback, manage your queue, or fetch track info directly from your shell without opening the full interface. Run `melo <command>` (e.g., `melo play`, `melo next`).
 
 ---
 
@@ -41,124 +39,71 @@
 
 ---
 
-## Features
+## ✨ Features
 
-- **Unified Search**: Find and play music from multiple sources in one place.
-- **Rich Terminal UI**: Intuitive, keyboard-driven interface for efficient navigation.
-- **Flexible Queue**: Manage your playback queue, shuffle, repeat, and favorites.
-- **Continuous Playback**: Automatic radio and recommendations when your queue ends.
-- **Artwork & Lyrics**: Inline album art and lyrics support.
-- **Direct Streaming**: High-quality playback with minimal latency.
-- **Cross-Platform**: Native builds for Windows, macOS, and Linux.
-
----
-
-## Configuration
-
-After installation, configuration files are created in your user config directory (e.g., `~/.config/melo` or `%APPDATA%\melo`).
-Add your API keys and credentials to the `.env` file as needed:
-
-```env
-LASTFM_API_KEY=your_lastfm_key
-SPOTIFY_CLIENT_ID=your_spotify_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-```
-
-You can also manage configuration directly from the terminal using the built-in `config` command:
-
-```bash
-melo config set <key> <value>      # Set a configuration value
-melo config list                  # List all configuration values
-melo config auth <provider>       # Authenticate with a provider (e.g., Spotify)
-```
-
-For more details, run:
-
-```bash
-melo config --help
-```
-
-You can also use `--help` with any subcommand for more details, e.g., `melo config set --help`.
+- **Background Daemon**: Play music persistently in the background using `melo daemon start`.
+- **Unified Search**: Access multiple streaming sources and your local library in a single view.
+- **Remote Control**: Manage playback from any terminal with commands like `melo pause`, `next`, or `queue list`.
+- **Social Integration**: Real-time Discord Rich Presence and Last.fm scrobbling support.
+- **Offline & Library**: Download tracks for offline use and manage local file metadata (`melo tag`).
+- **Smart Discovery**: Automatic radio mode and intelligent recommendations based on your taste.
+- **Aesthetic TUI**: Modern design with inline artwork previews and synced lyrics.
 
 ---
 
-## Installation
+## 🛠️ Quick Start
+
+1. **Download** the latest release for your platform from [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest).
+2. **Install** using the provided script (e.g., `./install.sh` on Linux/macOS).
+3. **Configure** your API keys in the generated `.env` file or via `melo config`.
+4. **Run** `melo` to enter the TUI or `melo daemon start` to play in the background.
+
+---
+
+## ⚙️ Configuration
+
+Configuration files are located in your user config directory (e.g., `~/.config/melo`). You can manage settings via the `.env` file or the CLI:
+
+```bash
+melo config set <key> <value>      # Update a setting
+melo config list                  # View all settings
+melo config auth <provider>       # Authenticate with services (e.g., Spotify, Last.fm)
+```
+
+For more details, run `melo --help`.
+
+---
+
+## 📦 Installation
 
 ### Prerequisites
-- Java 21+ (for building or running the JAR)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://ffmpeg.org/) (for audio streaming)
+- **Java 21+** (for building or running the JAR)
+- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** and **[ffmpeg](https://ffmpeg.org/)** (required for audio streaming)
 
-### From Release
-
-Download the latest release for your platform from [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest).
-
-**Linux / macOS**
-```bash
-tar -xzf melo-*-linux.tar.gz   # or macos
-cd melo-*/
-./install.sh
-```
-
-**Windows** (PowerShell)
-```powershell
-Expand-Archive melo-*-windows.zip
-cd melo-*\
-.\install.ps1
-```
-
-After installation, run `melo` from your terminal.
-
-### Uninstall
-
-**Linux / macOS**
-```bash
-cd melo-*/
-./uninstall.sh
-```
-
-**Windows** (PowerShell)
-```powershell
-cd melo-*\
-.\uninstall.ps1
-```
+### From Source
+1. Clone the repository: `git clone https://github.com/Adriianh/Melo.git`
+2. Build the native binary: `./gradlew :cli:nativeCompile`
+   - *Output: `cli/build/native/nativeCompile/melo`*
 
 ---
 
-## Building from Source
+## 🗺️ Roadmap & Vision
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Adriianh/Melo.git
-   cd Melo
-   ```
-2. Build the native binary for your platform:
-   ```bash
-   ./gradlew :cli:nativeCompile
-   # Output: cli/build/native/nativeCompile/melo (or melo.exe on Windows)
-   ```
-3. Or build the distributable archive:
-   ```bash
-   ./gradlew :cli:dist
-   # Output: cli/build/dist/
-   ```
+Melo is evolving beyond the terminal. Our goal is to provide a unified music experience across all your devices while maintaining the speed and simplicity you love.
+
+- [ ] **Melo Desktop**: A native cross-platform GUI using Compose Multiplatform.
+- [ ] **Melo Mobile**: Android and iOS support to take your library anywhere.
+- [ ] **Listen Together**: Real-time synchronized playback with friends.
+- [ ] **Cloud Sync**: Sync your history, favorites, and settings across all platforms.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-We welcome contributions! To collaborate effectively:
-
-- Fork the repository and create a feature or fix branch (e.g., `feat/feature-name` or `fix/bug-description`).
-- Follow the [Conventional Commits](https://www.conventionalcommits.org/) style for commit messages.
-- Ensure your code is clean, documented, and tested.
-- Run all tests and verify builds before submitting a pull request.
-- Open a pull request with a clear description of your changes and testing steps.
-- Review the [GitHub Guidelines](.github/copilot-instructions.md) for more details on workflow and code style.
-- If you find a bug or have a feature request, please open an issue with clear steps to reproduce or describe the enhancement.
+Contributions are welcome! Please follow the [Conventional Commits](https://www.conventionalcommits.org/) style and ensure your code is clean and tested. Check out our [Contribution Guidelines](.github/git-commit-instructions.md) for more details.
 
 ---
 
-## License
+## 📄 License
 
-Melo is licensed under the GNU General Public License v3.0 (GPLv3). See [LICENSE](LICENSE) for
-details.
+Melo is licensed under the **GNU General Public License v3.0 (GPLv3)**. See [LICENSE](LICENSE) for details.
