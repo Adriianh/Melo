@@ -200,7 +200,7 @@ class MeloScreen(
                 if (currentQuery != lastObservedSearchQuery) {
                     lastObservedSearchQuery = currentQuery
                     handleSearchQueryChange(currentQuery)
-                } else if (isFocused && !lastObservedFocus) {
+                } else if (isFocused && !lastObservedFocus && state.screen is ScreenState.Search) {
                     handleSearchQueryChange(currentQuery)
                 } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
                     updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
