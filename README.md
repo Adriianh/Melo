@@ -25,6 +25,23 @@ Melo adapts to your workflow with two primary modes of operation:
 
 ---
 
+## 🕹️ Command Cheat Sheet
+
+### Playback & Daemon
+- `melo daemon start` — Start the background engine.
+- `melo play "query"` — Search and play a track immediately.
+- `melo pause` / `melo resume` — Control the active stream.
+- `melo status` — Check what's playing and daemon health.
+
+### Library & Queue
+- `melo queue list` — View upcoming tracks.
+- `melo queue add "query"` — Add a specific track to the queue remotely.
+- `melo local scan` — Update your local music library.
+- `melo share` — Get the YouTube Music link for the current track.
+- `melo tag` — Interactively edit metadata for local files.
+
+---
+
 ## 🖼️ Demo
 
 <p align="center">
