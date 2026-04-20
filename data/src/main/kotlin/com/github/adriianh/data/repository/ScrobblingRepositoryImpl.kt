@@ -67,6 +67,10 @@ class ScrobblingRepositoryImpl(
         )
     }
 
+    override suspend fun logout() {
+        removeEnvKey(KEY_SESSION)
+    }
+
     private fun readEnvKey(key: String): String? {
         if (!envFile.exists()) return null
         return envFile.readLines()
