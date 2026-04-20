@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.command
 
 import com.github.adriianh.cli.command.config.ConfigCommand
+import com.github.adriianh.cli.command.player.AuthCommand
 import com.github.adriianh.cli.command.player.DownloadCommand
 import com.github.adriianh.cli.command.player.LyricsCommand
 import com.github.adriianh.cli.command.player.NextCommand
@@ -10,7 +11,9 @@ import com.github.adriianh.cli.command.player.PlaylistCommand
 import com.github.adriianh.cli.command.player.PrevCommand
 import com.github.adriianh.cli.command.player.QueueCommand
 import com.github.adriianh.cli.command.player.ResumeCommand
+import com.github.adriianh.cli.command.player.ScrobbleCommand
 import com.github.adriianh.cli.command.player.SearchCommand
+import com.github.adriianh.cli.command.player.StatsCommand
 import com.github.adriianh.cli.command.player.StatusCommand
 import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.config.Messages
@@ -57,6 +60,9 @@ class MeloCommand : CliktCommand(
             StopCommand(),
             QueueCommand(),
             PlaylistCommand(),
+            AuthCommand(),
+            StatsCommand(),
+            ScrobbleCommand(),
         )
     }
 
