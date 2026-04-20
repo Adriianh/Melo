@@ -39,6 +39,7 @@ class PlaylistCommand : CliktCommand(name = "playlist") {
             PlaylistListCommand(),
             PlaylistAddCommand(),
             PlaylistPlayCommand(),
+            PlaylistShowCommand(),
             PlaylistExportCommand()
         )
     }
@@ -189,6 +190,33 @@ class PlaylistPlayCommand : LibraryCommand("play") {
             getStream = getStream,
             terminal = terminal
         )
+    }
+}
+
+class PlaylistShowCommand : LibraryCommand("show") {
+    private val playlistName by argument(help = "Playlist name or ID")
+
+    override fun help(context: Context): String = "Show tracks in a local playlist"
+
+    override fun run() = runWithKoin {
+        val library: LibraryInteractors by inject()
+        val playlists = library.getPlaylists().first()
+        val playlist = findPlaylist(playlists, playlistName) ?: return@runWithKoin
+
+        val tracks = library.getPlaylistTracks(playlist.id).first()
+        if (tracks.isEmpty()) {
+            terminal.println(yellow("Playlist '${playlist.name}' is empty."))
+            return@runWithKoin
+        }
+
+        terminal.println(cyan("Tracks in '${playlist.name}':"))
+        selectInteractive(
+            tracks,
+            "Select Track to Play"
+        ) { "${it.title} by ${it.artist}" }?.let { track ->
+            val getStream: GetStreamUseCase by inject()
+            PlayActionHandler.playTrack(track, getStream, terminal)
+        }
     }
 }
 
