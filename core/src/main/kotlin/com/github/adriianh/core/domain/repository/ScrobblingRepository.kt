@@ -27,4 +27,7 @@ interface ScrobblingRepository {
 
     /** Scrobble a track. Should be called when playback reaches >50% or >4 minutes. */
     suspend fun scrobble(track: Track, startedAt: Long)
+
+    /** Logs out from Last.fm by clearing the session key. */
+    suspend fun logout()
 }

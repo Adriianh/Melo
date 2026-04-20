@@ -57,4 +57,14 @@ interface OfflineRepository {
      * Scans the provided paths for audio files and returns them as Tracks.
      */
     suspend fun scanLocalTracks(paths: List<String>): List<Track>
+
+    /**
+     * Updates the metadata of a local track on disk and in the repository.
+     */
+    suspend fun updateTrackMetadata(
+        trackId: String,
+        title: String?,
+        artist: String?,
+        album: String?
+    )
 }

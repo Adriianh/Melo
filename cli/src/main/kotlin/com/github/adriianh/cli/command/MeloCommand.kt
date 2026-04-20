@@ -1,15 +1,41 @@
 package com.github.adriianh.cli.command
 
 import com.github.adriianh.cli.command.config.ConfigCommand
+import com.github.adriianh.cli.command.player.AuthCommand
+import com.github.adriianh.cli.command.player.DaemonCommand
+import com.github.adriianh.cli.command.player.DiscoverCommand
+import com.github.adriianh.cli.command.player.DownloadCommand
+import com.github.adriianh.cli.command.player.HistoryCommand
+import com.github.adriianh.cli.command.player.LocalLibraryCommand
+import com.github.adriianh.cli.command.player.LyricsCommand
+import com.github.adriianh.cli.command.player.NextCommand
+import com.github.adriianh.cli.command.player.PauseCommand
+import com.github.adriianh.cli.command.player.PlayCommand
+import com.github.adriianh.cli.command.player.PlaylistCommand
+import com.github.adriianh.cli.command.player.PrevCommand
+import com.github.adriianh.cli.command.player.QueueCommand
+import com.github.adriianh.cli.command.player.RadioCommand
+import com.github.adriianh.cli.command.player.ResumeCommand
+import com.github.adriianh.cli.command.player.RpcCommand
+import com.github.adriianh.cli.command.player.ScrobbleCommand
 import com.github.adriianh.cli.command.player.SearchCommand
+import com.github.adriianh.cli.command.player.ShareCommand
+import com.github.adriianh.cli.command.player.StatsCommand
+import com.github.adriianh.cli.command.player.StatusCommand
+import com.github.adriianh.cli.command.player.StopCommand
+import com.github.adriianh.cli.command.player.TagCommand
 import com.github.adriianh.cli.config.Messages
-import com.github.adriianh.cli.config.configDir
-import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
-import com.github.adriianh.core.domain.interactor.*
+import com.github.adriianh.core.domain.interactor.LibraryInteractors
+import com.github.adriianh.core.domain.interactor.OfflineInteractors
+import com.github.adriianh.core.domain.interactor.PlaybackInteractors
+import com.github.adriianh.core.domain.interactor.SearchInteractors
+import com.github.adriianh.core.domain.interactor.SessionInteractors
+import com.github.adriianh.core.domain.interactor.SettingsInteractors
+import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -17,21 +43,42 @@ import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import kotlin.system.exitProcess
 
 class MeloCommand : CliktCommand(
     name = "melo"
 ), KoinComponent {
     init {
         subcommands(
-            SearchCommand(),
             ConfigCommand(),
+            SearchCommand(),
+            PlayCommand(),
+            RadioCommand(),
+            DiscoverCommand(),
+            HistoryCommand(),
+            LocalLibraryCommand(),
+            DaemonCommand(),
+            TagCommand(),
+            DownloadCommand(),
+            StatusCommand(),
+            LyricsCommand(),
+            PauseCommand(),
+            ResumeCommand(),
+            NextCommand(),
+            PrevCommand(),
+            StopCommand(),
+            QueueCommand(),
+            PlaylistCommand(),
+            AuthCommand(),
+            StatsCommand(),
+            ScrobbleCommand(),
+            ShareCommand(),
+            RpcCommand(),
         )
     }
 
@@ -41,11 +88,6 @@ class MeloCommand : CliktCommand(
 
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
-
-        if (resolveEnv("LASTFM_API_KEY") == null) {
-            echo(Messages.get("error.missing_lastfm_key", "configDir" to configDir), err = true)
-            exitProcess(1)
-        }
 
         startKoin { modules(appModule) }
 

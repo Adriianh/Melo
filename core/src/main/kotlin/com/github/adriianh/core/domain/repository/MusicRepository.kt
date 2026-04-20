@@ -22,4 +22,9 @@ interface MusicRepository {
     fun hasMorePlaylists(offset: Int): Boolean
 
     suspend fun getTrack(id: String): Track?
+
+    suspend fun getHome(): List<SearchResult.ArtistSection>
+    suspend fun getExplore(): List<SearchResult.ArtistSection>
+    suspend fun getTrending(): List<Track>
+    suspend fun getRadio(videoId: String): List<Track>
 }

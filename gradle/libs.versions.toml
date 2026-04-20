@@ -1,4 +1,5 @@
 [versions]
+kotter = "1.2.1"
 kotlin = "2.3.0"
 junit = "4.13.2"
 slf4j = "2.0.17"
@@ -7,6 +8,7 @@ kotlinxSerializationJSON = "1.9.0"
 kotlinxCoroutines = "1.10.2"
 ktor = "3.0.3"
 clikt = "5.0.2"
+mordant = "3.0.2"
 dotenv = "6.4.1"
 koin = "4.2.0-RC1"
 mockk = "1.13.13"
@@ -22,6 +24,7 @@ brotli = "0.1.2"
 newpipe = "v0.24.0"
 
 [libraries]
+kotter = { module = "com.varabyte.kotter:kotter-jvm", version.ref = "kotter" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
@@ -36,6 +39,9 @@ ktorClientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "kto
 ktorClientOkhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktorClientEncoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
+mordantCoroutines = { module = "com.github.ajalt.mordant:mordant-coroutines", version.ref = "mordant" }
+mordantMarkdown = { module = "com.github.ajalt.mordant:mordant-markdown", version.ref = "mordant" }
 dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 koinCore = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

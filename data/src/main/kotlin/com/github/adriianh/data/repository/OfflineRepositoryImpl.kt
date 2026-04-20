@@ -255,6 +255,46 @@ class OfflineRepositoryImpl(
         }
     }
 
+    override suspend fun updateTrackMetadata(
+        trackId: String,
+        title: String?,
+        artist: String?,
+        album: String?
+    ) {
+        val track = getOfflineTrack(trackId) ?: return
+        val path = track.localFilePath ?: return
+        val file = File(path)
+        if (!file.exists()) return
+
+        withContext(dispatcher) {
+            try {
+                val audioFile = AudioFileIO.read(file)
+                val tag = audioFile.tag ?: audioFile.createDefaultTag()
+
+                title?.let { tag.setField(FieldKey.TITLE, it) }
+                artist?.let { tag.setField(FieldKey.ARTIST, it) }
+                album?.let { tag.setField(FieldKey.ALBUM, it) }
+
+                audioFile.commit()
+
+                val current = _offlineTracksFlow.value.toMutableList()
+                val index = current.indexOfFirst { it.track.id == trackId }
+                if (index != -1) {
+                    val updatedTrack = current[index].track.copy(
+                        title = title ?: current[index].track.title,
+                        artist = artist ?: current[index].track.artist,
+                        album = album ?: current[index].track.album
+                    )
+                    current[index] = current[index].copy(track = updatedTrack)
+                    _offlineTracksFlow.value = current
+                    saveMetadataToDisk(current)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     private fun loadMetadataSync(): List<OfflineTrack> {
         if (!metadataFile.exists()) return emptyList()
         return try {

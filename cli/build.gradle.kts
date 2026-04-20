@@ -11,6 +11,9 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":data"))
     implementation(libs.clikt)
+    implementation(libs.mordant)
+    implementation(libs.mordantCoroutines)
+    implementation(libs.mordantMarkdown)
     implementation(libs.kotlinxCoroutines)
     implementation(libs.kotlinxDatetime)
     implementation(libs.koinCore)
@@ -21,6 +24,7 @@ dependencies {
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)
     implementation(libs.jmtc)
+    implementation(libs.kotter)
     implementation(libs.kdiscordipc)
     implementation(libs.slf4jApi)
 }

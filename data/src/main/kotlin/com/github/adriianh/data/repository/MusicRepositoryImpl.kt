@@ -177,6 +177,11 @@ class MusicRepositoryImpl(
         )
     }
 
+    override suspend fun getHome(): List<SearchResult.ArtistSection> = musicProvider.getHome()
+    override suspend fun getExplore(): List<SearchResult.ArtistSection> = musicProvider.getExplore()
+    override suspend fun getTrending(): List<Track> = musicProvider.getTrending()
+    override suspend fun getRadio(videoId: String): List<Track> = musicProvider.getRadio(videoId)
+
     companion object {
         /** Maximum number of tracks kept in the in-memory result cache.
          *  Avoids unbounded heap growth when multiple providers return large result sets. */

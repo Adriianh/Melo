@@ -2,12 +2,21 @@ package com.github.adriianh.cli.tui.player
 
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.core.domain.model.Track
-import io.github.selemba1000.*
-import io.ktor.client.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import io.github.selemba1000.JMTC
+import io.github.selemba1000.JMTCButtonCallback
+import io.github.selemba1000.JMTCCallbacks
+import io.github.selemba1000.JMTCEnabledButtons
+import io.github.selemba1000.JMTCMediaType
+import io.github.selemba1000.JMTCMusicProperties
+import io.github.selemba1000.JMTCPlayingState
+import io.github.selemba1000.JMTCSettings
+import io.github.selemba1000.JMTCTimelineProperties
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.readRawBytes
 import java.io.File
 import java.nio.file.Files
+import java.util.UUID
 
 /**
  * Integrates with the OS media session layer via JMTC:
@@ -40,7 +49,8 @@ class MediaSessionManager(
         synchronized(this) {
             if (initialized) return
             try {
-                jmtc = JMTC.getInstance(JMTCSettings("melo", "melo"))
+                val sessionId = "melo-${UUID.randomUUID()}"
+                jmtc = JMTC.getInstance(JMTCSettings(sessionId, "melo"))
 
                 val callbacks = JMTCCallbacks()
                 callbacks.onPlay = JMTCButtonCallback {
