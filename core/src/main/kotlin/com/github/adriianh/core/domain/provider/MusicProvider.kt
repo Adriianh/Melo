@@ -19,4 +19,9 @@ interface MusicProvider {
     suspend fun getArtistDetails(id: String): SearchResult.Artist? = null
     suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? = null
     suspend fun getSearchSuggestions(query: String): List<String> = emptyList()
+
+    suspend fun getHome(): List<SearchResult.ArtistSection> = emptyList()
+    suspend fun getExplore(): List<SearchResult.ArtistSection> = emptyList()
+    suspend fun getTrending(): List<Track> = emptyList()
+    suspend fun getRadio(videoId: String): List<Track> = emptyList()
 }

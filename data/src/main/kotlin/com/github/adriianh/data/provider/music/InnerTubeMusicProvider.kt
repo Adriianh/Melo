@@ -365,4 +365,88 @@ class InnerTubeMusicProvider(
             ?: return fallback?.getSearchSuggestions(query) ?: emptyList()
         return remoteSuggestions
     }
+
+    override suspend fun getHome(): List<SearchResult.ArtistSection> {
+        val homePage = YouTube.home().getOrNull() ?: return emptyList()
+        return homePage.sections.map { section ->
+            SearchResult.ArtistSection(
+                title = section.title,
+                items = section.items.mapNotNull { mapYTItem(it) }
+            )
+        }
+    }
+
+    override suspend fun getExplore(): List<SearchResult.ArtistSection> {
+        val explorePage = YouTube.explore().getOrNull() ?: return emptyList()
+        val sections = mutableListOf<SearchResult.ArtistSection>()
+
+        if (explorePage.newReleaseAlbums.isNotEmpty()) {
+            sections.add(
+                SearchResult.ArtistSection(
+                title = "New Releases",
+                items = explorePage.newReleaseAlbums.map { mapAlbumItem(it) }
+            ))
+        }
+
+        return sections
+    }
+
+    override suspend fun getTrending(): List<Track> {
+        val home = getHome()
+        return home.find { it.title.contains("Trending", ignoreCase = true) }
+            ?.items?.filterIsInstance<SearchResult.Song>()?.map { it.track }
+            ?: emptyList()
+    }
+
+    override suspend fun getRadio(videoId: String): List<Track> {
+        val endpoint = com.github.adriianh.innertube.models.WatchEndpoint(
+            videoId = videoId,
+            playlistId = "RDAMVM$videoId"
+        )
+        val result = YouTube.next(endpoint).getOrNull() ?: return emptyList()
+        return result.items.map { mapSongItem(it) }
+    }
+
+    private fun mapYTItem(item: YTItem): SearchResult? {
+        return when (item) {
+            is SongItem -> SearchResult.Song(mapSongItem(item))
+            is AlbumItem -> mapAlbumItem(item)
+            is ArtistItem -> SearchResult.Artist(
+                id = item.id,
+                name = item.title,
+                artworkUrl = item.thumbnail
+            )
+
+            is PlaylistItem -> SearchResult.Playlist(
+                id = item.id,
+                title = item.title,
+                author = item.author?.name ?: "Unknown",
+                trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                artworkUrl = item.thumbnail
+            )
+        }
+    }
+
+    private fun mapSongItem(item: SongItem): Track {
+        return Track(
+            id = "piped:${item.id}",
+            title = item.title,
+            artist = item.artists.firstOrNull()?.name ?: "Unknown",
+            durationMs = item.duration?.times(1000L) ?: 0L,
+            album = item.album?.name ?: "",
+            genres = emptyList(),
+            artworkUrl = item.thumbnail,
+            sourceId = item.id
+        )
+    }
+
+    private fun mapAlbumItem(item: AlbumItem): SearchResult.Album {
+        return SearchResult.Album(
+            id = item.browseId,
+            title = item.title,
+            author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
+            year = item.year?.toString(),
+            artworkUrl = item.thumbnail
+        )
+    }
 }
