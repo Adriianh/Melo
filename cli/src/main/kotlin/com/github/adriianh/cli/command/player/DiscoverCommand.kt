@@ -68,7 +68,6 @@ class DiscoverCommand : NoOpCliktCommand(
                             is SearchResult.Album -> "[Album] ${item.title} - ${item.author}"
                             is SearchResult.Playlist -> "[Playlist] ${item.title} - ${item.author}"
                             is SearchResult.Artist -> "[Artist] ${item.name}"
-                            else -> item.toString()
                         }
                         if (isSelected) {
                             kotterYellow { textLine("> $text") }

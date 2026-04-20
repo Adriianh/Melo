@@ -6,6 +6,7 @@ import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.interactor.PlaybackInteractors
@@ -45,7 +46,9 @@ import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseC
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
+import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.UpdateTrackMetadataUseCase
 import com.github.adriianh.core.domain.usecase.playback.AuthenticateLastFmUseCase
 import com.github.adriianh.core.domain.usecase.playback.CompleteWebAuthUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
@@ -57,12 +60,16 @@ import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
 import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
+import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
+import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMoreAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMoreArtistsUseCase
 import com.github.adriianh.core.domain.usecase.search.LoadMorePlaylistsUseCase
@@ -266,6 +273,8 @@ val appModule = module {
     factory { DeleteDownloadedTrackUseCase(get()) }
     factory { MarkTrackAccessedUseCase(get()) }
     factory { AutoCleanupUseCase(get()) }
+    factory { ScanLocalTracksUseCase(get()) }
+    factory { UpdateTrackMetadataUseCase(get()) }
     factory { GetPlaylistsUseCase(get()) }
     factory { GetPlaylistTracksUseCase(get()) }
     factory { CreatePlaylistUseCase(get()) }
@@ -287,7 +296,13 @@ val appModule = module {
     factory { GetSettingsUseCase(get()) }
     factory { UpdateSettingsUseCase(get()) }
 
+    factory { GetHomeUseCase(get()) }
+    factory { GetExploreUseCase(get()) }
+    factory { GetTrendingUseCase(get()) }
+    factory { GetRadioUseCase(get()) }
+
     // Interactors
+    factory { DiscoveryInteractors(get(), get(), get(), get()) }
     factory { GetSearchHistoryUseCase(get()) }
     factory { GetSearchSuggestionsUseCase(get()) }
     factory { SaveSearchQueryUseCase(get()) }
@@ -316,7 +331,7 @@ val appModule = module {
     }
     factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
-    factory { OfflineInteractors(get(), get(), get(), get(), get(), get()) }
+    factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { StatsInteractors(get(), get(), get()) }
     factory { SessionInteractors(get(), get(), get()) }
     factory { SettingsInteractors(get(), get()) }

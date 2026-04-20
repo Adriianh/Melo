@@ -59,7 +59,7 @@ class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
                 terminal.println(gray("Searching for '$query'..."))
                 val tracks = searchTracks(query)
                 val track =
-                    selectInteractive(tracks, "Select Track") { "${it.title} by ${it.artist}" }
+                    selectInteractive(tracks) { "${it.title} by ${it.artist}" }
 
                 if (track == null) {
                     terminal.println("No track results found or selection cancelled for '$query'.")
@@ -79,14 +79,13 @@ class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
 
     private fun <T> selectInteractive(
         results: List<T>,
-        title: String,
         titleSelector: (T) -> String
     ): T? {
         if (results.isEmpty()) return null
         if (!interactive || results.size == 1) return results.first()
 
         val limited = results.take(15)
-        val selected = ItemPicker.pickItem(limited, title) { _, item, isSelected ->
+        val selected = ItemPicker.pickItem(limited, "Select Track") { _, item, isSelected ->
             if (isSelected) {
                 kotterYellow { textLine("> " + titleSelector(item)) }
             } else {

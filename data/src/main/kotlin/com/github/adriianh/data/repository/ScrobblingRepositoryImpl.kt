@@ -42,9 +42,6 @@ class ScrobblingRepositoryImpl(
             true
         }
 
-    /** Returns the pending token stored by [startWebAuth], if any. */
-    fun getPendingToken(): String? = readEnvKey(KEY_TOKEN)
-
     override suspend fun updateNowPlaying(track: Track) {
         val key = getSessionKey() ?: return
         client.updateNowPlaying(
@@ -71,6 +68,7 @@ class ScrobblingRepositoryImpl(
         removeEnvKey(KEY_SESSION)
     }
 
+    @Suppress("SameParameterValue")
     private fun readEnvKey(key: String): String? {
         if (!envFile.exists()) return null
         return envFile.readLines()
