@@ -4,7 +4,9 @@ import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.ajalt.mordant.animation.progress.ThreadProgressTaskAnimator
@@ -32,6 +34,8 @@ object PlayActionHandler : KoinComponent {
     private val httpClient: HttpClient by inject()
     private val getSimilarTracks: GetSimilarTracksUseCase by inject()
     private val searchTracks: SearchTracksUseCase by inject()
+    private val scrobbling: ScrobblingRepository by inject()
+    private val recordPlay: RecordPlayUseCase by inject()
     suspend fun playTrack(
         seedTrack: Track,
         getStream: GetStreamUseCase,
@@ -83,6 +87,9 @@ object PlayActionHandler : KoinComponent {
         var activeProgressJob: Job? = null
         var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
 
+        var trackStartedAt = System.currentTimeMillis()
+        var hasScrobbledCurrent = false
+
         val ipcServer = LocalIpcServer(
             onPlayPause = { playPauseAction?.invoke() },
             onNext = { nextAction?.invoke() },
@@ -125,6 +132,21 @@ object PlayActionHandler : KoinComponent {
             onProgress = { posMs ->
                 sessionManager.updatePosition(posMs)
                 activeProgressTask?.update { completed = posMs }
+
+                // Scrobble if > 50% or > 4 minutes
+                if (!hasScrobbledCurrent && currentTrack.durationMs > 0) {
+                    val threshold = minOf(currentTrack.durationMs / 2, 4 * 60 * 1000L)
+                    if (posMs >= threshold) {
+                        hasScrobbledCurrent = true
+                        playerScope.launch {
+                            try {
+                                scrobbling.scrobble(currentTrack, trackStartedAt)
+                                recordPlay(currentTrack, trackStartedAt)
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+                }
             },
             onFinish = { nextAction?.invoke() },
             onError = { _ -> nextAction?.invoke() }
@@ -151,7 +173,15 @@ object PlayActionHandler : KoinComponent {
                 }
                 player.play(url)
                 isPlaying = true
+                trackStartedAt = System.currentTimeMillis()
+                hasScrobbledCurrent = false
                 sessionManager.updateTrack(currentTrack, currentTrack.durationMs)
+                playerScope.launch {
+                    try {
+                        scrobbling.updateNowPlaying(currentTrack)
+                    } catch (_: Exception) {
+                    }
+                }
             } else {
                 terminal.println(yellow("⚠️ Failed to get stream for: ") + currentTrack.title)
                 nextAction?.invoke()
