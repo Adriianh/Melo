@@ -62,12 +62,6 @@ jobs:
           name: melo-${{ matrix.label }}
           path: ${{ matrix.artifact }}
 
-      - name: Upload native image
-        uses: actions/upload-artifact@v7.0.0
-        with:
-          name: melo-native-${{ matrix.label }}
-          path: cli/build/native/nativeCompile/${{ matrix.os == 'windows-latest' && 'melo.exe' || 'melo' }}
-
   release:
     needs: build
     runs-on: ubuntu-latest
