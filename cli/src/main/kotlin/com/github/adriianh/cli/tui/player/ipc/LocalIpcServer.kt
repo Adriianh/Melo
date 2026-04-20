@@ -23,7 +23,8 @@ class LocalIpcServer(
     private val onQueueAdd: (Track) -> Unit,
     private val onQueueRemove: (Int) -> Boolean,
     private val onQueueClear: () -> Unit,
-    private val getQueue: () -> List<Track>
+    private val getQueue: () -> List<Track>,
+    private val onCustomCommand: (String, String) -> String = { _, _ -> "ERROR Not implemented" }
 ) {
     private val logger = LoggerFactory.getLogger(LocalIpcServer::class.java)
     private var serverSocket: ServerSocket? = null
@@ -115,7 +116,10 @@ class LocalIpcServer(
                         writer.write("OK $res\n")
                     }
 
-                    else -> writer.write("ERROR Unknown command\n")
+                    else -> {
+                        val response = onCustomCommand(cmd, payload)
+                        writer.write("$response\n")
+                    }
                 }
                 writer.flush()
             }
