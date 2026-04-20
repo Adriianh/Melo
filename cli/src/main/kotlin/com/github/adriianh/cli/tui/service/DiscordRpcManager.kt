@@ -7,7 +7,12 @@ import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -18,15 +23,30 @@ import kotlin.coroutines.cancellation.CancellationException
  * activity to reflect the currently playing track in Melo.
  */
 class DiscordRpcManager(
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    providedScope: CoroutineScope? = null
 ) {
     private var ipc: KDiscordIPC? = null
+    private var isConnected: Boolean = false
+
+    private val scope: CoroutineScope = providedScope ?: CoroutineScope(
+        Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
+            // Handle premature disconnection errors gracefully
+            if (throwable.message?.contains("Discord has disconnected") == true ||
+                throwable.message?.contains("disconnecting prematurely") == true
+            ) {
+                // These are expected when Discord is closed while Melo is running
+                isConnected = false
+                ipc = null
+            } else if (throwable !is CancellationException) {
+                throwable.printStackTrace()
+            }
+        }
+    )
     private val clientId = "1485113215905042515"
 
     private var currentTrack: Track? = null
     private var isPlaying: Boolean = false
     private var startTime: Instant? = null
-    private var isConnected: Boolean = false
     private var activityJob: Job? = null
 
     fun connect() {
@@ -39,7 +59,8 @@ class DiscordRpcManager(
                     isConnected = true
                     currentTrack?.let { updateActivity(it, isPlaying) }
                 }
-                
+
+                // Handle library-level error events if possible
                 newIpc.on<DisconnectedEvent> {
                     isConnected = false
                     ipc = null
