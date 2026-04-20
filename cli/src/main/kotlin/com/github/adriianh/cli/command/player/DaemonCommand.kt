@@ -143,8 +143,13 @@ class DaemonStatusCommand : CliktCommand(
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_LIST")
         if (result.startsWith("ERROR")) {
-            terminal.println(red("Daemon is NOT running."))
-            terminal.println(yellow("Use 'melo daemon run' to start it."))
+            if (result.contains("Failed to connect") || result.contains("No active playback session")) {
+                terminal.println(red("Daemon is NOT running."))
+                terminal.println(yellow("Use 'melo daemon start' to launch it in the background."))
+            } else {
+                terminal.println(red("Daemon is running but returned an error:"))
+                terminal.println(yellow(result))
+            }
         } else {
             terminal.println(green("Daemon is running and healthy."))
             terminal.println(cyan("Connected to IPC server."))

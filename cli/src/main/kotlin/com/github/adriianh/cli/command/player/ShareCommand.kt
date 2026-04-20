@@ -33,7 +33,7 @@ class ShareCommand : CliktCommand(
                 terminal.println(yellow("No track is currently playing in the daemon."))
                 terminal.println(cyan("Hint: Provide a search query to share a specific track, e.g., melo share 'Never Gonna Give You Up'"))
             } else {
-                val track = Json.decodeFromString<Track>(result)
+                val track = Json.decodeFromString(Track.serializer(), result)
                 printTrackLink(track)
             }
         } else {

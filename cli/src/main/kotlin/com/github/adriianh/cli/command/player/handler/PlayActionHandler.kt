@@ -27,7 +27,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -235,7 +234,8 @@ object PlayActionHandler : KoinComponent {
                     }
 
                     "GET_CURRENT_TRACK" -> {
-                        currentTrack?.let { Json.encodeToString(it) } ?: "ERROR No track playing"
+                        currentTrack?.let { Json.encodeToString(Track.serializer(), it) }
+                            ?: "ERROR No track playing"
                     }
 
                     else -> "ERROR Unknown command"

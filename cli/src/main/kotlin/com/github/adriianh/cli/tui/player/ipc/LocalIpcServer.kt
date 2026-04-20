@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -89,7 +89,7 @@ class LocalIpcServer(
 
                     "QUEUE_ADD" -> {
                         try {
-                            val track = json.decodeFromString<Track>(payload)
+                            val track = json.decodeFromString(Track.serializer(), payload)
                             onQueueAdd(track)
                             writer.write("OK\n")
                         } catch (_: Exception) {
@@ -112,7 +112,7 @@ class LocalIpcServer(
 
                     "QUEUE_LIST" -> {
                         val queue = getQueue()
-                        val res = json.encodeToString(queue)
+                        val res = json.encodeToString(ListSerializer(Track.serializer()), queue)
                         writer.write("OK $res\n")
                     }
 

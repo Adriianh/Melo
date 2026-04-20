@@ -22,7 +22,6 @@ import com.github.ajalt.mordant.rendering.TextColors.green
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -152,7 +151,7 @@ class PlayCommand : CliktCommand(
 
         val json = Json { ignoreUnknownKeys = true }
         tracks.forEach { track ->
-            val payload = json.encodeToString(track)
+            val payload = json.encodeToString(Track.serializer(), track)
             LocalIpcClient.sendCommand("QUEUE_ADD", payload)
         }
         return true
