@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.command.player
 
+import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.core.domain.usecase.playback.CompleteWebAuthUseCase
 import com.github.adriianh.core.domain.usecase.playback.StartWebAuthUseCase
@@ -11,6 +12,7 @@ import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.mordant.rendering.TextColors.cyan
 import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.red
 import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.runBlocking
@@ -37,6 +39,16 @@ class LastFmAuthCommand : CliktCommand(name = "lastfm"), KoinComponent {
     override fun help(context: Context): String = "Authenticate with Last.fm"
 
     override fun run() {
+        val apiKey = resolveEnv("LASTFM_API_KEY")
+        val sharedSecret = resolveEnv("LASTFM_SHARED_SECRET")
+
+        if (apiKey == null || sharedSecret == null) {
+            terminal.println(red("✗ LASTFM_API_KEY and LASTFM_SHARED_SECRET must be configured first."))
+            terminal.println(gray("  Run: melo config set LASTFM_API_KEY <key>"))
+            terminal.println(gray("  Run: melo config set LASTFM_SHARED_SECRET <secret>"))
+            return
+        }
+
         if (GlobalContext.getOrNull() == null) {
             startKoin { modules(appModule) }
         }
@@ -52,6 +64,8 @@ class LastFmAuthCommand : CliktCommand(name = "lastfm"), KoinComponent {
                         terminal.println(gray("(The token is the 'token' parameter in the URL you were redirected to)"))
                     } else {
                         terminal.println(yellow("Failed to start Last.fm authentication."))
+                        terminal.println(gray("Make sure you have configured LASTFM_API_KEY and LASTFM_SHARED_SECRET."))
+                        terminal.println(gray("You can set them with: melo config set LASTFM_API_KEY <your_key>"))
                     }
                 } else {
                     val completeWebAuth: CompleteWebAuthUseCase by inject()
