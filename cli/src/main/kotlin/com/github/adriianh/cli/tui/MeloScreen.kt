@@ -55,6 +55,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -200,14 +201,14 @@ class MeloScreen(
                 if (currentQuery != lastObservedSearchQuery) {
                     lastObservedSearchQuery = currentQuery
                     handleSearchQueryChange(currentQuery)
-                } else if (isFocused && !lastObservedFocus) {
+                } else if (isFocused && !lastObservedFocus && state.screen is ScreenState.Search) {
                     handleSearchQueryChange(currentQuery)
                 } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
                     updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
                 }
 
                 lastObservedFocus = isFocused
-                kotlinx.coroutines.delay(100)
+                delay(100)
             }
         }
     }
