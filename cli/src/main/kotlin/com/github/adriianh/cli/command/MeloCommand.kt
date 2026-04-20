@@ -6,6 +6,7 @@ import com.github.adriianh.cli.command.player.LyricsCommand
 import com.github.adriianh.cli.command.player.NextCommand
 import com.github.adriianh.cli.command.player.PauseCommand
 import com.github.adriianh.cli.command.player.PlayCommand
+import com.github.adriianh.cli.command.player.PlaylistCommand
 import com.github.adriianh.cli.command.player.PrevCommand
 import com.github.adriianh.cli.command.player.QueueCommand
 import com.github.adriianh.cli.command.player.ResumeCommand
@@ -55,6 +56,7 @@ class MeloCommand : CliktCommand(
             PrevCommand(),
             StopCommand(),
             QueueCommand(),
+            PlaylistCommand(),
         )
     }
 
