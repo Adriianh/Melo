@@ -3,6 +3,7 @@ package com.github.adriianh.cli.command.player.handler
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
+import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -26,6 +27,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.system.exitProcess
@@ -36,6 +39,9 @@ object PlayActionHandler : KoinComponent {
     private val searchTracks: SearchTracksUseCase by inject()
     private val scrobbling: ScrobblingRepository by inject()
     private val recordPlay: RecordPlayUseCase by inject()
+    private val discordRpc: DiscordRpcManager by inject()
+
+    private var rpcEnabled = true
     suspend fun playTrack(
         seedTrack: Track,
         getStream: GetStreamUseCase,
@@ -103,6 +109,10 @@ object PlayActionHandler : KoinComponent {
         var trackStartedAt = System.currentTimeMillis()
         var hasScrobbledCurrent = false
 
+        if (rpcEnabled) {
+            discordRpc.connect()
+        }
+
         val sessionManager = MediaSessionManager(
             httpClient = httpClient,
             onPlayPause = { playPauseAction?.invoke() },
@@ -168,6 +178,9 @@ object PlayActionHandler : KoinComponent {
                     } catch (_: Exception) {
                     }
                 }
+                if (rpcEnabled) {
+                    discordRpc.updateActivity(track, true)
+                }
             } else {
                 terminal.println(yellow("⚠️ Failed to get stream for: ") + track.title)
                 nextAction?.invoke()
@@ -207,7 +220,27 @@ object PlayActionHandler : KoinComponent {
                     terminal.println(gray("\nQueue cleared (except history and current track)."))
                 }
             },
-            getQueue = { radioQueue.drop(queueIndex + 1) }
+            getQueue = { radioQueue.drop(queueIndex + 1) },
+            onCustomCommand = { cmd: String, _: String ->
+                when (cmd) {
+                    "RPC_TOGGLE" -> {
+                        rpcEnabled = !rpcEnabled
+                        if (rpcEnabled) {
+                            discordRpc.connect()
+                            currentTrack?.let { discordRpc.updateActivity(it, isPlaying) }
+                        } else {
+                            discordRpc.disconnect()
+                        }
+                        "RPC is now ${if (rpcEnabled) "ENABLED" else "DISABLED"}"
+                    }
+
+                    "GET_CURRENT_TRACK" -> {
+                        currentTrack?.let { Json.encodeToString(it) } ?: "ERROR No track playing"
+                    }
+
+                    else -> "ERROR Unknown command"
+                }
+            }
         )
         ipcServer.start(playerScope)
         sessionManager.init()
@@ -223,6 +256,9 @@ object PlayActionHandler : KoinComponent {
                 terminal.println(green("▶ Resumed"))
             }
             isPlaying = !isPlaying
+            if (rpcEnabled) {
+                discordRpc.updateActivity(currentTrack, isPlaying)
+            }
         }
         nextAction = {
             playerScope.launch {
