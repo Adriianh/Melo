@@ -15,7 +15,7 @@ import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -66,7 +66,7 @@ class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
                     return@runBlocking
                 }
 
-                val payload = json.encodeToString(track)
+                val payload = json.encodeToString(Track.serializer(), track)
                 val result = LocalIpcClient.sendCommand("QUEUE_ADD", payload)
                 if (result.startsWith("ERROR")) terminal.println(result)
                 else terminal.println("Successfully added to queue: ${track.title}")
@@ -111,7 +111,7 @@ class QueueListCommand : CliktCommand(name = "list") {
         } else if (result.startsWith("OK ")) {
             val payload = result.removePrefix("OK ")
             try {
-                val queue = json.decodeFromString<List<Track>>(payload)
+                val queue = json.decodeFromString(ListSerializer(Track.serializer()), payload)
                 if (queue.isEmpty()) {
                     terminal.println("The queue is empty.")
                 } else {
@@ -120,8 +120,9 @@ class QueueListCommand : CliktCommand(name = "list") {
                         terminal.println("${i}. ${t.title} by ${t.artist}")
                     }
                 }
-            } catch (_: Exception) {
-                terminal.println("ERROR Failed to parse queue data.")
+            } catch (e: Exception) {
+                terminal.println("ERROR Failed to parse queue data: ${e.message}")
+                terminal.println(gray("Raw payload: $payload"))
             }
         }
     }
