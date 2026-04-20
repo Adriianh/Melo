@@ -65,6 +65,19 @@ object PlayActionHandler : KoinComponent {
         )
     }
 
+    suspend fun startDaemon(
+        getStream: GetStreamUseCase,
+        terminal: Terminal = Terminal()
+    ) {
+        startPlayback(
+            contextName = "Daemon Mode",
+            initialTracks = emptyList(),
+            getStream = getStream,
+            terminal = terminal,
+            shouldFetchSimilar = false
+        )
+    }
+
     private suspend fun startPlayback(
         contextName: String,
         initialTracks: List<Track>,
@@ -74,15 +87,15 @@ object PlayActionHandler : KoinComponent {
     ) {
         terminal.println(cyan("Starting playback for $contextName... Press Ctrl+C to stop."))
         terminal.println(gray("Media keys (Play/Pause, Next, Prev) are supported in background."))
-        var currentTrack = initialTracks.first()
-        var isPlaying = true
+        var currentTrack: Track? = initialTracks.firstOrNull()
+        var isPlaying = false
         val radioQueue = initialTracks.toMutableList()
         var queueIndex = 0
-        val stopSignal = CompletableDeferred<Unit>()
         var playPauseAction: (() -> Unit)? = null
         var nextAction: (() -> Unit)? = null
         var prevAction: (() -> Unit)? = null
         var stopAction: (() -> Unit)? = null
+        val stopSignal = CompletableDeferred<Unit>()
         val playerScope = CoroutineScope(Dispatchers.IO)
         var activeProgressJob: Job? = null
         var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
@@ -90,14 +103,93 @@ object PlayActionHandler : KoinComponent {
         var trackStartedAt = System.currentTimeMillis()
         var hasScrobbledCurrent = false
 
+        val sessionManager = MediaSessionManager(
+            httpClient = httpClient,
+            onPlayPause = { playPauseAction?.invoke() },
+            onNext = { nextAction?.invoke() },
+            onPrevious = { prevAction?.invoke() },
+            onStop = { stopAction?.invoke() }
+        )
+
+        val player = AudioPlayer(
+            scope = playerScope,
+            onProgress = { posMs ->
+                sessionManager.updatePosition(posMs)
+                activeProgressTask?.update { completed = posMs }
+
+                currentTrack?.let { track ->
+                    if (!hasScrobbledCurrent && track.durationMs > 0) {
+                        val threshold = minOf(track.durationMs / 2, 4 * 60 * 1000L)
+                        if (posMs >= threshold) {
+                            hasScrobbledCurrent = true
+                            playerScope.launch {
+                                try {
+                                    scrobbling.scrobble(track, trackStartedAt)
+                                    recordPlay(track, trackStartedAt)
+                                } catch (_: Exception) {
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            onFinish = { nextAction?.invoke() },
+            onError = { _ -> nextAction?.invoke() }
+        )
+
+        // Declare playCurrentTrackFromQueue as a local function to avoid circularity issues
+        suspend fun playCurrentTrack() {
+            val track = currentTrack ?: return
+            val url = getStream(track)
+            if (url != null) {
+                terminal.println(green("▶ Playing: ") + track.title + gray(" by ") + track.artist)
+                activeProgressJob?.cancel()
+                activeProgressTask = progressBarLayout {
+                    text {
+                        val posSec = completed / 1000L
+                        val lenSec = (total ?: 0L) / 1000L
+                        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
+                        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
+                        gray("$posStr / $lenStr")
+                    }
+                    progressBar()
+                }.animateOnThread(terminal, total = track.durationMs)
+                activeProgressJob = playerScope.launch {
+                    activeProgressTask.execute()
+                }
+                player.play(url)
+                isPlaying = true
+                trackStartedAt = System.currentTimeMillis()
+                hasScrobbledCurrent = false
+                sessionManager.updateTrack(track, track.durationMs)
+                playerScope.launch {
+                    try {
+                        scrobbling.updateNowPlaying(track)
+                    } catch (_: Exception) {
+                    }
+                }
+            } else {
+                terminal.println(yellow("⚠️ Failed to get stream for: ") + track.title)
+                nextAction?.invoke()
+            }
+        }
+
         val ipcServer = LocalIpcServer(
             onPlayPause = { playPauseAction?.invoke() },
             onNext = { nextAction?.invoke() },
             onPrevious = { prevAction?.invoke() },
             onStop = { stopAction?.invoke() },
             onQueueAdd = { track ->
+                val wasEmpty = radioQueue.isEmpty()
                 radioQueue.add(track)
                 terminal.println(green("\n🎵 Added to queue: ") + track.title + gray(" by ") + track.artist)
+                if (wasEmpty) {
+                    playerScope.launch {
+                        currentTrack = track
+                        queueIndex = 0
+                        playCurrentTrack()
+                    }
+                }
             },
             onQueueRemove = { index ->
                 val realIndex = queueIndex + 1 + index
@@ -118,75 +210,8 @@ object PlayActionHandler : KoinComponent {
             getQueue = { radioQueue.drop(queueIndex + 1) }
         )
         ipcServer.start(playerScope)
-
-        val sessionManager = MediaSessionManager(
-            httpClient = httpClient,
-            onPlayPause = { playPauseAction?.invoke() },
-            onNext = { nextAction?.invoke() },
-            onPrevious = { prevAction?.invoke() },
-            onStop = { stopAction?.invoke() }
-        )
-
-        val player = AudioPlayer(
-            scope = playerScope,
-            onProgress = { posMs ->
-                sessionManager.updatePosition(posMs)
-                activeProgressTask?.update { completed = posMs }
-
-                // Scrobble if > 50% or > 4 minutes
-                if (!hasScrobbledCurrent && currentTrack.durationMs > 0) {
-                    val threshold = minOf(currentTrack.durationMs / 2, 4 * 60 * 1000L)
-                    if (posMs >= threshold) {
-                        hasScrobbledCurrent = true
-                        playerScope.launch {
-                            try {
-                                scrobbling.scrobble(currentTrack, trackStartedAt)
-                                recordPlay(currentTrack, trackStartedAt)
-                            } catch (_: Exception) {
-                            }
-                        }
-                    }
-                }
-            },
-            onFinish = { nextAction?.invoke() },
-            onError = { _ -> nextAction?.invoke() }
-        )
-
         sessionManager.init()
-        val playCurrentTrackFromQueue = suspend {
-            val url = getStream(currentTrack)
-            if (url != null) {
-                terminal.println(green("▶ Playing: ") + currentTrack.title + gray(" by ") + currentTrack.artist)
-                activeProgressJob?.cancel()
-                activeProgressTask = progressBarLayout {
-                    text {
-                        val posSec = completed / 1000L
-                        val lenSec = (total ?: 0L) / 1000L
-                        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
-                        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
-                        gray("$posStr / $lenStr")
-                    }
-                    progressBar()
-                }.animateOnThread(terminal, total = currentTrack.durationMs)
-                activeProgressJob = playerScope.launch {
-                    activeProgressTask.execute()
-                }
-                player.play(url)
-                isPlaying = true
-                trackStartedAt = System.currentTimeMillis()
-                hasScrobbledCurrent = false
-                sessionManager.updateTrack(currentTrack, currentTrack.durationMs)
-                playerScope.launch {
-                    try {
-                        scrobbling.updateNowPlaying(currentTrack)
-                    } catch (_: Exception) {
-                    }
-                }
-            } else {
-                terminal.println(yellow("⚠️ Failed to get stream for: ") + currentTrack.title)
-                nextAction?.invoke()
-            }
-        }
+
         playPauseAction = {
             if (isPlaying) {
                 player.pause()
@@ -204,32 +229,34 @@ object PlayActionHandler : KoinComponent {
                 if (queueIndex + 1 < radioQueue.size) {
                     queueIndex++
                     currentTrack = radioQueue[queueIndex]
-                    playCurrentTrackFromQueue()
+                    playCurrentTrack()
                 } else {
-                    if (shouldFetchSimilar) {
-                        try {
-                            terminal.println(gray("Fetching similar tracks..."))
-                            val similarRaw =
-                                getSimilarTracks(currentTrack.artist, currentTrack.title).take(5)
-                            val similarTracksResolved = similarRaw.mapNotNull { sim ->
-                                searchTracks("${sim.title} ${sim.artist}").firstOrNull()
-                            }.filter { track -> radioQueue.none { it.id == track.id } }
-                            if (similarTracksResolved.isNotEmpty()) {
-                                radioQueue.addAll(similarTracksResolved)
-                                queueIndex++
-                                currentTrack = radioQueue[queueIndex]
-                                playCurrentTrackFromQueue()
-                            } else {
-                                terminal.println(gray("No more related tracks found."))
+                    currentTrack?.let { track ->
+                        if (shouldFetchSimilar) {
+                            try {
+                                terminal.println(gray("Fetching similar tracks..."))
+                                val similarRaw =
+                                    getSimilarTracks(track.artist, track.title).take(5)
+                                val similarTracksResolved = similarRaw.mapNotNull { sim ->
+                                    searchTracks("${sim.title} ${sim.artist}").firstOrNull()
+                                }.filter { t -> radioQueue.none { it.id == t.id } }
+                                if (similarTracksResolved.isNotEmpty()) {
+                                    radioQueue.addAll(similarTracksResolved)
+                                    queueIndex++
+                                    currentTrack = radioQueue[queueIndex]
+                                    playCurrentTrack()
+                                } else {
+                                    terminal.println(gray("No more related tracks found."))
+                                    stopAction?.invoke()
+                                }
+                            } catch (e: Exception) {
+                                terminal.println(gray("Failed to fetch similar tracks: ${e.message}"))
                                 stopAction?.invoke()
                             }
-                        } catch (e: Exception) {
-                            terminal.println(gray("Failed to fetch similar tracks: ${e.message}"))
+                        } else {
                             stopAction?.invoke()
                         }
-                    } else {
-                        stopAction?.invoke()
-                    }
+                    } ?: stopAction?.invoke()
                 }
             }
         }
@@ -238,7 +265,7 @@ object PlayActionHandler : KoinComponent {
                 if (queueIndex > 0) {
                     queueIndex--
                     currentTrack = radioQueue[queueIndex]
-                    playCurrentTrackFromQueue()
+                    playCurrentTrack()
                 } else {
                     player.seek(0)
                 }
@@ -254,7 +281,9 @@ object PlayActionHandler : KoinComponent {
             terminal.println(cyan("Playback stopped."))
         }
         playerScope.launch {
-            playCurrentTrackFromQueue()
+            if (currentTrack != null) {
+                playCurrentTrack()
+            }
         }
         // Keep running until stopAction is invoked (e.g. by session manager directly or error)
         try {

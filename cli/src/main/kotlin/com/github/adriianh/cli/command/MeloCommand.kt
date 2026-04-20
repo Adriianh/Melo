@@ -2,6 +2,7 @@ package com.github.adriianh.cli.command
 
 import com.github.adriianh.cli.command.config.ConfigCommand
 import com.github.adriianh.cli.command.player.AuthCommand
+import com.github.adriianh.cli.command.player.DaemonCommand
 import com.github.adriianh.cli.command.player.DiscoverCommand
 import com.github.adriianh.cli.command.player.DownloadCommand
 import com.github.adriianh.cli.command.player.HistoryCommand
@@ -59,6 +60,7 @@ class MeloCommand : CliktCommand(
             DiscoverCommand(),
             HistoryCommand(),
             LocalLibraryCommand(),
+            DaemonCommand(),
             TagCommand(),
             DownloadCommand(),
             StatusCommand(),

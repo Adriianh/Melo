@@ -3,6 +3,8 @@ package com.github.adriianh.cli.command.player
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
 import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.tui.player.ipc.LocalIpcClient
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
@@ -16,9 +18,12 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.github.ajalt.mordant.rendering.TextColors.green
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
@@ -74,12 +79,16 @@ class PlayCommand : CliktCommand(
                             terminal.println("No tracks found in album '${album.title}'.")
                             return@runBlocking
                         }
-                        PlayActionHandler.playMultiple(
-                            contextName = detailedAlbum.title,
-                            tracks = tracks,
-                            getStream = getStream,
-                            terminal = terminal
-                        )
+                        if (delegateToDaemon(tracks)) {
+                            terminal.println(green("Added album tracks to active session: ") + detailedAlbum.title)
+                        } else {
+                            PlayActionHandler.playMultiple(
+                                contextName = detailedAlbum.title,
+                                tracks = tracks,
+                                getStream = getStream,
+                                terminal = terminal
+                            )
+                        }
                     }
 
                     "playlist" -> {
@@ -98,12 +107,16 @@ class PlayCommand : CliktCommand(
                             terminal.println("No tracks found in playlist '${playlist.title}'.")
                             return@runBlocking
                         }
-                        PlayActionHandler.playMultiple(
-                            contextName = detailedPlaylist.title,
-                            tracks = tracks,
-                            getStream = getStream,
-                            terminal = terminal
-                        )
+                        if (delegateToDaemon(tracks)) {
+                            terminal.println(green("Added playlist tracks to active session: ") + detailedPlaylist.title)
+                        } else {
+                            PlayActionHandler.playMultiple(
+                                contextName = detailedPlaylist.title,
+                                tracks = tracks,
+                                getStream = getStream,
+                                terminal = terminal
+                            )
+                        }
                     }
 
                     else -> {
@@ -118,13 +131,29 @@ class PlayCommand : CliktCommand(
                             return@runBlocking
                         }
 
-                        PlayActionHandler.playTrack(track, getStream, terminal)
+                        if (delegateToDaemon(listOf(track))) {
+                            terminal.println(green("Added to active session: ") + "${track.title} by ${track.artist}")
+                        } else {
+                            PlayActionHandler.playTrack(track, getStream, terminal)
+                        }
                     }
                 }
             }
         } finally {
             stopKoin()
         }
+    }
+
+    private fun delegateToDaemon(tracks: List<Track>): Boolean {
+        val firstRes = LocalIpcClient.sendCommand("QUEUE_LIST")
+        if (firstRes.startsWith("ERROR")) return false
+
+        val json = Json { ignoreUnknownKeys = true }
+        tracks.forEach { track ->
+            val payload = json.encodeToString(track)
+            LocalIpcClient.sendCommand("QUEUE_ADD", payload)
+        }
+        return true
     }
 
     private fun <T> selectInteractive(
