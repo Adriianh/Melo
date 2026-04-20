@@ -2,6 +2,7 @@ package com.github.adriianh.cli.command.player.handler
 
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
+import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
@@ -81,6 +82,35 @@ object PlayActionHandler : KoinComponent {
         val playerScope = CoroutineScope(Dispatchers.IO)
         var activeProgressJob: Job? = null
         var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
+
+        val ipcServer = LocalIpcServer(
+            onPlayPause = { playPauseAction?.invoke() },
+            onNext = { nextAction?.invoke() },
+            onPrevious = { prevAction?.invoke() },
+            onStop = { stopAction?.invoke() },
+            onQueueAdd = { track ->
+                radioQueue.add(track)
+                terminal.println(green("\n🎵 Added to queue: ") + track.title + gray(" by ") + track.artist)
+            },
+            onQueueRemove = { index ->
+                val realIndex = queueIndex + 1 + index
+                if (realIndex in (queueIndex + 1) until radioQueue.size) {
+                    val removed = radioQueue.removeAt(realIndex)
+                    terminal.println(gray("\nRemoved from queue: ") + removed.title)
+                    true
+                } else false
+            },
+            onQueueClear = {
+                if (radioQueue.size > queueIndex + 1) {
+                    val toKeep = radioQueue.subList(0, queueIndex + 1).toList()
+                    radioQueue.clear()
+                    radioQueue.addAll(toKeep)
+                    terminal.println(gray("\nQueue cleared (except history and current track)."))
+                }
+            },
+            getQueue = { radioQueue.drop(queueIndex + 1) }
+        )
+        ipcServer.start(playerScope)
 
         val sessionManager = MediaSessionManager(
             httpClient = httpClient,
@@ -203,6 +233,7 @@ object PlayActionHandler : KoinComponent {
             activeProgressJob?.cancel()
             player.stop()
             sessionManager.destroy()
+            ipcServer.stop()
         }
         exitProcess(0)
     }
