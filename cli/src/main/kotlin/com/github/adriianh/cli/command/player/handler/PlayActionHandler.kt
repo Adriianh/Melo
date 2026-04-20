@@ -10,6 +10,8 @@ import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.ajalt.mordant.animation.progress.ThreadProgressTaskAnimator
 import com.github.ajalt.mordant.animation.progress.animateOnThread
 import com.github.ajalt.mordant.animation.progress.execute
@@ -39,6 +41,8 @@ object PlayActionHandler : KoinComponent {
     private val scrobbling: ScrobblingRepository by inject()
     private val recordPlay: RecordPlayUseCase by inject()
     private val discordRpc: DiscordRpcManager by inject()
+    private val getSettings: GetSettingsUseCase by inject()
+    private val updateSettings: UpdateSettingsUseCase by inject()
 
     private var rpcEnabled = true
     suspend fun playTrack(
@@ -91,6 +95,7 @@ object PlayActionHandler : KoinComponent {
         shouldFetchSimilar: Boolean
     ) {
         terminal.println(cyan("Starting playback for $contextName... Press Ctrl+C to stop."))
+        rpcEnabled = getSettings.getSnapshot().discordRpcEnabled
         terminal.println(gray("Media keys (Play/Pause, Next, Prev) are supported in background."))
         var currentTrack: Track? = initialTracks.firstOrNull()
         var isPlaying = false
@@ -224,6 +229,10 @@ object PlayActionHandler : KoinComponent {
                 when (cmd) {
                     "RPC_TOGGLE" -> {
                         rpcEnabled = !rpcEnabled
+                        playerScope.launch {
+                            val currentSettings = getSettings.getSnapshot()
+                            updateSettings(currentSettings.copy(discordRpcEnabled = rpcEnabled))
+                        }
                         if (rpcEnabled) {
                             discordRpc.connect()
                             currentTrack?.let { discordRpc.updateActivity(it, isPlaying) }
