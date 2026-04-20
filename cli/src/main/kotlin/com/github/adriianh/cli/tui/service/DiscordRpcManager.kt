@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.service
 import com.github.adriianh.core.domain.model.Track
 import dev.cbyrne.kdiscordipc.KDiscordIPC
 import dev.cbyrne.kdiscordipc.core.event.impl.DisconnectedEvent
+import dev.cbyrne.kdiscordipc.core.event.impl.ErrorEvent
 import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
@@ -12,9 +13,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
  * Manages Discord Rich Presence using KDiscordIPC.
@@ -30,16 +34,8 @@ class DiscordRpcManager(
 
     private val scope: CoroutineScope = providedScope ?: CoroutineScope(
         Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
-            // Handle premature disconnection errors gracefully
-            if (throwable.message?.contains("Discord has disconnected") == true ||
-                throwable.message?.contains("disconnecting prematurely") == true
-            ) {
-                // These are expected when Discord is closed while Melo is running
-                isConnected = false
-                ipc = null
-            } else if (throwable !is CancellationException) {
-                throwable.printStackTrace()
-            }
+            if (throwable is CancellationException) return@CoroutineExceptionHandler
+            throwable.printStackTrace()
         }
     )
     private val clientId = "1485113215905042515"
@@ -48,22 +44,44 @@ class DiscordRpcManager(
     private var isPlaying: Boolean = false
     private var startTime: Instant? = null
     private var activityJob: Job? = null
+    private var reconnectJob: Job? = null
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 6
+    private val initialReconnectDelayMs = 1_000L
+    private val maxReconnectDelayMs = 30_000L
+    private var manuallyDisconnected = false
 
     fun connect() {
         scope.launch {
             try {
+                manuallyDisconnected = false
+
                 if (isConnected || ipc != null) return@launch
-                
+
+                reconnectJob?.cancel()
+                reconnectJob = null
+
+
                 val newIpc = KDiscordIPC(clientId).also { ipc = it }
                 newIpc.on<ReadyEvent> {
                     isConnected = true
+                    reconnectAttempts = 0
+                    reconnectJob?.cancel()
+                    reconnectJob = null
                     currentTrack?.let { updateActivity(it, isPlaying) }
                 }
 
-                // Handle library-level error events if possible
                 newIpc.on<DisconnectedEvent> {
                     isConnected = false
                     ipc = null
+                    scheduleReconnect()
+                }
+
+                // Subscribe to library ErrorEvent (emitted for decode/socket errors)
+                newIpc.on<ErrorEvent> {
+                    isConnected = false
+                    ipc = null
+                    scheduleReconnect()
                 }
 
                 newIpc.connect()
@@ -142,7 +160,45 @@ class DiscordRpcManager(
             } finally {
                 ipc = null
                 isConnected = false
+                manuallyDisconnected = true
+                reconnectJob?.cancel()
+                reconnectJob = null
             }
+        }
+    }
+
+    private fun scheduleReconnect() {
+        if (manuallyDisconnected) return
+        if (reconnectJob?.isActive == true) return
+
+        reconnectJob = scope.launch {
+            while (reconnectAttempts < maxReconnectAttempts && !manuallyDisconnected) {
+                val delayMs = min(
+                    (initialReconnectDelayMs * 2.0.pow(reconnectAttempts.toDouble())).toLong(),
+                    maxReconnectDelayMs
+                )
+
+                try {
+                    delay(delayMs)
+                } catch (_: CancellationException) {
+                    return@launch
+                }
+
+                if (isConnected || ipc != null || manuallyDisconnected) break
+
+                reconnectAttempts++
+                try {
+                    connect()
+                    delay(2_000L)
+
+                    if (isConnected) {
+                        reconnectAttempts = 0
+                        break
+                    }
+                } catch (_: Throwable) {
+                }
+            }
+            reconnectJob = null
         }
     }
 }
