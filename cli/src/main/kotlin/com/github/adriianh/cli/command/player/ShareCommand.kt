@@ -48,7 +48,8 @@ class ShareCommand : CliktCommand(
     }
 
     private fun printTrackLink(track: Track) {
-        val link = "https://music.youtube.com/watch?v=${track.id}"
+        val trackId = track.id.split(":").last()
+        val link = "https://music.youtube.com/watch?v=${trackId}"
         terminal.println(green("Track Found: ") + track.title + " by " + track.artist)
         terminal.println(cyan("Link: ") + link)
     }
