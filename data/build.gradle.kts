@@ -4,10 +4,6 @@ plugins {
     id("app.cash.sqldelight")
 }
 
-repositories {
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-}
 
 kotlin {
     sourceSets {
@@ -17,6 +13,7 @@ kotlin {
                 implementation(project(":innertube"))
                 implementation(libs.bundles.ktor)
                 implementation(libs.kotlinxSerialization)
+                implementation(libs.kotlinxCoroutines)
                 implementation(libs.sqldelightRuntime)
                 implementation(libs.sqldelightCoroutinesExtensions)
             }
@@ -27,6 +24,16 @@ kotlin {
                 implementation(libs.sqldelightSqliteDriver)
                 implementation(libs.sqliteJdbc)
                 implementation(libs.jaudiotagger)
+            }
+        }
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.sqldelightAndroidDriver)
+            }
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(libs.sqldelightNativeDriver)
             }
         }
         jvmTest {

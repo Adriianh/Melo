@@ -5,6 +5,8 @@ import com.github.adriianh.innertube.pages.LibraryPage
 import com.github.adriianh.innertube.pages.PlaylistPage
 
 
+import kotlin.jvm.JvmName
+
 @JvmName("completedLibrary")
 suspend fun Result<PlaylistPage>.completed(): Result<PlaylistPage> = runCatching {
     val page = getOrThrow()
@@ -77,7 +79,7 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
     )
 }
 
-fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
+fun ByteArray.toHex(): String = joinToString(separator = "") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 fun parseCookieString(cookie: String): Map<String, String> =
     cookie.split("; ")

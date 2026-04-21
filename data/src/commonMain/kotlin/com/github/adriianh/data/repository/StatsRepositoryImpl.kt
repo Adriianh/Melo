@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.ListeningStats
@@ -16,7 +18,7 @@ class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
     private val queries = database.playHistoryQueries
 
     override suspend fun getTopTracks(period: StatsPeriod, limit: Int): List<TrackStat> =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             queries.selectTopTracks(
                 since = period.sinceEpochMillis(),
                 limit = limit.toLong(),
@@ -39,7 +41,7 @@ class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
         }
 
     override suspend fun getTopArtists(period: StatsPeriod, limit: Int): List<ArtistStat> =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             queries.selectTopArtists(
                 since = period.sinceEpochMillis(),
                 limit = limit.toLong(),
@@ -53,7 +55,7 @@ class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
         }
 
     override suspend fun getListeningStats(period: StatsPeriod): ListeningStats =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             val row = queries.selectTotalListeningMs(
                 since = period.sinceEpochMillis(),
             ).executeAsOne()

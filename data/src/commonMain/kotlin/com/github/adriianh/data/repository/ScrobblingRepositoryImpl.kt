@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
@@ -21,21 +23,21 @@ class ScrobblingRepositoryImpl(
     override fun getSessionKey(): String? = readEnvKey(KEY_SESSION)
 
     override suspend fun authenticate(username: String, password: String): Boolean =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             val key = client.getMobileSession(username, password) ?: return@withContext false
             writeEnvKey(KEY_SESSION, key)
             true
         }
 
     override suspend fun startWebAuth(): String? =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             val token = client.getToken() ?: return@withContext null
             writeEnvKey(KEY_TOKEN, token)
             "$AUTH_URL_BASE?api_key=${client.apiKey}&token=$token"
         }
 
     override suspend fun completeWebAuth(token: String): Boolean =
-        withContext(Dispatchers.IO) {
+        withContext(MeloDispatchers.IO) {
             val sessionKey = client.getSession(token) ?: return@withContext false
             writeEnvKey(KEY_SESSION, sessionKey)
             removeEnvKey(KEY_TOKEN)

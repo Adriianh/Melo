@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -22,7 +24,7 @@ class MusicRepositoryImpl(
 ) : MusicRepository {
 
     private val pageSize = 20
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(MeloDispatchers.IO)
 
     private var cachedResults: List<Track> = emptyList()
     private var backgroundFetch: Job? = null

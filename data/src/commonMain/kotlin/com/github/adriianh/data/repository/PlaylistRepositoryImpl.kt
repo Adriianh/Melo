@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
@@ -11,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import com.github.adriianh.core.platform.currentTimeSeconds
 
 class PlaylistRepositoryImpl(database: MeloDatabase) : PlaylistRepository {
 
@@ -20,7 +23,7 @@ class PlaylistRepositoryImpl(database: MeloDatabase) : PlaylistRepository {
     override fun getPlaylists(): Flow<List<Playlist>> =
         playlistsQueries.selectAllPlaylists()
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(MeloDispatchers.IO)
             .map { rows ->
                 rows.map { row ->
                     Playlist(
@@ -35,27 +38,31 @@ class PlaylistRepositoryImpl(database: MeloDatabase) : PlaylistRepository {
     override fun getPlaylistTracks(playlistId: Long): Flow<List<Track>> =
         tracksQueries.selectTracksForPlaylist(playlistId)
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(MeloDispatchers.IO)
             .map { rows -> rows.map { it.toTrack() } }
 
-    override suspend fun createPlaylist(name: String): Long = withContext(Dispatchers.IO) {
+    override suspend fun createPlaylist(name: String): Long = withContext(MeloDispatchers.IO) {
         playlistsQueries.transactionWithResult {
-            playlistsQueries.insertPlaylist(name = name, created_at = System.currentTimeMillis())
+            playlistsQueries.insertPlaylist(name = name, created_at = currentTimeSeconds() * 1000L)
             playlistsQueries.lastInsertId().executeAsOne()
         }
     }
 
-    override suspend fun renamePlaylist(id: Long, name: String) = withContext(Dispatchers.IO) {
-        playlistsQueries.renamePlaylist(name = name, id = id)
+    override suspend fun renamePlaylist(id: Long, name: String) {
+        withContext(MeloDispatchers.IO) {
+            playlistsQueries.renamePlaylist(name = name, id = id)
+        }
     }
 
-    override suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
-        tracksQueries.deleteAllTracksForPlaylist(id)
-        playlistsQueries.deletePlaylist(id)
+    override suspend fun deletePlaylist(id: Long) {
+        withContext(MeloDispatchers.IO) {
+            tracksQueries.deleteAllTracksForPlaylist(id)
+            playlistsQueries.deletePlaylist(id)
+        }
     }
 
-    override suspend fun addTrackToPlaylist(playlistId: Long, track: Track) =
-        withContext(Dispatchers.IO) {
+    override suspend fun addTrackToPlaylist(playlistId: Long, track: Track) {
+        withContext(MeloDispatchers.IO) {
             tracksQueries.insertTrackToPlaylist(
                 playlist_id = playlistId,
                 track_id = track.id,
@@ -66,14 +73,16 @@ class PlaylistRepositoryImpl(database: MeloDatabase) : PlaylistRepository {
                 artwork_url = track.artworkUrl,
                 source_id = track.sourceId,
                 playlist_id_ = playlistId,
-                added_at = System.currentTimeMillis(),
+                added_at = currentTimeSeconds() * 1000L,
             )
         }
+    }
 
-    override suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) =
-        withContext(Dispatchers.IO) {
+    override suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) {
+        withContext(MeloDispatchers.IO) {
             tracksQueries.removeTrackFromPlaylist(playlist_id = playlistId, track_id = trackId)
         }
+    }
 
     private fun Playlist_tracks.toTrack() = Track(
         id = track_id,

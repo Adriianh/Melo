@@ -1,5 +1,7 @@
 package com.github.adriianh.data.repository
 
+import com.github.adriianh.core.util.MeloDispatchers
+
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.github.adriianh.core.domain.model.Track
@@ -10,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import com.github.adriianh.core.platform.currentTimeSeconds
 
 class FavoritesRepositoryImpl(database: MeloDatabase) : FavoritesRepository {
 
@@ -18,27 +21,31 @@ class FavoritesRepositoryImpl(database: MeloDatabase) : FavoritesRepository {
     override fun getFavorites(): Flow<List<Track>> =
         queries.selectAllFavorites()
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(MeloDispatchers.IO)
             .map { rows -> rows.map { it.toTrack() } }
 
-    override suspend fun addFavorite(track: Track) = withContext(Dispatchers.IO) {
-        queries.insertFavorite(
-            id = track.id,
-            title = track.title,
-            artist = track.artist,
-            album = track.album,
-            duration_ms = track.durationMs,
-            artwork_url = track.artworkUrl,
-            source_id = track.sourceId,
-            added_at = System.currentTimeMillis(),
-        )
+    override suspend fun addFavorite(track: Track) {
+        withContext(MeloDispatchers.IO) {
+            queries.insertFavorite(
+                id = track.id,
+                title = track.title,
+                artist = track.artist,
+                album = track.album,
+                duration_ms = track.durationMs,
+                artwork_url = track.artworkUrl,
+                source_id = track.sourceId,
+                added_at = currentTimeSeconds() * 1000L,
+            )
+        }
     }
 
-    override suspend fun removeFavorite(trackId: String) = withContext(Dispatchers.IO) {
-        queries.deleteFavorite(trackId)
+    override suspend fun removeFavorite(trackId: String) {
+        withContext(MeloDispatchers.IO) {
+            queries.deleteFavorite(trackId)
+        }
     }
 
-    override suspend fun isFavorite(trackId: String): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun isFavorite(trackId: String): Boolean = withContext(MeloDispatchers.IO) {
         queries.isFavorite(trackId).executeAsOne() > 0
     }
 

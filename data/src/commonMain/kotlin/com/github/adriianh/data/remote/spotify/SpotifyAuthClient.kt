@@ -1,5 +1,7 @@
 package com.github.adriianh.data.remote.spotify
 
+import com.github.adriianh.core.platform.currentTimeSeconds
+
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.FormDataContent
@@ -30,7 +32,7 @@ class SpotifyAuthClient(
     private var tokenExpiresAt: Long = 0
 
     suspend fun getAccessToken(): String {
-        if (accessToken != null && System.currentTimeMillis() < tokenExpiresAt) {
+        if (accessToken != null && currentTimeSeconds() * 1000L < tokenExpiresAt) {
             return accessToken!!
         }
         return fetchNewToken()
@@ -49,7 +51,7 @@ class SpotifyAuthClient(
 
         val tokenResponse = response.body<TokenResponse>()
         accessToken = tokenResponse.accessToken
-        tokenExpiresAt = System.currentTimeMillis() + (tokenResponse.expiresIn * 1000L) - 60_000L
+        tokenExpiresAt = (currentTimeSeconds() * 1000L) + (tokenResponse.expiresIn * 1000L) - 60_000L
 
         return tokenResponse.accessToken
     }

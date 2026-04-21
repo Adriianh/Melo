@@ -65,6 +65,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.random.Random
+import kotlin.jvm.JvmInline
 
 /**
  * Parse useful data with [InnerTube] sending requests.
@@ -868,7 +869,7 @@ suspend fun playlist(playlistId: String): Result<PlaylistPage> = runCatching {
 
     suspend fun queue(videoIds: List<String>? = null, playlistId: String? = null): Result<List<SongItem>> = runCatching {
         if (videoIds != null) {
-            assert(videoIds.size <= MAX_GET_QUEUE_SIZE)
+            check(videoIds.size <= MAX_GET_QUEUE_SIZE)
         }
         innerTube.getQueue(WEB_REMIX, videoIds, playlistId).body<GetQueueResponse>().queueDatas
             .mapNotNull {
@@ -897,7 +898,10 @@ suspend fun playlist(playlistId: String): Result<PlaylistPage> = runCatching {
             val text = group.transcriptCueGroupRenderer.cues[0].transcriptCueRenderer.cue.simpleText
                 .trim('♪')
                 .trim(' ')
-            "[%02d:%02d.%03d]$text".format(time / 60000, (time / 1000) % 60, time % 1000)
+            val min = (time / 60000).toString().padStart(2, '0')
+            val sec = ((time / 1000) % 60).toString().padStart(2, '0')
+            val ms = (time % 1000).toString().padStart(3, '0')
+            "[$min:$sec.$ms]$text"
         }!!
     }
 

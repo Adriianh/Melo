@@ -21,6 +21,16 @@ kotlin {
                 implementation(libs.newpipeExtractor)
             }
         }
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.ktorClientOkhttp)
+            }
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(libs.ktorClientDarwin)
+            }
+        }
         jvmTest {
             dependencies {
                 implementation(libs.junit)

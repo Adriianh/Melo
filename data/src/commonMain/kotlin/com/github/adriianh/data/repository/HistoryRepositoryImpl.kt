@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
@@ -19,24 +21,28 @@ class HistoryRepositoryImpl(database: MeloDatabase) : HistoryRepository {
     override fun getRecentTracks(limit: Int): Flow<List<HistoryEntry>> =
         queries.selectDistinctRecentTracks(limit.toLong())
             .asFlow()
-            .mapToList(Dispatchers.IO)
+            .mapToList(MeloDispatchers.IO)
             .map { rows -> rows.map { it.toHistoryEntry() } }
 
-    override suspend fun recordPlay(entry: HistoryEntry) = withContext(Dispatchers.IO) {
-        queries.insertPlay(
-            track_id = entry.track.id,
-            title = entry.track.title,
-            artist = entry.track.artist,
-            album = entry.track.album,
-            duration_ms = entry.track.durationMs,
-            artwork_url = entry.track.artworkUrl,
-            source_id = entry.track.sourceId,
-            played_at = entry.playedAt,
-        )
+    override suspend fun recordPlay(entry: HistoryEntry) {
+        withContext(MeloDispatchers.IO) {
+            queries.insertPlay(
+                track_id = entry.track.id,
+                title = entry.track.title,
+                artist = entry.track.artist,
+                album = entry.track.album,
+                duration_ms = entry.track.durationMs,
+                artwork_url = entry.track.artworkUrl,
+                source_id = entry.track.sourceId,
+                played_at = entry.playedAt,
+            )
+        }
     }
 
-    override suspend fun pruneOldHistory() = withContext(Dispatchers.IO) {
-        queries.deleteOldHistory()
+    override suspend fun pruneOldHistory() {
+        withContext(MeloDispatchers.IO) {
+            queries.deleteOldHistory()
+        }
     }
 
     private fun Play_history.toHistoryEntry() = HistoryEntry(

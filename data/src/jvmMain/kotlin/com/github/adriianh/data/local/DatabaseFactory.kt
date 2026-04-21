@@ -6,8 +6,8 @@ import java.io.File
 import java.sql.DriverManager
 import java.util.*
 
-object DatabaseFactory {
-    fun create(): MeloDatabase {
+actual object DatabaseFactory {
+    actual fun create(): MeloDatabase {
         try {
             DriverManager.registerDriver(JDBC())
         } catch (_: Exception) {

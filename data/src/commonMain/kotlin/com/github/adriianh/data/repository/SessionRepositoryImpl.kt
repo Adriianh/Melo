@@ -1,4 +1,6 @@
+
 package com.github.adriianh.data.repository
+import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.SavedSession
@@ -6,6 +8,7 @@ import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.data.local.MeloDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.github.adriianh.core.platform.currentTimeSeconds
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -15,17 +18,17 @@ class SessionRepositoryImpl(database: MeloDatabase) : SessionRepository {
     private val queries = database.sessionQueries
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun saveSession(session: SavedSession) = withContext(Dispatchers.IO) {
+    override suspend fun saveSession(session: SavedSession) = withContext(MeloDispatchers.IO) {
         if (session.queue.isEmpty() || session.queueIndex < 0) return@withContext
         queries.upsertSession(
             queue_json  = json.encodeToString(session.queue.map { it.toDto() }),
             queue_index = session.queueIndex.toLong(),
             position_ms = session.positionMs,
-            saved_at    = System.currentTimeMillis(),
+            saved_at    = currentTimeSeconds() * 1000L,
         )
     }
 
-    override suspend fun restoreSession(): SavedSession? = withContext(Dispatchers.IO) {
+    override suspend fun restoreSession(): SavedSession? = withContext(MeloDispatchers.IO) {
         val row = queries.selectSession().executeAsOneOrNull() ?: return@withContext null
         val queue = runCatching {
             json.decodeFromString<List<TrackDto>>(row.queue_json).map { it.toTrack() }
@@ -38,8 +41,10 @@ class SessionRepositoryImpl(database: MeloDatabase) : SessionRepository {
         )
     }
 
-    override suspend fun clearSession() = withContext(Dispatchers.IO) {
-        queries.deleteSession()
+    override suspend fun clearSession() {
+        withContext(MeloDispatchers.IO) {
+            queries.deleteSession()
+        }
     }
 
     @Serializable
