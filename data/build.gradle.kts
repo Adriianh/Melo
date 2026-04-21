@@ -1,5 +1,5 @@
 plugins {
-    id("buildsrc.convention.kotlin-jvm")
+    id("buildsrc.convention.kotlin-multiplatform")
     kotlin("plugin.serialization")
     id("app.cash.sqldelight")
 }
@@ -9,20 +9,32 @@ repositories {
     maven { url = uri("https://jitpack.io") }
 }
 
-dependencies {
-    implementation(project(":core"))
-    implementation(libs.bundles.ktor)
-    implementation(libs.kotlinxSerialization)
-    implementation(libs.dotenv)
-    implementation(libs.sqldelightRuntime)
-    implementation(libs.sqldelightCoroutinesExtensions)
-    implementation(libs.sqldelightSqliteDriver)
-    implementation(libs.sqliteJdbc)
-    implementation(libs.jaudiotagger)
-
-    implementation(project(":core"))
-    implementation(project(":innertube"))
-    testImplementation(libs.kotlinxCoroutinesTest)
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(project(":core"))
+                implementation(project(":innertube"))
+                implementation(libs.bundles.ktor)
+                implementation(libs.kotlinxSerialization)
+                implementation(libs.sqldelightRuntime)
+                implementation(libs.sqldelightCoroutinesExtensions)
+            }
+        }
+        jvmMain {
+            dependencies {
+                implementation(libs.dotenv)
+                implementation(libs.sqldelightSqliteDriver)
+                implementation(libs.sqliteJdbc)
+                implementation(libs.jaudiotagger)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(libs.kotlinxCoroutinesTest)
+            }
+        }
+    }
 }
 
 sqldelight {

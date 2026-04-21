@@ -14,4 +14,16 @@ expect object PlatformFileSystem {
      * (e.g. `file:///absolute/path`).
      */
     fun toFileUri(path: String): String
+
+    /**
+     * Reads the contents of a file at the given [path] as a string.
+     * Returns `null` if the file does not exist or an error occurs.
+     */
+    fun readText(path: String): String?
+
+    /**
+     * Writes the given [text] to a file at the given [path].
+     * Creates the file and parent directories if they do not exist.
+     */
+    fun writeText(path: String, text: String)
 }

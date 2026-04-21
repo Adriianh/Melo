@@ -8,8 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.CancellationException
 import kotlinx.serialization.json.Json
-import java.security.MessageDigest
-import java.util.SortedMap
+import com.github.adriianh.core.platform.md5
 
 private const val BASE_URL = "https://ws.audioscrobbler.com/2.0/"
 
@@ -58,7 +57,7 @@ class LastFmApiClient(
     /** Authenticate with Last.fm and return a session key for the given credentials. */
     suspend fun getMobileSession(username: String, password: String): String? {
         return try {
-            val params = sortedMapOf(
+            val params = mapOf(
                 "api_key"  to apiKey,
                 "method"   to "auth.getMobileSession",
                 "password" to password,
@@ -81,7 +80,7 @@ class LastFmApiClient(
      */
     suspend fun getToken(): String? {
         return try {
-            val params = sortedMapOf(
+            val params = mapOf(
                 "api_key" to apiKey,
                 "method"  to "auth.getToken",
             )
@@ -106,7 +105,7 @@ class LastFmApiClient(
      */
     suspend fun getSession(token: String): String? {
         return try {
-            val params = sortedMapOf(
+            val params = mapOf(
                 "api_key" to apiKey,
                 "method"  to "auth.getSession",
                 "token"   to token,
@@ -130,7 +129,7 @@ class LastFmApiClient(
         durationSecs: Int,
     ) {
         try {
-            val params = sortedMapOf(
+            val params = mutableMapOf(
                 "api_key"  to apiKey,
                 "artist"   to artist,
                 "duration" to durationSecs.toString(),
@@ -154,7 +153,7 @@ class LastFmApiClient(
         timestamp: Long,
     ) {
         try {
-            val params = sortedMapOf(
+            val params = mutableMapOf(
                 "api_key"      to apiKey,
                 "artist[0]"    to artist,
                 "method"       to "track.scrobble",
@@ -188,10 +187,8 @@ class LastFmApiClient(
      * Builds the Last.fm API signature: concatenate sorted key=value pairs
      * (excluding format and callback), append the shared secret, then MD5.
      */
-    private fun sign(params: SortedMap<String, String>): String {
-        val base = params.entries.joinToString("") { (k, v) -> "$k$v" } + sharedSecret
-        return MessageDigest.getInstance("MD5")
-            .digest(base.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+    private fun sign(params: Map<String, String>): String {
+        val base = params.entries.sortedBy { it.key }.joinToString("") { (k, v) -> "$k$v" } + sharedSecret
+        return md5(base)
     }
 }

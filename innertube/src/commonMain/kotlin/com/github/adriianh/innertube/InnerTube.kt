@@ -4,10 +4,11 @@ import com.github.adriianh.innertube.models.Context
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.YouTubeLocale
 import com.github.adriianh.innertube.models.body.*
-import com.github.adriianh.innertube.utils.defaultCountryCode
-import com.github.adriianh.innertube.utils.defaultLanguageTag
+import com.github.adriianh.core.platform.currentTimeSeconds
+import com.github.adriianh.core.platform.defaultCountryCode
+import com.github.adriianh.core.platform.defaultLanguageTag
+import com.github.adriianh.core.platform.sha1
 import com.github.adriianh.innertube.utils.parseCookieString
-import com.github.adriianh.innertube.utils.sha1
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.compression.*
@@ -16,7 +17,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.util.encodeBase64
-import com.github.adriianh.innertube.utils.currentTimeSeconds
 import kotlinx.serialization.json.Json
 
 /**

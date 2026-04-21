@@ -7,10 +7,9 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackStat
 import com.github.adriianh.core.domain.repository.StatsRepository
 import com.github.adriianh.data.local.MeloDatabase
+import com.github.adriianh.core.platform.currentTimeSeconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
 
@@ -66,9 +65,12 @@ class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
             )
         }
 
-    private fun StatsPeriod.sinceEpochMillis(): Long = when (this) {
-        StatsPeriod.WEEK -> Instant.now().minus(7, ChronoUnit.DAYS).toEpochMilli()
-        StatsPeriod.MONTH -> Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
-        StatsPeriod.ALL_TIME -> 0L
+    private fun StatsPeriod.sinceEpochMillis(): Long {
+        val nowMs = currentTimeSeconds() * 1000L
+        return when (this) {
+            StatsPeriod.WEEK -> nowMs - (7L * 24 * 60 * 60 * 1000)
+            StatsPeriod.MONTH -> nowMs - (30L * 24 * 60 * 60 * 1000)
+            StatsPeriod.ALL_TIME -> 0L
+        }
     }
 }

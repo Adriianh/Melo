@@ -1,4 +1,4 @@
-package com.github.adriianh.innertube.utils
+package com.github.adriianh.core.platform
 
 /**
  * Platform-agnostic cryptographic and locale utilities.
@@ -23,3 +23,8 @@ expect fun defaultLanguageTag(): String
  * Returns the current time in seconds since epoch.
  */
 expect fun currentTimeSeconds(): Long
+
+/**
+ * Computes the MD5 hash of the given string and returns it as a hex string.
+ */
+expect fun md5(str: String): String

@@ -41,4 +41,9 @@ tasks.withType<Test>().configureEach {
             TestLogEvent.SKIPPED
         )
     }
+    // Don't fail if a module has no tests (like data module which currently only has manual runners)
+    filter {
+        isFailOnNoMatchingTests = false
+    }
+    failOnNoDiscoveredTests = false
 }

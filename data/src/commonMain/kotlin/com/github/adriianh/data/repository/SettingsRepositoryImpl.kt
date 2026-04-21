@@ -9,14 +9,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.File
+import com.github.adriianh.core.platform.PlatformFileSystem
 
 class SettingsRepositoryImpl(
-    private val configDir: File,
+    private val configDirPath: String,
     private val dispatcher: CoroutineDispatcher
 ) : SettingsRepository {
 
-    private val settingsFile = File(configDir, "settings.json")
+    private val settingsFilePath = "$configDirPath/settings.json"
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -34,9 +34,10 @@ class SettingsRepositoryImpl(
     }
 
     private fun loadSettingsSync(): Settings {
-        if (!settingsFile.exists()) return Settings()
+        if (!PlatformFileSystem.fileExists(settingsFilePath)) return Settings()
         return try {
-            json.decodeFromString(Settings.serializer(), settingsFile.readText())
+            val content = PlatformFileSystem.readText(settingsFilePath) ?: return Settings()
+            json.decodeFromString(Settings.serializer(), content)
         } catch (e: Exception) {
             e.printStackTrace()
             Settings()
@@ -46,9 +47,8 @@ class SettingsRepositoryImpl(
     private suspend fun saveSettingsToDisk(settings: Settings) {
         withContext(dispatcher) {
             try {
-                if (!configDir.exists()) configDir.mkdirs()
                 val jsonString = json.encodeToString(settings)
-                settingsFile.writeText(jsonString)
+                PlatformFileSystem.writeText(settingsFilePath, jsonString)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

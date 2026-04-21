@@ -5,7 +5,7 @@ import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
+import com.github.adriianh.core.platform.PlatformFileSystem
 
 private const val AUTH_URL_BASE = "https://www.last.fm/api/auth/"
 private const val KEY_SESSION = "LASTFM_SESSION_KEY"
@@ -16,7 +16,7 @@ class ScrobblingRepositoryImpl(
     private val configDir: String,
 ) : ScrobblingRepository {
 
-    private val envFile get() = File("$configDir/.env")
+    private val envFilePath get() = "$configDir/.env"
 
     override fun getSessionKey(): String? = readEnvKey(KEY_SESSION)
 
@@ -70,27 +70,28 @@ class ScrobblingRepositoryImpl(
 
     @Suppress("SameParameterValue")
     private fun readEnvKey(key: String): String? {
-        if (!envFile.exists()) return null
-        return envFile.readLines()
+        val content = PlatformFileSystem.readText(envFilePath) ?: return null
+        return content.lines()
             .firstOrNull { it.startsWith("$key=") }
             ?.substringAfter("=")
             ?.takeIf { it.isNotBlank() }
     }
 
     private fun writeEnvKey(key: String, value: String) {
-        envFile.parentFile?.mkdirs()
-        val lines = if (envFile.exists()) envFile.readLines() else emptyList()
+        val content = PlatformFileSystem.readText(envFilePath) ?: ""
+        val lines = content.lines().filter { it.isNotBlank() }
         val updated = if (lines.any { it.startsWith("$key=") }) {
             lines.map { if (it.startsWith("$key=")) "$key=$value" else it }
         } else {
             lines + "$key=$value"
         }
-        envFile.writeText(updated.joinToString("\n") + "\n")
+        PlatformFileSystem.writeText(envFilePath, updated.joinToString("\n") + "\n")
     }
 
     private fun removeEnvKey(key: String) {
-        if (!envFile.exists()) return
-        val updated = envFile.readLines().filter { !it.startsWith("$key=") }
-        envFile.writeText(updated.joinToString("\n") + "\n")
+        val content = PlatformFileSystem.readText(envFilePath) ?: return
+        val lines = content.lines()
+        val updated = lines.filter { !it.startsWith("$key=") && it.isNotBlank() }
+        PlatformFileSystem.writeText(envFilePath, updated.joinToString("\n") + "\n")
     }
 }

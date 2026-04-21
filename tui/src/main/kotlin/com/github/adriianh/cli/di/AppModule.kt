@@ -243,7 +243,7 @@ val appModule = module {
     single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
-    single<SettingsRepository> { SettingsRepositoryImpl(File(configDir), get()) }
+    single<SettingsRepository> { SettingsRepositoryImpl(configDir, get()) }
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
 
     factory { SearchTracksUseCase(get()) }
