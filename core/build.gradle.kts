@@ -1,12 +1,27 @@
 plugins {
-    id("buildsrc.convention.kotlin-jvm")
+    id("buildsrc.convention.kotlin-multiplatform")
     kotlin("plugin.serialization")
 }
 
-dependencies {
-    implementation(libs.bundles.kotlinxEcosystem)
-
-    testImplementation(kotlin("test"))
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinxCoroutinesTest)
+kotlin {
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(libs.kotlinxDatetime)
+                implementation(libs.kotlinxSerialization)
+                implementation(libs.kotlinxCoroutines)
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinxCoroutinesTest)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(libs.mockk)
+            }
+        }
+    }
 }

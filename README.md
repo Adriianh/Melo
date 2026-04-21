@@ -99,7 +99,7 @@ For more details, run `melo --help`.
 
 ### From Source
 1. Clone the repository: `git clone https://github.com/Adriianh/Melo.git`
-2. Build the native binary: `./gradlew :cli:nativeCompile`
+2. Build the native binary: `./gradlew :tui:nativeCompile`
    - *Output: `cli/build/native/nativeCompile/melo`*
 
 ---
