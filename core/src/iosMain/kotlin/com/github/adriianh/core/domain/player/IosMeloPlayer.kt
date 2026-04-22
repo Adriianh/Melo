@@ -1,6 +1,7 @@
 package com.github.adriianh.core.domain.player
 
 import com.github.adriianh.core.domain.model.Track
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,6 +23,7 @@ import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSURL
 
+@OptIn(ExperimentalForeignApi::class)
 class IosMeloPlayer : MeloPlayer {
     private val player = AVPlayer()
     private val _state = MutableStateFlow(PlaybackState())
