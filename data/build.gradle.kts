@@ -16,6 +16,7 @@ kotlin {
                 implementation(libs.kotlinxCoroutines)
                 implementation(libs.sqldelightRuntime)
                 implementation(libs.sqldelightCoroutinesExtensions)
+                implementation(libs.koinCore)
             }
         }
         jvmMain {

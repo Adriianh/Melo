@@ -37,12 +37,34 @@ kotlin {
                 // Add lifecycle for ViewModels
                 implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.runtime.compose)
+
+                // Koin
+                implementation(libs.koinCore)
+                implementation(libs.koinCompose)
+                implementation(libs.koinComposeViewModel)
+
+                // Ktor & Serialization
+                implementation(libs.ktorClientCore)
+                implementation(libs.ktorClientContentNegotiation)
+                implementation(libs.ktorSerializationKotlinxJson)
+                implementation(libs.kotlinxSerialization)
             }
         }
         val androidMain by getting {
             dependencies {
                 implementation(libs.androidx.activityCompose)
                 implementation(compose.preview)
+                implementation(libs.koinAndroid)
+            }
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(compose.preview)
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+
             }
         }
     }
@@ -82,7 +104,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.github.adriianh.melo"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
         }
     }
 }

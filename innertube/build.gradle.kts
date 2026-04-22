@@ -13,6 +13,7 @@ kotlin {
                 implementation(libs.ktorSerializationKotlinxJson)
                 implementation(libs.ktorClientEncoding)
                 implementation(libs.brotli)
+                implementation(libs.koinCore)
             }
         }
         jvmMain {

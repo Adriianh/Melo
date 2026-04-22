@@ -10,6 +10,7 @@ kotlin {
                 implementation(libs.kotlinxDatetime)
                 implementation(libs.kotlinxSerialization)
                 implementation(libs.kotlinxCoroutines)
+                implementation(libs.koinCore)
             }
         }
         commonTest {
