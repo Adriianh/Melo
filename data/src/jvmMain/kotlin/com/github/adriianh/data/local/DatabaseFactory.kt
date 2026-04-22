@@ -4,7 +4,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.sqlite.JDBC
 import java.io.File
 import java.sql.DriverManager
-import java.util.*
+import java.util.Properties
 
 actual object DatabaseFactory {
     actual fun create(): MeloDatabase {
@@ -56,7 +56,7 @@ actual object DatabaseFactory {
     private fun getConnection(url: String): java.sql.Connection {
         return try {
             DriverManager.getConnection(url)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // Fallback for GraalVM Native Image where DriverManager discovery might fail
             JDBC().connect(url, Properties())
         }
