@@ -13,6 +13,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) =
         modules(
             commonModule,
             dataModule,
+            useCaseModule,
             viewModelModule,
             platformModule
         )

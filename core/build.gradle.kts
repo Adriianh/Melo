@@ -13,6 +13,16 @@ kotlin {
                 implementation(libs.koinCore)
             }
         }
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.androidx.media3.exoplayer)
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.vlcj)
+            }
+        }
         commonTest {
             dependencies {
                 implementation(kotlin("test"))

@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,16 +25,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.player.PlayerViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SearchScreen(
-    viewModel: SearchViewModel = koinViewModel()
+    modifier: Modifier = Modifier,
+    viewModel: SearchViewModel = koinViewModel(),
+    playerViewModel: PlayerViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
@@ -70,7 +74,7 @@ fun SearchScreen(
             } else {
                 LazyColumn {
                     items(uiState.results) { track ->
-                        TrackItem(track)
+                        TrackItem(track, onClick = { playerViewModel.playTrack(track) })
                     }
                 }
             }
@@ -79,11 +83,12 @@ fun SearchScreen(
 }
 
 @Composable
-fun TrackItem(track: Track) {
+fun TrackItem(track: Track, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier

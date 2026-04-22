@@ -48,6 +48,9 @@ kotlin {
                 implementation(libs.ktorClientContentNegotiation)
                 implementation(libs.ktorSerializationKotlinxJson)
                 implementation(libs.kotlinxSerialization)
+
+                // Compose Icons
+                implementation(libs.material.icons.extended)
             }
         }
         val androidMain by getting {
@@ -64,7 +67,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-
+                implementation(libs.kotlinx.coroutines.swing)
             }
         }
     }

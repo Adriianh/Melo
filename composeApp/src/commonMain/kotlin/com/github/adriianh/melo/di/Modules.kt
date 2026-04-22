@@ -9,6 +9,7 @@ import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
+import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
@@ -22,6 +23,7 @@ import com.github.adriianh.data.repository.PlaylistRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.innertube.createPlatformHttpClient
+import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -83,11 +85,16 @@ val dataModule = module {
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
 }
 
+val useCaseModule = module {
+    singleOf(::GetStreamUseCase)
+}
+
 /**
  * ViewModel module for all shared ViewModels.
  */
 val viewModelModule = module {
     viewModelOf(::SearchViewModel)
+    viewModelOf(::PlayerViewModel)
 }
 
 expect val platformModule: Module
