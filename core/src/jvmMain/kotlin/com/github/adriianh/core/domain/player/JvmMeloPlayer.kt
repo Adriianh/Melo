@@ -47,14 +47,24 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun load(url: String, track: Track) {
-        mediaPlayer.media().play(url)
+        // Stop current playback if any
+        mediaPlayer.controls().stop()
+
+        // Update state to indicate loading/buffering
         _state.update {
             it.copy(
                 currentTrack = track,
                 progressMs = 0,
-                durationMs = track.durationMs
+                durationMs = track.durationMs,
+                isBuffering = true,
+                error = null
             )
         }
+
+        // Play with User-Agent option (important for YouTube)
+        val userAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        mediaPlayer.media().play(url, ":http-user-agent=$userAgent")
     }
 
     override fun play() {
