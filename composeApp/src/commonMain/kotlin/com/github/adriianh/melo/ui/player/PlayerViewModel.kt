@@ -18,9 +18,15 @@ class PlayerViewModel(
 
     fun playTrack(track: Track) {
         viewModelScope.launch {
-            val url = getStreamUseCase(track)
-            if (url != null) {
-                meloPlayer.load(url, track)
+            try {
+                val url = getStreamUseCase(track)
+                if (url != null) {
+                    meloPlayer.load(url, track)
+                } else {
+                    println("Failed to resolve stream URL for track: ${track.title}")
+                }
+            } catch (e: Exception) {
+                println("Error playing track: ${e.message}")
             }
         }
     }

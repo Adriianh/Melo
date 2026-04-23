@@ -9,19 +9,24 @@ import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
+import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
+import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.innertube.createPlatformHttpClient
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
@@ -33,6 +38,7 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
@@ -47,6 +53,7 @@ val commonModule = module {
                     ignoreUnknownKeys = true
                     explicitNulls = false
                     encodeDefaults = true
+                    isLenient = true
                 })
             }
         }
@@ -61,6 +68,8 @@ val dataModule = module {
     single<DiscoveryProvider> { InnerTubeDiscoveryProvider() }
 
     singleOf(::ItunesApiClient)
+    singleOf(::PipedApiClient)
+    singleOf(::PipedAudioProvider)
 
     single<MetadataProvider> {
         CompositeArtworkProvider(
@@ -83,6 +92,12 @@ val dataModule = module {
     singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
     singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
+    single<SettingsRepository> {
+        SettingsRepositoryImpl(
+            configDirPath = get(named("configDirPath")),
+            dispatcher = MeloDispatchers.IO
+        )
+    }
 }
 
 val useCaseModule = module {
