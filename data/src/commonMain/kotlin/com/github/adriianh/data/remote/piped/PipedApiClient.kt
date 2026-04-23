@@ -1,9 +1,12 @@
 package com.github.adriianh.data.remote.piped
 
 import com.github.adriianh.core.domain.model.Track
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.utils.io.CancellationException
 import kotlin.math.abs
 
@@ -16,57 +19,109 @@ class PipedApiClient(
         private val NON_ALNUM_RE = Regex("[^a-z0-9 ]")
     }
 
-    private val baseUrl = "https://api.piped.private.coffee"
+    private val instances = listOf(
+        "https://api.piped.private.coffee",
+        "https://pipedapi.kavin.rocks",
+        "https://piped-api.lunar.icu"
+    )
+
+    private fun HttpRequestBuilder.commonHeaders() {
+        header(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
 
     suspend fun search(query: String, title: String, artist: String, durationMs: Long): String? {
-        return try {
-            val cleanTitle = normalize(title)
-            val cleanArtist = normalize(artist)
-            val response = httpClient.get("$baseUrl/search") {
-                parameter("q", query)
-                parameter("filter", "music_songs")
-            }.body<PipedSearchResponse>()
+        for (baseUrl in instances) {
+            try {
+                val cleanTitle = normalize(title)
+                val cleanArtist = normalize(artist)
+                val response = httpClient.get("$baseUrl/search") {
+                    commonHeaders()
+                    parameter("q", query)
+                    parameter("filter", "music_songs")
+                }.body<PipedSearchResponse>()
 
-            val best = response.items
-                .filter { it.type == "stream" }
-                .firstOrNull { item ->
-                    val itemTitle = normalize(item.title)
-                    val itemUploader = normalize(item.uploaderName)
-                    val titleMatches = itemTitle.contains(cleanTitle) || cleanTitle.contains(itemTitle)
-                    val artistMatches = itemUploader.contains(cleanArtist) || cleanArtist.contains(itemUploader)
-                    val durationMatches = durationMs == 0L ||
-                            abs(item.duration * 1000 - durationMs) < 10_000
-                    titleMatches && artistMatches && durationMatches
+                val best = response.items
+                    .filter { it.type == "stream" }
+                    .firstOrNull { item ->
+                        val itemTitle = normalize(item.title)
+                        val itemUploader = normalize(item.uploaderName)
+                        val titleMatches =
+                            itemTitle.contains(cleanTitle) || cleanTitle.contains(itemTitle)
+                        val artistMatches =
+                            itemUploader.contains(cleanArtist) || cleanArtist.contains(itemUploader)
+                        val durationMatches = durationMs == 0L ||
+                                abs(item.duration * 1000 - durationMs) < 10_000
+                        titleMatches && artistMatches && durationMatches
+                    }
+
+                if (best != null) return best.url.substringAfter("v=")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
+        }
+        return null
+    }
+
+    suspend fun getStreamUrl(videoId: String): String? {
+        for (baseUrl in instances) {
+            try {
+                println("Piped: Trying instance $baseUrl for video $videoId")
+                val response = httpClient.get("$baseUrl/streams/$videoId") {
+                    commonHeaders()
                 }
 
-            best?.url?.substringAfter("v=")
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
+                if (response.status.value in 200..299) {
+                    val body = response.body<PipedStreamsResponse>()
+                    val url = body.audioStreams.maxByOrNull { it.bitrate }?.url
+
+                    if (url != null) {
+                        println("Piped: Success with $baseUrl")
+                        return url
+                    }
+                } else {
+                    println("Piped: Instance $baseUrl returned status ${response.status}")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                println("Piped: Instance $baseUrl failed with ${e::class.simpleName}: ${e.message}")
+            }
         }
+        return null
     }
 
     suspend fun getTrackDetails(videoId: String): Track? {
-        return try {
-            val response = httpClient.get("$baseUrl/streams/$videoId")
-                .body<PipedStreamsResponse>()
-            if (response.title.isBlank()) return null
-            Track(
-                id = "piped:$videoId",
-                title = response.title,
-                artist = response.uploader,
-                album = "",
-                durationMs = response.duration * 1_000L,
-                genres = emptyList(),
-                artworkUrl = null,
-                sourceId = videoId
-            )
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
+        for (baseUrl in instances) {
+            try {
+                val response = httpClient.get("$baseUrl/streams/$videoId") {
+                    commonHeaders()
+                }
+                if (response.status.value in 200..299) {
+                    val body = response.body<PipedStreamsResponse>()
+                    if (body.title.isBlank()) continue
+                    return Track(
+                        id = "piped:$videoId",
+                        title = body.title,
+                        artist = body.uploader,
+                        album = "",
+                        durationMs = body.duration * 1_000L,
+                        genres = emptyList(),
+                        artworkUrl = null,
+                        sourceId = videoId
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
         }
+        return null
     }
 
     /**
@@ -96,32 +151,28 @@ class PipedApiClient(
         expectedType: String,
         limit: Int
     ): List<PipedStreamDto> {
-        return try {
-            val response = httpClient.get("$baseUrl/search") {
-                parameter("q", query)
-                parameter("filter", filter)
-            }.body<PipedSearchResponse>()
+        for (baseUrl in instances) {
+            try {
+                val response = httpClient.get("$baseUrl/search") {
+                    commonHeaders()
+                    parameter("q", query)
+                    parameter("filter", filter)
+                }.body<PipedSearchResponse>()
 
-            response.items
-                .filter { it.type == expectedType }
-                .take(limit)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            emptyList()
+                return response.items
+                    .filter { it.type == expectedType }
+                    .take(limit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
         }
+        return emptyList()
     }
 
     /**
      * Returns tracks related to [videoId] based on YouTube's recommendation algorithm.
-     *
-     * Strategy:
-     * 1. Fetch `/streams/{videoId}` — YouTube's own related tracks graph. Best source.
-     * 2. If that yields < [limit] results, supplement with search-based discovery using
-     *    varied queries so the radio mode never loops the same tracks.
-     *
-     * Tracks from the original [videoId] and any tracks by [fallbackArtist] that
-     * match the seed exactly are deprioritised to maximise variety.
      */
     suspend fun getRelatedTracks(
         videoId: String,
@@ -132,45 +183,53 @@ class PipedApiClient(
         val seen = mutableSetOf(videoId)
         val results = mutableListOf<Track>()
 
-        try {
-            val response = httpClient.get("$baseUrl/streams/$videoId")
-                .body<PipedStreamsResponse>()
-
-            val normalizedSeedTitle  = fallbackTitle?.let  { normalize(it) } ?: ""
-            val normalizedSeedArtist = fallbackArtist?.let { normalize(it) } ?: ""
-
-            val related = response.relatedStreams
-                .filter { it.type == "stream" && it.duration in 30L..600L && it.title.isNotBlank() }
-                .mapNotNull { r ->
-                    val id = r.url.substringAfter("v=").substringBefore("&")
-                    if (id.isBlank() || id in seen) return@mapNotNull null
-                    seen += id
-                    Track(
-                        id = "piped:$id",
-                        title = r.title,
-                        artist = r.uploaderName,
-                        album = "",
-                        durationMs = r.duration * 1_000L,
-                        genres = emptyList(),
-                        artworkUrl = null,
-                        sourceId = id,
-                    )
+        for (baseUrl in instances) {
+            try {
+                val response = httpClient.get("$baseUrl/streams/$videoId") {
+                    commonHeaders()
                 }
-                .sortedBy { track ->
-                    val sameTitle  = normalize(track.title)  == normalizedSeedTitle
-                    val sameArtist = normalize(track.artist) == normalizedSeedArtist
-                    if (sameTitle && sameArtist) 1 else 0
-                }
+                if (response.status.value !in 200..299) continue
 
-            results += related
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) { }
+                val body = response.body<PipedStreamsResponse>()
+
+                val normalizedSeedTitle = fallbackTitle?.let { normalize(it) } ?: ""
+                val normalizedSeedArtist = fallbackArtist?.let { normalize(it) } ?: ""
+
+                val related = body.relatedStreams
+                    .filter { it.type == "stream" && it.duration in 30L..600L && it.title.isNotBlank() }
+                    .mapNotNull { r ->
+                        val id = r.url.substringAfter("v=").substringBefore("&")
+                        if (id.isBlank() || id in seen) return@mapNotNull null
+                        seen += id
+                        Track(
+                            id = "piped:$id",
+                            title = r.title,
+                            artist = r.uploaderName,
+                            album = "",
+                            durationMs = r.duration * 1_000L,
+                            genres = emptyList(),
+                            artworkUrl = null,
+                            sourceId = id,
+                        )
+                    }
+                    .sortedBy { track ->
+                        val sameTitle = normalize(track.title) == normalizedSeedTitle
+                        val sameArtist = normalize(track.artist) == normalizedSeedArtist
+                        if (sameTitle && sameArtist) 1 else 0
+                    }
+
+                results += related
+                if (results.isNotEmpty()) break
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+            }
+        }
 
         if (results.size >= limit) return results.take(limit)
 
         val artist = fallbackArtist ?: return results.take(limit)
-        val title  = fallbackTitle ?: ""
+        val title = fallbackTitle ?: ""
 
         val queries = buildList {
             if (title.isNotBlank()) add("$title $artist")

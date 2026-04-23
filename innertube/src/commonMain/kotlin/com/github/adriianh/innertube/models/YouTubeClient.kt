@@ -201,5 +201,12 @@ data class YouTubeClient(
             useSignatureTimestamp = false,
             packageName = "com.google.ios.youtube"
         )
+        val ANDROID_TESTSUITE = YouTubeClient(
+            clientName = "ANDROID_TESTSUITE",
+            clientVersion = "1.9",
+            clientId = "30",
+            userAgent = "com.google.android.youtube.testsuite/1.9 (Linux; U; Android 14) gzip",
+            useSignatureTimestamp = false
+        )
     }
 }

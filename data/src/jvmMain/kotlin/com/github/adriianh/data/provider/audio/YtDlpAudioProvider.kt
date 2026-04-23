@@ -22,7 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
  * `~/.config/melo/yt-dlp` automatically if it is not on the system PATH.
  */
 class YtDlpAudioProvider(
-    private val pipedApiClient: PipedApiClient
+    private val pipedApiClient: PipedApiClient,
+    private val fallback: AudioProvider? = null
 ) : AudioProvider {
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
@@ -89,7 +90,7 @@ class YtDlpAudioProvider(
                     streamUrlCache[sourceId] = it
                 }
             } catch (_: Exception) {
-                null
+                fallback?.getStreamUrl(sourceId)
             }
         }
     }
@@ -111,7 +112,8 @@ class YtDlpAudioProvider(
                 val url = "https://www.youtube.com/watch?v=$source"
 
                 val dir = File(destination)
-                val beforeFiles = dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
+                val beforeFiles =
+                    dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
                 val resolvedQuality = when (format) {
                     "flac" -> "0"
                     "opus" -> quality.replace("k", "").toIntOrNull()
@@ -149,8 +151,10 @@ class YtDlpAudioProvider(
 
                 runYtDlp(*args.toTypedArray())
 
-                val afterFiles = dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
-                val modifiedOrNewFiles = afterFiles.filter { (name, lastMod) -> beforeFiles[name] != lastMod }.keys
+                val afterFiles =
+                    dir.listFiles()?.associate { it.name to it.lastModified() } ?: emptyMap()
+                val modifiedOrNewFiles =
+                    afterFiles.filter { (name, lastMod) -> beforeFiles[name] != lastMod }.keys
 
                 // Filter for audio files only (ignore thumbnails like .webp, .jpg, etc.)
                 val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
@@ -166,9 +170,10 @@ class YtDlpAudioProvider(
                 modifiedOrNewFiles.forEach { fileName ->
                     val file = File(dir, fileName)
                     if (file.absolutePath != downloaded?.absolutePath) {
-                        val isMetadata = setOf("webp", "png", "jpg", "jpeg", "json", "temp", "part").any { ext ->
-                            fileName.endsWith(".$ext", ignoreCase = true)
-                        }
+                        val isMetadata =
+                            setOf("webp", "png", "jpg", "jpeg", "json", "temp", "part").any { ext ->
+                                fileName.endsWith(".$ext", ignoreCase = true)
+                            }
                         if (isMetadata) file.delete()
                     }
                 }
