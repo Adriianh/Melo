@@ -1,5 +1,5 @@
 [versions]
-comAndroidKotlinMultiplatformLibraryGradlePlugin = "9.1.1"
+kotlinMultiplatformPlugin = "9.1.1"
 composeGradlePlugin = "1.10.3"
 gradle = "9.1.1"
 kotter = "1.2.1"
@@ -29,20 +29,16 @@ jaudiotagger = "2.0.18"
 kdiscordipc = "5041c5b036"
 brotli = "0.1.2"
 newpipe = "v0.24.0"
-media3 = "1.5.1"
-vlcj = "4.8.3"
+media3 = "1.10.0"
+vlcj = "4.12.1"
 agp = "9.1.1"
 compose-plugin = "1.10.3"
 androidx-activityCompose = "1.13.0"
 
 [libraries]
-androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
-androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
-com-android-kotlin-multiplatform-library-gradle-plugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "comAndroidKotlinMultiplatformLibraryGradlePlugin" }
-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeGradlePlugin" }
-compose-compiler-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
-compose-gradle-plugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeGradlePlugin" }
-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeGradlePlugin" }
+kotlinMultiplatformPlugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "kotlinMultiplatformPlugin" }
+composeCompilerPlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+composePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeGradlePlugin" }
 gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 kotter = { module = "com.varabyte.kotter:kotter-jvm", version.ref = "kotter" }
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

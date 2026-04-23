@@ -10,9 +10,9 @@ dependencies {
     implementation(libs.kotlinGradlePlugin)
     implementation(libs.kotlinSerializationPlugin)
     implementation(libs.sqldelightGradlePlugin)
-    implementation(libs.com.android.kotlin.multiplatform.library.gradle.plugin)
+    implementation(libs.kotlinMultiplatformPlugin)
     implementation(libs.gradle)
-    implementation(libs.compose.gradle.plugin)
-    implementation(libs.compose.compiler.gradle.plugin)
+    implementation(libs.composePlugin)
+    implementation(libs.composeCompilerPlugin)
     implementation(kotlin("gradle-plugin"))
 }

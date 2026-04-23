@@ -25,6 +25,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktorClientOkhttp)
+                implementation(libs.newpipeExtractor)
             }
         }
         val iosMain by getting {

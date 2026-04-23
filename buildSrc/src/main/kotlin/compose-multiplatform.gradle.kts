@@ -1,8 +1,8 @@
 package buildsrc.convention
 
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 plugins {
     id("org.jetbrains.compose")
@@ -32,12 +32,12 @@ extensions.configure<KotlinMultiplatformExtension> {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.findLibrary("runtime").get())
-                implementation(libs.findLibrary("foundation").get())
-                implementation(libs.findLibrary("material3").get())
-                implementation(libs.findLibrary("ui").get())
-                implementation(libs.findLibrary("components-resources").get())
-                implementation(libs.findLibrary("ui-tooling-preview").get())
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
             }
         }
         val androidMain by getting {
