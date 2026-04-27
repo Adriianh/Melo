@@ -37,8 +37,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.userAgent
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.util.encodeBase64
 import kotlinx.serialization.json.Json
+import kotlin.io.encoding.Base64
 
 /**
  * Provide access to InnerTube endpoints.
@@ -379,7 +379,7 @@ class InnerTube {
         setBody(
             GetTranscriptBody(
                 context = client.toContext(locale, null, dataSyncId),
-                params = "\n${11.toChar()}$videoId".encodeBase64()
+                params = Base64.encode("\n${11.toChar()}$videoId".encodeToByteArray())
             )
         )
     }
