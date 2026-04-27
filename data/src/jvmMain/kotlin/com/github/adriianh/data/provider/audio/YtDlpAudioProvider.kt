@@ -46,6 +46,7 @@ class YtDlpAudioProvider(
      * for the given track. Returns the ID (e.g. `"4NRXx6U8ABQ"`) or null on failure.
      */
     override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? {
+        val startTime = System.currentTimeMillis()
         val cacheKey = "$artist|$title|$durationMs"
         sourceIdCache[cacheKey]?.let { return it }
 
@@ -53,6 +54,7 @@ class YtDlpAudioProvider(
         if (id != null) {
             sourceIdCache[cacheKey] = id
         }
+        println("YtDlpAudioProvider: getSourceId for $artist - $title took ${System.currentTimeMillis() - startTime}ms (Result: $id)")
         return id
     }
 
@@ -70,6 +72,7 @@ class YtDlpAudioProvider(
         }
 
         return withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
             try {
                 val url = "https://www.youtube.com/watch?v=$sourceId"
                 val streamUrl = runYtDlp(
@@ -89,7 +92,10 @@ class YtDlpAudioProvider(
                 streamUrl?.also {
                     streamUrlCache[sourceId] = it
                 }
-            } catch (_: Exception) {
+                println("YtDlpAudioProvider: getStreamUrl for $sourceId took ${System.currentTimeMillis() - startTime}ms")
+                streamUrl
+            } catch (e: Exception) {
+                println("YtDlpAudioProvider: getStreamUrl for $sourceId failed: ${e.message} after ${System.currentTimeMillis() - startTime}ms")
                 fallback?.getStreamUrl(sourceId)
             }
         }

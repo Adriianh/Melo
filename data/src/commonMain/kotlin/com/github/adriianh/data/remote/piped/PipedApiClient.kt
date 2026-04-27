@@ -21,8 +21,6 @@ class PipedApiClient(
 
     private val instances = listOf(
         "https://api.piped.private.coffee",
-        "https://pipedapi.kavin.rocks",
-        "https://piped-api.lunar.icu"
     )
 
     private fun HttpRequestBuilder.commonHeaders() {
@@ -70,26 +68,18 @@ class PipedApiClient(
     suspend fun getStreamUrl(videoId: String): String? {
         for (baseUrl in instances) {
             try {
-                println("Piped: Trying instance $baseUrl for video $videoId")
                 val response = httpClient.get("$baseUrl/streams/$videoId") {
                     commonHeaders()
                 }
-
                 if (response.status.value in 200..299) {
                     val body = response.body<PipedStreamsResponse>()
                     val url = body.audioStreams.maxByOrNull { it.bitrate }?.url
-
-                    if (url != null) {
-                        println("Piped: Success with $baseUrl")
-                        return url
-                    }
-                } else {
-                    println("Piped: Instance $baseUrl returned status ${response.status}")
+                    if (url != null) return url
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                println("Piped: Instance $baseUrl failed with ${e::class.simpleName}: ${e.message}")
+            } catch (_: Exception) {
+                continue
             }
         }
         return null
@@ -124,11 +114,6 @@ class PipedApiClient(
         return null
     }
 
-    /**
-     * Returns a list of [Track]s from Piped's `music_songs` search, suitable for
-     * use as a [com.github.adriianh.core.domain.provider.MusicProvider].
-     * Duration comes from Piped in **seconds**; it is converted to milliseconds here.
-     */
     suspend fun searchTracks(query: String, limit: Int = 20): List<Track> {
         return searchEntities(query, "music_songs", "stream", limit).map { it.toDomain() }
     }
@@ -171,9 +156,6 @@ class PipedApiClient(
         return emptyList()
     }
 
-    /**
-     * Returns tracks related to [videoId] based on YouTube's recommendation algorithm.
-     */
     suspend fun getRelatedTracks(
         videoId: String,
         limit: Int = 20,
@@ -259,11 +241,6 @@ class PipedApiClient(
         return results.take(limit)
     }
 
-    /**
-     * Resolves a YouTube video ID for [track].
-     * If the track already has a [Track.sourceId] (e.g. it came from Piped), it is returned directly.
-     * Otherwise, Piped is searched by title + artist to find the matching video ID.
-     */
     suspend fun resolveVideoId(track: Track): String? {
         track.sourceId?.let { return it }
         return search("${track.title} ${track.artist}", track.title, track.artist, track.durationMs)
