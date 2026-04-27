@@ -6,13 +6,13 @@ import com.github.adriianh.innertube.models.Artist
 import com.github.adriianh.innertube.models.ArtistItem
 import com.github.adriianh.innertube.models.BrowseEndpoint
 import com.github.adriianh.innertube.models.GridRenderer
-import com.github.adriianh.innertube.models.SectionListRenderer
 import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.MusicShelfRenderer
 import com.github.adriianh.innertube.models.MusicTwoRowItemRenderer
 import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.Run
 import com.github.adriianh.innertube.models.SearchSuggestions
+import com.github.adriianh.innertube.models.SectionListRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.WatchEndpoint
 import com.github.adriianh.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
@@ -64,8 +64,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
-import kotlin.random.Random
 import kotlin.jvm.JvmInline
+import kotlin.random.Random
 
 /**
  * Parse useful data with [InnerTube] sending requests.
@@ -93,6 +93,11 @@ object YouTube {
         get() = innerTube.proxyConfig
         set(value) {
             innerTube.proxyConfig = value
+        }
+    var proxyAuth: String?
+        get() = innerTube.proxyAuth
+        set(value) {
+            innerTube.proxyAuth = value
         }
     var useLoginForBrowse: Boolean
         get() = innerTube.useLoginForBrowse

@@ -1,21 +1,42 @@
 package com.github.adriianh.innertube
 
-import com.github.adriianh.innertube.models.Context
-import com.github.adriianh.innertube.models.YouTubeClient
-import com.github.adriianh.innertube.models.YouTubeLocale
-import com.github.adriianh.innertube.models.body.*
 import com.github.adriianh.core.platform.currentTimeSeconds
 import com.github.adriianh.core.platform.defaultCountryCode
 import com.github.adriianh.core.platform.defaultLanguageTag
 import com.github.adriianh.core.platform.sha1
+import com.github.adriianh.innertube.models.Context
+import com.github.adriianh.innertube.models.YouTubeClient
+import com.github.adriianh.innertube.models.YouTubeLocale
+import com.github.adriianh.innertube.models.body.AccountMenuBody
+import com.github.adriianh.innertube.models.body.Action
+import com.github.adriianh.innertube.models.body.BrowseBody
+import com.github.adriianh.innertube.models.body.CreatePlaylistBody
+import com.github.adriianh.innertube.models.body.EditPlaylistBody
+import com.github.adriianh.innertube.models.body.FeedbackBody
+import com.github.adriianh.innertube.models.body.GetQueueBody
+import com.github.adriianh.innertube.models.body.GetSearchSuggestionsBody
+import com.github.adriianh.innertube.models.body.GetTranscriptBody
+import com.github.adriianh.innertube.models.body.LikeBody
+import com.github.adriianh.innertube.models.body.NextBody
+import com.github.adriianh.innertube.models.body.PlayerBody
+import com.github.adriianh.innertube.models.body.PlaylistDeleteBody
+import com.github.adriianh.innertube.models.body.SearchBody
+import com.github.adriianh.innertube.models.body.SubscribeBody
 import com.github.adriianh.innertube.utils.parseCookieString
-import io.ktor.client.*
-import io.ktor.client.plugins.*
-import io.ktor.client.plugins.compression.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.compression.ContentEncoding
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.get
+import io.ktor.client.request.headers
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.userAgent
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.encodeBase64
 import kotlinx.serialization.json.Json
 
@@ -40,6 +61,13 @@ class InnerTube {
     private var cookieMap = emptyMap<String, String>()
 
     var proxyConfig: ProxyConfig? = null
+        set(value) {
+            field = value
+            httpClient.close()
+            httpClient = createClient()
+        }
+
+    var proxyAuth: String? = null
         set(value) {
             field = value
             httpClient.close()
@@ -85,7 +113,8 @@ class InnerTube {
                     append("cookie", cookie)
                     if ("SAPISID" !in cookieMap) return@let
                     val currentTime = currentTimeSeconds()
-                    val sapisidHash = sha1("$currentTime ${cookieMap["SAPISID"]} ${YouTubeClient.ORIGIN_YOUTUBE_MUSIC}")
+                    val sapisidHash =
+                        sha1("$currentTime ${cookieMap["SAPISID"]} ${YouTubeClient.ORIGIN_YOUTUBE_MUSIC}")
                     append("Authorization", "SAPISIDHASH ${currentTime}_${sapisidHash}")
                 }
             }
@@ -106,6 +135,7 @@ class InnerTube {
             )
         )
     }
+
     suspend fun unlikeVideo(
         client: YouTubeClient,
         videoId: String,
@@ -118,6 +148,7 @@ class InnerTube {
             )
         )
     }
+
     suspend fun likePlaylist(
         client: YouTubeClient,
         playlistId: String,
@@ -130,6 +161,7 @@ class InnerTube {
             )
         )
     }
+
     suspend fun unlikePlaylist(
         client: YouTubeClient,
         playlistId: String,
@@ -185,6 +217,7 @@ class InnerTube {
             )
         )
     }
+
     suspend fun unsubscribeChannel(
         client: YouTubeClient,
         channelId: String,
@@ -207,7 +240,11 @@ class InnerTube {
         ytClient(client, setLogin = useLoginForBrowse)
         setBody(
             SearchBody(
-                context = client.toContext(locale, visitorData, if (useLoginForBrowse) dataSyncId else null),
+                context = client.toContext(
+                    locale,
+                    visitorData,
+                    if (useLoginForBrowse) dataSyncId else null
+                ),
                 query = query,
                 params = params
             )
@@ -221,8 +258,8 @@ class InnerTube {
         videoId: String,
         playlistId: String?,
         signatureTimestamp: Int?,
-    ) = httpClient.post("player") {
-        ytClient(client, setLogin = true)
+    ) = httpClient.post("${client.apiUrl}player") {
+        ytClient(client, setLogin = client.loginSupported && cookie != null)
         setBody(
             PlayerBody(
                 context = client.toContext(locale, visitorData, dataSyncId).let {
@@ -238,9 +275,7 @@ class InnerTube {
                 playlistId = playlistId,
                 playbackContext = if (client.useSignatureTimestamp && signatureTimestamp != null) {
                     PlayerBody.PlaybackContext(
-                        PlayerBody.PlaybackContext.ContentPlaybackContext(
-                            signatureTimestamp
-                        )
+                        PlayerBody.PlaybackContext.ContentPlaybackContext(signatureTimestamp)
                     )
                 } else null,
             )
