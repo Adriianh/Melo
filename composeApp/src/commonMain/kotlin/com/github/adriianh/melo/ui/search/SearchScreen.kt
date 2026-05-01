@@ -25,14 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.player.QueueViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = koinViewModel(),
-    playerViewModel: PlayerViewModel = koinViewModel()
+    queueViewModel: QueueViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -74,7 +74,7 @@ fun SearchScreen(
             } else {
                 LazyColumn {
                     items(uiState.results) { track ->
-                        TrackItem(track, onClick = { playerViewModel.playTrack(track) })
+                        TrackItem(track, onClick = { queueViewModel.playTrack(track) })
                     }
                 }
             }
