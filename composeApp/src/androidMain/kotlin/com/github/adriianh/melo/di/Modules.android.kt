@@ -21,11 +21,13 @@ actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
 
+
     single(named("configDirPath")) { androidContext().filesDir.absolutePath }
-    // TODO: Implement real AudioProvider and OfflineRepository for Android
+
     single<AudioProvider> {
-        InnerTubeAudioProvider(fallback = get<PipedAudioProvider>())
+        InnerTubeAudioProvider(fallback = PipedAudioProvider(get()))
     }
+
     single<OfflineRepository> {
         object : OfflineRepository {
             override fun getOfflineTracksFlow(): Flow<List<OfflineTrack>> = flowOf(emptyList())

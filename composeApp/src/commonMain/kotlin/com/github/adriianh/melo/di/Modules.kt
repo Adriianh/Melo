@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -12,6 +13,7 @@ import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
@@ -29,10 +31,14 @@ import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.innertube.createPlatformHttpClient
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
@@ -98,6 +104,15 @@ val dataModule = module {
             dispatcher = MeloDispatchers.IO
         )
     }
+
+    single { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+    single<PlaybackManager> {
+        PlaybackManagerImpl(
+            meloPlayer = get(),
+            getStreamUseCase = get(),
+            scope = get(),
+        )
+    }
 }
 
 val useCaseModule = module {
@@ -110,6 +125,7 @@ val useCaseModule = module {
 val viewModelModule = module {
     viewModelOf(::SearchViewModel)
     viewModelOf(::PlayerViewModel)
+    viewModelOf(::QueueViewModel)
 }
 
 expect val platformModule: Module

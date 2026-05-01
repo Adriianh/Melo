@@ -28,7 +28,7 @@ actual val platformModule: Module = module {
     single(named("configDirPath")) { documentsDirectory }
 
     single<AudioProvider> {
-        InnerTubeAudioProvider(fallback = get<PipedAudioProvider>())
+        InnerTubeAudioProvider(fallback = PipedAudioProvider(get()))
     }
 
     single<OfflineRepository> {
