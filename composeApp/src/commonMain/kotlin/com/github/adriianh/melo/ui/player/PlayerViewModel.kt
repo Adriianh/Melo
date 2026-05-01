@@ -1,50 +1,16 @@
 package com.github.adriianh.melo.ui.player
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.player.MeloPlayer
-import com.github.adriianh.core.domain.player.PlaybackState
-import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import com.github.adriianh.core.domain.player.PlaybackManager
 
-class PlayerViewModel(
-    private val meloPlayer: MeloPlayer,
-    private val getStreamUseCase: GetStreamUseCase
-) : ViewModel() {
+class PlayerViewModel(private val manager: PlaybackManager) : ViewModel() {
+    val playbackState = manager.playbackState
 
-    val playbackState: StateFlow<PlaybackState> = meloPlayer.state
+    fun togglePlayPause() = manager.togglePlayPause()
 
-    fun playTrack(track: Track) {
-        viewModelScope.launch {
-            try {
-                val url = getStreamUseCase(track)
-                if (url != null) {
-                    meloPlayer.load(url, track)
-                } else {
-                    println("Failed to resolve stream URL for track: ${track.title}")
-                }
-            } catch (e: Exception) {
-                println("Error playing track: ${e.message}")
-            }
-        }
-    }
+    fun seekTo(positionMs: Long) = manager.seekTo(positionMs)
 
-    fun togglePlayPause() {
-        if (playbackState.value.isPlaying) {
-            meloPlayer.pause()
-        } else if (playbackState.value.currentTrack != null) {
-            meloPlayer.play()
-        }
-    }
+    fun playNext() = manager.playNext()
 
-    fun seekTo(positionMs: Long) {
-        meloPlayer.seekTo(positionMs)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        meloPlayer.release()
-    }
+    fun playPrevious() = manager.playPrevious()
 }
