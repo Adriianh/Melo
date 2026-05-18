@@ -3,11 +3,9 @@ package com.github.adriianh.cli.tui.component.screen
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.handler.persistSession
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.time.Duration
 
 internal fun MeloScreen.onStartLifecycle() {
@@ -90,6 +88,5 @@ internal fun MeloScreen.onStopLifecycle() {
     audioPlayer.stop()
     mediaSession.destroy()
     discordRpcManager.disconnect()
-    runBlocking { persistSession() }
     scope.cancel()
 }

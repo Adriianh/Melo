@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.RepeatMode
 import com.github.adriianh.cli.tui.handler.checkIsFavorite
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.onTrackStarted
+import com.github.adriianh.cli.tui.handler.persistSession
 import com.github.adriianh.cli.tui.handler.search.loadNowPlayingMetadata
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
@@ -18,6 +19,7 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 internal fun MeloScreen.playTrack(track: Track) {
     if (!state.isPlayable(track)) return
@@ -144,6 +146,7 @@ internal fun MeloScreen.playTrack(track: Track) {
         }
     }
 
+    runBlocking { persistSession() }
     checkIsFavorite(track.id)
 }
 

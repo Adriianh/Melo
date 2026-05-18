@@ -46,16 +46,16 @@ internal suspend fun MeloScreen.restoreLastSession() {
 }
 
 internal suspend fun MeloScreen.persistSession() {
-    val s = state
-    if (s.player.nowPlaying == null || s.player.queue.isEmpty() || s.player.queueIndex < 0) {
+    val currentState = state
+    if (currentState.player.nowPlaying == null || currentState.player.queue.isEmpty() || currentState.player.queueIndex < 0) {
         clearSession()
         return
     }
     saveSession(
         SavedSession(
-            queue = s.player.queue,
-            queueIndex = s.player.queueIndex,
-            positionMs = (s.player.progress * s.player.nowPlaying.durationMs).toLong(),
+            queue = currentState.player.queue,
+            queueIndex = currentState.player.queueIndex,
+            positionMs = (currentState.player.progress * currentState.player.nowPlaying.durationMs).toLong(),
         )
     )
 }
