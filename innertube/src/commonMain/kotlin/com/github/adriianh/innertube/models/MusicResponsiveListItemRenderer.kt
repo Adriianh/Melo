@@ -6,10 +6,10 @@ import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContext
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_ARTIST
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_AUDIOBOOK
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_PLAYLIST
+import com.github.adriianh.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
-import kotlinx.serialization.json.JsonNames
+import kotlinx.serialization.Serializable
 
 /**
  * Typical list item
@@ -47,6 +47,13 @@ data class MusicResponsiveListItemRenderer(
                 ?.musicVideoType
                 ?: navigationEndpoint?.musicVideoType
 
+    val isAudioTrack: Boolean
+        get() =
+            overlay
+                ?.musicItemThumbnailOverlayRenderer?.content
+                ?.musicPlayButtonRenderer?.playNavigationEndpoint
+                ?.watchEndpoint?.watchEndpointMusicSupportedConfigs
+                ?.watchEndpointMusicConfig?.musicVideoType == MUSIC_VIDEO_TYPE_ATV
 
     @Serializable
     data class FlexColumn(

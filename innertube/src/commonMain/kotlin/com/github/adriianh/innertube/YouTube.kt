@@ -15,7 +15,6 @@ import com.github.adriianh.innertube.models.SearchSuggestions
 import com.github.adriianh.innertube.models.SectionListRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.WatchEndpoint
-import com.github.adriianh.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.YouTubeClient.Companion.WEB
 import com.github.adriianh.innertube.models.YouTubeClient.Companion.WEB_REMIX
@@ -26,6 +25,7 @@ import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.models.response.AccountMenuResponse
 import com.github.adriianh.innertube.models.response.AddItemYouTubePlaylistResponse
 import com.github.adriianh.innertube.models.response.BrowseResponse
+import com.github.adriianh.innertube.models.response.BrowseResponse.Companion.extractItems
 import com.github.adriianh.innertube.models.response.CreatePlaylistResponse
 import com.github.adriianh.innertube.models.response.FeedbackResponse
 import com.github.adriianh.innertube.models.response.GetQueueResponse
@@ -56,6 +56,7 @@ import com.github.adriianh.innertube.pages.SearchResult
 import com.github.adriianh.innertube.pages.SearchSuggestionPage
 import com.github.adriianh.innertube.pages.SearchSummary
 import com.github.adriianh.innertube.pages.SearchSummaryPage
+import com.github.adriianh.innertube.utils.YoutubeConstants
 import io.ktor.client.call.body
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.runBlocking
@@ -121,32 +122,75 @@ object YouTube {
 
     suspend fun searchSummary(query: String): Result<SearchSummaryPage> = runCatching {
         val response = innerTube.search(WEB_REMIX, query).body<SearchResponse>()
+        val contents = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
+            ?.tabRenderer?.content?.sectionListRenderer?.contents.orEmpty()
+
+        val shelfSummaries = contents.mapNotNull { it ->
+            if (it.musicCardShelfRenderer != null) {
+                SearchSummary(
+                    title = it.musicCardShelfRenderer.header?.musicCardShelfHeaderBasicRenderer?.title?.runs?.firstOrNull()?.text
+                        ?: YoutubeConstants.DEFAULT_OTHER_RESULTS,
+                    items = listOfNotNull(SearchSummaryPage.fromMusicCardShelfRenderer(it.musicCardShelfRenderer))
+                        .plus(
+                            it.musicCardShelfRenderer.contents
+                                ?.mapNotNull { it.musicResponsiveListItemRenderer }
+                                ?.mapNotNull(SearchSummaryPage.Companion::fromMusicResponsiveListItemRenderer)
+                                .orEmpty()
+                        )
+                        .distinctBy { it.id }
+                        .ifEmpty { null } ?: return@mapNotNull null
+                )
+            } else if (it.musicShelfRenderer != null) {
+                SearchSummary(
+                    title = it.musicShelfRenderer.title?.runs?.firstOrNull()?.text
+                        ?: YoutubeConstants.DEFAULT_OTHER_RESULTS,
+                    items = it.musicShelfRenderer.contents?.getItems()
+                        ?.mapNotNull {
+                            SearchSummaryPage.fromMusicResponsiveListItemRenderer(it)
+                        }
+                        ?.distinctBy { it.id }
+                        ?.ifEmpty { null } ?: return@mapNotNull null
+                )
+            } else {
+                null
+            }
+        }
+
+        val flatItems = contents
+            .mapNotNull { it.itemSectionRenderer }
+            .flatMap { it.contents.orEmpty() }
+            .mapNotNull { it.musicResponsiveListItemRenderer }
+            .mapNotNull { SearchSummaryPage.fromMusicResponsiveListItemRenderer(it) }
+
+        val groupedSummaries = mutableListOf<SearchSummary>()
+
+        val flatSongs = flatItems.filterIsInstance<SongItem>().filter { !it.isVideoSong }
+        if (flatSongs.isNotEmpty()) {
+            groupedSummaries.add(SearchSummary(title = "Songs", items = flatSongs))
+        }
+
+        val flatVideos = flatItems.filterIsInstance<SongItem>().filter { it.isVideoSong }
+        if (flatVideos.isNotEmpty()) {
+            groupedSummaries.add(SearchSummary(title = "Videos", items = flatVideos))
+        }
+
+        val flatAlbums = flatItems.filterIsInstance<AlbumItem>()
+        if (flatAlbums.isNotEmpty()) {
+            groupedSummaries.add(SearchSummary(title = "Albums", items = flatAlbums))
+        }
+
+        val flatArtists = flatItems.filterIsInstance<ArtistItem>()
+        if (flatArtists.isNotEmpty()) {
+            groupedSummaries.add(SearchSummary(title = "Artists", items = flatArtists))
+        }
+
+        val flatPlaylists = flatItems.filterIsInstance<PlaylistItem>()
+        if (flatPlaylists.isNotEmpty()) {
+            groupedSummaries.add(SearchSummary(title = "Playlists", items = flatPlaylists))
+        }
+
         SearchSummaryPage(
-            summaries = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { it ->
-                if (it.musicCardShelfRenderer != null)
-                    SearchSummary(
-                        title = it.musicCardShelfRenderer.header?.musicCardShelfHeaderBasicRenderer?.title?.runs?.firstOrNull()?.text ?: "Top result",
-                        items = listOfNotNull(SearchSummaryPage.fromMusicCardShelfRenderer(it.musicCardShelfRenderer))
-                            .plus(
-                                it.musicCardShelfRenderer.contents
-                                    ?.mapNotNull { it.musicResponsiveListItemRenderer }
-                                    ?.mapNotNull(SearchSummaryPage.Companion::fromMusicResponsiveListItemRenderer)
-                                    .orEmpty()
-                            )
-                            .distinctBy { it.id }
-                            .ifEmpty { null } ?: return@mapNotNull null
-                    )
-                else
-                    SearchSummary(
-                        title = it.musicShelfRenderer?.title?.runs?.firstOrNull()?.text ?: "Other",
-                        items = it.musicShelfRenderer?.contents?.getItems()
-                            ?.mapNotNull {
-                                SearchSummaryPage.fromMusicResponsiveListItemRenderer(it)
-                            }
-                            ?.distinctBy { it.id }
-                            ?.ifEmpty { null } ?: return@mapNotNull null
-                    )
-            } ?: emptyList()
+            summaries = shelfSummaries + groupedSummaries
         )
     }
 
@@ -844,32 +888,15 @@ suspend fun playlist(playlistId: String): Result<PlaylistPage> = runCatching {
             ?.joinToString(separator = "") { it.text }
     }
 
-
     suspend fun related(endpoint: BrowseEndpoint): Result<RelatedPage> = runCatching {
         val response = innerTube.browse(WEB_REMIX, endpoint.browseId).body<BrowseResponse>()
-        val songs = mutableListOf<SongItem>()
-        val albums = mutableListOf<AlbumItem>()
-        val artists = mutableListOf<ArtistItem>()
-        val playlists = mutableListOf<PlaylistItem>()
-        response.contents?.sectionListRenderer?.contents?.forEach { sectionContent ->
-            sectionContent.musicCarouselShelfRenderer?.contents?.forEach { content ->
-                when (val item = content.musicResponsiveListItemRenderer?.let(RelatedPage.Companion::fromMusicResponsiveListItemRenderer)
-                    ?: content.musicTwoRowItemRenderer?.let(RelatedPage.Companion::fromMusicTwoRowItemRenderer)) {
-                    is SongItem -> if (content.musicResponsiveListItemRenderer?.overlay
-                            ?.musicItemThumbnailOverlayRenderer?.content
-                            ?.musicPlayButtonRenderer?.playNavigationEndpoint
-                            ?.watchEndpoint?.watchEndpointMusicSupportedConfigs
-                            ?.watchEndpointMusicConfig?.musicVideoType == MUSIC_VIDEO_TYPE_ATV
-                    ) songs.add(item)
 
-                    is AlbumItem -> albums.add(item)
-                    is ArtistItem -> artists.add(item)
-                    is PlaylistItem -> playlists.add(item)
-                    null -> {}
-                }
-            }
-        }
-        RelatedPage(songs, albums, artists, playlists)
+        RelatedPage(
+            songs = response.extractItems<SongItem> { renderer -> renderer!!.isAudioTrack },
+            albums = response.extractItems<AlbumItem>(),
+            artists = response.extractItems<ArtistItem>(),
+            playlists = response.extractItems<PlaylistItem>()
+        )
     }
 
     suspend fun queue(videoIds: List<String>? = null, playlistId: String? = null): Result<List<SongItem>> = runCatching {

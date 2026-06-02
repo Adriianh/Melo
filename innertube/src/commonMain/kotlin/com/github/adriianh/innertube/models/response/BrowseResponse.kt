@@ -4,14 +4,19 @@ import com.github.adriianh.innertube.models.Button
 import com.github.adriianh.innertube.models.Continuation
 import com.github.adriianh.innertube.models.GridRenderer
 import com.github.adriianh.innertube.models.Menu
+import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.MusicShelfRenderer
 import com.github.adriianh.innertube.models.ResponseContext
 import com.github.adriianh.innertube.models.Runs
 import com.github.adriianh.innertube.models.SectionListRenderer
+import com.github.adriianh.innertube.models.SectionListRenderer.Companion.processItemSection
+import com.github.adriianh.innertube.models.SectionListRenderer.Companion.processMusicCarouselShelf
+import com.github.adriianh.innertube.models.SectionListRenderer.Companion.processMusicShelf
 import com.github.adriianh.innertube.models.SubscriptionButton
 import com.github.adriianh.innertube.models.Tabs
 import com.github.adriianh.innertube.models.ThumbnailRenderer
 import com.github.adriianh.innertube.models.Thumbnails
+import com.github.adriianh.innertube.models.YTItem
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -180,5 +185,23 @@ data class BrowseResponse(
         data class MicroformatDataRenderer(
             val urlCanonical: String?,
         )
+    }
+
+    companion object {
+        inline fun <reified T : YTItem> BrowseResponse.extractItems(
+            crossinline filter: (MusicResponsiveListItemRenderer?) -> Boolean = { true }
+        ): List<T> = buildList {
+            val addItem: (YTItem, MusicResponsiveListItemRenderer?) -> Unit = { item, renderer ->
+                if (item is T && filter(renderer)) {
+                    add(item)
+                }
+            }
+
+            contents?.sectionListRenderer?.contents?.forEach { sectionContent ->
+                sectionContent.processMusicCarouselShelf(addItem)
+                sectionContent.processMusicShelf(addItem)
+                sectionContent.processItemSection(addItem)
+            }
+        }
     }
 }
