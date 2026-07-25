@@ -32,7 +32,6 @@ kotlin {
             dependencies {
                 implementation(project(":core"))
                 implementation(project(":data"))
-                implementation(project(":innertube"))
                 
                 // Add lifecycle for ViewModels
                 implementation(libs.lifecycle.viewmodel.compose)
@@ -45,6 +44,7 @@ kotlin {
 
                 // Ktor & Serialization
                 implementation(libs.ktorClientCore)
+                implementation(libs.ktorClientCio)
                 implementation(libs.ktorClientContentNegotiation)
                 implementation(libs.ktorSerializationKotlinxJson)
                 implementation(libs.kotlinxSerialization)
