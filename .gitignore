@@ -29,3 +29,6 @@ out/
 
 # Environment variables
 .env
+
+!.ignore
+WALKTHROUGH.md
