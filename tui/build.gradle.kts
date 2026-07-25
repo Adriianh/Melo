@@ -27,6 +27,9 @@ dependencies {
     implementation(libs.kotter)
     implementation(libs.kdiscordipc)
     implementation(libs.slf4jApi)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.junit)
 }
 
 val appVersion = "1.0.0"

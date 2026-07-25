@@ -12,6 +12,7 @@ kotlin {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    failOnNoDiscoveredTests = false
 
     testLogging {
         events(
