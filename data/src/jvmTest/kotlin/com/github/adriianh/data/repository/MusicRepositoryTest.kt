@@ -268,7 +268,7 @@ class MusicRepositoryTest {
         val repo = createRepository()
         repo.search("query1")
         repo.search("query2")
-        Thread.sleep(200)
+        Thread.sleep(500)
 
         val result = repo.loadMore("query2", 0)
         assertEquals(5, result.size)

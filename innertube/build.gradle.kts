@@ -37,6 +37,10 @@ kotlin {
             dependencies {
                 implementation(libs.junit)
                 implementation(kotlin("test"))
+                implementation(libs.mockk)
+                implementation(libs.ktorClientMock)
+                implementation(libs.ktorClientCio)
+                implementation(libs.kotlinxCoroutinesTest)
                 runtimeOnly("org.junit.vintage:junit-vintage-engine:5.10.2")
             }
         }

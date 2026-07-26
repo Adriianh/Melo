@@ -70,6 +70,17 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinxCoroutinesTest)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(libs.mockk)
+            }
+        }
     }
 }
 
