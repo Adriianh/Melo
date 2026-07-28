@@ -4,7 +4,6 @@ plugins {
     id("app.cash.sqldelight")
 }
 
-
 kotlin {
     sourceSets {
         commonMain {
