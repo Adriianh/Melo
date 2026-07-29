@@ -30,5 +30,6 @@ out/
 # Environment variables
 .env
 
-!.ignore
-WALKTHROUGH.md
+# User-specific files
+.ignore
+.docs/
