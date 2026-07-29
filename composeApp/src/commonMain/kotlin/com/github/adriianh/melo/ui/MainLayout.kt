@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
@@ -230,14 +231,11 @@ private fun DesktopPlayerBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MeloColors.surface1)
-                ) {
-                    // Artwork would go here
-                }
+                MeloAsyncImage(
+                    url = state.albumArt,
+                    contentDescription = state.title,
+                    size = 44.dp,
+                )
                 Column {
                     Text(
                         state.title,
@@ -384,11 +382,10 @@ private fun MobileMiniPlayer(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MeloColors.surface1)
+                MeloAsyncImage(
+                    url = state.albumArt,
+                    contentDescription = state.title,
+                    size = 40.dp,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

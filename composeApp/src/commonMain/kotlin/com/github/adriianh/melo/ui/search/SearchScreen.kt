@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.search
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.util.TrackArtwork
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -41,7 +43,6 @@ fun SearchScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Search Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -61,7 +62,6 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Results
         Box(modifier = Modifier.fillMaxSize()) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -94,8 +94,10 @@ fun TrackItem(track: Track, onClick: () -> Unit) {
             modifier = Modifier
                 .padding(12.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            TrackArtwork(track = track, size = 48.dp)
             Column {
                 Text(text = track.title, style = MaterialTheme.typography.titleMedium)
                 Text(text = track.artist, style = MaterialTheme.typography.bodySmall)
