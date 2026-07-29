@@ -16,7 +16,12 @@ import com.github.adriianh.melo.ui.AdaptiveScaffold
 import com.github.adriianh.melo.ui.search.SearchScreen
 
 @Composable
+expect fun InitImageLoader()
+
+@Composable
 fun App() {
+    InitImageLoader()
+
     MaterialTheme {
         var selectedTab by remember { mutableStateOf("Search") }
 
