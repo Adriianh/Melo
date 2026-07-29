@@ -20,44 +20,64 @@ class MergedMusicProvider(
 ) : MusicProvider {
 
     override suspend fun search(query: String): List<Track> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.search(query) }.getOrDefault(emptyList()) } }
+        val jobs =
+            providers.map { async { runCatching { it.search(query) }.getOrDefault(emptyList()) } }
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun searchAlbums(query: String): List<SearchResult.Album> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchAlbums(query) }.getOrDefault(emptyList()) } }
+        val jobs =
+            providers.map { async { runCatching { it.searchAlbums(query) }.getOrDefault(emptyList()) } }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
     override suspend fun searchArtists(query: String): List<SearchResult.Artist> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchArtists(query) }.getOrDefault(emptyList()) } }
+        val jobs =
+            providers.map { async { runCatching { it.searchArtists(query) }.getOrDefault(emptyList()) } }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
-    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchPlaylists(query) }.getOrDefault(emptyList()) } }
-        mergeLists(jobs.awaitAll()).distinctBy { it.id }
-    }
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> =
+        coroutineScope {
+            val jobs = providers.map {
+                async {
+                    runCatching { it.searchPlaylists(query) }.getOrDefault(emptyList())
+                }
+            }
+            mergeLists(jobs.awaitAll()).distinctBy { it.id }
+        }
 
     override suspend fun searchAll(query: String): List<Track> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }
+        val jobs =
+            providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchAllAlbums(query) }.getOrDefault(emptyList()) } }
+        val jobs =
+            providers.map { async { runCatching { it.searchAllAlbums(query) }.getOrDefault(emptyList()) } }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
-    override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchAllArtists(query) }.getOrDefault(emptyList()) } }
-        mergeLists(jobs.awaitAll()).distinctBy { it.id }
-    }
+    override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> =
+        coroutineScope {
+            val jobs = providers.map {
+                async {
+                    runCatching { it.searchAllArtists(query) }.getOrDefault(emptyList())
+                }
+            }
+            mergeLists(jobs.awaitAll()).distinctBy { it.id }
+        }
 
-    override suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> = coroutineScope {
-        val jobs = providers.map { async { runCatching { it.searchAllPlaylists(query) }.getOrDefault(emptyList()) } }
-        mergeLists(jobs.awaitAll()).distinctBy { it.id }
-    }
+    override suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> =
+        coroutineScope {
+            val jobs = providers.map {
+                async {
+                    runCatching { it.searchAllPlaylists(query) }.getOrDefault(emptyList())
+                }
+            }
+            mergeLists(jobs.awaitAll()).distinctBy { it.id }
+        }
 
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
         for (provider in providers) {
@@ -91,12 +111,49 @@ class MergedMusicProvider(
         return emptyList()
     }
 
+    override suspend fun getHome(): List<SearchResult.ArtistSection> {
+        for (provider in providers) {
+            val result = runCatching { provider.getHome() }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
+    override suspend fun getExplore(): List<SearchResult.ArtistSection> {
+        for (provider in providers) {
+            val result = runCatching { provider.getExplore() }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
+    override suspend fun getTrending(): List<Track> {
+        for (provider in providers) {
+            val result = runCatching { provider.getTrending() }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
+    override suspend fun getRadio(videoId: String): List<Track> {
+        for (provider in providers) {
+            val result = runCatching { provider.getRadio(videoId) }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
     override suspend fun getTrack(id: String): Track? {
         val provider = when {
-            id.startsWith("itunes:") -> providers.filterIsInstance<ItunesMusicProvider>().firstOrNull()
-            id.startsWith("piped:")  -> providers.filterIsInstance<PipedMusicProvider>().firstOrNull()
+            id.startsWith("itunes:") -> providers.filterIsInstance<ItunesMusicProvider>()
+                .firstOrNull()
+
+            id.startsWith("piped:") -> providers.filterIsInstance<PipedMusicProvider>()
+                .firstOrNull()
+
             id.startsWith("spotify:") || !id.contains(':') ->
                 providers.filterIsInstance<SpotifyMusicProvider>().firstOrNull()
+
             else -> null
         }
         if (provider != null) return runCatching { provider.getTrack(id) }.getOrNull()
