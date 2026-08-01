@@ -396,6 +396,15 @@ class InnerTubeMusicProvider(
         }
     }
 
+    override suspend fun getCharts(): List<SearchResult.ArtistSection> {
+        return YouTube.charts().getOrNull().orEmpty().map { section ->
+            SearchResult.ArtistSection(
+                title = section.title,
+                items = section.items.mapNotNull { mapYTItem(it) }
+            )
+        }
+    }
+
     override suspend fun getTrending(): List<Track> {
         val home = getHome()
         return home.find { it.title.contains("Trending", ignoreCase = true) }

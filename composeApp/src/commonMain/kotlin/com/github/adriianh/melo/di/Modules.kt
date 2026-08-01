@@ -12,6 +12,7 @@ import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
@@ -122,6 +123,7 @@ val useCaseModule = module {
     singleOf(::GetStreamUseCase)
     singleOf(::GetHomeUseCase)
     singleOf(::GetExploreUseCase)
+    singleOf(::GetChartsUseCase)
     singleOf(::GetTrendingUseCase)
 }
 

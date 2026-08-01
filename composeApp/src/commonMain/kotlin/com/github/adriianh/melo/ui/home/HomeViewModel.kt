@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
@@ -21,6 +22,7 @@ data class HomeUiState(
 class HomeViewModel(
     private val getHomeUseCase: GetHomeUseCase,
     private val getExploreUseCase: GetExploreUseCase,
+    private val getChartsUseCase: GetChartsUseCase,
     private val getTrendingUseCase: GetTrendingUseCase
 ) : ViewModel() {
 
@@ -34,6 +36,7 @@ class HomeViewModel(
                 val sections = buildList {
                     addAll(getHomeUseCase())
                     addAll(getExploreUseCase())
+                    addAll(getChartsUseCase())
                     val trending = getTrendingUseCase()
                     if (trending.isNotEmpty()) {
                         add(

@@ -60,6 +60,7 @@ import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
 import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
@@ -298,11 +299,12 @@ val appModule = module {
 
     factory { GetHomeUseCase(get()) }
     factory { GetExploreUseCase(get()) }
+    factory { GetChartsUseCase(get()) }
     factory { GetTrendingUseCase(get()) }
     factory { GetRadioUseCase(get()) }
 
     // Interactors
-    factory { DiscoveryInteractors(get(), get(), get(), get()) }
+    factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
     factory { GetSearchHistoryUseCase(get()) }
     factory { GetSearchSuggestionsUseCase(get()) }
     factory { SaveSearchQueryUseCase(get()) }

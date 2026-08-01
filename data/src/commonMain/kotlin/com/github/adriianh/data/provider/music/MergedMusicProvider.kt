@@ -127,6 +127,14 @@ class MergedMusicProvider(
         return emptyList()
     }
 
+    override suspend fun getCharts(): List<SearchResult.ArtistSection> {
+        for (provider in providers) {
+            val result = runCatching { provider.getCharts() }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
     override suspend fun getTrending(): List<Track> {
         for (provider in providers) {
             val result = runCatching { provider.getTrending() }.getOrNull()

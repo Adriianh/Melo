@@ -12,6 +12,10 @@ class GetExploreUseCase(private val repository: MusicRepository) {
     suspend operator fun invoke(): List<SearchResult.ArtistSection> = repository.getExplore()
 }
 
+class GetChartsUseCase(private val repository: MusicRepository) {
+    suspend operator fun invoke(): List<SearchResult.ArtistSection> = repository.getCharts()
+}
+
 class GetTrendingUseCase(private val repository: MusicRepository) {
     suspend operator fun invoke(): List<Track> = repository.getTrending()
 }

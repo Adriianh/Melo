@@ -22,6 +22,7 @@ interface MusicProvider {
 
     suspend fun getHome(): List<SearchResult.ArtistSection> = emptyList()
     suspend fun getExplore(): List<SearchResult.ArtistSection> = emptyList()
+    suspend fun getCharts(): List<SearchResult.ArtistSection> = emptyList()
     suspend fun getTrending(): List<Track> = emptyList()
     suspend fun getRadio(videoId: String): List<Track> = emptyList()
 }

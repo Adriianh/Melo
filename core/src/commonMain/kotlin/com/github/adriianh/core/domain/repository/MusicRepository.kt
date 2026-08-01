@@ -25,6 +25,7 @@ interface MusicRepository {
 
     suspend fun getHome(): List<SearchResult.ArtistSection>
     suspend fun getExplore(): List<SearchResult.ArtistSection>
+    suspend fun getCharts(): List<SearchResult.ArtistSection>
     suspend fun getTrending(): List<Track>
     suspend fun getRadio(videoId: String): List<Track>
 }
