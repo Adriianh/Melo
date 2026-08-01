@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 /**
  * Fake MusicProvider that returns pre-configured results.
- * Each instance represents one "source" (e.g. Spotify, iTunes).
+ * Each instance represents one "source" (e.g., Spotify, iTunes).
  */
 private class FakeMusicProvider(
     private val tracks: List<Track> = emptyList(),
@@ -23,6 +23,10 @@ private class FakeMusicProvider(
     private val albumLookup: Map<String, SearchResult.Album> = emptyMap(),
     private val artistLookup: Map<String, SearchResult.Artist> = emptyMap(),
     private val suggestions: List<String> = emptyList(),
+    private val homeSections: List<SearchResult.ArtistSection> = emptyList(),
+    private val exploreSections: List<SearchResult.ArtistSection> = emptyList(),
+    private val trendingTracks: List<Track> = emptyList(),
+    private val radioTracks: List<Track> = emptyList(),
     private val shouldThrowOnSearch: Boolean = false,
 ) : MusicProvider {
 
@@ -49,6 +53,11 @@ private class FakeMusicProvider(
     override suspend fun getArtistDetails(id: String): SearchResult.Artist? = artistLookup[id]
 
     override suspend fun getSearchSuggestions(query: String): List<String> = suggestions
+
+    override suspend fun getHome(): List<SearchResult.ArtistSection> = homeSections
+    override suspend fun getExplore(): List<SearchResult.ArtistSection> = exploreSections
+    override suspend fun getTrending(): List<Track> = trendingTracks
+    override suspend fun getRadio(videoId: String): List<Track> = radioTracks
 }
 
 private fun fakeTrack(
@@ -172,7 +181,7 @@ class MergedMusicProviderTest {
     @Test
     fun `deduplicate uses duration bucket not exact duration`() = runTest {
         // Both have same artist+title, durations differ by 5 seconds
-        // 180000 / 10000 = 18, 185000 / 10000 = 18 → same bucket
+        // 180,000 / 10,000 = 18, 185,000 / 10,000 = 18 → same bucket
         val providerA = FakeMusicProvider(
             tracks = listOf(fakeTrack("a1", title = "Song", artist = "Same", durationMs = 180_000))
         )
@@ -188,7 +197,7 @@ class MergedMusicProviderTest {
 
     @Test
     fun `deduplicate keeps tracks in different duration buckets`() = runTest {
-        // 180000 / 10000 = 18, 200000 / 10000 = 20 → different buckets
+        // 180,000 / 10,000 = 18, 200,000 / 10,000 = 20 → different buckets
         val providerA = FakeMusicProvider(
             tracks = listOf(fakeTrack("a1", title = "Song", artist = "Same", durationMs = 180_000))
         )
@@ -361,5 +370,139 @@ class MergedMusicProviderTest {
         val result = merged.getTrack("nonexistent")
 
         assertNull(result)
+    }
+
+    @Test
+    fun `getHome returns first non-empty result`() = runTest {
+        val p1 = FakeMusicProvider(homeSections = emptyList())
+        val p2 = FakeMusicProvider(
+            homeSections = listOf(
+                SearchResult.ArtistSection(
+                    "Section",
+                    emptyList()
+                )
+            )
+        )
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getHome()
+
+        assertEquals(1, result.size)
+        assertEquals("Section", result[0].title)
+    }
+
+    @Test
+    fun `getHome continues when one provide throws`() = runTest {
+        val bad = object : MusicProvider by FakeMusicProvider() {
+            override suspend fun getHome(): List<SearchResult.ArtistSection> {
+                throw RuntimeException("Provider error")
+            }
+        }
+        val good = FakeMusicProvider(
+            homeSections = listOf(
+                SearchResult.ArtistSection(
+                    "Good Section",
+                    emptyList()
+                )
+            )
+        )
+        val merged = MergedMusicProvider(listOf(bad, good))
+
+        val result = merged.getHome()
+
+        assertEquals(1, result.size)
+        assertEquals("Good Section", result[0].title)
+    }
+
+    @Test
+    fun `getHome returns empty when all providers return empty`() = runTest {
+        val p1 = FakeMusicProvider()
+        val p2 = FakeMusicProvider()
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getHome()
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getExplore returns first non-empty result`() = runTest {
+        val p1 = FakeMusicProvider(exploreSections = emptyList())
+        val p2 = FakeMusicProvider(
+            exploreSections = listOf(
+                SearchResult.ArtistSection(
+                    "Section",
+                    emptyList()
+                )
+            )
+        )
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getExplore()
+
+        assertEquals(1, result.size)
+        assertEquals("Section", result[0].title)
+    }
+
+    @Test
+    fun `getTrending returns first non-empty result`() = runTest {
+        val p1 = FakeMusicProvider(trendingTracks = emptyList())
+        val p2 = FakeMusicProvider(trendingTracks = listOf(fakeTrack("t1"), fakeTrack("t2")))
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getTrending()
+
+        assertEquals(2, result.size)
+        assertEquals("t1", result[0].id)
+    }
+
+    @Test
+    fun `getTrending returns empty when all providers return empty`() = runTest {
+
+        val p1 = FakeMusicProvider(trendingTracks = emptyList())
+        val p2 = FakeMusicProvider(trendingTracks = emptyList())
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getTrending()
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getRadio returns first non-empty result`() = runTest {
+        val p1 = FakeMusicProvider(radioTracks = emptyList())
+        val p2 = FakeMusicProvider(radioTracks = listOf(fakeTrack("r1"), fakeTrack("r2")))
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getRadio("videoId")
+
+        assertEquals(2, result.size)
+        assertEquals("r1", result[0].id)
+    }
+
+    @Test
+    fun `getRadio continues when one provider throws`() = runTest {
+        val bad = object : MusicProvider by FakeMusicProvider() {
+            override suspend fun getRadio(videoId: String): List<Track> =
+                throw RuntimeException("Provider error")
+        }
+        val good = FakeMusicProvider(radioTracks = listOf(fakeTrack("r3")))
+        val merged = MergedMusicProvider(listOf(bad, good))
+
+        val result = merged.getRadio("videoId")
+
+        assertEquals(1, result.size)
+        assertEquals("r3", result[0].id)
+    }
+
+    @Test
+    fun `getExplore returns empty when all providers return empty`() = runTest {
+        val p1 = FakeMusicProvider(exploreSections = emptyList())
+        val p2 = FakeMusicProvider(exploreSections = emptyList())
+        val merged = MergedMusicProvider(listOf(p1, p2))
+
+        val result = merged.getExplore()
+
+        assertTrue(result.isEmpty())
     }
 }

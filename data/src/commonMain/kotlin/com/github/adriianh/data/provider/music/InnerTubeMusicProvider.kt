@@ -270,28 +270,34 @@ class InnerTubeMusicProvider(
         val sections = result.sections.map { section ->
             val mappedItems = section.items.map { item ->
                 when (item) {
-                    is SongItem -> SearchResult.Song(Track(
-                        id = "piped:${item.id}",
-                        title = item.title,
-                        artist = item.artists.firstOrNull()?.name ?: result.artist.title,
-                        durationMs = item.duration?.times(1000L) ?: 0L,
-                        album = item.album?.name ?: "",
-                        genres = emptyList(),
-                        artworkUrl = item.thumbnail,
-                        sourceId = item.id
-                    ))
+                    is SongItem -> SearchResult.Song(
+                        Track(
+                            id = "piped:${item.id}",
+                            title = item.title,
+                            artist = item.artists.firstOrNull()?.name ?: result.artist.title,
+                            durationMs = item.duration?.times(1000L) ?: 0L,
+                            album = item.album?.name ?: "",
+                            genres = emptyList(),
+                            artworkUrl = item.thumbnail,
+                            sourceId = item.id
+                        )
+                    )
+
                     is AlbumItem -> SearchResult.Album(
                         id = item.browseId,
                         title = item.title,
-                        author = item.artists?.joinToString(", ") { it.name } ?: result.artist.title,
+                        author = item.artists?.joinToString(", ") { it.name }
+                            ?: result.artist.title,
                         year = item.year?.toString(),
                         artworkUrl = item.thumbnail
                     )
+
                     is ArtistItem -> SearchResult.Artist(
                         id = item.id,
                         name = item.title,
                         artworkUrl = item.thumbnail
                     )
+
                     is PlaylistItem -> SearchResult.Playlist(
                         id = item.id,
                         title = item.title,
@@ -305,7 +311,10 @@ class InnerTubeMusicProvider(
         }
 
         val topSongs = result.sections.find {
-            it.title.equals("Songs", ignoreCase = true) || it.title.equals("Top songs", ignoreCase = true)
+            it.title.equals("Songs", ignoreCase = true) || it.title.equals(
+                "Top songs",
+                ignoreCase = true
+            )
         }?.items?.filterIsInstance<SongItem>()
         val tracks = topSongs?.map { song ->
             Track(
@@ -378,17 +387,13 @@ class InnerTubeMusicProvider(
 
     override suspend fun getExplore(): List<SearchResult.ArtistSection> {
         val explorePage = YouTube.explore().getOrNull() ?: return emptyList()
-        val sections = mutableListOf<SearchResult.ArtistSection>()
 
-        if (explorePage.newReleaseAlbums.isNotEmpty()) {
-            sections.add(
-                SearchResult.ArtistSection(
-                title = "New Releases",
-                items = explorePage.newReleaseAlbums.map { mapAlbumItem(it) }
-            ))
+        return explorePage.sections.map { section ->
+            SearchResult.ArtistSection(
+                title = section.title,
+                items = section.items.mapNotNull { mapYTItem(it) }
+            )
         }
-
-        return sections
     }
 
     override suspend fun getTrending(): List<Track> {
