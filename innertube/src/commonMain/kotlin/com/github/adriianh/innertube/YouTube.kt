@@ -669,8 +669,26 @@ object YouTube {
         )
     }
 
-    suspend fun newReleaseAlbums(): Result<List<AlbumItem>> = runCatching {
-        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_new_releases_albums")
+    suspend fun charts(): Result<List<HomePage.Section>> = runCatching {
+        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_charts").body<BrowseResponse>()
+        response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
+            ?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { content ->
+                when {
+                    content.musicCarouselShelfRenderer != null ->
+                        HomePage.Section.fromMusicCarouselShelfRenderer(content.musicCarouselShelfRenderer)
+
+                    content.musicShelfRenderer != null ->
+                        HomePage.Section.fromMusicShelfRenderer(content.musicShelfRenderer)
+
+                    content.gridRenderer != null ->
+                        HomePage.Section.fromGridRenderer(content.gridRenderer)
+
+                    else -> null
+                }
+            }.orEmpty()
+    }
+
+    suspend fun newReleaseAlbums(): Result<List<AlbumItem>> = runCatching {        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_new_releases_albums")
             .body<BrowseResponse>()
         response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.gridRenderer?.items
             ?.mapNotNull { it.musicTwoRowItemRenderer }
