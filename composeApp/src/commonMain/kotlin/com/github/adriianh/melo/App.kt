@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.adriianh.melo.ui.AdaptiveScaffold
+import com.github.adriianh.melo.ui.home.HomeScreen
 import com.github.adriianh.melo.ui.search.SearchScreen
 
 @Composable
@@ -35,7 +36,7 @@ fun App() {
                     .padding(paddingValues)
             ) {
                 when (tab) {
-                    "Home" -> Text("Home Screen", modifier = Modifier.align(Alignment.Center))
+                    "Home" -> HomeScreen()
                     "Search" -> SearchScreen()
                     "Library" -> Text("Library Screen", modifier = Modifier.align(Alignment.Center))
                 }

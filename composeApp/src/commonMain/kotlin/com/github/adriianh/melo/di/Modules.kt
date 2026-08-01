@@ -12,6 +12,9 @@ import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
+import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
+import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
@@ -29,6 +32,7 @@ import com.github.adriianh.data.repository.PlaylistRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
+import com.github.adriianh.melo.ui.home.HomeViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
@@ -116,6 +120,9 @@ val dataModule = module {
 
 val useCaseModule = module {
     singleOf(::GetStreamUseCase)
+    singleOf(::GetHomeUseCase)
+    singleOf(::GetExploreUseCase)
+    singleOf(::GetTrendingUseCase)
 }
 
 /**
@@ -125,6 +132,7 @@ val viewModelModule = module {
     viewModelOf(::SearchViewModel)
     viewModelOf(::PlayerViewModel)
     viewModelOf(::QueueViewModel)
+    viewModelOf(::HomeViewModel)
 }
 
 expect val platformModule: Module
