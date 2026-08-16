@@ -28,6 +28,7 @@ import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
@@ -141,6 +142,7 @@ val dataModule = module {
 
 val useCaseModule = module {
     singleOf(::GetStreamUseCase)
+    singleOf(::SearchTracksUseCase)
     singleOf(::GetHomeUseCase)
     singleOf(::GetExploreUseCase)
     singleOf(::GetChartsUseCase)

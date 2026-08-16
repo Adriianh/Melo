@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Mic
@@ -123,12 +122,6 @@ private fun DesktopMainLayout(
                     icon = Icons.Default.Home,
                     selected = selectedTab == "Home",
                     onClick = { onTabSelected("Home") }
-                )
-                NavigationItem(
-                    label = "Search",
-                    icon = Icons.Default.Search,
-                    selected = selectedTab == "Search",
-                    onClick = { onTabSelected("Search") }
                 )
                 NavigationItem(
                     label = "Library",
@@ -460,12 +453,6 @@ private fun MobileMainLayout(
                         onClick = { onTabSelected("Home") },
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                         label = { Text("Home") }
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == "Search",
-                        onClick = { onTabSelected("Search") },
-                        icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                        label = { Text("Search") }
                     )
                     NavigationBarItem(
                         selected = selectedTab == "Library",
