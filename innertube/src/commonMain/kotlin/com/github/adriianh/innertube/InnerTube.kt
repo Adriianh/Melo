@@ -24,6 +24,7 @@ import com.github.adriianh.innertube.models.body.SearchBody
 import com.github.adriianh.innertube.models.body.SubscribeBody
 import com.github.adriianh.innertube.utils.parseCookieString
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -44,8 +45,10 @@ import kotlin.io.encoding.Base64
  * Provide access to InnerTube endpoints.
  * For making HTTP requests, not parsing response.
  */
-class InnerTube {
-    private var httpClient = createClient()
+class InnerTube(
+    engineOverride: HttpClientEngine? = null,
+) {
+    private var httpClient = createClient(engineOverride)
 
     var locale = YouTubeLocale(
         gl = defaultCountryCode(),
@@ -76,9 +79,9 @@ class InnerTube {
 
     var useLoginForBrowse: Boolean = false
 
-    private fun createClient(): HttpClient {
-        val baseClient = createPlatformHttpClient(proxyConfig)
-        return HttpClient(baseClient.engine) {
+    private fun createClient(engine: HttpClientEngine? = null): HttpClient {
+        val resolvedEngine = engine ?: createPlatformHttpClient(proxyConfig).engine
+        return HttpClient(resolvedEngine) {
             expectSuccess = true
 
             install(ContentNegotiation) {
@@ -100,7 +103,10 @@ class InnerTube {
         }
     }
 
-    private fun HttpRequestBuilder.ytClient(client: YouTubeClient, setLogin: Boolean = false) {
+    private fun HttpRequestBuilder.ytClient(
+        client: YouTubeClient,
+        setLogin: Boolean = false
+    ) {
         contentType(ContentType.Application.Json)
         headers {
             append("X-Goog-Api-Format-Version", "1")
@@ -111,6 +117,7 @@ class InnerTube {
             if (setLogin && client.loginSupported) {
                 cookie?.let { cookie ->
                     append("cookie", cookie)
+                    append("X-Goog-AuthUser", "0")
                     if ("SAPISID" !in cookieMap) return@let
                     val currentTime = currentTimeSeconds()
                     val sapisidHash =

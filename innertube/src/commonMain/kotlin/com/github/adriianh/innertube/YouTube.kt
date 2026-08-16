@@ -57,6 +57,7 @@ import com.github.adriianh.innertube.pages.SearchSuggestionPage
 import com.github.adriianh.innertube.pages.SearchSummary
 import com.github.adriianh.innertube.pages.SearchSummaryPage
 import com.github.adriianh.innertube.utils.YoutubeConstants
+import com.github.adriianh.innertube.utils.completed
 import io.ktor.client.call.body
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.runBlocking
@@ -670,7 +671,8 @@ object YouTube {
     }
 
     suspend fun charts(): Result<List<HomePage.Section>> = runCatching {
-        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_charts").body<BrowseResponse>()
+        val response =
+            innerTube.browse(WEB_REMIX, browseId = "FEmusic_charts").body<BrowseResponse>()
         response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
             ?.tabRenderer?.content?.sectionListRenderer?.contents?.mapNotNull { content ->
                 when {
@@ -688,7 +690,8 @@ object YouTube {
             }.orEmpty()
     }
 
-    suspend fun newReleaseAlbums(): Result<List<AlbumItem>> = runCatching {        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_new_releases_albums")
+    suspend fun newReleaseAlbums(): Result<List<AlbumItem>> = runCatching {
+        val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_new_releases_albums")
             .body<BrowseResponse>()
         response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.gridRenderer?.items
             ?.mapNotNull { it.musicTwoRowItemRenderer }
@@ -1108,6 +1111,16 @@ object YouTube {
         runCatching {
             innerTube.removeFromPlaylist(WEB_REMIX, playlistId, videoId, setVideoId)
         }
+
+    suspend fun userPlaylists(): Result<LibraryPage> =
+        library("FEmusic_liked_playlists").completed()
+
+    suspend fun userAlbums(): Result<LibraryPage> = library("FEmusic_liked_albums").completed()
+
+    suspend fun userArtists(): Result<LibraryPage> =
+        library("FEmusic_library_corpus_artists").completed()
+
+    suspend fun likedSongs(): Result<PlaylistPage> = playlist("LM").completed()
 
     suspend fun feedback(tokens: List<String>): Result<Boolean> = runCatching {
         innerTube.feedback(WEB_REMIX, tokens)
