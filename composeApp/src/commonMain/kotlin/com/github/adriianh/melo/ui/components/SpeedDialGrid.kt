@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,16 +33,22 @@ fun SpeedDialGrid(
 ) {
     val columns = items.chunked(3)
 
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        items(columns) { columnItems ->
-            Column(
-                modifier = Modifier.width(280.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val columnWidth = adaptiveCardWidth(
+            minCardWidth = 280.dp,
+            spacing = 10.dp,
+            horizontalPadding = 16.dp
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(columns) { columnItems ->
+                Column(
+                    modifier = Modifier.width(columnWidth),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                 columnItems.forEach { item ->
                     val title: String
                     val subtitle: String
@@ -110,5 +117,6 @@ fun SpeedDialGrid(
                 }
             }
         }
+    }
     }
 }

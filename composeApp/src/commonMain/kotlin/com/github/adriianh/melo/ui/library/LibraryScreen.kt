@@ -60,6 +60,9 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun LibraryScreen(
     onLoginClick: () -> Unit = {},
+    onAlbumClick: (String) -> Unit = {},
+    onPlaylistClick: (String) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
     viewModel: LibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -154,11 +157,7 @@ fun LibraryScreen(
             when (state.selectedTab) {
                 LibraryTab.PLAYLISTS -> PlaylistsContent(
                     playlists = state.playlists,
-                    onPlayPlaylist = { pl ->
-                        pl.songs?.firstOrNull()?.let { firstTrack ->
-                            viewModel.playTrack(firstTrack, pl.songs.orEmpty())
-                        }
-                    }
+                    onPlaylistClick = onPlaylistClick
                 )
 
                 LibraryTab.LIKED -> LikedSongsContent(
@@ -168,9 +167,15 @@ fun LibraryScreen(
                     }
                 )
 
-                LibraryTab.ARTISTS -> ArtistsContent(artists = state.artists)
+                LibraryTab.ARTISTS -> ArtistsContent(
+                    artists = state.artists,
+                    onArtistClick = onArtistClick
+                )
 
-                LibraryTab.ALBUMS -> AlbumsContent(albums = state.albums)
+                LibraryTab.ALBUMS -> AlbumsContent(
+                    albums = state.albums,
+                    onAlbumClick = onAlbumClick
+                )
 
                 LibraryTab.HISTORY -> HistoryContent(
                     history = state.history,
@@ -227,7 +232,7 @@ private fun NotLoggedInLibrary(onLoginClick: () -> Unit) {
 @Composable
 private fun PlaylistsContent(
     playlists: List<SearchResult.Playlist>,
-    onPlayPlaylist: (SearchResult.Playlist) -> Unit,
+    onPlaylistClick: (String) -> Unit,
 ) {
     if (playlists.isEmpty()) {
         EmptyLibrarySection("No se encontraron playlists en tu cuenta.")
@@ -244,7 +249,7 @@ private fun PlaylistsContent(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onPlayPlaylist(playlist) },
+                    .clickable { onPlaylistClick(playlist.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
@@ -337,7 +342,10 @@ private fun LikedSongsContent(
 }
 
 @Composable
-private fun ArtistsContent(artists: List<SearchResult.Artist>) {
+private fun ArtistsContent(
+    artists: List<SearchResult.Artist>,
+    onArtistClick: (String) -> Unit,
+) {
     if (artists.isEmpty()) {
         EmptyLibrarySection("No sigues a ningún artista actualmente.")
         return
@@ -352,7 +360,10 @@ private fun ArtistsContent(artists: List<SearchResult.Artist>) {
         items(artists) { artist ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onArtistClick(artist.id) }
+                    .padding(4.dp)
             ) {
                 PlatformAsyncImage(
                     url = artist.artworkUrl,
@@ -375,7 +386,10 @@ private fun ArtistsContent(artists: List<SearchResult.Artist>) {
 }
 
 @Composable
-private fun AlbumsContent(albums: List<SearchResult.Album>) {
+private fun AlbumsContent(
+    albums: List<SearchResult.Album>,
+    onAlbumClick: (String) -> Unit,
+) {
     if (albums.isEmpty()) {
         EmptyLibrarySection("No tienes álbumes guardados.")
         return
@@ -389,7 +403,9 @@ private fun AlbumsContent(albums: List<SearchResult.Album>) {
     ) {
         items(albums) { album ->
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAlbumClick(album.id) },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {

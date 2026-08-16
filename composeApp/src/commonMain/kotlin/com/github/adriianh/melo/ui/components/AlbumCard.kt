@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -24,10 +25,11 @@ fun AlbumCard(
     artworkUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    cardWidth: Dp = 140.dp,
 ) {
     Column(
         modifier = modifier
-            .width(140.dp)
+            .width(cardWidth)
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(4.dp)
@@ -35,7 +37,7 @@ fun AlbumCard(
         MeloAsyncImage(
             url = artworkUrl,
             contentDescription = title,
-            size = 140.dp,
+            size = cardWidth,
             shape = RoundedCornerShape(8.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))

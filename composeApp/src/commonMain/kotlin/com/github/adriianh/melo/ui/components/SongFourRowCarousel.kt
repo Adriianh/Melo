@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,21 +21,28 @@ fun SongFourRowCarousel(
 ) {
     val columns = tracks.chunked(4)
 
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(columns) { columnTracks ->
-            Column(
-                modifier = Modifier.width(320.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                columnTracks.forEach { track ->
-                    TrackRow(
-                        track = track,
-                        onClick = { onTrackClick(track) },
-                    )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val columnWidth = adaptiveCardWidth(
+            minCardWidth = 320.dp,
+            spacing = 12.dp,
+            horizontalPadding = 16.dp
+        )
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(columns) { columnTracks ->
+                Column(
+                    modifier = Modifier.width(columnWidth),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    columnTracks.forEach { track ->
+                        TrackRow(
+                            track = track,
+                            onClick = { onTrackClick(track) },
+                        )
+                    }
                 }
             }
         }

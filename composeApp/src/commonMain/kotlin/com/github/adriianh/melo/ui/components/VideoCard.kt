@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -26,10 +27,11 @@ fun VideoCard(
     artworkUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    cardWidth: Dp = 260.dp,
 ) {
     Column(
         modifier = modifier
-            .width(260.dp)
+            .width(cardWidth)
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(4.dp)
@@ -41,7 +43,7 @@ fun VideoCard(
                 .fillMaxWidth()
                 .height(146.dp)
                 .clip(RoundedCornerShape(10.dp)),
-            size = 260.dp,
+            size = cardWidth,
             shape = RoundedCornerShape(10.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
