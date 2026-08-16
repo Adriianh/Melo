@@ -1,6 +1,7 @@
 package com.github.adriianh.core.domain.repository
 
 import com.github.adriianh.core.domain.model.HomeFeed
+import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 
@@ -24,10 +25,10 @@ interface MusicRepository {
 
     suspend fun getTrack(id: String): Track?
 
-    suspend fun getHome(): List<SearchResult.ArtistSection>
+    suspend fun getHome(): List<HomeSection>
     suspend fun getHomeFeed(params: String? = null, continuation: String? = null): HomeFeed
-    suspend fun getExplore(): List<SearchResult.ArtistSection>
-    suspend fun getCharts(): List<SearchResult.ArtistSection>
+    suspend fun getExplore(): List<HomeSection>
+    suspend fun getCharts(): List<HomeSection>
     suspend fun getTrending(): List<Track>
     suspend fun getRadio(videoId: String): List<Track>
 }
