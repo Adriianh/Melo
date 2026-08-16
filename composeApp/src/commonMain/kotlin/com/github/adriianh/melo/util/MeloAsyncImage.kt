@@ -11,7 +11,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.adriianh.core.domain.model.Track
 
 @Composable
 expect fun PlatformAsyncImage(
@@ -47,14 +46,4 @@ fun MeloAsyncImage(
             contentAlignment = Alignment.Center,
         ) {}
     }
-}
-
-@Composable
-fun TrackArtwork(track: Track, modifier: Modifier = Modifier, size: Dp = 44.dp) {
-    MeloAsyncImage(
-        url = track.artworkUrl,
-        contentDescription = track.title,
-        modifier = modifier,
-        size = size,
-    )
 }

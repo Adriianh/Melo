@@ -55,7 +55,6 @@ import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
-import com.github.adriianh.melo.ui.search.SearchViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -165,7 +164,6 @@ val useCaseModule = module {
  * ViewModel module for all shared ViewModels.
  */
 val viewModelModule = module {
-    viewModelOf(::SearchViewModel)
     viewModelOf(::PlayerViewModel)
     viewModelOf(::QueueViewModel)
     viewModelOf(::HomeViewModel)
