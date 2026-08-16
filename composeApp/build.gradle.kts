@@ -59,6 +59,10 @@ kotlin {
 
                 // Compose Icons
                 implementation(libs.material.icons.extended)
+
+                // Dynamic Palette
+                implementation(libs.kmpaletteCore)
+                implementation(libs.kmpaletteByteArray)
             }
         }
         val androidMain by getting {

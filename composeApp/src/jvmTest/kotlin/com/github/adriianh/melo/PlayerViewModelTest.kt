@@ -6,6 +6,8 @@ import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.util.AccentColorExtractor
+import io.ktor.client.HttpClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -31,6 +33,7 @@ class PlayerViewModelTest {
     private val playbackManager = mockk<PlaybackManager>(relaxed = true)
     private val playbackFlow = MutableStateFlow(PlaybackState())
     private val queueFlow = MutableStateFlow(QueueState())
+    private val httpClient = mockk<HttpClient>(relaxed = true)
 
     @BeforeTest
     fun setup() {
@@ -44,7 +47,7 @@ class PlayerViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createVm() = PlayerViewModel(playbackManager)
+    private fun createVm() = PlayerViewModel(playbackManager, httpClient)
 
     @Test
     fun `playbackState delegates to manager`() = runTest {
@@ -100,6 +103,18 @@ class PlayerViewModelTest {
 
         assertFalse(vm.uiState.value.hasTrack)
         assertEquals("", vm.uiState.value.title)
+    }
+
+    @Test
+    fun `uiState uses fallback accent when no artwork`() = runTest {
+        playbackFlow.value = PlaybackState(
+            currentTrack = Track("t1", "S", "A", "B", 200_000, emptyList(), null, null)
+        )
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertEquals(AccentColorExtractor.fallback.dominant, vm.uiState.value.accentColor)
     }
 
     @Test

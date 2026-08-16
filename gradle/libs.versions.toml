@@ -36,6 +36,7 @@ vlcj = "4.12.1"
 agp = "9.1.1"
 compose-plugin = "1.10.3"
 androidx-activityCompose = "1.13.0"
+kmpalette = "3.1.0"
 
 [libraries]
 kotlinMultiplatformPlugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "kotlinMultiplatformPlugin" }
@@ -102,6 +103,8 @@ coilNetworkKtor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref 
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeGradlePlugin" }
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeGradlePlugin" }
+kmpaletteCore = { module = "com.kmpalette:kmpalette-core", version.ref = "kmpalette" }
+kmpaletteByteArray = { module = "com.kmpalette:extensions-bytearray", version.ref = "kmpalette" }
 
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
