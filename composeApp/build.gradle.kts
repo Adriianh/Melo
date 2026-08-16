@@ -8,6 +8,14 @@ plugins {
     id("buildsrc.convention.compose-multiplatform")
 }
 
+val javafxVersion = libs.versions.javafx.get()
+
+val javafxPlatform = when (org.gradle.internal.os.OperatingSystem.current()) {
+    org.gradle.internal.os.OperatingSystem.WINDOWS -> "win"
+    org.gradle.internal.os.OperatingSystem.MAC_OS -> "mac"
+    else -> "linux"
+}
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -15,7 +23,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -32,7 +40,7 @@ kotlin {
             dependencies {
                 implementation(project(":core"))
                 implementation(project(":data"))
-                
+
                 // Add lifecycle for ViewModels
                 implementation(libs.lifecycle.viewmodel.compose)
                 implementation(libs.lifecycle.runtime.compose)
@@ -58,6 +66,8 @@ kotlin {
                 implementation(libs.androidx.activityCompose)
                 implementation(compose.preview)
                 implementation(libs.koinAndroid)
+                implementation(libs.coilCompose)
+                implementation(libs.coilNetworkKtor)
             }
         }
         val iosMain by getting {
@@ -70,6 +80,17 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.coilCompose)
                 implementation(libs.coilNetworkKtor)
+                implementation(libs.sqliteJdbc)
+                listOf(
+                    "javafx-base",
+                    "javafx-graphics",
+                    "javafx-controls",
+                    "javafx-swing",
+                    "javafx-media",
+                    "javafx-web"
+                ).forEach { module ->
+                    implementation("org.openjfx:$module:$javafxVersion:$javafxPlatform")
+                }
             }
         }
         commonTest {
@@ -116,7 +137,6 @@ android {
 compose.desktop {
     application {
         mainClass = "com.github.adriianh.melo.MainKt"
-
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "com.github.adriianh.melo"
