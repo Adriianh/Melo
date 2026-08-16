@@ -1,5 +1,7 @@
 package com.github.adriianh.data.repository
 
+import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.ResolvedMetadata
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -110,7 +112,7 @@ class MusicRepositoryTest {
 
     @Test
     fun `getHome delegates to musicProvider`() = runTest {
-        val sections = listOf(SearchResult.ArtistSection("Top", emptyList()))
+        val sections = listOf(HomeSection("Top", HomeSectionType.MIXED, emptyList()))
         coEvery { musicProvider.getHome() } returns sections
 
         assertEquals(sections, createRepository().getHome())
@@ -118,7 +120,7 @@ class MusicRepositoryTest {
 
     @Test
     fun `getExplore delegates to musicProvider`() = runTest {
-        val sections = listOf(SearchResult.ArtistSection("Explore", emptyList()))
+        val sections = listOf(HomeSection("Explore", HomeSectionType.MIXED, emptyList()))
         coEvery { musicProvider.getExplore() } returns sections
 
         assertEquals(sections, createRepository().getExplore())

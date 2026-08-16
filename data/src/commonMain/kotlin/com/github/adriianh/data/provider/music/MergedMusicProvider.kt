@@ -1,5 +1,6 @@
 package com.github.adriianh.data.provider.music
 
+import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -111,7 +112,7 @@ class MergedMusicProvider(
         return emptyList()
     }
 
-    override suspend fun getHome(): List<SearchResult.ArtistSection> {
+    override suspend fun getHome(): List<HomeSection> {
         for (provider in providers) {
             val result = runCatching { provider.getHome() }.getOrNull()
             if (!result.isNullOrEmpty()) return result
@@ -119,7 +120,7 @@ class MergedMusicProvider(
         return emptyList()
     }
 
-    override suspend fun getExplore(): List<SearchResult.ArtistSection> {
+    override suspend fun getExplore(): List<HomeSection> {
         for (provider in providers) {
             val result = runCatching { provider.getExplore() }.getOrNull()
             if (!result.isNullOrEmpty()) return result
@@ -127,7 +128,7 @@ class MergedMusicProvider(
         return emptyList()
     }
 
-    override suspend fun getCharts(): List<SearchResult.ArtistSection> {
+    override suspend fun getCharts(): List<HomeSection> {
         for (provider in providers) {
             val result = runCatching { provider.getCharts() }.getOrNull()
             if (!result.isNullOrEmpty()) return result

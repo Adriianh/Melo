@@ -1,6 +1,8 @@
 package com.github.adriianh.data.provider.music
 
 import com.github.adriianh.core.domain.model.HomeFeed
+import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -376,7 +378,7 @@ class InnerTubeMusicProvider(
         return remoteSuggestions
     }
 
-    override suspend fun getHome(): List<SearchResult.ArtistSection> = getHomeFeed().sections
+    override suspend fun getHome(): List<HomeSection> = getHomeFeed().sections
 
     override suspend fun getHomeFeed(
         params: String?,
@@ -394,8 +396,9 @@ class InnerTubeMusicProvider(
         }
 
         val sections = homePage.sections.map { section ->
-            SearchResult.ArtistSection(
+            HomeSection(
                 title = section.title,
+                type = section.items.toHomeSectionType(),
                 items = section.items.mapNotNull { mapYTItem(it) }
             )
         }
@@ -407,21 +410,23 @@ class InnerTubeMusicProvider(
         )
     }
 
-    override suspend fun getExplore(): List<SearchResult.ArtistSection> {
+    override suspend fun getExplore(): List<HomeSection> {
         val explorePage = YouTube.explore().getOrNull() ?: return emptyList()
 
         return explorePage.sections.map { section ->
-            SearchResult.ArtistSection(
+            HomeSection(
                 title = section.title,
+                type = section.items.toHomeSectionType(),
                 items = section.items.mapNotNull { mapYTItem(it) }
             )
         }
     }
 
-    override suspend fun getCharts(): List<SearchResult.ArtistSection> {
+    override suspend fun getCharts(): List<HomeSection> {
         return YouTube.charts().getOrNull().orEmpty().map { section ->
-            SearchResult.ArtistSection(
+            HomeSection(
                 title = section.title,
+                type = section.items.toHomeSectionType(),
                 items = section.items.mapNotNull { mapYTItem(it) }
             )
         }
@@ -485,4 +490,14 @@ class InnerTubeMusicProvider(
             artworkUrl = item.thumbnail
         )
     }
+}
+
+private fun List<YTItem>.toHomeSectionType(): HomeSectionType = when {
+    isEmpty() -> HomeSectionType.MIXED
+    all { it is SongItem && it.isVideoSong } -> HomeSectionType.VIDEOS
+    all { it is SongItem } -> HomeSectionType.SONGS
+    all { it is AlbumItem } -> HomeSectionType.ALBUMS
+    all { it is PlaylistItem } -> HomeSectionType.PLAYLISTS
+    all { it is ArtistItem } -> HomeSectionType.ARTISTS
+    else -> HomeSectionType.MIXED
 }

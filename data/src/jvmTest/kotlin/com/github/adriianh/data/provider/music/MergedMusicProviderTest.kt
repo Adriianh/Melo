@@ -1,5 +1,7 @@
 package com.github.adriianh.data.provider.music
 
+import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -23,8 +25,8 @@ private class FakeMusicProvider(
     private val albumLookup: Map<String, SearchResult.Album> = emptyMap(),
     private val artistLookup: Map<String, SearchResult.Artist> = emptyMap(),
     private val suggestions: List<String> = emptyList(),
-    private val homeSections: List<SearchResult.ArtistSection> = emptyList(),
-    private val exploreSections: List<SearchResult.ArtistSection> = emptyList(),
+    private val homeSections: List<HomeSection> = emptyList(),
+    private val exploreSections: List<HomeSection> = emptyList(),
     private val trendingTracks: List<Track> = emptyList(),
     private val radioTracks: List<Track> = emptyList(),
     private val shouldThrowOnSearch: Boolean = false,
@@ -54,8 +56,8 @@ private class FakeMusicProvider(
 
     override suspend fun getSearchSuggestions(query: String): List<String> = suggestions
 
-    override suspend fun getHome(): List<SearchResult.ArtistSection> = homeSections
-    override suspend fun getExplore(): List<SearchResult.ArtistSection> = exploreSections
+    override suspend fun getHome(): List<HomeSection> = homeSections
+    override suspend fun getExplore(): List<HomeSection> = exploreSections
     override suspend fun getTrending(): List<Track> = trendingTracks
     override suspend fun getRadio(videoId: String): List<Track> = radioTracks
 }
@@ -377,8 +379,9 @@ class MergedMusicProviderTest {
         val p1 = FakeMusicProvider(homeSections = emptyList())
         val p2 = FakeMusicProvider(
             homeSections = listOf(
-                SearchResult.ArtistSection(
+                HomeSection(
                     "Section",
+                    HomeSectionType.MIXED,
                     emptyList()
                 )
             )
@@ -394,14 +397,15 @@ class MergedMusicProviderTest {
     @Test
     fun `getHome continues when one provide throws`() = runTest {
         val bad = object : MusicProvider by FakeMusicProvider() {
-            override suspend fun getHome(): List<SearchResult.ArtistSection> {
+            override suspend fun getHome(): List<HomeSection> {
                 throw RuntimeException("Provider error")
             }
         }
         val good = FakeMusicProvider(
             homeSections = listOf(
-                SearchResult.ArtistSection(
+                HomeSection(
                     "Good Section",
+                    HomeSectionType.MIXED,
                     emptyList()
                 )
             )
@@ -430,8 +434,9 @@ class MergedMusicProviderTest {
         val p1 = FakeMusicProvider(exploreSections = emptyList())
         val p2 = FakeMusicProvider(
             exploreSections = listOf(
-                SearchResult.ArtistSection(
+                HomeSection(
                     "Section",
+                    HomeSectionType.MIXED,
                     emptyList()
                 )
             )
