@@ -87,5 +87,6 @@ data class Settings(
     val downloadQuality: DownloadQuality = DownloadQuality.HIGH,
     val downloadPath: String? = null,
     val cachePath: String? = null,
-    val localLibraryPaths: List<String> = emptyList()
+    val localLibraryPaths: List<String> = emptyList(),
+    val sessionCookies: String? = null,
 )
