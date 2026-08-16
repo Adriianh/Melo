@@ -200,7 +200,7 @@ private fun DockedQueueContent(
     val queueState by queueViewModel.queueState.collectAsState()
     val suggestions by queueViewModel.suggestions.collectAsState()
 
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         modifier = Modifier.fillMaxWidth().height(180.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {

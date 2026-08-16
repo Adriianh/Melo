@@ -1,13 +1,15 @@
 package com.github.adriianh.melo.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -57,7 +59,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -76,7 +77,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -94,7 +94,6 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloMotion
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
-import com.github.adriianh.melo.util.PlayerUiState
 import com.github.adriianh.melo.util.getPlatform
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -146,7 +145,6 @@ private fun DesktopMainLayout(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.weight(1f)) {
-            // YouTube Music Style Structural Sidebar
             YouTubeStyleSidebar(
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
@@ -156,7 +154,6 @@ private fun DesktopMainLayout(
                 onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed }
             )
 
-            // Center Content Area
             Box(modifier = Modifier.weight(1f)) {
                 Scaffold(
                     containerColor = Color.Transparent,
@@ -189,7 +186,6 @@ private fun DesktopMainLayout(
                 }
             }
 
-            // Right Docked Now Playing Pane (§8.1)
             AnimatedVisibility(
                 visible = isDesktopPaneVisible,
                 enter = expandHorizontally(
@@ -210,7 +206,6 @@ private fun DesktopMainLayout(
             }
         }
 
-        // Bottom Structural Player Bar (§6.2 & §6.3)
         DesktopPlayerBar(
             onOpenNowPlaying = onOpenNowPlaying,
             onToggleLyrics = {
@@ -228,12 +223,6 @@ private fun DesktopMainLayout(
     }
 }
 
-/**
- * YouTube Music Style Sidebar:
- * - Hamburger icon at top toggles expanded/collapsed rail smoothly.
- * - Expanded (240dp): Logo, Sections (MENÚ, COLECCIÓN, TUS PLAYLISTS), + Nueva lista pill, playlists and user footer.
- * - Collapsed (72dp Navigation Rail): Icon on top + 10dp label below, centered.
- */
 @Composable
 private fun YouTubeStyleSidebar(
     selectedTab: String,
@@ -248,7 +237,7 @@ private fun YouTubeStyleSidebar(
     val state by viewModel.uiState.collectAsState()
     val sidebarWidth by animateDpAsState(
         targetValue = if (collapsed) 72.dp else 240.dp,
-        animationSpec = MeloMotion.medium(),
+        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
         label = "sidebarWidth"
     )
 
@@ -260,7 +249,6 @@ private fun YouTubeStyleSidebar(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            // Header: Hamburger button + Brand Logo
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.spacedBy(12.dp),
@@ -281,7 +269,8 @@ private fun YouTubeStyleSidebar(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.clickable(onClick = { onTabSelected("Home") })
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = { onTabSelected("Home") })
                     ) {
                         Surface(
                             shape = CircleShape,
@@ -307,44 +296,46 @@ private fun YouTubeStyleSidebar(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            if (collapsed) {
-                // Collapsed Navigation Rail (YouTube Music style: Icon on top, label bottom)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    CollapsedRailItem(
-                        label = "Inicio",
-                        icon = Icons.Default.Home,
-                        isSelected = selectedTab == "Home",
-                        onClick = { onTabSelected("Home") }
-                    )
-                    CollapsedRailItem(
-                        label = "Explorar",
-                        icon = Icons.Default.Explore,
-                        isSelected = selectedTab == "Search",
-                        onClick = { onTabSelected("Home") }
-                    )
-                    CollapsedRailItem(
-                        label = "Biblioteca",
-                        icon = Icons.Default.LibraryMusic,
-                        isSelected = selectedTab == "Library",
-                        onClick = { onTabSelected("Library") }
-                    )
-                }
-            } else {
-                // Expanded Navigation (Full Menu + Playlists)
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    item {
+            Crossfade(
+                targetState = collapsed,
+                animationSpec = tween(durationMillis = 150),
+                label = "sidebarContent"
+            ) { isCollapsed ->
+                if (isCollapsed) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CollapsedRailItem(
+                            label = "Inicio",
+                            icon = Icons.Default.Home,
+                            isSelected = selectedTab == "Home",
+                            onClick = { onTabSelected("Home") }
+                        )
+                        CollapsedRailItem(
+                            label = "Explorar",
+                            icon = Icons.Default.Explore,
+                            isSelected = selectedTab == "Search",
+                            onClick = { onTabSelected("Home") }
+                        )
+                        CollapsedRailItem(
+                            label = "Biblioteca",
+                            icon = Icons.Default.LibraryMusic,
+                            isSelected = selectedTab == "Library",
+                            onClick = { onTabSelected("Library") }
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             SidebarRow(
                                 label = "Inicio",
@@ -365,14 +356,9 @@ private fun YouTubeStyleSidebar(
                                 onClick = { onTabSelected("Library") }
                             )
                         }
-                    }
 
-                    item {
                         HorizontalDivider(color = MeloColors.border, thickness = 1.dp)
-                    }
 
-                    item {
-                        // YouTube Music style "+ Nueva lista" pill button
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -398,9 +384,7 @@ private fun YouTubeStyleSidebar(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                    }
 
-                    item {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             SidebarRow(
                                 label = "Canciones Favoritas",
@@ -415,10 +399,8 @@ private fun YouTubeStyleSidebar(
                                 onClick = { onTabSelected("Library") }
                             )
                         }
-                    }
 
-                    if (state.playlists.isNotEmpty()) {
-                        item {
+                        if (state.playlists.isNotEmpty()) {
                             Text(
                                 "TUS PLAYLISTS",
                                 style = MeloType.labelSmall,
@@ -427,23 +409,27 @@ private fun YouTubeStyleSidebar(
                                 color = MeloColors.textMuted,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
-                        }
 
-                        items(state.playlists) { playlist ->
-                            SidebarPlaylistRow(
-                                title = playlist.title,
-                                artworkUrl = playlist.artworkUrl,
-                                onClick = {
-                                    onPlaylistClick(playlist.id, playlist.title, playlist.artworkUrl, playlist.author)
-                                }
-                            )
+                            state.playlists.forEach { playlist ->
+                                SidebarPlaylistRow(
+                                    title = playlist.title,
+                                    artworkUrl = playlist.artworkUrl,
+                                    onClick = {
+                                        onPlaylistClick(
+                                            playlist.id,
+                                            playlist.title,
+                                            playlist.artworkUrl,
+                                            playlist.author
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Account Footer at Bottom
         Column {
             HorizontalDivider(color = MeloColors.border, thickness = 1.dp)
             Row(
@@ -484,9 +470,6 @@ private fun YouTubeStyleSidebar(
     }
 }
 
-/**
- * YouTube Music Style Collapsed Navigation Rail Item (Icon top, label bottom).
- */
 @Composable
 private fun CollapsedRailItem(
     label: String,
@@ -604,9 +587,6 @@ private fun SidebarPlaylistRow(
     }
 }
 
-/**
- * Desktop Player Bar according to DESIGN.md V5 §6.2 & §6.3 with Dynamic Accent Colors.
- */
 @Composable
 private fun DesktopPlayerBar(
     onOpenNowPlaying: () -> Unit = {},
@@ -633,7 +613,6 @@ private fun DesktopPlayerBar(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Left: Artwork (52dp) + Track Info + Dynamic Equalizer
             Row(
                 modifier = Modifier
                     .width(260.dp)
@@ -675,7 +654,6 @@ private fun DesktopPlayerBar(
                 }
             }
 
-            // Center: Compact Controls & Dynamic Slider
             Column(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,

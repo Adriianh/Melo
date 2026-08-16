@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -591,7 +590,7 @@ private fun NowPlayingQueueSection(
                         modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            androidx.compose.material.icons.Icons.Default.Add,
+                            Icons.Default.Add,
                             contentDescription = "Añadir a la cola",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)

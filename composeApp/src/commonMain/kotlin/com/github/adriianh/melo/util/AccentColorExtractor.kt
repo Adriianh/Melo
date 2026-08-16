@@ -1,7 +1,6 @@
 package com.github.adriianh.melo.util
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.luminance
 import com.kmpalette.generatePalette
 import com.kmpalette.loader.ByteArrayLoader

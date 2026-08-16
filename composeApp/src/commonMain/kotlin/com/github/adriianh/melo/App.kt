@@ -33,9 +33,22 @@ import org.koin.compose.viewmodel.koinViewModel
 sealed interface ScreenDestination {
     data object Home : ScreenDestination
     data object Library : ScreenDestination
-    data class Album(val id: String, val title: String = "", val artwork: String? = null, val author: String = "") : ScreenDestination
-    data class Playlist(val id: String, val title: String = "", val artwork: String? = null, val author: String = "") : ScreenDestination
-    data class Artist(val id: String, val name: String = "", val artwork: String? = null) : ScreenDestination
+    data class Album(
+        val id: String,
+        val title: String = "",
+        val artwork: String? = null,
+        val author: String = ""
+    ) : ScreenDestination
+
+    data class Playlist(
+        val id: String,
+        val title: String = "",
+        val artwork: String? = null,
+        val author: String = ""
+    ) : ScreenDestination
+
+    data class Artist(val id: String, val name: String = "", val artwork: String? = null) :
+        ScreenDestination
 }
 
 @Composable
@@ -76,7 +89,8 @@ fun App() {
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
                         selectedTab = tab
-                        navigationStack = listOf(if (tab == "Home") ScreenDestination.Home else ScreenDestination.Library)
+                        navigationStack =
+                            listOf(if (tab == "Home") ScreenDestination.Home else ScreenDestination.Library)
                     },
                     onLoginClick = { showLoginDialog = true },
                     onOpenNowPlaying = { isNowPlayingExpanded = true },

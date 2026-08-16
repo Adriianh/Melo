@@ -29,7 +29,7 @@ class PlayerViewModel(
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
-    private val _accentPalette = MutableStateFlow<AccentPalette>(AccentColorExtractor.fallback)
+    private val _accentPalette = MutableStateFlow(AccentColorExtractor.fallback)
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     val uiState: StateFlow<PlayerUiState> = combine(

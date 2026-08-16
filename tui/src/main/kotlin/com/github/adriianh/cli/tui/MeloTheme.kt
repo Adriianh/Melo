@@ -75,11 +75,11 @@ object MeloTheme {
     val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "📂" else ""
 
     // Brand
-    var PRIMARY_COLOR: Color = Color.hex("#8b2eb9")
+    var PRIMARY_COLOR: Color = Color.hex("#FF2D55")
     var SECONDARY_COLOR: Color = Color.hex("#1AA34A")
 
     // Backgrounds
-    var BG_DARK: Color = Color.hex("#121212")
+    var BG_DARK: Color = Color.hex("#0D0D0E")
     var BG_CARD: Color = Color.hex("#181818")
     var BG_ELEVATED: Color = Color.hex("#282828")
     var BG_HIGHLIGHT: Color = Color.hex("#2A2A2A")
@@ -90,7 +90,7 @@ object MeloTheme {
     var TEXT_DIM: Color = Color.hex("#535353")
 
     // Accents
-    var ACCENT_RED: Color = Color.hex("#E22134")
+    var ACCENT_RED: Color = Color.hex("#FF2D55")
     var ACCENT_BLUE: Color = Color.hex("#2E77D0")
 
     // Borders
@@ -107,9 +107,9 @@ object MeloTheme {
     fun loadTheme(preset: ThemePreset) {
         when (preset) {
             ThemePreset.DEFAULT -> {
-                PRIMARY_COLOR = Color.hex("#8b2eb9")
+                PRIMARY_COLOR = Color.hex("#FF2D55")
                 SECONDARY_COLOR = Color.hex("#1AA34A")
-                BG_DARK = Color.hex("#121212")
+                BG_DARK = Color.hex("#0D0D0E")
                 BG_CARD = Color.hex("#181818")
                 BG_ELEVATED = Color.hex("#282828")
                 BG_HIGHLIGHT = Color.hex("#2A2A2A")
