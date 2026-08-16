@@ -572,8 +572,12 @@ object YouTube {
             if (continuation != null) {
                 return@runCatching homeContinuation(continuation).getOrThrow()
             }
-            val response = innerTube.browse(WEB_REMIX, browseId = "FEmusic_home", params = params)
-                .body<BrowseResponse>()
+            val response = innerTube.browse(
+                client = WEB_REMIX,
+                browseId = "FEmusic_home",
+                params = params,
+                setLogin = true
+            ).body<BrowseResponse>()
             val continuation =
                 response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
                     ?.tabRenderer?.content?.sectionListRenderer?.continuations?.getContinuation()
@@ -605,8 +609,11 @@ object YouTube {
         }
 
     private suspend fun homeContinuation(continuation: String): Result<HomePage> = runCatching {
-        val response =
-            innerTube.browse(WEB_REMIX, continuation = continuation).body<BrowseResponse>()
+        val response = innerTube.browse(
+            client = WEB_REMIX,
+            continuation = continuation,
+            setLogin = true
+        ).body<BrowseResponse>()
         val sections = response.continuationContents?.sectionListContinuation?.contents
             ?.mapNotNull { content ->
                 when {
