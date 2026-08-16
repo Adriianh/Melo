@@ -1,5 +1,6 @@
-
 package com.github.adriianh.data.repository
+
+import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.Track
@@ -134,7 +135,10 @@ class MusicRepositoryImpl(
         return offset < cachedArtists.size
     }
 
-    override suspend fun loadMorePlaylists(query: String, offset: Int): List<SearchResult.Playlist> {
+    override suspend fun loadMorePlaylists(
+        query: String,
+        offset: Int
+    ): List<SearchResult.Playlist> {
         backgroundFetchPlaylists?.join()
         return cachedPlaylists.drop(offset).take(pageSize)
     }
@@ -159,7 +163,7 @@ class MusicRepositoryImpl(
 
     override suspend fun getTrack(id: String): Track? = coroutineScope {
         val track = musicProvider.getTrack(id) ?: return@coroutineScope null
-        val genres   = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
+        val genres = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
         val sourceId = if (track.sourceId != null) {
             async { track.sourceId }
         } else {
@@ -172,14 +176,17 @@ class MusicRepositoryImpl(
         }
         val resolved = metadata.await()
         track.copy(
-            genres     = genres.await(),
-            sourceId   = sourceId.await(),
+            genres = genres.await(),
+            sourceId = sourceId.await(),
             artworkUrl = resolved?.artworkUrl ?: track.artworkUrl,
             album = track.album.ifBlank { resolved?.album ?: "" }
         )
     }
 
     override suspend fun getHome(): List<SearchResult.ArtistSection> = musicProvider.getHome()
+    override suspend fun getHomeFeed(params: String?, continuation: String?): HomeFeed =
+        musicProvider.getHomeFeed(params, continuation)
+
     override suspend fun getExplore(): List<SearchResult.ArtistSection> = musicProvider.getExplore()
     override suspend fun getCharts(): List<SearchResult.ArtistSection> = musicProvider.getCharts()
     override suspend fun getTrending(): List<Track> = musicProvider.getTrending()

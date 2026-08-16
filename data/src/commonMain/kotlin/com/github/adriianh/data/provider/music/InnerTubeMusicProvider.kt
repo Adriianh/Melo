@@ -1,5 +1,6 @@
 package com.github.adriianh.data.provider.music
 
+import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -375,14 +376,35 @@ class InnerTubeMusicProvider(
         return remoteSuggestions
     }
 
-    override suspend fun getHome(): List<SearchResult.ArtistSection> {
-        val homePage = YouTube.home().getOrNull() ?: return emptyList()
-        return homePage.sections.map { section ->
+    override suspend fun getHome(): List<SearchResult.ArtistSection> = getHomeFeed().sections
+
+    override suspend fun getHomeFeed(
+        params: String?,
+        continuation: String?
+    ): HomeFeed {
+        val homePage = YouTube.home(continuation = continuation, params = params).getOrNull()
+            ?: return HomeFeed()
+
+        val chips = homePage.chips.orEmpty().map { chip ->
+            val title = chip.title
+            com.github.adriianh.core.domain.model.HomeFeedChip(
+                title = title,
+                params = chip.endpoint?.params
+            )
+        }
+
+        val sections = homePage.sections.map { section ->
             SearchResult.ArtistSection(
                 title = section.title,
                 items = section.items.mapNotNull { mapYTItem(it) }
             )
         }
+
+        return HomeFeed(
+            chips = chips,
+            sections = sections,
+            continuation = homePage.continuation
+        )
     }
 
     override suspend fun getExplore(): List<SearchResult.ArtistSection> {
