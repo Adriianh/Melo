@@ -44,7 +44,7 @@ class DiscoverCommand : NoOpCliktCommand(
 
                 runBlocking {
                     terminal.println(gray("Fetching home recommendations..."))
-                    val sections = discovery.getHome()
+                    val sections = discovery.getHome().sections
                     if (sections.isEmpty()) {
                         terminal.println("No recommendations found.")
                         return@runBlocking
