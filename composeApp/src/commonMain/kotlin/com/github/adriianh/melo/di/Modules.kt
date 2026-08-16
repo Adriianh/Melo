@@ -25,6 +25,7 @@ import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
@@ -50,6 +51,8 @@ import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
+import com.github.adriianh.melo.ui.SidebarViewModel
+import com.github.adriianh.melo.ui.detail.EntityDetailViewModel
 import com.github.adriianh.melo.ui.home.HomeViewModel
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.login.LoginViewModel
@@ -158,6 +161,7 @@ val useCaseModule = module {
     singleOf(::GetRemoteHistoryUseCase)
     singleOf(::ToggleLikeTrackUseCase)
     singleOf(::SubscribeChannelUseCase)
+    singleOf(::GetEntityDetailsUseCase)
 }
 
 /**
@@ -169,6 +173,8 @@ val viewModelModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::LibraryViewModel)
+    viewModelOf(::SidebarViewModel)
+    viewModelOf(::EntityDetailViewModel)
 }
 
 expect val platformModule: Module
