@@ -4,17 +4,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.github.adriianh.melo.ui.AdaptiveScaffold
 import com.github.adriianh.melo.ui.home.HomeScreen
+import com.github.adriianh.melo.ui.library.LibraryScreen
+import com.github.adriianh.melo.ui.login.LoginDialog
+import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 expect fun InitImageLoader()
@@ -25,10 +27,13 @@ fun App() {
 
     MaterialTheme {
         var selectedTab by remember { mutableStateOf("Search") }
+        var showLoginDialog by remember { mutableStateOf(false) }
+        val loginViewModel: LoginViewModel = koinViewModel()
 
         AdaptiveScaffold(
             selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it }
+            onTabSelected = { selectedTab = it },
+            onLoginClick = { showLoginDialog = true }
         ) { tab, paddingValues ->
             Box(
                 modifier = Modifier
@@ -38,9 +43,18 @@ fun App() {
                 when (tab) {
                     "Home" -> HomeScreen()
                     "Search" -> SearchScreen()
-                    "Library" -> Text("Library Screen", modifier = Modifier.align(Alignment.Center))
+                    "Library" -> LibraryScreen(
+                        onLoginClick = { showLoginDialog = true }
+                    )
                 }
             }
+        }
+
+        if (showLoginDialog) {
+            LoginDialog(
+                viewModel = loginViewModel,
+                onDismiss = { showLoginDialog = false }
+            )
         }
     }
 }

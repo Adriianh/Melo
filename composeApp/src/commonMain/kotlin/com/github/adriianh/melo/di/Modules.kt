@@ -6,16 +6,30 @@ import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.FavoritesRepository
 import com.github.adriianh.core.domain.repository.HistoryRepository
+import com.github.adriianh.core.domain.repository.LoginRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
+import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
+import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
+import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
@@ -28,12 +42,16 @@ import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
+import com.github.adriianh.data.repository.InnerTubeLoginRepository
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
+import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.melo.ui.home.HomeViewModel
+import com.github.adriianh.melo.ui.library.LibraryViewModel
+import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
@@ -76,6 +94,7 @@ val commonModule = module {
 val dataModule = module {
     single<MusicProvider> { InnerTubeMusicProvider() }
     single<DiscoveryProvider> { InnerTubeDiscoveryProvider() }
+    single<LoginRepository> { InnerTubeLoginRepository() }
 
     singleOf(::ItunesApiClient)
     singleOf(::PipedApiClient)
@@ -102,6 +121,7 @@ val dataModule = module {
     singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
     singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
+    single<RemoteLibraryRepository> { RemoteLibraryRepositoryImpl() }
     single<SettingsRepository> {
         SettingsRepositoryImpl(
             configDirPath = get(named("configDirPath")),
@@ -125,6 +145,18 @@ val useCaseModule = module {
     singleOf(::GetExploreUseCase)
     singleOf(::GetChartsUseCase)
     singleOf(::GetTrendingUseCase)
+    singleOf(::GetSettingsUseCase)
+    singleOf(::UpdateSettingsUseCase)
+    singleOf(::SetSessionCookiesUseCase)
+    singleOf(::VerifySessionUseCase)
+    singleOf(::GetAccountProfileUseCase)
+    singleOf(::GetUserPlaylistsUseCase)
+    singleOf(::GetLikedSongsUseCase)
+    singleOf(::GetUserArtistsUseCase)
+    singleOf(::GetUserAlbumsUseCase)
+    singleOf(::GetRemoteHistoryUseCase)
+    singleOf(::ToggleLikeTrackUseCase)
+    singleOf(::SubscribeChannelUseCase)
 }
 
 /**
@@ -135,6 +167,8 @@ val viewModelModule = module {
     viewModelOf(::PlayerViewModel)
     viewModelOf(::QueueViewModel)
     viewModelOf(::HomeViewModel)
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::LibraryViewModel)
 }
 
 expect val platformModule: Module

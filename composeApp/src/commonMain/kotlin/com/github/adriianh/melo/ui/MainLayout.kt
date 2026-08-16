@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Pause
@@ -71,6 +72,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdaptiveScaffold(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
+    onLoginClick: () -> Unit,
     content: @Composable (String, PaddingValues) -> Unit
 ) {
     val platform = remember { getPlatform() }
@@ -79,12 +81,14 @@ fun AdaptiveScaffold(
         DesktopMainLayout(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
+            onLoginClick = onLoginClick,
             content = { padding -> content(selectedTab, padding) }
         )
     } else {
         MobileMainLayout(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
+            onLoginClick = onLoginClick,
             content = { padding -> content(selectedTab, padding) }
         )
     }
@@ -95,6 +99,7 @@ fun AdaptiveScaffold(
 private fun DesktopMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
+    onLoginClick: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize().background(MeloColors.surface0)) {
@@ -147,7 +152,16 @@ private fun DesktopMainLayout(
                                 navigationIconContentColor = Color.Unspecified,
                                 titleContentColor = MeloColors.textPrimary,
                                 actionIconContentColor = Color.Unspecified
-                            )
+                            ),
+                            actions = {
+                                IconButton(onClick = onLoginClick) {
+                                    Icon(
+                                        Icons.Default.AccountCircle,
+                                        contentDescription = "Sign in to YouTube Music",
+                                        tint = MeloColors.textPrimary
+                                    )
+                                }
+                            }
                         )
                     }
                 ) { paddingValues ->
@@ -432,6 +446,7 @@ private fun MobileMiniPlayer(
 private fun MobileMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
+    onLoginClick: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
