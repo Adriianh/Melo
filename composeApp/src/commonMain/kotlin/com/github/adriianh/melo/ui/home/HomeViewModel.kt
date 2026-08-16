@@ -3,27 +3,37 @@ package com.github.adriianh.melo.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.HomeFeedChip
+import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.HomeSectionType
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 data class HomeUiState(
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
     val chips: List<HomeFeedChip> = emptyList(),
     val selectedChip: HomeFeedChip? = null,
-    val sections: List<SearchResult.ArtistSection> = emptyList(),
+    val sections: List<HomeSection> = emptyList(),
     val continuation: String? = null,
     val error: String? = null,
+    val searchQuery: String = "",
+    val searchResults: List<Track> = emptyList(),
+    val isSearching: Boolean = false,
 )
 
 class HomeViewModel(
@@ -32,18 +42,52 @@ class HomeViewModel(
     private val getChartsUseCase: GetChartsUseCase,
     private val getTrendingUseCase: GetTrendingUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
+    private val searchTracksUseCase: SearchTracksUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private var previousBaseFeed: HomeUiState? = null
+    private var searchJob: Job? = null
 
     init {
         viewModelScope.launch {
             getSettingsUseCase().collectLatest {
                 loadFeed()
             }
+        }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        searchJob?.cancel()
+
+        if (query.isBlank()) {
+            _uiState.update { it.copy(isSearching = false, searchResults = emptyList()) }
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            delay(300.milliseconds)
+            _uiState.update { it.copy(isSearching = true) }
+            try {
+                val results = searchTracksUseCase(query)
+                _uiState.update { it.copy(searchResults = results, isSearching = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isSearching = false) }
+            }
+        }
+    }
+
+    fun clearSearch() {
+        searchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                searchQuery = "",
+                searchResults = emptyList(),
+                isSearching = false
+            )
         }
     }
 
@@ -64,9 +108,10 @@ class HomeViewModel(
                     addAll(chartsSections)
                     if (trending.isNotEmpty()) {
                         add(
-                            SearchResult.ArtistSection(
-                                "Trending",
-                                trending.map { SearchResult.Song(it) })
+                            HomeSection(
+                                title = "Trending",
+                                type = HomeSectionType.SONGS,
+                                items = trending.map { SearchResult.Song(it) })
                         )
                     }
                 }.distinctBy { it.title }
@@ -138,7 +183,7 @@ class HomeViewModel(
                         continuation = nextFeed.continuation
                     )
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.update { it.copy(isLoadingMore = false) }
             }
         }
