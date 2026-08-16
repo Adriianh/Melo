@@ -1,11 +1,16 @@
 package com.github.adriianh.core.domain.usecase.search
 
+import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.repository.MusicRepository
 
 class GetHomeUseCase(private val repository: MusicRepository) {
-    suspend operator fun invoke(): List<SearchResult.ArtistSection> = repository.getHome()
+    suspend operator fun invoke(
+        params: String? = null,
+        continuation: String? = null
+    ): HomeFeed =
+        repository.getHomeFeed(params, continuation)
 }
 
 class GetExploreUseCase(private val repository: MusicRepository) {

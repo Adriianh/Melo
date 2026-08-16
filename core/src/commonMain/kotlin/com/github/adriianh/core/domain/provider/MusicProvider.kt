@@ -1,5 +1,6 @@
 package com.github.adriianh.core.domain.provider
 
+import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 
@@ -12,7 +13,9 @@ interface MusicProvider {
     suspend fun searchAll(query: String): List<Track> = search(query)
     suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = searchAlbums(query)
     suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = searchArtists(query)
-    suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> = searchPlaylists(query)
+    suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> =
+        searchPlaylists(query)
+
     suspend fun getTrack(id: String): Track?
 
     suspend fun getAlbumDetails(id: String): SearchResult.Album? = null
@@ -21,6 +24,12 @@ interface MusicProvider {
     suspend fun getSearchSuggestions(query: String): List<String> = emptyList()
 
     suspend fun getHome(): List<SearchResult.ArtistSection> = emptyList()
+    suspend fun getHomeFeed(
+        params: String? = null,
+        continuation: String? = null
+    ): HomeFeed =
+        HomeFeed(sections = getHome())
+
     suspend fun getExplore(): List<SearchResult.ArtistSection> = emptyList()
     suspend fun getCharts(): List<SearchResult.ArtistSection> = emptyList()
     suspend fun getTrending(): List<Track> = emptyList()
