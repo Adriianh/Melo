@@ -11,6 +11,8 @@ data class PlayerUiState(
     val albumArt: String? = null,
     val isPlaying: Boolean = false,
     val progressFraction: Float = 0f,
+    val progressMs: Long = 0L,
+    val durationMs: Long = 0L,
     val elapsedLabel: String = "0:00",
     val remainingLabel: String = "0:00",
     val shuffleEnabled: Boolean = false,
@@ -25,9 +27,9 @@ data class PlayerUiState(
         fun from(
             playback: PlaybackState,
             queue: QueueState,
+            accentColor: Color = MeloColors.textMuted,
         ): PlayerUiState {
             val track = playback.currentTrack
-            val durationMs = playback.durationMs.coerceAtLeast(1)
             val fraction = if (playback.durationMs > 0) {
                 (playback.progressMs.toFloat() / playback.durationMs).coerceIn(0f, 1f)
             } else 0f
@@ -38,12 +40,15 @@ data class PlayerUiState(
                 albumArt = track?.artworkUrl,
                 isPlaying = playback.isPlaying,
                 progressFraction = fraction,
+                progressMs = playback.progressMs,
+                durationMs = playback.durationMs,
                 elapsedLabel = formatTime(playback.progressMs),
                 remainingLabel = formatTime(playback.durationMs - playback.progressMs),
                 shuffleEnabled = queue.shuffleEnabled,
                 repeatMode = queue.repeatMode,
                 hasNext = queue.hasNext,
                 hasPrevious = queue.hasPrevious,
+                accentColor = accentColor,
             )
         }
 
