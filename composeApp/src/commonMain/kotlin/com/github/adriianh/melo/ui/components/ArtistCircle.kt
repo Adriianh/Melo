@@ -6,51 +6,48 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 @Composable
-fun AlbumCard(
-    title: String,
-    subtitle: String,
+fun ArtistCircle(
+    name: String,
     artworkUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    size: Dp = 110.dp,
 ) {
     Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .width(140.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .width(size + 16.dp)
+            .clip(CircleShape)
             .clickable(onClick = onClick)
-            .padding(4.dp)
+            .padding(8.dp)
     ) {
         MeloAsyncImage(
             url = artworkUrl,
-            contentDescription = title,
-            size = 140.dp,
-            shape = RoundedCornerShape(8.dp)
+            contentDescription = name,
+            size = size,
+            shape = CircleShape
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = title,
+            text = name,
             style = MeloType.labelMedium,
             color = MeloColors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = subtitle,
-            style = MeloType.labelSmall,
-            color = MeloColors.textSecondary,
+            textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

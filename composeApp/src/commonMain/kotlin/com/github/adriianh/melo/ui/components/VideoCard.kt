@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -11,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloAsyncImage
@@ -18,7 +20,7 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 @Composable
-fun AlbumCard(
+fun VideoCard(
     title: String,
     subtitle: String,
     artworkUrl: String?,
@@ -27,32 +29,37 @@ fun AlbumCard(
 ) {
     Column(
         modifier = modifier
-            .width(140.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .width(260.dp)
+            .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick)
             .padding(4.dp)
     ) {
         MeloAsyncImage(
             url = artworkUrl,
             contentDescription = title,
-            size = 140.dp,
-            shape = RoundedCornerShape(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(146.dp)
+                .clip(RoundedCornerShape(10.dp)),
+            size = 260.dp,
+            shape = RoundedCornerShape(10.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = title,
-            style = MeloType.labelMedium,
+            style = MeloType.body,
+            fontWeight = FontWeight.SemiBold,
             color = MeloColors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = subtitle,
             style = MeloType.labelSmall,
-            color = MeloColors.textSecondary,
+            color = MeloColors.textMuted,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
