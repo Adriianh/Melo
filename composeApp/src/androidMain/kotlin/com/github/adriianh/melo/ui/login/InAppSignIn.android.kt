@@ -1,7 +1,9 @@
 package com.github.adriianh.melo.ui.login
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.webkit.CookieManager
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
@@ -12,38 +14,61 @@ import java.util.concurrent.atomic.AtomicReference
 private const val DEFAULT_LOGIN_URL =
     "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com"
 
+private const val ANDROID_CHROME_UA =
+    "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
+
 private object AndroidSessionCookieStore {
     val capturedCookies = AtomicReference<String?>(null)
 
     fun mergeYouTubeCookies(cookieManager: CookieManager): String? {
+        cookieManager.flush()
         val cookieParts = linkedMapOf<String, String>()
 
-        listOf(
+        val urlsToCheck = listOf(
             "https://music.youtube.com",
             "https://www.youtube.com",
             "https://youtube.com",
-        ).forEach { url ->
-            cookieManager.getCookie(url)
-                ?.split(";")
-                ?.map(String::trim)
-                ?.filter(String::isNotBlank)
-                ?.forEach { part ->
-                    val separatorIndex = part.indexOf('=')
-                    if (separatorIndex <= 0) return@forEach
+            "https://accounts.google.com",
+            "https://myaccount.google.com",
+            "https://google.com",
+            "https://www.google.com"
+        )
 
-                    val key = part.substring(0, separatorIndex).trim()
-                    val value = part.substring(separatorIndex + 1).trim()
-                    if (key.isNotEmpty()) {
-                        cookieParts[key] = value
+        urlsToCheck.forEach { url ->
+            val cookieStr = cookieManager.getCookie(url)
+            if (!cookieStr.isNullOrBlank()) {
+                cookieStr.split(";")
+                    .map(String::trim)
+                    .filter(String::isNotBlank)
+                    .forEach { part ->
+                        val separatorIndex = part.indexOf('=')
+                        if (separatorIndex > 0) {
+                            val key = part.substring(0, separatorIndex).trim()
+                            val value = part.substring(separatorIndex + 1).trim()
+                            if (key.isNotEmpty() && !cookieParts.containsKey(key)) {
+                                cookieParts[key] = value
+                            }
+                        }
                     }
+            }
+        }
+
+        capturedCookies.get()?.split(";")?.forEach { part ->
+            val separatorIndex = part.indexOf('=')
+            if (separatorIndex > 0) {
+                val key = part.substring(0, separatorIndex).trim()
+                val value = part.substring(separatorIndex + 1).trim()
+                if (key.isNotEmpty() && !cookieParts.containsKey(key)) {
+                    cookieParts[key] = value
                 }
+            }
         }
 
         val merged = cookieParts.takeIf { it.isNotEmpty() }
             ?.entries
             ?.joinToString(separator = "; ") { (key, value) -> "$key=$value" }
 
-        if (!merged.isNullOrBlank() && merged.contains("SAPISID=")) {
+        if (!merged.isNullOrBlank() && (merged.contains("SAPISID=") || merged.contains("__Secure-3PSID="))) {
             capturedCookies.set(merged)
         }
 
@@ -63,7 +88,10 @@ private object AndroidSessionCookieStore {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-actual fun InAppSignInBrowser(modifier: Modifier) {
+actual fun InAppSignInBrowser(
+    modifier: Modifier,
+    onCookiesCaptured: (String) -> Unit
+) {
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -78,18 +106,28 @@ actual fun InAppSignInBrowser(modifier: Modifier) {
                     setSupportZoom(true)
                     builtInZoomControls = true
                     displayZoomControls = false
-
-                    // Remove '; wv' and 'Version/4.0' to prevent Google's disallowed_useragent block
-                    val defaultUa = userAgentString
-                    userAgentString = defaultUa
-                        .replace("; wv", "")
-                        .replace("Version/4.0 ", "")
+                    mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    userAgentString = ANDROID_CHROME_UA
                 }
 
                 webViewClient = object : WebViewClient() {
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                        super.onPageStarted(view, url, favicon)
+                        checkAndDeliverCookies(cookieManager, view, onCookiesCaptured)
+                    }
+
                     override fun onPageFinished(view: WebView, url: String?) {
                         super.onPageFinished(view, url)
-                        AndroidSessionCookieStore.mergeYouTubeCookies(cookieManager)
+                        checkAndDeliverCookies(cookieManager, view, onCookiesCaptured)
+                    }
+
+                    override fun doUpdateVisitedHistory(
+                        view: WebView?,
+                        url: String?,
+                        isReload: Boolean
+                    ) {
+                        super.doUpdateVisitedHistory(view, url, isReload)
+                        checkAndDeliverCookies(cookieManager, view, onCookiesCaptured)
                     }
                 }
 
@@ -97,6 +135,44 @@ actual fun InAppSignInBrowser(modifier: Modifier) {
             }
         }
     )
+}
+
+private fun checkAndDeliverCookies(
+    cookieManager: CookieManager,
+    webView: WebView?,
+    onCookiesCaptured: (String) -> Unit
+) {
+    cookieManager.flush()
+    val cookies = AndroidSessionCookieStore.mergeYouTubeCookies(cookieManager)
+    if (!cookies.isNullOrBlank() && cookies.contains("SAPISID=")) {
+        onCookiesCaptured(cookies)
+        return
+    }
+
+    webView?.evaluateJavascript("document.cookie") { jsCookies ->
+        val unquoted = jsCookies?.trim('"', ' ')
+        if (!unquoted.isNullOrBlank() && unquoted != "null") {
+            unquoted.split(";").forEach { part ->
+                val separatorIndex = part.indexOf('=')
+                if (separatorIndex > 0) {
+                    val key = part.substring(0, separatorIndex).trim()
+                    val value = part.substring(separatorIndex + 1).trim()
+                    if (key.isNotEmpty()) {
+                        val current = AndroidSessionCookieStore.capturedCookies.get() ?: ""
+                        if (!current.contains("$key=")) {
+                            AndroidSessionCookieStore.capturedCookies.set(
+                                if (current.isEmpty()) "$key=$value" else "$current; $key=$value"
+                            )
+                        }
+                    }
+                }
+            }
+            val updated = AndroidSessionCookieStore.mergeYouTubeCookies(cookieManager)
+            if (!updated.isNullOrBlank() && updated.contains("SAPISID=")) {
+                onCookiesCaptured(updated)
+            }
+        }
+    }
 }
 
 actual fun isInAppSignInAvailable(): Boolean = true
