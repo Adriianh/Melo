@@ -4,7 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-actual fun InAppSignInBrowser(modifier: Modifier) = Unit
+actual fun InAppSignInBrowser(
+    modifier: Modifier,
+    onCookiesCaptured: (String) -> Unit
+) = Unit
 
 actual fun isInAppSignInAvailable(): Boolean = false
 
