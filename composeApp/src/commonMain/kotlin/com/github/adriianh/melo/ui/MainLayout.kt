@@ -49,9 +49,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -67,7 +65,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -157,30 +154,6 @@ private fun DesktopMainLayout(
             Box(modifier = Modifier.weight(1f)) {
                 Scaffold(
                     containerColor = Color.Transparent,
-                    topBar = {
-                        CenterAlignedTopAppBar(
-                            title = {
-                                Text(
-                                    selectedTab,
-                                    style = MeloType.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent,
-                                titleContentColor = MeloColors.textPrimary,
-                            ),
-                            actions = {
-                                IconButton(onClick = onLoginClick) {
-                                    Icon(
-                                        Icons.Outlined.AccountCircle,
-                                        contentDescription = "Cuenta",
-                                        tint = MeloColors.textPrimary
-                                    )
-                                }
-                            }
-                        )
-                    }
                 ) { paddingValues ->
                     content(paddingValues)
                 }
@@ -746,7 +719,6 @@ private fun DesktopPlayerBar(
                 }
             }
 
-            // Right: Actions (Lyrics, Queue, Fullscreen)
             Row(
                 modifier = Modifier.width(220.dp),
                 horizontalArrangement = Arrangement.End,
@@ -829,9 +801,6 @@ private fun MobileMainLayout(
     }
 }
 
-/**
- * Mobile Player Bar with dynamic accent progress and equalizer.
- */
 @Composable
 private fun MobilePlayerBar(
     onOpenNowPlaying: () -> Unit,
