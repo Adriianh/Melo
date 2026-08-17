@@ -36,7 +36,7 @@ private val log = Logger.getLogger("Melo.InAppSignIn")
  * single WebView -- but it also means it can affect any other code in the process that relies on
  * `CookieHandler.getDefault()`. If Melo's HTTP client (Ktor/OkHttp/etc.) manages its own cookie
  * jar independently, this has no effect on it; if it *also* falls back to the JVM default, be
- * aware the two will share state.
+ * aware the two will share a state.
  */
 object SessionCookieStore {
     private val cookieManager = CookieManager(null, CookiePolicy.ACCEPT_ALL)
@@ -95,7 +95,7 @@ private class YouTubeLoginWebViewController(private val onCookiesCaptured: (Stri
     val jfxPanel = JFXPanel()
 
     fun start() {
-        SessionCookieStore.install()
+        install()
         Platform.setImplicitExit(false)
         Platform.runLater {
             val webView = WebView().apply { engine.userAgent = CHROME_UA }

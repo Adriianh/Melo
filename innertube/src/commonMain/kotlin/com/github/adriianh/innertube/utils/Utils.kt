@@ -79,7 +79,8 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
     )
 }
 
-fun ByteArray.toHex(): String = joinToString(separator = "") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
+fun ByteArray.toHex(): String =
+    joinToString(separator = "") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 fun parseCookieString(cookie: String): Map<String, String> =
     cookie.split(";")
@@ -102,7 +103,7 @@ fun String.parseTime(): Int? {
         if (parts.size == 3) {
             return parts[0] * 3600 + parts[1] * 60 + parts[2]
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         return null
     }
     return null
