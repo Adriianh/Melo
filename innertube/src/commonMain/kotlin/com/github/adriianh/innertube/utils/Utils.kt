@@ -82,12 +82,13 @@ suspend fun Result<LibraryPage>.completed(): Result<LibraryPage> = runCatching {
 fun ByteArray.toHex(): String = joinToString(separator = "") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 fun parseCookieString(cookie: String): Map<String, String> =
-    cookie.split("; ")
+    cookie.split(";")
+        .map { it.trim() }
         .filter { it.isNotEmpty() }
         .mapNotNull { part ->
             val splitIndex = part.indexOf('=')
             if (splitIndex == -1) null
-            else part.take(splitIndex) to part.substring(splitIndex + 1)
+            else part.substring(0, splitIndex).trim() to part.substring(splitIndex + 1).trim()
         }
         .toMap()
 

@@ -4,7 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-expect fun InAppSignInBrowser(modifier: Modifier = Modifier)
+expect fun InAppSignInBrowser(
+    modifier: Modifier = Modifier,
+    onCookiesCaptured: (String) -> Unit = {}
+)
 
 expect fun isInAppSignInAvailable(): Boolean
 
