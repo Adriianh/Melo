@@ -51,8 +51,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -95,23 +98,24 @@ fun LibraryScreen(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = state.profile?.name?.take(1)?.uppercase() ?: "Y",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MeloType.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = MeloColors.textPrimary
                         )
                     }
                 }
                 Column {
                     Text(
                         text = state.profile?.name ?: "Mi Biblioteca",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MeloType.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textPrimary
                     )
                     if (state.profile?.channelHandle != null) {
                         Text(
                             text = state.profile?.channelHandle.orEmpty(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary
                         )
                     }
                 }
@@ -375,8 +379,9 @@ private fun ArtistsContent(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = artist.name,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MeloType.labelMedium,
                     fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -443,8 +448,8 @@ private fun AlbumsContent(
 
 @Composable
 private fun HistoryContent(
-    history: List<com.github.adriianh.core.domain.model.HistoryEntry>,
-    onPlayTrack: (com.github.adriianh.core.domain.model.HistoryEntry) -> Unit,
+    history: List<HistoryEntry>,
+    onPlayTrack: (HistoryEntry) -> Unit,
 ) {
     if (history.isEmpty()) {
         EmptyLibrarySection("No hay reproducciones recientes registradas.")
