@@ -26,4 +26,7 @@ object MeloColors {
     val glassBorder = contentGlassBorder
     val chromeGlassFill = chromePillFill
     val chromeGlassBorder = chromePillBorder
+
+    val playerBarFill = Color(0x0FFFFFFF)
+    val playerBarBorder = Color(0x1FFFFFFF)
 }

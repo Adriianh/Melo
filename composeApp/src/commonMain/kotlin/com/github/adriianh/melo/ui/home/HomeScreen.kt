@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,6 +67,7 @@ fun HomeScreen(
     onAlbumClick: (String) -> Unit = {},
     onPlaylistClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
+    onLoginClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
@@ -75,6 +78,7 @@ fun HomeScreen(
             query = uiState.searchQuery,
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
+            onLoginClick = onLoginClick,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
@@ -116,49 +120,65 @@ private fun HomeSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
+    onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = {
-            Text(
-                "¿Qué quieres escuchar?",
-                style = MeloType.body,
-                color = MeloColors.textMuted
-            )
-        },
-        leadingIcon = {
-            Icon(
-                Icons.Default.Search,
-                contentDescription = "Buscar",
-                tint = MeloColors.textMuted
-            )
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = onClear) {
-                    Icon(
-                        Icons.Default.Clear,
-                        contentDescription = "Limpiar",
-                        tint = MeloColors.textMuted
-                    )
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = {
+                Text(
+                    "¿Qué quieres escuchar?",
+                    style = MeloType.body,
+                    color = MeloColors.textMuted
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Buscar",
+                    tint = MeloColors.textMuted
+                )
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "Limpiar",
+                            tint = MeloColors.textMuted
+                        )
+                    }
                 }
-            }
-        },
-        singleLine = true,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MeloColors.surface2,
-            unfocusedContainerColor = MeloColors.surface1,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            focusedTextColor = MeloColors.textPrimary,
-            unfocusedTextColor = MeloColors.textPrimary,
-        ),
-        shape = RoundedCornerShape(24.dp),
-        modifier = modifier.fillMaxWidth()
-    )
+            },
+            singleLine = true,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MeloColors.surface2,
+                unfocusedContainerColor = MeloColors.surface1,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                focusedTextColor = MeloColors.textPrimary,
+                unfocusedTextColor = MeloColors.textPrimary,
+            ),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.weight(1f)
+        )
+
+        IconButton(onClick = onLoginClick) {
+            Icon(
+                Icons.Default.AccountCircle,
+                contentDescription = "Cuenta",
+                tint = MeloColors.brandAccent,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
 }
 
 @Composable

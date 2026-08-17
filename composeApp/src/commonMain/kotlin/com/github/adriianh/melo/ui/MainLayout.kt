@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
@@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -99,7 +102,6 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AdaptiveScaffold(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    onLoginClick: () -> Unit,
     onOpenNowPlaying: () -> Unit = {},
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
     content: @Composable (String, PaddingValues) -> Unit
@@ -110,7 +112,6 @@ fun AdaptiveScaffold(
         DesktopMainLayout(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
-            onLoginClick = onLoginClick,
             onOpenNowPlaying = onOpenNowPlaying,
             onPlaylistClick = onPlaylistClick,
             content = { padding -> content(selectedTab, padding) }
@@ -119,7 +120,6 @@ fun AdaptiveScaffold(
         MobileMainLayout(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
-            onLoginClick = onLoginClick,
             onOpenNowPlaying = onOpenNowPlaying,
             content = { padding -> content(selectedTab, padding) }
         )
@@ -131,7 +131,6 @@ fun AdaptiveScaffold(
 private fun DesktopMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    onLoginClick: () -> Unit,
     onOpenNowPlaying: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     content: @Composable (PaddingValues) -> Unit
@@ -145,18 +144,34 @@ private fun DesktopMainLayout(
             YouTubeStyleSidebar(
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
-                onLoginClick = onLoginClick,
                 onPlaylistClick = onPlaylistClick,
                 collapsed = isSidebarCollapsed,
                 onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed }
             )
 
-            Box(modifier = Modifier.weight(1f)) {
-                Scaffold(
-                    containerColor = Color.Transparent,
-                ) { paddingValues ->
-                    content(paddingValues)
+            Column(modifier = Modifier.weight(1f)) {
+                Box(modifier = Modifier.weight(1f)) {
+                    Scaffold(
+                        containerColor = Color.Transparent,
+                    ) { paddingValues ->
+                        content(paddingValues)
+                    }
                 }
+
+                DesktopPlayerBar(
+                    onOpenNowPlaying = onOpenNowPlaying,
+                    onToggleLyrics = {
+                        isDesktopPaneVisible = true
+                        desktopPaneSection = PanelSection.LYRICS
+                    },
+                    onToggleQueue = {
+                        isDesktopPaneVisible = true
+                        desktopPaneSection = PanelSection.QUEUE
+                    },
+                    onToggleDockedPane = {
+                        isDesktopPaneVisible = !isDesktopPaneVisible
+                    }
+                )
             }
 
             AnimatedVisibility(
@@ -178,21 +193,6 @@ private fun DesktopMainLayout(
                 )
             }
         }
-
-        DesktopPlayerBar(
-            onOpenNowPlaying = onOpenNowPlaying,
-            onToggleLyrics = {
-                isDesktopPaneVisible = true
-                desktopPaneSection = PanelSection.LYRICS
-            },
-            onToggleQueue = {
-                isDesktopPaneVisible = true
-                desktopPaneSection = PanelSection.QUEUE
-            },
-            onToggleDockedPane = {
-                isDesktopPaneVisible = !isDesktopPaneVisible
-            }
-        )
     }
 }
 
@@ -200,7 +200,6 @@ private fun DesktopMainLayout(
 private fun YouTubeStyleSidebar(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    onLoginClick: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     collapsed: Boolean,
     onToggleCollapsed: () -> Unit,
@@ -218,13 +217,23 @@ private fun YouTubeStyleSidebar(
         modifier = modifier
             .width(sidebarWidth)
             .fillMaxHeight()
-            .background(MeloColors.surface1),
+            .background(MeloColors.playerBarFill)
+            .drawBehind {
+                drawLine(
+                    color = MeloColors.playerBarBorder,
+                    start = Offset(size.width, 0f),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
+            },
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.spacedBy(12.dp),
+                horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.spacedBy(
+                    12.dp
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = if (collapsed) 0.dp else 12.dp, vertical = 14.dp)
@@ -402,44 +411,6 @@ private fun YouTubeStyleSidebar(
                 }
             }
         }
-
-        Column {
-            HorizontalDivider(color = MeloColors.border, thickness = 1.dp)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onLoginClick)
-                    .padding(horizontal = if (collapsed) 0.dp else 14.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    tint = MeloColors.brandAccent,
-                    modifier = Modifier.size(28.dp)
-                )
-                if (!collapsed) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            state.profile?.name ?: "Cuenta",
-                            style = MeloType.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            if (state.isLoggedIn) state.profile?.email ?: "YouTube Music" else "Iniciar sesión",
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -569,17 +540,20 @@ private fun DesktopPlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val activeAccent = if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
+    val activeAccent =
+        if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
 
     if (!state.hasTrack) return
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MeloColors.surface2)
+            .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)
+            .shadow(8.dp, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .background(MeloColors.playerBarFill)
+            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(14.dp))
     ) {
-        HorizontalDivider(color = MeloColors.border, thickness = 1.dp)
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -648,7 +622,9 @@ private fun DesktopPlayerBar(
                         Icon(
                             Icons.Default.SkipPrevious,
                             contentDescription = "Previous",
-                            tint = if (state.hasPrevious) MeloColors.textPrimary else MeloColors.textMuted.copy(alpha = 0.4f),
+                            tint = if (state.hasPrevious) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                                alpha = 0.4f
+                            ),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -670,7 +646,9 @@ private fun DesktopPlayerBar(
                         Icon(
                             Icons.Default.SkipNext,
                             contentDescription = "Next",
-                            tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(alpha = 0.4f),
+                            tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                                alpha = 0.4f
+                            ),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -683,7 +661,12 @@ private fun DesktopPlayerBar(
                             RepeatMode.NONE -> MeloColors.textMuted
                             else -> activeAccent
                         }
-                        Icon(icon, contentDescription = "Repeat", tint = tint, modifier = Modifier.size(18.dp))
+                        Icon(
+                            icon,
+                            contentDescription = "Repeat",
+                            tint = tint,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
 
@@ -757,7 +740,6 @@ private fun DesktopPlayerBar(
 private fun MobileMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
-    onLoginClick: () -> Unit,
     onOpenNowPlaying: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -766,7 +748,8 @@ private fun MobileMainLayout(
         bottomBar = {
             Column {
                 MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
-                NavigationBar(containerColor = MeloColors.surface2) {
+                Spacer(modifier = Modifier.height(4.dp))
+                NavigationBar(containerColor = Color.Transparent) {
                     NavigationBarItem(
                         selected = selectedTab == "Home",
                         onClick = { onTabSelected("Home") },
@@ -807,14 +790,19 @@ private fun MobilePlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val activeAccent = if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
+    val activeAccent =
+        if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
 
     if (!state.hasTrack) return
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MeloColors.surface2)
+            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .shadow(6.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MeloColors.playerBarFill)
+            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(12.dp))
             .clickable(onClick = onOpenNowPlaying)
     ) {
         LinearProgressIndicator(
@@ -827,7 +815,7 @@ private fun MobilePlayerBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -871,7 +859,9 @@ private fun MobilePlayerBar(
                 Icon(
                     Icons.Default.SkipNext,
                     contentDescription = "Next",
-                    tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(alpha = 0.4f),
+                    tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                        alpha = 0.4f
+                    ),
                     modifier = Modifier.size(24.dp)
                 )
             }

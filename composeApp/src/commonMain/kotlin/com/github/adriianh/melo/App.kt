@@ -92,7 +92,6 @@ fun App() {
                         navigationStack =
                             listOf(if (tab == "Home") ScreenDestination.Home else ScreenDestination.Library)
                     },
-                    onLoginClick = { showLoginDialog = true },
                     onOpenNowPlaying = { isNowPlayingExpanded = true },
                     onPlaylistClick = { id, title, artwork, author ->
                         navigateTo(ScreenDestination.Playlist(id, title, artwork, author))
@@ -103,11 +102,12 @@ fun App() {
                             .fillMaxSize()
                             .padding(paddingValues)
                     ) {
-                        when (val dest = currentScreen) {
+                        when (currentScreen) {
                             ScreenDestination.Home -> HomeScreen(
                                 onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
                                 onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) },
                                 onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                onLoginClick = { showLoginDialog = true },
                             )
 
                             ScreenDestination.Library -> LibraryScreen(
@@ -118,25 +118,25 @@ fun App() {
                             )
 
                             is ScreenDestination.Album -> AlbumDetailScreen(
-                                albumId = dest.id,
-                                initialTitle = dest.title,
-                                initialArtwork = dest.artwork,
-                                initialAuthor = dest.author,
+                                albumId = currentScreen.id,
+                                initialTitle = currentScreen.title,
+                                initialArtwork = currentScreen.artwork,
+                                initialAuthor = currentScreen.author,
                                 onBack = ::navigateBack
                             )
 
                             is ScreenDestination.Playlist -> PlaylistDetailScreen(
-                                playlistId = dest.id,
-                                initialTitle = dest.title,
-                                initialArtwork = dest.artwork,
-                                initialAuthor = dest.author,
+                                playlistId = currentScreen.id,
+                                initialTitle = currentScreen.title,
+                                initialArtwork = currentScreen.artwork,
+                                initialAuthor = currentScreen.author,
                                 onBack = ::navigateBack
                             )
 
                             is ScreenDestination.Artist -> ArtistDetailScreen(
-                                artistId = dest.id,
-                                initialName = dest.name,
-                                initialArtwork = dest.artwork,
+                                artistId = currentScreen.id,
+                                initialName = currentScreen.name,
+                                initialArtwork = currentScreen.artwork,
                                 onBack = ::navigateBack,
                                 onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
                             )
