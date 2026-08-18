@@ -77,9 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -162,14 +160,27 @@ private fun DesktopMainLayout(
                 onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed }
             )
 
-            Column(modifier = Modifier.weight(1f)) {
-                Box(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = 12.dp, bottom = 12.dp, start = 8.dp, end = 12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .shadow(4.dp, RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MeloColors.surface0.copy(alpha = 0.6f))
+                        .border(0.5.dp, MeloColors.border, RoundedCornerShape(20.dp))
+                ) {
                     Scaffold(
                         containerColor = Color.Transparent,
                     ) { paddingValues ->
                         content(paddingValues)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 DesktopPlayerBar(
                     onOpenNowPlaying = onOpenNowPlaying,
@@ -183,7 +194,8 @@ private fun DesktopMainLayout(
                     },
                     onToggleDockedPane = {
                         isDesktopPaneVisible = !isDesktopPaneVisible
-                    }
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -230,15 +242,10 @@ private fun MainSidebar(
         modifier = modifier
             .width(sidebarWidth)
             .fillMaxHeight()
+            .padding(top = 12.dp, bottom = 12.dp, start = 12.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(MeloColors.playerBarFill)
-            .drawBehind {
-                drawLine(
-                    color = MeloColors.playerBarBorder,
-                    start = Offset(size.width, 0f),
-                    end = Offset(size.width, size.height),
-                    strokeWidth = 1.dp.toPx()
-                )
-            },
+            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(20.dp)),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -689,6 +696,7 @@ private fun DesktopPlayerBar(
     onToggleLyrics: () -> Unit = {},
     onToggleQueue: () -> Unit = {},
     onToggleDockedPane: () -> Unit = {},
+    modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -703,9 +711,9 @@ private fun DesktopPlayerBar(
     if (!state.hasTrack) return
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+            .padding(bottom = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -892,19 +900,24 @@ private fun MobileMainLayout(
     Box(modifier = Modifier.fillMaxSize()) {
         content(PaddingValues(bottom = 160.dp))
 
-        Column(
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(bottom = 100.dp)
         ) {
             MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
-            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 20.dp)
+        ) {
             FloatingNavigationBar(
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected
             )
-            Spacer(Modifier.navigationBarsPadding())
         }
     }
 }
