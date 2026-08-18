@@ -22,7 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.theme.LocalMeloColors
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -94,10 +94,12 @@ fun AmbientCanvas(
         OrbState(phase, pulse)
     }
 
+    val meloColors = LocalMeloColors.current
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MeloColors.surface0)
+            .background(meloColors.surface0)
             .drawBehind {
                 val w = size.width
                 val h = size.height
