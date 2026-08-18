@@ -60,7 +60,6 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -84,6 +83,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -164,11 +164,16 @@ private fun DesktopMainLayout(
                 modifier = Modifier
                     .weight(1f)
                     .padding(top = 12.dp, bottom = 12.dp, start = 8.dp, end = 12.dp)
+                    .graphicsLayer { clip = true; shape = RoundedCornerShape(20.dp) }
             ) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .shadow(4.dp, RoundedCornerShape(20.dp))
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(20.dp),
+                            ambientColor = Color.Black.copy(alpha = 0.5f)
+                        )
                         .clip(RoundedCornerShape(20.dp))
                         .background(MeloColors.surface0.copy(alpha = 0.6f))
                         .border(0.5.dp, MeloColors.border, RoundedCornerShape(20.dp))
@@ -230,15 +235,23 @@ private fun MainSidebar(
     viewModel: SidebarViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val sidebarWidth by animateDpAsState(
+    val sidebarWidthState = animateDpAsState(
         targetValue = if (collapsed) 72.dp else 240.dp,
-        animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
         label = "sidebarWidth"
     )
 
     Column(
         modifier = modifier
-            .width(sidebarWidth)
+            .layout { measurable, constraints ->
+                val width = sidebarWidthState.value.roundToPx()
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width)
+                )
+                layout(width, placeable.height) {
+                    placeable.placeRelative(0, 0)
+                }
+            }
             .fillMaxHeight()
             .padding(top = 12.dp, bottom = 12.dp, start = 12.dp)
             .clip(RoundedCornerShape(20.dp))
@@ -350,42 +363,22 @@ private fun MainSidebar(
                                 onClick = { onTabSelected("Home") }
                             )
                             SidebarRow(
-                                label = "Tu Biblioteca",
+                                label = "Biblioteca",
                                 icon = Icons.Default.LibraryMusic,
                                 isSelected = selectedTab == "Library",
                                 onClick = { onTabSelected("Library") }
                             )
                         }
 
-                        HorizontalDivider(color = MeloColors.border, thickness = 1.dp)
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(50))
-                                .background(MeloColors.surface2)
-                                .clickable(onClick = { onTabSelected("Library") })
-                                .padding(horizontal = 14.dp, vertical = 9.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Nueva lista",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                "Nueva lista de reproducción",
-                                style = MeloType.body,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MeloColors.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                "MI COLECCIÓN",
+                                style = MeloType.labelSmall,
+                                letterSpacing = 1.2.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MeloColors.textMuted,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
                             SidebarRow(
                                 label = "Canciones Favoritas",
                                 icon = Icons.Default.Favorite,
@@ -400,29 +393,49 @@ private fun MainSidebar(
                             )
                         }
 
-                        if (state.playlists.isNotEmpty()) {
-                            Text(
-                                "TUS PLAYLISTS",
-                                style = MeloType.labelSmall,
-                                letterSpacing = 1.2.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MeloColors.textMuted,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-
-                            state.playlists.forEach { playlist ->
-                                SidebarPlaylistRow(
-                                    title = playlist.title,
-                                    artworkUrl = playlist.artworkUrl,
-                                    onClick = {
-                                        onPlaylistClick(
-                                            playlist.id,
-                                            playlist.title,
-                                            playlist.artworkUrl,
-                                            playlist.author
-                                        )
-                                    }
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "PLAYLISTS",
+                                    style = MeloType.labelSmall,
+                                    letterSpacing = 1.2.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MeloColors.textMuted
                                 )
+                                IconButton(
+                                    onClick = { onTabSelected("Library") },
+                                    modifier = Modifier.size(20.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Nueva lista",
+                                        tint = MeloColors.textMuted,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            if (state.playlists.isNotEmpty()) {
+                                state.playlists.forEach { playlist ->
+                                    SidebarPlaylistRow(
+                                        title = playlist.title,
+                                        artworkUrl = playlist.artworkUrl,
+                                        onClick = {
+                                            onPlaylistClick(
+                                                playlist.id,
+                                                playlist.title,
+                                                playlist.artworkUrl,
+                                                playlist.author
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
