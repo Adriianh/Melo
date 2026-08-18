@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -40,7 +41,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -68,12 +71,17 @@ fun HomeScreen(
     onPlaylistClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     onLoginClick: () -> Unit = {},
+    paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: HomeViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
         HomeSearchBar(
             query = uiState.searchQuery,
             onQueryChange = viewModel::onSearchQueryChange,
@@ -109,6 +117,7 @@ fun HomeScreen(
                     onPlaylistClick = onPlaylistClick,
                     onArtistClick = onArtistClick,
                     queueViewModel = queueViewModel,
+                    paddingValues = paddingValues
                 )
             }
         }
@@ -158,8 +167,8 @@ private fun HomeSearchBar(
             },
             singleLine = true,
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = MeloColors.surface2,
-                unfocusedContainerColor = MeloColors.surface1,
+                focusedContainerColor = MeloColors.glassSurface,
+                unfocusedContainerColor = MeloColors.glassSurface.copy(alpha = 0.45f),
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent,
@@ -167,7 +176,10 @@ private fun HomeSearchBar(
                 unfocusedTextColor = MeloColors.textPrimary,
             ),
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .blur(if (query.isEmpty()) 0.dp else 0.dp)
+                .drawBehind {}
         )
 
         IconButton(onClick = onLoginClick) {
@@ -234,6 +246,7 @@ private fun HomeContent(
     onPlaylistClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
     queueViewModel: QueueViewModel,
+    paddingValues: PaddingValues,
 ) {
     val listState = rememberLazyListState()
 
@@ -255,6 +268,10 @@ private fun HomeContent(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(
+            top = paddingValues.calculateTopPadding(),
+            bottom = paddingValues.calculateBottomPadding() + 16.dp
+        )
     ) {
         if (uiState.chips.isNotEmpty()) {
             item {
@@ -269,17 +286,20 @@ private fun HomeContent(
                             onClick = { onChipClick(chip) },
                             label = { Text(chip.title, style = MeloType.labelMedium) },
                             colors = FilterChipDefaults.filterChipColors(
-                                containerColor = MeloColors.surface1,
+                                containerColor = MeloColors.glassSurface.copy(alpha = 0.5f),
                                 labelColor = MeloColors.textPrimary,
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(
+                                    alpha = 0.25f
+                                ),
                                 selectedLabelColor = MaterialTheme.colorScheme.primary
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
                                 selected = uiState.selectedChip == chip,
-                                borderColor = MeloColors.borderStrong,
+                                borderColor = MeloColors.glassBorder,
                                 selectedBorderColor = MaterialTheme.colorScheme.primary
-                            )
+                            ),
+                            modifier = Modifier.blur(0.dp)
                         )
                     }
                 }

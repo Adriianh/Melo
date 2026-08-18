@@ -38,12 +38,13 @@ fun TrackRow(
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
     trackNumber: Int? = null,
+    showGlassBackground: Boolean = false,
     onMoreClick: (() -> Unit)? = null,
 ) {
-    val backgroundColor = if (isCurrent) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-    } else {
-        androidx.compose.ui.graphics.Color.Transparent
+    val backgroundColor = when {
+        isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        showGlassBackground -> MeloColors.glassSurface.copy(alpha = 0.3f)
+        else -> androidx.compose.ui.graphics.Color.Transparent
     }
 
     Row(

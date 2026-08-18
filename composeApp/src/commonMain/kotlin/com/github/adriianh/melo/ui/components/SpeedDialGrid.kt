@@ -49,74 +49,74 @@ fun SpeedDialGrid(
                     modifier = Modifier.width(columnWidth),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                columnItems.forEach { item ->
-                    val title: String
-                    val subtitle: String
-                    val artworkUrl: String?
+                    columnItems.forEach { item ->
+                        val title: String
+                        val subtitle: String
+                        val artworkUrl: String?
 
-                    when (item) {
-                        is SearchResult.Song -> {
-                            title = item.track.title
-                            subtitle = item.track.artist
-                            artworkUrl = item.track.artworkUrl
+                        when (item) {
+                            is SearchResult.Song -> {
+                                title = item.track.title
+                                subtitle = item.track.artist
+                                artworkUrl = item.track.artworkUrl
+                            }
+
+                            is SearchResult.Album -> {
+                                title = item.title
+                                subtitle = item.author
+                                artworkUrl = item.artworkUrl
+                            }
+
+                            is SearchResult.Playlist -> {
+                                title = item.title
+                                subtitle = item.author
+                                artworkUrl = item.artworkUrl
+                            }
+
+                            is SearchResult.Artist -> {
+                                title = item.name
+                                subtitle = "Artista"
+                                artworkUrl = item.artworkUrl
+                            }
                         }
 
-                        is SearchResult.Album -> {
-                            title = item.title
-                            subtitle = item.author
-                            artworkUrl = item.artworkUrl
-                        }
-
-                        is SearchResult.Playlist -> {
-                            title = item.title
-                            subtitle = item.author
-                            artworkUrl = item.artworkUrl
-                        }
-
-                        is SearchResult.Artist -> {
-                            title = item.name
-                            subtitle = "Artista"
-                            artworkUrl = item.artworkUrl
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MeloColors.surface1)
-                            .clickable { onItemClick(item) }
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        MeloAsyncImage(
-                            url = artworkUrl,
-                            contentDescription = title,
-                            size = 48.dp,
-                            shape = RoundedCornerShape(6.dp)
-                        )
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = title,
-                                style = MeloType.labelMedium,
-                                color = MeloColors.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MeloColors.glassSurface.copy(alpha = 0.35f))
+                                .clickable { onItemClick(item) }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            MeloAsyncImage(
+                                url = artworkUrl,
+                                contentDescription = title,
+                                size = 48.dp,
+                                shape = RoundedCornerShape(6.dp)
                             )
-                            Text(
-                                text = subtitle,
-                                style = MeloType.labelSmall,
-                                color = MeloColors.textMuted,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = title,
+                                    style = MeloType.labelMedium,
+                                    color = MeloColors.textPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = subtitle,
+                                    style = MeloType.labelSmall,
+                                    color = MeloColors.textMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
     }
 }

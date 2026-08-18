@@ -20,6 +20,7 @@ data class PlayerUiState(
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
     val accentColor: Color = MeloColors.textMuted,
+    val lyrics: String? = null,
 ) {
     val hasTrack: Boolean get() = title.isNotEmpty()
 

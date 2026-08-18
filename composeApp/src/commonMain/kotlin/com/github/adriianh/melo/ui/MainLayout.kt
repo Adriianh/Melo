@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,9 +65,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -693,8 +692,13 @@ private fun DesktopPlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val activeAccent =
+    val targetAccent =
         if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
+    val activeAccent by animateColorAsState(
+        targetValue = targetAccent,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        label = "DesktopPlayerBarAccent"
+    )
 
     if (!state.hasTrack) return
 
@@ -885,44 +889,99 @@ private fun MobileMainLayout(
     onOpenNowPlaying: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            Column {
-                MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
-                Spacer(modifier = Modifier.height(4.dp))
-                NavigationBar(containerColor = Color.Transparent) {
-                    NavigationBarItem(
-                        selected = selectedTab == "Home",
-                        onClick = { onTabSelected("Home") },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Inicio") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MeloColors.textMuted,
-                            unselectedTextColor = MeloColors.textMuted,
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = selectedTab == "Library",
-                        onClick = { onTabSelected("Library") },
-                        icon = { Icon(Icons.Default.LibraryMusic, contentDescription = "Library") },
-                        label = { Text("Biblioteca") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MeloColors.textMuted,
-                            unselectedTextColor = MeloColors.textMuted,
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        )
-                    )
-                }
-            }
+    Box(modifier = Modifier.fillMaxSize()) {
+        content(PaddingValues(bottom = 160.dp))
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
+            Spacer(modifier = Modifier.height(12.dp))
+            FloatingNavigationBar(
+                selectedTab = selectedTab,
+                onTabSelected = onTabSelected
+            )
+            Spacer(Modifier.navigationBarsPadding())
         }
-    ) { paddingValues ->
-        content(paddingValues)
+    }
+}
+
+@Composable
+private fun FloatingNavigationBar(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .width(200.dp)
+            .height(58.dp)
+            .shadow(
+                elevation = 4.dp,
+                shape = RoundedCornerShape(29.dp)
+            )
+            .background(MeloColors.glassSurface, RoundedCornerShape(29.dp))
+            .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(29.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FloatingNavItem(
+                selected = selectedTab == "Home",
+                onClick = { onTabSelected("Home") },
+                icon = Icons.Default.Home,
+                label = "Inicio"
+            )
+            FloatingNavItem(
+                selected = selectedTab == "Library",
+                onClick = { onTabSelected("Library") },
+                icon = Icons.Default.LibraryMusic,
+                label = "Biblioteca"
+            )
+        }
+    }
+}
+
+@Composable
+private fun FloatingNavItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    label: String
+) {
+    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MeloColors.textMuted
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = contentColor,
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = label,
+            style = MeloType.labelSmall.copy(fontSize = 10.sp),
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = contentColor
+        )
     }
 }
 
@@ -932,20 +991,25 @@ private fun MobilePlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val activeAccent =
+    val targetAccent =
         if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
+    val activeAccent by animateColorAsState(
+        targetValue = targetAccent,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        label = "MobilePlayerBarAccent"
+    )
 
     if (!state.hasTrack) return
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .fillMaxWidth(0.94f)
+            .padding(horizontal = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp)
+                .padding(top = 12.dp)
                 .shadow(6.dp, RoundedCornerShape(12.dp))
                 .clip(RoundedCornerShape(12.dp))
                 .background(MeloColors.playerBarFill)
@@ -1018,8 +1082,8 @@ private fun MobilePlayerBar(
                 }
             },
             cornerRadius = 12.dp,
-            lineCenterY = 16.dp,
-            containerHeight = 32.dp,
+            lineCenterY = 12.5.dp,
+            containerHeight = 25.dp,
             showHoverControls = false,
             modifier = Modifier
                 .align(Alignment.TopCenter)

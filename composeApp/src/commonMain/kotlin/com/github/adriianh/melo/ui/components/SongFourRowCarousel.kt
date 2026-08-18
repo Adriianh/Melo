@@ -41,6 +41,7 @@ fun SongFourRowCarousel(
                         TrackRow(
                             track = track,
                             onClick = { onTrackClick(track) },
+                            showGlassBackground = true
                         )
                     }
                 }

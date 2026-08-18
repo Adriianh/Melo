@@ -7,7 +7,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -98,9 +97,7 @@ fun App() {
                     }
                 ) { _, paddingValues ->
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         when (currentScreen) {
                             ScreenDestination.Home -> HomeScreen(
@@ -108,6 +105,7 @@ fun App() {
                                 onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) },
                                 onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
                                 onLoginClick = { showLoginDialog = true },
+                                paddingValues = paddingValues
                             )
 
                             ScreenDestination.Library -> LibraryScreen(
@@ -115,6 +113,7 @@ fun App() {
                                 onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
                                 onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) },
                                 onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                paddingValues = paddingValues
                             )
 
                             is ScreenDestination.Album -> AlbumDetailScreen(

@@ -1,5 +1,7 @@
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,31 +22,39 @@ fun NowPlayingBackground(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize().background(MeloColors.surface0)) {
-        if (artworkUrl != null) {
-            MeloAsyncImage(
-                url = artworkUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scale(1.4f)
-                    .blur(24.dp),
-                shape = RoundedCornerShape(0.dp)
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.35f),
-                                Color.Black.copy(alpha = 0.75f),
-                                Color.Black.copy(alpha = 0.95f),
-                            )
-                        )
+        Crossfade(
+            targetState = artworkUrl,
+            animationSpec = tween(durationMillis = 650),
+            label = "NowPlayingBgCrossfade"
+        ) { url ->
+            if (url != null) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    MeloAsyncImage(
+                        url = url,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(1.4f)
+                            .blur(28.dp),
+                        shape = RoundedCornerShape(0.dp)
                     )
-            )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.50f),
+                                        Color.Black.copy(alpha = 0.35f),
+                                        Color.Black.copy(alpha = 0.75f),
+                                        Color.Black.copy(alpha = 0.95f),
+                                    )
+                                )
+                            )
+                    )
+                }
+            }
         }
     }
 }

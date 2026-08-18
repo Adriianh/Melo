@@ -1,5 +1,7 @@
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,29 +19,37 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -84,6 +94,8 @@ fun NowPlayingScreen(
     val state by viewModel.uiState.collectAsState()
     val platform = remember { getPlatform() }
     var selectedSection by remember { mutableStateOf(PanelSection.QUEUE) }
+    var showLyrics by remember { mutableStateOf(false) }
+    var expandedBottomSection by remember { mutableStateOf<PanelSection?>(null) }
     var isFavorite by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -92,7 +104,7 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -151,16 +163,36 @@ fun NowPlayingScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        MeloAsyncImage(
-                            url = state.albumArt,
-                            contentDescription = state.title,
+                        Box(
                             modifier = Modifier
                                 .size(280.dp)
                                 .shadow(24.dp, RoundedCornerShape(20.dp))
                                 .clip(RoundedCornerShape(20.dp)),
-                            size = 280.dp,
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Crossfade(
+                                targetState = showLyrics,
+                                label = "DesktopLyricsCrossfade"
+                            ) { isLyrics ->
+                                if (isLyrics) {
+                                    NowPlayingLyricsCard(
+                                        lyrics = state.lyrics,
+                                        onToggleArtwork = { showLyrics = false },
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    MeloAsyncImage(
+                                        url = state.albumArt,
+                                        contentDescription = state.title,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clickable { showLyrics = true },
+                                        size = 280.dp,
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -186,13 +218,26 @@ fun NowPlayingScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-                            IconButton(onClick = { isFavorite = !isFavorite }) {
-                                Icon(
-                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = "Favorite",
-                                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
-                                    modifier = Modifier.size(26.dp)
-                                )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                IconButton(onClick = { showLyrics = !showLyrics }) {
+                                    Icon(
+                                        Icons.Outlined.Mic,
+                                        contentDescription = "Letra",
+                                        tint = if (showLyrics) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                IconButton(onClick = { isFavorite = !isFavorite }) {
+                                    Icon(
+                                        if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                        contentDescription = "Favorite",
+                                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
                             }
                         }
 
@@ -234,7 +279,7 @@ fun NowPlayingScreen(
                             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 when (selectedSection) {
                                     PanelSection.QUEUE -> NowPlayingQueueSection(state)
-                                    PanelSection.LYRICS -> NowPlayingLyricsSection()
+                                    PanelSection.LYRICS -> NowPlayingLyricsSection(state.lyrics)
                                     PanelSection.ARTIST -> NowPlayingArtistSection(state)
                                 }
                             }
@@ -247,21 +292,41 @@ fun NowPlayingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    MeloAsyncImage(
-                        url = state.albumArt,
-                        contentDescription = state.title,
+                    Box(
                         modifier = Modifier
-                            .size(260.dp)
-                            .shadow(20.dp, RoundedCornerShape(16.dp))
-                            .clip(RoundedCornerShape(16.dp)),
-                        size = 260.dp,
-                        shape = RoundedCornerShape(16.dp)
-                    )
+                            .size(270.dp)
+                            .shadow(20.dp, RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(20.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Crossfade(
+                            targetState = showLyrics,
+                            label = "MobileLyricsCrossfade"
+                        ) { isLyrics ->
+                            if (isLyrics) {
+                                NowPlayingLyricsCard(
+                                    lyrics = state.lyrics,
+                                    onToggleArtwork = { showLyrics = false },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                MeloAsyncImage(
+                                    url = state.albumArt,
+                                    contentDescription = state.title,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clickable { showLyrics = true },
+                                    size = 270.dp,
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                            }
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -282,13 +347,26 @@ fun NowPlayingScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        IconButton(onClick = { isFavorite = !isFavorite }) {
-                            Icon(
-                                if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorite",
-                                tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
-                                modifier = Modifier.size(26.dp)
-                            )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            IconButton(onClick = { showLyrics = !showLyrics }) {
+                                Icon(
+                                    Icons.Outlined.Mic,
+                                    contentDescription = "Letra",
+                                    tint = if (showLyrics) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            IconButton(onClick = { isFavorite = !isFavorite }) {
+                                Icon(
+                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorite",
+                                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
                         }
                     }
 
@@ -296,36 +374,173 @@ fun NowPlayingScreen(
 
                     PlayerTransportControls(state = state, viewModel = viewModel)
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    GlassPanel(
-                        modifier = Modifier.fillMaxWidth().height(140.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            SegmentedControl(
-                                options = PanelSection.entries,
-                                selected = selectedSection,
-                                onSelect = { selectedSection = it },
-                                label = {
-                                    when (it) {
-                                        PanelSection.QUEUE -> "Cola"
-                                        PanelSection.LYRICS -> "Letra"
-                                        PanelSection.ARTIST -> "Artista"
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                                when (selectedSection) {
-                                    PanelSection.QUEUE -> NowPlayingQueueSection(state)
-                                    PanelSection.LYRICS -> NowPlayingLyricsSection()
-                                    PanelSection.ARTIST -> NowPlayingArtistSection(state)
-                                }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MeloColors.surface1.copy(alpha = 0.7f),
+                            border = BorderStroke(1.dp, MeloColors.border),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { expandedBottomSection = PanelSection.QUEUE }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.QueueMusic,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "Cola",
+                                    style = MeloType.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MeloColors.surface1.copy(alpha = 0.7f),
+                            border = BorderStroke(1.dp, MeloColors.border),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { expandedBottomSection = PanelSection.ARTIST }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "Artista",
+                                    style = MeloType.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
                             }
                         }
                     }
                 }
             }
+        }
+
+        if (expandedBottomSection != null) {
+            ModalBottomSheet(
+                onDismissRequest = { expandedBottomSection = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                containerColor = MeloColors.surface1.copy(alpha = 0.88f),
+                contentColor = MeloColors.textPrimary,
+                scrimColor = Color.Black.copy(alpha = 0.55f),
+                tonalElevation = 12.dp,
+                dragHandle = {
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .size(width = 36.dp, height = 4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MeloColors.textMuted.copy(alpha = 0.4f))
+                    )
+                }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 24.dp)
+                        .fillMaxHeight(0.70f)
+                ) {
+                    Text(
+                        text = when (expandedBottomSection) {
+                            PanelSection.QUEUE -> "Cola de reproducción"
+                            PanelSection.ARTIST -> "Acerca del Artista"
+                            else -> ""
+                        },
+                        style = MeloType.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    when (expandedBottomSection) {
+                        PanelSection.QUEUE -> NowPlayingQueueSection(state)
+                        PanelSection.ARTIST -> NowPlayingArtistSection(state)
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NowPlayingLyricsCard(
+    lyrics: String?,
+    onToggleArtwork: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MeloColors.surface1.copy(alpha = 0.9f),
+        border = BorderStroke(1.dp, MeloColors.borderStrong),
+        shadowElevation = 16.dp,
+        modifier = modifier.clickable(onClick = onToggleArtwork)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Default.Mic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (!lyrics.isNullOrBlank()) lyrics else "Letras sincronizadas disponibles próximamente",
+                    style = MeloType.body,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Toca para ver la portada",
+                style = MeloType.labelSmall.copy(fontSize = 11.sp),
+                color = MeloColors.textMuted
+            )
         }
     }
 }
@@ -603,13 +818,14 @@ private fun NowPlayingQueueSection(
 }
 
 @Composable
-private fun NowPlayingLyricsSection() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun NowPlayingLyricsSection(lyrics: String? = null) {
+    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
         Text(
-            "Letras sincronizadas disponibles próximamente",
+            text = if (!lyrics.isNullOrBlank()) lyrics else "Letras sincronizadas disponibles próximamente",
             style = MeloType.body,
             color = MeloColors.textSecondary,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.verticalScroll(rememberScrollState())
         )
     }
 }

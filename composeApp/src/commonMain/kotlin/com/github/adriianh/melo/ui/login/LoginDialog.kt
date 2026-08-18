@@ -1,5 +1,7 @@
 package com.github.adriianh.melo.ui.login
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,6 +69,16 @@ fun LoginDialog(
                 onDismiss()
             }
         },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MeloColors.surface1.copy(alpha = 0.90f),
+        textContentColor = MeloColors.textPrimary,
+        titleContentColor = Color.White,
+        tonalElevation = 10.dp,
+        modifier = Modifier
+            .border(
+                BorderStroke(1.dp, MeloColors.borderStrong),
+                RoundedCornerShape(24.dp)
+            ),
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

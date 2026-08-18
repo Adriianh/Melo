@@ -22,11 +22,13 @@ object MeloColors {
     val contentGlassBorder = Color(0x40FFFFFF)
     val scrimOverArt = Color(0x59000000)
 
-    val glassFill = contentGlassFill
-    val glassBorder = contentGlassBorder
+    val glassSurface = Color(0xCC1C1C1E)
+    val glassFill = glassSurface
+    val glassBorder = Color(0x26FFFFFF)
+    
     val chromeGlassFill = chromePillFill
     val chromeGlassBorder = chromePillBorder
 
-    val playerBarFill = Color(0x0FFFFFFF)
-    val playerBarBorder = Color(0x1FFFFFFF)
+    val playerBarFill = Color(0xE61C1C1E)
+    val playerBarBorder = glassBorder
 }
