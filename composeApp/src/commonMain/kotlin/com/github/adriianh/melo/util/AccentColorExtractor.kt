@@ -12,7 +12,13 @@ import io.ktor.client.request.get
 data class AccentPalette(
     val dominant: Color,
     val onDominant: Color,
-)
+) {
+    fun harmonize(isDarkMode: Boolean): AccentPalette {
+        val harmonized = ColorUtils.harmonize(dominant, isDarkMode)
+        val onColor = if (harmonized.luminance() > 0.5f) Color.Black else Color.White
+        return AccentPalette(dominant = harmonized, onDominant = onColor)
+    }
+}
 
 object AccentColorExtractor {
     val fallback = AccentPalette(
