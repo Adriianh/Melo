@@ -36,6 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -135,7 +136,7 @@ fun LibraryScreen(
                 FilterChip(
                     selected = selected,
                     onClick = { viewModel.selectTab(tab) },
-                    label = { Text(tab.label) },
+                    label = { Text(tab.label, style = MeloType.labelMedium) },
                     leadingIcon = {
                         val icon = when (tab) {
                             LibraryTab.PLAYLISTS -> Icons.AutoMirrored.Filled.PlaylistPlay
@@ -145,7 +146,21 @@ fun LibraryScreen(
                             LibraryTab.HISTORY -> Icons.Default.History
                         }
                         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-                    }
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MeloColors.surface1,
+                        labelColor = MeloColors.textPrimary,
+                        iconColor = MeloColors.textSecondary,
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.primary,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selected,
+                        borderColor = MeloColors.borderStrong,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
         }

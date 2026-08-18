@@ -86,7 +86,7 @@ fun LoginDialog(
                     Icon(
                         Icons.Default.AccountCircle,
                         contentDescription = null,
-                        tint = MeloColors.brandAccent
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 Text(
@@ -141,7 +141,7 @@ fun LoginDialog(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MeloColors.brandAccent)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
                                 Text("Completar inicio de sesión")
                             }
@@ -182,7 +182,6 @@ fun LoginDialog(
                                 if (!captured.isNullOrBlank()) {
                                     viewModel.saveSessionCookies(captured)
                                 } else {
-                                    // Fallback to normal automated login
                                     isWaitingBrowserAuth = true
                                     browserAuthStatus = "Iniciando ventana de navegador..."
                                     val autoCaptured = launchAutomatedBrowserLogin()
@@ -245,7 +244,7 @@ private fun WaitingBrowserContent(status: String?) {
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(36.dp),
-            color = MeloColors.brandAccent
+            color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = status ?: "Inicia sesión en la ventana de tu navegador.",
@@ -269,7 +268,7 @@ private fun VerifyingContent() {
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
-            color = MeloColors.brandAccent
+            color = MaterialTheme.colorScheme.primary
         )
         Text("Verificando tu cuenta de YouTube Music...")
     }
@@ -283,7 +282,7 @@ private fun LoggedInContent(accountName: String?) {
                 text = "¡Conectado como $accountName!",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MeloColors.brandAccent
+                color = MaterialTheme.colorScheme.primary
             )
         }
         Text(
@@ -310,7 +309,6 @@ private fun NotLoggedInContent(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (autoBrowserAvailable) {
-            // Desktop standard automated browser flow
             Text(
                 text = "Inicia sesión con tu cuenta de Google de forma automática y 100% segura:",
                 style = MaterialTheme.typography.bodyMedium,
@@ -319,7 +317,7 @@ private fun NotLoggedInContent(
             Button(
                 onClick = onAutomatedLogin,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MeloColors.brandAccent)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     Icons.Default.Language,
@@ -354,7 +352,6 @@ private fun NotLoggedInContent(
 
             HorizontalDivider(modifier = Modifier.height(8.dp))
         } else if (inAppBrowserAvailable) {
-            // Android / Mobile embedded webview flow
             Text(
                 text = "Inicia sesión con tu cuenta de Google para acceder a tus playlists y biblioteca:",
                 style = MaterialTheme.typography.bodyMedium,
@@ -363,7 +360,7 @@ private fun NotLoggedInContent(
             Button(
                 onClick = onInAppLogin,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MeloColors.brandAccent)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Login,

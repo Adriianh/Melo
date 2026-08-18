@@ -9,11 +9,18 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,7 +32,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,13 +62,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,11 +81,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.player.RepeatMode
@@ -96,6 +109,7 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,7 +155,7 @@ private fun DesktopMainLayout(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.weight(1f)) {
-            YouTubeStyleSidebar(
+            MainSidebar(
                 selectedTab = selectedTab,
                 onTabSelected = onTabSelected,
                 onPlaylistClick = onPlaylistClick,
@@ -197,7 +211,7 @@ private fun DesktopMainLayout(
 }
 
 @Composable
-private fun YouTubeStyleSidebar(
+private fun MainSidebar(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
@@ -256,7 +270,7 @@ private fun YouTubeStyleSidebar(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = MeloColors.brandAccent,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -354,7 +368,7 @@ private fun YouTubeStyleSidebar(
                             Icon(
                                 Icons.Default.Add,
                                 contentDescription = "Nueva lista",
-                                tint = MeloColors.brandAccent,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
@@ -415,6 +429,145 @@ private fun YouTubeStyleSidebar(
 }
 
 @Composable
+private fun HoverableProgressBar(
+    progressFraction: Float,
+    accentColor: Color,
+    elapsedLabel: String,
+    onSeek: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 14.dp,
+    lineCenterY: Dp = 22.dp,
+    containerHeight: Dp = 44.dp,
+    showHoverControls: Boolean = true,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val activeHover = isHovered && showHoverControls
+    val barHeight by animateDpAsState(
+        targetValue = if (activeHover) 6.dp else 2.5.dp,
+        animationSpec = tween(durationMillis = 150),
+        label = "barHeight"
+    )
+    val markerSize = 12.dp
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(containerHeight)
+            .hoverable(interactionSource)
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    onSeek(fraction)
+                }
+            }
+    ) {
+        val density = LocalDensity.current
+        val widthPx = constraints.maxWidth.toFloat()
+        val topY = with(density) { lineCenterY.toPx() }
+        val rPx = with(density) { cornerRadius.toPx() }
+
+        val fullPath = remember(widthPx, topY, rPx) {
+            Path().apply {
+                moveTo(0f, topY + rPx)
+                arcTo(
+                    rect = Rect(0f, topY, 2f * rPx, topY + 2f * rPx),
+                    startAngleDegrees = 180f,
+                    sweepAngleDegrees = 90f,
+                    forceMoveTo = false
+                )
+                lineTo((widthPx - rPx).coerceAtLeast(rPx), topY)
+                arcTo(
+                    rect = Rect(widthPx - 2f * rPx, topY, widthPx, topY + 2f * rPx),
+                    startAngleDegrees = 270f,
+                    sweepAngleDegrees = 90f,
+                    forceMoveTo = false
+                )
+            }
+        }
+
+        val pathMeasure = remember { PathMeasure() }
+        pathMeasure.setPath(fullPath, false)
+        val totalLength = pathMeasure.length
+        val progressDistance =
+            (totalLength * progressFraction.coerceIn(0f, 1f)).coerceIn(0f, totalLength)
+
+        val activePath = remember(fullPath, progressDistance) {
+            Path().apply {
+                if (progressDistance > 0f) {
+                    pathMeasure.getSegment(0f, progressDistance, this, true)
+                }
+            }
+        }
+
+        val playHeadPos = remember(pathMeasure, progressDistance) {
+            pathMeasure.getPosition(progressDistance)
+        }
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(containerHeight)) {
+            drawPath(
+                path = fullPath,
+                color = MeloColors.borderStrong,
+                style = Stroke(width = barHeight.toPx(), cap = StrokeCap.Round)
+            )
+
+            if (progressDistance > 0f) {
+                drawPath(
+                    path = activePath,
+                    color = accentColor,
+                    style = Stroke(width = barHeight.toPx(), cap = StrokeCap.Round)
+                )
+            }
+
+            if (activeHover) {
+                drawCircle(
+                    color = Color.White,
+                    radius = markerSize.toPx() / 2f + 1.5.dp.toPx(),
+                    center = playHeadPos
+                )
+                drawCircle(
+                    color = accentColor,
+                    radius = markerSize.toPx() / 2f,
+                    center = playHeadPos
+                )
+            }
+        }
+
+        if (activeHover) {
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = MeloColors.surface2,
+                border = BorderStroke(1.dp, MeloColors.borderStrong),
+                shadowElevation = 8.dp,
+                modifier = Modifier
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val xPx = (playHeadPos.x - placeable.width / 2f)
+                            .coerceIn(
+                                8.dp.toPx(),
+                                (maxWidth.toPx() - placeable.width - 8.dp.toPx()).coerceAtLeast(0f)
+                            )
+                        val yPx =
+                            (playHeadPos.y - markerSize.toPx() / 2f - placeable.height - 4.dp.toPx())
+                                .coerceAtLeast(0f)
+                        layout(placeable.width, placeable.height) {
+                            placeable.placeRelative(xPx.roundToInt(), yPx.roundToInt())
+                        }
+                    }
+            ) {
+                Text(
+                    text = elapsedLabel,
+                    style = MeloType.labelSmall.copy(fontSize = 11.sp),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun CollapsedRailItem(
     label: String,
     icon: ImageVector,
@@ -434,7 +587,7 @@ private fun CollapsedRailItem(
         Icon(
             icon,
             contentDescription = label,
-            tint = if (isSelected) MeloColors.brandAccent else MeloColors.textSecondary,
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -442,7 +595,7 @@ private fun CollapsedRailItem(
             label,
             style = MeloType.labelSmall.copy(fontSize = 10.sp),
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) MeloColors.textPrimary else MeloColors.textMuted,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
             textAlign = TextAlign.Center,
             maxLines = 1
         )
@@ -469,7 +622,7 @@ private fun SidebarRow(
         Icon(
             icon,
             contentDescription = label,
-            tint = if (isSelected) MeloColors.brandAccent else MeloColors.textSecondary,
+            tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
             modifier = Modifier.size(20.dp)
         )
         Text(
@@ -541,198 +694,187 @@ private fun DesktopPlayerBar(
 ) {
     val state by viewModel.uiState.collectAsState()
     val activeAccent =
-        if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
+        if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
 
     if (!state.hasTrack) return
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)
-            .shadow(8.dp, RoundedCornerShape(14.dp))
-            .clip(RoundedCornerShape(14.dp))
-            .background(MeloColors.playerBarFill)
-            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(14.dp))
+            .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(top = 22.dp)
+                .shadow(8.dp, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .background(MeloColors.playerBarFill)
+                .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(14.dp))
         ) {
             Row(
                 modifier = Modifier
-                    .width(260.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onToggleDockedPane)
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box {
-                    MeloAsyncImage(
-                        url = state.albumArt,
-                        contentDescription = state.title,
-                        size = 52.dp,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .width(260.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onToggleDockedPane)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box {
+                        MeloAsyncImage(
+                            url = state.albumArt,
+                            contentDescription = state.title,
+                            size = 52.dp,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                state.title,
+                                style = MeloType.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (state.isPlaying) {
+                                AnimatedEqualizerBars(accentColor = activeAccent)
+                            }
+                        }
                         Text(
-                            state.title,
-                            style = MeloType.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            state.artist,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (state.isPlaying) {
-                            AnimatedEqualizerBars(accentColor = activeAccent)
-                        }
                     }
-                    Text(
-                        state.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
-            }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = viewModel::toggleShuffle) {
-                        Icon(
-                            Icons.Default.Shuffle,
-                            contentDescription = "Shuffle",
-                            tint = if (state.shuffleEnabled) activeAccent else MeloColors.textMuted,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    IconButton(onClick = viewModel::playPrevious, enabled = state.hasPrevious) {
-                        Icon(
-                            Icons.Default.SkipPrevious,
-                            contentDescription = "Previous",
-                            tint = if (state.hasPrevious) MeloColors.textPrimary else MeloColors.textMuted.copy(
-                                alpha = 0.4f
-                            ),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    FilledIconButton(
-                        onClick = viewModel::togglePlayPause,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = activeAccent
-                        ),
-                        modifier = Modifier.size(38.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (state.isPlaying) "Pause" else "Play",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
-                        Icon(
-                            Icons.Default.SkipNext,
-                            contentDescription = "Next",
-                            tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
-                                alpha = 0.4f
+                        IconButton(onClick = viewModel::toggleShuffle) {
+                            Icon(
+                                Icons.Default.Shuffle,
+                                contentDescription = "Shuffle",
+                                tint = if (state.shuffleEnabled) activeAccent else MeloColors.textMuted,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(onClick = viewModel::playPrevious, enabled = state.hasPrevious) {
+                            Icon(
+                                Icons.Default.SkipPrevious,
+                                contentDescription = "Previous",
+                                tint = if (state.hasPrevious) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                                    alpha = 0.4f
+                                ),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        FilledIconButton(
+                            onClick = viewModel::togglePlayPause,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = activeAccent
                             ),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    IconButton(onClick = viewModel::toggleRepeat) {
-                        val icon = when (state.repeatMode) {
-                            RepeatMode.ONE -> Icons.Default.RepeatOne
-                            else -> Icons.Default.Repeat
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Icon(
+                                if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (state.isPlaying) "Pause" else "Play",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
-                        val tint = when (state.repeatMode) {
-                            RepeatMode.NONE -> MeloColors.textMuted
-                            else -> activeAccent
+                        IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
+                            Icon(
+                                Icons.Default.SkipNext,
+                                contentDescription = "Next",
+                                tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                                    alpha = 0.4f
+                                ),
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                        Icon(
-                            icon,
-                            contentDescription = "Repeat",
-                            tint = tint,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        IconButton(onClick = viewModel::toggleRepeat) {
+                            val icon = when (state.repeatMode) {
+                                RepeatMode.ONE -> Icons.Default.RepeatOne
+                                else -> Icons.Default.Repeat
+                            }
+                            val tint = when (state.repeatMode) {
+                                RepeatMode.NONE -> MeloColors.textMuted
+                                else -> activeAccent
+                            }
+                            Icon(
+                                icon,
+                                contentDescription = "Repeat",
+                                tint = tint,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
                 Row(
-                    modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.width(220.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        state.elapsedLabel,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textMuted
-                    )
-                    Slider(
-                        value = state.progressFraction,
-                        onValueChange = { fraction ->
-                            if (state.durationMs > 0) {
-                                viewModel.seekTo((fraction * state.durationMs).toLong())
-                            }
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = activeAccent,
-                            activeTrackColor = activeAccent,
-                            inactiveTrackColor = MeloColors.borderStrong
-                        ),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        state.remainingLabel,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textMuted
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.width(220.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onToggleLyrics) {
-                    Icon(
-                        Icons.Outlined.Mic,
-                        contentDescription = "Letras en panel",
-                        tint = MeloColors.textMuted,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                IconButton(onClick = onToggleQueue) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.QueueMusic,
-                        contentDescription = "Cola en panel",
-                        tint = MeloColors.textMuted,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                IconButton(onClick = onOpenNowPlaying) {
-                    Icon(
-                        Icons.Default.OpenInFull,
-                        contentDescription = "Expandir pantalla completa",
-                        tint = MeloColors.textMuted,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    IconButton(onClick = onToggleLyrics) {
+                        Icon(
+                            Icons.Outlined.Mic,
+                            contentDescription = "Letras en panel",
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(onClick = onToggleQueue) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.QueueMusic,
+                            contentDescription = "Cola en panel",
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(onClick = onOpenNowPlaying) {
+                        Icon(
+                            Icons.Default.OpenInFull,
+                            contentDescription = "Expandir pantalla completa",
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
+
+        HoverableProgressBar(
+            progressFraction = state.progressFraction,
+            accentColor = activeAccent,
+            elapsedLabel = state.elapsedLabel,
+            onSeek = { fraction ->
+                if (state.durationMs > 0) {
+                    viewModel.seekTo((fraction * state.durationMs).toLong())
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+        )
     }
 }
 
@@ -756,11 +898,11 @@ private fun MobileMainLayout(
                         icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                         label = { Text("Inicio") },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MeloColors.brandAccent,
-                            selectedTextColor = MeloColors.brandAccent,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = MeloColors.textMuted,
                             unselectedTextColor = MeloColors.textMuted,
-                            indicatorColor = MeloColors.surface1
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
                     )
                     NavigationBarItem(
@@ -769,11 +911,11 @@ private fun MobileMainLayout(
                         icon = { Icon(Icons.Default.LibraryMusic, contentDescription = "Library") },
                         label = { Text("Biblioteca") },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MeloColors.brandAccent,
-                            selectedTextColor = MeloColors.brandAccent,
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = MeloColors.textMuted,
                             unselectedTextColor = MeloColors.textMuted,
-                            indicatorColor = MeloColors.surface1
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
                     )
                 }
@@ -791,80 +933,97 @@ private fun MobilePlayerBar(
 ) {
     val state by viewModel.uiState.collectAsState()
     val activeAccent =
-        if (state.accentColor != MeloColors.textMuted) state.accentColor else MeloColors.brandAccent
+        if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
 
     if (!state.hasTrack) return
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 6.dp, vertical = 6.dp)
-            .shadow(6.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .background(MeloColors.playerBarFill)
-            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(12.dp))
-            .clickable(onClick = onOpenNowPlaying)
     ) {
-        LinearProgressIndicator(
-            progress = { state.progressFraction },
-            modifier = Modifier.fillMaxWidth().height(2.dp),
-            color = activeAccent,
-            trackColor = Color.Transparent,
-        )
-
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(top = 16.dp)
+                .shadow(6.dp, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
+                .background(MeloColors.playerBarFill)
+                .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(12.dp))
+                .clickable(onClick = onOpenNowPlaying)
         ) {
-            MeloAsyncImage(
-                url = state.albumArt,
-                contentDescription = state.title,
-                size = 40.dp,
-                shape = RoundedCornerShape(6.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MeloAsyncImage(
+                    url = state.albumArt,
+                    contentDescription = state.title,
+                    size = 40.dp,
+                    shape = RoundedCornerShape(6.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            state.title,
+                            style = MeloType.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (state.isPlaying) {
+                            AnimatedEqualizerBars(accentColor = activeAccent)
+                        }
+                    }
                     Text(
-                        state.title,
-                        style = MeloType.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        state.artist,
+                        style = MeloType.labelSmall,
+                        color = MeloColors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (state.isPlaying) {
-                        AnimatedEqualizerBars(accentColor = activeAccent)
-                    }
                 }
-                Text(
-                    state.artist,
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            IconButton(onClick = viewModel::togglePlayPause) {
-                Icon(
-                    if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (state.isPlaying) "Pause" else "Play",
-                    tint = activeAccent,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
-                Icon(
-                    Icons.Default.SkipNext,
-                    contentDescription = "Next",
-                    tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
-                        alpha = 0.4f
-                    ),
-                    modifier = Modifier.size(24.dp)
-                )
+                IconButton(onClick = viewModel::togglePlayPause) {
+                    Icon(
+                        if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        tint = activeAccent,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
+                    Icon(
+                        Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
+                            alpha = 0.4f
+                        ),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
+
+        HoverableProgressBar(
+            progressFraction = state.progressFraction,
+            accentColor = activeAccent,
+            elapsedLabel = state.elapsedLabel,
+            onSeek = { fraction ->
+                if (state.durationMs > 0) {
+                    viewModel.seekTo((fraction * state.durationMs).toLong())
+                }
+            },
+            cornerRadius = 12.dp,
+            lineCenterY = 16.dp,
+            containerHeight = 32.dp,
+            showHoverControls = false,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+        )
     }
 }

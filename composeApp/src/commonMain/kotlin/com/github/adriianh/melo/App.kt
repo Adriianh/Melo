@@ -58,7 +58,10 @@ expect fun InitImageLoader()
 fun App() {
     InitImageLoader()
 
-    MeloTheme {
+    val playerViewModel: PlayerViewModel = koinViewModel()
+    val accentPalette by playerViewModel.accentPalette.collectAsState()
+
+    MeloTheme(accentColor = accentPalette.dominant) {
         var selectedTab by remember { mutableStateOf("Home") }
         var showLoginDialog by remember { mutableStateOf(false) }
         var isNowPlayingExpanded by remember { mutableStateOf(false) }
@@ -76,9 +79,6 @@ fun App() {
                 navigationStack = navigationStack.dropLast(1)
             }
         }
-
-        val playerViewModel: PlayerViewModel = koinViewModel()
-        val accentPalette by playerViewModel.accentPalette.collectAsState()
 
         AmbientCanvas(
             accentColor = accentPalette.dominant,

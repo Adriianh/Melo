@@ -174,7 +174,7 @@ private fun HomeSearchBar(
             Icon(
                 Icons.Default.AccountCircle,
                 contentDescription = "Cuenta",
-                tint = MeloColors.brandAccent,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp)
             )
         }
