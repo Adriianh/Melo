@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -72,25 +73,25 @@ fun AmbientCanvas(
     }
 
     val orbAnimations = orbConfigs.map { config ->
-        val phase by infiniteTransition.animateFloat(
+        val phase = infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(config.phaseDuration, easing = LinearEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "OrbPhase_${config.hashCode()}"
+            label = "OrbPhase"
         )
-        val pulse by infiniteTransition.animateFloat(
+        val pulse = infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
                 animation = tween(config.pulseDuration, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
-            label = "OrbPulse_${config.hashCode()}"
+            label = "OrbPulse"
         )
-        OrbAnimation(phase, pulse)
+        OrbState(phase, pulse)
     }
 
     Box(
@@ -102,9 +103,9 @@ fun AmbientCanvas(
                 val h = size.height
                 val maxDim = size.maxDimension
 
-                orbConfigs.zip(orbAnimations).forEach { (config, anim) ->
-                    val p = anim.phase * 2f * PI.toFloat()
-                    val pulse = anim.pulse
+                orbConfigs.zip(orbAnimations).forEach { (config, state) ->
+                    val p = state.phase.value * 2f * PI.toFloat()
+                    val pulseValue = state.pulse.value
 
                     var xOffset = 0.85f * sin(p * config.xFreq + config.xPhase)
                     var yOffset = 0.85f * sin(p * config.yFreq + config.yPhase)
@@ -121,8 +122,8 @@ fun AmbientCanvas(
 
                     val diagonal = kotlin.math.sqrt(w * w + h * h)
                     val coreFraction =
-                        config.baseRadius + config.radiusPulse * pulse
-                    val alpha = config.baseAlpha + config.alphaPulse * pulse
+                        config.baseRadius + config.radiusPulse * pulseValue
+                    val alpha = config.baseAlpha + config.alphaPulse * pulseValue
 
                     drawRect(
                         brush = Brush.radialGradient(
@@ -176,4 +177,4 @@ private data class OrbConfig(
     val yFreq2: Float = 0f, val yPhase2: Float = 0f, val yAmp2: Float = 0f
 )
 
-private data class OrbAnimation(val phase: Float, val pulse: Float)
+private data class OrbState(val phase: State<Float>, val pulse: State<Float>)
