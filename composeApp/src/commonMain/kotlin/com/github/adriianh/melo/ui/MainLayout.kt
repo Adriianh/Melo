@@ -180,8 +180,6 @@ private fun DesktopMainLayout(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 DesktopPlayerBar(
                     onOpenNowPlaying = onOpenNowPlaying,
                     onToggleLyrics = {
@@ -718,7 +716,7 @@ private fun DesktopPlayerBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 22.dp)
+                .padding(top = 10.dp)
                 .shadow(8.dp, RoundedCornerShape(14.dp))
                 .clip(RoundedCornerShape(14.dp))
                 .background(MeloColors.playerBarFill)
@@ -885,7 +883,9 @@ private fun DesktopPlayerBar(
             },
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            lineCenterY = 10.5.dp,
+            containerHeight = 21.dp
         )
     }
 }

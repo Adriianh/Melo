@@ -277,7 +277,7 @@ private fun HomeContent(
             item {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     items(uiState.chips) { chip ->
@@ -548,7 +548,7 @@ private fun SkeletonLoading(
             item {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     items(chips) { chip ->
