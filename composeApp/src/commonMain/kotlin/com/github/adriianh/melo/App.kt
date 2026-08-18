@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,8 +60,13 @@ fun App() {
 
     val playerViewModel: PlayerViewModel = koinViewModel()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
+    val isSystemDark = isSystemInDarkTheme()
+    var isDarkTheme by remember { mutableStateOf(isSystemDark) }
 
-    MeloTheme(accentColor = accentPalette.dominant) {
+    MeloTheme(
+        accentColor = accentPalette.dominant,
+        isDarkTheme = isDarkTheme
+    ) {
         var selectedTab by remember { mutableStateOf("Home") }
         var showLoginDialog by remember { mutableStateOf(false) }
         var isNowPlayingExpanded by remember { mutableStateOf(false) }
@@ -94,7 +100,9 @@ fun App() {
                     onOpenNowPlaying = { isNowPlayingExpanded = true },
                     onPlaylistClick = { id, title, artwork, author ->
                         navigateTo(ScreenDestination.Playlist(id, title, artwork, author))
-                    }
+                    },
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = { isDarkTheme = !isDarkTheme }
                 ) { _, paddingValues ->
                     Box(
                         modifier = Modifier.fillMaxSize()

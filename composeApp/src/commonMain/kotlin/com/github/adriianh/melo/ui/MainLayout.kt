@@ -42,11 +42,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OpenInFull
@@ -102,6 +104,7 @@ import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloMotion
+import com.github.adriianh.melo.theme.LocalMeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
@@ -115,6 +118,8 @@ fun AdaptiveScaffold(
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit = {},
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
+    isDarkTheme: Boolean = true,
+    onToggleTheme: () -> Unit = {},
     content: @Composable (String, PaddingValues) -> Unit
 ) {
     val platform = remember { getPlatform() }
@@ -125,6 +130,8 @@ fun AdaptiveScaffold(
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
             onPlaylistClick = onPlaylistClick,
+            isDarkTheme = isDarkTheme,
+            onToggleTheme = onToggleTheme,
             content = { padding -> content(selectedTab, padding) }
         )
     } else {
@@ -132,6 +139,8 @@ fun AdaptiveScaffold(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
+            isDarkTheme = isDarkTheme,
+            onToggleTheme = onToggleTheme,
             content = { padding -> content(selectedTab, padding) }
         )
     }
@@ -144,6 +153,8 @@ private fun DesktopMainLayout(
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     var isDesktopPaneVisible by remember { mutableStateOf(true) }
@@ -157,7 +168,9 @@ private fun DesktopMainLayout(
                 onTabSelected = onTabSelected,
                 onPlaylistClick = onPlaylistClick,
                 collapsed = isSidebarCollapsed,
-                onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed }
+                onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
 
             Column(
@@ -231,10 +244,13 @@ private fun MainSidebar(
     onPlaylistClick: (String, String, String?, String) -> Unit,
     collapsed: Boolean,
     onToggleCollapsed: () -> Unit,
+    isDarkTheme: Boolean = true,
+    onToggleTheme: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SidebarViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val meloColors = LocalMeloColors.current
     val sidebarWidthState = animateDpAsState(
         targetValue = if (collapsed) 72.dp else 240.dp,
         animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
@@ -255,8 +271,8 @@ private fun MainSidebar(
             .fillMaxHeight()
             .padding(top = 12.dp, bottom = 12.dp, start = 12.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.playerBarFill)
-            .border(0.5.dp, MeloColors.playerBarBorder, RoundedCornerShape(20.dp)),
+            .background(meloColors.playerBarFill)
+            .border(0.5.dp, meloColors.playerBarBorder, RoundedCornerShape(20.dp)),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -441,6 +457,60 @@ private fun MainSidebar(
                     }
                 }
             }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SidebarThemeToggle(
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme,
+                collapsed = collapsed
+            )
+        }
+    }
+}
+
+@Composable
+private fun SidebarThemeToggle(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    collapsed: Boolean
+) {
+    if (collapsed) {
+        IconButton(onClick = onToggleTheme) {
+            Icon(
+                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                contentDescription = "Cambiar tema",
+                tint = MeloColors.textMuted
+            )
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onToggleTheme)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                contentDescription = null,
+                tint = MeloColors.textSecondary,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = if (isDarkTheme) "Tema Claro" else "Tema Oscuro",
+                style = MeloType.body,
+                color = MeloColors.textSecondary
+            )
         }
     }
 }
@@ -908,6 +978,8 @@ private fun MobileMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
