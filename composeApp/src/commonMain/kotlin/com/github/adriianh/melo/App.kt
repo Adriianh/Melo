@@ -34,8 +34,11 @@ import com.github.adriianh.melo.ui.login.LoginDialog
 import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.settings.SettingsDialog
 import com.github.adriianh.melo.ui.settings.SettingsSheet
 import com.github.adriianh.melo.util.MeloMotion
+import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.getPlatform
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -76,6 +79,7 @@ fun App() {
     val accentPalette by playerViewModel.accentPalette.collectAsState()
     val settings by getSettingsUseCase().collectAsState(initial = Settings())
     val isSystemDark = isSystemInDarkTheme()
+    val platform = remember { getPlatform() }
     val isDarkTheme = settings.themeMode.resolveDarkTheme(isSystemDark)
     val themeAccent = remember(settings.theme) { settings.theme.toAccentColor() }
     val finalAccent = if (settings.dynamicColor) accentPalette.dominant else themeAccent
@@ -209,40 +213,77 @@ fun App() {
                 }
 
                 if (showSettingsSheet) {
-                    SettingsSheet(
-                        settings = settings,
-                        isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
-                        onDismiss = { showSettingsSheet = false },
-                        onThemeModeSelected = { themeMode ->
-                            coroutineScope.launch {
-                                updateSettingsUseCase { current ->
-                                    current.copy(themeMode = themeMode)
+                    if (platform.type == PlatformType.DESKTOP) {
+                        SettingsDialog(
+                            settings = settings,
+                            isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
+                            onDismiss = { showSettingsSheet = false },
+                            onThemeModeSelected = { themeMode ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(themeMode = themeMode)
+                                    }
                                 }
-                            }
-                        },
-                        onThemePresetSelected = { preset ->
-                            coroutineScope.launch {
-                                updateSettingsUseCase { current ->
-                                    current.copy(theme = preset)
+                            },
+                            onThemePresetSelected = { preset ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(theme = preset)
+                                    }
                                 }
-                            }
-                        },
-                        onDynamicColorToggle = { enabled ->
-                            coroutineScope.launch {
-                                updateSettingsUseCase { current ->
-                                    current.copy(dynamicColor = enabled)
+                            },
+                            onDynamicColorToggle = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(dynamicColor = enabled)
+                                    }
                                 }
+                            },
+                            onOpenLogin = {
+                                showSettingsSheet = false
+                                showLoginDialog = true
+                            },
+                            onLogout = {
+                                showSettingsSheet = false
+                                loginViewModel.logout()
                             }
-                        },
-                        onOpenLogin = {
-                            showSettingsSheet = false
-                            showLoginDialog = true
-                        },
-                        onLogout = {
-                            showSettingsSheet = false
-                            loginViewModel.logout()
-                        }
-                    )
+                        )
+                    } else {
+                        SettingsSheet(
+                            settings = settings,
+                            isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
+                            onDismiss = { showSettingsSheet = false },
+                            onThemeModeSelected = { themeMode ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(themeMode = themeMode)
+                                    }
+                                }
+                            },
+                            onThemePresetSelected = { preset ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(theme = preset)
+                                    }
+                                }
+                            },
+                            onDynamicColorToggle = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(dynamicColor = enabled)
+                                    }
+                                }
+                            },
+                            onOpenLogin = {
+                                showSettingsSheet = false
+                                showLoginDialog = true
+                            },
+                            onLogout = {
+                                showSettingsSheet = false
+                                loginViewModel.logout()
+                            }
+                        )
+                    }
                 }
             }
         }
