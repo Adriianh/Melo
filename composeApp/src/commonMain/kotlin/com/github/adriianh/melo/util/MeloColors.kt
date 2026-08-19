@@ -35,10 +35,10 @@ object DarkMeloColors : MeloColorScheme {
     override val textSecondary = Color(0xBFFFFFFF)
     override val textMuted = Color(0x80FFFFFF)
     override val glassSurface = Color(0xCC1C1C1E)
-    override val glassFill = Color(0x1FFFFFFF)
+    override val glassFill = Color(0x331C1C1E)
     override val glassBorder = Color(0x26FFFFFF)
-    override val playerBarFill = Color(0x1AFFFFFF)
-    override val playerBarBorder = Color(0x26FFFFFF)
+    override val playerBarFill = Color(0xF21C1C1E)
+    override val playerBarBorder = Color(0x33FFFFFF)
     override val chromePillFill = Color(0x0FFFFFFF)
     override val chromePillBorder = Color(0x1FFFFFFF)
 }
