@@ -65,7 +65,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
-    onLoginClick: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
     onPlaylistClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
@@ -75,7 +75,7 @@ fun LibraryScreen(
     val state by viewModel.uiState.collectAsState()
 
     if (!state.isLoggedIn) {
-        NotLoggedInLibrary(onLoginClick = onLoginClick)
+        NotLoggedInLibrary(onLoginClick = onOpenSettings)
         return
     }
 
@@ -103,7 +103,9 @@ fun LibraryScreen(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clickable(onClick = onOpenSettings)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(

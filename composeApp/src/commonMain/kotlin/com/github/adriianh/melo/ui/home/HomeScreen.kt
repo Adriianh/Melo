@@ -70,7 +70,7 @@ fun HomeScreen(
     onAlbumClick: (String) -> Unit = {},
     onPlaylistClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: HomeViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
@@ -86,7 +86,7 @@ fun HomeScreen(
             query = uiState.searchQuery,
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
-            onLoginClick = onLoginClick,
+            onOpenSettings = onOpenSettings,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
@@ -129,7 +129,7 @@ private fun HomeSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
-    onLoginClick: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -182,7 +182,7 @@ private fun HomeSearchBar(
                 .drawBehind {}
         )
 
-        IconButton(onClick = onLoginClick) {
+        IconButton(onClick = onOpenSettings) {
             Icon(
                 Icons.Default.AccountCircle,
                 contentDescription = "Cuenta",

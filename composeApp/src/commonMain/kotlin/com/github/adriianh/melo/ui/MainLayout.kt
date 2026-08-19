@@ -118,6 +118,7 @@ fun AdaptiveScaffold(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
     isDarkTheme: Boolean = true,
     onToggleTheme: () -> Unit = {},
@@ -130,6 +131,7 @@ fun AdaptiveScaffold(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
+            onOpenSettings = onOpenSettings,
             onPlaylistClick = onPlaylistClick,
             isDarkTheme = isDarkTheme,
             onToggleTheme = onToggleTheme,
@@ -140,8 +142,6 @@ fun AdaptiveScaffold(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
-            isDarkTheme = isDarkTheme,
-            onToggleTheme = onToggleTheme,
             content = { padding -> content(selectedTab, padding) }
         )
     }
@@ -153,6 +153,7 @@ private fun DesktopMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit,
+    onOpenSettings: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
@@ -171,7 +172,8 @@ private fun DesktopMainLayout(
                 collapsed = isSidebarCollapsed,
                 onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed },
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme
+                onToggleTheme = onToggleTheme,
+                onOpenSettings = onOpenSettings
             )
 
             Column(
@@ -257,6 +259,7 @@ private fun MainSidebar(
     onToggleCollapsed: () -> Unit,
     isDarkTheme: Boolean = true,
     onToggleTheme: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SidebarViewModel = koinViewModel()
 ) {
@@ -473,7 +476,7 @@ private fun MainSidebar(
         SidebarUtils(
             isDarkTheme = isDarkTheme,
             onToggleTheme = onToggleTheme,
-            onOpenSettings = { /* TODO: Implement settings */ },
+            onOpenSettings = onOpenSettings,
             collapsed = collapsed
         )
     }
@@ -533,7 +536,8 @@ private fun SidebarUtils(
 private fun UtilIconButton(
     icon: ImageVector,
     onClick: () -> Unit,
-    contentDescription: String? = null
+    contentDescription: String? = null,
+    size: Dp = 36.dp
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -541,7 +545,7 @@ private fun UtilIconButton(
 
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(size)
             .clip(RoundedCornerShape(10.dp))
             .background(
                 if (isHovered) meloColors.glassSurface.copy(alpha = 0.35f)
@@ -1034,8 +1038,6 @@ private fun MobileMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit,
-    isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {

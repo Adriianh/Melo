@@ -57,6 +57,13 @@ data class MeloKey(
 )
 
 @Serializable
+enum class ThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK
+}
+
+@Serializable
 data class Settings(
     val theme: ThemePreset = ThemePreset.DEFAULT,
     val volume: Int = 75,
@@ -89,4 +96,5 @@ data class Settings(
     val cachePath: String? = null,
     val localLibraryPaths: List<String> = emptyList(),
     val sessionCookies: String? = null,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )

@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import com.github.adriianh.core.domain.model.ThemeMode
+import com.github.adriianh.core.domain.model.ThemePreset
 import com.github.adriianh.melo.util.ColorUtils
 import com.github.adriianh.melo.util.DarkMeloColors
 import com.github.adriianh.melo.util.LightMeloColors
@@ -42,6 +44,20 @@ val MeloLightRipple = RippleConfiguration(
         pressedAlpha = 0.10f
     )
 )
+
+fun ThemeMode.resolveDarkTheme(systemDarkTheme: Boolean): Boolean = when (this) {
+    ThemeMode.SYSTEM -> systemDarkTheme
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+}
+
+fun ThemePreset.toAccentColor(): Color = when (this) {
+    ThemePreset.DEFAULT -> Color(0xFFFF2D55)
+    ThemePreset.CATPPUCCIN_MOCHA -> Color(0xFFCBA6F7)
+    ThemePreset.GRUVBOX -> Color(0xFFD3869B)
+    ThemePreset.NORD -> Color(0xFFB48EAD)
+    ThemePreset.TOKYO_NIGHT -> Color(0xFFBB9AF7)
+}
 
 private val MeloDarkColorScheme = darkColorScheme(
     primary = Color(0xFFFF2D55),
