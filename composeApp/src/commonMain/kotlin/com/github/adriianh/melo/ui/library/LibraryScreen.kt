@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,6 +61,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
+import com.github.adriianh.melo.util.desktopScroll
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,9 +140,11 @@ fun LibraryScreen(
             }
         }
 
+        val libraryChipState = rememberLazyListState()
         LazyRow(
+            state = libraryChipState,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().desktopScroll(libraryChipState)
         ) {
             items(LibraryTab.entries.toTypedArray()) { tab ->
                 val selected = state.selectedTab == tab

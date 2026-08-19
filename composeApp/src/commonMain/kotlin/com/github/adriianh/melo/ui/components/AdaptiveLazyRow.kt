@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.util.desktopScroll
 
 fun BoxWithConstraintsScope.adaptiveCardWidth(
     minCardWidth: Dp,
@@ -31,19 +33,25 @@ fun <T> AdaptiveLazyRow(
     modifier: Modifier = Modifier,
     itemContent: @Composable (T, Dp) -> Unit,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val cardWidth = adaptiveCardWidth(
-            minCardWidth = minCardWidth,
-            spacing = spacing,
-            horizontalPadding = horizontalPadding
-        )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = horizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(spacing),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(items) { item ->
-                itemContent(item, cardWidth)
+    val listState = rememberLazyListState()
+    CarouselScrollContainer(state = listState) {
+        BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+            val cardWidth = adaptiveCardWidth(
+                minCardWidth = minCardWidth,
+                spacing = spacing,
+                horizontalPadding = horizontalPadding
+            )
+            LazyRow(
+                state = listState,
+                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(spacing),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .desktopScroll(listState)
+            ) {
+                items(items) { item ->
+                    itemContent(item, cardWidth)
+                }
             }
         }
     }

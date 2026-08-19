@@ -62,6 +62,7 @@ import com.github.adriianh.melo.ui.components.VideoCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.desktopScroll
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -276,10 +277,15 @@ private fun HomeContent(
     ) {
         if (uiState.chips.isNotEmpty()) {
             item {
+                val chipState = rememberLazyListState()
                 LazyRow(
+                    state = chipState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .desktopScroll(chipState)
                 ) {
                     items(uiState.chips) { chip ->
                         FilterChip(
@@ -547,10 +553,15 @@ private fun SkeletonLoading(
     ) {
         if (chips.isNotEmpty()) {
             item {
+                val skeletonChipState = rememberLazyListState()
                 LazyRow(
+                    state = skeletonChipState,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 24.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .desktopScroll(skeletonChipState)
                 ) {
                     items(chips) { chip ->
                         FilterChip(
