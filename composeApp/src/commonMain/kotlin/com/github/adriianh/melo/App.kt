@@ -78,10 +78,11 @@ fun App() {
     val isSystemDark = isSystemInDarkTheme()
     val isDarkTheme = settings.themeMode.resolveDarkTheme(isSystemDark)
     val themeAccent = remember(settings.theme) { settings.theme.toAccentColor() }
+    val finalAccent = if (settings.dynamicColor) accentPalette.dominant else themeAccent
     var showSettingsSheet by remember { mutableStateOf(false) }
 
     MeloTheme(
-        accentColor = themeAccent,
+        accentColor = finalAccent,
         isDarkTheme = isDarkTheme
     ) {
         var selectedTab by remember { mutableStateOf("Home") }
@@ -102,7 +103,7 @@ fun App() {
         }
 
         AmbientCanvas(
-            accentColor = accentPalette.dominant,
+            accentColor = finalAccent,
             modifier = Modifier.fillMaxSize()
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -223,6 +224,13 @@ fun App() {
                             coroutineScope.launch {
                                 updateSettingsUseCase { current ->
                                     current.copy(theme = preset)
+                                }
+                            }
+                        },
+                        onDynamicColorToggle = { enabled ->
+                            coroutineScope.launch {
+                                updateSettingsUseCase { current ->
+                                    current.copy(dynamicColor = enabled)
                                 }
                             }
                         },

@@ -16,6 +16,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ fun SettingsSheet(
     onDismiss: () -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onThemePresetSelected: (ThemePreset) -> Unit,
+    onDynamicColorToggle: (Boolean) -> Unit,
     onOpenLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -80,8 +82,29 @@ fun SettingsSheet(
             }
 
             SettingSection(
+                title = "Dynamic colors",
+                subtitle = "Use colors extracted from the current track's artwork."
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (settings.dynamicColor) "Enabled" else "Disabled",
+                        style = MeloType.body,
+                        color = MeloColors.textSecondary
+                    )
+                    Switch(
+                        checked = settings.dynamicColor,
+                        onCheckedChange = onDynamicColorToggle
+                    )
+                }
+            }
+
+            SettingSection(
                 title = "Color preset",
-                subtitle = "Choose the accent palette used across the app."
+                subtitle = "Choose a fixed accent palette (overridden if dynamic colors are enabled)."
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(ThemePreset.entries) { preset ->

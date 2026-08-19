@@ -97,4 +97,5 @@ data class Settings(
     val localLibraryPaths: List<String> = emptyList(),
     val sessionCookies: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val dynamicColor: Boolean = true,
 )
