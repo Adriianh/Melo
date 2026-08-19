@@ -14,24 +14,32 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import com.github.adriianh.melo.util.ColorUtils
 import com.github.adriianh.melo.util.DarkMeloColors
 import com.github.adriianh.melo.util.LightMeloColors
-import com.github.adriianh.melo.util.MeloColorScheme
+import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloType
 
-val LocalMeloColors = staticCompositionLocalOf<MeloColorScheme> { DarkMeloColors }
-
 @OptIn(ExperimentalMaterial3Api::class)
-val MeloRippleConfiguration = RippleConfiguration(
+val MeloDarkRipple = RippleConfiguration(
     color = Color.White.copy(alpha = 0.15f),
     rippleAlpha = RippleAlpha(
         draggedAlpha = 0.06f,
         focusedAlpha = 0.08f,
         hoveredAlpha = 0.04f,
         pressedAlpha = 0.12f
+    )
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+val MeloLightRipple = RippleConfiguration(
+    color = Color.Black.copy(alpha = 0.12f),
+    rippleAlpha = RippleAlpha(
+        draggedAlpha = 0.04f,
+        focusedAlpha = 0.06f,
+        hoveredAlpha = 0.03f,
+        pressedAlpha = 0.10f
     )
 )
 
@@ -55,8 +63,8 @@ private val MeloDarkColorScheme = darkColorScheme(
 private val MeloLightColorScheme = lightColorScheme(
     primary = Color(0xFFFF2D55),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFFFDADE),
-    onPrimaryContainer = Color(0xFF3A101C),
+    primaryContainer = Color(0xFFFFE5E9),
+    onPrimaryContainer = Color(0xFF9E002B),
     background = LightMeloColors.surface0,
     onBackground = LightMeloColors.textPrimary,
     surface = LightMeloColors.surface0,
@@ -76,8 +84,45 @@ fun MeloTheme(
     isDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val rawPrimary = accentColor ?: Color(0xFFFF2D55)
+    val themeAnimSpec = tween<Color>(durationMillis = 600, easing = FastOutSlowInEasing)
+    val targetColors = if (isDarkTheme) DarkMeloColors else LightMeloColors
 
+    val surface0 by animateColorAsState(targetColors.surface0, themeAnimSpec, label = "surface0")
+    val surface1 by animateColorAsState(targetColors.surface1, themeAnimSpec, label = "surface1")
+    val surface2 by animateColorAsState(targetColors.surface2, themeAnimSpec, label = "surface2")
+    val border by animateColorAsState(targetColors.border, themeAnimSpec, label = "border")
+    val borderStrong by animateColorAsState(targetColors.borderStrong, themeAnimSpec, label = "borderStrong")
+    val textPrimary by animateColorAsState(targetColors.textPrimary, themeAnimSpec, label = "textPrimary")
+    val textSecondary by animateColorAsState(targetColors.textSecondary, themeAnimSpec, label = "textSecondary")
+    val textMuted by animateColorAsState(targetColors.textMuted, themeAnimSpec, label = "textMuted")
+    val glassSurface by animateColorAsState(targetColors.glassSurface, themeAnimSpec, label = "glassSurface")
+    val glassFill by animateColorAsState(targetColors.glassFill, themeAnimSpec, label = "glassFill")
+    val glassBorder by animateColorAsState(targetColors.glassBorder, themeAnimSpec, label = "glassBorder")
+    val playerBarFill by animateColorAsState(targetColors.playerBarFill, themeAnimSpec, label = "playerBarFill")
+    val playerBarBorder by animateColorAsState(targetColors.playerBarBorder, themeAnimSpec, label = "playerBarBorder")
+    val chromePillFill by animateColorAsState(targetColors.chromePillFill, themeAnimSpec, label = "chromePillFill")
+    val chromePillBorder by animateColorAsState(targetColors.chromePillBorder, themeAnimSpec, label = "chromePillBorder")
+
+    val meloColors = com.github.adriianh.melo.util.AnimatedMeloColors(
+        isDark = isDarkTheme,
+        surface0 = surface0,
+        surface1 = surface1,
+        surface2 = surface2,
+        border = border,
+        borderStrong = borderStrong,
+        textPrimary = textPrimary,
+        textSecondary = textSecondary,
+        textMuted = textMuted,
+        glassSurface = glassSurface,
+        glassFill = glassFill,
+        glassBorder = glassBorder,
+        playerBarFill = playerBarFill,
+        playerBarBorder = playerBarBorder,
+        chromePillFill = chromePillFill,
+        chromePillBorder = chromePillBorder
+    )
+
+    val rawPrimary = accentColor ?: Color(0xFFFF2D55)
     val harmonizedPrimary = ColorUtils.harmonize(rawPrimary, isDarkTheme)
 
     val animatedPrimary by animateColorAsState(
@@ -89,16 +134,24 @@ fun MeloTheme(
     val baseColorScheme = if (isDarkTheme) MeloDarkColorScheme else MeloLightColorScheme
     val colorScheme = baseColorScheme.copy(
         primary = animatedPrimary,
-        primaryContainer = if (isDarkTheme) animatedPrimary.copy(alpha = 0.25f) else animatedPrimary.copy(
-            alpha = 0.15f
-        ),
+        primaryContainer = if (isDarkTheme) animatedPrimary.copy(alpha = 0.25f) else animatedPrimary.copy(alpha = 0.15f),
+        background = surface0,
+        surface = surface0,
+        onBackground = textPrimary,
+        onSurface = textPrimary,
+        surfaceVariant = surface1,
+        onSurfaceVariant = textSecondary,
+        surfaceContainer = surface1,
+        surfaceContainerHigh = surface2,
+        outline = border,
+        outlineVariant = borderStrong
     )
 
-    val meloColors = if (isDarkTheme) DarkMeloColors else LightMeloColors
+    val rippleConfiguration = if (isDarkTheme) MeloDarkRipple else MeloLightRipple
 
     CompositionLocalProvider(
         LocalMeloColors provides meloColors,
-        LocalRippleConfiguration provides MeloRippleConfiguration
+        LocalRippleConfiguration provides rippleConfiguration
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

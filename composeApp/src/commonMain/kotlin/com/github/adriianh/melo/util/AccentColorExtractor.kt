@@ -22,13 +22,13 @@ data class AccentPalette(
 
 object AccentColorExtractor {
     val fallback = AccentPalette(
-        dominant = MeloColors.brandAccent,
+        dominant = Color(0xFFFF2D55),
         onDominant = Color.White
     )
 
     fun fromPalette(palette: Palette): AccentPalette {
         val dominantSwatch = palette.dominantSwatch ?: palette.vibrantSwatch ?: palette.mutedSwatch
-        val dominantColor = dominantSwatch?.rgb?.let { Color(it) } ?: MeloColors.brandAccent
+        val dominantColor = dominantSwatch?.rgb?.let { Color(it) } ?: Color(0xFFFF2D55)
         val onColor = if (dominantColor.luminance() > 0.5f) Color.Black else Color.White
         return AccentPalette(dominant = dominantColor, onDominant = onColor)
     }

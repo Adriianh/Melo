@@ -19,10 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import com.github.adriianh.melo.theme.LocalMeloColors
+import com.github.adriianh.melo.util.LocalMeloColors
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -44,30 +43,24 @@ fun AmbientCanvas(
         listOf(
             OrbConfig(
                 phaseDuration = 16000, pulseDuration = 6500,
-                xFreq = 1.3f, xPhase = 0.2f,
+                xFreq = 1.0f, xPhase = 0.2f,
                 yFreq = 0.75f, yPhase = 0.4f,
-                baseRadius = 0.34f, radiusPulse = 0.05f,
-                baseAlpha = 0.45f, alphaPulse = 0.10f,
-                xFreq2 = 0.0f, xPhase2 = 0.0f, xAmp2 = 0.0f,
-                yFreq2 = 0.0f, yPhase2 = 0.0f, yAmp2 = 0.0f
+                baseRadius = 0.55f, radiusPulse = 0.08f,
+                baseAlpha = 0.32f, alphaPulse = 0.10f
             ),
             OrbConfig(
                 phaseDuration = 21000, pulseDuration = 9000,
                 xFreq = 0.85f, xPhase = 1.1f,
                 yFreq = 0.90f, yPhase = 0.2f,
-                baseRadius = 0.29f, radiusPulse = 0.045f,
-                baseAlpha = 0.40f, alphaPulse = 0.10f,
-                xFreq2 = 0.0f, xPhase2 = 0.0f, xAmp2 = 0.0f,
-                yFreq2 = 0.0f, yPhase2 = 0.0f, yAmp2 = 0.0f
+                baseRadius = 0.48f, radiusPulse = 0.07f,
+                baseAlpha = 0.26f, alphaPulse = 0.09f
             ),
             OrbConfig(
                 phaseDuration = 27000, pulseDuration = 11500,
                 xFreq = 1.10f, xPhase = 2.2f,
                 yFreq = 0.70f, yPhase = 1.6f,
-                baseRadius = 0.25f, radiusPulse = 0.04f,
-                baseAlpha = 0.35f, alphaPulse = 0.08f,
-                xFreq2 = 0.0f, xPhase2 = 0.0f, xAmp2 = 0.0f,
-                yFreq2 = 0.0f, yPhase2 = 0.0f, yAmp2 = 0.0f
+                baseRadius = 0.42f, radiusPulse = 0.06f,
+                baseAlpha = 0.22f, alphaPulse = 0.08f
             )
         )
     }
@@ -95,6 +88,7 @@ fun AmbientCanvas(
     }
 
     val meloColors = LocalMeloColors.current
+    val isDark = meloColors.isDark
 
     Box(
         modifier = modifier
@@ -103,63 +97,35 @@ fun AmbientCanvas(
             .drawBehind {
                 val w = size.width
                 val h = size.height
-                val maxDim = size.maxDimension
+                val minDim = size.minDimension
 
                 orbConfigs.zip(orbAnimations).forEach { (config, state) ->
                     val p = state.phase.value * 2f * PI.toFloat()
                     val pulseValue = state.pulse.value
 
-                    var xOffset = 0.85f * sin(p * config.xFreq + config.xPhase)
-                    var yOffset = 0.85f * sin(p * config.yFreq + config.yPhase)
-
-                    if (config.xAmp2 != 0f) {
-                        xOffset += config.xAmp2 * sin(p * config.xFreq2 + config.xPhase2)
-                    }
-                    if (config.yAmp2 != 0f) {
-                        yOffset += config.yAmp2 * sin(p * config.yFreq2 + config.yPhase2)
-                    }
+                    val xOffset = 0.45f * sin(p * config.xFreq + config.xPhase)
+                    val yOffset = 0.42f * sin(p * config.yFreq + config.yPhase)
 
                     val x = w * (0.5f + xOffset)
                     val y = h * (0.5f + yOffset)
 
-                    val diagonal = kotlin.math.sqrt(w * w + h * h)
-                    val coreFraction =
-                        config.baseRadius + config.radiusPulse * pulseValue
-                    val alpha = config.baseAlpha + config.alphaPulse * pulseValue
-
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            0f to animatedAccent.copy(alpha = alpha),
-                            coreFraction * 0.5f to animatedAccent.copy(alpha = alpha * 0.55f),
-                            coreFraction to animatedAccent.copy(alpha = alpha * 0.18f),
-                            1f to Color.Transparent,
-                            center = Offset(x, y),
-                            radius = diagonal
-                        ),
-                        blendMode = BlendMode.Screen
-                    )
+                    val radius = minDim * (config.baseRadius + config.radiusPulse * pulseValue)
+                    val rawAlpha = config.baseAlpha + config.alphaPulse * pulseValue
+                    val alpha = if (isDark) rawAlpha else rawAlpha * 0.65f
 
                     drawRect(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = alpha * 0.5f),
-                                animatedAccent.copy(alpha = alpha * 0.3f),
+                                animatedAccent.copy(alpha = alpha),
+                                animatedAccent.copy(alpha = alpha * 0.50f),
+                                animatedAccent.copy(alpha = alpha * 0.15f),
                                 Color.Transparent
                             ),
                             center = Offset(x, y),
-                            radius = diagonal * coreFraction * 0.25f
-                        ),
-                        blendMode = BlendMode.Screen
+                            radius = radius
+                        )
                     )
                 }
-
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.30f)),
-                        center = Offset(w / 2f, h / 2f),
-                        radius = maxDim * 0.75f
-                    )
-                )
             }
     ) {
         content()

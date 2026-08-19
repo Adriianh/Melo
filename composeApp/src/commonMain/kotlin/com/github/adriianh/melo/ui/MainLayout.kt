@@ -101,10 +101,10 @@ import com.github.adriianh.melo.ui.components.AnimatedEqualizerBars
 import com.github.adriianh.melo.ui.player.DesktopNowPlayingDockedPane
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloMotion
-import com.github.adriianh.melo.theme.LocalMeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
@@ -591,10 +591,11 @@ private fun HoverableProgressBar(
             pathMeasure.getPosition(progressDistance)
         }
 
+        val trackBgColor = MeloColors.borderStrong
         Canvas(modifier = Modifier.fillMaxWidth().height(containerHeight)) {
             drawPath(
                 path = fullPath,
-                color = MeloColors.borderStrong,
+                color = trackBgColor,
                 style = Stroke(width = barHeight.toPx(), cap = StrokeCap.Round)
             )
 
@@ -646,7 +647,7 @@ private fun HoverableProgressBar(
                     text = elapsedLabel,
                     style = MeloType.labelSmall.copy(fontSize = 11.sp),
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MeloColors.textPrimary,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
@@ -716,7 +717,7 @@ private fun SidebarRow(
             label,
             style = MeloType.body,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) Color.White else MeloColors.textSecondary,
+            color = if (isSelected) MeloColors.textPrimary else MeloColors.textSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -834,7 +835,7 @@ private fun DesktopPlayerBar(
                                 state.title,
                                 style = MeloType.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
+                                color = MeloColors.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -1133,7 +1134,7 @@ private fun MobilePlayerBar(
                             state.title,
                             style = MeloType.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MeloColors.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
