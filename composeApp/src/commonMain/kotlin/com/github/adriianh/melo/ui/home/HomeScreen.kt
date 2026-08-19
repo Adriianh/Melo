@@ -87,7 +87,7 @@ fun HomeScreen(
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
             onOpenSettings = onOpenSettings,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
         )
 
         Box(modifier = Modifier.weight(1f)) {
@@ -270,14 +270,16 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(
             top = paddingValues.calculateTopPadding(),
-            bottom = paddingValues.calculateBottomPadding() + 16.dp
+            bottom = paddingValues.calculateBottomPadding() + 16.dp,
+            start = 24.dp,
+            end = 24.dp
         )
     ) {
         if (uiState.chips.isNotEmpty()) {
             item {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     items(uiState.chips) { chip ->
@@ -548,7 +550,7 @@ private fun SkeletonLoading(
             item {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
                     items(chips) { chip ->

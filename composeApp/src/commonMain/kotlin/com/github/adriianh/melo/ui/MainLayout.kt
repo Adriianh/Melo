@@ -103,7 +103,7 @@ private fun DesktopMainLayout(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(top = 12.dp, bottom = 12.dp, start = 8.dp, end = 12.dp)
+                    .padding(top = 12.dp, bottom = 12.dp, start = 12.dp, end = 12.dp)
             ) {
                 val currentColors = LocalMeloColors.current
                 val glassTint =
