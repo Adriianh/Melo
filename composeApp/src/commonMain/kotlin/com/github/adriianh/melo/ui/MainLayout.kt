@@ -80,12 +80,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
@@ -177,19 +177,29 @@ private fun DesktopMainLayout(
                 modifier = Modifier
                     .weight(1f)
                     .padding(top = 12.dp, bottom = 12.dp, start = 8.dp, end = 12.dp)
-                    .graphicsLayer { clip = true; shape = RoundedCornerShape(20.dp) }
             ) {
+                val currentColors = LocalMeloColors.current
+                val glassTint =
+                    if (isDarkTheme) currentColors.glassSurface else Color.Black.copy(alpha = 0.5f)
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .shadow(
-                            elevation = 4.dp,
-                            shape = RoundedCornerShape(20.dp),
-                            ambientColor = Color.Black.copy(alpha = 0.5f)
-                        )
                         .clip(RoundedCornerShape(20.dp))
-                        .background(MeloColors.surface0.copy(alpha = 0.6f))
-                        .border(0.5.dp, MeloColors.border, RoundedCornerShape(20.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    glassTint.copy(alpha = if (isDarkTheme) 0.18f else 0.12f),
+                                    glassTint.copy(alpha = if (isDarkTheme) 0.06f else 0.04f)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 0.5.dp,
+                            color = if (isDarkTheme) currentColors.border.copy(alpha = 0.2f)
+                            else Color.Black.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(20.dp)
+                        )
                 ) {
                     Scaffold(
                         containerColor = Color.Transparent,

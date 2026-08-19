@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import com.github.adriianh.melo.util.LocalMeloColors
 import kotlin.math.PI
 import kotlin.math.sin
@@ -93,7 +94,15 @@ fun AmbientCanvas(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(meloColors.surface0)
+            .background(
+                if (isDark) SolidColor(meloColors.surface0)
+                else Brush.verticalGradient(
+                    colors = listOf(
+                        meloColors.surface0,
+                        meloColors.surface2.copy(alpha = 0.9f)
+                    )
+                )
+            )
             .drawBehind {
                 val w = size.width
                 val h = size.height
@@ -111,7 +120,7 @@ fun AmbientCanvas(
 
                     val radius = minDim * (config.baseRadius + config.radiusPulse * pulseValue)
                     val rawAlpha = config.baseAlpha + config.alphaPulse * pulseValue
-                    val alpha = if (isDark) rawAlpha else rawAlpha * 0.65f
+                    val alpha = if (isDark) rawAlpha else rawAlpha * 0.40f
 
                     drawRect(
                         brush = Brush.radialGradient(
@@ -123,6 +132,21 @@ fun AmbientCanvas(
                             ),
                             center = Offset(x, y),
                             radius = radius
+                        )
+                    )
+                }
+
+                if (!isDark) {
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.10f), Color.Transparent)
+                        )
+                    )
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.08f)),
+                            center = Offset(w / 2f, h / 2f),
+                            radius = minDim * 1.5f
                         )
                     )
                 }
