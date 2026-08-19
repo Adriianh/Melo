@@ -85,8 +85,8 @@ fun LibraryScreen(
             .statusBarsPadding()
             .padding(
                 top = 16.dp,
-                start = 16.dp,
-                end = 16.dp,
+                start = 24.dp,
+                end = 24.dp,
                 bottom = paddingValues.calculateBottomPadding() + 16.dp
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp)

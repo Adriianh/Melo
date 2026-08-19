@@ -17,8 +17,8 @@ fun BoxWithConstraintsScope.adaptiveCardWidth(
     spacing: Dp,
     horizontalPadding: Dp,
 ): Dp {
-    val available = (maxWidth - horizontalPadding * 2 + spacing).coerceAtLeast(minCardWidth)
-    val columns = (available / (minCardWidth + spacing)).toInt().coerceAtLeast(1)
+    val available = (maxWidth - horizontalPadding * 2).coerceAtLeast(minCardWidth)
+    val columns = ((available + spacing) / (minCardWidth + spacing)).toInt().coerceAtLeast(1)
     return (available - spacing * (columns - 1)) / columns
 }
 

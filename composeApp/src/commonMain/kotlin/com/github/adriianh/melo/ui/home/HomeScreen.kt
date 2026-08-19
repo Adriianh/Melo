@@ -87,7 +87,7 @@ fun HomeScreen(
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
             onOpenSettings = onOpenSettings,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
         )
 
         Box(modifier = Modifier.weight(1f)) {
@@ -155,12 +155,22 @@ private fun HomeSearchBar(
                 )
             },
             trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = onClear) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = onClear) {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "Limpiar",
+                                tint = MeloColors.textMuted
+                            )
+                        }
+                    }
+                    IconButton(onClick = onOpenSettings) {
                         Icon(
-                            Icons.Default.Clear,
-                            contentDescription = "Limpiar",
-                            tint = MeloColors.textMuted
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Cuenta",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -177,19 +187,10 @@ private fun HomeSearchBar(
             ),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .blur(if (query.isEmpty()) 0.dp else 0.dp)
                 .drawBehind {}
         )
-
-        IconButton(onClick = onOpenSettings) {
-            Icon(
-                Icons.Default.AccountCircle,
-                contentDescription = "Cuenta",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-        }
     }
 }
 
@@ -569,7 +570,7 @@ private fun SkeletonLoading(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                         .height(24.dp)
                         .width(160.dp)
                         .clip(RoundedCornerShape(4.dp))
@@ -579,7 +580,7 @@ private fun SkeletonLoading(
             item {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
                 ) {
                     items(6) {
                         Column {
