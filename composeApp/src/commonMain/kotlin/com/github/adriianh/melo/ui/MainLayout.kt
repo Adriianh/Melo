@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -469,59 +470,103 @@ private fun MainSidebar(
             }
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SidebarThemeToggle(
-                isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme,
-                collapsed = collapsed
-            )
+        SidebarUtils(
+            isDarkTheme = isDarkTheme,
+            onToggleTheme = onToggleTheme,
+            onOpenSettings = { /* TODO: Implement settings */ },
+            collapsed = collapsed
+        )
+    }
+}
+
+@Composable
+private fun SidebarUtils(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    onOpenSettings: () -> Unit,
+    collapsed: Boolean
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (collapsed) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                UtilIconButton(
+                    icon = Icons.Default.Settings,
+                    onClick = onOpenSettings,
+                    contentDescription = "Ajustes"
+                )
+                UtilIconButton(
+                    icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    onClick = onToggleTheme,
+                    contentDescription = "Cambiar tema"
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UtilIconButton(
+                    icon = Icons.Default.Settings,
+                    onClick = onOpenSettings,
+                    contentDescription = "Ajustes"
+                )
+                UtilIconButton(
+                    icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    onClick = onToggleTheme,
+                    contentDescription = "Cambiar tema"
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun SidebarThemeToggle(
-    isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit,
-    collapsed: Boolean
+private fun UtilIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    contentDescription: String? = null
 ) {
-    if (collapsed) {
-        IconButton(onClick = onToggleTheme) {
-            Icon(
-                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                contentDescription = "Cambiar tema",
-                tint = MeloColors.textMuted
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val meloColors = LocalMeloColors.current
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                if (isHovered) meloColors.glassSurface.copy(alpha = 0.35f)
+                else meloColors.glassSurface.copy(alpha = 0.15f)
             )
-        }
-    } else {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onToggleTheme)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                contentDescription = null,
-                tint = MeloColors.textSecondary,
-                modifier = Modifier.size(20.dp)
+            .border(
+                width = 0.5.dp,
+                color = if (isHovered) meloColors.glassBorder.copy(alpha = 0.5f)
+                else meloColors.glassBorder.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(10.dp)
             )
-            Text(
-                text = if (isDarkTheme) "Tema Claro" else "Tema Oscuro",
-                style = MeloType.body,
-                color = MeloColors.textSecondary
-            )
-        }
+            .hoverable(interactionSource)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (isHovered) meloColors.textPrimary else meloColors.textSecondary,
+            modifier = Modifier.size(19.dp)
+        )
     }
 }
 
