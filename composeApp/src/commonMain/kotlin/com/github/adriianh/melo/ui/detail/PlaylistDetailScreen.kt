@@ -183,10 +183,10 @@ fun PlaylistDetailScreen(
                                     Icon(
                                         Icons.Default.PlayArrow,
                                         contentDescription = "Reproducir",
-                                        tint = Color.White
+                                        tint = MaterialTheme.colorScheme.onPrimary
                                     )
                                     Spacer(modifier = Modifier.size(6.dp))
-                                    Text("Reproducir", color = Color.White)
+                                    Text("Reproducir", color = MaterialTheme.colorScheme.onPrimary)
                                 }
 
                                 Button(

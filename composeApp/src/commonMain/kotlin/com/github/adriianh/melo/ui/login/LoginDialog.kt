@@ -72,7 +72,7 @@ fun LoginDialog(
         shape = RoundedCornerShape(24.dp),
         containerColor = MeloColors.surface1.copy(alpha = 0.90f),
         textContentColor = MeloColors.textPrimary,
-        titleContentColor = Color.White,
+        titleContentColor = MeloColors.textPrimary,
         tonalElevation = 10.dp,
         modifier = Modifier
             .border(
