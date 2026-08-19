@@ -405,7 +405,7 @@ fun NowPlayingScreen(
                                     "Cola",
                                     style = MeloType.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
+                                    color = MeloColors.textPrimary
                                 )
                             }
                         }
@@ -435,7 +435,7 @@ fun NowPlayingScreen(
                                     "Artista",
                                     style = MeloType.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
+                                    color = MeloColors.textPrimary
                                 )
                             }
                         }
@@ -478,7 +478,7 @@ fun NowPlayingScreen(
                         },
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MeloColors.textPrimary,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
@@ -531,7 +531,7 @@ private fun NowPlayingLyricsCard(
                     text = if (!lyrics.isNullOrBlank()) lyrics else "Letras sincronizadas disponibles próximamente",
                     style = MeloType.body,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White,
+                    color = MeloColors.textPrimary,
                     textAlign = TextAlign.Center
                 )
             }

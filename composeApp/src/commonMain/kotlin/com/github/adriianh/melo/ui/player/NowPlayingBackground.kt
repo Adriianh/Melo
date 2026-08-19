@@ -39,16 +39,17 @@ fun NowPlayingBackground(
                         shape = RoundedCornerShape(0.dp)
                     )
 
+                    val scrimColor = if (MeloColors.isDark) Color.Black else Color.White
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        Color.Black.copy(alpha = 0.50f),
-                                        Color.Black.copy(alpha = 0.35f),
-                                        Color.Black.copy(alpha = 0.75f),
-                                        Color.Black.copy(alpha = 0.95f),
+                                        scrimColor.copy(alpha = 0.50f),
+                                        scrimColor.copy(alpha = 0.35f),
+                                        scrimColor.copy(alpha = 0.75f),
+                                        scrimColor.copy(alpha = 0.95f),
                                     )
                                 )
                             )

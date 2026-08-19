@@ -70,8 +70,8 @@ fun DesktopNowPlayingDockedPane(
             .fillMaxHeight()
             .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.contentGlassFill)
-            .border(0.5.dp, MeloColors.contentGlassBorder, RoundedCornerShape(20.dp))
+            .background(MeloColors.glassFill)
+            .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
