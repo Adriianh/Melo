@@ -19,7 +19,7 @@ data class PlayerUiState(
     val repeatMode: RepeatMode = RepeatMode.NONE,
     val hasNext: Boolean = false,
     val hasPrevious: Boolean = false,
-    val accentColor: Color = MeloColors.textMuted,
+    val accentColor: Color = Color.Transparent,
     val lyrics: String? = null,
 ) {
     val hasTrack: Boolean get() = title.isNotEmpty()
@@ -28,7 +28,7 @@ data class PlayerUiState(
         fun from(
             playback: PlaybackState,
             queue: QueueState,
-            accentColor: Color = MeloColors.textMuted,
+            accentColor: Color = Color.Transparent,
         ): PlayerUiState {
             val track = playback.currentTrack
             val fraction = if (playback.durationMs > 0) {

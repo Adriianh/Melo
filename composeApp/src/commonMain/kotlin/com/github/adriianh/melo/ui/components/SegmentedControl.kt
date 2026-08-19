@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 @Composable
@@ -28,7 +29,7 @@ fun <T> SegmentedControl(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.Black.copy(alpha = 0.25f))
+            .background(MeloColors.chromePillFill)
             .padding(3.dp),
     ) {
         options.forEach { option ->
@@ -37,7 +38,7 @@ fun <T> SegmentedControl(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(11.dp))
-                    .background(if (isSelected) Color.White.copy(alpha = 0.9f) else Color.Transparent)
+                    .background(if (isSelected) MeloColors.surface1 else Color.Transparent)
                     .clickable { onSelect(option) }
                     .padding(vertical = 7.dp),
                 contentAlignment = Alignment.Center,
@@ -45,7 +46,7 @@ fun <T> SegmentedControl(
                 Text(
                     text = label(option),
                     style = MeloType.labelSmall,
-                    color = if (isSelected) Color(0xFF1A1410) else Color.White.copy(alpha = 0.75f),
+                    color = if (isSelected) MeloColors.textPrimary else MeloColors.textMuted,
                 )
             }
         }
