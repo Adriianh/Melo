@@ -270,9 +270,7 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(
             top = paddingValues.calculateTopPadding(),
-            bottom = paddingValues.calculateBottomPadding() + 16.dp,
-            start = 24.dp,
-            end = 24.dp
+            bottom = paddingValues.calculateBottomPadding() + 16.dp
         )
     ) {
         if (uiState.chips.isNotEmpty()) {

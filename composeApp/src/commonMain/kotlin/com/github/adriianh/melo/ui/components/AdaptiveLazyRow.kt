@@ -27,7 +27,7 @@ fun <T> AdaptiveLazyRow(
     items: List<T>,
     minCardWidth: Dp,
     spacing: Dp,
-    horizontalPadding: Dp = 16.dp,
+    horizontalPadding: Dp = 24.dp,
     modifier: Modifier = Modifier,
     itemContent: @Composable (T, Dp) -> Unit,
 ) {

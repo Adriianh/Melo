@@ -37,11 +37,11 @@ fun SpeedDialGrid(
         val columnWidth = adaptiveCardWidth(
             minCardWidth = 280.dp,
             spacing = 10.dp,
-            horizontalPadding = 16.dp
+            horizontalPadding = 24.dp
         )
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(columns) { columnItems ->

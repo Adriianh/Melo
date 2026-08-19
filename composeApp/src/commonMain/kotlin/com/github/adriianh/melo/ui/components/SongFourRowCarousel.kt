@@ -25,11 +25,11 @@ fun SongFourRowCarousel(
         val columnWidth = adaptiveCardWidth(
             minCardWidth = 320.dp,
             spacing = 12.dp,
-            horizontalPadding = 16.dp
+            horizontalPadding = 24.dp
         )
 
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(columns) { columnTracks ->
