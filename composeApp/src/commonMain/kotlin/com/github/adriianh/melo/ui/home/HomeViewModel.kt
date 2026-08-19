@@ -12,13 +12,11 @@ import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
-import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -41,7 +39,6 @@ class HomeViewModel(
     private val getExploreUseCase: GetExploreUseCase,
     private val getChartsUseCase: GetChartsUseCase,
     private val getTrendingUseCase: GetTrendingUseCase,
-    private val getSettingsUseCase: GetSettingsUseCase,
     private val searchTracksUseCase: SearchTracksUseCase,
 ) : ViewModel() {
 
@@ -52,11 +49,7 @@ class HomeViewModel(
     private var searchJob: Job? = null
 
     init {
-        viewModelScope.launch {
-            getSettingsUseCase().collectLatest {
-                loadFeed()
-            }
-        }
+        loadFeed()
     }
 
     fun onSearchQueryChange(query: String) {
