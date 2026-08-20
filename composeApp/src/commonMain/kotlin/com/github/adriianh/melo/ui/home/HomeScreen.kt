@@ -28,6 +28,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -109,7 +111,7 @@ fun HomeScreen(
                     )
                 }
 
-                uiState.error != null -> ErrorState(uiState.error)
+                uiState.error != null -> ErrorState(uiState.error, onRetry = viewModel::loadFeed)
                 else -> HomeContent(
                     uiState = uiState,
                     onChipClick = viewModel::toggleChip,
@@ -626,14 +628,27 @@ private fun SkeletonLoading(
 }
 
 @Composable
-private fun ErrorState(error: String?) {
+private fun ErrorState(error: String?, onRetry: () -> Unit = {}) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "Error: $error",
-            color = MaterialTheme.colorScheme.error,
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Error: $error",
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onRetry,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MeloColors.surface2,
+                    contentColor = MeloColors.textPrimary
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text("Reintentar")
+            }
+        }
     }
 }
