@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.Icon
@@ -41,7 +42,7 @@ internal fun FloatingNavigationBar(
 ) {
     Box(
         modifier = modifier
-            .width(200.dp)
+            .width(260.dp)
             .height(58.dp)
             .shadow(
                 elevation = 4.dp,
@@ -61,6 +62,12 @@ internal fun FloatingNavigationBar(
                 onClick = { onTabSelected("Home") },
                 icon = Icons.Default.Home,
                 label = "Inicio"
+            )
+            FloatingNavItem(
+                selected = selectedTab == "Search",
+                onClick = { onTabSelected("Search") },
+                icon = Icons.Default.Explore,
+                label = "Explorar"
             )
             FloatingNavItem(
                 selected = selectedTab == "Library",

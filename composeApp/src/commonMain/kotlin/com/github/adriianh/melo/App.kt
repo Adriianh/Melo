@@ -30,6 +30,7 @@ import com.github.adriianh.melo.ui.detail.ArtistDetailScreen
 import com.github.adriianh.melo.ui.detail.PlaylistDetailScreen
 import com.github.adriianh.melo.ui.home.HomeScreen
 import com.github.adriianh.melo.ui.library.LibraryScreen
+import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.login.LoginDialog
 import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
@@ -62,6 +63,8 @@ sealed interface ScreenDestination {
 
     data class Artist(val id: String, val name: String = "", val artwork: String? = null) :
         ScreenDestination
+
+    data object Search : ScreenDestination
 }
 
 @Composable
@@ -115,8 +118,11 @@ fun App() {
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
                         selectedTab = tab
-                        navigationStack =
-                            listOf(if (tab == "Home") ScreenDestination.Home else ScreenDestination.Library)
+                        navigationStack = when (tab) {
+                            "Home" -> listOf(ScreenDestination.Home)
+                            "Search" -> listOf(ScreenDestination.Search)
+                            else -> listOf(ScreenDestination.Library)
+                        }
                     },
                     onOpenNowPlaying = { isNowPlayingExpanded = true },
                     onOpenSettings = { showSettingsSheet = true },
@@ -147,6 +153,13 @@ fun App() {
                                 onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
                                 onOpenSettings = { showSettingsSheet = true },
                                 paddingValues = paddingValues
+                            )
+
+                            ScreenDestination.Search -> SearchScreen(
+                                onBack = ::navigateBack,
+                                onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) },
+                                onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
                             )
 
                             ScreenDestination.Library -> LibraryScreen(

@@ -177,7 +177,7 @@ internal fun MainSidebar(
                             label = "Explorar",
                             icon = Icons.Default.Explore,
                             isSelected = selectedTab == "Search",
-                            onClick = { onTabSelected("Home") }
+                            onClick = { onTabSelected("Search") }
                         )
                         CollapsedRailItem(
                             label = "Biblioteca",
@@ -205,7 +205,7 @@ internal fun MainSidebar(
                                 label = "Explorar",
                                 icon = Icons.Default.Explore,
                                 isSelected = selectedTab == "Search",
-                                onClick = { onTabSelected("Home") }
+                                onClick = { onTabSelected("Search") }
                             )
                             SidebarRow(
                                 label = "Biblioteca",
