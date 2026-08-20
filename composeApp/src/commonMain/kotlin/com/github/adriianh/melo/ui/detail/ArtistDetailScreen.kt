@@ -110,6 +110,27 @@ fun ArtistDetailScreen(
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
+        } else if (uiState.error != null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = uiState.error.orEmpty(),
+                        style = MeloType.body,
+                        color = MeloColors.textMuted
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Reintentar")
+                    }
+                }
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -232,8 +253,9 @@ fun ArtistDetailScreen(
                         }
                     }
 
-                    artist?.sections?.forEach { section ->
-                        item {
+                    val sections = artist?.sections.orEmpty()
+                    for (section in sections) {
+                        item(key = "section_${section.title}") {
                             SectionHeader(title = section.title)
                             AdaptiveLazyRow(
                                 items = section.items,
