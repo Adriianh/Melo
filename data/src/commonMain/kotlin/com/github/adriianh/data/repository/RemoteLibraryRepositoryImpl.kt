@@ -103,6 +103,16 @@ class RemoteLibraryRepositoryImpl : RemoteLibraryRepository {
         YouTube.likeVideo(rawId, isLiked).getOrThrow()
     }
 
+    override suspend fun toggleLikeAlbum(browseId: String, isLiked: Boolean): Result<Unit> =
+        runCatching {
+            YouTube.likeAlbum(browseId, isLiked).getOrThrow()
+        }
+
+    override suspend fun toggleLikePlaylist(playlistId: String, isLiked: Boolean): Result<Unit> =
+        runCatching {
+            YouTube.likePlaylist(playlistId, isLiked).getOrThrow()
+        }
+
     override suspend fun subscribeChannel(channelId: String, isSubscribed: Boolean): Result<Unit> =
         runCatching {
             YouTube.subscribeChannel(channelId, isSubscribed).getOrThrow()

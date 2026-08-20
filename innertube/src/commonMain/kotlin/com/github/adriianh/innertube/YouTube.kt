@@ -894,6 +894,13 @@ object YouTube {
             innerTube.unlikePlaylist(WEB_REMIX, playlistId)
     }
 
+    suspend fun likeAlbum(browseId: String, like: Boolean) = runCatching {
+        if (like)
+            innerTube.likeAlbum(WEB_REMIX, browseId)
+        else
+            innerTube.unlikeAlbum(WEB_REMIX, browseId)
+    }
+
     suspend fun musicHistory() = runCatching {
         val response = innerTube.browse(
             client = WEB_REMIX,

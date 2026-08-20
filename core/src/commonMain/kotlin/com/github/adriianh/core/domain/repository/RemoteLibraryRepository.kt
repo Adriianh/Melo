@@ -13,5 +13,7 @@ interface RemoteLibraryRepository {
     suspend fun getUserAlbums(): Result<List<SearchResult.Album>>
     suspend fun getRemoteHistory(): Result<List<HistoryEntry>>
     suspend fun toggleLike(videoId: String, isLiked: Boolean): Result<Unit>
+    suspend fun toggleLikeAlbum(browseId: String, isLiked: Boolean): Result<Unit>
+    suspend fun toggleLikePlaylist(playlistId: String, isLiked: Boolean): Result<Unit>
     suspend fun subscribeChannel(channelId: String, isSubscribed: Boolean): Result<Unit>
 }

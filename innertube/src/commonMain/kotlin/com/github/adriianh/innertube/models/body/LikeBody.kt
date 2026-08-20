@@ -13,5 +13,7 @@ data class LikeBody(
         data class VideoTarget(val videoId: String) : Target()
         @Serializable
         data class PlaylistTarget(val playlistId: String) : Target()
+        @Serializable
+        data class AlbumTarget(val browseId: String) : Target()
     }
 }

@@ -3,6 +3,8 @@ package com.github.adriianh.melo.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,10 +16,13 @@ data class EntityDetailUiState(
     val isLoading: Boolean = true,
     val entity: SearchResult? = null,
     val error: String? = null,
+    val isSaved: Boolean = false,
 )
 
 class EntityDetailViewModel(
     private val getEntityDetailsUseCase: GetEntityDetailsUseCase,
+    private val toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
+    private val toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
@@ -65,6 +70,23 @@ class EntityDetailViewModel(
                 artworkUrl = initialArtwork
             )
         )
+    }
+
+    fun toggleSave() {
+        val entity = _uiState.value.entity ?: return
+        val newSaved = !_uiState.value.isSaved
+        _uiState.update { it.copy(isSaved = newSaved) }
+        viewModelScope.launch {
+            try {
+                when (entity) {
+                    is SearchResult.Album -> toggleLikeAlbumUseCase(entity.id, newSaved)
+                    is SearchResult.Playlist -> toggleLikePlaylistUseCase(entity.id, newSaved)
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaved = !newSaved) }
+            }
+        }
     }
 
     private fun loadEntity(initial: SearchResult) {

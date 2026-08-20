@@ -182,6 +182,32 @@ class InnerTube(
         )
     }
 
+    suspend fun likeAlbum(
+        client: YouTubeClient,
+        browseId: String,
+    ) = httpClient.post("like/like") {
+        ytClient(client, setLogin = true)
+        setBody(
+            LikeBody(
+                context = client.toContext(locale, visitorData, dataSyncId),
+                target = LikeBody.Target.AlbumTarget(browseId)
+            )
+        )
+    }
+
+    suspend fun unlikeAlbum(
+        client: YouTubeClient,
+        browseId: String,
+    ) = httpClient.post("like/removelike") {
+        ytClient(client, setLogin = true)
+        setBody(
+            LikeBody(
+                context = client.toContext(locale, visitorData, dataSyncId),
+                target = LikeBody.Target.AlbumTarget(browseId)
+            )
+        )
+    }
+
     suspend fun createPlaylist(
         client: YouTubeClient,
         title: String,

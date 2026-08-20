@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
@@ -108,6 +109,27 @@ fun PlaylistDetailScreen(
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
+        } else if (uiState.error != null) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = uiState.error.orEmpty(),
+                        style = MeloType.body,
+                        color = MeloColors.textMuted
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor) },
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Reintentar")
+                    }
+                }
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -190,20 +212,23 @@ fun PlaylistDetailScreen(
                                 }
 
                                 Button(
-                                    onClick = { /* Save to library */ },
+                                    onClick = { viewModel.toggleSave() },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = MeloColors.surface2,
-                                        contentColor = MeloColors.textPrimary
+                                        containerColor = if (uiState.isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
+                                        contentColor = if (uiState.isSaved) accentColor else MeloColors.textPrimary
                                     ),
                                     shape = RoundedCornerShape(24.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.BookmarkBorder,
+                                        if (uiState.isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                         contentDescription = "Guardar",
-                                        tint = MeloColors.textPrimary
+                                        tint = if (uiState.isSaved) accentColor else MeloColors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.size(6.dp))
-                                    Text("Guardar", color = MeloColors.textPrimary)
+                                    Text(
+                                        if (uiState.isSaved) "Guardado" else "Guardar",
+                                        color = if (uiState.isSaved) accentColor else MeloColors.textPrimary
+                                    )
                                 }
                             }
                         }

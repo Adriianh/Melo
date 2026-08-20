@@ -20,6 +20,8 @@ import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
@@ -58,6 +60,7 @@ import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.ui.search.SearchViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -160,6 +163,8 @@ val useCaseModule = module {
     singleOf(::GetUserAlbumsUseCase)
     singleOf(::GetRemoteHistoryUseCase)
     singleOf(::ToggleLikeTrackUseCase)
+    singleOf(::ToggleLikeAlbumUseCase)
+    singleOf(::ToggleLikePlaylistUseCase)
     singleOf(::SubscribeChannelUseCase)
     singleOf(::GetEntityDetailsUseCase)
 }
@@ -175,6 +180,7 @@ val viewModelModule = module {
     viewModelOf(::LibraryViewModel)
     viewModelOf(::SidebarViewModel)
     viewModelOf(::EntityDetailViewModel)
+    viewModelOf(::SearchViewModel)
 }
 
 expect val platformModule: Module

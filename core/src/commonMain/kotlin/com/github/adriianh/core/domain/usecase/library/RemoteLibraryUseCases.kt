@@ -49,6 +49,20 @@ class ToggleLikeTrackUseCase(
         repository.toggleLike(videoId, isLiked)
 }
 
+class ToggleLikeAlbumUseCase(
+    private val repository: RemoteLibraryRepository,
+) {
+    suspend operator fun invoke(browseId: String, isLiked: Boolean): Result<Unit> =
+        repository.toggleLikeAlbum(browseId, isLiked)
+}
+
+class ToggleLikePlaylistUseCase(
+    private val repository: RemoteLibraryRepository,
+) {
+    suspend operator fun invoke(playlistId: String, isLiked: Boolean): Result<Unit> =
+        repository.toggleLikePlaylist(playlistId, isLiked)
+}
+
 class SubscribeChannelUseCase(
     private val repository: RemoteLibraryRepository,
 ) {
