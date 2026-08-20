@@ -30,9 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,7 +57,6 @@ fun DesktopNowPlayingDockedPane(
     viewModel: PlayerViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    var isFavorite by remember { mutableStateOf(false) }
 
     if (!state.hasTrack) return
 
@@ -148,13 +144,13 @@ fun DesktopNowPlayingDockedPane(
                 }
 
                 IconButton(
-                    onClick = { isFavorite = !isFavorite },
+                    onClick = { viewModel.toggleFavorite() },
                     modifier = Modifier.size(28.dp)
                 ) {
                     Icon(
-                        if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Favorito",
-                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                        tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
                         modifier = Modifier.size(20.dp)
                     )
                 }

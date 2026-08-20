@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.melo.util.AccentColorExtractor
 import com.github.adriianh.melo.util.AccentPalette
 import com.github.adriianh.melo.util.PlayerUiState
@@ -20,24 +21,29 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModel(
     private val manager: PlaybackManager,
     private val httpClient: HttpClient,
+    private val toggleLikeTrackUseCase: ToggleLikeTrackUseCase,
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
     private val _accentPalette = MutableStateFlow(AccentColorExtractor.fallback)
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
+    private val _isFavorite = MutableStateFlow(false)
+
     val uiState: StateFlow<PlayerUiState> = combine(
         manager.playbackState,
         manager.queueState,
-        _accentPalette
-    ) { playback, queue, accent ->
-        PlayerUiState.from(playback, queue, accent.dominant)
+        _accentPalette,
+        _isFavorite,
+    ) { playback, queue, accent, isFavorite ->
+        PlayerUiState.from(playback, queue, accent.dominant).copy(isFavorite = isFavorite)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PlayerUiState())
 
     init {
@@ -56,6 +62,14 @@ class PlayerViewModel(
                     _accentPalette.value = palette
                 }
         }
+        viewModelScope.launch {
+            manager.playbackState
+                .map { it.currentTrack?.sourceId }
+                .distinctUntilChanged()
+                .collectLatest {
+                    _isFavorite.value = false
+                }
+        }
     }
 
     fun togglePlayPause() = manager.togglePlayPause()
@@ -69,4 +83,17 @@ class PlayerViewModel(
     fun toggleShuffle() = manager.toggleShuffle()
 
     fun toggleRepeat() = manager.toggleRepeat()
+
+    fun toggleFavorite() {
+        val track = manager.playbackState.value.currentTrack ?: return
+        val videoId = track.sourceId ?: return
+        val newFavorite = !_isFavorite.value
+        _isFavorite.value = newFavorite
+        viewModelScope.launch {
+            val result = toggleLikeTrackUseCase(videoId, newFavorite)
+            if (result.isFailure) {
+                _isFavorite.value = !newFavorite
+            }
+        }
+    }
 }

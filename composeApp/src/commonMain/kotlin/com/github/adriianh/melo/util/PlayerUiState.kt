@@ -21,6 +21,7 @@ data class PlayerUiState(
     val hasPrevious: Boolean = false,
     val accentColor: Color = Color.Transparent,
     val lyrics: String? = null,
+    val isFavorite: Boolean = false,
 ) {
     val hasTrack: Boolean get() = title.isNotEmpty()
 

@@ -96,7 +96,6 @@ fun NowPlayingScreen(
     var selectedSection by remember { mutableStateOf(PanelSection.QUEUE) }
     var showLyrics by remember { mutableStateOf(false) }
     var expandedBottomSection by remember { mutableStateOf<PanelSection?>(null) }
-    var isFavorite by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         NowPlayingBackground(artworkUrl = state.albumArt)
@@ -230,11 +229,11 @@ fun NowPlayingScreen(
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
-                                IconButton(onClick = { isFavorite = !isFavorite }) {
+                                IconButton(onClick = { viewModel.toggleFavorite() }) {
                                     Icon(
-                                        if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                        if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                         contentDescription = "Favorite",
-                                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                        tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -359,11 +358,11 @@ fun NowPlayingScreen(
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
-                            IconButton(onClick = { isFavorite = !isFavorite }) {
+                            IconButton(onClick = { viewModel.toggleFavorite() }) {
                                 Icon(
-                                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                     contentDescription = "Favorite",
-                                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                    tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
