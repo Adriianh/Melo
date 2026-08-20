@@ -30,11 +30,11 @@ import com.github.adriianh.melo.ui.detail.ArtistDetailScreen
 import com.github.adriianh.melo.ui.detail.PlaylistDetailScreen
 import com.github.adriianh.melo.ui.home.HomeScreen
 import com.github.adriianh.melo.ui.library.LibraryScreen
-import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.login.LoginDialog
 import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.settings.SettingsDialog
 import com.github.adriianh.melo.ui.settings.SettingsSheet
 import com.github.adriianh.melo.util.MeloMotion
@@ -156,10 +156,11 @@ fun App() {
                             )
 
                             ScreenDestination.Search -> SearchScreen(
-                                onBack = ::navigateBack,
                                 onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
                                 onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) },
                                 onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                onOpenSettings = { showSettingsSheet = true },
+                                paddingValues = paddingValues
                             )
 
                             ScreenDestination.Library -> LibraryScreen(
