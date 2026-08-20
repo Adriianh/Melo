@@ -104,7 +104,7 @@ fun LibraryScreen(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MeloColors.surface2,
                     modifier = Modifier
                         .size(48.dp)
                         .clickable(onClick = onOpenSettings)
@@ -166,7 +166,7 @@ fun LibraryScreen(
                         containerColor = MeloColors.surface1,
                         labelColor = MeloColors.textPrimary,
                         iconColor = MeloColors.textSecondary,
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedContainerColor = MeloColors.surface2,
                         selectedLabelColor = MaterialTheme.colorScheme.primary,
                         selectedLeadingIconColor = MaterialTheme.colorScheme.primary
                     ),
@@ -251,7 +251,7 @@ private fun NotLoggedInLibrary(onLoginClick: () -> Unit) {
                 Text(
                     text = "Inicia sesión para sincronizar y reproducir tus playlists guardadas, canciones con 'Me Gusta', artistas favoritos e historial.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MeloColors.textSecondary
                 )
                 Button(onClick = onLoginClick) {
                     Icon(Icons.Default.AccountCircle, contentDescription = null)
@@ -285,7 +285,7 @@ private fun PlaylistsContent(
                     .fillMaxWidth()
                     .clickable { onPlaylistClick(playlist.id) },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     PlatformAsyncImage(
@@ -309,7 +309,7 @@ private fun PlaylistsContent(
                     Text(
                         text = "${playlist.trackCount ?: 0} canciones • ${playlist.author}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MeloColors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -347,7 +347,7 @@ private fun LikedSongsContent(
                     Text(
                         track.artist,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MeloColors.textSecondary
                     )
                 },
                 leadingContent = {
@@ -442,7 +442,7 @@ private fun AlbumsContent(
                     .fillMaxWidth()
                     .clickable { onAlbumClick(album.id) },
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     PlatformAsyncImage(
@@ -466,7 +466,7 @@ private fun AlbumsContent(
                     Text(
                         text = album.author,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MeloColors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -504,7 +504,7 @@ private fun HistoryContent(
                     Text(
                         entry.track.artist,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MeloColors.textSecondary
                     )
                 },
                 leadingContent = {
@@ -533,7 +533,7 @@ private fun EmptyLibrarySection(message: String) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MeloColors.textSecondary
         )
     }
 }
