@@ -25,13 +25,17 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
+import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
+import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
@@ -150,6 +154,8 @@ val dataModule = module {
 
 val useCaseModule = module {
     singleOf(::GetStreamUseCase)
+    singleOf(::RecordPlayUseCase)
+    singleOf(::GetRecentTracksUseCase)
     singleOf(::SearchTracksUseCase)
     singleOf(::GetHomeUseCase)
     singleOf(::GetExploreUseCase)
@@ -173,6 +179,8 @@ val useCaseModule = module {
     singleOf(::GetEntityDetailsUseCase)
     singleOf(::GetSearchHistoryUseCase)
     singleOf(::SaveSearchQueryUseCase)
+    singleOf(::GetSearchSuggestionsUseCase)
+    singleOf(::BrowseCategoryUseCase)
 }
 
 /**

@@ -17,11 +17,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,17 +79,119 @@ fun SearchScreen(
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        SearchTopBar(
-            query = uiState.query,
-            onQueryChange = viewModel::onQueryChange,
-            onClear = viewModel::clearQuery,
-            onOpenSettings = onOpenSettings,
-            onFocusChanged = { isFocused = it },
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-        )
+        Box {
+            SearchTopBar(
+                query = uiState.query,
+                onQueryChange = viewModel::onQueryChange,
+                onClear = viewModel::clearQuery,
+                onOpenSettings = onOpenSettings,
+                onFocusChanged = { isFocused = it },
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            if (isFocused && uiState.query.isNotBlank() && uiState.suggestions.isNotEmpty()) {
+                SuggestionsDropdown(
+                    suggestions = uiState.suggestions,
+                    onSelect = { suggestion ->
+                        viewModel.onQueryChange(suggestion)
+                        isFocused = false
+                    },
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 56.dp)
+                )
+            }
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             when {
+                uiState.isBrowsingCategory || uiState.browseCategoryResult != null -> {
+                    if (uiState.isBrowsingCategory) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        val browseResult = uiState.browseCategoryResult
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 24.dp,
+                                end = 24.dp,
+                                top = 8.dp,
+                                bottom = paddingValues.calculateBottomPadding() + 16.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            item(key = "back_button") {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { viewModel.exitBrowsing() }
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = "Volver",
+                                        style = MeloType.body,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            browseResult?.sections?.forEach { section ->
+                                val sectionTitle = section.title
+                                if (sectionTitle != null) {
+                                    item(key = "section_$sectionTitle") {
+                                        SectionHeader(title = sectionTitle)
+                                    }
+                                }
+                                items(section.items) { item ->
+                                    when (item) {
+                                        is SearchResult.Song -> TrackRow(
+                                            track = item.track,
+                                            onClick = { queueViewModel.playTrack(item.track) }
+                                        )
+
+                                        is SearchResult.Album -> AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = 140.dp,
+                                            onClick = { onAlbumClick(item.id) }
+                                        )
+
+                                        is SearchResult.Artist -> ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            size = 80.dp,
+                                            onClick = { onArtistClick(item.id) }
+                                        )
+
+                                        is SearchResult.Playlist -> AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = 140.dp,
+                                            onClick = { onPlaylistClick(item.id) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 isFocused && uiState.query.isBlank() -> {
                     RecentSearchesList(
                         searches = uiState.recentSearches,
@@ -146,6 +251,16 @@ fun SearchScreen(
                             bottom = paddingValues.calculateBottomPadding() + 32.dp
                         )
                     ) {
+                        if (uiState.recentHistory.isNotEmpty()) {
+                            item(key = "recent_history") {
+                                SectionHeader(title = "Vuelve a escuchar")
+                                SongFourRowCarousel(
+                                    tracks = uiState.recentHistory,
+                                    onTrackClick = queueViewModel::playTrack
+                                )
+                            }
+                        }
+
                         uiState.exploreSections.forEach { section ->
                             when (section.type) {
                                 HomeSectionType.SONGS -> {
@@ -266,7 +381,12 @@ fun SearchScreen(
                                                     CategoryCard(
                                                         title = category.title,
                                                         color = Color(category.stripeColor.toInt()),
-                                                        onClick = { viewModel.onQueryChange(category.title) },
+                                                        onClick = {
+                                                            viewModel.browseCategory(
+                                                                category.browseId,
+                                                                category.params
+                                                            )
+                                                        },
                                                         modifier = Modifier.weight(1f)
                                                     )
                                                 }
@@ -284,6 +404,45 @@ fun SearchScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionsDropdown(
+    suggestions: List<String>,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DropdownMenu(
+        expanded = true,
+        onDismissRequest = {},
+        modifier = modifier.fillMaxWidth()
+    ) {
+        suggestions.forEach { suggestion ->
+            DropdownMenuItem(
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = suggestion,
+                            style = MeloType.body,
+                            color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
+                onClick = { onSelect(suggestion) }
+            )
         }
     }
 }

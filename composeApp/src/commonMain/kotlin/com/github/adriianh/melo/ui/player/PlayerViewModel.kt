@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.melo.util.AccentColorExtractor
 import com.github.adriianh.melo.util.AccentPalette
 import com.github.adriianh.melo.util.PlayerUiState
@@ -29,6 +30,7 @@ class PlayerViewModel(
     private val manager: PlaybackManager,
     private val httpClient: HttpClient,
     private val toggleLikeTrackUseCase: ToggleLikeTrackUseCase,
+    private val recordPlayUseCase: RecordPlayUseCase,
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
@@ -68,6 +70,16 @@ class PlayerViewModel(
                 .distinctUntilChanged()
                 .collectLatest {
                     _isFavorite.value = false
+                }
+        }
+        viewModelScope.launch {
+            manager.playbackState
+                .map { it.currentTrack }
+                .distinctUntilChanged()
+                .collectLatest { track ->
+                    if (track != null) {
+                        recordPlayUseCase(track)
+                    }
                 }
         }
     }
