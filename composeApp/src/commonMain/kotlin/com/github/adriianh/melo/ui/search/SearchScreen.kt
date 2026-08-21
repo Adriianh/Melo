@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -29,17 +31,25 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.CategoryCard
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SongFourRowCarousel
 import com.github.adriianh.melo.ui.components.TrackRow
@@ -59,6 +69,7 @@ fun SearchScreen(
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var isFocused by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -70,60 +81,66 @@ fun SearchScreen(
             onQueryChange = viewModel::onQueryChange,
             onClear = viewModel::clearQuery,
             onOpenSettings = onOpenSettings,
+            onFocusChanged = { isFocused = it },
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            if (uiState.query.isNotBlank()) {
-                if (uiState.isSearching) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                } else if (uiState.results.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "No se encontraron resultados",
-                            style = MeloType.body,
-                            color = MeloColors.textMuted
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 24.dp,
-                            end = 24.dp,
-                            top = 8.dp,
-                            bottom = paddingValues.calculateBottomPadding() + 16.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(uiState.results) { track ->
-                            TrackRow(
-                                track = track,
-                                onClick = { queueViewModel.playTrack(track) }
+            when {
+                isFocused && uiState.query.isBlank() -> {
+                    RecentSearchesList(
+                        searches = uiState.recentSearches,
+                        onQueryChange = {
+                            viewModel.onQueryChange(it)
+                            isFocused = false
+                        }
+                    )
+                }
+
+                uiState.query.isNotBlank() -> {
+                    if (uiState.isSearching) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else if (uiState.results.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "No se encontraron resultados",
+                                style = MeloType.body,
+                                color = MeloColors.textMuted
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 24.dp,
+                                end = 24.dp,
+                                top = 8.dp,
+                                bottom = paddingValues.calculateBottomPadding() + 16.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(uiState.results) { track ->
+                                TrackRow(
+                                    track = track,
+                                    onClick = { queueViewModel.playTrack(track) }
+                                )
+                            }
                         }
                     }
                 }
-            } else {
-                if (uiState.isLoadingExplore) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                } else {
+
+                else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
                         contentPadding = PaddingValues(
                             top = 8.dp,
                             bottom = paddingValues.calculateBottomPadding() + 32.dp
@@ -132,9 +149,8 @@ fun SearchScreen(
                         uiState.exploreSections.forEach { section ->
                             when (section.type) {
                                 HomeSectionType.SONGS -> {
-                                    val tracks =
-                                        section.items.filterIsInstance<SearchResult.Song>()
-                                            .map { it.track }
+                                    val tracks = section.items.filterIsInstance<SearchResult.Song>()
+                                        .map { it.track }
                                     item(key = section.title) {
                                         SectionHeader(title = section.title)
                                         SongFourRowCarousel(
@@ -161,14 +177,6 @@ fun SearchScreen(
                                                     onClick = { onAlbumClick(item.id) }
                                                 )
 
-                                                is SearchResult.Song -> AlbumCard(
-                                                    title = item.track.title,
-                                                    subtitle = item.track.artist,
-                                                    artworkUrl = item.track.artworkUrl,
-                                                    cardWidth = cardWidth,
-                                                    onClick = { queueViewModel.playTrack(item.track) }
-                                                )
-
                                                 is SearchResult.Playlist -> AlbumCard(
                                                     title = item.title,
                                                     subtitle = item.author,
@@ -183,6 +191,8 @@ fun SearchScreen(
                                                     size = cardWidth,
                                                     onClick = { onArtistClick(item.id) }
                                                 )
+
+                                                else -> {}
                                             }
                                         }
                                     }
@@ -213,41 +223,6 @@ fun SearchScreen(
                                                     onClick = { onAlbumClick(item.id) }
                                                 )
 
-                                                is SearchResult.Song -> AlbumCard(
-                                                    title = item.track.title,
-                                                    subtitle = item.track.artist,
-                                                    artworkUrl = item.track.artworkUrl,
-                                                    cardWidth = cardWidth,
-                                                    onClick = { queueViewModel.playTrack(item.track) }
-                                                )
-
-                                                is SearchResult.Artist -> ArtistCircle(
-                                                    name = item.name,
-                                                    artworkUrl = item.artworkUrl,
-                                                    size = cardWidth,
-                                                    onClick = { onArtistClick(item.id) }
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                HomeSectionType.ARTISTS -> {
-                                    item(key = section.title) {
-                                        SectionHeader(title = section.title)
-                                        AdaptiveLazyRow(
-                                            items = section.items,
-                                            minCardWidth = 140.dp,
-                                            spacing = 12.dp
-                                        ) { item, cardWidth ->
-                                            when (item) {
-                                                is SearchResult.Artist -> ArtistCircle(
-                                                    name = item.name,
-                                                    artworkUrl = item.artworkUrl,
-                                                    size = cardWidth,
-                                                    onClick = { onArtistClick(item.id) }
-                                                )
-
                                                 else -> {}
                                             }
                                         }
@@ -255,6 +230,53 @@ fun SearchScreen(
                                 }
 
                                 else -> {}
+                            }
+                        }
+
+                        if (uiState.isLoadingMoodAndGenres) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        } else if (uiState.moodAndGenres.isNotEmpty()) {
+                            uiState.moodAndGenres.forEach { group ->
+                                item(key = "mood_${group.title}") {
+                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Text(
+                                            group.title,
+                                            style = MeloType.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MeloColors.textPrimary,
+                                            modifier = Modifier.padding(horizontal = 24.dp)
+                                        )
+
+                                        val columns = 5
+                                        group.items.chunked(columns).forEach { rowItems ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 24.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                rowItems.forEach { category ->
+                                                    CategoryCard(
+                                                        title = category.title,
+                                                        color = Color(category.stripeColor.toInt()),
+                                                        onClick = { viewModel.onQueryChange(category.title) },
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                }
+                                                repeat(columns - rowItems.size) {
+                                                    Spacer(modifier = Modifier.weight(1f))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -267,11 +289,59 @@ fun SearchScreen(
 }
 
 @Composable
+private fun RecentSearchesList(
+    searches: List<String>,
+    onQueryChange: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
+    ) {
+        item {
+            Text(
+                "Búsquedas recientes",
+                style = MeloType.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MeloColors.textMuted,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+        }
+
+        items(searches) { query ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onQueryChange(query) }
+                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = null,
+                    tint = MeloColors.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = query,
+                    style = MeloType.body,
+                    color = MeloColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SearchTopBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
     onOpenSettings: () -> Unit,
+    onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -332,6 +402,7 @@ private fun SearchTopBar(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
                 .weight(1f)
+                .onFocusChanged { onFocusChanged(it.isFocused) }
                 .blur(if (query.isEmpty()) 0.dp else 0.dp)
                 .drawBehind {}
         )
