@@ -1,5 +1,6 @@
 package com.github.adriianh.core.domain.provider
 
+import com.github.adriianh.core.domain.model.BrowseCategoryResult
 import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
@@ -37,4 +38,5 @@ interface MusicProvider {
     suspend fun getTrending(): List<Track> = emptyList()
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = emptyList()
     suspend fun getRadio(videoId: String): List<Track> = emptyList()
+    suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? = null
 }

@@ -1,10 +1,9 @@
 package com.github.adriianh.data.repository
 
+import com.github.adriianh.core.domain.model.BrowseCategoryResult
 import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
-import com.github.adriianh.core.util.MeloDispatchers
-
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -12,8 +11,8 @@ import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.MusicRepository
+import com.github.adriianh.core.util.MeloDispatchers
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -192,8 +191,12 @@ class MusicRepositoryImpl(
     override suspend fun getExplore(): List<HomeSection> = musicProvider.getExplore()
     override suspend fun getCharts(): List<HomeSection> = musicProvider.getCharts()
     override suspend fun getTrending(): List<Track> = musicProvider.getTrending()
-    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = musicProvider.getMoodAndGenres()
+    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> =
+        musicProvider.getMoodAndGenres()
+
     override suspend fun getRadio(videoId: String): List<Track> = musicProvider.getRadio(videoId)
+    override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? =
+        musicProvider.browseCategory(browseId, params)
 
     companion object {
         /** Maximum number of tracks kept in the in-memory result cache.

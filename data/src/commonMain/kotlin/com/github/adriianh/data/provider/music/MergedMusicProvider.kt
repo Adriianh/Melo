@@ -1,5 +1,6 @@
 package com.github.adriianh.data.provider.music
 
+import com.github.adriianh.core.domain.model.BrowseCategoryResult
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
@@ -159,6 +160,14 @@ class MergedMusicProvider(
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
+    }
+
+    override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
+        for (provider in providers) {
+            val result = runCatching { provider.browseCategory(browseId, params) }.getOrNull()
+            if (result != null) return result
+        }
+        return null
     }
 
     override suspend fun getTrack(id: String): Track? {
