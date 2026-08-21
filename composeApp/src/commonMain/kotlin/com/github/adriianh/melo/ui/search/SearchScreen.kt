@@ -135,7 +135,7 @@ fun SearchScreen(
                 suggestions = uiState.suggestions,
                 recentSearches = uiState.recentSearches,
                 onSelect = { selected ->
-                    viewModel.onQueryChange(selected)
+                    viewModel.onSuggestionSelected(selected)
                     isFocused = false
                 }
             ) { isFocused = false }

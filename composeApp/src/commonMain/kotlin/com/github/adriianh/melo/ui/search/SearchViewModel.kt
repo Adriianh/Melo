@@ -3,7 +3,6 @@ package com.github.adriianh.melo.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.BrowseCategoryResult
-import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
@@ -80,6 +79,7 @@ class SearchViewModel(
         if (query.isBlank()) {
             _uiState.update {
                 it.copy(
+                    query = "",
                     isSearching = false,
                     results = emptyList(),
                     suggestions = emptyList()
@@ -100,7 +100,24 @@ class SearchViewModel(
         }
 
         searchJob = viewModelScope.launch {
-            delay(300.milliseconds)
+            delay(500.milliseconds)
+            _uiState.update { it.copy(isSearching = true) }
+            try {
+                val results = searchTracksUseCase(query)
+                _uiState.update { it.copy(results = results, isSearching = false) }
+                saveSearchQueryUseCase(query)
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isSearching = false) }
+            }
+        }
+    }
+
+    fun onSuggestionSelected(query: String) {
+        _uiState.update { it.copy(query = query, results = emptyList(), suggestions = emptyList()) }
+        searchJob.cancel()
+        suggestionsJob.cancel()
+
+        searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true) }
             try {
                 val results = searchTracksUseCase(query)
