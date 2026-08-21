@@ -30,7 +30,10 @@ import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
+import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
+import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
@@ -151,6 +154,7 @@ val useCaseModule = module {
     singleOf(::GetHomeUseCase)
     singleOf(::GetExploreUseCase)
     singleOf(::GetChartsUseCase)
+    singleOf(::GetMoodAndGenresUseCase)
     singleOf(::GetTrendingUseCase)
     singleOf(::GetSettingsUseCase)
     singleOf(::UpdateSettingsUseCase)
@@ -167,6 +171,8 @@ val useCaseModule = module {
     singleOf(::ToggleLikePlaylistUseCase)
     singleOf(::SubscribeChannelUseCase)
     singleOf(::GetEntityDetailsUseCase)
+    singleOf(::GetSearchHistoryUseCase)
+    singleOf(::SaveSearchQueryUseCase)
 }
 
 /**

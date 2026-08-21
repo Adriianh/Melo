@@ -3,11 +3,15 @@ package com.github.adriianh.melo.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
+import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
+import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +28,9 @@ data class SearchUiState(
     val isSearching: Boolean = false,
     val exploreSections: List<HomeSection> = emptyList(),
     val isLoadingExplore: Boolean = true,
+    val moodAndGenres: List<MoodAndGenreGroup> = emptyList(),
+    val isLoadingMoodAndGenres: Boolean = true,
+    val recentSearches: List<String> = emptyList(),
     val error: String? = null,
 )
 
@@ -32,23 +39,29 @@ class SearchViewModel(
     private val getExploreUseCase: GetExploreUseCase,
     private val getChartsUseCase: GetChartsUseCase,
     private val getTrendingUseCase: GetTrendingUseCase,
+    private val getMoodAndGenresUseCase: GetMoodAndGenresUseCase,
+    private val getSearchHistoryUseCase: GetSearchHistoryUseCase,
+    private val saveSearchQueryUseCase: SaveSearchQueryUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private var searchJob: Job? = null
+    private var searchJob: Job = Job()
 
     init {
         loadExplore()
+        loadMoodAndGenres()
+        loadRecentSearches()
     }
 
     fun onQueryChange(query: String) {
         _uiState.update { it.copy(query = query) }
-        searchJob?.cancel()
+        searchJob.cancel()
 
         if (query.isBlank()) {
             _uiState.update { it.copy(isSearching = false, results = emptyList()) }
+            loadRecentSearches()
             return
         }
 
@@ -58,6 +71,7 @@ class SearchViewModel(
             try {
                 val results = searchTracksUseCase(query)
                 _uiState.update { it.copy(results = results, isSearching = false) }
+                saveSearchQueryUseCase(query)
             } catch (_: Exception) {
                 _uiState.update { it.copy(isSearching = false) }
             }
@@ -65,8 +79,29 @@ class SearchViewModel(
     }
 
     fun clearQuery() {
-        searchJob?.cancel()
+        searchJob.cancel()
         _uiState.update { it.copy(query = "", results = emptyList(), isSearching = false) }
+        loadRecentSearches()
+    }
+
+    private fun loadRecentSearches() {
+        viewModelScope.launch {
+            getSearchHistoryUseCase("", 10).collect { queries ->
+                _uiState.update { it.copy(recentSearches = queries) }
+            }
+        }
+    }
+
+    private fun loadMoodAndGenres() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoodAndGenres = true) }
+            try {
+                val groups = getMoodAndGenresUseCase()
+                _uiState.update { it.copy(moodAndGenres = groups, isLoadingMoodAndGenres = false) }
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isLoadingMoodAndGenres = false) }
+            }
+        }
     }
 
     private fun loadExplore() {
