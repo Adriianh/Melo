@@ -93,7 +93,12 @@ fun SearchScreen(
             onQueryChange = viewModel::onQueryChange,
             onClear = viewModel::clearQuery,
             onOpenSettings = onOpenSettings,
-            onFocusChanged = { isFocused = it },
+            onFocusChanged = { focused ->
+                isFocused = focused
+                if (focused && uiState.query.isNotBlank()) {
+                    viewModel.onQueryChange(uiState.query)
+                }
+            },
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
         )
 
@@ -129,8 +134,13 @@ fun SearchScreen(
                 }
             }
 
+            val shouldShowOverlay = isFocused && (
+                    (uiState.query.isBlank() && uiState.recentSearches.isNotEmpty()) ||
+                            (uiState.query.isNotBlank() && uiState.suggestions.isNotEmpty())
+                    )
+
             SearchOverlayWrapper(
-                visible = isFocused,
+                visible = shouldShowOverlay,
                 query = uiState.query,
                 suggestions = uiState.suggestions,
                 recentSearches = uiState.recentSearches,
@@ -480,9 +490,9 @@ private fun SearchActiveOverlay(
 ) {
     Box(
         modifier = modifier
-            .shadow(16.dp, RoundedCornerShape(20.dp))
+            .shadow(12.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.surface1.copy(alpha = 0.95f))
+            .background(MeloColors.surface1.copy(alpha = 0.98f))
             .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
             .clickable(enabled = false) {}
     ) {
