@@ -2,6 +2,7 @@ package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.util.MeloDispatchers
 
 import com.github.adriianh.core.domain.model.Track
@@ -191,6 +192,7 @@ class MusicRepositoryImpl(
     override suspend fun getExplore(): List<HomeSection> = musicProvider.getExplore()
     override suspend fun getCharts(): List<HomeSection> = musicProvider.getCharts()
     override suspend fun getTrending(): List<Track> = musicProvider.getTrending()
+    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = musicProvider.getMoodAndGenres()
     override suspend fun getRadio(videoId: String): List<Track> = musicProvider.getRadio(videoId)
 
     companion object {
