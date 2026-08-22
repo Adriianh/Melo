@@ -174,7 +174,6 @@ private fun DesktopMainLayout(
                     onClose = { isDesktopPaneVisible = false },
                     onArtistClick = onArtistClick,
                     onAlbumClick = onAlbumClick,
-                    onPlaylistClick = { id -> onPlaylistClick(id, "", null, "") },
                     selectedSection = desktopPaneSection,
                     onSectionChange = { desktopPaneSection = it }
                 )

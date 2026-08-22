@@ -61,7 +61,6 @@ fun DesktopNowPlayingDockedPane(
     onClose: () -> Unit,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
-    onPlaylistClick: (String) -> Unit = {},
     selectedSection: PanelSection = PanelSection.QUEUE,
     onSectionChange: (PanelSection) -> Unit = {},
     modifier: Modifier = Modifier,
