@@ -1,11 +1,13 @@
 package com.github.adriianh.melo.util
 
 import androidx.compose.ui.graphics.Color
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 
 data class PlayerUiState(
+    val currentTrack: Track? = null,
     val title: String = "",
     val artist: String = "",
     val albumArt: String? = null,
@@ -37,6 +39,7 @@ data class PlayerUiState(
             } else 0f
 
             return PlayerUiState(
+                currentTrack = track,
                 title = track?.title ?: "",
                 artist = track?.artist ?: "",
                 albumArt = track?.artworkUrl,

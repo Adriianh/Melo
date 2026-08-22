@@ -7,11 +7,14 @@ import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -21,6 +24,8 @@ class PlaybackManagerImpl(
     private val meloPlayer: MeloPlayer,
     private val getStreamUseCase: GetStreamUseCase,
     private val scope: CoroutineScope,
+    private val getRadioUseCase: GetRadioUseCase? = null,
+    private val getSettingsUseCase: GetSettingsUseCase? = null,
 ) : PlaybackManager {
 
     override val playbackState: StateFlow<PlaybackState> = meloPlayer.state
@@ -31,6 +36,7 @@ class PlaybackManagerImpl(
     private val prefetchCache = mutableMapOf<String, String>()
     private val cacheMutex = Mutex()
     private var prefetchJob: Job? = null
+    private var isAutoplayFetching = false
 
     init {
         scope.launch {
@@ -80,8 +86,11 @@ class PlaybackManagerImpl(
 
     override fun setQueue(tracks: List<Track>, startIndex: Int) {
         scope.launch { cacheMutex.withLock { prefetchCache.clear() } }
-        _queueState.update { it.copy(tracks = tracks, currentIndex = startIndex) }
-        playCurrentQueueTrack()
+        val validIndex = if (tracks.isEmpty()) -1 else startIndex.coerceIn(0, tracks.lastIndex)
+        _queueState.update { it.copy(tracks = tracks, currentIndex = validIndex) }
+        if (validIndex >= 0) {
+            playCurrentQueueTrack()
+        }
     }
 
     override fun addToQueue(track: Track) {
@@ -94,7 +103,10 @@ class PlaybackManagerImpl(
 
     override fun playNext() {
         val q = _queueState.value
-        if (!q.hasNext) return
+        if (!q.hasNext) {
+            handleAutoplay(forcePlayNext = true)
+            return
+        }
         val nextIndex = when (q.repeatMode) {
             RepeatMode.ONE -> q.currentIndex
             RepeatMode.ALL -> (q.currentIndex + 1) % q.tracks.size
@@ -161,6 +173,11 @@ class PlaybackManagerImpl(
 
     private fun schedulePrefetch() {
         prefetchJob?.cancel()
+        val q = _queueState.value
+        if (q.currentIndex >= 0 && q.currentIndex == q.tracks.lastIndex && getRadioUseCase != null) {
+            handleAutoplay(forcePlayNext = false)
+        }
+
         val nextTrack = nextTrackForPrefetch() ?: return
         prefetchJob = scope.launch {
             cacheMutex.withLock {
@@ -168,7 +185,47 @@ class PlaybackManagerImpl(
             }
             val url = getStreamUseCase(nextTrack) ?: return@launch
             cacheMutex.withLock { prefetchCache[nextTrack.id] = url }
-            println("[PlaybackManager] Prefetched URL for: ${nextTrack.title}")
+        }
+    }
+
+    private fun handleAutoplay(forcePlayNext: Boolean) {
+        val currentTrack = _queueState.value.currentTrack ?: return
+        if (isAutoplayFetching || getRadioUseCase == null) {
+            if (forcePlayNext) meloPlayer.stop()
+            return
+        }
+
+        isAutoplayFetching = true
+        scope.launch {
+            try {
+                val autoplayEnabled = getSettingsUseCase?.invoke()?.firstOrNull()?.autoplay ?: true
+                if (!autoplayEnabled) {
+                    if (forcePlayNext) meloPlayer.stop()
+                    return@launch
+                }
+
+                val videoId = currentTrack.sourceId ?: currentTrack.id.removePrefix("piped:")
+                val radioTracks = getRadioUseCase(videoId).filter { rec ->
+                    _queueState.value.tracks.none { it.id == rec.id }
+                }
+
+                if (radioTracks.isNotEmpty()) {
+                    _queueState.update { it.copy(tracks = it.tracks + radioTracks) }
+                    if (forcePlayNext) {
+                        val nextIdx = _queueState.value.currentIndex + 1
+                        if (nextIdx in _queueState.value.tracks.indices) {
+                            _queueState.update { it.copy(currentIndex = nextIdx) }
+                            playCurrentQueueTrack()
+                        }
+                    }
+                } else if (forcePlayNext) {
+                    meloPlayer.stop()
+                }
+            } catch (e: Exception) {
+                if (forcePlayNext) meloPlayer.stop()
+            } finally {
+                isAutoplayFetching = false
+            }
         }
     }
 
@@ -185,7 +242,7 @@ class PlaybackManagerImpl(
         if (_queueState.value.hasNext) {
             playNext()
         } else {
-            meloPlayer.stop()
+            handleAutoplay(forcePlayNext = true)
         }
     }
 }

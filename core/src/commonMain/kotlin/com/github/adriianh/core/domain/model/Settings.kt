@@ -98,4 +98,5 @@ data class Settings(
     val sessionCookies: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    val autoplay: Boolean = true,
 )

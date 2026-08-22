@@ -28,13 +28,15 @@ import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
+import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
+import com.github.adriianh.core.domain.usecase.search.GetArtistRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
-import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
@@ -148,6 +150,8 @@ val dataModule = module {
             meloPlayer = get(),
             getStreamUseCase = get(),
             scope = get(),
+            getRadioUseCase = get(),
+            getSettingsUseCase = get(),
         )
     }
 }
@@ -162,6 +166,8 @@ val useCaseModule = module {
     singleOf(::GetChartsUseCase)
     singleOf(::GetMoodAndGenresUseCase)
     singleOf(::GetTrendingUseCase)
+    singleOf(::GetRadioUseCase)
+    singleOf(::GetArtistRadioUseCase)
     singleOf(::GetSettingsUseCase)
     singleOf(::UpdateSettingsUseCase)
     singleOf(::SetSessionCookiesUseCase)
