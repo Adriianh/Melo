@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -65,6 +66,7 @@ fun DesktopNowPlayingDockedPane(
     onSectionChange: (PanelSection) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel(),
+    queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
@@ -158,16 +160,35 @@ fun DesktopNowPlayingDockedPane(
                 )
             }
 
-            IconButton(
-                onClick = { viewModel.toggleFavorite() },
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorito",
-                    tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
-                    modifier = Modifier.size(20.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = {
+                        val track = state.currentTrack
+                        if (track != null) {
+                            queueViewModel.startRadio(track)
+                        }
+                    },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.GraphicEq,
+                        contentDescription = "Iniciar Radio",
+                        tint = MeloColors.textMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { viewModel.toggleFavorite() },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 

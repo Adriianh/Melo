@@ -221,7 +221,7 @@ class PlaybackManagerImpl(
                 } else if (forcePlayNext) {
                     meloPlayer.stop()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 if (forcePlayNext) meloPlayer.stop()
             } finally {
                 isAutoplayFetching = false

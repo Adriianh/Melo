@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
@@ -260,6 +261,28 @@ fun ArtistDetailScreen(
                                     )
                                     Spacer(modifier = Modifier.size(6.dp))
                                     Text("Aleatorio", color = MeloColors.textPrimary)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        queueViewModel.startArtistRadio(
+                                            artistId = artistId,
+                                            fallbackTracks = topSongs
+                                        )
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MeloColors.surface2,
+                                        contentColor = MeloColors.textPrimary
+                                    ),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.GraphicEq,
+                                        contentDescription = "Radio",
+                                        tint = MeloColors.textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.size(6.dp))
+                                    Text("Radio", color = MeloColors.textPrimary)
                                 }
 
                                 Button(

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
@@ -102,6 +103,7 @@ fun NowPlayingScreen(
     onPlaylistClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel(),
+    queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
@@ -483,10 +485,45 @@ fun NowPlayingScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    val track = state.currentTrack
+                                    if (track != null) {
+                                        queueViewModel.startRadio(track)
+                                    }
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.GraphicEq,
+                                    contentDescription = null,
+                                    tint = activeAccent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "Radio",
+                                    style = MeloType.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MeloColors.textPrimary
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MeloColors.surface1.copy(alpha = 0.7f),
+                            border = BorderStroke(1.dp, MeloColors.border),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
                                 .clickable { expandedBottomSection = PanelSection.ARTIST }
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
