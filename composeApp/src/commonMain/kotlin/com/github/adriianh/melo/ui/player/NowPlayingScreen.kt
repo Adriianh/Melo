@@ -237,7 +237,10 @@ fun NowPlayingScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.clickable {
-                                        artistDetails?.id?.let(onArtistClick)
+                                        artistDetails?.id?.let { id ->
+                                            onCollapse()
+                                            onArtistClick(id)
+                                        }
                                     }
                                 )
                             }
@@ -395,7 +398,10 @@ fun NowPlayingScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.clickable {
-                                    artistDetails?.id?.let(onArtistClick)
+                                    artistDetails?.id?.let { id ->
+                                        onCollapse()
+                                        onArtistClick(id)
+                                    }
                                 }
                             )
                         }

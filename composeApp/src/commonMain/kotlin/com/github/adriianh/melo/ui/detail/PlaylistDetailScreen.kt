@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
@@ -40,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,7 +121,14 @@ fun PlaylistDetailScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
-                        onClick = { viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor) },
+                        onClick = {
+                            viewModel.loadPlaylist(
+                                playlistId,
+                                initialTitle,
+                                initialArtwork,
+                                initialAuthor
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                         shape = RoundedCornerShape(24.dp)
                     ) {
@@ -153,8 +159,12 @@ fun PlaylistDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            val effectiveArtwork = playlist?.artworkUrl?.takeIf { it.isNotBlank() }
+                                ?: initialArtwork?.takeIf { it.isNotBlank() }
+                                ?: playlist?.songs?.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+
                             MeloAsyncImage(
-                                url = playlist?.artworkUrl ?: initialArtwork,
+                                url = effectiveArtwork,
                                 contentDescription = playlist?.title ?: initialTitle,
                                 modifier = Modifier
                                     .size(200.dp)

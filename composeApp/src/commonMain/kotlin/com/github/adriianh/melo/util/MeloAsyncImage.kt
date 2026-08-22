@@ -29,7 +29,7 @@ fun MeloAsyncImage(
     size: Dp = 44.dp,
     shape: Shape = RoundedCornerShape(4.dp),
 ) {
-    if (url != null) {
+    if (!url.isNullOrBlank()) {
         PlatformAsyncImage(
             url = url,
             contentDescription = contentDescription,

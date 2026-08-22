@@ -261,12 +261,15 @@ class InnerTubeMusicProvider(
             )
         }
 
+        val albumArtwork =
+            albumItem.thumbnail?.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
+
         return SearchResult.Album(
             id = albumItem.browseId,
             title = albumItem.title,
             author = albumItem.artists?.joinToString(", ") { it.name } ?: "Unknown",
             year = albumItem.year?.toString(),
-            artworkUrl = albumItem.thumbnail,
+            artworkUrl = albumArtwork,
             songs = tracks,
             otherVersions = otherVersions
         )
@@ -336,10 +339,13 @@ class InnerTubeMusicProvider(
             )
         }
 
+        val artistArtwork =
+            result.artist.thumbnail?.takeIf { it.isNotBlank() } ?: tracks?.firstOrNull()?.artworkUrl
+
         return SearchResult.Artist(
             id = result.artist.id,
             name = result.artist.title,
-            artworkUrl = result.artist.thumbnail,
+            artworkUrl = artistArtwork,
             description = result.description,
             subscriberCountText = result.subscriberCountText,
             monthlyListenerCount = result.monthlyListenerCount,
@@ -365,12 +371,15 @@ class InnerTubeMusicProvider(
             )
         }
 
+        val playlistArtwork = result.playlist.thumbnail?.takeIf { it.isNotBlank() }
+            ?: tracks.firstOrNull()?.artworkUrl
+
         return SearchResult.Playlist(
             id = result.playlist.id,
             title = result.playlist.title,
             author = result.playlist.author?.name ?: "Unknown",
             trackCount = result.songs.size,
-            artworkUrl = result.playlist.thumbnail,
+            artworkUrl = playlistArtwork,
             songs = tracks,
             description = null
         )

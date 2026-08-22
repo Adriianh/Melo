@@ -221,7 +221,19 @@ fun App() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     NowPlayingScreen(
-                        onCollapse = { isNowPlayingExpanded = false }
+                        onCollapse = { isNowPlayingExpanded = false },
+                        onArtistClick = { id ->
+                            isNowPlayingExpanded = false
+                            navigateTo(ScreenDestination.Artist(id))
+                        },
+                        onAlbumClick = { id ->
+                            isNowPlayingExpanded = false
+                            navigateTo(ScreenDestination.Album(id))
+                        },
+                        onPlaylistClick = { id ->
+                            isNowPlayingExpanded = false
+                            navigateTo(ScreenDestination.Playlist(id))
+                        }
                     )
                 }
 

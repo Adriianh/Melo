@@ -120,7 +120,14 @@ fun AlbumDetailScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Button(
-                        onClick = { viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor) },
+                        onClick = {
+                            viewModel.loadAlbum(
+                                albumId,
+                                initialTitle,
+                                initialArtwork,
+                                initialAuthor
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                         shape = RoundedCornerShape(24.dp)
                     ) {
@@ -151,8 +158,12 @@ fun AlbumDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            val effectiveArtwork = album?.artworkUrl?.takeIf { it.isNotBlank() }
+                                ?: initialArtwork?.takeIf { it.isNotBlank() }
+                                ?: album?.songs?.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+
                             MeloAsyncImage(
-                                url = album?.artworkUrl ?: initialArtwork,
+                                url = effectiveArtwork,
                                 contentDescription = album?.title ?: initialTitle,
                                 modifier = Modifier
                                     .size(200.dp)

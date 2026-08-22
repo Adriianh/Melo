@@ -12,14 +12,16 @@ class GetEntityDetailsUseCase(
                 val details = musicProvider.getAlbumDetails(entity.id) ?: return entity
                 details.copy(
                     author = if (details.author == "Unknown") entity.author else details.author,
-                    description = details.description ?: entity.description
+                    description = details.description ?: entity.description,
+                    artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
                 )
             }
 
             is SearchResult.Artist -> {
                 val details = musicProvider.getArtistDetails(entity.id) ?: return entity
                 details.copy(
-                    description = details.description ?: entity.description
+                    description = details.description ?: entity.description,
+                    artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
                 )
             }
 
@@ -28,9 +30,11 @@ class GetEntityDetailsUseCase(
                 details.copy(
                     author = if (details.author == "Unknown") entity.author else details.author,
                     description = details.description ?: entity.description,
-                    trackCount = details.trackCount ?: entity.trackCount
+                    trackCount = details.trackCount ?: entity.trackCount,
+                    artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
                 )
             }
+
             is SearchResult.Song -> entity
         }
     }
