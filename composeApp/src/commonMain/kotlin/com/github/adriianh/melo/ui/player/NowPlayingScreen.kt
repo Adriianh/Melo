@@ -3,10 +3,12 @@ package com.github.adriianh.melo.ui.player
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -72,6 +74,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
+import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.GlassPanel
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SegmentedControl
@@ -94,6 +97,9 @@ enum class PanelSection {
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
+    onArtistClick: (String) -> Unit = {},
+    onAlbumClick: (String) -> Unit = {},
+    onPlaylistClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel(),
 ) {
@@ -104,13 +110,20 @@ fun NowPlayingScreen(
     var showLyrics by remember { mutableStateOf(false) }
     var expandedBottomSection by remember { mutableStateOf<PanelSection?>(null) }
 
+    val activeAccent =
+        if (state.accentColor != Color.Transparent && state.accentColor != MeloColors.textMuted) {
+            state.accentColor
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
     Box(modifier = modifier.fillMaxSize()) {
         NowPlayingBackground(artworkUrl = state.albumArt)
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 32.dp),
+                .padding(horizontal = 20.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -154,7 +167,7 @@ fun NowPlayingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             if (platform.type == PlatformType.DESKTOP) {
                 Row(
@@ -171,9 +184,9 @@ fun NowPlayingScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(280.dp)
-                                .shadow(24.dp, RoundedCornerShape(20.dp))
-                                .clip(RoundedCornerShape(20.dp)),
+                                .size(250.dp)
+                                .shadow(20.dp, RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(18.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Crossfade(
@@ -183,6 +196,7 @@ fun NowPlayingScreen(
                                 if (isLyrics) {
                                     NowPlayingLyricsCard(
                                         lyrics = state.lyrics,
+                                        activeAccent = activeAccent,
                                         onToggleArtwork = { showLyrics = false },
                                         modifier = Modifier.fillMaxSize()
                                     )
@@ -193,8 +207,8 @@ fun NowPlayingScreen(
                                         modifier = Modifier
                                             .fillMaxSize()
                                             .clickable { showLyrics = true },
-                                        size = 280.dp,
-                                        shape = RoundedCornerShape(20.dp)
+                                        size = 250.dp,
+                                        shape = RoundedCornerShape(18.dp)
                                     )
                                 }
                             }
@@ -221,7 +235,10 @@ fun NowPlayingScreen(
                                     style = MeloType.titleMedium,
                                     color = MeloColors.textSecondary,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.clickable {
+                                        artistDetails?.id?.let(onArtistClick)
+                                    }
                                 )
                             }
                             Row(
@@ -232,7 +249,7 @@ fun NowPlayingScreen(
                                     Icon(
                                         Icons.Outlined.Mic,
                                         contentDescription = "Letra",
-                                        tint = if (showLyrics) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                        tint = if (showLyrics) activeAccent else MeloColors.textMuted,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -240,7 +257,7 @@ fun NowPlayingScreen(
                                     Icon(
                                         if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                         contentDescription = "Favorite",
-                                        tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                        tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -251,20 +268,25 @@ fun NowPlayingScreen(
 
                         PlayerSlider(
                             state = state,
+                            activeAccent = activeAccent,
                             onSeekTo = viewModel::seekTo,
                             modifier = Modifier.widthIn(max = 380.dp)
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        PlayerTransportControls(state = state, viewModel = viewModel)
+                        PlayerTransportControls(
+                            state = state,
+                            activeAccent = activeAccent,
+                            viewModel = viewModel
+                        )
                     }
 
                     GlassPanel(
                         modifier = Modifier
                             .width(360.dp)
                             .fillMaxHeight()
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 4.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             SegmentedControl(
@@ -284,11 +306,28 @@ fun NowPlayingScreen(
 
                             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 when (selectedSection) {
-                                    PanelSection.QUEUE -> NowPlayingQueueSection(state)
+                                    PanelSection.QUEUE -> NowPlayingQueueSection(
+                                        state,
+                                        activeAccent
+                                    )
+
                                     PanelSection.LYRICS -> NowPlayingLyricsSection(state.lyrics)
                                     PanelSection.ARTIST -> NowPlayingArtistSection(
-                                        state,
-                                        artistDetails
+                                        state = state,
+                                        artistDetails = artistDetails,
+                                        activeAccent = activeAccent,
+                                        onArtistClick = { id ->
+                                            onCollapse()
+                                            onArtistClick(id)
+                                        },
+                                        onAlbumClick = { id ->
+                                            onCollapse()
+                                            onAlbumClick(id)
+                                        },
+                                        onPlaylistClick = { id ->
+                                            onCollapse()
+                                            onPlaylistClick(id)
+                                        }
                                     )
                                 }
                             }
@@ -303,9 +342,9 @@ fun NowPlayingScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(270.dp)
-                            .shadow(20.dp, RoundedCornerShape(20.dp))
-                            .clip(RoundedCornerShape(20.dp)),
+                            .size(230.dp)
+                            .shadow(16.dp, RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Crossfade(
@@ -315,6 +354,7 @@ fun NowPlayingScreen(
                             if (isLyrics) {
                                 NowPlayingLyricsCard(
                                     lyrics = state.lyrics,
+                                    activeAccent = activeAccent,
                                     onToggleArtwork = { showLyrics = false },
                                     modifier = Modifier.fillMaxSize()
                                 )
@@ -325,14 +365,14 @@ fun NowPlayingScreen(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clickable { showLyrics = true },
-                                    size = 270.dp,
-                                    shape = RoundedCornerShape(20.dp)
+                                    size = 230.dp,
+                                    shape = RoundedCornerShape(16.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -353,7 +393,10 @@ fun NowPlayingScreen(
                                 style = MeloType.titleMedium,
                                 color = MeloColors.textSecondary,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.clickable {
+                                    artistDetails?.id?.let(onArtistClick)
+                                }
                             )
                         }
                         Row(
@@ -364,7 +407,7 @@ fun NowPlayingScreen(
                                 Icon(
                                     Icons.Outlined.Mic,
                                     contentDescription = "Letra",
-                                    tint = if (showLyrics) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                    tint = if (showLyrics) activeAccent else MeloColors.textMuted,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -372,18 +415,26 @@ fun NowPlayingScreen(
                                 Icon(
                                     if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                     contentDescription = "Favorite",
-                                    tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                                    tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
                         }
                     }
 
-                    PlayerSlider(state = state, onSeekTo = viewModel::seekTo)
+                    PlayerSlider(
+                        state = state,
+                        activeAccent = activeAccent,
+                        onSeekTo = viewModel::seekTo
+                    )
 
-                    PlayerTransportControls(state = state, viewModel = viewModel)
+                    PlayerTransportControls(
+                        state = state,
+                        activeAccent = activeAccent,
+                        viewModel = viewModel
+                    )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -406,7 +457,7 @@ fun NowPlayingScreen(
                                 Icon(
                                     Icons.AutoMirrored.Filled.QueueMusic,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = activeAccent,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -436,7 +487,7 @@ fun NowPlayingScreen(
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = activeAccent,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -458,7 +509,7 @@ fun NowPlayingScreen(
                 onDismissRequest = { expandedBottomSection = null },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                containerColor = MeloColors.surface1.copy(alpha = 0.88f),
+                containerColor = MeloColors.surface1.copy(alpha = 0.95f),
                 contentColor = MeloColors.textPrimary,
                 scrimColor = Color.Black.copy(alpha = 0.55f),
                 tonalElevation = 12.dp,
@@ -492,8 +543,28 @@ fun NowPlayingScreen(
                     )
 
                     when (expandedBottomSection) {
-                        PanelSection.QUEUE -> NowPlayingQueueSection(state)
-                        PanelSection.ARTIST -> NowPlayingArtistSection(state, artistDetails)
+                        PanelSection.QUEUE -> NowPlayingQueueSection(state, activeAccent)
+                        PanelSection.ARTIST -> NowPlayingArtistSection(
+                            state = state,
+                            artistDetails = artistDetails,
+                            activeAccent = activeAccent,
+                            onArtistClick = { id ->
+                                expandedBottomSection = null
+                                onCollapse()
+                                onArtistClick(id)
+                            },
+                            onAlbumClick = { id ->
+                                expandedBottomSection = null
+                                onCollapse()
+                                onAlbumClick(id)
+                            },
+                            onPlaylistClick = { id ->
+                                expandedBottomSection = null
+                                onCollapse()
+                                onPlaylistClick(id)
+                            }
+                        )
+
                         else -> {}
                     }
                 }
@@ -505,11 +576,12 @@ fun NowPlayingScreen(
 @Composable
 private fun NowPlayingLyricsCard(
     lyrics: String?,
+    activeAccent: Color,
     onToggleArtwork: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         color = MeloColors.surface1.copy(alpha = 0.9f),
         border = BorderStroke(1.dp, MeloColors.borderStrong),
         shadowElevation = 16.dp,
@@ -525,7 +597,7 @@ private fun NowPlayingLyricsCard(
             Icon(
                 Icons.Default.Mic,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = activeAccent,
                 modifier = Modifier.size(28.dp)
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -557,6 +629,7 @@ private fun NowPlayingLyricsCard(
 @Composable
 private fun PlayerSlider(
     state: PlayerUiState,
+    activeAccent: Color,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -569,8 +642,8 @@ private fun PlayerSlider(
                 }
             },
             colors = SliderDefaults.colors(
-                thumbColor = state.accentColor,
-                activeTrackColor = state.accentColor,
+                thumbColor = activeAccent,
+                activeTrackColor = activeAccent,
                 inactiveTrackColor = MeloColors.borderStrong
             ),
             modifier = Modifier.fillMaxWidth()
@@ -597,6 +670,7 @@ private fun PlayerSlider(
 @Composable
 private fun PlayerTransportControls(
     state: PlayerUiState,
+    activeAccent: Color,
     viewModel: PlayerViewModel
 ) {
     Row(
@@ -608,7 +682,7 @@ private fun PlayerTransportControls(
             Icon(
                 Icons.Default.Shuffle,
                 contentDescription = "Shuffle",
-                tint = if (state.shuffleEnabled) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                tint = if (state.shuffleEnabled) activeAccent else MeloColors.textMuted,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -626,7 +700,7 @@ private fun PlayerTransportControls(
 
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
+            color = activeAccent,
             modifier = Modifier.size(64.dp).clickable(onClick = viewModel::togglePlayPause)
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -657,7 +731,7 @@ private fun PlayerTransportControls(
             }
             val tint = when (state.repeatMode) {
                 RepeatMode.NONE -> MeloColors.textMuted
-                else -> MaterialTheme.colorScheme.primary
+                else -> activeAccent
             }
             Icon(icon, contentDescription = "Repeat", tint = tint, modifier = Modifier.size(24.dp))
         }
@@ -667,6 +741,7 @@ private fun PlayerTransportControls(
 @Composable
 private fun NowPlayingQueueSection(
     state: PlayerUiState,
+    activeAccent: Color,
     queueViewModel: QueueViewModel = koinViewModel()
 ) {
     val queueState by queueViewModel.queueState.collectAsState()
@@ -681,14 +756,16 @@ private fun NowPlayingQueueSection(
                 "REPRODUCIENDO AHORA",
                 style = MeloType.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = activeAccent,
+                letterSpacing = 1.sp
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                    .background(activeAccent.copy(alpha = 0.15f))
+                    .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -696,8 +773,8 @@ private fun NowPlayingQueueSection(
                 MeloAsyncImage(
                     url = state.albumArt,
                     contentDescription = state.title,
-                    size = 38.dp,
-                    shape = RoundedCornerShape(4.dp)
+                    size = 42.dp,
+                    shape = RoundedCornerShape(6.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -744,8 +821,8 @@ private fun NowPlayingQueueSection(
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 32.dp,
-                        shape = RoundedCornerShape(4.dp)
+                        size = 36.dp,
+                        shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -790,8 +867,8 @@ private fun NowPlayingQueueSection(
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 32.dp,
-                        shape = RoundedCornerShape(4.dp)
+                        size = 36.dp,
+                        shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -816,7 +893,7 @@ private fun NowPlayingQueueSection(
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Añadir a la cola",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = activeAccent,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -843,47 +920,50 @@ private fun NowPlayingLyricsSection(lyrics: String? = null) {
 private fun NowPlayingArtistSection(
     state: PlayerUiState,
     artistDetails: SearchResult.Artist?,
+    activeAccent: Color,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String) -> Unit,
+    onPlaylistClick: (String) -> Unit,
+    queueViewModel: QueueViewModel = koinViewModel()
 ) {
     if (artistDetails == null) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = activeAccent)
         }
         return
     }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onArtistClick(artistDetails.id) },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 MeloAsyncImage(
                     url = artistDetails.artworkUrl,
                     contentDescription = artistDetails.name,
                     modifier = Modifier
-                        .size(240.dp)
-                        .shadow(20.dp, RoundedCornerShape(20.dp))
-                        .clip(RoundedCornerShape(20.dp)),
-                    size = 240.dp,
-                    shape = RoundedCornerShape(20.dp)
+                        .size(110.dp)
+                        .shadow(12.dp, CircleShape)
+                        .clip(CircleShape)
+                        .border(1.5.dp, MeloColors.borderStrong, CircleShape),
+                    size = 110.dp,
+                    shape = CircleShape
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = artistDetails.name,
-                    style = MeloType.titleLarge,
+                    style = MeloType.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MeloColors.textPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
 
@@ -893,12 +973,31 @@ private fun NowPlayingArtistSection(
                 ).joinToString(" · ")
 
                 if (subtitle.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = subtitle,
-                        style = MeloType.labelMedium,
+                        style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = activeAccent.copy(alpha = 0.12f),
+                    border = BorderStroke(
+                        0.5.dp,
+                        activeAccent.copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier.clickable { onArtistClick(artistDetails.id) }
+                ) {
+                    Text(
+                        "Ver perfil completo",
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                        style = MeloType.labelMedium,
+                        color = activeAccent,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -908,29 +1007,48 @@ private fun NowPlayingArtistSection(
         if (!bio.isNullOrBlank()) {
             item {
                 var expanded by remember { mutableStateOf(false) }
-                Column(modifier = Modifier.padding(horizontal = 4.dp)) {
-                    Text(
-                        text = "Biografía",
-                        style = MeloType.labelSmall,
-                        letterSpacing = 1.2.sp,
-                        color = MeloColors.textMuted
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = bio,
-                        style = MeloType.body,
-                        color = MeloColors.textSecondary,
-                        maxLines = if (expanded) Int.MAX_VALUE else 4,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clickable { expanded = !expanded }
-                    )
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MeloColors.glassFill.copy(alpha = 0.3f),
+                    border = BorderStroke(0.5.dp, MeloColors.glassBorder)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Biografía",
+                            style = MeloType.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MeloColors.textPrimary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = bio,
+                            style = MeloType.body.copy(lineHeight = 18.sp),
+                            color = MeloColors.textSecondary,
+                            maxLines = if (expanded) Int.MAX_VALUE else 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = if (expanded) "Leer menos" else "Leer más",
+                            style = MeloType.labelSmall,
+                            color = activeAccent,
+                            modifier = Modifier
+                                .padding(top = 6.dp)
+                                .clickable { expanded = !expanded }
+                        )
+                    }
                 }
             }
         }
 
         artistDetails.topSongs?.takeIf { it.isNotEmpty() }?.let { topSongs ->
             item {
-                SectionHeader(title = "Canciones populares")
+                Text(
+                    "Canciones populares",
+                    style = MeloType.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
             itemsIndexed(topSongs) { index, track ->
                 val isPlayingThis = state.title == track.title && state.artist == track.artist
@@ -938,25 +1056,29 @@ private fun NowPlayingArtistSection(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (isPlayingThis) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            if (isPlayingThis) activeAccent.copy(alpha = 0.15f)
                             else Color.Transparent
                         )
                 ) {
                     TrackRow(
                         track = track,
                         trackNumber = index + 1,
-                        onClick = { }
+                        isCurrent = isPlayingThis,
+                        isPlaying = state.isPlaying,
+                        onClick = { queueViewModel.playTrack(track) }
                     )
                 }
             }
         }
 
         for (section in artistDetails.sections) {
+            if (section.items.isEmpty()) continue
+
             item(key = "section_${section.title}") {
                 SectionHeader(title = section.title)
                 AdaptiveLazyRow(
                     items = section.items,
-                    minCardWidth = 130.dp,
+                    minCardWidth = 120.dp,
                     spacing = 10.dp
                 ) { item, cardWidth ->
                     when (item) {
@@ -965,21 +1087,34 @@ private fun NowPlayingArtistSection(
                             subtitle = item.author,
                             artworkUrl = item.artworkUrl,
                             cardWidth = cardWidth,
-                            onClick = { }
+                            onClick = { onAlbumClick(item.id) }
+                        )
+
+                        is SearchResult.Artist -> ArtistCircle(
+                            name = item.name,
+                            artworkUrl = item.artworkUrl,
+                            onClick = { onArtistClick(item.id) },
+                            size = cardWidth
                         )
 
                         is SearchResult.Song -> TrackRow(
                             track = item.track,
-                            onClick = { },
-                            modifier = Modifier.size(280.dp, 56.dp)
+                            onClick = { queueViewModel.playTrack(item.track) },
+                            modifier = Modifier.width(280.dp)
                         )
 
-                        else -> {}
+                        is SearchResult.Playlist -> AlbumCard(
+                            title = item.title,
+                            subtitle = item.author,
+                            artworkUrl = item.artworkUrl,
+                            cardWidth = cardWidth,
+                            onClick = { onPlaylistClick(item.id) }
+                        )
                     }
                 }
             }
         }
 
-        item { Spacer(modifier = Modifier.height(8.dp)) }
+        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 }

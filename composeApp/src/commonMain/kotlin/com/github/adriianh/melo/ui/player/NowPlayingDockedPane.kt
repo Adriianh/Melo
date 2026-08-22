@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -23,13 +26,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +59,9 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DesktopNowPlayingDockedPane(
     onExpandToFullscreen: () -> Unit,
     onClose: () -> Unit,
+    onArtistClick: (String) -> Unit = {},
+    onAlbumClick: (String) -> Unit = {},
+    onPlaylistClick: (String) -> Unit = {},
     selectedSection: PanelSection = PanelSection.QUEUE,
     onSectionChange: (PanelSection) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -60,132 +69,137 @@ fun DesktopNowPlayingDockedPane(
 ) {
     val state by viewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
+    val activeAccent =
+        if (state.accentColor != Color.Transparent && state.accentColor != MeloColors.textMuted) {
+            state.accentColor
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
 
     if (!state.hasTrack) return
 
     Column(
         modifier = modifier
-            .width(280.dp)
+            .width(290.dp)
             .fillMaxHeight()
             .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.glassFill)
+            .background(MeloColors.glassSurface)
             .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
             .padding(14.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "REPRODUCIENDO",
-                    style = MeloType.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    color = MeloColors.textMuted
-                )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onExpandToFullscreen, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            Icons.Default.OpenInFull,
-                            contentDescription = "Expandir pantalla completa",
-                            tint = MeloColors.textPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Cerrar panel",
-                            tint = MeloColors.textMuted,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            MeloAsyncImage(
-                url = state.albumArt,
-                contentDescription = state.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .shadow(12.dp, RoundedCornerShape(14.dp))
-                    .clip(RoundedCornerShape(14.dp)),
-                size = 200.dp,
-                shape = RoundedCornerShape(14.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "REPRODUCIENDO",
+                style = MeloType.labelSmall,
+                letterSpacing = 1.2.sp,
+                color = MeloColors.textMuted
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = state.title,
-                        style = MeloType.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = state.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                IconButton(
-                    onClick = { viewModel.toggleFavorite() },
-                    modifier = Modifier.size(28.dp)
-                ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onExpandToFullscreen, modifier = Modifier.size(28.dp)) {
                     Icon(
-                        if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorito",
-                        tint = if (state.isFavorite) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
-                        modifier = Modifier.size(20.dp)
+                        Icons.Default.OpenInFull,
+                        contentDescription = "Expandir pantalla completa",
+                        tint = MeloColors.textPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Cerrar panel",
+                        tint = MeloColors.textMuted,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(14.dp))
+        MeloAsyncImage(
+            url = state.albumArt,
+            contentDescription = state.title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .shadow(10.dp, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp)),
+            size = 160.dp,
+            shape = RoundedCornerShape(12.dp)
+        )
 
-            SegmentedControl(
-                options = PanelSection.entries,
-                selected = selectedSection,
-                onSelect = onSectionChange,
-                label = {
-                    when (it) {
-                        PanelSection.QUEUE -> "Cola"
-                        PanelSection.LYRICS -> "Letra"
-                        PanelSection.ARTIST -> "Artista"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = state.title,
+                    style = MeloType.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = state.artist,
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable {
+                        artistDetails?.id?.let(onArtistClick)
                     }
-                }
-            )
+                )
+            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = false)
+            IconButton(
+                onClick = { viewModel.toggleFavorite() },
+                modifier = Modifier.size(28.dp)
             ) {
-                when (selectedSection) {
-                    PanelSection.QUEUE -> DockedQueueContent(state)
-                    PanelSection.LYRICS -> DockedLyricsContent()
-                    PanelSection.ARTIST -> DockedArtistContent(state, artistDetails)
+                Icon(
+                    if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorito",
+                    tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        SegmentedControl(
+            options = PanelSection.entries,
+            selected = selectedSection,
+            onSelect = onSectionChange,
+            label = {
+                when (it) {
+                    PanelSection.QUEUE -> "Cola"
+                    PanelSection.LYRICS -> "Letra"
+                    PanelSection.ARTIST -> "Artista"
                 }
+            }
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            when (selectedSection) {
+                PanelSection.QUEUE -> DockedQueueContent(state, activeAccent)
+                PanelSection.LYRICS -> DockedLyricsContent()
+                PanelSection.ARTIST -> DockedArtistContent(
+                    state = state,
+                    artistDetails = artistDetails,
+                    activeAccent = activeAccent,
+                    onArtistClick = onArtistClick,
+                    onAlbumClick = onAlbumClick
+                )
             }
         }
     }
@@ -194,13 +208,14 @@ fun DesktopNowPlayingDockedPane(
 @Composable
 private fun DockedQueueContent(
     state: PlayerUiState,
+    activeAccent: Color,
     queueViewModel: QueueViewModel = koinViewModel()
 ) {
     val queueState by queueViewModel.queueState.collectAsState()
     val suggestions by queueViewModel.suggestions.collectAsState()
 
     LazyColumn(
-        modifier = Modifier.fillMaxWidth().height(180.dp),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         item {
@@ -208,23 +223,24 @@ private fun DockedQueueContent(
                 "Reproduciendo ahora",
                 style = MeloType.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = activeAccent
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                    .background(activeAccent.copy(alpha = 0.15f))
+                    .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 MeloAsyncImage(
                     url = state.albumArt,
                     contentDescription = state.title,
-                    size = 32.dp,
-                    shape = RoundedCornerShape(4.dp)
+                    size = 40.dp,
+                    shape = RoundedCornerShape(6.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -264,19 +280,26 @@ private fun DockedQueueContent(
                         .clickable { queueViewModel.playTrackInQueue(track) }
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 26.dp,
-                        shape = RoundedCornerShape(4.dp)
+                        size = 34.dp,
+                        shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             track.title,
                             style = MeloType.labelMedium,
                             color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            track.artist,
+                            style = MeloType.labelSmall.copy(fontSize = 10.sp),
+                            color = MeloColors.textMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -301,19 +324,26 @@ private fun DockedQueueContent(
                         .clip(RoundedCornerShape(6.dp))
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 26.dp,
-                        shape = RoundedCornerShape(4.dp)
+                        size = 34.dp,
+                        shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             track.title,
                             style = MeloType.labelMedium,
                             color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            track.artist,
+                            style = MeloType.labelSmall.copy(fontSize = 10.sp),
+                            color = MeloColors.textMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -325,7 +355,7 @@ private fun DockedQueueContent(
                         Icon(
                             Icons.Default.Add,
                             contentDescription = "Añadir a la cola",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = activeAccent,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -338,11 +368,11 @@ private fun DockedQueueContent(
 @Composable
 private fun DockedLyricsContent() {
     Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            "Letras sincronizadas próximamente",
+            "Letras sincronizadas disponibles próximamente",
             style = MeloType.body,
             color = MeloColors.textSecondary,
             textAlign = TextAlign.Center
@@ -354,41 +384,82 @@ private fun DockedLyricsContent() {
 private fun DockedArtistContent(
     state: PlayerUiState,
     artistDetails: SearchResult.Artist?,
+    activeAccent: Color,
+    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String) -> Unit,
+    queueViewModel: QueueViewModel = koinViewModel()
 ) {
     if (artistDetails == null) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            ArtistCircle(
-                name = state.artist,
-                artworkUrl = state.albumArt,
-                onClick = {},
-                size = 64.dp
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ArtistCircle(
+                    name = state.artist,
+                    artworkUrl = state.albumArt,
+                    onClick = { },
+                    size = 68.dp
+                )
+                CircularProgressIndicator(
+                    color = activeAccent,
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            }
         }
         return
     }
 
+    val topSongs = remember(artistDetails) {
+        artistDetails.topSongs?.take(4) ?: emptyList()
+    }
+
+    val albums = remember(artistDetails) {
+        val albumsFromSections = artistDetails.sections
+            .filter { section ->
+                section.title.contains("álbum", ignoreCase = true) ||
+                        section.title.contains("album", ignoreCase = true) ||
+                        section.title.contains("disc", ignoreCase = true) ||
+                        section.title.contains("lanzamiento", ignoreCase = true) ||
+                        section.title.contains("release", ignoreCase = true)
+            }
+            .flatMap { it.items }
+            .filterIsInstance<SearchResult.Album>()
+            .ifEmpty {
+                artistDetails.sections.flatMap { it.items }.filterIsInstance<SearchResult.Album>()
+            }
+            .distinctBy { it.id }
+            .take(4)
+        albumsFromSections
+    }
+
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onArtistClick(artistDetails.id) }
+                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 MeloAsyncImage(
                     url = artistDetails.artworkUrl,
                     contentDescription = artistDetails.name,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .shadow(10.dp, RoundedCornerShape(14.dp))
-                        .clip(RoundedCornerShape(14.dp)),
-                    size = 140.dp,
-                    shape = RoundedCornerShape(14.dp)
+                        .size(68.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .border(1.5.dp, MeloColors.borderStrong, CircleShape),
+                    size = 68.dp,
+                    shape = CircleShape
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -403,26 +474,47 @@ private fun DockedArtistContent(
                     textAlign = TextAlign.Center
                 )
 
-                val subscriberText = artistDetails.subscriberCountText
-                if (!subscriberText.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                val subtitle = listOfNotNull(
+                    artistDetails.subscriberCountText,
+                    artistDetails.monthlyListenerCount
+                ).firstOrNull { it.isNotBlank() }
+
+                if (!subtitle.isNullOrBlank()) {
                     Text(
-                        text = subscriberText,
+                        text = subtitle,
                         style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         textAlign = TextAlign.Center
                     )
                 }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = activeAccent.copy(alpha = 0.12f),
+                    border = BorderStroke(0.5.dp, activeAccent.copy(alpha = 0.35f)),
+                    modifier = Modifier.clickable { onArtistClick(artistDetails.id) }
+                ) {
+                    Text(
+                        "Ver perfil",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp),
+                        style = MeloType.labelSmall.copy(fontSize = 11.sp),
+                        color = activeAccent,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
-        artistDetails.topSongs?.take(5)?.takeIf { it.isNotEmpty() }?.let { topSongs ->
+        if (topSongs.isNotEmpty()) {
             item {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Canciones populares",
+                    "Populares",
                     style = MeloType.labelSmall,
-                    color = MeloColors.textMuted
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textMuted,
+                    letterSpacing = 1.sp
                 )
             }
             items(topSongs) { track ->
@@ -430,11 +522,12 @@ private fun DockedArtistContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (isPlayingThis) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            if (isPlayingThis) activeAccent.copy(alpha = 0.15f)
                             else Color.Transparent
                         )
+                        .clickable { queueViewModel.playTrack(track) }
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -442,21 +535,22 @@ private fun DockedArtistContent(
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 32.dp,
-                        shape = RoundedCornerShape(4.dp)
+                        size = 36.dp,
+                        shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             track.title,
                             style = MeloType.labelMedium,
-                            color = MeloColors.textPrimary,
+                            fontWeight = if (isPlayingThis) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isPlayingThis) activeAccent else MeloColors.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             track.artist,
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textMuted,
+                            style = MeloType.labelSmall.copy(fontSize = 10.sp),
+                            color = MeloColors.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -465,17 +559,81 @@ private fun DockedArtistContent(
             }
         }
 
-        val bio = artistDetails.description
-        if (!bio.isNullOrBlank()) {
+        if (albums.isNotEmpty()) {
             item {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    bio,
+                    "Álbumes y lanzamientos",
                     style = MeloType.labelSmall,
+                    fontWeight = FontWeight.Bold,
                     color = MeloColors.textMuted,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    letterSpacing = 1.sp
                 )
+            }
+            items(albums) { album ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onAlbumClick(album.id) }
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MeloAsyncImage(
+                        url = album.artworkUrl,
+                        contentDescription = album.title,
+                        size = 44.dp,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            album.title,
+                            style = MeloType.labelMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        val yearOrAuthor =
+                            listOfNotNull(album.year, album.author).firstOrNull { it.isNotBlank() }
+                        if (!yearOrAuthor.isNullOrBlank()) {
+                            Text(
+                                yearOrAuthor,
+                                style = MeloType.labelSmall.copy(fontSize = 11.sp),
+                                color = MeloColors.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MeloColors.chromePillFill,
+                border = BorderStroke(0.5.dp, MeloColors.border),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onArtistClick(artistDetails.id) }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Ver perfil completo",
+                        style = MeloType.labelSmall,
+                        color = activeAccent,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 

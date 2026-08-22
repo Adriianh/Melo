@@ -44,6 +44,8 @@ fun AdaptiveScaffold(
     onOpenNowPlaying: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
+    onAlbumClick: (String) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
     isDarkTheme: Boolean = true,
     onToggleTheme: () -> Unit = {},
     content: @Composable (String, PaddingValues) -> Unit
@@ -57,6 +59,8 @@ fun AdaptiveScaffold(
             onOpenNowPlaying = onOpenNowPlaying,
             onOpenSettings = onOpenSettings,
             onPlaylistClick = onPlaylistClick,
+            onAlbumClick = onAlbumClick,
+            onArtistClick = onArtistClick,
             isDarkTheme = isDarkTheme,
             onToggleTheme = onToggleTheme,
             content = { padding -> content(selectedTab, padding) }
@@ -79,6 +83,8 @@ private fun DesktopMainLayout(
     onOpenNowPlaying: () -> Unit,
     onOpenSettings: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
+    onAlbumClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
@@ -166,6 +172,9 @@ private fun DesktopMainLayout(
                 DesktopNowPlayingDockedPane(
                     onExpandToFullscreen = onOpenNowPlaying,
                     onClose = { isDesktopPaneVisible = false },
+                    onArtistClick = onArtistClick,
+                    onAlbumClick = onAlbumClick,
+                    onPlaylistClick = { id -> onPlaylistClick(id, "", null, "") },
                     selectedSection = desktopPaneSection,
                     onSectionChange = { desktopPaneSection = it }
                 )

@@ -129,6 +129,12 @@ fun App() {
                     onPlaylistClick = { id, title, artwork, author ->
                         navigateTo(ScreenDestination.Playlist(id, title, artwork, author))
                     },
+                    onAlbumClick = { id ->
+                        navigateTo(ScreenDestination.Album(id))
+                    },
+                    onArtistClick = { id ->
+                        navigateTo(ScreenDestination.Artist(id))
+                    },
                     isDarkTheme = isDarkTheme,
                     onToggleTheme = {
                         coroutineScope.launch {
