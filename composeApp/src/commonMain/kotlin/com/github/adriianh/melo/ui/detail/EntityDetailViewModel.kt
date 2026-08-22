@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
@@ -23,6 +24,7 @@ class EntityDetailViewModel(
     private val getEntityDetailsUseCase: GetEntityDetailsUseCase,
     private val toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
     private val toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
+    private val subscribeChannelUseCase: SubscribeChannelUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
@@ -81,9 +83,10 @@ class EntityDetailViewModel(
                 when (entity) {
                     is SearchResult.Album -> toggleLikeAlbumUseCase(entity.id, newSaved)
                     is SearchResult.Playlist -> toggleLikePlaylistUseCase(entity.id, newSaved)
+                    is SearchResult.Artist -> subscribeChannelUseCase?.invoke(entity.id, newSaved)
                     else -> {}
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.update { it.copy(isSaved = !newSaved) }
             }
         }
