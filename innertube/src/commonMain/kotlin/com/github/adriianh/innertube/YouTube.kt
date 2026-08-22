@@ -232,22 +232,47 @@ object YouTube {
 
             response = innerTube.browse(WEB_REMIX, "VL$playlistId").body<BrowseResponse>()
 
+            val albumHeader =
+                response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer
+                    ?: response.header?.musicHeaderRenderer
+                    ?: response.header?.musicDetailHeaderRenderer?.let {
+                        BrowseResponse.Header.MusicHeaderRenderer(
+                            buttons = null,
+                            title = it.title,
+                            thumbnail = null,
+                            subtitle = it.subtitle,
+                            secondSubtitle = it.secondSubtitle,
+                            straplineTextOne = null,
+                            straplineThumbnail = null
+                        )
+                    }
+
+            val albumTitle = albumHeader?.title?.runs?.firstOrNull()?.text
+                ?: response.header?.musicDetailHeaderRenderer?.title?.runs?.firstOrNull()?.text
+                ?: response.header?.musicVisualHeaderRenderer?.title?.runs?.firstOrNull()?.text
+                ?: ""
+
+            val albumArtists = albumHeader?.straplineTextOne?.runs?.oddElements()?.map {
+                Artist(
+                    name = it.text,
+                    id = it.navigationEndpoint?.browseEndpoint?.browseId
+                )
+            } ?: emptyList()
+
+            val albumYear = albumHeader?.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull()
+            val albumThumbnail =
+                albumHeader?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
+                    ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                    ?: ""
+
             AlbumPage(
                 album = AlbumItem(
                     browseId = browseId,
                     playlistId = playlistId,
-                    title = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.title?.runs?.firstOrNull()?.text
-                        ?: "",
-                    artists = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.straplineTextOne?.runs?.oddElements()
-                        ?.map {
-                            Artist(
-                                name = it.text,
-                                id = it.navigationEndpoint?.browseEndpoint?.browseId
-                            )
-                        } ?: emptyList(),
-                    year = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
-                    thumbnail = response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.musicResponsiveHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
-                        ?: "",
+                    title = albumTitle,
+                    artists = albumArtists,
+                    year = albumYear,
+                    thumbnail = albumThumbnail,
                 ),
                 songs = if (withSongs) {
                     val songs = response.contents?.twoColumnBrowseResultsRenderer
@@ -477,10 +502,20 @@ object YouTube {
 
         val editable = base?.musicEditablePlaylistDetailHeaderRenderer != null
 
+        val playlistTitle = header?.title?.runs?.firstOrNull()?.text
+            ?: response.header?.musicDetailHeaderRenderer?.title?.runs?.firstOrNull()?.text
+            ?: response.header?.musicHeaderRenderer?.title?.runs?.firstOrNull()?.text
+            ?: ""
+
+        val playlistThumbnail =
+            header?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
+                ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                ?: ""
+
         PlaylistPage(
             playlist = PlaylistItem(
                 id = playlistId,
-                title = header?.title?.runs?.firstOrNull()?.text ?: "",
+                title = playlistTitle,
                 author = header?.straplineTextOne?.runs?.firstOrNull()?.let {
                     Artist(
                         name = it.text,
@@ -488,8 +523,7 @@ object YouTube {
                     )
                 },
                 songCountText = header?.secondSubtitle?.runs?.firstOrNull()?.text,
-                thumbnail = header?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
-                    ?: "",
+                thumbnail = playlistThumbnail,
                 playEndpoint = null,
                 shuffleEndpoint = header?.buttons?.lastOrNull()?.menuRenderer?.items?.firstOrNull()?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
                 radioEndpoint = header?.buttons?.getOrNull(2)?.menuRenderer?.items?.find {

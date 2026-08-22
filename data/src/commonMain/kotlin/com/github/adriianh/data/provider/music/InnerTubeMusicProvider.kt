@@ -263,10 +263,13 @@ class InnerTubeMusicProvider(
 
         val albumArtwork =
             albumItem.thumbnail.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
+        val albumTitle = albumItem.title.takeIf { it.isNotBlank() }
+            ?: tracks.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+            ?: "Álbum"
 
         return SearchResult.Album(
             id = albumItem.browseId,
-            title = albumItem.title,
+            title = albumTitle,
             author = albumItem.artists?.joinToString(", ") { it.name } ?: "Unknown",
             year = albumItem.year?.toString(),
             artworkUrl = albumArtwork,
@@ -373,10 +376,11 @@ class InnerTubeMusicProvider(
 
         val playlistArtwork = result.playlist.thumbnail.takeIf { it.isNotBlank() }
             ?: tracks.firstOrNull()?.artworkUrl
+        val playlistTitle = result.playlist.title.takeIf { it.isNotBlank() } ?: "Playlist"
 
         return SearchResult.Playlist(
             id = result.playlist.id,
-            title = result.playlist.title,
+            title = playlistTitle,
             author = result.playlist.author?.name ?: "Unknown",
             trackCount = result.songs.size,
             artworkUrl = playlistArtwork,

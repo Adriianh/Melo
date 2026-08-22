@@ -11,7 +11,11 @@ class GetEntityDetailsUseCase(
             is SearchResult.Album -> {
                 val details = musicProvider.getAlbumDetails(entity.id) ?: return entity
                 details.copy(
-                    author = if (details.author == "Unknown") entity.author else details.author,
+                    title = details.title.takeIf { it.isNotBlank() }
+                        ?: entity.title.takeIf { it.isNotBlank() }
+                        ?: details.songs?.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+                        ?: "Álbum",
+                    author = if (details.author == "Unknown" && entity.author.isNotBlank()) entity.author else details.author,
                     description = details.description ?: entity.description,
                     artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
                 )
@@ -20,6 +24,8 @@ class GetEntityDetailsUseCase(
             is SearchResult.Artist -> {
                 val details = musicProvider.getArtistDetails(entity.id) ?: return entity
                 details.copy(
+                    name = details.name.takeIf { it.isNotBlank() }
+                        ?: entity.name.takeIf { it.isNotBlank() } ?: "Artista",
                     description = details.description ?: entity.description,
                     artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
                 )
@@ -28,7 +34,10 @@ class GetEntityDetailsUseCase(
             is SearchResult.Playlist -> {
                 val details = musicProvider.getPlaylistDetails(entity.id) ?: return entity
                 details.copy(
-                    author = if (details.author == "Unknown") entity.author else details.author,
+                    title = details.title.takeIf { it.isNotBlank() }
+                        ?: entity.title.takeIf { it.isNotBlank() }
+                        ?: "Playlist",
+                    author = if (details.author == "Unknown" && entity.author.isNotBlank()) entity.author else details.author,
                     description = details.description ?: entity.description,
                     trackCount = details.trackCount ?: entity.trackCount,
                     artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
