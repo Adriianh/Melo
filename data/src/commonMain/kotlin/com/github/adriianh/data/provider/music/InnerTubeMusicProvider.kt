@@ -262,7 +262,7 @@ class InnerTubeMusicProvider(
         }
 
         val albumArtwork =
-            albumItem.thumbnail?.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
+            albumItem.thumbnail.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
 
         return SearchResult.Album(
             id = albumItem.browseId,
@@ -340,7 +340,7 @@ class InnerTubeMusicProvider(
         }
 
         val artistArtwork =
-            result.artist.thumbnail?.takeIf { it.isNotBlank() } ?: tracks?.firstOrNull()?.artworkUrl
+            result.artist.thumbnail.takeIf { it.isNotBlank() } ?: tracks?.firstOrNull()?.artworkUrl
 
         return SearchResult.Artist(
             id = result.artist.id,
@@ -371,7 +371,7 @@ class InnerTubeMusicProvider(
             )
         }
 
-        val playlistArtwork = result.playlist.thumbnail?.takeIf { it.isNotBlank() }
+        val playlistArtwork = result.playlist.thumbnail.takeIf { it.isNotBlank() }
             ?: tracks.firstOrNull()?.artworkUrl
 
         return SearchResult.Playlist(
