@@ -195,6 +195,8 @@ class MusicRepositoryImpl(
         musicProvider.getMoodAndGenres()
 
     override suspend fun getRadio(videoId: String): List<Track> = musicProvider.getRadio(videoId)
+    override suspend fun getArtistRadio(artistId: String): List<Track> =
+        musicProvider.getArtistRadio(artistId)
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? =
         musicProvider.browseCategory(browseId, params)
 

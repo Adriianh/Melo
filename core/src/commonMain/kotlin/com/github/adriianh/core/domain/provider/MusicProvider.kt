@@ -38,5 +38,6 @@ interface MusicProvider {
     suspend fun getTrending(): List<Track> = emptyList()
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = emptyList()
     suspend fun getRadio(videoId: String): List<Track> = emptyList()
+    suspend fun getArtistRadio(artistId: String): List<Track> = emptyList()
     suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? = null
 }

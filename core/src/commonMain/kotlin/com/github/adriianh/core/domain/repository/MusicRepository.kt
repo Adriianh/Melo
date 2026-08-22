@@ -34,5 +34,6 @@ interface MusicRepository {
     suspend fun getTrending(): List<Track>
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup>
     suspend fun getRadio(videoId: String): List<Track>
+    suspend fun getArtistRadio(artistId: String): List<Track>
     suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult?
 }

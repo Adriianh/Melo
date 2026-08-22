@@ -15,6 +15,7 @@ import com.github.adriianh.innertube.models.AlbumItem
 import com.github.adriianh.innertube.models.ArtistItem
 import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SongItem
+import com.github.adriianh.innertube.models.WatchEndpoint
 import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.YouTubeClient
 
@@ -473,12 +474,38 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun getRadio(videoId: String): List<Track> {
-        val endpoint = com.github.adriianh.innertube.models.WatchEndpoint(
-            videoId = videoId,
-            playlistId = "RDAMVM$videoId"
+        val cleanId = videoId.removePrefix("piped:")
+        if (cleanId.isBlank()) return emptyList()
+        val endpoint = WatchEndpoint(
+            videoId = cleanId,
+            playlistId = "RDAMVM$cleanId"
         )
-        val result = YouTube.next(endpoint).getOrNull() ?: return emptyList()
+        val result = YouTube.next(endpoint).getOrNull()
+            ?: YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
+            ?: return fallback?.getRadio(videoId) ?: emptyList()
         return result.items.map { mapSongItem(it) }
+    }
+
+    override suspend fun getArtistRadio(artistId: String): List<Track> {
+        val cleanId = artistId.removePrefix("piped:")
+        if (cleanId.isBlank()) return emptyList()
+
+        val endpoint = WatchEndpoint(
+            playlistId = if (cleanId.startsWith("RDAMEA")) cleanId else "RDAMEA$cleanId"
+        )
+        val result = YouTube.next(endpoint).getOrNull()
+        if (result != null && result.items.isNotEmpty()) {
+            return result.items.map { mapSongItem(it) }
+        }
+
+        val artistDetails = getArtistDetails(cleanId)
+        val firstTopSongId = artistDetails?.topSongs?.firstOrNull()?.sourceId
+            ?: artistDetails?.topSongs?.firstOrNull()?.id?.removePrefix("piped:")
+        if (!firstTopSongId.isNullOrBlank()) {
+            return getRadio(firstTopSongId)
+        }
+
+        return emptyList()
     }
 
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
