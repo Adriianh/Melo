@@ -39,9 +39,25 @@ class QueueViewModel(
 
     fun playTrack(track: Track) = manager.playTrack(track)
 
+    fun playTracks(tracks: List<Track>, startIndex: Int = 0) {
+        if (tracks.isEmpty()) return
+        val validIndex = startIndex.coerceIn(0, tracks.lastIndex)
+        manager.setQueue(tracks, validIndex)
+    }
+
+    fun playShuffled(tracks: List<Track>) {
+        if (tracks.isEmpty()) return
+        val shuffled = tracks.shuffled()
+        manager.setQueue(shuffled, 0)
+    }
+
     fun addToQueue(track: Track) {
         manager.addToQueue(track)
         _suggestions.update { current -> current.filter { it.id != track.id } }
+    }
+
+    fun addAllToQueue(tracks: List<Track>) {
+        tracks.forEach { manager.addToQueue(it) }
     }
 
     fun playTrackInQueue(track: Track) = manager.playTrackInQueue(track)

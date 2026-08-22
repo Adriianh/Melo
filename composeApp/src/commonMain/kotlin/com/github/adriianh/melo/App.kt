@@ -182,7 +182,9 @@ fun App() {
                                 initialTitle = currentScreen.title,
                                 initialArtwork = currentScreen.artwork,
                                 initialAuthor = currentScreen.author,
-                                onBack = ::navigateBack
+                                onBack = ::navigateBack,
+                                onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
                             )
 
                             is ScreenDestination.Playlist -> PlaylistDetailScreen(
@@ -190,7 +192,8 @@ fun App() {
                                 initialTitle = currentScreen.title,
                                 initialArtwork = currentScreen.artwork,
                                 initialAuthor = currentScreen.author,
-                                onBack = ::navigateBack
+                                onBack = ::navigateBack,
+                                onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) }
                             )
 
                             is ScreenDestination.Artist -> ArtistDetailScreen(
@@ -198,7 +201,9 @@ fun App() {
                                 initialName = currentScreen.name,
                                 initialArtwork = currentScreen.artwork,
                                 onBack = ::navigateBack,
-                                onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
+                                onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                onPlaylistClick = { id -> navigateTo(ScreenDestination.Playlist(id)) }
                             )
                         }
                     }
