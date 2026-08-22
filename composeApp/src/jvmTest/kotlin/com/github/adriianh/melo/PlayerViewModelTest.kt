@@ -5,6 +5,7 @@ import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.melo.ui.player.PlayerViewModel
@@ -38,6 +39,7 @@ class PlayerViewModelTest {
     private val httpClient = mockk<HttpClient>(relaxed = true)
     private val toggleLikeTrackUseCase = mockk<ToggleLikeTrackUseCase>(relaxed = true)
     private val recordPlayUseCase = mockk<RecordPlayUseCase>(relaxed = true)
+    private val musicProvider = mockk<MusicProvider>(relaxed = true)
 
     @BeforeTest
     fun setup() {
@@ -51,7 +53,13 @@ class PlayerViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createVm() = PlayerViewModel(playbackManager, httpClient, toggleLikeTrackUseCase, recordPlayUseCase)
+    private fun createVm() = PlayerViewModel(
+        playbackManager,
+        httpClient,
+        toggleLikeTrackUseCase,
+        recordPlayUseCase,
+        musicProvider
+    )
 
     @Test
     fun `playbackState delegates to manager`() = runTest {

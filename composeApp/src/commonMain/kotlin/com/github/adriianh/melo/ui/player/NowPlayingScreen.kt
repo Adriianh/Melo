@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,10 +68,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.RepeatMode
-import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.GlassPanel
+import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SegmentedControl
+import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -92,6 +98,7 @@ fun NowPlayingScreen(
     viewModel: PlayerViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val artistDetails by viewModel.artistDetails.collectAsState()
     val platform = remember { getPlatform() }
     var selectedSection by remember { mutableStateOf(PanelSection.QUEUE) }
     var showLyrics by remember { mutableStateOf(false) }
@@ -279,7 +286,10 @@ fun NowPlayingScreen(
                                 when (selectedSection) {
                                     PanelSection.QUEUE -> NowPlayingQueueSection(state)
                                     PanelSection.LYRICS -> NowPlayingLyricsSection(state.lyrics)
-                                    PanelSection.ARTIST -> NowPlayingArtistSection(state)
+                                    PanelSection.ARTIST -> NowPlayingArtistSection(
+                                        state,
+                                        artistDetails
+                                    )
                                 }
                             }
                         }
@@ -483,7 +493,7 @@ fun NowPlayingScreen(
 
                     when (expandedBottomSection) {
                         PanelSection.QUEUE -> NowPlayingQueueSection(state)
-                        PanelSection.ARTIST -> NowPlayingArtistSection(state)
+                        PanelSection.ARTIST -> NowPlayingArtistSection(state, artistDetails)
                         else -> {}
                     }
                 }
@@ -830,23 +840,146 @@ private fun NowPlayingLyricsSection(lyrics: String? = null) {
 }
 
 @Composable
-private fun NowPlayingArtistSection(state: PlayerUiState) {
-    Column(
+private fun NowPlayingArtistSection(
+    state: PlayerUiState,
+    artistDetails: SearchResult.Artist?,
+) {
+    if (artistDetails == null) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+        return
+    }
+
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        ArtistCircle(
-            name = state.artist,
-            artworkUrl = state.albumArt,
-            onClick = {},
-            size = 80.dp
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            "Artista verificado",
-            style = MeloType.labelSmall,
-            color = MeloColors.textMuted
-        )
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MeloAsyncImage(
+                    url = artistDetails.artworkUrl,
+                    contentDescription = artistDetails.name,
+                    modifier = Modifier
+                        .size(240.dp)
+                        .shadow(20.dp, RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(20.dp)),
+                    size = 240.dp,
+                    shape = RoundedCornerShape(20.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = artistDetails.name,
+                    style = MeloType.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+
+                val subtitle = listOfNotNull(
+                    artistDetails.subscriberCountText,
+                    artistDetails.monthlyListenerCount
+                ).joinToString(" · ")
+
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MeloType.labelMedium,
+                        color = MeloColors.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        val bio = artistDetails.description
+        if (!bio.isNullOrBlank()) {
+            item {
+                var expanded by remember { mutableStateOf(false) }
+                Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                    Text(
+                        text = "Biografía",
+                        style = MeloType.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        color = MeloColors.textMuted
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = bio,
+                        style = MeloType.body,
+                        color = MeloColors.textSecondary,
+                        maxLines = if (expanded) Int.MAX_VALUE else 4,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { expanded = !expanded }
+                    )
+                }
+            }
+        }
+
+        artistDetails.topSongs?.takeIf { it.isNotEmpty() }?.let { topSongs ->
+            item {
+                SectionHeader(title = "Canciones populares")
+            }
+            itemsIndexed(topSongs) { index, track ->
+                val isPlayingThis = state.title == track.title && state.artist == track.artist
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isPlayingThis) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else Color.Transparent
+                        )
+                ) {
+                    TrackRow(
+                        track = track,
+                        trackNumber = index + 1,
+                        onClick = { }
+                    )
+                }
+            }
+        }
+
+        for (section in artistDetails.sections) {
+            item(key = "section_${section.title}") {
+                SectionHeader(title = section.title)
+                AdaptiveLazyRow(
+                    items = section.items,
+                    minCardWidth = 130.dp,
+                    spacing = 10.dp
+                ) { item, cardWidth ->
+                    when (item) {
+                        is SearchResult.Album -> AlbumCard(
+                            title = item.title,
+                            subtitle = item.author,
+                            artworkUrl = item.artworkUrl,
+                            cardWidth = cardWidth,
+                            onClick = { }
+                        )
+
+                        is SearchResult.Song -> TrackRow(
+                            track = item.track,
+                            onClick = { },
+                            modifier = Modifier.size(280.dp, 56.dp)
+                        )
+
+                        else -> {}
+                    }
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
     }
 }

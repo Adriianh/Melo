@@ -34,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.util.MeloAsyncImage
@@ -57,6 +59,7 @@ fun DesktopNowPlayingDockedPane(
     viewModel: PlayerViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val artistDetails by viewModel.artistDetails.collectAsState()
 
     if (!state.hasTrack) return
 
@@ -181,7 +184,7 @@ fun DesktopNowPlayingDockedPane(
                 when (selectedSection) {
                     PanelSection.QUEUE -> DockedQueueContent(state)
                     PanelSection.LYRICS -> DockedLyricsContent()
-                    PanelSection.ARTIST -> DockedArtistContent(state)
+                    PanelSection.ARTIST -> DockedArtistContent(state, artistDetails)
                 }
             }
         }
@@ -348,16 +351,134 @@ private fun DockedLyricsContent() {
 }
 
 @Composable
-private fun DockedArtistContent(state: PlayerUiState) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun DockedArtistContent(
+    state: PlayerUiState,
+    artistDetails: SearchResult.Artist?,
+) {
+    if (artistDetails == null) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            ArtistCircle(
+                name = state.artist,
+                artworkUrl = state.albumArt,
+                onClick = {},
+                size = 64.dp
+            )
+        }
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        ArtistCircle(
-            name = state.artist,
-            artworkUrl = state.albumArt,
-            onClick = {},
-            size = 64.dp
-        )
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MeloAsyncImage(
+                    url = artistDetails.artworkUrl,
+                    contentDescription = artistDetails.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .shadow(10.dp, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp)),
+                    size = 140.dp,
+                    shape = RoundedCornerShape(14.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = artistDetails.name,
+                    style = MeloType.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+
+                val subscriberText = artistDetails.subscriberCountText
+                if (!subscriberText.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subscriberText,
+                        style = MeloType.labelSmall,
+                        color = MeloColors.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        artistDetails.topSongs?.take(5)?.takeIf { it.isNotEmpty() }?.let { topSongs ->
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Canciones populares",
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textMuted
+                )
+            }
+            items(topSongs) { track ->
+                val isPlayingThis = state.title == track.title && state.artist == track.artist
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (isPlayingThis) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else Color.Transparent
+                        )
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    MeloAsyncImage(
+                        url = track.artworkUrl,
+                        contentDescription = track.title,
+                        size = 32.dp,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            track.title,
+                            style = MeloType.labelMedium,
+                            color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            track.artist,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        val bio = artistDetails.description
+        if (!bio.isNullOrBlank()) {
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    bio,
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textMuted,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(4.dp)) }
     }
 }

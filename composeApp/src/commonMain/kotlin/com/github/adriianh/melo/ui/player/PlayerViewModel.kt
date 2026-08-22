@@ -2,7 +2,9 @@ package com.github.adriianh.melo.ui.player
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.melo.util.AccentColorExtractor
@@ -22,7 +24,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,6 +32,7 @@ class PlayerViewModel(
     private val httpClient: HttpClient,
     private val toggleLikeTrackUseCase: ToggleLikeTrackUseCase,
     private val recordPlayUseCase: RecordPlayUseCase,
+    private val musicProvider: MusicProvider,
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
@@ -38,6 +40,9 @@ class PlayerViewModel(
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     private val _isFavorite = MutableStateFlow(false)
+
+    private val _artistDetails = MutableStateFlow<SearchResult.Artist?>(null)
+    val artistDetails: StateFlow<SearchResult.Artist?> = _artistDetails.asStateFlow()
 
     val uiState: StateFlow<PlayerUiState> = combine(
         manager.playbackState,
@@ -81,6 +86,30 @@ class PlayerViewModel(
                         recordPlayUseCase(track)
                     }
                 }
+        }
+        viewModelScope.launch {
+            manager.playbackState
+                .map { it.currentTrack?.artist?.takeIf { a -> a.isNotBlank() } }
+                .distinctUntilChanged()
+                .collectLatest { artistName ->
+                    if (artistName != null) {
+                        loadArtistDetails(artistName)
+                    } else {
+                        _artistDetails.value = null
+                    }
+                }
+        }
+    }
+
+    private suspend fun loadArtistDetails(artistName: String) {
+        runCatching {
+            val results = musicProvider.searchArtists(artistName)
+            val first = results.firstOrNull() ?: return@runCatching null
+            musicProvider.getArtistDetails(first.id)
+        }.onSuccess { details ->
+            _artistDetails.value = details
+        }.onFailure {
+            _artistDetails.value = null
         }
     }
 
