@@ -14,6 +14,7 @@ import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 
 class JvmMeloPlayer : MeloPlayer {
     private val factory = MediaPlayerFactory(
@@ -34,11 +35,18 @@ class JvmMeloPlayer : MeloPlayer {
         mediaPlayer.events().addMediaPlayerEventListener(
             object : MediaPlayerEventAdapter() {
                 override fun playing(mediaPlayer: MediaPlayer?) {
-                    _state.update { it.copy(isPlaying = true, isBuffering = false, error = null) }
+                    _state.update {
+                        it.copy(
+                            isPlaying = true,
+                            isBuffering = false,
+                            isFinished = false,
+                            error = null
+                        )
+                    }
                     scope.launch {
-                        delay(500)
+                        delay(500.milliseconds)
                         mediaPlayer?.audio()?.setVolume(75)
-                        delay(2000)
+                        delay(2000.milliseconds)
                         mediaPlayer?.audio()?.setVolume(75)
                     }
                     startProgressUpdate()
@@ -72,13 +80,14 @@ class JvmMeloPlayer : MeloPlayer {
                         it.copy(
                             isPlaying = false,
                             isBuffering = false,
+                            isFinished = false,
                             error = "Playback error: Check your internet connection or stream source."
                         )
                     }
                 }
 
                 override fun finished(mediaPlayer: MediaPlayer?) {
-                    _state.update { it.copy(isPlaying = false) }
+                    _state.update { it.copy(isPlaying = false, isFinished = true) }
                     stopProgressUpdate()
                 }
             }
@@ -94,6 +103,7 @@ class JvmMeloPlayer : MeloPlayer {
                 progressMs = 0,
                 durationMs = track.durationMs,
                 isBuffering = true,
+                isFinished = false,
                 error = null
             )
         }
@@ -136,8 +146,6 @@ class JvmMeloPlayer : MeloPlayer {
         mediaPlayer.release()
         factory.release()
     }
-
-    // ----- Private helpers -----
 
     private fun buildVlcOptions(url: String): Array<String> {
         val baseOptions = arrayOf(
@@ -201,7 +209,7 @@ class JvmMeloPlayer : MeloPlayer {
         progressJob = scope.launch {
             while (true) {
                 _state.update { it.copy(progressMs = mediaPlayer.status().time()) }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }

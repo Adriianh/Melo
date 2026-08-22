@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class AndroidMeloPlayer(context: Context) : MeloPlayer {
     private val exoPlayer = ExoPlayer.Builder(context).build()
@@ -34,6 +35,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                 _state.update {
                     it.copy(
                         isBuffering = playbackState == Player.STATE_BUFFERING,
+                        isFinished = playbackState == Player.STATE_ENDED,
                         durationMs = if (playbackState == Player.STATE_READY) exoPlayer.duration else it.durationMs
                     )
                 }
@@ -49,7 +51,8 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
             it.copy(
                 currentTrack = track,
                 progressMs = 0,
-                durationMs = track.durationMs
+                durationMs = track.durationMs,
+                isFinished = false
             )
         }
         play()
@@ -81,7 +84,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         progressJob = scope.launch {
             while (true) {
                 _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }

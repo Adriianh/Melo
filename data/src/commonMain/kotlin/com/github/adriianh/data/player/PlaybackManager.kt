@@ -37,17 +37,19 @@ class PlaybackManagerImpl(
     private val cacheMutex = Mutex()
     private var prefetchJob: Job? = null
     private var isAutoplayFetching = false
+    private var lastHandledFinishedTrackId: String? = null
 
     init {
         scope.launch {
             meloPlayer.state.collect { state ->
-                if (!state.isPlaying
-                    && !state.isBuffering
-                    && state.progressMs > 0
-                    && state.progressMs >= state.durationMs - 500
-                    && state.error == null
-                ) {
-                    handleTrackFinished()
+                val trackId = state.currentTrack?.id
+                if (state.isFinished && state.error == null) {
+                    if (trackId != null && trackId != lastHandledFinishedTrackId) {
+                        lastHandledFinishedTrackId = trackId
+                        handleTrackFinished()
+                    }
+                } else if (state.isPlaying) {
+                    lastHandledFinishedTrackId = null
                 }
             }
         }
@@ -163,7 +165,11 @@ class PlaybackManagerImpl(
             val url = cachedUrl
                 ?: getStreamUseCase(track)
                 ?: run {
-                    println("[PlaybackManager] Failed to resolve stream URL for: ${track.title}")
+                    if (_queueState.value.hasNext) {
+                        playNext()
+                    } else {
+                        handleAutoplay(forcePlayNext = true)
+                    }
                     return@launch
                 }
             meloPlayer.load(url, track)
