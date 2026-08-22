@@ -28,3 +28,7 @@ class GetTrendingUseCase(private val repository: MusicRepository) {
 class GetRadioUseCase(private val repository: MusicRepository) {
     suspend operator fun invoke(videoId: String): List<Track> = repository.getRadio(videoId)
 }
+
+class GetArtistRadioUseCase(private val repository: MusicRepository) {
+    suspend operator fun invoke(artistId: String): List<Track> = repository.getArtistRadio(artistId)
+}
