@@ -226,6 +226,7 @@ class SearchViewModel(
     }
 
     fun onSuggestionSelected(query: String) {
+        _uiState.update { it.copy(query = query, suggestions = emptyList()) }
         executeSearch(query)
     }
 

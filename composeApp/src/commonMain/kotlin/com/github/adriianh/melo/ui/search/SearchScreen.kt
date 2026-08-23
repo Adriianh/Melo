@@ -106,7 +106,7 @@ fun SearchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
-    var isFocused by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -115,18 +115,27 @@ fun SearchScreen(
     ) {
         SearchTopBar(
             query = uiState.query,
-            onQueryChange = viewModel::onQueryChange,
+            onQueryChange = { q ->
+                isSearchActive = true
+                viewModel.onQueryChange(q)
+            },
             onSearch = { q ->
-                isFocused = false
+                isSearchActive = false
                 focusManager.clearFocus()
                 viewModel.executeSearch(q)
             },
-            onClear = viewModel::clearQuery,
+            onClear = {
+                isSearchActive = false
+                focusManager.clearFocus()
+                viewModel.clearQuery()
+            },
             onOpenSettings = onOpenSettings,
             onFocusChanged = { focused ->
-                isFocused = focused
-                if (focused && uiState.query.isNotBlank()) {
-                    viewModel.onQueryChange(uiState.query)
+                if (focused) {
+                    isSearchActive = true
+                    if (uiState.query.isNotBlank()) {
+                        viewModel.onQueryChange(uiState.query)
+                    }
                 }
             },
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
@@ -140,7 +149,7 @@ fun SearchScreen(
             SearchFilterChipsRow(
                 selectedFilter = uiState.selectedFilter,
                 onFilterSelected = { filter ->
-                    isFocused = false
+                    isSearchActive = false
                     focusManager.clearFocus()
                     viewModel.onFilterSelected(filter)
                 },
@@ -189,7 +198,7 @@ fun SearchScreen(
                 }
             }
 
-            val shouldShowOverlay = isFocused && (
+            val shouldShowOverlay = isSearchActive && (
                     (uiState.query.isBlank() && uiState.recentSearches.isNotEmpty()) ||
                             (uiState.query.isNotBlank() && uiState.suggestions.isNotEmpty())
                     )
@@ -203,7 +212,7 @@ fun SearchScreen(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            isFocused = false
+                            isSearchActive = false
                             focusManager.clearFocus()
                         }
                 )
@@ -215,7 +224,7 @@ fun SearchScreen(
                 suggestions = uiState.suggestions,
                 recentSearches = uiState.recentSearches,
                 onSelect = { selectedQuery ->
-                    isFocused = false
+                    isSearchActive = false
                     focusManager.clearFocus()
                     viewModel.onSuggestionSelected(selectedQuery)
                 }
@@ -1103,42 +1112,38 @@ private fun SearchActiveOverlay(
             .clip(RoundedCornerShape(20.dp))
             .background(MeloColors.surface1.copy(alpha = 0.98f))
             .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
-            .clickable(enabled = false) {}
     ) {
+        val showHistory = query.isBlank()
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-            item {
-                Crossfade(targetState = query.isBlank()) { isHistory ->
-                    if (isHistory) {
-                        if (recentSearches.isNotEmpty()) {
-                            Column {
-                                Text(
-                                    "Búsquedas recientes",
-                                    style = MeloType.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MeloColors.textMuted,
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 12.dp
-                                    )
-                                )
-                                recentSearches.forEach { search ->
-                                    SearchItemRow(
-                                        search,
-                                        Icons.Default.History
-                                    ) { onSelect(search) }
-                                }
-                            }
-                        }
-                    } else {
-                        Column {
-                            suggestions.forEach { suggestion ->
-                                SearchItemRow(
-                                    suggestion,
-                                    Icons.Default.Search
-                                ) { onSelect(suggestion) }
-                            }
-                        }
+            if (showHistory) {
+                if (recentSearches.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Búsquedas recientes",
+                            style = MeloType.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MeloColors.textMuted,
+                            modifier = Modifier.padding(
+                                horizontal = 16.dp,
+                                vertical = 12.dp
+                            )
+                        )
                     }
+                    items(recentSearches) { search ->
+                        SearchItemRow(
+                            text = search,
+                            icon = Icons.Default.History,
+                            onClick = { onSelect(search) }
+                        )
+                    }
+                }
+            } else {
+                items(suggestions) { suggestion ->
+                    SearchItemRow(
+                        text = suggestion,
+                        icon = Icons.Default.Search,
+                        onClick = { onSelect(suggestion) }
+                    )
                 }
             }
         }
