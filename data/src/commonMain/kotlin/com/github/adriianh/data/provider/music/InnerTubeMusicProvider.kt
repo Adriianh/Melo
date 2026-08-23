@@ -508,6 +508,22 @@ class InnerTubeMusicProvider(
         return emptyList()
     }
 
+    override suspend fun getRelated(videoId: String): List<Track> {
+        val cleanId = videoId.removePrefix("piped:")
+        if (cleanId.isBlank()) return emptyList()
+
+        val nextResult = YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
+        val relatedEndpoint = nextResult?.relatedEndpoint
+        if (relatedEndpoint != null) {
+            val relatedPage = YouTube.related(relatedEndpoint).getOrNull()
+            if (relatedPage != null && relatedPage.songs.isNotEmpty()) {
+                return relatedPage.songs.map { mapSongItem(it) }
+            }
+        }
+
+        return fallback?.getRelated(videoId) ?: getRadio(cleanId)
+    }
+
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
         val browseResult = YouTube.browse(browseId, params).getOrNull() ?: return null
         val sections = browseResult.items.map { item ->

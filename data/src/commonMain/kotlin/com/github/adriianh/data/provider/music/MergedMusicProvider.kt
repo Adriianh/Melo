@@ -170,6 +170,14 @@ class MergedMusicProvider(
         return emptyList()
     }
 
+    override suspend fun getRelated(videoId: String): List<Track> {
+        for (provider in providers) {
+            val result = runCatching { provider.getRelated(videoId) }.getOrNull()
+            if (!result.isNullOrEmpty()) return result
+        }
+        return emptyList()
+    }
+
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
         for (provider in providers) {
             val result = runCatching { provider.browseCategory(browseId, params) }.getOrNull()
