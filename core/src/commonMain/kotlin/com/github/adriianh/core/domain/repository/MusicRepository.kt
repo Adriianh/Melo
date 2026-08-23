@@ -12,6 +12,8 @@ interface MusicRepository {
     suspend fun searchAlbums(query: String): List<SearchResult.Album>
     suspend fun searchArtists(query: String): List<SearchResult.Artist>
     suspend fun searchPlaylists(query: String): List<SearchResult.Playlist>
+    suspend fun searchVideos(query: String): List<Track> = emptyList()
+    suspend fun searchSummary(query: String): List<HomeSection> = emptyList()
 
     suspend fun loadMore(query: String, offset: Int): List<Track>
     fun hasMore(offset: Int): Boolean

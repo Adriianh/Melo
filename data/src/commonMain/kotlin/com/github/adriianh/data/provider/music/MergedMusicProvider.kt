@@ -50,6 +50,20 @@ class MergedMusicProvider(
             mergeLists(jobs.awaitAll()).distinctBy { it.id }
         }
 
+    override suspend fun searchVideos(query: String): List<Track> = coroutineScope {
+        val jobs =
+            providers.map { async { runCatching { it.searchVideos(query) }.getOrDefault(emptyList()) } }
+        deduplicate(mergeLists(jobs.awaitAll()))
+    }
+
+    override suspend fun searchSummary(query: String): List<HomeSection> {
+        for (p in providers) {
+            val sections = runCatching { p.searchSummary(query) }.getOrNull()
+            if (!sections.isNullOrEmpty()) return sections
+        }
+        return emptyList()
+    }
+
     override suspend fun searchAll(query: String): List<Track> = coroutineScope {
         val jobs =
             providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }

@@ -34,19 +34,28 @@ class InnerTubeMusicProvider(
         val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
 
         return result?.items?.filterIsInstance<SongItem>()
-            ?.map { item ->
-                Track(
-                    id = "piped:${item.id}",
-                    title = item.title,
-                    artist = item.artists.firstOrNull()?.name ?: "Unknown",
-                    durationMs = item.duration?.times(1000L) ?: 0L,
-                    album = item.album?.name ?: "",
-                    genres = emptyList(),
-                    artworkUrl = item.thumbnail,
-                    sourceId = item.id
-                )
-            }
+            ?.map { item -> mapSongItem(item) }
             ?: (fallback?.search(query) ?: emptyList())
+    }
+
+    override suspend fun searchVideos(query: String): List<Track> {
+        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_VIDEO).getOrNull()
+        return result?.items?.filterIsInstance<SongItem>()
+            ?.map { item -> mapSongItem(item) }
+            ?: (fallback?.searchVideos(query) ?: emptyList())
+    }
+
+    override suspend fun searchSummary(query: String): List<HomeSection> {
+        val result = YouTube.searchSummary(query).getOrNull() ?: return emptyList()
+        return result.summaries.mapNotNull { summary ->
+            val items = summary.items.mapNotNull { mapYTItem(it) }
+            if (items.isEmpty()) null
+            else HomeSection(
+                title = summary.title,
+                type = summary.items.toHomeSectionType(),
+                items = items
+            )
+        }
     }
 
     override suspend fun searchAlbums(query: String): List<SearchResult.Album> {
@@ -94,18 +103,7 @@ class InnerTubeMusicProvider(
         var continuation: String? = result.continuation
 
         fun mapItems(items: List<YTItem>) {
-            pages.addAll(items.filterIsInstance<SongItem>().map { item ->
-                Track(
-                    id = "piped:${item.id}",
-                    title = item.title,
-                    artist = item.artists.firstOrNull()?.name ?: "Unknown",
-                    durationMs = item.duration?.times(1000L) ?: 0L,
-                    album = item.album?.name ?: "",
-                    genres = emptyList(),
-                    artworkUrl = item.thumbnail,
-                    sourceId = item.id
-                )
-            })
+            pages.addAll(items.filterIsInstance<SongItem>().map { item -> mapSongItem(item) })
         }
 
         mapItems(result.items)

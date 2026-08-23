@@ -13,6 +13,9 @@ interface MusicProvider {
     suspend fun searchArtists(query: String): List<SearchResult.Artist> = emptyList()
     suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = emptyList()
 
+    suspend fun searchVideos(query: String): List<Track> = emptyList()
+    suspend fun searchSummary(query: String): List<HomeSection> = emptyList()
+
     suspend fun searchAll(query: String): List<Track> = search(query)
     suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = searchAlbums(query)
     suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = searchArtists(query)

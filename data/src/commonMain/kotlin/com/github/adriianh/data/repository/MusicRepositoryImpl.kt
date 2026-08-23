@@ -201,6 +201,12 @@ class MusicRepositoryImpl(
     override suspend fun getRelated(videoId: String): List<Track> =
         musicProvider.getRelated(videoId)
 
+    override suspend fun searchVideos(query: String): List<Track> =
+        deduplicate(musicProvider.searchVideos(query))
+
+    override suspend fun searchSummary(query: String): List<HomeSection> =
+        musicProvider.searchSummary(query)
+
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? =
         musicProvider.browseCategory(browseId, params)
 
