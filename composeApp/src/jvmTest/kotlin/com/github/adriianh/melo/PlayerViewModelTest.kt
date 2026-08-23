@@ -132,7 +132,7 @@ class PlayerViewModelTest {
     @Test
     fun `uiState reflects queue shuffle and repeat`() = runTest {
         queueFlow.value = QueueState(
-            tracks = listOf(mockk()),
+            tracks = listOf(mockk(relaxed = true)),
             currentIndex = 0,
             shuffleEnabled = true,
             repeatMode = RepeatMode.ALL

@@ -311,7 +311,8 @@ class PlaybackManagerTest {
             currentTrack = fakeTrack("1"),
             isPlaying = false,
             isBuffering = false,
-            progressMs = 179_600,
+            isFinished = true,
+            progressMs = 180_000,
             durationMs = 180_000
         )
 
@@ -333,7 +334,8 @@ class PlaybackManagerTest {
             currentTrack = fakeTrack("1"),
             isPlaying = false,
             isBuffering = false,
-            progressMs = 179_600,
+            isFinished = true,
+            progressMs = 180_000,
             durationMs = 180_000
         )
 

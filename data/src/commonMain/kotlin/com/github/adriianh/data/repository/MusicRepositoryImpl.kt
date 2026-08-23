@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MusicRepositoryImpl(
@@ -49,8 +50,7 @@ class MusicRepositoryImpl(
 
         backgroundFetch = scope.launch {
             val full = deduplicate(musicProvider.searchAll(query))
-            if (full.size > cachedResults.size) {
-                // Cap the cache to avoid unbounded heap growth when providers return large result sets.
+            if (isActive && full.size > cachedResults.size) {
                 cachedResults = full.take(MAX_CACHE_SIZE)
             }
         }
@@ -67,7 +67,7 @@ class MusicRepositoryImpl(
 
         backgroundFetchAlbums = scope.launch {
             val full = musicProvider.searchAllAlbums(query)
-            if (full.size > cachedAlbums.size) {
+            if (isActive && full.size > cachedAlbums.size) {
                 cachedAlbums = full.take(MAX_CACHE_SIZE)
             }
         }
@@ -83,7 +83,7 @@ class MusicRepositoryImpl(
 
         backgroundFetchArtists = scope.launch {
             val full = musicProvider.searchAllArtists(query)
-            if (full.size > cachedArtists.size) {
+            if (isActive && full.size > cachedArtists.size) {
                 cachedArtists = full.take(MAX_CACHE_SIZE)
             }
         }
@@ -99,7 +99,7 @@ class MusicRepositoryImpl(
 
         backgroundFetchPlaylists = scope.launch {
             val full = musicProvider.searchAllPlaylists(query)
-            if (full.size > cachedPlaylists.size) {
+            if (isActive && full.size > cachedPlaylists.size) {
                 cachedPlaylists = full.take(MAX_CACHE_SIZE)
             }
         }
