@@ -27,7 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GraphicEq
@@ -79,6 +78,8 @@ import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.GlassPanel
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SegmentedControl
+import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
+import com.github.adriianh.melo.ui.components.SuggestionTrackCard
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -789,6 +790,7 @@ private fun NowPlayingQueueSection(
 ) {
     val queueState by queueViewModel.queueState.collectAsState()
     val suggestions by queueViewModel.suggestions.collectAsState()
+    val isLoadingSuggestions by queueViewModel.isLoadingSuggestions.collectAsState()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -889,81 +891,56 @@ private fun NowPlayingQueueSection(
             }
         }
 
-        if (suggestions.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "SUGERENCIAS PARA TI",
+                    style = MeloType.labelSmall,
+                    letterSpacing = 1.2.sp,
+                    color = MeloColors.textMuted
+                )
+                IconButton(
+                    onClick = { queueViewModel.refreshSuggestions() },
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    Text(
-                        "SUGERENCIAS PARA TI",
-                        style = MeloType.labelSmall,
-                        letterSpacing = 1.2.sp,
-                        color = MeloColors.textMuted
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Refrescar sugerencias",
+                        tint = MeloColors.textMuted,
+                        modifier = Modifier.size(16.dp)
                     )
-                    IconButton(
-                        onClick = { queueViewModel.refreshSuggestions() },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = "Refrescar sugerencias",
-                            tint = MeloColors.textMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
                 }
             }
+        }
 
+        if (isLoadingSuggestions && suggestions.isEmpty()) {
+            items(4) {
+                SuggestionSkeletonCard()
+            }
+        } else if (suggestions.isEmpty()) {
+            item {
+                Text(
+                    "No hay más sugerencias por ahora",
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textMuted,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        } else {
             itemsIndexed(
                 suggestions,
                 key = { index, track -> "screen_sugg_${index}_${track.id}" }) { _, track ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MeloColors.surface2.copy(alpha = 0.4f))
-                        .clickable { queueViewModel.playTrack(track) }
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    MeloAsyncImage(
-                        url = track.artworkUrl,
-                        contentDescription = track.title,
-                        size = 36.dp,
-                        shape = RoundedCornerShape(6.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            track.title,
-                            style = MeloType.labelMedium,
-                            color = MeloColors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            track.artist,
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    IconButton(
-                        onClick = { queueViewModel.addToQueue(track) },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Añadir a la cola",
-                            tint = activeAccent,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
+                SuggestionTrackCard(
+                    track = track,
+                    activeAccent = activeAccent,
+                    onClick = { queueViewModel.playTrack(track) },
+                    onAddClick = { queueViewModel.insertTrackNext(track) }
+                )
             }
         }
     }

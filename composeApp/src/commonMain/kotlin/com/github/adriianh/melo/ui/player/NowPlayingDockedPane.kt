@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -55,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SegmentedControl
+import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
+import com.github.adriianh.melo.ui.components.SuggestionTrackCard
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -267,7 +268,6 @@ private fun DockedQueueContent(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(activeAccent.copy(alpha = 0.15f))
-                    .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -336,7 +336,6 @@ private fun DockedQueueContent(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(MeloColors.surface1.copy(alpha = 0.5f))
-                        .border(0.5.dp, MeloColors.border, RoundedCornerShape(8.dp))
                         .clickable { queueViewModel.playTrackInQueue(track) }
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -419,7 +418,11 @@ private fun DockedQueueContent(
             }
         }
 
-        if (suggestions.isEmpty() && !isLoadingSuggestions) {
+        if (isLoadingSuggestions && suggestions.isEmpty()) {
+            items(4) {
+                SuggestionSkeletonCard()
+            }
+        } else if (suggestions.isEmpty()) {
             item {
                 Text(
                     "No hay más sugerencias por ahora",
@@ -428,56 +431,16 @@ private fun DockedQueueContent(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-        }
-
-        itemsIndexed(
-            suggestions,
-            key = { index, track -> "docked_sugg_${index}_${track.id}" }) { _, track ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MeloColors.surface0.copy(alpha = 0.7f))
-                    .border(0.5.dp, MeloColors.border.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                    .clickable { queueViewModel.playTrack(track) }
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MeloAsyncImage(
-                    url = track.artworkUrl,
-                    contentDescription = track.title,
-                    size = 36.dp,
-                    shape = RoundedCornerShape(6.dp)
+        } else {
+            itemsIndexed(
+                suggestions,
+                key = { index, track -> "docked_sugg_${index}_${track.id}" }) { _, track ->
+                SuggestionTrackCard(
+                    track = track,
+                    activeAccent = activeAccent,
+                    onClick = { queueViewModel.playTrack(track) },
+                    onAddClick = { queueViewModel.insertTrackNext(track) }
                 )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        track.title,
-                        style = MeloType.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MeloColors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        track.artist,
-                        style = MeloType.labelSmall.copy(fontSize = 10.sp),
-                        color = MeloColors.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                IconButton(
-                    onClick = { queueViewModel.addToQueue(track) },
-                    modifier = Modifier.size(26.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Añadir a la cola",
-                        tint = activeAccent,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
         }
     }
