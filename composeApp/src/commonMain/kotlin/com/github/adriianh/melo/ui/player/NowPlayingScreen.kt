@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +37,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -851,7 +851,9 @@ private fun NowPlayingQueueSection(
                 )
             }
 
-            items(upNextTracks) { track ->
+            itemsIndexed(
+                upNextTracks,
+                key = { index, track -> "screen_q_${index}_${track.id}" }) { _, track ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -890,20 +892,41 @@ private fun NowPlayingQueueSection(
         if (suggestions.isNotEmpty()) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "SUGERENCIAS",
-                    style = MeloType.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    color = MeloColors.textMuted
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "SUGERENCIAS PARA TI",
+                        style = MeloType.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        color = MeloColors.textMuted
+                    )
+                    IconButton(
+                        onClick = { queueViewModel.refreshSuggestions() },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Refrescar sugerencias",
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
-            items(suggestions) { track ->
+            itemsIndexed(
+                suggestions,
+                key = { index, track -> "screen_sugg_${index}_${track.id}" }) { _, track ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MeloColors.surface2.copy(alpha = 0.4f))
+                        .clickable { queueViewModel.playTrack(track) }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -233,10 +238,21 @@ private fun DockedQueueContent(
 ) {
     val queueState by queueViewModel.queueState.collectAsState()
     val suggestions by queueViewModel.suggestions.collectAsState()
+    val isLoadingSuggestions by queueViewModel.isLoadingSuggestions.collectAsState()
+    var isQueueExpanded by remember { mutableStateOf(false) }
+
+    val upNextTracks = remember(queueState.tracks, queueState.currentIndex) {
+        if (queueState.currentIndex >= 0 && queueState.currentIndex < queueState.tracks.size) {
+            queueState.tracks.drop(queueState.currentIndex + 1)
+        } else {
+            emptyList()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
             Text(
@@ -249,9 +265,9 @@ private fun DockedQueueContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(activeAccent.copy(alpha = 0.15f))
-                    .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                    .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -259,7 +275,7 @@ private fun DockedQueueContent(
                 MeloAsyncImage(
                     url = state.albumArt,
                     contentDescription = state.title,
-                    size = 40.dp,
+                    size = 42.dp,
                     shape = RoundedCornerShape(6.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
@@ -282,80 +298,61 @@ private fun DockedQueueContent(
             }
         }
 
-        val upNextTracks = queueState.tracks.drop(queueState.currentIndex + 1)
         if (upNextTracks.isNotEmpty()) {
             item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "A continuación",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textMuted
-                )
-            }
-            items(upNextTracks) { track ->
+                Spacer(modifier = Modifier.height(2.dp))
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { queueViewModel.playTrackInQueue(track) }
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    MeloAsyncImage(
-                        url = track.artworkUrl,
-                        contentDescription = track.title,
-                        size = 34.dp,
-                        shape = RoundedCornerShape(6.dp)
+                    Text(
+                        "A continuación",
+                        style = MeloType.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MeloColors.textSecondary
                     )
-                    Column(modifier = Modifier.weight(1f)) {
+                    if (upNextTracks.size > 1) {
                         Text(
-                            track.title,
-                            style = MeloType.labelMedium,
-                            color = MeloColors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            track.artist,
-                            style = MeloType.labelSmall.copy(fontSize = 10.sp),
-                            color = MeloColors.textMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = if (isQueueExpanded) "Contraer" else "+${upNextTracks.size - 1} en cola",
+                            style = MeloType.labelSmall.copy(fontSize = 11.sp),
+                            color = activeAccent,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { isQueueExpanded = !isQueueExpanded }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
                         )
                     }
                 }
             }
-        }
 
-        if (suggestions.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Sugerencias",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textMuted
-                )
-            }
-            items(suggestions) { track ->
+            val visibleQueueTracks = if (isQueueExpanded) upNextTracks else upNextTracks.take(1)
+            itemsIndexed(
+                visibleQueueTracks,
+                key = { index, track -> "docked_q_${index}_${track.id}" }) { _, track ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(6.dp))
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MeloColors.surface1.copy(alpha = 0.5f))
+                        .border(0.5.dp, MeloColors.border, RoundedCornerShape(8.dp))
+                        .clickable { queueViewModel.playTrackInQueue(track) }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     MeloAsyncImage(
                         url = track.artworkUrl,
                         contentDescription = track.title,
-                        size = 34.dp,
+                        size = 36.dp,
                         shape = RoundedCornerShape(6.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             track.title,
                             style = MeloType.labelMedium,
+                            fontWeight = FontWeight.Medium,
                             color = MeloColors.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -369,16 +366,117 @@ private fun DockedQueueContent(
                         )
                     }
                     IconButton(
-                        onClick = { queueViewModel.addToQueue(track) },
+                        onClick = { queueViewModel.removeTrackFromQueue(track) },
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Añadir a la cola",
-                            tint = activeAccent,
-                            modifier = Modifier.size(16.dp)
+                            Icons.Default.Close,
+                            contentDescription = "Quitar de la cola",
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(14.dp)
                         )
                     }
+                }
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        "Sugerencias para ti",
+                        style = MeloType.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textSecondary
+                    )
+                    if (isLoadingSuggestions) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(12.dp),
+                            strokeWidth = 1.5.dp,
+                            color = activeAccent
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = { queueViewModel.refreshSuggestions() },
+                    modifier = Modifier.size(22.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Refrescar sugerencias",
+                        tint = MeloColors.textMuted,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+        }
+
+        if (suggestions.isEmpty() && !isLoadingSuggestions) {
+            item {
+                Text(
+                    "No hay más sugerencias por ahora",
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textMuted,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+
+        itemsIndexed(
+            suggestions,
+            key = { index, track -> "docked_sugg_${index}_${track.id}" }) { _, track ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MeloColors.surface0.copy(alpha = 0.7f))
+                    .border(0.5.dp, MeloColors.border.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                    .clickable { queueViewModel.playTrack(track) }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                MeloAsyncImage(
+                    url = track.artworkUrl,
+                    contentDescription = track.title,
+                    size = 36.dp,
+                    shape = RoundedCornerShape(6.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        track.title,
+                        style = MeloType.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MeloColors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        track.artist,
+                        style = MeloType.labelSmall.copy(fontSize = 10.sp),
+                        color = MeloColors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                IconButton(
+                    onClick = { queueViewModel.addToQueue(track) },
+                    modifier = Modifier.size(26.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Añadir a la cola",
+                        tint = activeAccent,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
