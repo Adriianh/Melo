@@ -32,6 +32,49 @@ fun List<Run>.splitBySeparator(): List<List<Run>> {
     return res
 }
 
+fun String.isTimeDuration(): Boolean {
+    val trimmed = this.trim()
+    return trimmed.matches(Regex("""^\d{1,2}:\d{2}(:\d{2})?$"""))
+}
+
+fun String.isKnownTypeLabel(): Boolean {
+    val lower = this.trim().lowercase()
+    return lower in setOf(
+        "cancion", "canción", "song", "songs",
+        "video", "videos", "vídeo", "vídeos",
+        "álbum", "album", "albumes", "álbumes", "albums",
+        "artista", "artist", "artistas", "artists",
+        "sencillo", "single", "singles", "ep",
+        "lista de reproducción", "playlist", "playlists"
+    )
+}
+
+fun String.isInvalidArtistName(): Boolean {
+    val trimmed = this.trim()
+    if (trimmed.isEmpty()) return true
+    if (trimmed.isTimeDuration()) return true
+    val lower = trimmed.lowercase()
+    if (lower.isKnownTypeLabel()) return true
+    if (lower.matches(Regex("""^\d{4}$"""))) return true
+    if (lower.matches(
+            Regex(
+                """^[\d.,]+\s*[kmb]?\s*(plays?|views?|reproducciones|visualizaciones|escuchas|oyentes|vistas)""",
+                RegexOption.IGNORE_CASE
+            )
+        )
+    ) return true
+    if (lower.endsWith("plays") || lower.endsWith("play") ||
+        lower.endsWith("views") || lower.endsWith("view") ||
+        lower.endsWith("reproducciones") || lower.endsWith("visualizaciones") ||
+        lower.endsWith("escuchas") || lower.endsWith("oyentes") ||
+        lower.endsWith("vistas") || lower.contains("de reproducciones") ||
+        lower.contains("de visualizaciones")
+    ) {
+        return true
+    }
+    return false
+}
+
 fun List<List<Run>>.clean(): List<List<Run>> =
     if (getOrNull(0)?.getOrNull(0)?.navigationEndpoint != null) this
     else this.drop(1)
@@ -46,7 +89,9 @@ fun List<Run>.extractArtists(): List<Artist> {
     fun flush() {
         val name = currentName.toString().trim()
         if (name.isNotEmpty() && name != "•" && name != "&" && name != "," && name != "/" && name != "|") {
-            artists.add(Artist(name = name, id = currentId))
+            if (!name.isInvalidArtistName()) {
+                artists.add(Artist(name = name, id = currentId))
+            }
         }
         currentName = StringBuilder()
         currentId = null
@@ -79,9 +124,13 @@ fun List<Run>.extractArtists(): List<Artist> {
     }
     flush()
 
-    return artists.ifEmpty {
+    return artists.filter { !it.name.isInvalidArtistName() }.ifEmpty {
         val combined = joinToString("") { it.text }.trim()
-        if (combined.isNotEmpty()) listOf(Artist(name = combined, id = null)) else emptyList()
+        if (combined.isNotEmpty() && !combined.isInvalidArtistName()) {
+            listOf(Artist(name = combined, id = null))
+        } else {
+            emptyList()
+        }
     }
 }
 

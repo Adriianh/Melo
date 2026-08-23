@@ -129,14 +129,29 @@ object YouTube {
 
         val shelfSummaries = contents.mapNotNull { it ->
             if (it.musicCardShelfRenderer != null) {
+                val cardShelf = it.musicCardShelfRenderer
+                val heroItem = SearchSummaryPage.fromMusicCardShelfRenderer(cardShelf)
+                val shelfArtist: Artist? = when (heroItem) {
+                    is ArtistItem -> Artist(name = heroItem.title, id = heroItem.id)
+                    is AlbumItem -> heroItem.artists?.firstOrNull()
+                    is SongItem -> heroItem.artists?.firstOrNull()
+                    else -> cardShelf.title.runs?.firstOrNull()?.text?.let { name ->
+                        Artist(name = name, id = cardShelf.onTap.browseEndpoint?.browseId)
+                    }
+                }
                 SearchSummary(
-                    title = it.musicCardShelfRenderer.header?.musicCardShelfHeaderBasicRenderer?.title?.runs?.firstOrNull()?.text
+                    title = cardShelf.header?.musicCardShelfHeaderBasicRenderer?.title?.runs?.firstOrNull()?.text
                         ?: YoutubeConstants.DEFAULT_OTHER_RESULTS,
-                    items = listOfNotNull(SearchSummaryPage.fromMusicCardShelfRenderer(it.musicCardShelfRenderer))
+                    items = listOfNotNull(heroItem)
                         .plus(
-                            it.musicCardShelfRenderer.contents
+                            cardShelf.contents
                                 ?.mapNotNull { it.musicResponsiveListItemRenderer }
-                                ?.mapNotNull(SearchSummaryPage.Companion::fromMusicResponsiveListItemRenderer)
+                                ?.mapNotNull {
+                                    SearchSummaryPage.fromMusicResponsiveListItemRenderer(
+                                        it,
+                                        defaultArtist = shelfArtist
+                                    )
+                                }
                                 .orEmpty()
                         )
                         .distinctBy { it.id }

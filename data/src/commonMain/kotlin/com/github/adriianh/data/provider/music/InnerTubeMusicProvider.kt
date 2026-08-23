@@ -18,6 +18,7 @@ import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.WatchEndpoint
 import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.YouTubeClient
+import com.github.adriianh.innertube.models.isInvalidArtistName
 
 /**
  * MusicProvider backed by InnerTube API.
@@ -557,8 +558,10 @@ class InnerTubeMusicProvider(
     }
 
     private fun mapSongItem(item: SongItem): Track {
-        val artistName = if (item.artists.isNotEmpty()) {
-            item.artists.map { it.name.trim() }.filter { it.isNotEmpty() }.joinToString(", ")
+        val validArtists = item.artists.map { it.name.trim() }
+            .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
+        val artistName = if (validArtists.isNotEmpty()) {
+            validArtists.joinToString(", ")
         } else {
             "Unknown"
         }
