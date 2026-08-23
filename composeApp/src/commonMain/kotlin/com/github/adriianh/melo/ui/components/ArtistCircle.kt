@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -32,7 +31,6 @@ fun ArtistCircle(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .width(size + 16.dp)
-            .clip(CircleShape)
             .clickable(onClick = onClick)
             .padding(8.dp)
     ) {
