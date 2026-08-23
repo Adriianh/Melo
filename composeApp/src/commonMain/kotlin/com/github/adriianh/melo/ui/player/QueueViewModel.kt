@@ -35,10 +35,18 @@ class QueueViewModel(
 
     init {
         viewModelScope.launch {
+            var lastTrackId: String? = null
             queueState.collectLatest { state ->
                 val track = state.currentTrack
                 if (track != null) {
-                    loadSuggestionsForTrack(track)
+                    if (track.id != lastTrackId) {
+                        lastTrackId = track.id
+                        _suggestions.value = emptyList()
+                        loadSuggestionsForTrack(track)
+                    }
+                } else {
+                    lastTrackId = null
+                    _suggestions.value = emptyList()
                 }
             }
         }
@@ -80,6 +88,7 @@ class QueueViewModel(
     fun refreshSuggestions() {
         val track = queueState.value.currentTrack ?: return
         viewModelScope.launch {
+            _suggestions.value = emptyList()
             loadSuggestionsForTrack(track)
         }
     }
@@ -141,6 +150,12 @@ class QueueViewModel(
 
     fun addAllToQueue(tracks: List<Track>) {
         tracks.forEach { manager.addToQueue(it) }
+    }
+
+    fun insertTrackNext(track: Track) {
+        val index = queueState.value.currentIndex + 1
+        manager.insertToQueue(track, index)
+        _suggestions.update { current -> current.filter { it.id != track.id } }
     }
 
     fun playTrackInQueue(track: Track) = manager.playTrackInQueue(track)

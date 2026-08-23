@@ -103,6 +103,14 @@ class PlaybackManagerImpl(
         }
     }
 
+    override fun insertToQueue(track: Track, index: Int) {
+        _queueState.update {
+            val newTracks = it.tracks.toMutableList()
+                .apply { add(index.coerceIn(0, size), track) }
+            it.copy(tracks = newTracks)
+        }
+    }
+
     override fun playNext() {
         val q = _queueState.value
         if (!q.hasNext) {
