@@ -15,6 +15,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -61,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -83,7 +87,9 @@ import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SongFourRowCarousel
 import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.VideoCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.koin.compose.viewmodel.koinViewModel
@@ -111,6 +117,7 @@ fun SearchScreen(
             query = uiState.query,
             onQueryChange = viewModel::onQueryChange,
             onSearch = { q ->
+                isFocused = false
                 focusManager.clearFocus()
                 viewModel.executeSearch(q)
             },
@@ -133,6 +140,7 @@ fun SearchScreen(
             SearchFilterChipsRow(
                 selectedFilter = uiState.selectedFilter,
                 onFilterSelected = { filter ->
+                    isFocused = false
                     focusManager.clearFocus()
                     viewModel.onFilterSelected(filter)
                 },
@@ -146,7 +154,7 @@ fun SearchScreen(
             Crossfade(
                 targetState = when {
                     uiState.isBrowsingCategory || uiState.browseCategoryResult != null -> "category"
-                    uiState.query.isNotBlank() && !isFocused -> "results"
+                    uiState.query.isNotBlank() -> "results"
                     else -> "explore"
                 }
             ) { state ->
@@ -190,11 +198,14 @@ fun SearchScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.45f))
+                        .background(Color.Black.copy(alpha = 0.5f))
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { focusManager.clearFocus() }
+                        ) {
+                            isFocused = false
+                            focusManager.clearFocus()
+                        }
                 )
             }
 
@@ -203,9 +214,10 @@ fun SearchScreen(
                 query = uiState.query,
                 suggestions = uiState.suggestions,
                 recentSearches = uiState.recentSearches,
-                onSelect = { query ->
+                onSelect = { selectedQuery ->
+                    isFocused = false
                     focusManager.clearFocus()
-                    viewModel.onSuggestionSelected(query)
+                    viewModel.onSuggestionSelected(selectedQuery)
                 }
             )
         }
@@ -282,8 +294,159 @@ private fun SearchOverlayWrapper(
                 onSelect = onSelect,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 340.dp)
+                    .heightIn(max = 360.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun TopResultHeroCard(
+    item: SearchResult,
+    onAlbumClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onPlaylistClick: (String) -> Unit,
+    queueViewModel: QueueViewModel,
+    modifier: Modifier = Modifier
+) {
+    val isArtist = item is SearchResult.Artist
+    val title = when (item) {
+        is SearchResult.Artist -> item.name
+        is SearchResult.Song -> item.track.title
+        is SearchResult.Album -> item.title
+        is SearchResult.Playlist -> item.title
+    }
+    val subtitle = when (item) {
+        is SearchResult.Artist -> "Artista"
+        is SearchResult.Song -> item.track.artist
+        is SearchResult.Album -> item.author + (item.year?.let { " • $it" } ?: "")
+        is SearchResult.Playlist -> item.author
+    }
+    val artworkUrl = when (item) {
+        is SearchResult.Artist -> item.artworkUrl
+        is SearchResult.Song -> item.track.artworkUrl
+        is SearchResult.Album -> item.artworkUrl
+        is SearchResult.Playlist -> item.artworkUrl
+    }
+    val badgeText = when (item) {
+        is SearchResult.Artist -> "ARTISTA"
+        is SearchResult.Song -> "CANCIÓN"
+        is SearchResult.Album -> "ÁLBUM"
+        is SearchResult.Playlist -> "PLAYLIST"
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        MeloColors.surface2.copy(alpha = 0.85f),
+                        MeloColors.surface1.copy(alpha = 0.65f)
+                    )
+                )
+            )
+            .border(0.75.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
+            .clickable {
+                when (item) {
+                    is SearchResult.Artist -> onArtistClick(item.id)
+                    is SearchResult.Song -> queueViewModel.playTrack(item.track)
+                    is SearchResult.Album -> onAlbumClick(item.id)
+                    is SearchResult.Playlist -> onPlaylistClick(item.id)
+                }
+            }
+            .padding(20.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    style = MeloType.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isArtist) {
+                    MeloAsyncImage(
+                        url = artworkUrl,
+                        contentDescription = title,
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .border(
+                                2.dp,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                CircleShape
+                            ),
+                        shape = CircleShape
+                    )
+                } else {
+                    MeloAsyncImage(
+                        url = artworkUrl,
+                        contentDescription = title,
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .shadow(8.dp, RoundedCornerShape(14.dp)),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MeloType.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        style = MeloType.body,
+                        color = MeloColors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        when (item) {
+                            is SearchResult.Song -> queueViewModel.playTrack(item.track)
+                            is SearchResult.Artist -> onArtistClick(item.id)
+                            is SearchResult.Album -> onAlbumClick(item.id)
+                            is SearchResult.Playlist -> onPlaylistClick(item.id)
+                        }
+                    },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(8.dp, CircleShape)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color.Black,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -418,122 +581,237 @@ private fun SearchResultsContent(
     } else {
         when (uiState.selectedFilter) {
             SearchFilterType.ALL -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 24.dp,
-                        end = 24.dp,
-                        top = 8.dp,
-                        bottom = paddingValues.calculateBottomPadding() + 16.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    uiState.summarySections.forEach { section ->
+                val allSongs = uiState.summarySections
+                    .flatMap { it.items }
+                    .filterIsInstance<SearchResult.Song>()
+                    .map { it.track }
+                    .distinctBy { it.id }
+
+                val topResult = uiState.summarySections.firstOrNull()?.items?.firstOrNull()
+                val otherSections = uiState.summarySections.filter { section ->
+                    section.type != HomeSectionType.SONGS && section.type != HomeSectionType.VIDEOS
+                }
+
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val isWide = maxWidth >= 760.dp
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 24.dp,
+                            end = 24.dp,
+                            top = 8.dp,
+                            bottom = paddingValues.calculateBottomPadding() + 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
                         item {
-                            SectionHeader(title = section.title)
+                            if (topResult != null) {
+                                if (isWide) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(20.dp)
+                                    ) {
+                                        Column(modifier = Modifier.weight(1.1f)) {
+                                            SectionHeader(title = "Mejor resultado")
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            TopResultHeroCard(
+                                                item = topResult,
+                                                onAlbumClick = onAlbumClick,
+                                                onArtistClick = onArtistClick,
+                                                onPlaylistClick = onPlaylistClick,
+                                                queueViewModel = queueViewModel,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+
+                                        if (allSongs.isNotEmpty()) {
+                                            Column(modifier = Modifier.weight(1.5f)) {
+                                                SectionHeader(title = "Canciones principales")
+                                                Spacer(modifier = Modifier.height(10.dp))
+                                                allSongs.take(4).forEach { track ->
+                                                    TrackRow(
+                                                        track = track,
+                                                        onClick = { queueViewModel.playTrack(track) }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        Column {
+                                            SectionHeader(title = "Mejor resultado")
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            TopResultHeroCard(
+                                                item = topResult,
+                                                onAlbumClick = onAlbumClick,
+                                                onArtistClick = onArtistClick,
+                                                onPlaylistClick = onPlaylistClick,
+                                                queueViewModel = queueViewModel,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+
+                                        if (allSongs.isNotEmpty()) {
+                                            Column {
+                                                SectionHeader(title = "Canciones")
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                allSongs.take(4).forEach { track ->
+                                                    TrackRow(
+                                                        track = track,
+                                                        onClick = { queueViewModel.playTrack(track) }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (allSongs.isNotEmpty()) {
+                                Column {
+                                    SectionHeader(title = "Canciones")
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    allSongs.take(5).forEach { track ->
+                                        TrackRow(
+                                            track = track,
+                                            onClick = { queueViewModel.playTrack(track) }
+                                        )
+                                    }
+                                }
+                            }
                         }
 
-                        when (section.type) {
-                            HomeSectionType.SONGS, HomeSectionType.VIDEOS -> {
-                                val songs = section.items.filterIsInstance<SearchResult.Song>()
-                                    .map { it.track }
-                                items(songs) { track ->
-                                    TrackRow(
-                                        track = track,
-                                        onClick = { queueViewModel.playTrack(track) })
-                                }
-                            }
-
-                            HomeSectionType.ALBUMS -> {
-                                item {
-                                    val albums =
-                                        section.items.filterIsInstance<SearchResult.Album>()
-                                    AdaptiveLazyRow(
-                                        items = albums,
-                                        minCardWidth = 140.dp,
-                                        spacing = 12.dp
-                                    ) { album, width ->
-                                        AlbumCard(
-                                            title = album.title,
-                                            subtitle = album.author,
-                                            artworkUrl = album.artworkUrl,
-                                            cardWidth = width,
-                                            onClick = { onAlbumClick(album.id) }
+                        if (allSongs.size > 4) {
+                            item {
+                                SectionHeader(title = "Más canciones")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    allSongs.drop(4).take(6).forEach { track ->
+                                        TrackRow(
+                                            track = track,
+                                            onClick = { queueViewModel.playTrack(track) }
                                         )
                                     }
                                 }
                             }
+                        }
 
-                            HomeSectionType.ARTISTS -> {
-                                item {
-                                    val artists =
-                                        section.items.filterIsInstance<SearchResult.Artist>()
-                                    AdaptiveLazyRow(
-                                        items = artists,
-                                        minCardWidth = 110.dp,
-                                        spacing = 12.dp
-                                    ) { artist, width ->
-                                        ArtistCircle(
-                                            name = artist.name,
-                                            artworkUrl = artist.artworkUrl,
-                                            onClick = { onArtistClick(artist.id) },
-                                            size = width
-                                        )
+                        otherSections.forEach { section ->
+                            when (section.type) {
+                                HomeSectionType.ALBUMS -> {
+                                    item {
+                                        val albums =
+                                            section.items.filterIsInstance<SearchResult.Album>()
+                                        if (albums.isNotEmpty()) {
+                                            SectionHeader(title = section.title.ifBlank { "Álbumes" })
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            AdaptiveLazyRow(
+                                                items = albums,
+                                                minCardWidth = 140.dp,
+                                                spacing = 12.dp,
+                                                horizontalPadding = 0.dp
+                                            ) { album, width ->
+                                                AlbumCard(
+                                                    title = album.title,
+                                                    subtitle = album.author,
+                                                    artworkUrl = album.artworkUrl,
+                                                    cardWidth = width,
+                                                    onClick = { onAlbumClick(album.id) }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
-                            }
 
-                            HomeSectionType.PLAYLISTS -> {
-                                item {
-                                    val playlists =
-                                        section.items.filterIsInstance<SearchResult.Playlist>()
-                                    AdaptiveLazyRow(
-                                        items = playlists,
-                                        minCardWidth = 140.dp,
-                                        spacing = 12.dp
-                                    ) { playlist, width ->
-                                        AlbumCard(
-                                            title = playlist.title,
-                                            subtitle = playlist.author,
-                                            artworkUrl = playlist.artworkUrl,
-                                            cardWidth = width,
-                                            onClick = { onPlaylistClick(playlist.id) }
-                                        )
+                                HomeSectionType.ARTISTS -> {
+                                    item {
+                                        val artists =
+                                            section.items.filterIsInstance<SearchResult.Artist>()
+                                        if (artists.isNotEmpty()) {
+                                            SectionHeader(title = section.title.ifBlank { "Artistas" })
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            AdaptiveLazyRow(
+                                                items = artists,
+                                                minCardWidth = 110.dp,
+                                                spacing = 12.dp,
+                                                horizontalPadding = 0.dp
+                                            ) { artist, width ->
+                                                ArtistCircle(
+                                                    name = artist.name,
+                                                    artworkUrl = artist.artworkUrl,
+                                                    onClick = { onArtistClick(artist.id) },
+                                                    size = width
+                                                )
+                                            }
+                                        }
                                     }
                                 }
-                            }
 
-                            HomeSectionType.MIXED -> {
-                                items(section.items) { item ->
-                                    when (item) {
-                                        is SearchResult.Song -> TrackRow(
-                                            item.track,
-                                            onClick = { queueViewModel.playTrack(item.track) })
-
-                                        is SearchResult.Album -> AlbumCard(
-                                            item.title,
-                                            item.author,
-                                            item.artworkUrl,
-                                            onClick = { onAlbumClick(item.id) },
-                                            cardWidth = 140.dp
-                                        )
-
-                                        is SearchResult.Artist -> ArtistCircle(
-                                            item.name,
-                                            item.artworkUrl,
-                                            onClick = { onArtistClick(item.id) },
-                                            size = 80.dp
-                                        )
-
-                                        is SearchResult.Playlist -> AlbumCard(
-                                            item.title,
-                                            item.author,
-                                            item.artworkUrl,
-                                            onClick = { onPlaylistClick(item.id) },
-                                            cardWidth = 140.dp
-                                        )
+                                HomeSectionType.PLAYLISTS -> {
+                                    item {
+                                        val playlists =
+                                            section.items.filterIsInstance<SearchResult.Playlist>()
+                                        if (playlists.isNotEmpty()) {
+                                            SectionHeader(title = section.title.ifBlank { "Playlists" })
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            AdaptiveLazyRow(
+                                                items = playlists,
+                                                minCardWidth = 140.dp,
+                                                spacing = 12.dp,
+                                                horizontalPadding = 0.dp
+                                            ) { playlist, width ->
+                                                AlbumCard(
+                                                    title = playlist.title,
+                                                    subtitle = playlist.author,
+                                                    artworkUrl = playlist.artworkUrl,
+                                                    cardWidth = width,
+                                                    onClick = { onPlaylistClick(playlist.id) }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
+
+                                HomeSectionType.MIXED -> {
+                                    item {
+                                        SectionHeader(title = section.title)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            section.items.forEach { item ->
+                                                when (item) {
+                                                    is SearchResult.Song -> TrackRow(
+                                                        item.track,
+                                                        onClick = { queueViewModel.playTrack(item.track) })
+
+                                                    is SearchResult.Album -> AlbumCard(
+                                                        item.title,
+                                                        item.author,
+                                                        item.artworkUrl,
+                                                        onClick = { onAlbumClick(item.id) },
+                                                        cardWidth = 140.dp
+                                                    )
+
+                                                    is SearchResult.Artist -> ArtistCircle(
+                                                        item.name,
+                                                        item.artworkUrl,
+                                                        onClick = { onArtistClick(item.id) },
+                                                        size = 80.dp
+                                                    )
+
+                                                    is SearchResult.Playlist -> AlbumCard(
+                                                        item.title,
+                                                        item.author,
+                                                        item.artworkUrl,
+                                                        onClick = { onPlaylistClick(item.id) },
+                                                        cardWidth = 140.dp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                else -> {}
                             }
                         }
                     }
@@ -559,7 +837,7 @@ private fun SearchResultsContent(
 
             SearchFilterType.ALBUMS -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(140.dp),
+                    columns = GridCells.Adaptive(150.dp),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 24.dp,
@@ -567,8 +845,8 @@ private fun SearchResultsContent(
                         top = 8.dp,
                         bottom = paddingValues.calculateBottomPadding() + 16.dp
                     ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     itemsIndexed(
                         uiState.albumResults,
@@ -585,7 +863,7 @@ private fun SearchResultsContent(
 
             SearchFilterType.ARTISTS -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(110.dp),
+                    columns = GridCells.Adaptive(120.dp),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 24.dp,
@@ -603,7 +881,7 @@ private fun SearchResultsContent(
                             name = artist.name,
                             artworkUrl = artist.artworkUrl,
                             onClick = { onArtistClick(artist.id) },
-                            size = 110.dp
+                            size = 120.dp
                         )
                     }
                 }
@@ -611,7 +889,7 @@ private fun SearchResultsContent(
 
             SearchFilterType.PLAYLISTS -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(140.dp),
+                    columns = GridCells.Adaptive(150.dp),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 24.dp,
@@ -619,8 +897,8 @@ private fun SearchResultsContent(
                         top = 8.dp,
                         bottom = paddingValues.calculateBottomPadding() + 16.dp
                     ),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     itemsIndexed(
                         uiState.playlistResults,
@@ -636,7 +914,8 @@ private fun SearchResultsContent(
             }
 
             SearchFilterType.VIDEOS -> {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(260.dp),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = 24.dp,
@@ -644,10 +923,19 @@ private fun SearchResultsContent(
                         top = 8.dp,
                         bottom = paddingValues.calculateBottomPadding() + 16.dp
                     ),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    items(uiState.videoResults) { track ->
-                        TrackRow(track = track, onClick = { queueViewModel.playTrack(track) })
+                    itemsIndexed(
+                        uiState.videoResults,
+                        key = { index, track -> "video_${index}_${track.id}" }
+                    ) { _, track ->
+                        VideoCard(
+                            title = track.title,
+                            subtitle = track.artist,
+                            artworkUrl = track.artworkUrl,
+                            onClick = { queueViewModel.playTrack(track) }
+                        )
                     }
                 }
             }
@@ -811,7 +1099,7 @@ private fun SearchActiveOverlay(
 ) {
     Box(
         modifier = modifier
-            .shadow(12.dp, RoundedCornerShape(20.dp))
+            .shadow(16.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(MeloColors.surface1.copy(alpha = 0.98f))
             .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
@@ -864,8 +1152,11 @@ private fun SearchItemRow(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { onClick() }
-            .padding(vertical = 10.dp, horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
