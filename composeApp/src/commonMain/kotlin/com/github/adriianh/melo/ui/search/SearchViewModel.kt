@@ -17,7 +17,12 @@ import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +33,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
+enum class SearchFilterType(val label: String) {
+    ALL("Todos"),
+    SONGS("Canciones"),
+    ALBUMS("Álbumes"),
+    ARTISTS("Artistas"),
+    PLAYLISTS("Playlists"),
+    VIDEOS("Videos")
+}
+
 data class SearchUiState(
     val query: String = "",
-    val results: List<Track> = emptyList(),
+    val selectedFilter: SearchFilterType = SearchFilterType.ALL,
+    val summarySections: List<HomeSection> = emptyList(),
+    val songResults: List<Track> = emptyList(),
+    val albumResults: List<SearchResult.Album> = emptyList(),
+    val artistResults: List<SearchResult.Artist> = emptyList(),
+    val playlistResults: List<SearchResult.Playlist> = emptyList(),
+    val videoResults: List<Track> = emptyList(),
     val isSearching: Boolean = false,
     val exploreSections: List<HomeSection> = emptyList(),
     val isLoadingExplore: Boolean = true,
@@ -42,10 +62,25 @@ data class SearchUiState(
     val browseCategoryResult: BrowseCategoryResult? = null,
     val isBrowsingCategory: Boolean = false,
     val error: String? = null,
-)
+) {
+    val hasResults: Boolean
+        get() = when (selectedFilter) {
+            SearchFilterType.ALL -> summarySections.isNotEmpty()
+            SearchFilterType.SONGS -> songResults.isNotEmpty()
+            SearchFilterType.ALBUMS -> albumResults.isNotEmpty()
+            SearchFilterType.ARTISTS -> artistResults.isNotEmpty()
+            SearchFilterType.PLAYLISTS -> playlistResults.isNotEmpty()
+            SearchFilterType.VIDEOS -> videoResults.isNotEmpty()
+        }
+}
 
 class SearchViewModel(
     private val searchTracksUseCase: SearchTracksUseCase,
+    private val searchAlbumsUseCase: SearchAlbumsUseCase,
+    private val searchArtistsUseCase: SearchArtistsUseCase,
+    private val searchPlaylistsUseCase: SearchPlaylistsUseCase,
+    private val searchVideosUseCase: SearchVideosUseCase,
+    private val searchSummaryUseCase: SearchSummaryUseCase,
     private val getExploreUseCase: GetExploreUseCase,
     private val getChartsUseCase: GetChartsUseCase,
     private val getTrendingUseCase: GetTrendingUseCase,
@@ -81,7 +116,12 @@ class SearchViewModel(
                 it.copy(
                     query = "",
                     isSearching = false,
-                    results = emptyList(),
+                    summarySections = emptyList(),
+                    songResults = emptyList(),
+                    albumResults = emptyList(),
+                    artistResults = emptyList(),
+                    playlistResults = emptyList(),
+                    videoResults = emptyList(),
                     suggestions = emptyList()
                 )
             }
@@ -100,33 +140,92 @@ class SearchViewModel(
         }
 
         searchJob = viewModelScope.launch {
-            delay(500.milliseconds)
-            _uiState.update { it.copy(isSearching = true) }
-            try {
-                val results = searchTracksUseCase(query)
-                _uiState.update { it.copy(results = results, isSearching = false) }
-                saveSearchQueryUseCase(query)
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isSearching = false) }
+            delay(400.milliseconds)
+            performSearch(query, _uiState.value.selectedFilter)
+        }
+    }
+
+    fun onFilterSelected(filter: SearchFilterType) {
+        if (_uiState.value.selectedFilter == filter) return
+        _uiState.update { it.copy(selectedFilter = filter) }
+        val query = _uiState.value.query
+        if (query.isNotBlank()) {
+            executeSearch(query)
+        }
+    }
+
+    fun executeSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        searchJob.cancel()
+        suggestionsJob.cancel()
+        _uiState.update { it.copy(query = trimmed, suggestions = emptyList()) }
+
+        searchJob = viewModelScope.launch {
+            performSearch(trimmed, _uiState.value.selectedFilter)
+        }
+    }
+
+    private suspend fun performSearch(query: String, filter: SearchFilterType) {
+        _uiState.update { it.copy(isSearching = true) }
+        try {
+            when (filter) {
+                SearchFilterType.ALL -> {
+                    val summary = searchSummaryUseCase(query)
+                    if (summary.isNotEmpty()) {
+                        _uiState.update { it.copy(summarySections = summary, isSearching = false) }
+                    } else {
+                        val tracks = searchTracksUseCase(query)
+                        val fallbackSections = if (tracks.isNotEmpty()) {
+                            listOf(
+                                HomeSection(
+                                    "Canciones",
+                                    com.github.adriianh.core.domain.model.HomeSectionType.SONGS,
+                                    tracks.map { SearchResult.Song(it) })
+                            )
+                        } else emptyList()
+                        _uiState.update {
+                            it.copy(
+                                summarySections = fallbackSections,
+                                isSearching = false
+                            )
+                        }
+                    }
+                }
+
+                SearchFilterType.SONGS -> {
+                    val results = searchTracksUseCase(query)
+                    _uiState.update { it.copy(songResults = results, isSearching = false) }
+                }
+
+                SearchFilterType.ALBUMS -> {
+                    val results = searchAlbumsUseCase(query)
+                    _uiState.update { it.copy(albumResults = results, isSearching = false) }
+                }
+
+                SearchFilterType.ARTISTS -> {
+                    val results = searchArtistsUseCase(query)
+                    _uiState.update { it.copy(artistResults = results, isSearching = false) }
+                }
+
+                SearchFilterType.PLAYLISTS -> {
+                    val results = searchPlaylistsUseCase(query)
+                    _uiState.update { it.copy(playlistResults = results, isSearching = false) }
+                }
+
+                SearchFilterType.VIDEOS -> {
+                    val results = searchVideosUseCase(query)
+                    _uiState.update { it.copy(videoResults = results, isSearching = false) }
+                }
             }
+            saveSearchQueryUseCase(query)
+        } catch (_: Exception) {
+            _uiState.update { it.copy(isSearching = false) }
         }
     }
 
     fun onSuggestionSelected(query: String) {
-        _uiState.update { it.copy(query = query, results = emptyList(), suggestions = emptyList()) }
-        searchJob.cancel()
-        suggestionsJob.cancel()
-
-        searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true) }
-            try {
-                val results = searchTracksUseCase(query)
-                _uiState.update { it.copy(results = results, isSearching = false) }
-                saveSearchQueryUseCase(query)
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isSearching = false) }
-            }
-        }
+        executeSearch(query)
     }
 
     fun clearQuery() {
@@ -135,7 +234,12 @@ class SearchViewModel(
         _uiState.update {
             it.copy(
                 query = "",
-                results = emptyList(),
+                summarySections = emptyList(),
+                songResults = emptyList(),
+                albumResults = emptyList(),
+                artistResults = emptyList(),
+                playlistResults = emptyList(),
+                videoResults = emptyList(),
                 isSearching = false,
                 suggestions = emptyList(),
                 browseCategoryResult = null,
@@ -221,7 +325,12 @@ class SearchViewModel(
         _uiState.update {
             it.copy(
                 query = "",
-                results = emptyList(),
+                summarySections = emptyList(),
+                songResults = emptyList(),
+                albumResults = emptyList(),
+                artistResults = emptyList(),
+                playlistResults = emptyList(),
+                videoResults = emptyList(),
                 suggestions = emptyList(),
                 isBrowsingCategory = true,
                 browseCategoryResult = null

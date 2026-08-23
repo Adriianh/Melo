@@ -36,3 +36,17 @@ class GetArtistRadioUseCase(private val repository: MusicRepository) {
 class GetRelatedTracksUseCase(private val repository: MusicRepository) {
     suspend operator fun invoke(videoId: String): List<Track> = repository.getRelated(videoId)
 }
+
+class SearchVideosUseCase(private val repository: MusicRepository) {
+    suspend operator fun invoke(query: String): List<Track> {
+        if (query.isBlank()) return emptyList()
+        return repository.searchVideos(query)
+    }
+}
+
+class SearchSummaryUseCase(private val repository: MusicRepository) {
+    suspend operator fun invoke(query: String): List<HomeSection> {
+        if (query.isBlank()) return emptyList()
+        return repository.searchSummary(query)
+    }
+}

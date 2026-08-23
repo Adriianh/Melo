@@ -41,7 +41,12 @@ import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
@@ -162,6 +167,11 @@ val useCaseModule = module {
     singleOf(::RecordPlayUseCase)
     singleOf(::GetRecentTracksUseCase)
     singleOf(::SearchTracksUseCase)
+    singleOf(::SearchAlbumsUseCase)
+    singleOf(::SearchArtistsUseCase)
+    singleOf(::SearchPlaylistsUseCase)
+    singleOf(::SearchVideosUseCase)
+    singleOf(::SearchSummaryUseCase)
     singleOf(::GetHomeUseCase)
     singleOf(::GetExploreUseCase)
     singleOf(::GetChartsUseCase)
