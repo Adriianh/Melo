@@ -12,6 +12,7 @@ data class PlayerUiState(
     val artist: String = "",
     val albumArt: String? = null,
     val isPlaying: Boolean = false,
+    val isBuffering: Boolean = false,
     val progressFraction: Float = 0f,
     val progressMs: Long = 0L,
     val durationMs: Long = 0L,
@@ -33,10 +34,15 @@ data class PlayerUiState(
             queue: QueueState,
             accentColor: Color = Color.Transparent,
         ): PlayerUiState {
-            val track = playback.currentTrack
-            val fraction = if (playback.durationMs > 0) {
-                (playback.progressMs.toFloat() / playback.durationMs).coerceIn(0f, 1f)
+            val track = queue.currentTrack ?: playback.currentTrack
+            val durationMs =
+                if (playback.durationMs > 0) playback.durationMs else (track?.durationMs ?: 0L)
+            val fraction = if (durationMs > 0) {
+                (playback.progressMs.toFloat() / durationMs).coerceIn(0f, 1f)
             } else 0f
+
+            val isBuffering = playback.isBuffering ||
+                    (track != null && !playback.isPlaying && (playback.currentTrack == null || playback.currentTrack?.id != track.id))
 
             return PlayerUiState(
                 currentTrack = track,
@@ -44,11 +50,12 @@ data class PlayerUiState(
                 artist = track?.artist ?: "",
                 albumArt = track?.artworkUrl,
                 isPlaying = playback.isPlaying,
+                isBuffering = isBuffering,
                 progressFraction = fraction,
                 progressMs = playback.progressMs,
-                durationMs = playback.durationMs,
+                durationMs = durationMs,
                 elapsedLabel = formatTime(playback.progressMs),
-                remainingLabel = formatTime(playback.durationMs - playback.progressMs),
+                remainingLabel = formatTime((durationMs - playback.progressMs).coerceAtLeast(0L)),
                 shuffleEnabled = queue.shuffleEnabled,
                 repeatMode = queue.repeatMode,
                 hasNext = queue.hasNext,
