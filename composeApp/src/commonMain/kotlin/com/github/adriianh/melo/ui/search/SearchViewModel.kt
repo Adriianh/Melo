@@ -219,6 +219,7 @@ class SearchViewModel(
                 }
             }
             saveSearchQueryUseCase(query)
+            loadRecentSearches()
         } catch (_: Exception) {
             _uiState.update { it.copy(isSearching = false) }
         }
