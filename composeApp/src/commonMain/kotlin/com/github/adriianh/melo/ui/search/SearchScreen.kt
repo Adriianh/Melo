@@ -2,6 +2,8 @@ package com.github.adriianh.melo.ui.search
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -9,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,8 +27,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
@@ -53,7 +62,15 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeSectionType
@@ -64,6 +81,7 @@ import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.CategoryCard
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
@@ -81,6 +99,7 @@ fun SearchScreen(
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val focusManager = LocalFocusManager.current
     var isFocused by remember { mutableStateOf(false) }
 
     Column(
@@ -91,6 +110,10 @@ fun SearchScreen(
         SearchTopBar(
             query = uiState.query,
             onQueryChange = viewModel::onQueryChange,
+            onSearch = { q ->
+                focusManager.clearFocus()
+                viewModel.executeSearch(q)
+            },
             onClear = viewModel::clearQuery,
             onOpenSettings = onOpenSettings,
             onFocusChanged = { focused ->
@@ -102,6 +125,23 @@ fun SearchScreen(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
         )
 
+        AnimatedVisibility(
+            visible = uiState.query.isNotBlank(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            SearchFilterChipsRow(
+                selectedFilter = uiState.selectedFilter,
+                onFilterSelected = { filter ->
+                    focusManager.clearFocus()
+                    viewModel.onFilterSelected(filter)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 6.dp)
+            )
+        }
+
         Box(modifier = Modifier.weight(1f)) {
             Crossfade(
                 targetState = when {
@@ -112,24 +152,31 @@ fun SearchScreen(
             ) { state ->
                 when (state) {
                     "category" -> CategoryBrowsingContent(
-                        uiState,
-                        paddingValues,
-                        viewModel::exitBrowsing,
-                        onAlbumClick,
-                        onArtistClick,
-                        onPlaylistClick,
-                        queueViewModel
+                        uiState = uiState,
+                        paddingValues = paddingValues,
+                        onBack = viewModel::exitBrowsing,
+                        onAlbumClick = onAlbumClick,
+                        onArtistClick = onArtistClick,
+                        onPlaylistClick = onPlaylistClick,
+                        queueViewModel = queueViewModel
                     )
 
-                    "results" -> SearchResultsContent(uiState, paddingValues, queueViewModel)
+                    "results" -> SearchResultsContent(
+                        uiState = uiState,
+                        paddingValues = paddingValues,
+                        onAlbumClick = onAlbumClick,
+                        onArtistClick = onArtistClick,
+                        onPlaylistClick = onPlaylistClick,
+                        queueViewModel = queueViewModel
+                    )
+
                     "explore" -> ExploreContent(
-                        uiState,
-                        paddingValues,
-                        onAlbumClick,
-                        onArtistClick,
-                        onPlaylistClick,
-                        viewModel::browseCategory,
-                        queueViewModel
+                        uiState = uiState,
+                        paddingValues = paddingValues,
+                        onAlbumClick = onAlbumClick,
+                        onPlaylistClick = onPlaylistClick,
+                        onBrowseCategory = viewModel::browseCategory,
+                        queueViewModel = queueViewModel
                     )
                 }
             }
@@ -139,16 +186,73 @@ fun SearchScreen(
                             (uiState.query.isNotBlank() && uiState.suggestions.isNotEmpty())
                     )
 
+            if (shouldShowOverlay) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { focusManager.clearFocus() }
+                )
+            }
+
             SearchOverlayWrapper(
                 visible = shouldShowOverlay,
                 query = uiState.query,
                 suggestions = uiState.suggestions,
                 recentSearches = uiState.recentSearches,
-                onSelect = { selected ->
-                    viewModel.onSuggestionSelected(selected)
-                    isFocused = false
+                onSelect = { query ->
+                    focusManager.clearFocus()
+                    viewModel.onSuggestionSelected(query)
                 }
-            ) { isFocused = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchFilterChipsRow(
+    selectedFilter: SearchFilterType,
+    onFilterSelected: (SearchFilterType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+    Row(
+        modifier = modifier.horizontalScroll(scrollState),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SearchFilterType.entries.forEach { filter ->
+            val isSelected = filter == selectedFilter
+            val activeColor = MaterialTheme.colorScheme.primary
+            val bgAlpha by animateColorAsState(
+                targetValue = if (isSelected) activeColor else MeloColors.surface1,
+                animationSpec = tween(250),
+                label = "chip_bg"
+            )
+            val textColor by animateColorAsState(
+                targetValue = if (isSelected) Color.White else MeloColors.textSecondary,
+                animationSpec = tween(250),
+                label = "chip_text"
+            )
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(bgAlpha)
+                    .clickable { onFilterSelected(filter) }
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = filter.label,
+                    style = MeloType.labelMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = textColor
+                )
+            }
         }
     }
 }
@@ -159,44 +263,27 @@ private fun SearchOverlayWrapper(
     query: String,
     suggestions: List<String>,
     recentSearches: List<String>,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onSelect: (String) -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = Modifier.fillMaxSize()
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
+            SearchActiveOverlay(
+                query = query,
+                suggestions = suggestions,
+                recentSearches = recentSearches,
+                onSelect = onSelect,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onDismiss() }
+                    .fillMaxWidth()
+                    .heightIn(max = 340.dp)
             )
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .animateEnterExit(
-                        enter = expandVertically(expandFrom = Alignment.Top),
-                        exit = shrinkVertically(shrinkTowards = Alignment.Top)
-                    )
-            ) {
-                SearchActiveOverlay(
-                    query = query,
-                    suggestions = suggestions,
-                    recentSearches = recentSearches,
-                    onSelect = onSelect,
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                )
-            }
         }
     }
 }
@@ -285,21 +372,12 @@ private fun CategoryBrowsingContent(
 private fun SearchResultsContent(
     uiState: SearchUiState,
     paddingValues: PaddingValues,
+    onAlbumClick: (String) -> Unit,
+    onArtistClick: (String) -> Unit,
+    onPlaylistClick: (String) -> Unit,
     queueViewModel: QueueViewModel
 ) {
     if (uiState.isSearching) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-    } else if (uiState.results.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No se encontraron resultados",
-                style = MeloType.body,
-                color = MeloColors.textMuted
-            )
-        }
-    } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -308,10 +386,270 @@ private fun SearchResultsContent(
                 top = 8.dp,
                 bottom = paddingValues.calculateBottomPadding() + 16.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(uiState.results) { track ->
-                TrackRow(track = track, onClick = { queueViewModel.playTrack(track) })
+            items(6) {
+                SuggestionSkeletonCard()
+            }
+        }
+    } else if (!uiState.hasResults) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "No se encontraron resultados",
+                    style = MeloType.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary
+                )
+                Text(
+                    "Intenta buscar con otras palabras o cambiar de filtro",
+                    style = MeloType.body,
+                    color = MeloColors.textMuted,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    } else {
+        when (uiState.selectedFilter) {
+            SearchFilterType.ALL -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    uiState.summarySections.forEach { section ->
+                        item {
+                            SectionHeader(title = section.title)
+                        }
+
+                        when (section.type) {
+                            HomeSectionType.SONGS, HomeSectionType.VIDEOS -> {
+                                val songs = section.items.filterIsInstance<SearchResult.Song>()
+                                    .map { it.track }
+                                items(songs) { track ->
+                                    TrackRow(
+                                        track = track,
+                                        onClick = { queueViewModel.playTrack(track) })
+                                }
+                            }
+
+                            HomeSectionType.ALBUMS -> {
+                                item {
+                                    val albums =
+                                        section.items.filterIsInstance<SearchResult.Album>()
+                                    AdaptiveLazyRow(
+                                        items = albums,
+                                        minCardWidth = 140.dp,
+                                        spacing = 12.dp
+                                    ) { album, width ->
+                                        AlbumCard(
+                                            title = album.title,
+                                            subtitle = album.author,
+                                            artworkUrl = album.artworkUrl,
+                                            cardWidth = width,
+                                            onClick = { onAlbumClick(album.id) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            HomeSectionType.ARTISTS -> {
+                                item {
+                                    val artists =
+                                        section.items.filterIsInstance<SearchResult.Artist>()
+                                    AdaptiveLazyRow(
+                                        items = artists,
+                                        minCardWidth = 110.dp,
+                                        spacing = 12.dp
+                                    ) { artist, width ->
+                                        ArtistCircle(
+                                            name = artist.name,
+                                            artworkUrl = artist.artworkUrl,
+                                            onClick = { onArtistClick(artist.id) },
+                                            size = width
+                                        )
+                                    }
+                                }
+                            }
+
+                            HomeSectionType.PLAYLISTS -> {
+                                item {
+                                    val playlists =
+                                        section.items.filterIsInstance<SearchResult.Playlist>()
+                                    AdaptiveLazyRow(
+                                        items = playlists,
+                                        minCardWidth = 140.dp,
+                                        spacing = 12.dp
+                                    ) { playlist, width ->
+                                        AlbumCard(
+                                            title = playlist.title,
+                                            subtitle = playlist.author,
+                                            artworkUrl = playlist.artworkUrl,
+                                            cardWidth = width,
+                                            onClick = { onPlaylistClick(playlist.id) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            HomeSectionType.MIXED -> {
+                                items(section.items) { item ->
+                                    when (item) {
+                                        is SearchResult.Song -> TrackRow(
+                                            item.track,
+                                            onClick = { queueViewModel.playTrack(item.track) })
+
+                                        is SearchResult.Album -> AlbumCard(
+                                            item.title,
+                                            item.author,
+                                            item.artworkUrl,
+                                            onClick = { onAlbumClick(item.id) },
+                                            cardWidth = 140.dp
+                                        )
+
+                                        is SearchResult.Artist -> ArtistCircle(
+                                            item.name,
+                                            item.artworkUrl,
+                                            onClick = { onArtistClick(item.id) },
+                                            size = 80.dp
+                                        )
+
+                                        is SearchResult.Playlist -> AlbumCard(
+                                            item.title,
+                                            item.author,
+                                            item.artworkUrl,
+                                            onClick = { onPlaylistClick(item.id) },
+                                            cardWidth = 140.dp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            SearchFilterType.SONGS -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(uiState.songResults) { track ->
+                        TrackRow(track = track, onClick = { queueViewModel.playTrack(track) })
+                    }
+                }
+            }
+
+            SearchFilterType.ALBUMS -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(140.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(
+                        uiState.albumResults,
+                        key = { index, item -> "album_${index}_${item.id}" }) { _, album ->
+                        AlbumCard(
+                            title = album.title,
+                            subtitle = album.author,
+                            artworkUrl = album.artworkUrl,
+                            onClick = { onAlbumClick(album.id) }
+                        )
+                    }
+                }
+            }
+
+            SearchFilterType.ARTISTS -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(110.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    itemsIndexed(
+                        uiState.artistResults,
+                        key = { index, item -> "artist_${index}_${item.id}" }) { _, artist ->
+                        ArtistCircle(
+                            name = artist.name,
+                            artworkUrl = artist.artworkUrl,
+                            onClick = { onArtistClick(artist.id) },
+                            size = 110.dp
+                        )
+                    }
+                }
+            }
+
+            SearchFilterType.PLAYLISTS -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(140.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    itemsIndexed(
+                        uiState.playlistResults,
+                        key = { index, item -> "pl_${index}_${item.id}" }) { _, playlist ->
+                        AlbumCard(
+                            title = playlist.title,
+                            subtitle = playlist.author,
+                            artworkUrl = playlist.artworkUrl,
+                            onClick = { onPlaylistClick(playlist.id) }
+                        )
+                    }
+                }
+            }
+
+            SearchFilterType.VIDEOS -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(uiState.videoResults) { track ->
+                        TrackRow(track = track, onClick = { queueViewModel.playTrack(track) })
+                    }
+                }
             }
         }
     }
@@ -322,25 +660,28 @@ private fun ExploreContent(
     uiState: SearchUiState,
     paddingValues: PaddingValues,
     onAlbumClick: (String) -> Unit,
-    onArtistClick: (String) -> Unit,
     onPlaylistClick: (String) -> Unit,
     onBrowseCategory: (String, String?) -> Unit,
     queueViewModel: QueueViewModel
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
         contentPadding = PaddingValues(
             top = 8.dp,
-            bottom = paddingValues.calculateBottomPadding() + 32.dp
-        )
+            bottom = paddingValues.calculateBottomPadding() + 16.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         if (uiState.recentHistory.isNotEmpty()) {
             item {
-                SectionHeader(title = "Vuelve a escuchar")
+                SectionHeader(
+                    title = "Búsquedas recientes",
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
                 SongFourRowCarousel(
                     tracks = uiState.recentHistory,
-                    onTrackClick = queueViewModel::playTrack
+                    onTrackClick = { track -> queueViewModel.playTrack(track) },
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }
@@ -348,55 +689,35 @@ private fun ExploreContent(
         uiState.exploreSections.forEach { section ->
             when (section.type) {
                 HomeSectionType.SONGS -> {
-                    val tracks =
+                    val songs =
                         section.items.filterIsInstance<SearchResult.Song>().map { it.track }
-                    item {
-                        SectionHeader(title = section.title)
-                        SongFourRowCarousel(
-                            tracks = tracks,
-                            onTrackClick = queueViewModel::playTrack
-                        )
-                    }
-                }
-
-                HomeSectionType.ALBUMS -> {
-                    item {
-                        SectionHeader(title = section.title)
-                        AdaptiveLazyRow(section.items, 140.dp, 12.dp) { item, cardWidth ->
-                            when (item) {
-                                is SearchResult.Album -> AlbumCard(
-                                    item.title,
-                                    item.author,
-                                    item.artworkUrl,
-                                    onClick = { onAlbumClick(item.id) },
-                                    cardWidth = cardWidth
-                                )
-
-                                is SearchResult.Playlist -> AlbumCard(
-                                    item.title,
-                                    item.author,
-                                    item.artworkUrl,
-                                    onClick = { onPlaylistClick(item.id) },
-                                    cardWidth = cardWidth
-                                )
-
-                                is SearchResult.Artist -> ArtistCircle(
-                                    item.name,
-                                    item.artworkUrl,
-                                    onClick = { onArtistClick(item.id) },
-                                    size = cardWidth
-                                )
-
-                                else -> {}
-                            }
+                    if (songs.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = section.title,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+                            SongFourRowCarousel(
+                                tracks = songs,
+                                onTrackClick = { track -> queueViewModel.playTrack(track) },
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
                         }
                     }
                 }
 
-                HomeSectionType.PLAYLISTS -> {
+                HomeSectionType.MIXED -> {
                     item {
-                        SectionHeader(title = section.title)
-                        AdaptiveLazyRow(section.items, 140.dp, 14.dp) { item, cardWidth ->
+                        SectionHeader(
+                            title = section.title,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                        AdaptiveLazyRow(
+                            items = section.items,
+                            minCardWidth = 140.dp,
+                            spacing = 12.dp,
+                            horizontalPadding = 24.dp
+                        ) { item, cardWidth ->
                             when (item) {
                                 is SearchResult.Playlist -> AlbumCard(
                                     item.title,
@@ -563,6 +884,7 @@ private fun SearchItemRow(
 private fun SearchTopBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    onSearch: (String) -> Unit,
     onClear: () -> Unit,
     onOpenSettings: () -> Unit,
     onFocusChanged: (Boolean) -> Unit,
@@ -613,6 +935,8 @@ private fun SearchTopBar(
                 }
             },
             singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearch(query) }),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MeloColors.glassSurface,
                 unfocusedContainerColor = MeloColors.glassSurface.copy(alpha = 0.45f),
@@ -624,8 +948,19 @@ private fun SearchTopBar(
                 cursorColor = MaterialTheme.colorScheme.primary,
             ),
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.weight(1f).onFocusChanged { onFocusChanged(it.isFocused) }
-                .blur(if (query.isEmpty()) 0.dp else 0.dp).drawBehind {}
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { onFocusChanged(it.isFocused) }
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.key == Key.Enter && keyEvent.type == KeyEventType.KeyUp) {
+                        onSearch(query)
+                        true
+                    } else {
+                        false
+                    }
+                }
+                .blur(if (query.isEmpty()) 0.dp else 0.dp)
+                .drawBehind {}
         )
     }
 }
