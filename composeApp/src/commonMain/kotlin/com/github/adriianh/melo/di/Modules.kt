@@ -36,6 +36,7 @@ import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRelatedTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
@@ -168,6 +169,7 @@ val useCaseModule = module {
     singleOf(::GetTrendingUseCase)
     singleOf(::GetRadioUseCase)
     singleOf(::GetArtistRadioUseCase)
+    singleOf(::GetRelatedTracksUseCase)
     singleOf(::GetSettingsUseCase)
     singleOf(::UpdateSettingsUseCase)
     singleOf(::SetSessionCookiesUseCase)
