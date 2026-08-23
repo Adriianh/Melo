@@ -5,7 +5,8 @@ import com.github.adriianh.innertube.models.AlbumItem
 import com.github.adriianh.innertube.models.Artist
 import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.SongItem
-import com.github.adriianh.innertube.models.oddElements
+import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
 
 data class AlbumPage(
@@ -31,13 +32,10 @@ data class AlbumPage(
                     ?: return null,
                 title = PageHelper.extractRuns(renderer.flexColumns, "MUSIC_VIDEO")
                     .firstOrNull()?.text ?: return null,
-                artists = renderer.flexColumns.getOrNull(1)?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.oddElements()
-                    ?.map {
-                        Artist(
-                            name = it.text,
-                            id = it.navigationEndpoint?.browseEndpoint?.browseId
-                        )
-                    } ?: return null,
+                artists = renderer.flexColumns.getOrNull(1)?.musicResponsiveListItemFlexColumnRenderer?.text?.runs
+                    ?.splitBySeparator()?.firstOrNull()?.extractArtists().orEmpty().ifEmpty {
+                        listOf(Artist(name = "Unknown", id = null))
+                    },
                 album = album?.let {
                     Album(it.title, it.browseId)
                 }

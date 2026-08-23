@@ -559,10 +559,15 @@ class InnerTubeMusicProvider(
     }
 
     private fun mapSongItem(item: SongItem): Track {
+        val artistName = if (item.artists.isNotEmpty()) {
+            item.artists.map { it.name.trim() }.filter { it.isNotEmpty() }.joinToString(", ")
+        } else {
+            "Unknown"
+        }
         return Track(
             id = "piped:${item.id}",
             title = item.title,
-            artist = item.artists.firstOrNull()?.name ?: "Unknown",
+            artist = artistName,
             durationMs = item.duration?.times(1000L) ?: 0L,
             album = item.album?.name ?: "",
             genres = emptyList(),
