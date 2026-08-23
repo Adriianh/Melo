@@ -63,6 +63,7 @@ import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -81,8 +82,10 @@ fun ArtistDetailScreen(
     initialArtwork: String? = null,
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
+    playerViewModel: PlayerViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val playerUiState by playerViewModel.uiState.collectAsState()
 
     LaunchedEffect(artistId) {
         viewModel.loadArtist(artistId, initialName, initialArtwork)
@@ -369,7 +372,7 @@ fun ArtistDetailScreen(
                                     track = track,
                                     trackNumber = index + 1,
                                     isCurrent = isPlayingThis,
-                                    isPlaying = isPlayingThis,
+                                    isPlaying = isPlayingThis && playerUiState.isPlaying,
                                     onClick = { queueViewModel.playTracks(topSongs, index) }
                                 )
                             }

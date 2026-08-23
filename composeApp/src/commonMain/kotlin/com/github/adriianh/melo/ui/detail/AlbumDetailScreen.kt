@@ -77,8 +77,10 @@ fun AlbumDetailScreen(
     initialAuthor: String = "",
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
+    playerViewModel: com.github.adriianh.melo.ui.player.PlayerViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val playerUiState by playerViewModel.uiState.collectAsState()
 
     LaunchedEffect(albumId) {
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
@@ -399,7 +401,7 @@ fun AlbumDetailScreen(
                                     track = song,
                                     trackNumber = index + 1,
                                     isCurrent = isPlayingThis,
-                                    isPlaying = isPlayingThis,
+                                    isPlaying = isPlayingThis && playerUiState.isPlaying,
                                     onClick = { queueViewModel.playTracks(songs, index) }
                                 )
                             }

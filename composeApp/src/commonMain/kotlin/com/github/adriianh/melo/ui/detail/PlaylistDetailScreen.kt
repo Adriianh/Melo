@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -73,8 +74,10 @@ fun PlaylistDetailScreen(
     initialAuthor: String = "",
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
+    playerViewModel: PlayerViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val playerUiState by playerViewModel.uiState.collectAsState()
 
     LaunchedEffect(playlistId) {
         viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor)
@@ -391,7 +394,7 @@ fun PlaylistDetailScreen(
                                     track = song,
                                     trackNumber = index + 1,
                                     isCurrent = isPlayingThis,
-                                    isPlaying = isPlayingThis,
+                                    isPlaying = isPlayingThis && playerUiState.isPlaying,
                                     onClick = { queueViewModel.playTracks(songs, index) }
                                 )
                             }

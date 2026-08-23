@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -166,12 +167,20 @@ internal fun DesktopPlayerBar(
                             ),
                             modifier = Modifier.size(38.dp)
                         ) {
-                            Icon(
-                                if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = if (state.isPlaying) "Pause" else "Play",
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            if (state.isBuffering) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (state.isPlaying) "Pause" else "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
                         IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
                             Icon(
@@ -320,12 +329,20 @@ internal fun MobilePlayerBar(
                     )
                 }
                 IconButton(onClick = viewModel::togglePlayPause) {
-                    Icon(
-                        if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause" else "Play",
-                        tint = activeAccent,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    if (state.isBuffering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = activeAccent,
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        Icon(
+                            if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (state.isPlaying) "Pause" else "Play",
+                            tint = activeAccent,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
                 IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
                     Icon(

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -45,23 +46,51 @@ fun SuggestionTrackCard(
     onClick: () -> Unit,
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isCurrent: Boolean = false,
+    isPlaying: Boolean = false,
 ) {
+    val backgroundColor =
+        if (isCurrent) activeAccent.copy(alpha = 0.18f) else MeloColors.surface1.copy(alpha = 0.55f)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MeloColors.surface1.copy(alpha = 0.55f))
+            .background(backgroundColor)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        MeloAsyncImage(
-            url = track.artworkUrl,
-            contentDescription = track.title,
-            size = 36.dp,
-            shape = RoundedCornerShape(6.dp)
-        )
+        Box(
+            modifier = Modifier.size(36.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            MeloAsyncImage(
+                url = track.artworkUrl,
+                contentDescription = track.title,
+                size = 36.dp,
+                shape = RoundedCornerShape(6.dp)
+            )
+            if (isCurrent) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isPlaying) {
+                        AnimatedEqualizerBars(accentColor = Color.White)
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                }
+            }
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -70,7 +99,7 @@ fun SuggestionTrackCard(
                 text = track.title,
                 style = MeloType.labelMedium,
                 fontWeight = FontWeight.Medium,
-                color = MeloColors.textPrimary,
+                color = if (isCurrent) activeAccent else MeloColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

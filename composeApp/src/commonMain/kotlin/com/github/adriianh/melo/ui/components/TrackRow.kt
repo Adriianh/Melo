@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
@@ -44,7 +47,7 @@ fun TrackRow(
     val backgroundColor = when {
         isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         showGlassBackground -> MeloColors.glassSurface.copy(alpha = 0.3f)
-        else -> androidx.compose.ui.graphics.Color.Transparent
+        else -> Transparent
     }
 
     Row(
@@ -69,6 +72,12 @@ fun TrackRow(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
+                } else if (isCurrent) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
                 } else {
                     Text(
                         text = "$trackNumber",
@@ -78,12 +87,36 @@ fun TrackRow(
                 }
             }
         } else {
-            MeloAsyncImage(
-                url = track.artworkUrl,
-                contentDescription = track.title,
-                size = 44.dp,
-                shape = RoundedCornerShape(6.dp)
-            )
+            Box(
+                modifier = Modifier.size(44.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                MeloAsyncImage(
+                    url = track.artworkUrl,
+                    contentDescription = track.title,
+                    size = 44.dp,
+                    shape = RoundedCornerShape(6.dp)
+                )
+                if (isCurrent) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isPlaying) {
+                            AnimatedEqualizerBars(accentColor = Color.White)
+                        } else {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         Column(modifier = Modifier.weight(1f)) {

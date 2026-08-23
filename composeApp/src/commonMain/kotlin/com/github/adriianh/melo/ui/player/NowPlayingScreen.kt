@@ -748,12 +748,20 @@ private fun PlayerTransportControls(
             modifier = Modifier.size(64.dp).clickable(onClick = viewModel::togglePlayPause)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (state.isPlaying) "Pause" else "Play",
-                    tint = Color.White,
-                    modifier = Modifier.size(34.dp)
-                )
+                if (state.isBuffering) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(30.dp),
+                        color = Color.White,
+                        strokeWidth = 3.dp
+                    )
+                } else {
+                    Icon(
+                        if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
         }
 
@@ -815,12 +823,32 @@ private fun NowPlayingQueueSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                MeloAsyncImage(
-                    url = state.albumArt,
-                    contentDescription = state.title,
-                    size = 42.dp,
-                    shape = RoundedCornerShape(6.dp)
-                )
+                Box(
+                    modifier = Modifier.size(42.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MeloAsyncImage(
+                        url = state.albumArt,
+                        contentDescription = state.title,
+                        size = 42.dp,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                    if (state.isBuffering) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.Black.copy(alpha = 0.45f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         state.title,
@@ -938,6 +966,8 @@ private fun NowPlayingQueueSection(
                 SuggestionTrackCard(
                     track = track,
                     activeAccent = activeAccent,
+                    isCurrent = state.currentTrack?.id == track.id,
+                    isPlaying = state.isPlaying && state.currentTrack?.id == track.id,
                     onClick = { queueViewModel.playTrack(track) },
                     onAddClick = { queueViewModel.insertTrackNext(track) }
                 )
