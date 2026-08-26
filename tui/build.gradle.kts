@@ -33,7 +33,7 @@ dependencies {
 }
 
 val appVersion = "1.0.0"
-val appName    = "melo"
+val appName = "melo"
 
 // Root of the distribution script templates
 val distSrc = file("src/dist")
@@ -78,13 +78,16 @@ graalvmNative {
             fallback.set(false)
             verbose.set(true)
 
-            // ── Ktor / Kotlin / kotlinx ecosystem ────────────────────────
+            // Optimized for modern GraalVM
             buildArgs.addAll(
                 "-H:+JNI",
+                "--no-fallback",
+                "--install-exit-handlers",
                 "--initialize-at-build-time=io.ktor",
                 "--initialize-at-build-time=kotlin",
                 "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
-                "--initialize-at-build-time=io.github.selemba1000.linux.LinuxJMTC",
+                "--initialize-at-run-time=io.github.selemba1000.linux.LinuxJMTC",
+                "--initialize-at-run-time=org.freedesktop.dbus",
                 "--initialize-at-build-time=kotlinx.coroutines",
                 "--initialize-at-build-time=kotlinx.serialization",
                 "--initialize-at-build-time=kotlinx.serialization.json.Json",
@@ -112,7 +115,6 @@ graalvmNative {
                 "--initialize-at-build-time=java.sql.DriverInfo",
                 "--initialize-at-run-time=org.newsclub.net.unix",
                 // ── Native image housekeeping ───────────────────────────
-                "-H:+InstallExitHandlers",
                 "-H:+ReportUnsupportedElementsAtRuntime",
                 "-H:+ReportExceptionStackTraces",
                 // ── Required for JNA / DBus (MediaSessionManager / SMTC) ────────────
@@ -130,13 +132,13 @@ graalvmNative {
     }
 }
 
-// ─── distribution tasks ───────────────────────────────────────────────────────────────────
 
 tasks.register("distUnix") {
+    description = ""
     dependsOn(tasks.named("nativeCompile"))
 
-    val osTag    = if (System.getProperty("os.name").lowercase().contains("mac")) "macos" else "linux"
-    val distOut  = layout.buildDirectory.dir("dist")
+    val osTag = if (System.getProperty("os.name").lowercase().contains("mac")) "macos" else "linux"
+    val distOut = layout.buildDirectory.dir("dist")
     val stageOut = layout.buildDirectory.dir("dist/stage")
 
     inputs.dir(distSrc.resolve("unix"))
@@ -145,8 +147,8 @@ tasks.register("distUnix") {
     doLast {
         val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
         val stageDir = stageOut.get().asFile
-        val rootDir  = File(stageDir, "$appName-$appVersion")
-        val distDir  = distOut.get().asFile
+        val rootDir = File(stageDir, "$appName-$appVersion")
+        val distDir = distOut.get().asFile
 
         stageDir.deleteRecursively()
         distDir.mkdirs()
@@ -167,7 +169,12 @@ tasks.register("distUnix") {
         }
 
         val tarName = "$appName-$appVersion-$osTag.tar.gz"
-        val result  = ProcessBuilder("tar", "-czf", File(distDir, tarName).absolutePath, "$appName-$appVersion")
+        val result = ProcessBuilder(
+            "tar",
+            "-czf",
+            File(distDir, tarName).absolutePath,
+            "$appName-$appVersion"
+        )
             .directory(stageDir)
             .inheritIO()
             .start()
@@ -179,9 +186,10 @@ tasks.register("distUnix") {
 }
 
 tasks.register("distWindows") {
+    description = "Packages the application for Windows distribution."
     dependsOn(tasks.named("nativeCompile"))
 
-    val distOut  = layout.buildDirectory.dir("dist")
+    val distOut = layout.buildDirectory.dir("dist")
     val stageOut = layout.buildDirectory.dir("dist/stage")
 
     inputs.dir(distSrc.resolve("windows"))
@@ -190,8 +198,8 @@ tasks.register("distWindows") {
     doLast {
         val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
         val stageDir = stageOut.get().asFile
-        val rootDir  = File(stageDir, "$appName-$appVersion")
-        val distDir  = distOut.get().asFile
+        val rootDir = File(stageDir, "$appName-$appVersion")
+        val distDir = distOut.get().asFile
 
         stageDir.deleteRecursively()
         distDir.mkdirs()
@@ -227,10 +235,11 @@ tasks.register("distWindows") {
 }
 
 tasks.register("dist") {
+    description = "Packages the application for Linux/MacOS distribution"
     dependsOn(tasks.shadowJar)
     val os = System.getProperty("os.name").lowercase()
     when {
         os.contains("win") -> dependsOn("distWindows")
-        else               -> dependsOn("distUnix")
+        else -> dependsOn("distUnix")
     }
 }
