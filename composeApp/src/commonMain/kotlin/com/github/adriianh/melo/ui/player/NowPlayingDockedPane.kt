@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,7 +79,7 @@ fun DesktopNowPlayingDockedPane(
         if (state.accentColor != Color.Transparent && state.accentColor != MeloColors.textMuted) {
             state.accentColor
         } else {
-            MaterialTheme.colorScheme.primary
+            MeloColors.brandAccent
         }
 
     if (!state.hasTrack) return
@@ -616,7 +615,7 @@ private fun DockedArtistContent(
                     "Populares",
                     style = MeloType.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MeloColors.textMuted,
+                    color = activeAccent,
                     letterSpacing = 1.sp
                 )
             }
