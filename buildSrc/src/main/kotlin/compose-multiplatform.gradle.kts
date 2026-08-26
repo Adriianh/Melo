@@ -32,12 +32,12 @@ extensions.configure<KotlinMultiplatformExtension> {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.components.resources)
-                implementation(compose.components.uiToolingPreview)
+                implementation(libs.findLibrary("composeRuntime").get())
+                implementation(libs.findLibrary("composeFoundation").get())
+                implementation(libs.findLibrary("material3").get())
+                implementation(libs.findLibrary("ui").get())
+                implementation(libs.findLibrary("composeResources").get())
+                implementation(libs.findLibrary("composeUiToolingPreview").get())
             }
         }
         val androidMain by getting {
