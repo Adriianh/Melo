@@ -110,7 +110,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         progressJob = scope.launch {
             while (true) {
                 _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
-                delay(1000.milliseconds)
+                delay(200.milliseconds)
             }
         }
     }

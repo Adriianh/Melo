@@ -209,7 +209,7 @@ class JvmMeloPlayer : MeloPlayer {
         progressJob = scope.launch {
             while (true) {
                 _state.update { it.copy(progressMs = mediaPlayer.status().time()) }
-                delay(1000.milliseconds)
+                delay(200.milliseconds)
             }
         }
     }
