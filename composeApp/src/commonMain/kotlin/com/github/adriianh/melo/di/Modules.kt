@@ -7,6 +7,7 @@ import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.FavoritesRepository
 import com.github.adriianh.core.domain.repository.HistoryRepository
 import com.github.adriianh.core.domain.repository.LoginRepository
+import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
 import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
@@ -25,6 +26,8 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
+import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
+import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
@@ -34,11 +37,13 @@ import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
+import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRelatedTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
@@ -58,10 +63,13 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
+import com.github.adriianh.data.remote.lyrics.LyricsApiClient
+import com.github.adriianh.data.remote.lyrics.LyricsTranslator
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
 import com.github.adriianh.data.repository.InnerTubeLoginRepository
+import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
 import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
@@ -120,6 +128,9 @@ val dataModule = module {
     singleOf(::ItunesApiClient)
     singleOf(::PipedApiClient)
     singleOf(::PipedAudioProvider)
+    singleOf(::LyricsApiClient)
+    singleOf(::LyricsTranslator)
+    single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
 
     single<MetadataProvider> {
         CompositeArtworkProvider(
@@ -166,6 +177,10 @@ val useCaseModule = module {
     singleOf(::GetStreamUseCase)
     singleOf(::RecordPlayUseCase)
     singleOf(::GetRecentTracksUseCase)
+    singleOf(::GetLyricsUseCase)
+    singleOf(::GetSyncedLyricsUseCase)
+    singleOf(::GetTrackLyricsUseCase)
+    singleOf(::TranslateLyricsUseCase)
     singleOf(::SearchTracksUseCase)
     singleOf(::SearchAlbumsUseCase)
     singleOf(::SearchArtistsUseCase)

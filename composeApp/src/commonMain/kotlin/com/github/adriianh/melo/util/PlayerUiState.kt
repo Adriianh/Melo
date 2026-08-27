@@ -2,6 +2,7 @@ package com.github.adriianh.melo.util
 
 import androidx.compose.ui.graphics.Color
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
@@ -24,6 +25,12 @@ data class PlayerUiState(
     val hasPrevious: Boolean = false,
     val accentColor: Color = Color.Transparent,
     val lyrics: String? = null,
+    val trackLyrics: TrackLyrics? = null,
+    val activeLyricIndex: Int = -1,
+    val isLyricsLoading: Boolean = false,
+    val showTranslation: Boolean = false,
+    val isTranslating: Boolean = false,
+    val targetLanguage: String = "es",
     val isFavorite: Boolean = false,
 ) {
     val hasTrack: Boolean get() = title.isNotEmpty()
