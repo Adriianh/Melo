@@ -35,13 +35,14 @@ actual val platformModule: Module = module {
     single(named("configDirPath")) { dataDir.absolutePath }
 
     single<AudioProvider> {
-        val innerTubeProvider = InnerTubeAudioProvider(
-            fallback = YtDlpAudioProvider(get())
-        )
-
-        PipedAudioProvider(
+        val ytDlpProvider = YtDlpAudioProvider(pipedApiClient = get())
+        val pipedProvider = PipedAudioProvider(
             apiClient = get(),
-            fallback = innerTubeProvider
+            fallback = ytDlpProvider
+        )
+        InnerTubeAudioProvider(
+            configDirPath = get(named("configDirPath")),
+            fallback = pipedProvider
         )
     }
 

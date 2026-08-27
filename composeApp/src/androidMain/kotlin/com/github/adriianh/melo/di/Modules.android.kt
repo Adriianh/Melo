@@ -34,7 +34,11 @@ actual val platformModule: Module = module {
     single(named("configDirPath")) { androidContext().filesDir.absolutePath }
 
     single<AudioProvider> {
-        InnerTubeAudioProvider(fallback = PipedAudioProvider(get()))
+        val pipedProvider = PipedAudioProvider(apiClient = get())
+        InnerTubeAudioProvider(
+            configDirPath = get(named("configDirPath")),
+            fallback = pipedProvider
+        )
     }
 
     single<OfflineRepository> {

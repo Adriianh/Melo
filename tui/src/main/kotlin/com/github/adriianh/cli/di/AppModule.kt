@@ -59,8 +59,8 @@ import com.github.adriianh.core.domain.usecase.playback.StartWebAuthUseCase
 import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
 import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
+import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
@@ -94,6 +94,7 @@ import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
 import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
+import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.provider.discovery.CompositeDiscoveryProvider
 import com.github.adriianh.data.provider.discovery.DeezerDiscoveryProvider
@@ -142,13 +143,11 @@ private fun hasSpotifyKeys() =
             resolveEnv("SPOTIFY_CLIENT_SECRET") != null
 
 val appModule = module {
-    // Infrastructure
     single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
 
     single {
         HttpClient(CIO) {
             engine {
-                // Use our limited dispatcher for the CIO engine
                 dispatcher = get<CoroutineDispatcher>()
                 endpoint {
                     maxConnectionsCount = 20
@@ -176,7 +175,6 @@ val appModule = module {
         }
     }
 
-    // API Clients
     single { ArtworkRenderer(get()) }
     single { ItunesApiClient(get()) }
     single {
@@ -198,7 +196,6 @@ val appModule = module {
     single { PipedApiClient(get()) }
     single { DeezerApiClient(get()) }
 
-    // Providers
     single<MusicProvider> {
         val itunes = ItunesMusicProvider(get())
         val providers = mutableListOf(
@@ -225,14 +222,18 @@ val appModule = module {
         )
     }
     single<AudioProvider> {
+        val dataDir = File(System.getProperty("user.home"), ".melo")
+        if (!dataDir.exists()) dataDir.mkdirs()
+        val ytDlp = YtDlpAudioProvider(pipedApiClient = get())
+        val piped = PipedAudioProvider(apiClient = get(), fallback = ytDlp)
         InnerTubeAudioProvider(
-            fallback = YtDlpAudioProvider(get())
+            configDirPath = dataDir.absolutePath,
+            fallback = piped
         )
     }
     single { MediaSessionManager(httpClient = get()) }
     single { DiscordRpcManager() }
 
-    // Repositories
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
     single<LyricsRepository> { LyricsRepositoryImpl(get()) }
@@ -303,7 +304,6 @@ val appModule = module {
     factory { GetTrendingUseCase(get()) }
     factory { GetRadioUseCase(get()) }
 
-    // Interactors
     factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
     factory { GetSearchHistoryUseCase(get()) }
     factory { GetSearchSuggestionsUseCase(get()) }
@@ -331,7 +331,21 @@ val appModule = module {
             get()
         )
     }
-    factory { LibraryInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory {
+        LibraryInteractors(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
     factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { StatsInteractors(get(), get(), get()) }

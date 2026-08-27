@@ -21,6 +21,10 @@ class PipedApiClient(
 
     private val instances = listOf(
         "https://api.piped.private.coffee",
+        "https://pipedapi.kavin.rocks",
+        "https://api.piped.privacydev.net",
+        "https://pipedapi.tokhmi.xyz",
+        "https://piped-api.garudalinux.org"
     )
 
     private fun HttpRequestBuilder.commonHeaders() {
