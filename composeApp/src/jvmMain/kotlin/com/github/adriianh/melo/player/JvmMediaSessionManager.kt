@@ -46,11 +46,8 @@ class JvmMediaSessionManager(
     private var observerJob: Job? = null
     private var artworkJob: Job? = null
     private var currentTrackId: String? = null
-
-    /** Single reusable temp file for JMTC artwork — overwritten on each track change. */
-    private val artworkTempFile: File by lazy {
-        Files.createTempFile("melo-art-", ".jpg").toFile().also { it.deleteOnExit() }
-    }
+    private var currentDurationMs: Long = 0L
+    private var currentArtFile: File? = null
 
     override fun init() {
         if (initialized) return
@@ -118,17 +115,37 @@ class JvmMediaSessionManager(
                         if (track == null) {
                             if (currentTrackId != null) {
                                 currentTrackId = null
+                                currentDurationMs = 0L
                                 lastPlaying = null
+                                cleanupCurrentArt()
                                 instance.playingState = JMTCPlayingState.STOPPED
                                 instance.updateDisplay()
                             }
                             return@collect
                         }
 
+                        val effectiveDurationMs = when {
+                            state.durationMs > 0 -> state.durationMs
+                            track.durationMs > 0 -> track.durationMs
+                            else -> 0L
+                        }
+
                         val trackChanged = track.id != currentTrackId
                         if (trackChanged) {
                             currentTrackId = track.id
-                            updateTrack(instance, track, state.durationMs)
+                            currentDurationMs = effectiveDurationMs
+                            updateTrack(instance, track, effectiveDurationMs)
+                        } else if (effectiveDurationMs > 0 && effectiveDurationMs != currentDurationMs) {
+                            currentDurationMs = effectiveDurationMs
+                            instance.setTimelineProperties(
+                                JMTCTimelineProperties(
+                                    /* start     */ 0L,
+                                    /* end       */ effectiveDurationMs * 1_000L,
+                                    /* seekStart */ 0L,
+                                    /* seekEnd   */ effectiveDurationMs * 1_000L
+                                )
+                            )
+                            instance.updateDisplay()
                         }
 
                         if (state.isPlaying != lastPlaying) {
@@ -141,7 +158,7 @@ class JvmMediaSessionManager(
                             instance.updateDisplay()
                         }
 
-                        if (state.progressMs > 0) {
+                        if (state.progressMs >= 0) {
                             instance.setPosition(state.progressMs * 1_000L)
                         }
                     } catch (_: Throwable) {
@@ -153,6 +170,7 @@ class JvmMediaSessionManager(
 
     private fun updateTrack(instance: JMTC, track: Track, durationMs: Long) {
         try {
+            cleanupCurrentArt()
             instance.mediaProperties = JMTCMusicProperties(
                 /* title       */ track.title,
                 /* artist      */ track.artist,
@@ -174,6 +192,7 @@ class JvmMediaSessionManager(
             instance.playingState = JMTCPlayingState.PLAYING
             instance.updateDisplay()
 
+            // Asynchronously download and apply album artwork using cache-busting unique temp files
             artworkJob?.cancel()
             val artworkUrl = track.artworkUrl
             if (!artworkUrl.isNullOrBlank()) {
@@ -181,6 +200,8 @@ class JvmMediaSessionManager(
                     val file = downloadArtwork(artworkUrl)
                     if (file != null && currentTrackId == track.id) {
                         try {
+                            val oldFile = currentArtFile
+                            currentArtFile = file
                             instance.mediaProperties = JMTCMusicProperties(
                                 /* title       */ track.title,
                                 /* artist      */ track.artist,
@@ -192,6 +213,10 @@ class JvmMediaSessionManager(
                                 /* art         */ file
                             )
                             instance.updateDisplay()
+                            try {
+                                oldFile?.delete()
+                            } catch (_: Throwable) {
+                            }
                         } catch (_: Throwable) {
                         }
                     }
@@ -202,16 +227,34 @@ class JvmMediaSessionManager(
     }
 
     private suspend fun downloadArtwork(url: String): File? = try {
-        val bytes = httpClient.get(url).readRawBytes()
-        artworkTempFile.writeBytes(bytes)
-        artworkTempFile
+        val formattedUrl = if (url.startsWith("//")) "https:$url" else url
+        val bytes = httpClient.get(formattedUrl).readRawBytes()
+        if (bytes.isEmpty()) null
+        else {
+            val tempFile =
+                Files.createTempFile("melo-art-${System.currentTimeMillis()}-", ".jpg").toFile()
+                    .also {
+                        it.deleteOnExit()
+                    }
+            tempFile.writeBytes(bytes)
+            tempFile
+        }
     } catch (_: Throwable) {
         null
+    }
+
+    private fun cleanupCurrentArt() {
+        try {
+            currentArtFile?.delete()
+        } catch (_: Throwable) {
+        }
+        currentArtFile = null
     }
 
     override fun release() {
         observerJob?.cancel()
         artworkJob?.cancel()
+        cleanupCurrentArt()
         try {
             jmtc?.enabled = false
         } catch (_: Throwable) {
@@ -219,9 +262,6 @@ class JvmMediaSessionManager(
         jmtc = null
         initialized = false
         currentTrackId = null
-        try {
-            artworkTempFile.delete()
-        } catch (_: Throwable) {
-        }
+        currentDurationMs = 0L
     }
 }

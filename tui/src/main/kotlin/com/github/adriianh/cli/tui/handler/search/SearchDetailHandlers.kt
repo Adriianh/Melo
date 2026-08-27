@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlin.time.Duration.Companion.milliseconds
 
 private fun mergeEntityDetails(original: SearchResult, loaded: SearchResult): SearchResult {
     return when (original) {
@@ -63,7 +64,7 @@ internal fun MeloScreen.debouncedLoadDetails(track: Track) {
     } catch (_: Exception) {
     }
     detailsJob = scope.launch {
-        delay(150)
+        delay(150.milliseconds)
         if (isActive) loadTrackDetails(track.id, track)
     }
 }
@@ -74,7 +75,7 @@ internal fun MeloScreen.debouncedLoadEntityDetails(entity: SearchResult) {
     } catch (_: Exception) {
     }
     detailsJob = scope.launch {
-        delay(150)
+        delay(150.milliseconds)
         if (isActive) loadEntityDetails(entity)
     }
 }
@@ -362,13 +363,17 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
 
         if (isActive) appRunner()?.runOnRenderThread {
             if (state.player.nowPlaying?.id == track.id) {
+                val updatedTrack = state.player.nowPlaying?.copy(
+                    artworkUrl = artworkUrl, album = album
+                ) ?: track
                 state = state.copy(
                     player = state.player.copy(
-                        nowPlaying = state.player.nowPlaying?.copy(
-                            artworkUrl = artworkUrl, album = album
-                        )
+                        nowPlaying = updatedTrack
                     )
                 )
+                if (state.player.isPlaying) {
+                    mediaSession.updateTrack(updatedTrack, updatedTrack.durationMs)
+                }
             }
         }
 

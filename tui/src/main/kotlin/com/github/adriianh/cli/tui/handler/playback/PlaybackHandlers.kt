@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.milliseconds
 
 internal fun MeloScreen.playTrack(track: Track) {
     if (!state.isPlayable(track)) return
@@ -81,6 +82,9 @@ internal fun MeloScreen.playTrack(track: Track) {
                                     queue = currentQ
                                 )
                             )
+                            if (fetched.durationMs > 0L) {
+                                mediaSession.updateTimeline(fetched.durationMs)
+                            }
                         }
                     }
                 }
@@ -111,7 +115,7 @@ internal fun MeloScreen.playTrack(track: Track) {
         val maxAttempts = 3
         while (attempts < maxAttempts && url == null) {
             url = getStream(resolvedTrack)
-            if (url == null) delay(700L)
+            if (url == null) delay(700L.milliseconds)
             attempts++
         }
 

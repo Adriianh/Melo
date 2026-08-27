@@ -39,10 +39,7 @@ class MediaSessionManager(
     @Volatile
     private var initialized = false
 
-    /** Single reusable temp file for JMTC artwork — overwritten on each track change. */
-    private val artworkTempFile: File by lazy {
-        Files.createTempFile("melo-art-", ".jpg").toFile().also { it.deleteOnExit() }
-    }
+    private var currentArtFile: File? = null
 
     fun init() {
         if (initialized) return
@@ -115,6 +112,22 @@ class MediaSessionManager(
         } catch (_: Exception) { }
     }
 
+    /** Called when total duration is resolved later. */
+    fun updateTimeline(durationMs: Long) {
+        try {
+            jmtc?.setTimelineProperties(
+                JMTCTimelineProperties(
+                    /* start     */ 0L,
+                    /* end       */ durationMs * 1_000L,
+                    /* seekStart */ 0L,
+                    /* seekEnd   */ durationMs * 1_000L,
+                )
+            )
+            jmtc?.updateDisplay()
+        } catch (_: Exception) {
+        }
+    }
+
     /** Called when playback is paused. */
     fun notifyPaused() {
         try {
@@ -153,24 +166,38 @@ class MediaSessionManager(
         jmtc = null
         initialized = false
         try {
-            artworkTempFile.delete()
+            currentArtFile?.delete()
         } catch (_: Exception) { }
+        currentArtFile = null
     }
 
     /**
-     * Downloads the artwork from [url] and writes it to the single reusable temp file.
-     * JMTC expects a [File] rather than raw bytes for the album art.
-     *
-     * Uses the shared Ktor [HttpClient] instead of creating a new java.net.http.HttpClient
-     * per call (which would spin up a dedicated thread pool each time).
+     * Downloads the artwork from [url] and writes it to a new unique temp file.
+     * Uses cache-busting filenames so desktop environments (MPRIS2/SMTC) reload
+     * the image instead of hitting their pixbuf file path cache.
      */
     private fun downloadArtworkToTempFile(url: String): File? = try {
+        val formattedUrl = if (url.startsWith("//")) "https:$url" else url
         val bytes = kotlinx.coroutines.runBlocking {
-            val response = httpClient.get(url)
+            val response = httpClient.get(formattedUrl)
             response.readRawBytes()
         }
-        artworkTempFile.writeBytes(bytes)
-        artworkTempFile
+        if (bytes.isEmpty()) null
+        else {
+            val tempFile =
+                Files.createTempFile("melo-art-${System.currentTimeMillis()}-", ".jpg").toFile()
+                    .also {
+                        it.deleteOnExit()
+                    }
+            tempFile.writeBytes(bytes)
+            val old = currentArtFile
+            currentArtFile = tempFile
+            try {
+                old?.delete()
+            } catch (_: Throwable) {
+            }
+            tempFile
+        }
     } catch (_: Exception) {
         null
     }
