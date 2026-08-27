@@ -3,6 +3,7 @@ package com.github.adriianh.melo.di
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.AndroidMeloPlayer
+import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -10,6 +11,7 @@ import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
+import com.github.adriianh.melo.player.AndroidMediaSessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.koin.android.ext.koin.androidContext
@@ -20,6 +22,13 @@ import org.koin.dsl.module
 actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
+    single<MediaSessionManager>(createdAtStart = true) {
+        AndroidMediaSessionManager(
+            context = androidContext(),
+            playbackManager = get(),
+            meloPlayer = get()
+        ).also { it.init() }
+    }
 
 
     single(named("configDirPath")) { androidContext().filesDir.absolutePath }

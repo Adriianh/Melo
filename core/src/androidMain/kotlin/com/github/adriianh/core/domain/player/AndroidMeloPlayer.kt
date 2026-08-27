@@ -1,7 +1,11 @@
 package com.github.adriianh.core.domain.player
 
 import android.content.Context
+import android.net.Uri
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.github.adriianh.core.domain.model.Track
@@ -17,7 +21,16 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class AndroidMeloPlayer(context: Context) : MeloPlayer {
-    private val exoPlayer = ExoPlayer.Builder(context).build()
+    private val audioAttributes = AudioAttributes.Builder()
+        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+        .setUsage(C.USAGE_MEDIA)
+        .build()
+
+    val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
+        .setAudioAttributes(audioAttributes, true)
+        .setHandleAudioBecomingNoisy(true)
+        .setWakeMode(C.WAKE_MODE_NETWORK)
+        .build()
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
@@ -44,7 +57,20 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     }
 
     override fun load(url: String, track: Track) {
-        val mediaItem = MediaItem.fromUri(url)
+        val metadata = MediaMetadata.Builder()
+            .setTitle(track.title)
+            .setArtist(track.artist)
+            .setAlbumTitle(track.album)
+            .setAlbumArtist(track.artist)
+            .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
+            .build()
+
+        val mediaItem = MediaItem.Builder()
+            .setUri(url)
+            .setMediaId(track.id)
+            .setMediaMetadata(metadata)
+            .build()
+
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         _state.update {
