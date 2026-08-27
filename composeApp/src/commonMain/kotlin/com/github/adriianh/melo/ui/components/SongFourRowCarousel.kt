@@ -20,6 +20,7 @@ fun SongFourRowCarousel(
     tracks: List<Track>,
     onTrackClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    onMoreClick: ((Track) -> Unit)? = null
 ) {
     val columns = tracks.chunked(4)
     val listState = rememberLazyListState()
@@ -49,7 +50,10 @@ fun SongFourRowCarousel(
                             TrackRow(
                                 track = track,
                                 onClick = { onTrackClick(track) },
-                                showGlassBackground = true
+                                showGlassBackground = true,
+                                onMoreClick = if (onMoreClick != null) {
+                                    { onMoreClick(track) }
+                                } else null
                             )
                         }
                     }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ fun SuggestionTrackCard(
     activeAccent: Color,
     onClick: () -> Unit,
     onAddClick: () -> Unit,
+    onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
@@ -111,16 +113,32 @@ fun SuggestionTrackCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        IconButton(
-            onClick = onAddClick,
-            modifier = Modifier.size(28.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Añadir a la cola",
-                tint = activeAccent,
-                modifier = Modifier.size(18.dp)
-            )
+            IconButton(
+                onClick = onMoreClick,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "Más opciones",
+                    tint = MeloColors.textMuted,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            IconButton(
+                onClick = onAddClick,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Añadir a la cola",
+                    tint = activeAccent,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }

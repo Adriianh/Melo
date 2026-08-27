@@ -15,8 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomSheetDefaults
@@ -48,6 +48,8 @@ fun TrackContextMenu(
     onDismissRequest: () -> Unit,
     onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
+    onRemoveFromQueue: () -> Unit = {},
+    inQueue: Boolean = false,
     onToggleLike: () -> Unit,
     isLiked: Boolean = false,
     onAddToPlaylist: () -> Unit,
@@ -107,18 +109,26 @@ fun TrackContextMenu(
                 color = MeloColors.glassBorder
             )
 
+            if (inQueue) {
+                ContextMenuItem(
+                    icon = Icons.AutoMirrored.Filled.QueueMusic,
+                    text = "Eliminar de la cola",
+                    onClick = { onRemoveFromQueue(); onDismissRequest() }
+                )
+            } else {
+                ContextMenuItem(
+                    icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                    text = "Reproducir a continuación",
+                    onClick = { onPlayNext(); onDismissRequest() }
+                )
+                ContextMenuItem(
+                    icon = Icons.AutoMirrored.Filled.QueueMusic,
+                    text = "Añadir a la cola",
+                    onClick = { onAddToQueue(); onDismissRequest() }
+                )
+            }
             ContextMenuItem(
-                icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                text = "Reproducir a continuación",
-                onClick = { onPlayNext(); onDismissRequest() }
-            )
-            ContextMenuItem(
-                icon = Icons.AutoMirrored.Filled.QueueMusic,
-                text = "Añadir a la cola",
-                onClick = { onAddToQueue(); onDismissRequest() }
-            )
-            ContextMenuItem(
-                icon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                icon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder,
                 text = if (isLiked) "Quitar de Me gusta" else "Me gusta",
                 onClick = { onToggleLike(); onDismissRequest() },
                 iconTint = if (isLiked) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
