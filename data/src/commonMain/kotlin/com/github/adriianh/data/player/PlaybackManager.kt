@@ -136,6 +136,24 @@ class PlaybackManagerImpl(
         }
     }
 
+    override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
+        val q = _queueState.value
+        if (fromIndex < 0 || fromIndex >= q.tracks.size || toIndex < 0 || toIndex >= q.tracks.size || fromIndex == toIndex) return
+        _queueState.update { current ->
+            val newTracks = current.tracks.toMutableList()
+            val item = newTracks.removeAt(fromIndex)
+            newTracks.add(toIndex, item)
+
+            val newCurrentIndex = when {
+                current.currentIndex == fromIndex -> toIndex
+                fromIndex < current.currentIndex && toIndex >= current.currentIndex -> current.currentIndex - 1
+                fromIndex > current.currentIndex && toIndex <= current.currentIndex -> current.currentIndex + 1
+                else -> current.currentIndex
+            }
+            current.copy(tracks = newTracks, currentIndex = newCurrentIndex)
+        }
+    }
+
     override fun playNext() {
         val q = _queueState.value
         if (!q.hasNext) {

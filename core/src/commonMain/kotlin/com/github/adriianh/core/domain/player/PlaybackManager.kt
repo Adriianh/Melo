@@ -13,6 +13,7 @@ interface PlaybackManager {
     fun addToQueue(track: Track)
     fun insertToQueue(track: Track, index: Int)
     fun removeFromQueue(index: Int)
+    fun moveQueueItem(fromIndex: Int, toIndex: Int)
     fun playNext()
     fun playPrevious()
     fun togglePlayPause()

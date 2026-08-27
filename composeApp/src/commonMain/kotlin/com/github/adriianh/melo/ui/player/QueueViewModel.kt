@@ -181,6 +181,10 @@ class QueueViewModel(
         return idx
     }
 
+    fun moveTrack(fromIndex: Int, toIndex: Int) {
+        manager.moveQueueItem(fromIndex, toIndex)
+    }
+
     fun toggleShuffle() = manager.toggleShuffle()
 
     fun toggleRepeat() = manager.toggleRepeat()

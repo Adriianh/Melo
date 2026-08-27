@@ -23,25 +23,20 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -136,37 +131,11 @@ fun NowPlayingArtistSection(
         val bio = artistDetails.description
         if (!bio.isNullOrBlank()) {
             item {
-                var expanded by remember { mutableStateOf(false) }
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MeloColors.glassFill.copy(alpha = 0.3f),
-                    border = BorderStroke(0.5.dp, MeloColors.glassBorder)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "Biografía",
-                            style = MeloType.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = bio,
-                            style = MeloType.body.copy(lineHeight = 18.sp),
-                            color = MeloColors.textSecondary,
-                            maxLines = if (expanded) Int.MAX_VALUE else 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = if (expanded) "Leer menos" else "Leer más",
-                            style = MeloType.labelSmall,
-                            color = activeAccent,
-                            modifier = Modifier
-                                .padding(top = 6.dp)
-                                .clickable { expanded = !expanded }
-                        )
-                    }
-                }
+                ExpandableDescriptionCard(
+                    title = "Biografía",
+                    description = bio,
+                    accentColor = activeAccent
+                )
             }
         }
 
