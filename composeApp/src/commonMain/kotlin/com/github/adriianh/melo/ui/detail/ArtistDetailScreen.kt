@@ -1,41 +1,21 @@
 package com.github.adriianh.melo.ui.detail
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -43,29 +23,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
+import com.github.adriianh.melo.ui.components.TrackContextMenu
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.rememberTrackInteraction
+import com.github.adriianh.melo.ui.detail.components.ArtistHeaderCard
+import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard
+import com.github.adriianh.melo.ui.detail.components.detailTrackItems
+import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
-import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.koin.compose.viewmodel.koinViewModel
@@ -83,9 +62,16 @@ fun ArtistDetailScreen(
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     playerViewModel: PlayerViewModel = koinViewModel(),
+    libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playerUiState by playerViewModel.uiState.collectAsState()
+    val libraryState by libraryViewModel.uiState.collectAsState()
+    val queueState by queueViewModel.queueState.collectAsState()
+
+    val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
+    val activeAccent = interaction.resolveActiveAccent(playerUiState)
+    val accentColor = MaterialTheme.colorScheme.primary
 
     LaunchedEffect(artistId) {
         viewModel.loadArtist(artistId, initialName, initialArtwork)
@@ -98,8 +84,35 @@ fun ArtistDetailScreen(
             ?: "Artista"
     }
 
-    val queueState by queueViewModel.queueState.collectAsState()
-    val accentColor = MaterialTheme.colorScheme.primary
+    if (interaction.contextMenuTrack != null) {
+        val track = interaction.contextMenuTrack!!
+        val isLiked = libraryState.likedSongs.any { it.id == track.id }
+        TrackContextMenu(
+            track = track,
+            onDismissRequest = interaction::dismissContextMenu,
+            onPlayNext = {
+                interaction.showPlayNextSnackbar(track, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            onAddToQueue = {
+                interaction.showAddedToQueueSnackbar(track, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            onToggleLike = {
+                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            isLiked = isLiked,
+            onAddToPlaylist = { /* TODO */ },
+            onGoToArtist = {
+                interaction.contextMenuTrack = null
+            },
+            onGoToAlbum = {
+                interaction.contextMenuTrack = null
+            },
+            onShare = { /* TODO */ }
+        )
+    }
 
     Scaffold(
         containerColor = MeloColors.surface0,
@@ -137,26 +150,11 @@ fun ArtistDetailScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else if (uiState.error != null && artist?.topSongs == null && artist?.sections.isNullOrEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = uiState.error.orEmpty(),
-                        style = MeloType.body,
-                        color = MeloColors.textMuted
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text("Reintentar")
-                    }
-                }
-            }
+            MeloErrorState(
+                error = uiState.error,
+                onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
+                modifier = Modifier.padding(paddingValues)
+            )
         } else {
             Box(
                 modifier = Modifier
@@ -169,6 +167,14 @@ fun ArtistDetailScreen(
                     )
             ) {
                 val topSongs = remember(artist) { artist?.topSongs.orEmpty() }
+                val effectiveArtwork = artist?.artworkUrl?.takeIf { it.isNotBlank() }
+                    ?: initialArtwork?.takeIf { it.isNotBlank() }
+                    ?: topSongs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+
+                val subtitleParts = listOfNotNull(
+                    artist?.monthlyListenerCount?.takeIf { it.isNotBlank() },
+                    artist?.subscriberCountText?.takeIf { it.isNotBlank() }
+                ).joinToString(" • ")
 
                 LazyColumn(
                     modifier = Modifier
@@ -178,205 +184,74 @@ fun ArtistDetailScreen(
                     contentPadding = PaddingValues(bottom = 32.dp)
                 ) {
                     item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            val effectiveArtwork = artist?.artworkUrl?.takeIf { it.isNotBlank() }
-                                ?: initialArtwork?.takeIf { it.isNotBlank() }
-                                ?: topSongs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
-
-                            MeloAsyncImage(
-                                url = effectiveArtwork,
-                                contentDescription = artist?.name ?: initialName,
-                                modifier = Modifier
-                                    .size(160.dp)
-                                    .shadow(16.dp, CircleShape)
-                                    .clip(CircleShape)
-                                    .border(1.5.dp, MeloColors.borderStrong, CircleShape),
-                                size = 160.dp,
-                                shape = CircleShape
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                text = effectiveName,
-                                style = MeloType.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MeloColors.textPrimary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
-                            )
-
-                            val subtitleParts = listOfNotNull(
-                                artist?.monthlyListenerCount?.takeIf { it.isNotBlank() },
-                                artist?.subscriberCountText?.takeIf { it.isNotBlank() }
-                            )
-
-                            if (subtitleParts.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = subtitleParts.joinToString(" • "),
-                                    style = MeloType.labelSmall,
-                                    color = MeloColors.textSecondary,
-                                    textAlign = TextAlign.Center
+                        ArtistHeaderCard(
+                            artworkUrl = effectiveArtwork,
+                            name = effectiveName,
+                            subtitleText = subtitleParts,
+                            isSaved = uiState.isSaved,
+                            onPlayClick = { queueViewModel.playTracks(topSongs, 0) },
+                            onShuffleClick = { queueViewModel.playShuffled(topSongs) },
+                            onRadioClick = {
+                                queueViewModel.startArtistRadio(
+                                    artistId = artistId,
+                                    fallbackTracks = topSongs
                                 )
-                            }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Button(
-                                    onClick = { queueViewModel.playTracks(topSongs, 0) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                                    shape = RoundedCornerShape(24.dp),
-                                    enabled = topSongs.isNotEmpty()
-                                ) {
-                                    Icon(
-                                        Icons.Default.PlayArrow,
-                                        contentDescription = "Reproducir",
-                                        tint = MaterialTheme.colorScheme.onPrimary
-                                    )
-                                    Spacer(modifier = Modifier.size(6.dp))
-                                    Text("Reproducir", color = MaterialTheme.colorScheme.onPrimary)
-                                }
-
-                                Button(
-                                    onClick = { queueViewModel.playShuffled(topSongs) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MeloColors.surface2,
-                                        contentColor = MeloColors.textPrimary
-                                    ),
-                                    shape = RoundedCornerShape(24.dp),
-                                    enabled = topSongs.isNotEmpty()
-                                ) {
-                                    Icon(
-                                        Icons.Default.Shuffle,
-                                        contentDescription = "Aleatorio",
-                                        tint = MeloColors.textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.size(6.dp))
-                                    Text("Aleatorio", color = MeloColors.textPrimary)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        queueViewModel.startArtistRadio(
-                                            artistId = artistId,
-                                            fallbackTracks = topSongs
-                                        )
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MeloColors.surface2,
-                                        contentColor = MeloColors.textPrimary
-                                    ),
-                                    shape = RoundedCornerShape(24.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.GraphicEq,
-                                        contentDescription = "Radio",
-                                        tint = MeloColors.textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.size(6.dp))
-                                    Text("Radio", color = MeloColors.textPrimary)
-                                }
-
-                                Button(
-                                    onClick = { viewModel.toggleSave() },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (uiState.isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
-                                        contentColor = if (uiState.isSaved) accentColor else MeloColors.textPrimary
-                                    ),
-                                    border = BorderStroke(
-                                        0.5.dp,
-                                        if (uiState.isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
-                                    ),
-                                    shape = RoundedCornerShape(24.dp)
-                                ) {
-                                    Icon(
-                                        if (uiState.isSaved) Icons.Default.Check else Icons.Default.PersonAdd,
-                                        contentDescription = if (uiState.isSaved) "Siguiendo" else "Seguir",
-                                        tint = if (uiState.isSaved) accentColor else MeloColors.textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.size(6.dp))
-                                    Text(
-                                        if (uiState.isSaved) "Siguiendo" else "Seguir",
-                                        color = if (uiState.isSaved) accentColor else MeloColors.textPrimary
-                                    )
-                                }
-                            }
-                        }
+                            },
+                            onToggleFollow = viewModel::toggleSave,
+                            accentColor = accentColor,
+                            hasTracks = topSongs.isNotEmpty()
+                        )
                     }
 
                     val bio = artist?.description
                     if (!bio.isNullOrBlank()) {
                         item {
-                            var expanded by remember { mutableStateOf(false) }
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MeloColors.glassFill.copy(alpha = 0.3f),
-                                border = BorderStroke(0.5.dp, MeloColors.glassBorder),
+                            ExpandableDescriptionCard(
+                                title = "Biografía",
+                                description = bio,
+                                accentColor = accentColor,
                                 modifier = Modifier.padding(horizontal = 16.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Text(
-                                        text = "Biografía",
-                                        style = MeloType.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MeloColors.textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = bio,
-                                        style = MeloType.body.copy(lineHeight = 18.sp),
-                                        color = MeloColors.textSecondary,
-                                        maxLines = if (expanded) Int.MAX_VALUE else 3,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = if (expanded) "Leer menos" else "Leer más",
-                                        style = MeloType.labelSmall,
-                                        color = accentColor,
-                                        modifier = Modifier
-                                            .padding(top = 6.dp)
-                                            .clickable { expanded = !expanded }
-                                    )
-                                }
-                            }
+                            )
                         }
                     }
 
                     if (topSongs.isNotEmpty()) {
                         item {
-                            SectionHeader(title = "Canciones populares")
+                            SectionHeader(
+                                title = "Canciones populares",
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                         }
-                        itemsIndexed(topSongs) { index, track ->
-                            val isPlayingThis = queueState.currentTrack?.id == track.id
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        if (isPlayingThis) accentColor.copy(alpha = 0.15f)
-                                        else Color.Transparent
-                                    )
-                            ) {
-                                TrackRow(
-                                    track = track,
-                                    trackNumber = index + 1,
-                                    isCurrent = isPlayingThis,
-                                    isPlaying = isPlayingThis && playerUiState.isPlaying,
-                                    onClick = { queueViewModel.playTracks(topSongs, index) }
+                        detailTrackItems(
+                            tracks = topSongs,
+                            currentTrackId = queueState.currentTrack?.id,
+                            isPlaying = playerUiState.isPlaying,
+                            isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            onTrackClick = { index, _ ->
+                                queueViewModel.playTracks(
+                                    topSongs,
+                                    index
                                 )
-                            }
-                        }
+                            },
+                            onMoreClick = { interaction.openContextMenu(it) },
+                            onSwipeLeft = {
+                                interaction.showAddedToQueueSnackbar(
+                                    it,
+                                    activeAccent
+                                )
+                            },
+                            onSwipeRight = { song ->
+                                val isLiked = libraryState.likedSongs.any { it.id == song.id }
+                                interaction.showToggledLikeSnackbar(
+                                    song,
+                                    isLiked,
+                                    activeAccent
+                                )
+                            },
+                            accentColor = accentColor,
+                            keyPrefix = "artist_top",
+                            itemModifier = Modifier.padding(horizontal = 16.dp)
+                        )
                     }
 
                     val sections = artist?.sections.orEmpty()
@@ -384,11 +259,15 @@ fun ArtistDetailScreen(
                         if (section.items.isEmpty()) continue
 
                         item(key = "section_${section.title}") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(
+                                title = section.title,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                             AdaptiveLazyRow(
                                 items = section.items,
                                 minCardWidth = 130.dp,
-                                spacing = 12.dp
+                                spacing = 12.dp,
+                                horizontalPadding = 16.dp
                             ) { item, cardWidth ->
                                 when (item) {
                                     is SearchResult.Album -> AlbumCard(
@@ -409,6 +288,7 @@ fun ArtistDetailScreen(
                                     is SearchResult.Song -> TrackRow(
                                         track = item.track,
                                         onClick = { queueViewModel.playTrack(item.track) },
+                                        onMoreClick = { interaction.openContextMenu(item.track) },
                                         modifier = Modifier.width(280.dp)
                                     )
 
