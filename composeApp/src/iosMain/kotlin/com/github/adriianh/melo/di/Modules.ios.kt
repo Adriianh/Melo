@@ -3,7 +3,9 @@ package com.github.adriianh.melo.di
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.IosMeloPlayer
+import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.NoOpMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.local.DatabaseFactory
@@ -22,6 +24,7 @@ import platform.Foundation.NSUserDomainMask
 actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { IosMeloPlayer() }
+    single<MediaSessionManager> { NoOpMediaSessionManager() }
 
     val paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
     val documentsDirectory = paths.first() as String
