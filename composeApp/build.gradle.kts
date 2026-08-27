@@ -72,6 +72,8 @@ kotlin {
                 implementation(libs.koinAndroid)
                 implementation(libs.coilCompose)
                 implementation(libs.coilNetworkKtor)
+                implementation(libs.androidx.media3.session)
+                implementation(libs.androidx.media3.exoplayer)
             }
         }
         val iosMain by getting {
@@ -85,6 +87,7 @@ kotlin {
                 implementation(libs.coilCompose)
                 implementation(libs.coilNetworkKtor)
                 implementation(libs.sqliteJdbc)
+                implementation(libs.jmtc)
                 listOf(
                     "javafx-base",
                     "javafx-graphics",
