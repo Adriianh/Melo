@@ -17,12 +17,10 @@ import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.PlayerUiState
-import kotlinx.coroutines.CoroutineScope
 import org.koin.compose.viewmodel.koinViewModel
 
 class TrackInteractionState(
     val snackbar: MeloSnackbarState,
-    val scope: CoroutineScope,
     private val libraryViewModel: LibraryViewModel,
     private val queueViewModel: QueueViewModel,
 ) {
@@ -88,6 +86,6 @@ fun rememberTrackInteraction(
     val snackbar = LocalMeloSnackbar.current
     val scope = rememberCoroutineScope()
     return remember(snackbar, scope, libraryViewModel, queueViewModel) {
-        TrackInteractionState(snackbar, scope, libraryViewModel, queueViewModel)
+        TrackInteractionState(snackbar, libraryViewModel, queueViewModel)
     }
 }
