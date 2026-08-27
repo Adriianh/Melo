@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,25 +14,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost
+import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.TrackContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryViewModel
@@ -75,29 +86,80 @@ fun NowPlayingScreen(
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(state)
 
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+
+    val sheetSnackbarState = remember { MeloSnackbarState() }
+    val sheetScope = rememberCoroutineScope()
+
     var contextMenuInQueue by remember { mutableStateOf(false) }
 
     if (interaction.contextMenuTrack != null) {
         val track = interaction.contextMenuTrack!!
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
+        val targetSnackbar =
+            if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
+        val targetScope =
+            if (contextMenuInQueue && expandedBottomSection != null) sheetScope else interaction.scope
+
         TrackContextMenu(
             track = track,
             onDismissRequest = interaction::dismissContextMenu,
             onPlayNext = {
-                interaction.showPlayNextSnackbar(track, activeAccent)
+                val insertIndex = queueViewModel.queueState.value.currentIndex + 1
+                queueViewModel.insertTrackNext(track)
+                targetSnackbar.show(
+                    msg = "Se reproducirá a continuación",
+                    vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                    scope = targetScope,
+                    action = "Deshacer",
+                    actionColor = activeAccent,
+                    onAction = { queueViewModel.removeTrackAt(insertIndex) }
+                )
                 interaction.contextMenuTrack = null
             },
             onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(track, activeAccent)
+                queueViewModel.addToQueue(track)
+                targetSnackbar.show(
+                    msg = "Añadida a la cola",
+                    vector = Icons.AutoMirrored.Filled.QueueMusic,
+                    scope = targetScope,
+                    action = "Deshacer",
+                    actionColor = activeAccent,
+                    onAction = { queueViewModel.removeTrackFromQueue(track) }
+                )
                 interaction.contextMenuTrack = null
             },
             onRemoveFromQueue = {
-                queueViewModel.removeTrackFromQueue(track)
+                val removedIndex = queueViewModel.removeTrackFromQueue(track)
+                if (removedIndex != -1) {
+                    targetSnackbar.show(
+                        msg = "Eliminada de la cola",
+                        vector = Icons.Default.Delete,
+                        scope = targetScope,
+                        action = "Deshacer",
+                        actionColor = activeAccent,
+                        onAction = { queueViewModel.insertTrackAt(track, removedIndex) }
+                    )
+                }
                 interaction.contextMenuTrack = null
             },
             inQueue = contextMenuInQueue,
             onToggleLike = {
-                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                libraryViewModel.toggleLike(track.id, !isLiked)
+                targetSnackbar.show(
+                    msg = if (isLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
+                    vector = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
+                    scope = targetScope,
+                    action = "Deshacer",
+                    actionColor = activeAccent,
+                    onAction = { libraryViewModel.toggleLike(track.id, isLiked) }
+                )
                 interaction.contextMenuTrack = null
             },
             isLiked = isLiked,
@@ -139,7 +201,13 @@ fun NowPlayingScreen(
     }
     val isLiked: (Track) -> Boolean = { track -> libraryState.likedSongs.any { it.id == track.id } }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures { }
+            }
+    ) {
         NowPlayingBackground(artworkUrl = state.albumArt)
 
         Column(
@@ -206,7 +274,10 @@ fun NowPlayingScreen(
 
         if (expandedBottomSection != null) {
             ModalBottomSheet(
-                onDismissRequest = { expandedBottomSection = null },
+                onDismissRequest = {
+                    sheetSnackbarState.dismiss()
+                    expandedBottomSection = null
+                },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 containerColor = MeloColors.surface1.copy(alpha = 0.95f),
@@ -248,15 +319,65 @@ fun NowPlayingScreen(
                                 state = state,
                                 activeAccent = activeAccent,
                                 onMoreClick = onMoreClick,
-                                onSwipeQueueItem = onSwipeQueueItem,
-                                onSwipeSuggestionItem = onSwipeSuggestionItem,
-                                onPlayNextSuggestionItem = { track ->
-                                    interaction.showPlayNextSnackbar(
-                                        track,
-                                        activeAccent
+                                onSwipeQueueItem = { trackIndex ->
+                                    val removedTrack = queueViewModel.removeTrackAt(trackIndex)
+                                    if (removedTrack != null) {
+                                        sheetSnackbarState.show(
+                                            msg = "Eliminada de la cola",
+                                            vector = Icons.Default.Delete,
+                                            scope = sheetScope,
+                                            action = "Deshacer",
+                                            actionColor = activeAccent,
+                                            onAction = {
+                                                queueViewModel.insertTrackAt(
+                                                    removedTrack,
+                                                    trackIndex
+                                                )
+                                            }
+                                        )
+                                    }
+                                },
+                                onSwipeSuggestionItem = { track ->
+                                    queueViewModel.addToQueue(track)
+                                    sheetSnackbarState.show(
+                                        msg = "Añadida a la cola",
+                                        vector = Icons.AutoMirrored.Filled.QueueMusic,
+                                        scope = sheetScope,
+                                        action = "Deshacer",
+                                        actionColor = activeAccent,
+                                        onAction = { queueViewModel.removeTrackFromQueue(track) }
                                     )
                                 },
-                                onSwipeRight = onSwipeRight,
+                                onPlayNextSuggestionItem = { track ->
+                                    val insertIndex =
+                                        queueViewModel.queueState.value.currentIndex + 1
+                                    queueViewModel.insertTrackNext(track)
+                                    sheetSnackbarState.show(
+                                        msg = "Se reproducirá a continuación",
+                                        vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                                        scope = sheetScope,
+                                        action = "Deshacer",
+                                        actionColor = activeAccent,
+                                        onAction = { queueViewModel.removeTrackAt(insertIndex) }
+                                    )
+                                },
+                                onSwipeRight = { track ->
+                                    val trackIsLiked = isLiked(track)
+                                    libraryViewModel.toggleLike(track.id, !trackIsLiked)
+                                    sheetSnackbarState.show(
+                                        msg = if (trackIsLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
+                                        vector = if (trackIsLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
+                                        scope = sheetScope,
+                                        action = "Deshacer",
+                                        actionColor = activeAccent,
+                                        onAction = {
+                                            libraryViewModel.toggleLike(
+                                                track.id,
+                                                trackIsLiked
+                                            )
+                                        }
+                                    )
+                                },
                                 isLiked = isLiked
                             )
 
@@ -285,20 +406,12 @@ fun NowPlayingScreen(
                         }
                     }
                     MeloSnackbarHost(
-                        state = interaction.snackbar,
+                        state = sheetSnackbarState,
                         modifier = Modifier.align(Alignment.BottomCenter),
                         bottomPadding = 24.dp
                     )
                 }
             }
-        }
-
-        if (expandedBottomSection == null) {
-            MeloSnackbarHost(
-                state = interaction.snackbar,
-                modifier = Modifier.align(Alignment.BottomCenter),
-                bottomPadding = 32.dp
-            )
         }
     }
 }
