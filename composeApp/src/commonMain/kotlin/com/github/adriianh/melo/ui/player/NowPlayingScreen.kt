@@ -29,7 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,8 +94,6 @@ fun NowPlayingScreen(
     }
 
     val sheetSnackbarState = remember { MeloSnackbarState() }
-    val sheetScope = rememberCoroutineScope()
-
     var contextMenuInQueue by remember { mutableStateOf(false) }
 
     if (interaction.contextMenuTrack != null) {
@@ -104,8 +101,6 @@ fun NowPlayingScreen(
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
         val targetSnackbar =
             if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
-        val targetScope =
-            if (contextMenuInQueue && expandedBottomSection != null) sheetScope else interaction.scope
 
         TrackContextMenu(
             track = track,
