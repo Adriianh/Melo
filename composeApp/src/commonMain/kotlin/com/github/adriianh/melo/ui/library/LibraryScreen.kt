@@ -27,7 +27,6 @@ import com.github.adriianh.melo.ui.library.components.LibraryNotLoggedInCard
 import com.github.adriianh.melo.ui.library.components.LikedSongsTabContent
 import com.github.adriianh.melo.ui.library.components.PlaylistsTabContent
 import com.github.adriianh.melo.ui.player.PlayerViewModel
-import com.github.adriianh.melo.ui.player.QueueViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +38,6 @@ fun LibraryScreen(
     onArtistClick: (String) -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: LibraryViewModel = koinViewModel(),
-    queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val playerViewModel: PlayerViewModel = koinViewModel()
@@ -49,22 +47,32 @@ fun LibraryScreen(
     val activeAccent = interaction.resolveActiveAccent(playerState)
 
     if (interaction.contextMenuTrack != null) {
+        val track = interaction.contextMenuTrack!!
+        val isLiked = state.likedSongs.any { it.id == track.id }
         TrackContextMenu(
-            track = interaction.contextMenuTrack!!,
+            track = track,
             onDismissRequest = interaction::dismissContextMenu,
             onPlayNext = {
-                queueViewModel.insertTrackNext(interaction.contextMenuTrack!!)
+                interaction.showPlayNextSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
             onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(interaction.contextMenuTrack!!)
+                interaction.showAddedToQueueSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
-            onToggleLike = { /* TODO */ },
-            isLiked = state.likedSongs.any { it.id == interaction.contextMenuTrack?.id },
+            onToggleLike = {
+                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            isLiked = isLiked,
             onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = { onArtistClick("") },
-            onGoToAlbum = { onAlbumClick("") },
+            onGoToArtist = {
+                interaction.contextMenuTrack = null
+                onArtistClick(track.artist)
+            },
+            onGoToAlbum = {
+                interaction.contextMenuTrack = null
+            },
             onShare = { /* TODO */ }
         )
     }
@@ -114,7 +122,7 @@ fun LibraryScreen(
                         viewModel.playTrack(track, state.likedSongs)
                     },
                     onMoreClick = { interaction.openContextMenu(it) },
-                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(it) },
+                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
                     onSwipeRight = { track ->
                         viewModel.toggleLike(track.id, false)
                         interaction.snackbar.show(
@@ -147,7 +155,7 @@ fun LibraryScreen(
                         viewModel.playTrack(entry.track)
                     },
                     onMoreClick = { interaction.openContextMenu(it) },
-                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(it) },
+                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
                     onSwipeRight = { track ->
                         val trackIsLiked = state.likedSongs.any { it.id == track.id }
                         interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)

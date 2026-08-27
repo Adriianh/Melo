@@ -19,9 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -44,6 +44,7 @@ internal fun NowPlayingDesktopLayout(
     onMoreClick: (Track, Boolean) -> Unit,
     onSwipeQueueItem: (Int) -> Unit,
     onSwipeSuggestionItem: (Track) -> Unit,
+    onPlayNextSuggestionItem: (Track) -> Unit = {},
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
     onToggleFavorite: () -> Unit,
@@ -156,6 +157,7 @@ internal fun NowPlayingDesktopLayout(
                                 onMoreClick = onMoreClick,
                                 onSwipeQueueItem = onSwipeQueueItem,
                                 onSwipeSuggestionItem = onSwipeSuggestionItem,
+                                onPlayNextSuggestionItem = onPlayNextSuggestionItem,
                                 onSwipeRight = onSwipeRight,
                                 isLiked = isLiked
                             )

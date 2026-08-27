@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -63,12 +67,15 @@ fun HomeSearchResultsView(
                 )
             }
             items(results) { track ->
+                val isLiked = likedSongs.any { it.id == track.id }
                 MeloSwipeableItem(
-                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(track) },
+                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(track, activeAccent) },
                     onSwipeRight = {
-                        val trackIsLiked = likedSongs.any { it.id == track.id }
-                        interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
-                    }
+                        interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                    },
+                    swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
+                    swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
+                    swipeLeftColor = MeloColors.brandAccent
                 ) {
                     TrackRow(
                         track = track,

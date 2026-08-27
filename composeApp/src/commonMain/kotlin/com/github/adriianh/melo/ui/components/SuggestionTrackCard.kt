@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -133,10 +133,10 @@ fun SuggestionTrackCard(
                 modifier = Modifier.size(28.dp)
             ) {
                 Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Añadir a la cola",
+                    Icons.AutoMirrored.Filled.PlaylistPlay,
+                    contentDescription = "Reproducir a continuación",
                     tint = activeAccent,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

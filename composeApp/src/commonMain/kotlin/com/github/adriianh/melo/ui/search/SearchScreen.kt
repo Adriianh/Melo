@@ -62,21 +62,32 @@ fun SearchScreen(
     var isSearchActive by remember { mutableStateOf(false) }
 
     if (interaction.contextMenuTrack != null) {
+        val track = interaction.contextMenuTrack!!
+        val isLiked = libraryState.likedSongs.any { it.id == track.id }
         TrackContextMenu(
-            track = interaction.contextMenuTrack!!,
+            track = track,
             onDismissRequest = interaction::dismissContextMenu,
             onPlayNext = {
-                queueViewModel.insertTrackNext(interaction.contextMenuTrack!!)
+                interaction.showPlayNextSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
             onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(interaction.contextMenuTrack!!)
+                interaction.showAddedToQueueSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
-            onToggleLike = { /* TODO */ },
+            onToggleLike = {
+                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            isLiked = isLiked,
             onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = { onArtistClick("") },
-            onGoToAlbum = { onAlbumClick("") },
+            onGoToArtist = {
+                interaction.contextMenuTrack = null
+                onArtistClick(track.artist)
+            },
+            onGoToAlbum = {
+                interaction.contextMenuTrack = null
+            },
             onShare = { /* TODO */ }
         )
     }
@@ -151,7 +162,7 @@ fun SearchScreen(
                         onPlaylistClick = onPlaylistClick,
                         queueViewModel = queueViewModel,
                         onMoreClick = { interaction.openContextMenu(it) },
-                        onSwipeLeft = { interaction.showAddedToQueueSnackbar(it) },
+                        onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
                         isLiked = { track -> libraryState.likedSongs.any { it.id == track.id } },
                         onSwipeRight = { track ->
                             val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
@@ -167,7 +178,7 @@ fun SearchScreen(
                         onPlaylistClick = onPlaylistClick,
                         queueViewModel = queueViewModel,
                         onMoreClick = { interaction.openContextMenu(it) },
-                        onSwipeLeft = { interaction.showAddedToQueueSnackbar(it) },
+                        onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
                         isLiked = { track -> libraryState.likedSongs.any { it.id == track.id } },
                         onSwipeRight = { track ->
                             val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }

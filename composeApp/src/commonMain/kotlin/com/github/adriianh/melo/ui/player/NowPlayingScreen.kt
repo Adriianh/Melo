@@ -78,26 +78,37 @@ fun NowPlayingScreen(
     var contextMenuInQueue by remember { mutableStateOf(false) }
 
     if (interaction.contextMenuTrack != null) {
+        val track = interaction.contextMenuTrack!!
+        val isLiked = libraryState.likedSongs.any { it.id == track.id }
         TrackContextMenu(
-            track = interaction.contextMenuTrack!!,
+            track = track,
             onDismissRequest = interaction::dismissContextMenu,
             onPlayNext = {
-                queueViewModel.insertTrackNext(interaction.contextMenuTrack!!)
+                interaction.showPlayNextSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
             onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(interaction.contextMenuTrack!!)
+                interaction.showAddedToQueueSnackbar(track, activeAccent)
                 interaction.contextMenuTrack = null
             },
             onRemoveFromQueue = {
-                queueViewModel.removeTrackFromQueue(interaction.contextMenuTrack!!)
+                queueViewModel.removeTrackFromQueue(track)
                 interaction.contextMenuTrack = null
             },
             inQueue = contextMenuInQueue,
-            onToggleLike = { /* TODO */ },
+            onToggleLike = {
+                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            isLiked = isLiked,
             onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = { onArtistClick("") },
-            onGoToAlbum = { onAlbumClick("") },
+            onGoToArtist = {
+                interaction.contextMenuTrack = null
+                onArtistClick(track.artist)
+            },
+            onGoToAlbum = {
+                interaction.contextMenuTrack = null
+            },
             onShare = { /* TODO */ }
         )
     }
@@ -120,7 +131,7 @@ fun NowPlayingScreen(
         }
     }
     val onSwipeSuggestionItem: (Track) -> Unit = { track ->
-        interaction.showAddedToQueueSnackbar(track)
+        interaction.showAddedToQueueSnackbar(track, activeAccent)
     }
     val onSwipeRight: (Track) -> Unit = { track ->
         val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
@@ -156,6 +167,12 @@ fun NowPlayingScreen(
                     onMoreClick = onMoreClick,
                     onSwipeQueueItem = onSwipeQueueItem,
                     onSwipeSuggestionItem = onSwipeSuggestionItem,
+                    onPlayNextSuggestionItem = { track ->
+                        interaction.showPlayNextSnackbar(
+                            track,
+                            activeAccent
+                        )
+                    },
                     onSwipeRight = onSwipeRight,
                     isLiked = isLiked,
                     onToggleFavorite = viewModel::toggleFavorite,
@@ -233,6 +250,12 @@ fun NowPlayingScreen(
                                 onMoreClick = onMoreClick,
                                 onSwipeQueueItem = onSwipeQueueItem,
                                 onSwipeSuggestionItem = onSwipeSuggestionItem,
+                                onPlayNextSuggestionItem = { track ->
+                                    interaction.showPlayNextSnackbar(
+                                        track,
+                                        activeAccent
+                                    )
+                                },
                                 onSwipeRight = onSwipeRight,
                                 isLiked = isLiked
                             )
@@ -268,6 +291,14 @@ fun NowPlayingScreen(
                     )
                 }
             }
+        }
+
+        if (expandedBottomSection == null) {
+            MeloSnackbarHost(
+                state = interaction.snackbar,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                bottomPadding = 32.dp
+            )
         }
     }
 }

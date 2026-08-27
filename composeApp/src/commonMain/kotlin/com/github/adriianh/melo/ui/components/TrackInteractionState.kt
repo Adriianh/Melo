@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
@@ -35,13 +36,27 @@ class TrackInteractionState(
         contextMenuTrack = null
     }
 
-    fun showAddedToQueueSnackbar(track: Track) {
+    fun showPlayNextSnackbar(track: Track, actionColor: Color? = null) {
+        val insertIndex = queueViewModel.queueState.value.currentIndex + 1
+        queueViewModel.insertTrackNext(track)
+        snackbar.show(
+            msg = "Se reproducirá a continuación",
+            vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+            scope = scope,
+            action = "Deshacer",
+            actionColor = actionColor,
+            onAction = { queueViewModel.removeTrackAt(insertIndex) }
+        )
+    }
+
+    fun showAddedToQueueSnackbar(track: Track, actionColor: Color? = null) {
         queueViewModel.addToQueue(track)
         snackbar.show(
             msg = "Añadida a la cola",
             vector = Icons.AutoMirrored.Filled.QueueMusic,
             scope = scope,
             action = "Deshacer",
+            actionColor = actionColor,
             onAction = { queueViewModel.removeTrackFromQueue(track) }
         )
     }
