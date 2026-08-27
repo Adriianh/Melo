@@ -109,6 +109,7 @@ import com.github.adriianh.data.remote.deezer.DeezerApiClient
 import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsApiClient
+import com.github.adriianh.data.remote.lyrics.LyricsTranslator
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
@@ -193,6 +194,7 @@ val appModule = module {
         )
     }
     single { LyricsApiClient(get()) }
+    single { LyricsTranslator(get()) }
     single { PipedApiClient(get()) }
     single { DeezerApiClient(get()) }
 
@@ -236,7 +238,7 @@ val appModule = module {
 
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
-    single<LyricsRepository> { LyricsRepositoryImpl(get()) }
+    single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
     single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
     single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
