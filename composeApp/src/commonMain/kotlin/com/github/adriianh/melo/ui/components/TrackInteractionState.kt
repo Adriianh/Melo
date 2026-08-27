@@ -42,7 +42,6 @@ class TrackInteractionState(
         snackbar.show(
             msg = "Se reproducirá a continuación",
             vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-            scope = scope,
             action = "Deshacer",
             actionColor = actionColor,
             onAction = { queueViewModel.removeTrackAt(insertIndex) }
@@ -54,7 +53,6 @@ class TrackInteractionState(
         snackbar.show(
             msg = "Añadida a la cola",
             vector = Icons.AutoMirrored.Filled.QueueMusic,
-            scope = scope,
             action = "Deshacer",
             actionColor = actionColor,
             onAction = { queueViewModel.removeTrackFromQueue(track) }
@@ -66,7 +64,6 @@ class TrackInteractionState(
         snackbar.show(
             msg = if (isCurrentlyLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
             vector = if (isCurrentlyLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-            scope = scope,
             action = "Deshacer",
             actionColor = actionColor,
             onAction = { libraryViewModel.toggleLike(track.id, isCurrentlyLiked) }

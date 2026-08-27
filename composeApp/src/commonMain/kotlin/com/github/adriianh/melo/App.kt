@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +19,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -102,6 +105,16 @@ fun App() {
         var showLoginDialog by remember { mutableStateOf(false) }
         var isNowPlayingExpanded by remember { mutableStateOf(false) }
         var navigationStack by remember { mutableStateOf(listOf<ScreenDestination>(ScreenDestination.Home)) }
+
+        val focusManager = LocalFocusManager.current
+        val keyboardController = LocalSoftwareKeyboardController.current
+
+        LaunchedEffect(isNowPlayingExpanded) {
+            if (isNowPlayingExpanded) {
+                focusManager.clearFocus(force = true)
+                keyboardController?.hide()
+            }
+        }
 
         val currentScreen = navigationStack.lastOrNull() ?: ScreenDestination.Home
 

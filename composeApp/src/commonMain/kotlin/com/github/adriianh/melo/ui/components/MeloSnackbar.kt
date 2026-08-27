@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,10 +29,7 @@ import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
 class MeloSnackbarState {
@@ -49,32 +47,26 @@ class MeloSnackbarState {
     var onActionClick = mutableStateOf<(() -> Unit)?>(null)
         private set
 
-    private var currentJob: Job? = null
+    var showCount = mutableStateOf(0)
+        private set
 
     fun show(
         msg: String,
         vector: ImageVector? = null,
-        scope: CoroutineScope,
         action: String? = null,
         actionColor: androidx.compose.ui.graphics.Color? = null,
         onAction: (() -> Unit)? = null
     ) {
-        currentJob?.cancel()
         message.value = msg
         icon.value = vector
         actionLabel.value = action
         this.actionColor.value = actionColor
         onActionClick.value = onAction
         isVisible.value = true
-
-        currentJob = scope.launch {
-            delay(3500.milliseconds)
-            isVisible.value = false
-        }
+        showCount.value++
     }
 
     fun dismiss() {
-        currentJob?.cancel()
         isVisible.value = false
     }
 }
@@ -88,6 +80,13 @@ fun MeloSnackbarHost(
     bottomPadding: androidx.compose.ui.unit.Dp? = null
 ) {
     val platform = remember { getPlatform() }
+
+    LaunchedEffect(state.showCount.value, state.isVisible.value) {
+        if (state.isVisible.value) {
+            delay(3500.milliseconds)
+            state.dismiss()
+        }
+    }
 
     AnimatedVisibility(
         visible = state.isVisible.value,

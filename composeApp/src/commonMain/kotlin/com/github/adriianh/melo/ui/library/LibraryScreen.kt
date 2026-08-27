@@ -128,7 +128,6 @@ fun LibraryScreen(
                         interaction.snackbar.show(
                             msg = "Eliminada de tus Me Gusta",
                             vector = Icons.Default.HeartBroken,
-                            scope = interaction.scope,
                             action = "Deshacer",
                             actionColor = activeAccent,
                             onAction = {

@@ -116,7 +116,6 @@ fun NowPlayingScreen(
                 targetSnackbar.show(
                     msg = "Se reproducirá a continuación",
                     vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                    scope = targetScope,
                     action = "Deshacer",
                     actionColor = activeAccent,
                     onAction = { queueViewModel.removeTrackAt(insertIndex) }
@@ -128,7 +127,6 @@ fun NowPlayingScreen(
                 targetSnackbar.show(
                     msg = "Añadida a la cola",
                     vector = Icons.AutoMirrored.Filled.QueueMusic,
-                    scope = targetScope,
                     action = "Deshacer",
                     actionColor = activeAccent,
                     onAction = { queueViewModel.removeTrackFromQueue(track) }
@@ -141,7 +139,6 @@ fun NowPlayingScreen(
                     targetSnackbar.show(
                         msg = "Eliminada de la cola",
                         vector = Icons.Default.Delete,
-                        scope = targetScope,
                         action = "Deshacer",
                         actionColor = activeAccent,
                         onAction = { queueViewModel.insertTrackAt(track, removedIndex) }
@@ -155,7 +152,6 @@ fun NowPlayingScreen(
                 targetSnackbar.show(
                     msg = if (isLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
                     vector = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                    scope = targetScope,
                     action = "Deshacer",
                     actionColor = activeAccent,
                     onAction = { libraryViewModel.toggleLike(track.id, isLiked) }
@@ -185,7 +181,6 @@ fun NowPlayingScreen(
             interaction.snackbar.show(
                 msg = "Eliminada de la cola",
                 vector = Icons.Default.Delete,
-                scope = interaction.scope,
                 action = "Deshacer",
                 actionColor = activeAccent,
                 onAction = { queueViewModel.insertTrackAt(removedTrack, trackIndex) }
@@ -325,7 +320,6 @@ fun NowPlayingScreen(
                                         sheetSnackbarState.show(
                                             msg = "Eliminada de la cola",
                                             vector = Icons.Default.Delete,
-                                            scope = sheetScope,
                                             action = "Deshacer",
                                             actionColor = activeAccent,
                                             onAction = {
@@ -342,7 +336,6 @@ fun NowPlayingScreen(
                                     sheetSnackbarState.show(
                                         msg = "Añadida a la cola",
                                         vector = Icons.AutoMirrored.Filled.QueueMusic,
-                                        scope = sheetScope,
                                         action = "Deshacer",
                                         actionColor = activeAccent,
                                         onAction = { queueViewModel.removeTrackFromQueue(track) }
@@ -355,7 +348,6 @@ fun NowPlayingScreen(
                                     sheetSnackbarState.show(
                                         msg = "Se reproducirá a continuación",
                                         vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                                        scope = sheetScope,
                                         action = "Deshacer",
                                         actionColor = activeAccent,
                                         onAction = { queueViewModel.removeTrackAt(insertIndex) }
@@ -367,7 +359,6 @@ fun NowPlayingScreen(
                                     sheetSnackbarState.show(
                                         msg = if (trackIsLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
                                         vector = if (trackIsLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                                        scope = sheetScope,
                                         action = "Deshacer",
                                         actionColor = activeAccent,
                                         onAction = {
