@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.player.JvmMeloPlayer
+import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -10,6 +11,7 @@ import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
+import com.github.adriianh.melo.player.JvmMediaSessionManager
 import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
@@ -19,6 +21,13 @@ import java.io.File
 actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { JvmMeloPlayer() }
+
+    single<MediaSessionManager>(createdAtStart = true) {
+        JvmMediaSessionManager(
+            playbackManager = get(),
+            httpClient = get()
+        ).also { it.init() }
+    }
 
     val dataDir = File(System.getProperty("user.home"), ".melo")
     if (!dataDir.exists()) dataDir.mkdirs()
