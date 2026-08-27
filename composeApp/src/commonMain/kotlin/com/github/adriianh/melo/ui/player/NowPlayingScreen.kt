@@ -203,15 +203,18 @@ fun NowPlayingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(
+                    horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
+                    vertical = 16.dp
+                ),
+            verticalArrangement = Arrangement.Top
         ) {
             NowPlayingTopBar(
                 title = state.title,
                 onCollapse = onCollapse
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             if (platform.type == PlatformType.DESKTOP) {
                 NowPlayingDesktopLayout(

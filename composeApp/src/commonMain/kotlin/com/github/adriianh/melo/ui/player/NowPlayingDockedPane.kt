@@ -55,6 +55,7 @@ import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.SuggestionTrackCard
+import com.github.adriianh.melo.ui.player.components.NowPlayingLyricsCard
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -217,7 +218,7 @@ fun DesktopNowPlayingDockedPane(
         ) {
             when (selectedSection) {
                 PanelSection.QUEUE -> DockedQueueContent(state, activeAccent)
-                PanelSection.LYRICS -> DockedLyricsContent()
+                PanelSection.LYRICS -> DockedLyricsContent(state, activeAccent, viewModel)
                 PanelSection.ARTIST -> DockedArtistContent(
                     state = state,
                     artistDetails = artistDetails,
@@ -468,18 +469,24 @@ private fun DockedQueueContent(
 }
 
 @Composable
-private fun DockedLyricsContent() {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            "Letras sincronizadas disponibles próximamente",
-            style = MeloType.body,
-            color = MeloColors.textSecondary,
-            textAlign = TextAlign.Center
-        )
-    }
+private fun DockedLyricsContent(
+    state: PlayerUiState,
+    activeAccent: Color,
+    viewModel: PlayerViewModel
+) {
+    NowPlayingLyricsCard(
+        trackLyrics = state.trackLyrics,
+        activeLyricIndex = state.activeLyricIndex,
+        isLoading = state.isLyricsLoading,
+        showTranslation = state.showTranslation,
+        isTranslating = state.isTranslating,
+        targetLanguage = state.targetLanguage,
+        activeAccent = activeAccent,
+        onSeekTo = { viewModel.seekTo(it) },
+        onToggleTranslation = { viewModel.toggleTranslation() },
+        onSelectLanguage = { viewModel.setTargetLanguage(it) },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable

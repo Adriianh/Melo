@@ -1,6 +1,5 @@
 package com.github.adriianh.melo.ui.player.components
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,70 +54,60 @@ internal fun NowPlayingDesktopLayout(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(36.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.2f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(250.dp)
-                    .shadow(20.dp, RoundedCornerShape(18.dp))
-                    .clip(RoundedCornerShape(18.dp)),
+                    .size(340.dp)
+                    .shadow(28.dp, RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(22.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Crossfade(
-                    targetState = showLyrics,
-                    label = "DesktopLyricsCrossfade"
-                ) { isLyrics ->
-                    if (isLyrics) {
-                        NowPlayingLyricsCard(
-                            lyrics = state.lyrics,
-                            activeAccent = activeAccent,
-                            onToggleArtwork = onToggleLyrics,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        MeloAsyncImage(
-                            url = state.albumArt,
-                            contentDescription = state.title,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable { onToggleLyrics() },
-                            size = 250.dp,
-                            shape = RoundedCornerShape(18.dp)
-                        )
-                    }
-                }
+                MeloAsyncImage(
+                    url = state.albumArt,
+                    contentDescription = state.title,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onSelectSection(PanelSection.LYRICS) },
+                    shape = RoundedCornerShape(22.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             TrackInfoBar(
                 state = state,
                 activeAccent = activeAccent,
-                showLyrics = showLyrics,
-                onToggleLyrics = onToggleLyrics,
+                showLyrics = selectedSection == PanelSection.LYRICS,
+                onToggleLyrics = {
+                    if (selectedSection == PanelSection.LYRICS) {
+                        onSelectSection(PanelSection.QUEUE)
+                    } else {
+                        onSelectSection(PanelSection.LYRICS)
+                    }
+                },
                 onToggleFavorite = onToggleFavorite,
-                onArtistClick = { artistDetails?.id?.let { onArtistClick(it) } },
-                modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth()
+                onArtistClick = { state.currentTrack?.artist?.let { onArtistClick(it) } },
+                modifier = Modifier.widthIn(max = 420.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             PlayerSlider(
                 state = state,
                 activeAccent = activeAccent,
                 onSeekTo = viewModel::seekTo,
-                modifier = Modifier.widthIn(max = 380.dp)
+                modifier = Modifier.widthIn(max = 420.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             PlayerTransportControls(
                 state = state,
@@ -127,11 +116,14 @@ internal fun NowPlayingDesktopLayout(
             )
         }
 
-        Box(modifier = Modifier.padding(vertical = 4.dp)) {
+        Box(
+            modifier = Modifier
+                .width(440.dp)
+                .fillMaxHeight()
+                .padding(vertical = 8.dp)
+        ) {
             GlassPanel(
-                modifier = Modifier
-                    .width(360.dp)
-                    .fillMaxHeight()
+                modifier = Modifier.fillMaxSize()
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     SegmentedControl(
@@ -152,8 +144,8 @@ internal fun NowPlayingDesktopLayout(
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when (selectedSection) {
                             PanelSection.QUEUE -> NowPlayingQueueSection(
-                                state,
-                                activeAccent,
+                                state = state,
+                                activeAccent = activeAccent,
                                 onMoreClick = onMoreClick,
                                 onSwipeQueueItem = onSwipeQueueItem,
                                 onSwipeSuggestionItem = onSwipeSuggestionItem,
@@ -162,7 +154,20 @@ internal fun NowPlayingDesktopLayout(
                                 isLiked = isLiked
                             )
 
-                            PanelSection.LYRICS -> NowPlayingLyricsSection(state.lyrics)
+                            PanelSection.LYRICS -> NowPlayingLyricsCard(
+                                trackLyrics = state.trackLyrics,
+                                activeLyricIndex = state.activeLyricIndex,
+                                isLoading = state.isLyricsLoading,
+                                showTranslation = state.showTranslation,
+                                isTranslating = state.isTranslating,
+                                targetLanguage = state.targetLanguage,
+                                activeAccent = activeAccent,
+                                onSeekTo = { viewModel.seekTo(it) },
+                                onToggleTranslation = { viewModel.toggleTranslation() },
+                                onSelectLanguage = { viewModel.setTargetLanguage(it) },
+                                modifier = Modifier.fillMaxSize()
+                            )
+
                             PanelSection.ARTIST -> NowPlayingArtistSection(
                                 state = state,
                                 artistDetails = artistDetails,
