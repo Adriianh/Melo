@@ -160,21 +160,25 @@ class QueueViewModel(
 
     fun playTrackInQueue(track: Track) = manager.playTrackInQueue(track)
 
-    fun removeTrackFromQueue(track: Track) {
+    fun insertTrackAt(track: Track, index: Int) {
+        manager.insertToQueue(track, index)
+    }
+
+    fun removeTrackAt(index: Int): Track? {
+        val currentTracks = queueState.value.tracks.toMutableList()
+        if (index < 0 || index >= currentTracks.size) return null
+        val track = currentTracks[index]
+        manager.removeFromQueue(index)
+        return track
+    }
+
+    fun removeTrackFromQueue(track: Track): Int {
         val currentTracks = queueState.value.tracks.toMutableList()
         val idx = currentTracks.indexOfFirst { it.id == track.id }
         if (idx != -1) {
-            currentTracks.removeAt(idx)
-            val newCurrentIdx = when {
-                idx < queueState.value.currentIndex -> queueState.value.currentIndex - 1
-                idx == queueState.value.currentIndex -> queueState.value.currentIndex.coerceAtMost(
-                    currentTracks.lastIndex
-                )
-
-                else -> queueState.value.currentIndex
-            }
-            manager.setQueue(currentTracks, newCurrentIdx)
+            manager.removeFromQueue(idx)
         }
+        return idx
     }
 
     fun toggleShuffle() = manager.toggleShuffle()

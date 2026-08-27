@@ -105,9 +105,34 @@ class PlaybackManagerImpl(
 
     override fun insertToQueue(track: Track, index: Int) {
         _queueState.update {
+            val safeIndex = index.coerceIn(0, it.tracks.size)
+            val newTracks = it.tracks.toMutableList().apply { add(safeIndex, track) }
+            val newIndex =
+                if (safeIndex <= it.currentIndex) it.currentIndex + 1 else it.currentIndex
+            it.copy(tracks = newTracks, currentIndex = newIndex)
+        }
+    }
+
+    override fun removeFromQueue(index: Int) {
+        val q = _queueState.value
+        if (index < 0 || index >= q.tracks.size) return
+        val wasCurrent = index == q.currentIndex
+        _queueState.update {
             val newTracks = it.tracks.toMutableList()
-                .apply { add(index.coerceIn(0, size), track) }
-            it.copy(tracks = newTracks)
+            newTracks.removeAt(index)
+            val newIndex = when {
+                index < it.currentIndex -> it.currentIndex - 1
+                index == it.currentIndex -> it.currentIndex.coerceAtMost(newTracks.lastIndex)
+                else -> it.currentIndex
+            }
+            it.copy(tracks = newTracks, currentIndex = newIndex)
+        }
+        if (wasCurrent) {
+            if (_queueState.value.tracks.isEmpty()) {
+                meloPlayer.stop()
+            } else {
+                playCurrentQueueTrack()
+            }
         }
     }
 
