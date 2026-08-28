@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.util.ColorUtils
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.PlayerUiState
 import org.koin.compose.viewmodel.koinViewModel
@@ -57,7 +58,11 @@ class TrackInteractionState(
         )
     }
 
-    fun showToggledLikeSnackbar(track: Track, isCurrentlyLiked: Boolean, actionColor: Color? = null) {
+    fun showToggledLikeSnackbar(
+        track: Track,
+        isCurrentlyLiked: Boolean,
+        actionColor: Color? = null
+    ) {
         libraryViewModel.toggleLike(track.id, !isCurrentlyLiked)
         snackbar.show(
             msg = if (isCurrentlyLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
@@ -70,8 +75,9 @@ class TrackInteractionState(
 
     @Composable
     fun resolveActiveAccent(playerState: PlayerUiState): Color {
-        return if (playerState.accentColor != Color.Transparent && playerState.accentColor != MeloColors.textMuted) {
-            playerState.accentColor
+        val color = playerState.accentColor
+        return if (color != Color.Transparent && color != MeloColors.textMuted && color != Color.Black) {
+            ColorUtils.harmonize(color, MeloColors.isDark)
         } else {
             MeloColors.brandAccent
         }
