@@ -14,13 +14,14 @@ actual fun PlatformAsyncImage(
     url: String?,
     contentDescription: String?,
     modifier: Modifier,
-    size: Dp,
+    size: Dp?,
     shape: Shape,
 ) {
+    val sizeMod = if (size != null) Modifier.size(size) else Modifier
     AsyncImage(
         model = url,
         contentDescription = contentDescription,
-        modifier = modifier.size(size).clip(shape),
+        modifier = modifier.then(sizeMod).clip(shape),
         contentScale = ContentScale.Crop,
     )
 }

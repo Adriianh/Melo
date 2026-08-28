@@ -276,7 +276,7 @@ object YouTube {
 
             val albumYear = albumHeader?.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull()
             val albumThumbnail =
-                albumHeader?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
+                albumHeader?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: ""
 
@@ -523,7 +523,7 @@ object YouTube {
             ?: ""
 
         val playlistThumbnail =
-            header?.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails?.lastOrNull()?.url
+            header?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                 ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                 ?: ""
 

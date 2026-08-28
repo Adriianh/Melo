@@ -51,7 +51,9 @@ data class BrowseResponse(
     data class MusicThumbnailRenderer(
         val thumbnail: Thumbnails?,
         val thumbnailCrop: String?,
-    )
+    ) {
+        fun getThumbnailUrl() = thumbnail?.getHighResUrl()
+    }
 
     @Serializable
     data class ContinuationContents(
@@ -174,7 +176,14 @@ data class BrowseResponse(
         data class MusicThumbnailRenderer(
             val musicThumbnailRenderer: BrowseResponse.MusicThumbnailRenderer,
             val thumbnails: List<MusicThumbnail>?,
-        )
+        ) {
+            fun getThumbnailUrl() = musicThumbnailRenderer.getThumbnailUrl()
+                ?: thumbnails?.lastOrNull()?.url?.let {
+                    com.github.adriianh.innertube.models.resizeThumbnailUrl(
+                        it
+                    )
+                }
+        }
     }
 
     @Serializable
