@@ -1,10 +1,23 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +29,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,6 +44,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,7 +52,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +66,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -86,22 +101,33 @@ fun LiveLyricsPreviewCard(
             trackLyrics.syncedLyrics[activeLyricIndex + 1]
         } else null
 
-    val cardBg = activeAccent.copy(alpha = 0.18f)
-    val borderColor = activeAccent.copy(alpha = 0.35f)
+    val cardShape = RoundedCornerShape(18.dp)
+    val glassBg = Brush.verticalGradient(
+        colors = listOf(
+            activeAccent.copy(alpha = 0.18f),
+            MeloColors.glassFill.copy(alpha = 0.50f)
+        )
+    )
+    val glassBorder = Brush.horizontalGradient(
+        colors = listOf(
+            activeAccent.copy(alpha = 0.40f),
+            MeloColors.glassBorder.copy(alpha = 0.25f)
+        )
+    )
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = cardBg,
-        border = BorderStroke(1.dp, borderColor),
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .height(122.dp)
+            .clip(cardShape)
+            .background(glassBg)
+            .border(width = 1.dp, brush = glassBorder, shape = cardShape)
             .clickable { onExpand() }
+            .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -113,7 +139,7 @@ fun LiveLyricsPreviewCard(
                         imageVector = Icons.Default.Mic,
                         contentDescription = null,
                         tint = activeAccent,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -140,70 +166,104 @@ fun LiveLyricsPreviewCard(
                         imageVector = Icons.Default.OpenInFull,
                         contentDescription = "Expandir letra",
                         tint = MeloColors.textSecondary,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(12.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                if (trackLyrics.hasSync) {
+                    AnimatedContent(
+                        targetState = activeLyricIndex to currentLine,
+                        transitionSpec = {
+                            (slideInVertically(
+                                animationSpec = tween(280, easing = FastOutSlowInEasing),
+                                initialOffsetY = { it / 2 }
+                            ) + fadeIn(tween(280))).togetherWith(
+                                slideOutVertically(
+                                    animationSpec = tween(200, easing = FastOutSlowInEasing),
+                                    targetOffsetY = { -it / 2 }
+                                ) + fadeOut(tween(200))
+                            )
+                        },
+                        label = "LiveLyricsTransition"
+                    ) { (_, line) ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (line != null && line.text.isNotBlank()) {
+                                Text(
+                                    text = line.text,
+                                    style = MeloType.titleMedium.copy(
+                                        fontSize = 16.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        lineHeight = 21.sp
+                                    ),
+                                    color = MeloColors.textPrimary,
+                                    maxLines = if (showTranslation && !line.translation.isNullOrBlank()) 1 else 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
 
-            if (currentLine != null) {
-                Text(
-                    text = currentLine.text,
-                    style = MeloType.titleMedium.copy(
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 22.sp
-                    ),
-                    color = MeloColors.textPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                                val translation = line.translation
+                                if (showTranslation && !translation.isNullOrBlank()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = translation,
+                                        style = MeloType.body.copy(
+                                            fontStyle = FontStyle.Italic,
+                                            fontSize = 13.sp,
+                                            lineHeight = 16.sp
+                                        ),
+                                        color = activeAccent.copy(alpha = 0.90f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
 
-                val translation = currentLine.translation
-                if (showTranslation && !translation.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = translation,
-                        style = MeloType.body.copy(
-                            fontStyle = FontStyle.Italic,
-                            fontSize = 13.sp,
-                            lineHeight = 17.sp
-                        ),
-                        color = activeAccent.copy(alpha = 0.9f),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                if (nextLine != null) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = nextLine.text,
-                        style = MeloType.body.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 18.sp
-                        ),
-                        color = MeloColors.textMuted.copy(alpha = 0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            } else {
-                val plain = trackLyrics.plainLyrics
-                if (!plain.isNullOrBlank()) {
-                    val previewSnippet =
-                        plain.lines().filter { it.isNotBlank() }.take(3).joinToString("\n")
-                    Text(
-                        text = previewSnippet,
-                        style = MeloType.body.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
-                        ),
-                        color = MeloColors.textSecondary,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                                if (nextLine != null && (!showTranslation || translation.isNullOrBlank())) {
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Text(
+                                        text = nextLine.text.ifBlank { "♪ ♫ ♪" },
+                                        style = MeloType.body.copy(
+                                            fontSize = 13.5.sp,
+                                            lineHeight = 17.sp
+                                        ),
+                                        color = MeloColors.textMuted.copy(alpha = 0.55f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            } else {
+                                DancingMelodyIndicator(
+                                    isActive = true,
+                                    tint = activeAccent,
+                                    baseFontSize = 17.sp
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    val plain = trackLyrics.plainLyrics
+                    if (!plain.isNullOrBlank()) {
+                        val previewSnippet =
+                            plain.lines().filter { it.isNotBlank() }.take(2).joinToString("\n")
+                        Text(
+                            text = previewSnippet,
+                            style = MeloType.body.copy(
+                                fontSize = 13.5.sp,
+                                lineHeight = 18.sp
+                            ),
+                            color = MeloColors.textSecondary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
@@ -225,13 +285,42 @@ fun NowPlayingLyricsCard(
     onToggleArtwork: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MeloColors.surface1.copy(alpha = 0.92f),
-        border = BorderStroke(1.dp, MeloColors.borderStrong),
-        shadowElevation = 16.dp,
+    val cardShape = RoundedCornerShape(24.dp)
+    val glassFillBrush = Brush.linearGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.08f),
+            MeloColors.glassSurface.copy(alpha = 0.82f),
+            Color.Black.copy(alpha = 0.65f)
+        )
+    )
+    val glassBorderBrush = Brush.linearGradient(
+        colors = listOf(
+            Color.White.copy(alpha = 0.42f),
+            activeAccent.copy(alpha = 0.50f),
+            MeloColors.glassBorder.copy(alpha = 0.40f),
+            Color.White.copy(alpha = 0.12f)
+        )
+    )
+
+    Box(
         modifier = modifier
+            .clip(cardShape)
+            .background(glassFillBrush)
+            .border(width = 1.2.dp, brush = glassBorderBrush, shape = cardShape)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            activeAccent.copy(alpha = 0.14f),
+                            Color.Transparent
+                        ),
+                        radius = 800f
+                    )
+                )
+        )
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -338,7 +427,7 @@ fun NowPlayingLyricsCard(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    MeloColors.surface1.copy(alpha = 0.9f),
+                                    MeloColors.glassSurface.copy(alpha = 0.85f),
                                     Color.Transparent
                                 )
                             )
@@ -353,7 +442,7 @@ fun NowPlayingLyricsCard(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    MeloColors.surface1.copy(alpha = 0.95f)
+                                    MeloColors.glassSurface.copy(alpha = 0.92f)
                                 )
                             )
                         )
@@ -405,7 +494,7 @@ private fun LyricsHeaderBar(
             ) {
                 Box {
                     val buttonBg by animateColorAsState(
-                        targetValue = if (showTranslation) activeAccent.copy(alpha = 0.22f) else MeloColors.surface2,
+                        targetValue = if (showTranslation) activeAccent.copy(alpha = 0.22f) else MeloColors.chromePillFill,
                         label = "TranslationBgAnim"
                     )
                     val iconTint by animateColorAsState(
@@ -417,6 +506,11 @@ private fun LyricsHeaderBar(
                         modifier = Modifier
                             .clip(CircleShape)
                             .background(buttonBg)
+                            .border(
+                                width = 1.dp,
+                                color = if (showTranslation) activeAccent.copy(alpha = 0.4f) else MeloColors.chromePillBorder,
+                                shape = CircleShape
+                            )
                             .clickable { onToggleTranslation() }
                             .padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -531,24 +625,25 @@ private fun SyncedLyricsList(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(top = 28.dp, bottom = 100.dp, start = 20.dp, end = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 80.dp, start = 18.dp, end = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
     ) {
         itemsIndexed(lines) { index, line ->
             val isActive = index == activeIndex
             val alpha by animateFloatAsState(
-                targetValue = if (isActive) 1f else 0.38f,
-                animationSpec = spring(stiffness = 300f),
+                targetValue = if (isActive) 1f else 0.45f,
+                animationSpec = spring(stiffness = 320f),
                 label = "LyricAlphaAnim"
             )
             val scale by animateFloatAsState(
-                targetValue = if (isActive) 1.03f else 1.0f,
-                animationSpec = spring(stiffness = 300f),
+                targetValue = if (isActive) 1.02f else 1.0f,
+                animationSpec = spring(stiffness = 320f),
                 label = "LyricScaleAnim"
             )
             val textColor by animateColorAsState(
                 targetValue = if (isActive) activeAccent else MeloColors.textPrimary,
+                animationSpec = tween(220),
                 label = "LyricColorAnim"
             )
 
@@ -557,34 +652,43 @@ private fun SyncedLyricsList(
                     .fillMaxWidth()
                     .scale(scale)
                     .alpha(alpha)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         onClick = { onSeekTo(line.timeMs) }
                     )
-                    .padding(vertical = 6.dp, horizontal = 4.dp),
+                    .padding(vertical = 4.dp, horizontal = 6.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    text = line.text,
-                    style = MeloType.body.copy(
-                        fontSize = if (isActive) 19.sp else 16.sp,
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                        lineHeight = 26.sp
-                    ),
-                    color = textColor
-                )
+                if (line.text.isNotBlank()) {
+                    Text(
+                        text = line.text,
+                        style = MeloType.body.copy(
+                            fontSize = if (isActive) 18.sp else 15.5.sp,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                            lineHeight = if (isActive) 24.sp else 21.sp
+                        ),
+                        color = textColor
+                    )
+                } else {
+                    DancingMelodyIndicator(
+                        isActive = isActive,
+                        tint = textColor,
+                        baseFontSize = if (isActive) 18.sp else 15.5.sp,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
 
                 val translation = line.translation
                 if (showTranslation && !translation.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = translation,
                         style = MeloType.body.copy(
                             fontStyle = FontStyle.Italic,
-                            fontSize = 13.5.sp,
-                            lineHeight = 18.sp
+                            fontSize = 13.sp,
+                            lineHeight = 17.sp
                         ),
                         color = if (isActive) activeAccent.copy(alpha = 0.88f) else MeloColors.textMuted
                     )
@@ -602,14 +706,14 @@ private fun PlainLyricsView(
     Box(
         modifier = modifier
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         contentAlignment = Alignment.TopStart
     ) {
         Text(
             text = text,
             style = MeloType.body.copy(
-                fontSize = 15.sp,
-                lineHeight = 26.sp
+                fontSize = 14.5.sp,
+                lineHeight = 22.sp
             ),
             color = MeloColors.textPrimary
         )
@@ -617,22 +721,123 @@ private fun PlainLyricsView(
 }
 
 @Composable
-fun NowPlayingLyricsSection(
-    lyrics: String?,
-    modifier: Modifier = Modifier
+fun DancingMelodyIndicator(
+    isActive: Boolean,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    baseFontSize: androidx.compose.ui.unit.TextUnit = 17.sp,
+    noteCount: Int = 3
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = if (!lyrics.isNullOrBlank()) lyrics else "Letras no disponibles",
-            style = MeloType.body,
-            color = MeloColors.textSecondary,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.verticalScroll(rememberScrollState())
+    val notes = listOf("♪", "♫", "♩", "♬")
+
+    if (isActive) {
+        val infiniteTransition = rememberInfiniteTransition(label = "DancingMelodyTransition")
+
+        val iconScale by infiniteTransition.animateFloat(
+            initialValue = 0.92f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "IconScaleAnim"
         )
+
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = "Melodía",
+                tint = tint,
+                modifier = Modifier
+                    .size(18.dp)
+                    .graphicsLayer(scaleX = iconScale, scaleY = iconScale)
+            )
+
+            val delays = listOf(0, 160, 320, 480)
+            for (i in 0 until noteCount.coerceAtMost(notes.size)) {
+                val delay = delays.getOrElse(i) { i * 160 }
+                val bounceY by infiniteTransition.animateFloat(
+                    initialValue = 1.5f,
+                    targetValue = -5.5f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 420,
+                            delayMillis = delay,
+                            easing = FastOutSlowInEasing
+                        ),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "NoteBounce_$i"
+                )
+                val rotation by infiniteTransition.animateFloat(
+                    initialValue = -10f,
+                    targetValue = 10f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 480,
+                            delayMillis = delay,
+                            easing = LinearEasing
+                        ),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "NoteRotate_$i"
+                )
+                val scale by infiniteTransition.animateFloat(
+                    initialValue = 0.90f,
+                    targetValue = 1.20f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(
+                            durationMillis = 380,
+                            delayMillis = delay,
+                            easing = FastOutSlowInEasing
+                        ),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "NoteScale_$i"
+                )
+
+                Text(
+                    text = notes[i % notes.size],
+                    style = MeloType.body.copy(
+                        fontSize = baseFontSize,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = tint,
+                    modifier = Modifier
+                        .offset(y = bounceY.dp)
+                        .graphicsLayer(
+                            rotationZ = rotation,
+                            scaleX = scale,
+                            scaleY = scale
+                        )
+                )
+            }
+        }
+    } else {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = "Melodía",
+                tint = tint,
+                modifier = Modifier.size(15.dp)
+            )
+            Text(
+                text = "♪ ♫ ♪",
+                style = MeloType.body.copy(
+                    fontSize = baseFontSize,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 2.sp
+                ),
+                color = tint
+            )
+        }
     }
 }

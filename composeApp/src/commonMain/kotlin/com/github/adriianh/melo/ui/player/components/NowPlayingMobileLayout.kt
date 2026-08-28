@@ -6,14 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,36 +85,39 @@ internal fun NowPlayingMobileLayout(
             }
         }
     } else {
-        val scrollState = rememberScrollState()
-
         Column(
-            modifier = modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState),
+            modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .widthIn(max = 340.dp)
-                    .aspectRatio(1f)
-                    .shadow(24.dp, RoundedCornerShape(20.dp))
-                    .clip(RoundedCornerShape(20.dp)),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center
             ) {
-                MeloAsyncImage(
-                    url = state.albumArt,
-                    contentDescription = state.title,
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clickable { onToggleLyrics() },
-                    shape = RoundedCornerShape(20.dp)
-                )
+                        .fillMaxHeight()
+                        .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                        .widthIn(max = 340.dp)
+                        .shadow(24.dp, RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MeloAsyncImage(
+                        url = state.albumArt,
+                        contentDescription = state.title,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { onToggleLyrics() },
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             TrackInfoBar(
                 state = state,
@@ -129,7 +131,7 @@ internal fun NowPlayingMobileLayout(
                     .padding(horizontal = 12.dp)
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             PlayerSlider(
                 state = state,
@@ -140,7 +142,7 @@ internal fun NowPlayingMobileLayout(
                     .padding(horizontal = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             PlayerTransportControls(
                 state = state,
@@ -148,20 +150,22 @@ internal fun NowPlayingMobileLayout(
                 viewModel = viewModel
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if (state.trackLyrics != null && (state.trackLyrics.hasSync || !state.trackLyrics.plainLyrics.isNullOrBlank())) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            LiveLyricsPreviewCard(
-                trackLyrics = state.trackLyrics,
-                activeLyricIndex = state.activeLyricIndex,
-                showTranslation = state.showTranslation,
-                activeAccent = activeAccent,
-                onExpand = onToggleLyrics,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            )
+                LiveLyricsPreviewCard(
+                    trackLyrics = state.trackLyrics,
+                    activeLyricIndex = state.activeLyricIndex,
+                    showTranslation = state.showTranslation,
+                    activeAccent = activeAccent,
+                    onExpand = onToggleLyrics,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             NowPlayingMobileActions(
                 activeAccent = activeAccent,
@@ -174,7 +178,7 @@ internal fun NowPlayingMobileLayout(
                     .padding(horizontal = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
