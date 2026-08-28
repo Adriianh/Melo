@@ -7,6 +7,8 @@ import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
+import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.AccentColorExtractor
@@ -40,6 +42,8 @@ class PlayerViewModelTest {
     private val toggleLikeTrackUseCase = mockk<ToggleLikeTrackUseCase>(relaxed = true)
     private val recordPlayUseCase = mockk<RecordPlayUseCase>(relaxed = true)
     private val musicProvider = mockk<MusicProvider>(relaxed = true)
+    private val getTrackLyricsUseCase = mockk<GetTrackLyricsUseCase>(relaxed = true)
+    private val translateLyricsUseCase = mockk<TranslateLyricsUseCase>(relaxed = true)
 
     @BeforeTest
     fun setup() {
@@ -58,7 +62,9 @@ class PlayerViewModelTest {
         httpClient,
         toggleLikeTrackUseCase,
         recordPlayUseCase,
-        musicProvider
+        musicProvider,
+        getTrackLyricsUseCase,
+        translateLyricsUseCase
     )
 
     @Test
