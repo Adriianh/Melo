@@ -55,7 +55,7 @@ data class PlayerUiState(
                 currentTrack = track,
                 title = track?.title ?: "",
                 artist = track?.artist ?: "",
-                albumArt = track?.artworkUrl,
+                albumArt = normalizeArtworkUrl(track?.artworkUrl),
                 isPlaying = playback.isPlaying,
                 isBuffering = isBuffering,
                 progressFraction = fraction,
