@@ -155,7 +155,7 @@ class OfflineRepositoryImpl(
     override suspend fun cleanupExpired(maxAgeDays: Int) {
         val cutoff = System.currentTimeMillis() - (maxAgeDays * 24 * 60 * 60 * 1000L)
         val current = getOfflineTracks().filter {
-            it.downloadType == DownloadType.PREFETCH && it.downloadStatus == DownloadStatus.COMPLETED && (it.lastAccessedAt
+            it.downloadType != DownloadType.MANUAL && it.downloadStatus == DownloadStatus.COMPLETED && (it.lastAccessedAt
                 ?: it.downloadedAt ?: Long.MAX_VALUE) < cutoff
             }
         current.forEach { removeOfflineTrack(it.track.id) }
@@ -169,7 +169,7 @@ class OfflineRepositoryImpl(
         if (totalSize <= maxSizeBytes) return
 
         val sorted =
-            current.filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.PREFETCH }
+            current.filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType != DownloadType.MANUAL }
                 .sortedBy { it.lastAccessedAt ?: it.downloadedAt ?: 0L }
 
         for (track in sorted) {

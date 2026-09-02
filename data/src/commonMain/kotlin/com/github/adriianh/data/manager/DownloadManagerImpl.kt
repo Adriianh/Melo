@@ -45,12 +45,9 @@ class DownloadManagerImpl(
         return withContext(dispatcher) {
             val existing = offlineRepository.getOfflineTrack(track.id)
             val existingPath = existing?.localFilePath
-            if (existing?.downloadStatus == DownloadStatus.COMPLETED &&
-                existingPath != null &&
-                PlatformFileSystem.fileExists(existingPath)
-            ) {
-                return@withContext true
-            }
+            val isCompleted = existing?.downloadStatus == DownloadStatus.COMPLETED &&
+                    existingPath != null &&
+                    PlatformFileSystem.fileExists(existingPath)
 
             val settings = getSettingsUseCase.getSnapshot()
             val formatExtension = settings.downloadFormat.displayName.lowercase()
@@ -63,6 +60,27 @@ class DownloadManagerImpl(
 
             PlatformFileSystem.makeDirs(targetFolder)
             val targetFilePath = "$targetFolder/$safeFileName"
+
+            if (isCompleted) {
+                if (existing.downloadType == DownloadType.MANUAL && existingPath == targetFilePath) {
+                    return@withContext true
+                }
+                if (existingPath != targetFilePath && PlatformFileSystem.fileExists(
+                        existingPath
+                    )
+                ) {
+                    PlatformFileSystem.copyFile(existingPath, targetFilePath)
+                }
+                val promotedTrack = existing.copy(
+                    localFilePath = targetFilePath,
+                    downloadStatus = DownloadStatus.COMPLETED,
+                    downloadType = DownloadType.MANUAL,
+                    downloadedAt = Clock.System.now().toEpochMilliseconds(),
+                    fileSize = existing.fileSize
+                )
+                offlineRepository.saveOfflineTrack(promotedTrack)
+                return@withContext true
+            }
 
             val offlineTrack = OfflineTrack(
                 track = track,
@@ -198,6 +216,7 @@ class DownloadManagerImpl(
         val track = offlineRepository.getOfflineTrack(trackId) ?: return false
         val path = track.localFilePath
         return track.downloadStatus == DownloadStatus.COMPLETED &&
+                track.downloadType == DownloadType.MANUAL &&
                 path != null &&
                 PlatformFileSystem.fileExists(path)
     }

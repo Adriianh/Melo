@@ -269,13 +269,26 @@ class InnerTubeMusicProvider(
                 ?: YouTube.searchSummary(cleanId).getOrNull()?.summaries?.flatMap { it.items }
                     ?.filterIsInstance<AlbumItem>()?.firstOrNull()
 
-            if (firstAlbum != null && firstAlbum.browseId != cleanId) {
-                albumCache[firstAlbum.browseId]?.let {
+            val candidateAlbum = if (firstAlbum != null) {
+                val normalizedQuery = cleanId.lowercase().trim()
+                val albumTitle = firstAlbum.title.lowercase().trim()
+                val artistTitle =
+                    firstAlbum.artists?.joinToString(" ") { it.name }?.lowercase().orEmpty()
+                val isRelevant = albumTitle.contains(normalizedQuery) ||
+                        normalizedQuery.contains(albumTitle) ||
+                        (artistTitle.isNotBlank() && (normalizedQuery.contains(artistTitle) || artistTitle.contains(
+                            normalizedQuery
+                        )))
+                if (isRelevant) firstAlbum else null
+            } else null
+
+            if (candidateAlbum != null && candidateAlbum.browseId != cleanId) {
+                albumCache[candidateAlbum.browseId]?.let {
                     if (it.createdAt.elapsedNow().inWholeMilliseconds < 3600_000L) {
                         return it.result
                     }
                 }
-                response = YouTube.album(firstAlbum.browseId)
+                response = YouTube.album(candidateAlbum.browseId)
                 result = response.getOrNull()
             }
         }

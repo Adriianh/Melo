@@ -202,7 +202,7 @@ class AndroidOfflineRepositoryImpl(
         val cutoff = System.currentTimeMillis() - (maxAgeDays * 24 * 60 * 60 * 1000L)
         val current = getOfflineTracks()
             .filter {
-                it.downloadType == DownloadType.PREFETCH &&
+                it.downloadType != DownloadType.MANUAL &&
                         it.downloadStatus == DownloadStatus.COMPLETED &&
                         (it.lastAccessedAt ?: it.downloadedAt ?: Long.MAX_VALUE) < cutoff
             }
@@ -217,7 +217,7 @@ class AndroidOfflineRepositoryImpl(
         if (totalSize <= maxSizeBytes) return
 
         val sorted = current
-            .filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.PREFETCH }
+            .filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType != DownloadType.MANUAL }
             .sortedBy { it.lastAccessedAt ?: it.downloadedAt ?: 0L }
 
         for (track in sorted) {
