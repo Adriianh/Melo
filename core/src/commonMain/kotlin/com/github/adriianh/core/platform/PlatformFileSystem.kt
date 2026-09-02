@@ -34,6 +34,18 @@ expect object PlatformFileSystem {
     fun writeBytes(path: String, bytes: ByteArray)
 
     /**
+     * Reads the contents of a file at the given [path] as a byte array.
+     * Returns `null` if the file does not exist or an error occurs.
+     */
+    fun readBytes(path: String): ByteArray?
+
+    /**
+     * Copies a file from [sourcePath] to [destPath].
+     * Creates parent directories of [destPath] if needed.
+     */
+    fun copyFile(sourcePath: String, destPath: String): Boolean
+
+    /**
      * Deletes the file or empty directory at the given [path].
      */
     fun deleteFile(path: String): Boolean

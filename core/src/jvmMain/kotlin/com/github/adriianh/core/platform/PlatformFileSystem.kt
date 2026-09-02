@@ -27,6 +27,25 @@ actual object PlatformFileSystem {
         } catch (_: Exception) {}
     }
 
+    actual fun readBytes(path: String): ByteArray? = try {
+        File(path).takeIf { it.exists() }?.readBytes()
+    } catch (_: Exception) {
+        null
+    }
+
+    actual fun copyFile(sourcePath: String, destPath: String): Boolean = try {
+        val src = File(sourcePath)
+        val dst = File(destPath)
+        if (!src.exists()) false
+        else {
+            dst.parentFile?.mkdirs()
+            src.copyTo(dst, overwrite = true)
+            true
+        }
+    } catch (_: Exception) {
+        false
+    }
+
     actual fun deleteFile(path: String): Boolean = try {
         File(path).delete()
     } catch (_: Exception) { false }

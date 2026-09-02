@@ -1,8 +1,13 @@
 package com.github.adriianh.core.platform
 
 import kotlinx.cinterop.BetaInteropApi
-import platform.Foundation.*
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSString
+import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.create
+import platform.Foundation.stringWithContentsOfFile
+import platform.Foundation.writeToFile
 
 @OptIn(ExperimentalForeignApi::class)
 actual object PlatformFileSystem {
@@ -21,6 +26,14 @@ actual object PlatformFileSystem {
     }
 
     actual fun writeBytes(path: String, bytes: ByteArray) {
+    }
+
+    actual fun readBytes(path: String): ByteArray? = null
+
+    actual fun copyFile(sourcePath: String, destPath: String): Boolean = try {
+        NSFileManager.defaultManager.copyItemAtPath(sourcePath, destPath, null)
+    } catch (_: Exception) {
+        false
     }
 
     actual fun deleteFile(path: String): Boolean = try {
