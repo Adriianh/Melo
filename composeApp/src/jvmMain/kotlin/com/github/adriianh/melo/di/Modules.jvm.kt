@@ -34,7 +34,7 @@ actual val platformModule: Module = module {
 
     single(named("configDirPath")) { dataDir.absolutePath }
 
-    single<AudioProvider> {
+    single<AudioProvider>(createdAtStart = true) {
         val ytDlpProvider = YtDlpAudioProvider(pipedApiClient = get())
         val pipedProvider = PipedAudioProvider(
             apiClient = get(),
