@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.components.AlbumsTabContent
@@ -115,7 +116,8 @@ fun LibraryScreen(
                 )
 
                 LibraryTab.DOWNLOADS -> DownloadsTabContent(
-                    downloadedTracks = state.downloadedTracks,
+                    downloadedTracks = state.downloadedTracks
+                        .filter { it.downloadType == DownloadType.MANUAL },
                     onPlayTrack = { track ->
                         val offlineQueue = state.downloadedTracks.map { it.track }
                         viewModel.playTrack(track, offlineQueue)
