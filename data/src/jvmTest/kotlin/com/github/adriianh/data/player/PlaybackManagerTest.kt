@@ -416,4 +416,50 @@ class PlaybackManagerTest {
         assertEquals(3, manager.queueState.value.tracks.size)
         assertEquals("99", manager.queueState.value.tracks[2].id)
     }
+
+    @Test
+    fun `auto-caching invokes downloadManager cacheTrack`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val downloadManager = mockk<com.github.adriianh.core.domain.manager.DownloadManager>(relaxed = true)
+        coEvery { downloadManager.cacheTrack(any()) } returns true
+
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            downloadManager = downloadManager
+        )
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        coVerify { downloadManager.cacheTrack(match { it.id == "1" }) }
+    }
+
+    @Test
+    fun `smart fallback advances to next offline track when online stream fails`() = runTest {
+        val offlineRepo = mockk<com.github.adriianh.core.domain.repository.OfflineRepository>(relaxed = true)
+        coEvery { getStreamUseCase(match { it.id == "1" }) } returns null
+        coEvery { getStreamUseCase(match { it.id == "2" }) } returns "file:///local/2.mp3"
+        coEvery { offlineRepo.getOfflineTrack("2") } returns com.github.adriianh.core.domain.model.OfflineTrack(
+            track = fakeTrack("2"),
+            localFilePath = "/local/2.mp3",
+            downloadStatus = com.github.adriianh.core.domain.model.DownloadStatus.COMPLETED
+        )
+
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            offlineRepository = offlineRepo
+        )
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        assertEquals(1, manager.queueState.value.currentIndex)
+        assertEquals("2", manager.queueState.value.currentTrack?.id)
+    }
 }

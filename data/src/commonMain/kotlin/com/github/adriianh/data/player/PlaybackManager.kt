@@ -1,11 +1,14 @@
 package com.github.adriianh.data.player
 
+import com.github.adriianh.core.domain.manager.DownloadManager
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -26,6 +29,8 @@ class PlaybackManagerImpl(
     private val scope: CoroutineScope,
     private val getRadioUseCase: GetRadioUseCase? = null,
     private val getSettingsUseCase: GetSettingsUseCase? = null,
+    private val downloadManager: DownloadManager? = null,
+    private val offlineRepository: OfflineRepository? = null,
 ) : PlaybackManager {
 
     override val playbackState: StateFlow<PlaybackState> = meloPlayer.state
@@ -212,11 +217,29 @@ class PlaybackManagerImpl(
     private fun playCurrentQueueTrack() {
         val track = _queueState.value.currentTrack ?: return
         scope.launch {
+            val settings = getSettingsUseCase?.invoke()?.firstOrNull()
+            val isOfflineMode = settings?.offlineMode == true
+            val isTrackAvailableOffline = track.id.startsWith("local:") ||
+                (offlineRepository?.getOfflineTrack(track.id)?.downloadStatus == DownloadStatus.COMPLETED)
+
+            if (isOfflineMode && !isTrackAvailableOffline) {
+                val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
+                if (nextOfflineIndex != null) {
+                    _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+                    playCurrentQueueTrack()
+                    return@launch
+                }
+            }
+
             val cachedUrl = cacheMutex.withLock { prefetchCache.remove(track.id) }
             val url = cachedUrl
                 ?: getStreamUseCase(track)
                 ?: run {
-                    if (_queueState.value.hasNext) {
+                    val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
+                    if (nextOfflineIndex != null) {
+                        _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+                        playCurrentQueueTrack()
+                    } else if (_queueState.value.hasNext) {
                         playNext()
                     } else {
                         handleAutoplay(forcePlayNext = true)
@@ -224,6 +247,13 @@ class PlaybackManagerImpl(
                     return@launch
                 }
             meloPlayer.load(url, track)
+
+            if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
+                launch {
+                    downloadManager?.cacheTrack(track)
+                }
+            }
+
             schedulePrefetch()
         }
     }
@@ -235,14 +265,35 @@ class PlaybackManagerImpl(
             handleAutoplay(forcePlayNext = false)
         }
 
-        val nextTrack = nextTrackForPrefetch() ?: return
+        val queueTracks = q.tracks
+        val nextIndices = (q.currentIndex + 1 until minOf(queueTracks.size, q.currentIndex + 4))
+        if (nextIndices.isEmpty()) return
+
         prefetchJob = scope.launch {
-            cacheMutex.withLock {
-                if (nextTrack.id in prefetchCache) return@withLock
+            for (idx in nextIndices) {
+                val nextTrack = queueTracks.getOrNull(idx) ?: continue
+                val alreadyCached = cacheMutex.withLock { nextTrack.id in prefetchCache }
+                if (!alreadyCached) {
+                    val url = getStreamUseCase(nextTrack) ?: continue
+                    cacheMutex.withLock { prefetchCache[nextTrack.id] = url }
+                }
+                if (!nextTrack.id.startsWith("local:")) {
+                    downloadManager?.cacheTrack(nextTrack)
+                }
             }
-            val url = getStreamUseCase(nextTrack) ?: return@launch
-            cacheMutex.withLock { prefetchCache[nextTrack.id] = url }
         }
+    }
+
+    private suspend fun findNextOfflineTrackIndex(startIndex: Int): Int? {
+        val q = _queueState.value
+        for (i in (startIndex + 1 until q.tracks.size)) {
+            val t = q.tracks[i]
+            if (t.id.startsWith("local:")) return i
+            if (offlineRepository?.getOfflineTrack(t.id)?.downloadStatus == DownloadStatus.COMPLETED) {
+                return i
+            }
+        }
+        return null
     }
 
     private fun handleAutoplay(forcePlayNext: Boolean) {

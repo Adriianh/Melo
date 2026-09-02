@@ -11,25 +11,40 @@ class LyricsRepositoryImpl(
     val lyricsTranslator: LyricsTranslator? = null
 ) : LyricsRepository {
 
+    private val lyricsCache = mutableMapOf<String, TrackLyrics>()
+
     override suspend fun getLyrics(artist: String, title: String): String? {
+        val cached = lyricsCache["$artist - $title".lowercase()]
+        if (cached?.plainLyrics != null) return cached.plainLyrics
+
         val raw = lyricsApiClient.getLyricsResponse(artist, title)?.plainLyrics ?: return null
         return sanitizePlainLyrics(raw)
     }
 
-    override suspend fun getSyncedLyrics(artist: String, title: String): String? =
-        lyricsApiClient.getLyricsResponse(artist, title)?.syncedLyrics
+    override suspend fun getSyncedLyrics(artist: String, title: String): String? {
+        val cached = lyricsCache["$artist - $title".lowercase()]
+        if (cached?.syncedLyrics?.isNotEmpty() == true) {
+            return cached.syncedLyrics.joinToString("\n") { "[${it.timeMs}] ${it.text}" }
+        }
+        return lyricsApiClient.getLyricsResponse(artist, title)?.syncedLyrics
+    }
 
     override suspend fun getTrackLyrics(artist: String, title: String): TrackLyrics {
+        val cacheKey = "$artist - $title".lowercase()
+        lyricsCache[cacheKey]?.let { return it }
+
         val response = lyricsApiClient.getLyricsResponse(artist, title)
             ?: return TrackLyrics(error = "No lyrics found")
         val plain = response.plainLyrics?.let { sanitizePlainLyrics(it) }
         val synced = LrcParser.parse(response.syncedLyrics)
 
-        return TrackLyrics(
+        val result = TrackLyrics(
             plainLyrics = plain,
             syncedLyrics = synced,
             hasSync = synced.isNotEmpty()
         )
+        lyricsCache[cacheKey] = result
+        return result
     }
 
     override suspend fun translateLyrics(

@@ -107,11 +107,60 @@ class DownloadManagerImpl(
                 offlineRepository.saveOfflineTrack(completedTrack)
                 _activeDownloads.update { it - track.id }
                 true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 offlineRepository.saveOfflineTrack(
                     offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
                 )
                 _activeDownloads.update { it - track.id }
+                PlatformFileSystem.deleteFile(targetFilePath)
+                false
+            }
+        }
+    }
+
+    override suspend fun cacheTrack(track: Track): Boolean {
+        if (track.id.startsWith("local:")) return true
+        return withContext(dispatcher) {
+            val existing = offlineRepository.getOfflineTrack(track.id)
+            val existingPath = existing?.localFilePath
+            if (existing?.downloadStatus == DownloadStatus.COMPLETED &&
+                existingPath != null &&
+                PlatformFileSystem.fileExists(existingPath)
+            ) {
+                offlineRepository.markTrackAsAccessed(track.id)
+                return@withContext true
+            }
+
+            val settings = getSettingsUseCase.getSnapshot()
+            val formatExtension = settings.downloadFormat.displayName.lowercase()
+            val safeFileName = "cache_${track.id.hashCode()}.$formatExtension"
+            val targetFolder = settings.cachePath ?: "$configDirPath/cache"
+
+            PlatformFileSystem.makeDirs(targetFolder)
+            val targetFilePath = "$targetFolder/$safeFileName"
+
+            try {
+                val streamUrl = getStreamUseCase(track) ?: return@withContext false
+                val response = httpClient.get(streamUrl)
+                val bytes = response.bodyAsBytes()
+                PlatformFileSystem.writeBytes(targetFilePath, bytes)
+
+                val cachedTrack = OfflineTrack(
+                    track = track,
+                    localFilePath = targetFilePath,
+                    downloadStatus = DownloadStatus.COMPLETED,
+                    downloadType = DownloadType.CACHE,
+                    downloadedAt = Clock.System.now().toEpochMilliseconds(),
+                    lastAccessedAt = Clock.System.now().toEpochMilliseconds(),
+                    fileSize = bytes.size.toLong()
+                )
+                offlineRepository.saveOfflineTrack(cachedTrack)
+
+                if (settings.maxOfflineSizeMb > 0) {
+                    offlineRepository.cleanupCache(settings.maxOfflineSizeMb)
+                }
+                true
+            } catch (_: Exception) {
                 PlatformFileSystem.deleteFile(targetFilePath)
                 false
             }
