@@ -9,7 +9,13 @@ class GetEntityDetailsUseCase(
     suspend operator fun invoke(entity: SearchResult): SearchResult {
         return when (entity) {
             is SearchResult.Album -> {
-                val details = musicProvider.getAlbumDetails(entity.id) ?: return entity
+                var details = musicProvider.getAlbumDetails(entity.id)
+                if (details == null && entity.title.isNotBlank()) {
+                    val query =
+                        if (entity.author.isNotBlank()) "${entity.author} ${entity.title}" else entity.title
+                    details = musicProvider.getAlbumDetails(query)
+                }
+                if (details == null) return entity
                 details.copy(
                     title = details.title.takeIf { it.isNotBlank() }
                         ?: entity.title.takeIf { it.isNotBlank() }

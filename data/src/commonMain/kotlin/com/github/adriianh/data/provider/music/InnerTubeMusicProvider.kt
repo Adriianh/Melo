@@ -19,6 +19,8 @@ import com.github.adriianh.innertube.models.WatchEndpoint
 import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.isInvalidArtistName
+import kotlin.time.ComparableTimeMark
+import kotlin.time.TimeSource
 
 /**
  * MusicProvider backed by InnerTube API.
@@ -235,17 +237,62 @@ class InnerTubeMusicProvider(
         }
     }
 
+    private val artistCache = mutableMapOf<String, CachedArtist>()
+    private val albumCache = mutableMapOf<String, CachedAlbum>()
+
+    private data class CachedArtist(
+        val result: SearchResult.Artist,
+        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow()
+    )
+
+    private data class CachedAlbum(
+        val result: SearchResult.Album,
+        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow()
+    )
+
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
-        val response = YouTube.album(id)
-        val result = response.getOrNull() ?: return fallback?.getAlbumDetails(id)
+        val cleanId = id.removePrefix("piped:").removePrefix("itunes:")
+
+        albumCache[cleanId]?.let {
+            if (it.createdAt.elapsedNow().inWholeMilliseconds < 3600_000L) {
+                return it.result
+            }
+        }
+
+        var response = YouTube.album(cleanId)
+        var result = response.getOrNull()
+
+        if (result == null || result.songs.isEmpty()) {
+            val searchResults =
+                YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
+            val firstAlbum = searchResults?.items?.filterIsInstance<AlbumItem>()?.firstOrNull()
+                ?: YouTube.searchSummary(cleanId).getOrNull()?.summaries?.flatMap { it.items }
+                    ?.filterIsInstance<AlbumItem>()?.firstOrNull()
+
+            if (firstAlbum != null && firstAlbum.browseId != cleanId) {
+                albumCache[firstAlbum.browseId]?.let {
+                    if (it.createdAt.elapsedNow().inWholeMilliseconds < 3600_000L) {
+                        return it.result
+                    }
+                }
+                response = YouTube.album(firstAlbum.browseId)
+                result = response.getOrNull()
+            }
+        }
+
+        if (result == null || result.songs.isEmpty()) {
+            return fallback?.getAlbumDetails(id)
+        }
+
         val albumItem = result.album
         val tracks = result.songs.map { song ->
             Track(
                 id = "piped:${song.id}",
                 title = song.title,
-                artist = song.artists.firstOrNull()?.name ?: "Unknown",
+                artist = song.artists.firstOrNull()?.name ?: albumItem.artists?.firstOrNull()?.name
+                ?: "Unknown",
                 durationMs = song.duration?.times(1000L) ?: 0L,
-                album = albumItem.title,
+                album = albumItem.title.ifBlank { cleanId },
                 genres = emptyList(),
                 artworkUrl = song.thumbnail,
                 sourceId = song.id
@@ -265,21 +312,66 @@ class InnerTubeMusicProvider(
             albumItem.thumbnail.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
         val albumTitle = albumItem.title.takeIf { it.isNotBlank() }
             ?: tracks.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+            ?: cleanId.takeIf { it.isNotBlank() }
             ?: "Álbum"
 
-        return SearchResult.Album(
-            id = albumItem.browseId,
+        val album = SearchResult.Album(
+            id = albumItem.browseId.ifBlank { cleanId },
             title = albumTitle,
-            author = albumItem.artists?.joinToString(", ") { it.name } ?: "Unknown",
+            author = albumItem.artists?.joinToString(", ") { it.name }?.ifBlank { null }
+                ?: tracks.firstOrNull()?.artist
+                ?: "Unknown",
             year = albumItem.year?.toString(),
             artworkUrl = albumArtwork,
             songs = tracks,
             otherVersions = otherVersions
         )
+
+        if (albumCache.size > 100) {
+            val oldest = albumCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key
+            oldest?.let { albumCache.remove(it) }
+        }
+        albumCache[cleanId] = CachedAlbum(album)
+        albumCache[albumItem.browseId] = CachedAlbum(album)
+
+        return album
     }
 
     override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
-        val result = YouTube.artist(id).getOrNull() ?: return fallback?.getArtistDetails(id)
+        val cleanId = id.removePrefix("piped:").removePrefix("itunes:")
+
+        artistCache[cleanId]?.let {
+            if (it.createdAt.elapsedNow().inWholeMilliseconds < 3600_000L) {
+                return it.result
+            }
+        }
+
+        val resolvedId =
+            if (!cleanId.startsWith("UC") && !cleanId.startsWith("FE") && cleanId.isNotBlank()) {
+                val searchResults =
+                    YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
+                val firstArtist =
+                    searchResults?.items?.filterIsInstance<ArtistItem>()?.firstOrNull()
+                        ?: YouTube.searchSummary(cleanId)
+                            .getOrNull()?.summaries?.flatMap { it.items }
+                            ?.filterIsInstance<ArtistItem>()?.firstOrNull()
+                firstArtist?.id ?: cleanId
+            } else {
+                cleanId
+            }
+
+        if (resolvedId != cleanId) {
+            artistCache[resolvedId]?.let {
+                if (it.createdAt.elapsedNow().inWholeMilliseconds < 3600_000L) {
+                    return it.result
+                }
+            }
+        }
+
+        val result = YouTube.artist(resolvedId).getOrNull()
+            ?: (if (resolvedId != cleanId) YouTube.artist(cleanId).getOrNull() else null)
+            ?: return fallback?.getArtistDetails(id)
+
         val sections = result.sections.map { section ->
             val mappedItems = section.items.map { item ->
                 when (item) {
@@ -323,12 +415,19 @@ class InnerTubeMusicProvider(
             SearchResult.ArtistSection(section.title, mappedItems)
         }
 
-        val topSongs = result.sections.find {
-            it.title.equals("Songs", ignoreCase = true) || it.title.equals(
-                "Top songs",
-                ignoreCase = true
-            )
-        }?.items?.filterIsInstance<SongItem>()
+        val songSection = result.sections.find {
+            it.title.equals("Songs", ignoreCase = true) ||
+                    it.title.equals("Top songs", ignoreCase = true) ||
+                    it.title.contains("Cancion", ignoreCase = true) ||
+                    it.title.contains("Temas", ignoreCase = true) ||
+                    it.title.contains("Populares", ignoreCase = true) ||
+                    it.title.contains("Pistas", ignoreCase = true)
+        } ?: result.sections.firstOrNull { sec -> sec.items.any { it is SongItem } }
+
+        val topSongs = songSection?.items?.filterIsInstance<SongItem>()
+            ?: result.sections.flatMap { it.items.filterIsInstance<SongItem>() }
+                .takeIf { it.isNotEmpty() }
+
         val tracks = topSongs?.map { song ->
             Track(
                 id = "piped:${song.id}",
@@ -345,7 +444,7 @@ class InnerTubeMusicProvider(
         val artistArtwork =
             result.artist.thumbnail.takeIf { it.isNotBlank() } ?: tracks?.firstOrNull()?.artworkUrl
 
-        return SearchResult.Artist(
+        val artist = SearchResult.Artist(
             id = result.artist.id,
             name = result.artist.title,
             artworkUrl = artistArtwork,
@@ -355,6 +454,15 @@ class InnerTubeMusicProvider(
             topSongs = tracks,
             sections = sections
         )
+
+        if (artistCache.size > 100) {
+            val oldest = artistCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key
+            oldest?.let { artistCache.remove(it) }
+        }
+        artistCache[cleanId] = CachedArtist(artist)
+        artistCache[resolvedId] = CachedArtist(artist)
+
+        return artist
     }
 
     override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
