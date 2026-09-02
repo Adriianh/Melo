@@ -26,4 +26,25 @@ expect object PlatformFileSystem {
      * Creates the file and parent directories if they do not exist.
      */
     fun writeText(path: String, text: String)
+
+    /**
+     * Writes the given [bytes] to a file at the given [path].
+     * Creates the file and parent directories if they do not exist.
+     */
+    fun writeBytes(path: String, bytes: ByteArray)
+
+    /**
+     * Deletes the file or empty directory at the given [path].
+     */
+    fun deleteFile(path: String): Boolean
+
+    /**
+     * Creates the directory and any necessary parent directories at [path].
+     */
+    fun makeDirs(path: String): Boolean
+
+    /**
+     * Returns standard system directories where audio/music files typically reside on the platform.
+     */
+    fun getDefaultMusicPaths(): List<String>
 }

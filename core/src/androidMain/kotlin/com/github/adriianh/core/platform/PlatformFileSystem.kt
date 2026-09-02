@@ -1,21 +1,82 @@
 package com.github.adriianh.core.platform
 
+import android.os.Environment
 import java.io.File
 
 actual object PlatformFileSystem {
-    actual fun fileExists(path: String): Boolean = File(path).exists()
+    actual fun fileExists(path: String): Boolean = try {
+        if (path.startsWith("content://")) true
+        else File(path.removePrefix("file://")).exists()
+    } catch (_: Exception) {
+        false
+    }
 
-    actual fun toFileUri(path: String): String = "file://${File(path).absolutePath}"
+    actual fun toFileUri(path: String): String {
+        if (path.startsWith("content://") || path.startsWith("file://") || path.startsWith("http://") || path.startsWith(
+                "https://"
+            )
+        ) {
+            return path
+        }
+        return "file://${File(path).absolutePath}"
+    }
 
     actual fun readText(path: String): String? = try {
         File(path).takeIf { it.exists() }?.readText()
-    } catch (_: Exception) { null }
+    } catch (_: Exception) {
+        null
+    }
 
     actual fun writeText(path: String, text: String) {
         try {
             val file = File(path)
             file.parentFile?.mkdirs()
             file.writeText(text)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
+    }
+
+    actual fun writeBytes(path: String, bytes: ByteArray) {
+        try {
+            val file = File(path)
+            file.parentFile?.mkdirs()
+            file.writeBytes(bytes)
+        } catch (_: Exception) {
+        }
+    }
+
+    actual fun deleteFile(path: String): Boolean = try {
+        File(path).delete()
+    } catch (_: Exception) {
+        false
+    }
+
+    actual fun makeDirs(path: String): Boolean = try {
+        File(path).mkdirs()
+    } catch (_: Exception) {
+        false
+    }
+
+    actual fun getDefaultMusicPaths(): List<String> {
+        val paths = mutableListOf<String>()
+        try {
+            val musicDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
+            if (musicDir != null) paths.add(musicDir.absolutePath)
+        } catch (_: Exception) {
+        }
+
+        try {
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (downloadsDir != null) paths.add(downloadsDir.absolutePath)
+        } catch (_: Exception) {
+        }
+
+        listOf("/storage/emulated/0/Music", "/storage/emulated/0/Download").forEach { path ->
+            if (path !in paths) paths.add(path)
+        }
+
+        return paths.distinct()
     }
 }

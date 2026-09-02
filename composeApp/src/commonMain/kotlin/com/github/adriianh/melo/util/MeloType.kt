@@ -16,6 +16,11 @@ object MeloType {
         lineHeight = 24.sp,
         fontWeight = FontWeight.Medium
     )
+    val titleSmall = TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Medium
+    )
     val body = TextStyle(
         fontSize = 14.sp,
         lineHeight = 20.sp,

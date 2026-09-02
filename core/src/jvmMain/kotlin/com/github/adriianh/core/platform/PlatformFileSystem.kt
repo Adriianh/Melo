@@ -18,4 +18,30 @@ actual object PlatformFileSystem {
             file.writeText(text)
         } catch (_: Exception) {}
     }
+
+    actual fun writeBytes(path: String, bytes: ByteArray) {
+        try {
+            val file = File(path)
+            file.parentFile?.mkdirs()
+            file.writeBytes(bytes)
+        } catch (_: Exception) {}
+    }
+
+    actual fun deleteFile(path: String): Boolean = try {
+        File(path).delete()
+    } catch (_: Exception) { false }
+
+    actual fun makeDirs(path: String): Boolean = try {
+        File(path).mkdirs()
+    } catch (_: Exception) { false }
+
+    actual fun getDefaultMusicPaths(): List<String> {
+        val userHome = System.getProperty("user.home") ?: return emptyList()
+        val musicDir = File(userHome, "Music")
+        val downloadsDir = File(userHome, "Downloads")
+        return listOf(musicDir, downloadsDir)
+            .filter { it.exists() && it.isDirectory }
+            .map { it.absolutePath }
+            .ifEmpty { listOf(musicDir.absolutePath) }
+    }
 }
