@@ -1,7 +1,6 @@
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -87,8 +85,7 @@ internal fun NowPlayingMobileLayout(
     } else {
         Column(
             modifier = modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
@@ -101,7 +98,6 @@ internal fun NowPlayingMobileLayout(
                     modifier = Modifier
                         .fillMaxHeight()
                         .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                        .widthIn(max = 340.dp)
                         .shadow(24.dp, RoundedCornerShape(20.dp))
                         .clip(RoundedCornerShape(20.dp)),
                     contentAlignment = Alignment.Center
@@ -117,40 +113,45 @@ internal fun NowPlayingMobileLayout(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TrackInfoBar(
-                state = state,
-                activeAccent = activeAccent,
-                showLyrics = false,
-                onToggleLyrics = onToggleLyrics,
-                onToggleFavorite = onToggleFavorite,
-                onArtistClick = onArtistClick,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-            )
+                    .padding(bottom = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(4.dp))
+                TrackInfoBar(
+                    state = state,
+                    activeAccent = activeAccent,
+                    showLyrics = false,
+                    onToggleLyrics = onToggleLyrics,
+                    onToggleFavorite = onToggleFavorite,
+                    onArtistClick = onArtistClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                )
 
-            PlayerSlider(
-                state = state,
-                activeAccent = activeAccent,
-                onSeekTo = viewModel::seekTo,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            )
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(4.dp))
+                PlayerSlider(
+                    state = state,
+                    activeAccent = activeAccent,
+                    onSeekTo = viewModel::seekTo,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
 
-            PlayerTransportControls(
-                state = state,
-                activeAccent = activeAccent,
-                viewModel = viewModel
-            )
+                Spacer(modifier = Modifier.height(4.dp))
 
-            if (state.trackLyrics != null && (state.trackLyrics.hasSync || !state.trackLyrics.plainLyrics.isNullOrBlank())) {
+                PlayerTransportControls(
+                    state = state,
+                    activeAccent = activeAccent,
+                    viewModel = viewModel
+                )
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LiveLyricsPreviewCard(
@@ -163,22 +164,20 @@ internal fun NowPlayingMobileLayout(
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                NowPlayingMobileActions(
+                    activeAccent = activeAccent,
+                    state = state,
+                    onOpenQueue = onOpenQueue,
+                    onStartRadio = onStartRadio,
+                    onOpenArtist = onOpenArtist,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            NowPlayingMobileActions(
-                activeAccent = activeAccent,
-                state = state,
-                onOpenQueue = onOpenQueue,
-                onStartRadio = onStartRadio,
-                onOpenArtist = onOpenArtist,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }

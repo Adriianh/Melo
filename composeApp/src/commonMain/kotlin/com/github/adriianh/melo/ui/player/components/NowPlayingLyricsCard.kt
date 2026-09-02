@@ -87,17 +87,13 @@ fun LiveLyricsPreviewCard(
     onExpand: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (trackLyrics == null || (!trackLyrics.hasSync && trackLyrics.plainLyrics.isNullOrBlank())) {
-        return
-    }
-
     val currentLine =
-        if (trackLyrics.hasSync && activeLyricIndex in trackLyrics.syncedLyrics.indices) {
+        if (trackLyrics != null && trackLyrics.hasSync && activeLyricIndex in trackLyrics.syncedLyrics.indices) {
             trackLyrics.syncedLyrics[activeLyricIndex]
         } else null
 
     val nextLine =
-        if (trackLyrics.hasSync && activeLyricIndex + 1 in trackLyrics.syncedLyrics.indices) {
+        if (trackLyrics != null && trackLyrics.hasSync && activeLyricIndex + 1 in trackLyrics.syncedLyrics.indices) {
             trackLyrics.syncedLyrics[activeLyricIndex + 1]
         } else null
 
@@ -177,7 +173,7 @@ fun LiveLyricsPreviewCard(
                     .weight(1f),
                 contentAlignment = Alignment.CenterStart
             ) {
-                if (trackLyrics.hasSync) {
+                if (trackLyrics != null && trackLyrics.hasSync) {
                     AnimatedContent(
                         targetState = activeLyricIndex to currentLine,
                         transitionSpec = {
@@ -248,20 +244,38 @@ fun LiveLyricsPreviewCard(
                             }
                         }
                     }
+                } else if (trackLyrics != null && !trackLyrics.plainLyrics.isNullOrBlank()) {
+                    val plain = trackLyrics.plainLyrics ?: ""
+                    val previewSnippet =
+                        plain.lines().filter { it.isNotBlank() }.take(2).joinToString("\n")
+                    Text(
+                        text = previewSnippet,
+                        style = MeloType.body.copy(
+                            fontSize = 13.5.sp,
+                            lineHeight = 18.sp
+                        ),
+                        color = MeloColors.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 } else {
-                    val plain = trackLyrics.plainLyrics
-                    if (!plain.isNullOrBlank()) {
-                        val previewSnippet =
-                            plain.lines().filter { it.isNotBlank() }.take(2).joinToString("\n")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = activeAccent.copy(alpha = 0.8f),
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text(
-                            text = previewSnippet,
+                            text = trackLyrics?.error ?: "Letra no disponible para esta canción",
                             style = MeloType.body.copy(
-                                fontSize = 13.5.sp,
-                                lineHeight = 18.sp
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
                             ),
-                            color = MeloColors.textSecondary,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            color = MeloColors.textMuted
                         )
                     }
                 }
