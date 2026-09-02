@@ -230,7 +230,8 @@ val appModule = module {
         val piped = PipedAudioProvider(apiClient = get(), fallback = ytDlp)
         InnerTubeAudioProvider(
             configDirPath = dataDir.absolutePath,
-            fallback = piped
+            fallback = piped,
+            settingsRepository = get()
         )
     }
     single { MediaSessionManager(httpClient = get()) }

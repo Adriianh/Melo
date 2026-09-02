@@ -37,7 +37,8 @@ actual val platformModule: Module = module {
         val pipedProvider = PipedAudioProvider(apiClient = get())
         InnerTubeAudioProvider(
             configDirPath = get(named("configDirPath")),
-            fallback = pipedProvider
+            fallback = pipedProvider,
+            settingsRepository = get()
         )
     }
 

@@ -42,7 +42,8 @@ actual val platformModule: Module = module {
         )
         InnerTubeAudioProvider(
             configDirPath = get(named("configDirPath")),
-            fallback = pipedProvider
+            fallback = pipedProvider,
+            settingsRepository = get()
         )
     }
 

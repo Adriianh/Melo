@@ -30,11 +30,12 @@ actual val platformModule: Module = module {
     val documentsDirectory = paths.first() as String
     single(named("configDirPath")) { documentsDirectory }
 
-    single<AudioProvider> {
+    single<AudioProvider>(createdAtStart = true) {
         val pipedProvider = PipedAudioProvider(apiClient = get())
         InnerTubeAudioProvider(
             configDirPath = get(named("configDirPath")),
-            fallback = pipedProvider
+            fallback = pipedProvider,
+            settingsRepository = get()
         )
     }
 
