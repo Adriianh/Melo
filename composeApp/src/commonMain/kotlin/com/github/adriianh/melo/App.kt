@@ -336,6 +336,50 @@ fun App() {
                                         }
                                     }
                                 },
+                                onDownloadFormatSelected = { format ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(downloadFormat = format)
+                                        }
+                                    }
+                                },
+                                onDownloadQualitySelected = { quality ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(downloadQuality = quality)
+                                        }
+                                    }
+                                },
+                                onAutoplayToggle = { autoplay ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(autoplay = autoplay)
+                                        }
+                                    }
+                                },
+                                onDiscordRpcToggle = { rpc ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(discordRpcEnabled = rpc)
+                                        }
+                                    }
+                                },
+                                onAddLocalPath = { path ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            if (path !in current.localLibraryPaths) {
+                                                current.copy(localLibraryPaths = current.localLibraryPaths + path)
+                                            } else current
+                                        }
+                                    }
+                                },
+                                onRemoveLocalPath = { path ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
+                                        }
+                                    }
+                                },
                                 onOpenLogin = {
                                     showSettingsSheet = false
                                     showLoginDialog = true
@@ -382,6 +426,50 @@ fun App() {
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(audioQuality = quality)
+                                        }
+                                    }
+                                },
+                                onDownloadFormatSelected = { format ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(downloadFormat = format)
+                                        }
+                                    }
+                                },
+                                onDownloadQualitySelected = { quality ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(downloadQuality = quality)
+                                        }
+                                    }
+                                },
+                                onAutoplayToggle = { autoplay ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(autoplay = autoplay)
+                                        }
+                                    }
+                                },
+                                onDiscordRpcToggle = { rpc ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(discordRpcEnabled = rpc)
+                                        }
+                                    }
+                                },
+                                onAddLocalPath = { path ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            if (path !in current.localLibraryPaths) {
+                                                current.copy(localLibraryPaths = current.localLibraryPaths + path)
+                                            } else current
+                                        }
+                                    }
+                                },
+                                onRemoveLocalPath = { path ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
                                         }
                                     }
                                 },

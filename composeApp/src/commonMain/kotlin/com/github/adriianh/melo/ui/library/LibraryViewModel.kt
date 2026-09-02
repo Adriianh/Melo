@@ -2,8 +2,11 @@ package com.github.adriianh.melo.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
@@ -14,7 +17,13 @@ import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +36,8 @@ import kotlinx.coroutines.launch
 enum class LibraryTab(val label: String) {
     PLAYLISTS("Playlists"),
     LIKED("Canciones que me gustan"),
+    DOWNLOADS("Descargas"),
+    LOCAL("Archivos locales"),
     ARTISTS("Artistas"),
     ALBUMS("Álbumes"),
     HISTORY("Historial")
@@ -35,10 +46,15 @@ enum class LibraryTab(val label: String) {
 data class LibraryUiState(
     val isLoggedIn: Boolean = false,
     val isLoading: Boolean = false,
+    val isScanningLocal: Boolean = false,
     val profile: AccountProfile? = null,
     val selectedTab: LibraryTab = LibraryTab.PLAYLISTS,
     val playlists: List<SearchResult.Playlist> = emptyList(),
     val likedSongs: List<Track> = emptyList(),
+    val downloadedTracks: List<OfflineTrack> = emptyList(),
+    val localTracks: List<Track> = emptyList(),
+    val localLibraryPaths: List<String> = emptyList(),
+    val activeDownloads: Map<String, Float> = emptyMap(),
     val artists: List<SearchResult.Artist> = emptyList(),
     val albums: List<SearchResult.Album> = emptyList(),
     val history: List<HistoryEntry> = emptyList(),
@@ -47,6 +63,7 @@ data class LibraryUiState(
 
 class LibraryViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
+    private val updateSettingsUseCase: UpdateSettingsUseCase,
     private val getAccountProfileUseCase: GetAccountProfileUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     private val getLikedSongsUseCase: GetLikedSongsUseCase,
@@ -54,6 +71,12 @@ class LibraryViewModel(
     private val getUserAlbumsUseCase: GetUserAlbumsUseCase,
     private val getRemoteHistoryUseCase: GetRemoteHistoryUseCase,
     private val toggleLikeTrackUseCase: ToggleLikeTrackUseCase,
+    private val getOfflineTracksUseCase: GetOfflineTracksUseCase,
+    private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
+    private val enrichLocalTracksUseCase: EnrichLocalTracksUseCase,
+    private val deleteDownloadedTrackUseCase: DeleteDownloadedTrackUseCase,
+    private val syncOfflineTracksUseCase: SyncOfflineTracksUseCase,
+    private val downloadManager: DownloadManager,
     private val playbackManager: PlaybackManager,
 ) : ViewModel() {
 
@@ -61,6 +84,31 @@ class LibraryViewModel(
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            syncOfflineTracksUseCase()
+            getOfflineTracksUseCase().collectLatest { tracks ->
+                _uiState.value = _uiState.value.copy(
+                    downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                )
+            }
+        }
+
+        viewModelScope.launch {
+            downloadManager.activeDownloads.collectLatest { downloads ->
+                _uiState.value = _uiState.value.copy(activeDownloads = downloads)
+            }
+        }
+
+        viewModelScope.launch {
+            getSettingsUseCase().collectLatest { settings ->
+                _uiState.value = _uiState.value.copy(
+                    localLibraryPaths = settings.localLibraryPaths
+                )
+            }
+        }
+        scanLocalTracks()
+
+        // Account / Online library sync
         viewModelScope.launch {
             val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
                 ?.takeIf { it.isNotBlank() }
@@ -87,12 +135,72 @@ class LibraryViewModel(
 
     fun selectTab(tab: LibraryTab) {
         _uiState.value = _uiState.value.copy(selectedTab = tab)
+        if (tab == LibraryTab.LOCAL && _uiState.value.localTracks.isEmpty()) {
+            scanLocalTracks()
+        }
+    }
+
+    fun scanLocalTracks() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isScanningLocal = true)
+            val settings = getSettingsUseCase.getSnapshot()
+            val paths = settings.localLibraryPaths
+            val scanned = scanLocalTracksUseCase(paths)
+            _uiState.value = _uiState.value.copy(
+                localTracks = scanned,
+                localLibraryPaths = paths,
+                isScanningLocal = false
+            )
+
+            if (scanned.isNotEmpty()) {
+                val enriched = enrichLocalTracksUseCase(scanned)
+                _uiState.value = _uiState.value.copy(localTracks = enriched)
+            }
+        }
+    }
+
+    fun addLocalLibraryPath(path: String) {
+        if (path.isBlank()) return
+        viewModelScope.launch {
+            val currentSettings = getSettingsUseCase.getSnapshot()
+            val cleanPath = path.trim()
+            if (cleanPath !in currentSettings.localLibraryPaths) {
+                val updatedPaths = currentSettings.localLibraryPaths + cleanPath
+                updateSettingsUseCase(currentSettings.copy(localLibraryPaths = updatedPaths))
+                _uiState.value = _uiState.value.copy(localLibraryPaths = updatedPaths)
+                scanLocalTracks()
+            }
+        }
+    }
+
+    fun removeLocalLibraryPath(path: String) {
+        viewModelScope.launch {
+            val currentSettings = getSettingsUseCase.getSnapshot()
+            val updatedPaths = currentSettings.localLibraryPaths.filter { it != path }
+            updateSettingsUseCase(currentSettings.copy(localLibraryPaths = updatedPaths))
+            _uiState.value = _uiState.value.copy(localLibraryPaths = updatedPaths)
+            scanLocalTracks()
+        }
+    }
+
+    fun downloadTrack(track: Track) {
+        viewModelScope.launch {
+            downloadManager.downloadTrack(track)
+        }
+    }
+
+    fun deleteDownloadedTrack(trackId: String) {
+        viewModelScope.launch {
+            deleteDownloadedTrackUseCase(trackId)
+        }
     }
 
     fun refreshAll() {
-        if (!_uiState.value.isLoggedIn) return
-
         viewModelScope.launch {
+            syncOfflineTracksUseCase()
+            scanLocalTracks()
+            if (!_uiState.value.isLoggedIn) return@launch
+
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             val profileResult = getAccountProfileUseCase()
@@ -129,7 +237,6 @@ class LibraryViewModel(
     fun toggleLike(trackId: String, isLiked: Boolean) {
         viewModelScope.launch {
             toggleLikeTrackUseCase(trackId, isLiked)
-            // Refresh liked songs in background
             val updatedLiked = getLikedSongsUseCase().getOrNull()
             if (updatedLiked != null) {
                 _uiState.value = _uiState.value.copy(likedSongs = updatedLiked)

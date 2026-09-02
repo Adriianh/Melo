@@ -17,14 +17,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.adriianh.melo.ui.components.TrackContextMenu
+import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.components.AlbumsTabContent
 import com.github.adriianh.melo.ui.library.components.ArtistsTabContent
+import com.github.adriianh.melo.ui.library.components.DownloadsTabContent
 import com.github.adriianh.melo.ui.library.components.HistoryTabContent
 import com.github.adriianh.melo.ui.library.components.LibraryHeader
 import com.github.adriianh.melo.ui.library.components.LibraryNotLoggedInCard
 import com.github.adriianh.melo.ui.library.components.LikedSongsTabContent
+import com.github.adriianh.melo.ui.library.components.LocalTabContent
 import com.github.adriianh.melo.ui.library.components.PlaylistsTabContent
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -46,41 +48,12 @@ fun LibraryScreen(
     val interaction = rememberTrackInteraction()
     val activeAccent = interaction.resolveActiveAccent(playerState)
 
-    if (interaction.contextMenuTrack != null) {
-        val track = interaction.contextMenuTrack!!
-        val isLiked = state.likedSongs.any { it.id == track.id }
-        TrackContextMenu(
-            track = track,
-            onDismissRequest = interaction::dismissContextMenu,
-            onPlayNext = {
-                interaction.showPlayNextSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onToggleLike = {
-                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            isLiked = isLiked,
-            onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = {
-                interaction.contextMenuTrack = null
-                onArtistClick(track.artist)
-            },
-            onGoToAlbum = {
-                interaction.contextMenuTrack = null
-            },
-            onShare = { /* TODO */ }
-        )
-    }
-
-    if (!state.isLoggedIn) {
-        LibraryNotLoggedInCard(onLoginClick = onOpenSettings)
-        return
-    }
+    TrackInteractionContextMenu(
+        interaction = interaction,
+        libraryState = state,
+        activeAccent = activeAccent,
+        onArtistClick = onArtistClick
+    )
 
     Column(
         modifier = Modifier
@@ -102,7 +75,11 @@ fun LibraryScreen(
             onRefresh = viewModel::refreshAll
         )
 
-        if (state.isLoading) {
+        val isLocalOrDownloadTab =
+            state.selectedTab == LibraryTab.DOWNLOADS || state.selectedTab == LibraryTab.LOCAL
+        if (!state.isLoggedIn && !isLocalOrDownloadTab) {
+            LibraryNotLoggedInCard(onLoginClick = onOpenSettings)
+        } else if (state.isLoading && !isLocalOrDownloadTab) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -135,6 +112,40 @@ fun LibraryScreen(
                             }
                         )
                     }
+                )
+
+                LibraryTab.DOWNLOADS -> DownloadsTabContent(
+                    downloadedTracks = state.downloadedTracks,
+                    onPlayTrack = { track ->
+                        val offlineQueue = state.downloadedTracks.map { it.track }
+                        viewModel.playTrack(track, offlineQueue)
+                    },
+                    onPlayAll = {
+                        val offlineQueue = state.downloadedTracks.map { it.track }
+                        if (offlineQueue.isNotEmpty()) {
+                            viewModel.playTrack(offlineQueue.first(), offlineQueue)
+                        }
+                    },
+                    onDeleteDownload = viewModel::deleteDownloadedTrack,
+                    onMoreClick = { interaction.openContextMenu(it) }
+                )
+
+                LibraryTab.LOCAL -> LocalTabContent(
+                    localTracks = state.localTracks,
+                    localLibraryPaths = state.localLibraryPaths,
+                    isScanning = state.isScanningLocal,
+                    onRescan = viewModel::scanLocalTracks,
+                    onAddFolder = viewModel::addLocalLibraryPath,
+                    onRemoveFolder = viewModel::removeLocalLibraryPath,
+                    onPlayTrack = { track ->
+                        viewModel.playTrack(track, state.localTracks)
+                    },
+                    onPlayAll = {
+                        if (state.localTracks.isNotEmpty()) {
+                            viewModel.playTrack(state.localTracks.first(), state.localTracks)
+                        }
+                    },
+                    onMoreClick = { interaction.openContextMenu(it) }
                 )
 
                 LibraryTab.ARTISTS -> ArtistsTabContent(

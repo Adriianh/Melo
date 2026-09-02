@@ -15,7 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -70,7 +72,7 @@ fun LibraryHeader(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = profile?.name?.take(1)?.uppercase() ?: "Y",
+                            text = profile?.name?.take(1)?.uppercase() ?: "M",
                             style = MeloType.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MeloColors.textPrimary
@@ -115,6 +117,8 @@ fun LibraryHeader(
                         val icon = when (tab) {
                             LibraryTab.PLAYLISTS -> Icons.AutoMirrored.Filled.PlaylistPlay
                             LibraryTab.LIKED -> Icons.Default.Favorite
+                            LibraryTab.DOWNLOADS -> Icons.Default.DownloadDone
+                            LibraryTab.LOCAL -> Icons.Default.Folder
                             LibraryTab.ARTISTS -> Icons.Default.Person
                             LibraryTab.ALBUMS -> Icons.Default.Album
                             LibraryTab.HISTORY -> Icons.Default.History
