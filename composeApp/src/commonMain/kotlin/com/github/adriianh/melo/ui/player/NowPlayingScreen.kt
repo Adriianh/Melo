@@ -28,6 +28,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.TrackContextMenu
@@ -83,7 +84,8 @@ fun NowPlayingScreen(
     if (interaction.contextMenuTrack != null) {
         val track = interaction.contextMenuTrack!!
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
-        val isDownloaded = libraryState.downloadedTracks.any { it.track.id == track.id }
+        val isDownloaded =
+            libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
         val isDownloading = libraryState.activeDownloads.containsKey(track.id)
         val downloadProgress = libraryState.activeDownloads[track.id]
         val targetSnackbar =

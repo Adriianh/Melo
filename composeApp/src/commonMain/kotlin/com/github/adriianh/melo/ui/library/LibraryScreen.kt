@@ -36,7 +36,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun LibraryScreen(
     onOpenSettings: () -> Unit = {},
-    onAlbumClick: (String) -> Unit = {},
+    onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onPlaylistClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),
@@ -115,24 +115,33 @@ fun LibraryScreen(
                     }
                 )
 
-                LibraryTab.DOWNLOADS -> DownloadsTabContent(
-                    downloadedTracks = state.downloadedTracks
-                        .filter { it.downloadType == DownloadType.MANUAL },
-                    onPlayTrack = { track ->
-                        val offlineQueue = state.downloadedTracks.map { it.track }
-                        viewModel.playTrack(track, offlineQueue)
-                    },
-                    onPlayAll = {
-                        val offlineQueue = state.downloadedTracks.map { it.track }
-                        if (offlineQueue.isNotEmpty()) {
-                            viewModel.playTrack(offlineQueue.first(), offlineQueue)
-                        }
-                    },
-                    onDeleteDownload = viewModel::deleteDownloadedTrack,
-                    onMoreClick = { interaction.openContextMenu(it) },
-                    onAlbumClick = onAlbumClick,
-                    onArtistClick = onArtistClick
-                )
+                LibraryTab.DOWNLOADS -> {
+                    val manualDownloads = state.downloadedTracks
+                        .filter { it.downloadType == DownloadType.MANUAL }
+                    val cachedDownloads = state.downloadedTracks
+                        .filter { it.downloadType != DownloadType.MANUAL }
+                    val prioritizedOfflineQueue =
+                        manualDownloads.map { it.track } + cachedDownloads.map { it.track }
+
+                    DownloadsTabContent(
+                        downloadedTracks = manualDownloads,
+                        onPlayTrack = { track ->
+                            viewModel.playTrack(track, prioritizedOfflineQueue)
+                        },
+                        onPlayAll = {
+                            if (prioritizedOfflineQueue.isNotEmpty()) {
+                                viewModel.playTrack(
+                                    prioritizedOfflineQueue.first(),
+                                    prioritizedOfflineQueue
+                                )
+                            }
+                        },
+                        onDeleteDownload = viewModel::deleteDownloadedTrack,
+                        onMoreClick = { interaction.openContextMenu(it) },
+                        onAlbumClick = onAlbumClick,
+                        onArtistClick = onArtistClick
+                    )
+                }
 
                 LibraryTab.LOCAL -> LocalTabContent(
                     localTracks = state.localTracks,
@@ -159,7 +168,7 @@ fun LibraryScreen(
 
                 LibraryTab.ALBUMS -> AlbumsTabContent(
                     albums = state.albums,
-                    onAlbumClick = onAlbumClick
+                    onAlbumClick = { id -> onAlbumClick(id, "", null, "") }
                 )
 
                 LibraryTab.HISTORY -> HistoryTabContent(

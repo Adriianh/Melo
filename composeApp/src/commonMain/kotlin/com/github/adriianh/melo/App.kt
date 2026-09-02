@@ -228,7 +228,16 @@ fun App() {
 
                                     ScreenDestination.Library -> LibraryScreen(
                                         onOpenSettings = { showSettingsSheet = true },
-                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                        onAlbumClick = { id, title, artwork, author ->
+                                            navigateTo(
+                                                ScreenDestination.Album(
+                                                    id,
+                                                    title,
+                                                    artwork,
+                                                    author
+                                                )
+                                            )
+                                        },
                                         onPlaylistClick = { id ->
                                             navigateTo(
                                                 ScreenDestination.Playlist(

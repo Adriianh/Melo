@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.util.MeloAsyncImage
@@ -200,7 +201,8 @@ fun TrackInteractionContextMenu(
 ) {
     val track = interaction.contextMenuTrack ?: return
     val isLiked = libraryState.likedSongs.any { it.id == track.id }
-    val isDownloaded = libraryState.downloadedTracks.any { it.track.id == track.id }
+    val isDownloaded =
+        libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
     val isDownloading = libraryState.activeDownloads.containsKey(track.id)
     val downloadProgress = libraryState.activeDownloads[track.id]
 

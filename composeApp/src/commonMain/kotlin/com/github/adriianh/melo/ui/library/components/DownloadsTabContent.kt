@@ -70,7 +70,7 @@ fun DownloadsTabContent(
     onDeleteDownload: (String) -> Unit,
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
-    onAlbumClick: (String) -> Unit = {},
+    onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
 ) {
     if (downloadedTracks.isEmpty()) {
@@ -254,7 +254,14 @@ fun DownloadsTabContent(
                             title = album.name,
                             subtitle = "${album.artist} • ${album.tracks.size} canciones",
                             artworkUrl = album.artworkUrl,
-                            onClick = { onAlbumClick(album.name) }
+                            onClick = {
+                                onAlbumClick(
+                                    album.name,
+                                    album.name,
+                                    album.artworkUrl,
+                                    album.artist
+                                )
+                            }
                         )
                     }
                 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -85,7 +86,9 @@ class EntityDetailViewModel(
             return
         }
 
-        val completedOffline = offlineTracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+        val completedOffline = offlineTracks.filter {
+            it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.MANUAL
+        }
 
         val completedKeys = mutableSetOf<String>()
         val completedSignatures = mutableSetOf<String>()
@@ -255,6 +258,20 @@ class EntityDetailViewModel(
             }
 
             try {
+                val isOnlineAlbumId = when (initial) {
+                    is SearchResult.Album -> initial.id.startsWith("MPRE") || initial.id.startsWith(
+                        "OLAK"
+                    ) || initial.id.startsWith("VL") || initial.id.startsWith("FE") || initial.id.startsWith(
+                        "piped:"
+                    )
+
+                    else -> false
+                }
+
+                if (loadedOffline && initial is SearchResult.Album && !isOnlineAlbumId) {
+                    return@launch
+                }
+
                 val fullDetails = getEntityDetailsUseCase(initial)
                 val hasContent = when (fullDetails) {
                     is SearchResult.Album -> !fullDetails.songs.isNullOrEmpty()
@@ -264,10 +281,23 @@ class EntityDetailViewModel(
                 }
 
                 if (hasContent) {
+                    if (loadedOffline && fullDetails is SearchResult.Album && initial is SearchResult.Album) {
+                        val initialAuthor =
+                            initial.author.takeIf { it.isNotBlank() && it != "Unknown" }
+                        val fullAuthor =
+                            fullDetails.author.takeIf { it.isNotBlank() && it != "Unknown" }
+                        if (initialAuthor != null && fullAuthor != null &&
+                            !fullAuthor.contains(initialAuthor, ignoreCase = true) &&
+                            !initialAuthor.contains(fullAuthor, ignoreCase = true)
+                        ) {
+                            return@launch
+                        }
+                    }
+
                     val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
                     val matchingOfflineArtistTracks = if (fullDetails is SearchResult.Artist) {
                         offlineRepository.getOfflineTracks()
-                            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                            .filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.MANUAL }
                             .map { it.track }
                             .filter {
                                 it.artist.contains(fullDetails.name, ignoreCase = true) ||
@@ -311,12 +341,27 @@ class EntityDetailViewModel(
         when (initial) {
             is SearchResult.Album -> {
                 val albumQuery = initial.title.ifBlank { initial.id }
+                val hasAuthor = initial.author.isNotBlank() && initial.author != "Unknown"
                 val matchingTracks = allOffline
                     .filter { it.downloadStatus == DownloadStatus.COMPLETED }
                     .map { it.track }
                     .filter {
-                        (albumQuery.isNotBlank() && it.album.equals(albumQuery, ignoreCase = true)) ||
-                                (initial.author.isNotBlank() && it.artist.equals(initial.author, ignoreCase = true))
+                        val matchesAlbum = albumQuery.isNotBlank() && it.album.equals(
+                            albumQuery,
+                            ignoreCase = true
+                        )
+                        val matchesAuthor =
+                            hasAuthor && it.artist.equals(initial.author, ignoreCase = true)
+
+                        if (albumQuery.isNotBlank() && hasAuthor) {
+                            matchesAlbum && matchesAuthor
+                        } else if (albumQuery.isNotBlank()) {
+                            matchesAlbum
+                        } else if (hasAuthor) {
+                            matchesAuthor
+                        } else {
+                            false
+                        }
                     }
                 if (matchingTracks.isNotEmpty()) {
                     val resolved = initial.copy(

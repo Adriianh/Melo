@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.HomeSectionType
@@ -178,9 +179,12 @@ class HomeViewModel(
     }
 
     private suspend fun loadOfflineFeed() {
-        val downloadedTracks = getOfflineTracksUseCase().firstOrNull()
-            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-            ?.map { it.track } ?: emptyList()
+        val allCompleted = getOfflineTracksUseCase().firstOrNull()
+            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED } ?: emptyList()
+        val downloadedTracks = allCompleted
+            .filter { it.downloadType == DownloadType.MANUAL }
+            .map { it.track }
+            .ifEmpty { allCompleted.map { it.track } }
 
         val localTracks = try {
             scanLocalTracksUseCase()
