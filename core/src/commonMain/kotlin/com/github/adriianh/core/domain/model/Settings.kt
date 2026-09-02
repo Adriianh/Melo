@@ -57,6 +57,14 @@ data class MeloKey(
 )
 
 @Serializable
+enum class AudioQuality(val displayName: String) {
+    AUTO("Auto"),
+    HIGH("High (160-256 kbps)"),
+    MEDIUM("Standard (128 kbps)"),
+    LOW("Data Saver (48-64 kbps)")
+}
+
+@Serializable
 enum class ThemeMode {
     SYSTEM,
     LIGHT,
@@ -99,4 +107,6 @@ data class Settings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val autoplay: Boolean = true,
+    val dataSaver: Boolean = false,
+    val audioQuality: AudioQuality = AudioQuality.AUTO,
 )

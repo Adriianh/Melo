@@ -1,6 +1,9 @@
 package com.github.adriianh.data.provider.audio
 
+import com.github.adriianh.core.domain.model.AudioQuality
+import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.provider.AudioProvider
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.innertube.YouTube
@@ -15,12 +18,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 class InnerTubeAudioProvider(
     private val configDirPath: String? = null,
     private val fallback: AudioProvider? = null,
+    private val settingsRepository: SettingsRepository? = null,
 ) : AudioProvider {
 
     companion object {
@@ -84,6 +89,9 @@ class InnerTubeAudioProvider(
             }
         }
         return withContext(MeloDispatchers.IO) {
+            val settings = settingsRepository?.getSettings() ?: Settings()
+            val targetQuality = if (settings.dataSaver) AudioQuality.LOW else settings.audioQuality
+
             var resolvedUrl: String? = null
             for (client in CLIENTS_TO_TRY) {
                 if (client.loginRequired && YouTube.cookie == null) continue
@@ -93,7 +101,7 @@ class InnerTubeAudioProvider(
                         YouTube.player(sourceId, null, client, sts).getOrNull()
                     }
                     if (resp?.playabilityStatus?.status != "OK") continue
-                    val fmt = findBestAudioFormat(resp) ?: continue
+                    val fmt = findAudioFormat(resp, targetQuality) ?: continue
                     val urlResult = YouTubeStreamUtils.getStreamUrl(fmt, sourceId)
                     urlResult.exceptionOrNull()?.let { e ->
                         if (e.message?.contains("deobfuscat", ignoreCase = true) == true ||
@@ -112,7 +120,11 @@ class InnerTubeAudioProvider(
             }
             if (resolvedUrl.isNullOrEmpty()) {
                 val streams = getNewPipeStreamUrls(sourceId)
-                val preferredItags = listOf(140, 141, 139, 251, 250, 249)
+                val preferredItags = when (targetQuality) {
+                    AudioQuality.LOW -> listOf(249, 250, 139, 140, 251)
+                    AudioQuality.MEDIUM -> listOf(140, 250, 251, 139, 249)
+                    AudioQuality.HIGH, AudioQuality.AUTO -> listOf(140, 141, 251, 250, 139)
+                }
                 resolvedUrl = preferredItags
                     .firstNotNullOfOrNull { itag -> streams.firstOrNull { it.first == itag }?.second }
                     ?: streams.firstOrNull()?.second
@@ -189,11 +201,26 @@ class InnerTubeAudioProvider(
         return (expireEpochSec - 5 * 60) * 1000L
     }
 
-    private fun findBestAudioFormat(response: PlayerResponse): PlayerResponse.StreamingData.Format? {
+    private fun findAudioFormat(
+        response: PlayerResponse,
+        targetQuality: AudioQuality
+    ): PlayerResponse.StreamingData.Format? {
         val audioFormats = (response.streamingData?.adaptiveFormats ?: emptyList())
             .filter { it.mimeType.startsWith("audio/") && it.audioTrack?.isAutoDubbed != true }
         if (audioFormats.isEmpty()) return null
-        return audioFormats.maxByOrNull { it.bitrate + (if (it.mimeType.contains("webm")) 10240 else 0) }
+        return when (targetQuality) {
+            AudioQuality.LOW -> {
+                audioFormats.minByOrNull { it.bitrate }
+            }
+
+            AudioQuality.MEDIUM -> {
+                audioFormats.minByOrNull { abs(it.bitrate - 128000) }
+            }
+
+            AudioQuality.HIGH, AudioQuality.AUTO -> {
+                audioFormats.maxByOrNull { it.bitrate + (if (it.mimeType.contains("webm")) 10240 else 0) }
+            }
+        }
     }
 
     override suspend fun downloadAudio(
