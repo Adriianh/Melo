@@ -43,6 +43,7 @@ import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
+import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsDialog
 import com.github.adriianh.melo.ui.settings.SettingsSheet
 import com.github.adriianh.melo.util.MeloMotion
@@ -296,191 +297,109 @@ fun App() {
                     }
 
                     if (showSettingsSheet) {
+                        val settingsActions = SettingsActions(
+                            onThemeModeSelected = { themeMode ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(themeMode = themeMode)
+                                    }
+                                }
+                            },
+                            onThemePresetSelected = { preset ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(theme = preset)
+                                    }
+                                }
+                            },
+                            onDynamicColorToggle = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(dynamicColor = enabled)
+                                    }
+                                }
+                            },
+                            onDataSaverToggle = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(dataSaver = enabled)
+                                    }
+                                }
+                            },
+                            onAudioQualitySelected = { quality ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(audioQuality = quality)
+                                    }
+                                }
+                            },
+                            onDownloadFormatSelected = { format ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(downloadFormat = format)
+                                    }
+                                }
+                            },
+                            onDownloadQualitySelected = { quality ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(downloadQuality = quality)
+                                    }
+                                }
+                            },
+                            onAutoplayToggle = { autoplay ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(autoplay = autoplay)
+                                    }
+                                }
+                            },
+                            onDiscordRpcToggle = { rpc ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(discordRpcEnabled = rpc)
+                                    }
+                                }
+                            },
+                            onAddLocalPath = { path ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        if (path !in current.localLibraryPaths) {
+                                            current.copy(localLibraryPaths = current.localLibraryPaths + path)
+                                        } else current
+                                    }
+                                }
+                            },
+                            onRemoveLocalPath = { path ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
+                                    }
+                                }
+                            },
+                            onOpenLogin = {
+                                showSettingsSheet = false
+                                showLoginDialog = true
+                            },
+                            onLogout = {
+                                showSettingsSheet = false
+                                loginViewModel.logout()
+                            }
+                        )
+
                         if (platform.type == PlatformType.DESKTOP) {
                             SettingsDialog(
                                 settings = settings,
                                 isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
-                                onDismiss = { showSettingsSheet = false },
-                                onThemeModeSelected = { themeMode ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(themeMode = themeMode)
-                                        }
-                                    }
-                                },
-                                onThemePresetSelected = { preset ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(theme = preset)
-                                        }
-                                    }
-                                },
-                                onDynamicColorToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dynamicColor = enabled)
-                                        }
-                                    }
-                                },
-                                onDataSaverToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dataSaver = enabled)
-                                        }
-                                    }
-                                },
-                                onAudioQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(audioQuality = quality)
-                                        }
-                                    }
-                                },
-                                onDownloadFormatSelected = { format ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadFormat = format)
-                                        }
-                                    }
-                                },
-                                onDownloadQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadQuality = quality)
-                                        }
-                                    }
-                                },
-                                onAutoplayToggle = { autoplay ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(autoplay = autoplay)
-                                        }
-                                    }
-                                },
-                                onDiscordRpcToggle = { rpc ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(discordRpcEnabled = rpc)
-                                        }
-                                    }
-                                },
-                                onAddLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            if (path !in current.localLibraryPaths) {
-                                                current.copy(localLibraryPaths = current.localLibraryPaths + path)
-                                            } else current
-                                        }
-                                    }
-                                },
-                                onRemoveLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
-                                        }
-                                    }
-                                },
-                                onOpenLogin = {
-                                    showSettingsSheet = false
-                                    showLoginDialog = true
-                                },
-                                onLogout = {
-                                    showSettingsSheet = false
-                                    loginViewModel.logout()
-                                }
+                                actions = settingsActions,
+                                onDismiss = { showSettingsSheet = false }
                             )
                         } else {
                             SettingsSheet(
                                 settings = settings,
                                 isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
-                                onDismiss = { showSettingsSheet = false },
-                                onThemeModeSelected = { themeMode ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(themeMode = themeMode)
-                                        }
-                                    }
-                                },
-                                onThemePresetSelected = { preset ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(theme = preset)
-                                        }
-                                    }
-                                },
-                                onDynamicColorToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dynamicColor = enabled)
-                                        }
-                                    }
-                                },
-                                onDataSaverToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dataSaver = enabled)
-                                        }
-                                    }
-                                },
-                                onAudioQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(audioQuality = quality)
-                                        }
-                                    }
-                                },
-                                onDownloadFormatSelected = { format ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadFormat = format)
-                                        }
-                                    }
-                                },
-                                onDownloadQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadQuality = quality)
-                                        }
-                                    }
-                                },
-                                onAutoplayToggle = { autoplay ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(autoplay = autoplay)
-                                        }
-                                    }
-                                },
-                                onDiscordRpcToggle = { rpc ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(discordRpcEnabled = rpc)
-                                        }
-                                    }
-                                },
-                                onAddLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            if (path !in current.localLibraryPaths) {
-                                                current.copy(localLibraryPaths = current.localLibraryPaths + path)
-                                            } else current
-                                        }
-                                    }
-                                },
-                                onRemoveLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
-                                        }
-                                    }
-                                },
-                                onOpenLogin = {
-                                    showSettingsSheet = false
-                                    showLoginDialog = true
-                                },
-                                onLogout = {
-                                    showSettingsSheet = false
-                                    loginViewModel.logout()
-                                }
+                                actions = settingsActions,
+                                onDismiss = { showSettingsSheet = false }
                             )
                         }
                     }
