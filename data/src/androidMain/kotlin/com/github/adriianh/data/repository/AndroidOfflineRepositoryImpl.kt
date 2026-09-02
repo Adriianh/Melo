@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.audio.exceptions.CannotReadVideoException
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
@@ -74,7 +75,7 @@ class AndroidOfflineRepositoryImpl(
     /**
      * Extracts metadata from the audio file using Android's MediaMetadataRetriever and JAudioTagger fallback.
      */
-    private fun getFileMetadata(file: File): TrackMetadata {
+    private fun getFileMetadata(file: File): TrackMetadata? {
         val retriever = MediaMetadataRetriever()
         try {
             if (file.exists() && file.canRead()) {
@@ -131,6 +132,8 @@ class AndroidOfflineRepositoryImpl(
                 }
 
                 return TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, null)
+            } catch (_: CannotReadVideoException) {
+                return null
             } catch (__: Exception) {
                 val name = file.nameWithoutExtension
                 val parts = name.split(" - ", limit = 2)
@@ -318,13 +321,15 @@ class AndroidOfflineRepositoryImpl(
             "m4a",
             "opus",
             "ogg",
+            "oga",
             "wav",
+            "wave",
             "aac",
-            "webm",
             "wma",
-            "mp4",
             "m4b",
-            "m4p"
+            "m4p",
+            "aiff",
+            "aif"
         )
         val results = mutableListOf<Track>()
 
@@ -346,10 +351,11 @@ class AndroidOfflineRepositoryImpl(
                             MediaStore.Audio.Media.DATA,
                             MediaStore.Audio.Media.DISPLAY_NAME
                         )
+                        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
                         val cursor = context.contentResolver.query(
                             contentUri,
                             projection,
-                            null,
+                            selection,
                             null,
                             "${MediaStore.Audio.Media.TITLE} ASC"
                         )
@@ -445,7 +451,7 @@ class AndroidOfflineRepositoryImpl(
                             .forEach { file ->
                                 val localId = "local:${file.absolutePath}"
                                 if (results.none { it.id == localId }) {
-                                    val metadata = getFileMetadata(file)
+                                    val metadata = getFileMetadata(file) ?: return@forEach
                                     results.add(
                                         Track(
                                             id = localId,

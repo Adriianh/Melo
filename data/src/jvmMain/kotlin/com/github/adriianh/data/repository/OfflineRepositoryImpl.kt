@@ -6,6 +6,7 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.platform.PlatformFileSystem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.audio.AudioHeader
+import org.jaudiotagger.audio.exceptions.CannotReadVideoException
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
@@ -69,7 +71,7 @@ class OfflineRepositoryImpl(
     /**
      * Extracts metadata from the audio file tags.
      */
-    private fun getFileMetadata(file: File): TrackMetadata {
+    private fun getFileMetadata(file: File): TrackMetadata? {
         return try {
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tag
@@ -91,6 +93,8 @@ class OfflineRepositoryImpl(
                 if (parts.size == 2) parts[0] else "Artista Desconocido"
             }
             TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, artworkUrl)
+        } catch (_: CannotReadVideoException) {
+            null
         } catch (_: Exception) {
             val parts = file.nameWithoutExtension.split(" - ", limit = 2)
             val (artistPart, titlePart) = if (parts.size == 2) parts[0] to parts[1] else "Artista Desconocido" to parts[0]
@@ -150,11 +154,9 @@ class OfflineRepositoryImpl(
 
     override suspend fun cleanupExpired(maxAgeDays: Int) {
         val cutoff = System.currentTimeMillis() - (maxAgeDays * 24 * 60 * 60 * 1000L)
-        val current = getOfflineTracks()
-            .filter {
-                it.downloadType == DownloadType.PREFETCH &&
-                        it.downloadStatus == DownloadStatus.COMPLETED &&
-                        (it.lastAccessedAt ?: it.downloadedAt ?: Long.MAX_VALUE) < cutoff
+        val current = getOfflineTracks().filter {
+            it.downloadType == DownloadType.PREFETCH && it.downloadStatus == DownloadStatus.COMPLETED && (it.lastAccessedAt
+                ?: it.downloadedAt ?: Long.MAX_VALUE) < cutoff
             }
         current.forEach { removeOfflineTrack(it.track.id) }
     }
@@ -166,9 +168,9 @@ class OfflineRepositoryImpl(
         var totalSize = current.sumOf { it.fileSize }
         if (totalSize <= maxSizeBytes) return
 
-        val sorted = current
-            .filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.PREFETCH }
-            .sortedBy { it.lastAccessedAt ?: it.downloadedAt ?: 0L }
+        val sorted =
+            current.filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.PREFETCH }
+                .sortedBy { it.lastAccessedAt ?: it.downloadedAt ?: 0L }
 
         for (track in sorted) {
             if (totalSize <= maxSizeBytes) break
@@ -190,8 +192,7 @@ class OfflineRepositoryImpl(
         withContext(dispatcher) {
             val settings = settingsRepository.getSettings()
             val customCacheDir = settings.cachePath?.let { File(it) } ?: File(
-                defaultDownloadsDir.parentFile,
-                "cache"
+                defaultDownloadsDir.parentFile, "cache"
             )
             val customDownloadDir = settings.downloadPath?.let { File(it) }
             val current = _offlineTracksFlow.value.toMutableList()
@@ -202,31 +203,27 @@ class OfflineRepositoryImpl(
                 if (localPath != null) {
                     val file = File(localPath)
                     when {
-                        file.exists() && track.downloadStatus != DownloadStatus.COMPLETED ->
-                            track.copy(
-                                downloadStatus = DownloadStatus.COMPLETED,
-                                fileSize = file.length(),
-                                downloadedAt = track.downloadedAt ?: file.lastModified()
-                            )
+                        file.exists() && track.downloadStatus != DownloadStatus.COMPLETED -> track.copy(
+                            downloadStatus = DownloadStatus.COMPLETED,
+                            fileSize = file.length(),
+                            downloadedAt = track.downloadedAt ?: file.lastModified()
+                        )
 
-                        !file.exists() && track.downloadStatus == DownloadStatus.COMPLETED ->
-                            track.copy(
-                                localFilePath = null,
-                                downloadStatus = DownloadStatus.PENDING,
-                                fileSize = 0L
-                            )
+                        !file.exists() && track.downloadStatus == DownloadStatus.COMPLETED -> track.copy(
+                            localFilePath = null,
+                            downloadStatus = DownloadStatus.PENDING,
+                            fileSize = 0L
+                        )
 
                         else -> track
                     }
                 } else {
                     when (track.downloadStatus) {
-                        DownloadStatus.FAILED ->
-                            if (track.downloadType == DownloadType.PREFETCH) null
-                            else track.copy(downloadStatus = DownloadStatus.PENDING)
+                        DownloadStatus.FAILED -> if (track.downloadType == DownloadType.PREFETCH) null
+                        else track.copy(downloadStatus = DownloadStatus.PENDING)
 
-                        DownloadStatus.DOWNLOADING ->
-                            if (track.downloadType == DownloadType.PREFETCH) null
-                            else track.copy(downloadStatus = DownloadStatus.PENDING)
+                        DownloadStatus.DOWNLOADING -> if (track.downloadType == DownloadType.PREFETCH) null
+                        else track.copy(downloadStatus = DownloadStatus.PENDING)
 
                         else -> track
                     }
@@ -238,10 +235,7 @@ class OfflineRepositoryImpl(
                 saveMetadataToDisk(updated)
             }
 
-            val validPaths = updated
-                .mapNotNull { it.localFilePath }
-                .map { it.lowercase() }
-                .toSet()
+            val validPaths = updated.mapNotNull { it.localFilePath }.map { it.lowercase() }.toSet()
 
             val audioExtensions = setOf("mp3", "flac", "m4a", "opus", "ogg", "wav", "aac")
             val metadataExtensions = setOf("webp", "png", "jpg", "jpeg")
@@ -271,28 +265,28 @@ class OfflineRepositoryImpl(
             "m4a",
             "opus",
             "ogg",
+            "oga",
             "wav",
+            "wave",
             "aac",
-            "webm",
             "wma",
-            "mp4",
             "m4b",
-            "m4p"
+            "m4p",
+            "aiff",
+            "aif"
         )
         val results = mutableListOf<Track>()
 
         return withContext(dispatcher) {
-            val effectivePaths =
-                if (paths.isNotEmpty()) paths else com.github.adriianh.core.platform.PlatformFileSystem.getDefaultMusicPaths()
+            val effectivePaths = paths.ifEmpty { PlatformFileSystem.getDefaultMusicPaths() }
             effectivePaths.forEach { path ->
                 val dir = File(path)
                 if (dir.exists() && dir.isDirectory) {
                     try {
-                        dir.walkTopDown()
-                            .maxDepth(12)
+                        dir.walkTopDown().maxDepth(12)
                             .filter { it.isFile && it.extension.lowercase() in audioExtensions }
                             .forEach { file ->
-                                val metadata = getFileMetadata(file)
+                                val metadata = getFileMetadata(file) ?: return@forEach
                                 results.add(
                                     Track(
                                         id = "local:${file.absolutePath}",
@@ -316,10 +310,7 @@ class OfflineRepositoryImpl(
     }
 
     override suspend fun updateTrackMetadata(
-        trackId: String,
-        title: String?,
-        artist: String?,
-        album: String?
+        trackId: String, title: String?, artist: String?, album: String?
     ) {
         val path = if (trackId.startsWith("local:")) {
             trackId.removePrefix("local:")
