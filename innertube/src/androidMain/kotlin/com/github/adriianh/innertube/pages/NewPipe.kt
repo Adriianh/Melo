@@ -181,11 +181,11 @@ object NewPipeExtractor {
     fun prewarm(videoId: String = "dQw4w9WgXcQ") {
         try {
             utils.getSignatureTimestamp(videoId)
-            YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(
+            YoutubeJavaScriptPlayerManager.deobfuscateSignature(
                 videoId,
-                "https://googlevideo.com/videoplayback?n=12345"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
             )
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
         }
     }
 

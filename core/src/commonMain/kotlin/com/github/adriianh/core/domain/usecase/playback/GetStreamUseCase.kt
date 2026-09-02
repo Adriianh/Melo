@@ -39,11 +39,13 @@ class GetStreamUseCase(
             }
         }
 
-        val sourceId = track.sourceId ?: audioProvider.getSourceId(
-            artist = track.artist,
-            title = track.title,
-            durationMs = track.durationMs,
-        ) ?: return null
+        val sourceId = track.sourceId
+            ?: (if (track.id.startsWith("piped:")) track.id.removePrefix("piped:") else null)
+            ?: audioProvider.getSourceId(
+                artist = track.artist,
+                title = track.title,
+                durationMs = track.durationMs,
+            ) ?: return null
 
         return audioProvider.getStreamUrl(sourceId)
     }
