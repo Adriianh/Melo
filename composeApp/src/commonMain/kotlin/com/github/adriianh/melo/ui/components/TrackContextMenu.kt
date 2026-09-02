@@ -15,6 +15,9 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.Person
@@ -37,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -55,7 +59,12 @@ fun TrackContextMenu(
     onAddToPlaylist: () -> Unit,
     onGoToArtist: () -> Unit,
     onGoToAlbum: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    onDownload: (() -> Unit)? = null,
+    onDeleteDownload: (() -> Unit)? = null,
+    isDownloaded: Boolean = false,
+    isDownloading: Boolean = false,
+    downloadProgress: Float? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -133,6 +142,28 @@ fun TrackContextMenu(
                 onClick = { onToggleLike(); onDismissRequest() },
                 iconTint = if (isLiked) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
             )
+
+            if (isDownloaded && onDeleteDownload != null) {
+                ContextMenuItem(
+                    icon = Icons.Default.DeleteOutline,
+                    text = "Eliminar descarga",
+                    onClick = { onDeleteDownload(); onDismissRequest() }
+                )
+            } else if (isDownloading) {
+                ContextMenuItem(
+                    icon = Icons.Default.Downloading,
+                    text = "Descargando... ${((downloadProgress ?: 0f) * 100).toInt()}%",
+                    onClick = { onDismissRequest() },
+                    iconTint = MaterialTheme.colorScheme.primary
+                )
+            } else if (onDownload != null && !track.id.startsWith("local:")) {
+                ContextMenuItem(
+                    icon = Icons.Default.Download,
+                    text = "Descargar canción",
+                    onClick = { onDownload(); onDismissRequest() }
+                )
+            }
+
             ContextMenuItem(
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                 text = "Añadir a playlist...",
@@ -155,6 +186,67 @@ fun TrackContextMenu(
             )
         }
     }
+}
+
+@Composable
+fun TrackInteractionContextMenu(
+    interaction: TrackInteractionState,
+    libraryState: LibraryUiState,
+    activeAccent: Color,
+    onArtistClick: (String) -> Unit = {},
+    onAlbumClick: (String) -> Unit = {},
+    inQueue: Boolean = false,
+    onRemoveFromQueue: () -> Unit = {},
+) {
+    val track = interaction.contextMenuTrack ?: return
+    val isLiked = libraryState.likedSongs.any { it.id == track.id }
+    val isDownloaded = libraryState.downloadedTracks.any { it.track.id == track.id }
+    val isDownloading = libraryState.activeDownloads.containsKey(track.id)
+    val downloadProgress = libraryState.activeDownloads[track.id]
+
+    TrackContextMenu(
+        track = track,
+        onDismissRequest = interaction::dismissContextMenu,
+        onPlayNext = {
+            interaction.showPlayNextSnackbar(track, activeAccent)
+            interaction.dismissContextMenu()
+        },
+        onAddToQueue = {
+            interaction.showAddedToQueueSnackbar(track, activeAccent)
+            interaction.dismissContextMenu()
+        },
+        onRemoveFromQueue = {
+            onRemoveFromQueue()
+            interaction.dismissContextMenu()
+        },
+        inQueue = inQueue,
+        onToggleLike = {
+            interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+            interaction.dismissContextMenu()
+        },
+        isLiked = isLiked,
+        onAddToPlaylist = { /* TODO */ },
+        onGoToArtist = {
+            interaction.dismissContextMenu()
+            onArtistClick(track.artist)
+        },
+        onGoToAlbum = {
+            interaction.dismissContextMenu()
+            if (track.album.isNotBlank()) onAlbumClick(track.album)
+        },
+        onShare = { /* TODO */ },
+        onDownload = {
+            interaction.downloadTrack(track, activeAccent)
+            interaction.dismissContextMenu()
+        },
+        onDeleteDownload = {
+            interaction.deleteDownloadedTrack(track.id, activeAccent)
+            interaction.dismissContextMenu()
+        },
+        isDownloaded = isDownloaded,
+        isDownloading = isDownloading,
+        downloadProgress = downloadProgress
+    )
 }
 
 @Composable

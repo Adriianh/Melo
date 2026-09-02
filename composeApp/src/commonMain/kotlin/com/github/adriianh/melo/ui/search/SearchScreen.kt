@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.components.MeloSearchBar
 import com.github.adriianh.melo.ui.components.TrackContextMenu
+import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
@@ -61,36 +62,13 @@ fun SearchScreen(
     val focusManager = LocalFocusManager.current
     var isSearchActive by remember { mutableStateOf(false) }
 
-    if (interaction.contextMenuTrack != null) {
-        val track = interaction.contextMenuTrack!!
-        val isLiked = libraryState.likedSongs.any { it.id == track.id }
-        TrackContextMenu(
-            track = track,
-            onDismissRequest = interaction::dismissContextMenu,
-            onPlayNext = {
-                interaction.showPlayNextSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onToggleLike = {
-                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            isLiked = isLiked,
-            onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = {
-                interaction.contextMenuTrack = null
-                onArtistClick(track.artist)
-            },
-            onGoToAlbum = {
-                interaction.contextMenuTrack = null
-            },
-            onShare = { /* TODO */ }
-        )
-    }
+    TrackInteractionContextMenu(
+        interaction = interaction,
+        libraryState = libraryState,
+        activeAccent = activeAccent,
+        onArtistClick = onArtistClick,
+        onAlbumClick = onAlbumClick
+    )
 
     Column(
         modifier = Modifier

@@ -101,6 +101,9 @@ fun NowPlayingScreen(
     if (interaction.contextMenuTrack != null) {
         val track = interaction.contextMenuTrack!!
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
+        val isDownloaded = libraryState.downloadedTracks.any { it.track.id == track.id }
+        val isDownloading = libraryState.activeDownloads.containsKey(track.id)
+        val downloadProgress = libraryState.activeDownloads[track.id]
         val targetSnackbar =
             if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
 
@@ -164,7 +167,18 @@ fun NowPlayingScreen(
             onGoToAlbum = {
                 interaction.contextMenuTrack = null
             },
-            onShare = { /* TODO */ }
+            onShare = { /* TODO */ },
+            onDownload = {
+                interaction.downloadTrack(track, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            onDeleteDownload = {
+                interaction.deleteDownloadedTrack(track.id, activeAccent)
+                interaction.contextMenuTrack = null
+            },
+            isDownloaded = isDownloaded,
+            isDownloading = isDownloading,
+            downloadProgress = downloadProgress
         )
     }
 

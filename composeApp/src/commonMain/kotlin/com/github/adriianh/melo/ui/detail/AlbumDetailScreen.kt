@@ -37,6 +37,7 @@ import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackContextMenu
+import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.EntityHeaderCard
 import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard
@@ -85,36 +86,13 @@ fun AlbumDetailScreen(
             ?: "Álbum"
     }
 
-    if (interaction.contextMenuTrack != null) {
-        val track = interaction.contextMenuTrack!!
-        val isLiked = libraryState.likedSongs.any { it.id == track.id }
-        TrackContextMenu(
-            track = track,
-            onDismissRequest = interaction::dismissContextMenu,
-            onPlayNext = {
-                interaction.showPlayNextSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onAddToQueue = {
-                interaction.showAddedToQueueSnackbar(track, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            onToggleLike = {
-                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
-                interaction.contextMenuTrack = null
-            },
-            isLiked = isLiked,
-            onAddToPlaylist = { /* TODO */ },
-            onGoToArtist = {
-                interaction.contextMenuTrack = null
-                onArtistClick(track.artist)
-            },
-            onGoToAlbum = {
-                interaction.contextMenuTrack = null
-            },
-            onShare = { /* TODO */ }
-        )
-    }
+    TrackInteractionContextMenu(
+        interaction = interaction,
+        libraryState = libraryState,
+        activeAccent = activeAccent,
+        onArtistClick = onArtistClick,
+        onAlbumClick = onAlbumClick
+    )
 
     Scaffold(
         containerColor = MeloColors.surface0,

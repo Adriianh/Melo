@@ -73,6 +73,22 @@ class TrackInteractionState(
         )
     }
 
+    fun downloadTrack(track: Track, actionColor: Color? = null) {
+        libraryViewModel.downloadTrack(track)
+        snackbar.show(
+            msg = "Descargando ${track.title}...",
+            actionColor = actionColor
+        )
+    }
+
+    fun deleteDownloadedTrack(trackId: String, actionColor: Color? = null) {
+        libraryViewModel.deleteDownloadedTrack(trackId)
+        snackbar.show(
+            msg = "Descarga eliminada",
+            actionColor = actionColor
+        )
+    }
+
     @Composable
     fun resolveActiveAccent(playerState: PlayerUiState): Color {
         val color = playerState.accentColor
