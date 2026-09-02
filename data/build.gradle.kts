@@ -30,6 +30,7 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.sqldelightAndroidDriver)
+                implementation(libs.jaudiotagger)
             }
         }
         val iosMain by getting {

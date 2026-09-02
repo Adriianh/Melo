@@ -1,11 +1,17 @@
 package com.github.adriianh.data.repository
 
+import android.content.ContentUris
+import android.content.Context
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.provider.MediaStore
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.platform.PlatformFileSystem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,14 +19,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.audio.AudioHeader
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
 
-class OfflineRepositoryImpl(
+class AndroidOfflineRepositoryImpl(
     dataDir: File,
     private val settingsRepository: SettingsRepository,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val context: Context? = null
 ) : OfflineRepository {
 
     private val defaultDownloadsDir = File(dataDir, "cache")
@@ -33,16 +39,15 @@ class OfflineRepositoryImpl(
 
     private val _offlineTracksFlow = MutableStateFlow(loadMetadataSync())
 
-    private val artworkCacheDir =
-        File(defaultDownloadsDir.parentFile, "artworks").apply { if (!exists()) mkdirs() }
+    private val artworkCacheDir = File(dataDir, "artworks").apply { if (!exists()) mkdirs() }
 
-    private fun extractArtwork(file: File, tag: org.jaudiotagger.tag.Tag?): String? {
+    private fun extractEmbeddedArtwork(file: File, retriever: MediaMetadataRetriever): String? {
         return try {
-            val artBytes = tag?.firstArtwork?.binaryData
-            if (artBytes != null && artBytes.isNotEmpty()) {
+            val picture = retriever.embeddedPicture
+            if (picture != null && picture.isNotEmpty()) {
                 val artFile = File(artworkCacheDir, "art_${file.absolutePath.hashCode()}.jpg")
                 if (!artFile.exists() || artFile.length() == 0L) {
-                    artFile.writeBytes(artBytes)
+                    artFile.writeBytes(picture)
                 }
                 "file://${artFile.absolutePath}"
             } else {
@@ -67,34 +72,76 @@ class OfflineRepositoryImpl(
     }
 
     /**
-     * Extracts metadata from the audio file tags.
+     * Extracts metadata from the audio file using Android's MediaMetadataRetriever and JAudioTagger fallback.
      */
     private fun getFileMetadata(file: File): TrackMetadata {
-        return try {
-            val audioFile = AudioFileIO.read(file)
-            val tag = audioFile.tag
-            val header: AudioHeader = audioFile.audioHeader
-
-            val title = tag?.getFirst(FieldKey.TITLE)?.takeIf { it.isNotBlank() }
-            val artist = (tag?.getFirst(FieldKey.ARTIST)
-                ?: tag?.getFirst(FieldKey.ALBUM_ARTIST))?.takeIf { it.isNotBlank() }
-            val album = tag?.getFirst(FieldKey.ALBUM)?.ifBlank { null }
-            val durationMs = (header.trackLength * 1000L).takeIf { it > 0 } ?: 0L
-            val artworkUrl = extractArtwork(file, tag)
+        val retriever = MediaMetadataRetriever()
+        try {
+            if (file.exists() && file.canRead()) {
+                java.io.FileInputStream(file).use { fis ->
+                    retriever.setDataSource(fis.fd)
+                }
+            } else {
+                retriever.setDataSource(file.absolutePath)
+            }
+            val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+                ?.takeIf { it.isNotBlank() }
+            val artist = (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+                ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)
+                ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR)
+                ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER))?.takeIf { it.isNotBlank() && it != "<unknown>" }
+            val album = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+                ?.takeIf { it.isNotBlank() && it != "<unknown>" }
+            val durationStr =
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+            val durationMs = durationStr?.toLongOrNull() ?: 0L
+            val artworkUrl = extractEmbeddedArtwork(file, retriever)
 
             val safeTitle = title ?: run {
-                val parts = file.nameWithoutExtension.split(" - ", limit = 2)
-                if (parts.size == 2) parts[1] else parts[0]
+                val name = file.nameWithoutExtension
+                val parts = name.split(" - ", limit = 2)
+                if (parts.size == 2) parts[1].trim() else name
             }
             val safeArtist = artist ?: run {
-                val parts = file.nameWithoutExtension.split(" - ", limit = 2)
-                if (parts.size == 2) parts[0] else "Artista Desconocido"
+                val name = file.nameWithoutExtension
+                val parts = name.split(" - ", limit = 2)
+                if (parts.size == 2) parts[0].trim() else "Artista Desconocido"
             }
-            TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, artworkUrl)
+
+            return TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, artworkUrl)
         } catch (_: Exception) {
-            val parts = file.nameWithoutExtension.split(" - ", limit = 2)
-            val (artistPart, titlePart) = if (parts.size == 2) parts[0] to parts[1] else "Artista Desconocido" to parts[0]
-            TrackMetadata(titlePart, artistPart, "", 0L, null)
+            try {
+                val audioFile = AudioFileIO.read(file)
+                val tag = audioFile.tag
+                val title = tag?.getFirst(FieldKey.TITLE)?.takeIf { it.isNotBlank() }
+                val artist = (tag?.getFirst(FieldKey.ARTIST)
+                    ?: tag?.getFirst(FieldKey.ALBUM_ARTIST))?.takeIf { it.isNotBlank() }
+                val album = tag?.getFirst(FieldKey.ALBUM)?.takeIf { it.isNotBlank() }
+                val durationMs = (audioFile.audioHeader?.trackLength?.toLong() ?: 0L) * 1000L
+
+                val safeTitle = title ?: run {
+                    val name = file.nameWithoutExtension
+                    val parts = name.split(" - ", limit = 2)
+                    if (parts.size == 2) parts[1].trim() else name
+                }
+                val safeArtist = artist ?: run {
+                    val name = file.nameWithoutExtension
+                    val parts = name.split(" - ", limit = 2)
+                    if (parts.size == 2) parts[0].trim() else "Artista Desconocido"
+                }
+
+                return TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, null)
+            } catch (__: Exception) {
+                val name = file.nameWithoutExtension
+                val parts = name.split(" - ", limit = 2)
+                val (artistPart, titlePart) = if (parts.size == 2) parts[0].trim() to parts[1].trim() else "Artista Desconocido" to name
+                return TrackMetadata(titlePart, artistPart, "", 0L, null)
+            }
+        } finally {
+            try {
+                retriever.release()
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -282,8 +329,112 @@ class OfflineRepositoryImpl(
         val results = mutableListOf<Track>()
 
         return withContext(dispatcher) {
+            if (context != null) {
+                val mediaStoreUris = listOf(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    MediaStore.Audio.Media.INTERNAL_CONTENT_URI
+                )
+                mediaStoreUris.forEach { contentUri ->
+                    try {
+                        val projection = arrayOf(
+                            MediaStore.Audio.Media._ID,
+                            MediaStore.Audio.Media.TITLE,
+                            MediaStore.Audio.Media.ARTIST,
+                            MediaStore.Audio.Media.ALBUM,
+                            MediaStore.Audio.Media.ALBUM_ID,
+                            MediaStore.Audio.Media.DURATION,
+                            MediaStore.Audio.Media.DATA,
+                            MediaStore.Audio.Media.DISPLAY_NAME
+                        )
+                        val cursor = context.contentResolver.query(
+                            contentUri,
+                            projection,
+                            null,
+                            null,
+                            "${MediaStore.Audio.Media.TITLE} ASC"
+                        )
+                        cursor?.use { c ->
+                            val idCol = c.getColumnIndex(MediaStore.Audio.Media._ID)
+                            val titleCol = c.getColumnIndex(MediaStore.Audio.Media.TITLE)
+                            val artistCol = c.getColumnIndex(MediaStore.Audio.Media.ARTIST)
+                            val albumCol = c.getColumnIndex(MediaStore.Audio.Media.ALBUM)
+                            val albumIdCol = c.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
+                            val durationCol = c.getColumnIndex(MediaStore.Audio.Media.DURATION)
+                            val dataCol = c.getColumnIndex(MediaStore.Audio.Media.DATA)
+                            val nameCol = c.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
+
+                            while (c.moveToNext()) {
+                                val id = if (idCol >= 0) c.getLong(idCol) else -1L
+                                val albumId = if (albumIdCol >= 0) c.getLong(albumIdCol) else -1L
+                                val dataPath = if (dataCol >= 0) c.getString(dataCol) else null
+                                val displayName = if (nameCol >= 0) c.getString(nameCol) else null
+
+                                val ext = (dataPath?.substringAfterLast('.', "")
+                                    ?: displayName?.substringAfterLast('.', "") ?: "").lowercase()
+                                if (ext.isBlank() || ext in audioExtensions) {
+                                    val matchesPath = if (paths.isNotEmpty() && dataPath != null) {
+                                        paths.any { p -> dataPath.startsWith(p, ignoreCase = true) }
+                                    } else true
+
+                                    if (matchesPath) {
+                                        val title =
+                                            if (titleCol >= 0) c.getString(titleCol) else null
+                                        val artist =
+                                            if (artistCol >= 0) c.getString(artistCol) else null
+                                        val album =
+                                            if (albumCol >= 0) c.getString(albumCol) else null
+                                        val durationMs =
+                                            if (durationCol >= 0) c.getLong(durationCol) else 0L
+
+                                        val safeTitle = title?.takeIf { it.isNotBlank() }
+                                            ?: displayName?.substringBeforeLast('.')
+                                            ?: (if (dataPath != null) File(dataPath).nameWithoutExtension else "Pista local")
+                                        val safeArtist =
+                                            artist?.takeIf { it.isNotBlank() && it != "<unknown>" }
+                                                ?: "Artista Desconocido"
+                                        val safeAlbum =
+                                            album?.takeIf { it.isNotBlank() && it != "<unknown>" }
+                                                ?: ""
+                                        val artworkUrl = if (albumId >= 0) {
+                                            ContentUris.withAppendedId(
+                                                Uri.parse("content://media/external/audio/albumart"),
+                                                albumId
+                                            ).toString()
+                                        } else null
+
+                                        val trackId =
+                                            if (dataPath != null && dataPath.isNotBlank()) {
+                                                "local:$dataPath"
+                                            } else if (id >= 0) {
+                                                "local:content://media/external/audio/media/$id"
+                                            } else null
+
+                                        if (trackId != null) {
+                                            results.add(
+                                                Track(
+                                                    id = trackId,
+                                                    title = safeTitle,
+                                                    artist = safeArtist,
+                                                    album = safeAlbum,
+                                                    durationMs = durationMs,
+                                                    genres = emptyList(),
+                                                    artworkUrl = artworkUrl,
+                                                    sourceId = null
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             val effectivePaths =
-                if (paths.isNotEmpty()) paths else com.github.adriianh.core.platform.PlatformFileSystem.getDefaultMusicPaths()
+                if (paths.isNotEmpty()) paths else PlatformFileSystem.getDefaultMusicPaths()
             effectivePaths.forEach { path ->
                 val dir = File(path)
                 if (dir.exists() && dir.isDirectory) {
@@ -292,19 +443,22 @@ class OfflineRepositoryImpl(
                             .maxDepth(12)
                             .filter { it.isFile && it.extension.lowercase() in audioExtensions }
                             .forEach { file ->
-                                val metadata = getFileMetadata(file)
-                                results.add(
-                                    Track(
-                                        id = "local:${file.absolutePath}",
-                                        title = metadata.title,
-                                        artist = metadata.artist,
-                                        album = metadata.album,
-                                        durationMs = metadata.durationMs,
-                                        genres = emptyList(),
-                                        artworkUrl = metadata.artworkUrl,
-                                        sourceId = null
+                                val localId = "local:${file.absolutePath}"
+                                if (results.none { it.id == localId }) {
+                                    val metadata = getFileMetadata(file)
+                                    results.add(
+                                        Track(
+                                            id = localId,
+                                            title = metadata.title,
+                                            artist = metadata.artist,
+                                            album = metadata.album,
+                                            durationMs = metadata.durationMs,
+                                            genres = emptyList(),
+                                            artworkUrl = metadata.artworkUrl,
+                                            sourceId = null
+                                        )
                                     )
-                                )
+                                }
                             }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -330,17 +484,15 @@ class OfflineRepositoryImpl(
         }
 
         withContext(dispatcher) {
-            if (path != null) {
+            if (path != null && !path.startsWith("content://")) {
                 val file = File(path)
                 if (file.exists() && file.isFile) {
                     try {
                         val audioFile = AudioFileIO.read(file)
                         val tag = audioFile.tag ?: audioFile.createDefaultTag()
-
                         title?.let { tag.setField(FieldKey.TITLE, it) }
                         artist?.let { tag.setField(FieldKey.ARTIST, it) }
                         album?.let { tag.setField(FieldKey.ALBUM, it) }
-
                         audioFile.commit()
                     } catch (e: Exception) {
                         e.printStackTrace()
