@@ -72,6 +72,22 @@ enum class ThemeMode {
 }
 
 @Serializable
+enum class CacheSizeLimit(val sizeMb: Int, val displayName: String) {
+    MB_500(512, "500 MB"),
+    GB_1(1024, "1 GB"),
+    GB_2(2048, "2 GB"),
+    GB_5(5120, "5 GB"),
+    GB_10(10240, "10 GB"),
+    UNLIMITED(0, "Sin límite");
+
+    companion object {
+        fun fromSizeMb(sizeMb: Int): CacheSizeLimit {
+            return entries.find { it.sizeMb == sizeMb } ?: GB_1
+        }
+    }
+}
+
+@Serializable
 data class Settings(
     val theme: ThemePreset = ThemePreset.DEFAULT,
     val volume: Int = 75,

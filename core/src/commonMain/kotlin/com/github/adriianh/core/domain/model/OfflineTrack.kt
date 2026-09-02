@@ -13,6 +13,7 @@ enum class DownloadStatus {
 @Serializable
 enum class DownloadType {
     PREFETCH,
+    CACHE,
     MANUAL
 }
 

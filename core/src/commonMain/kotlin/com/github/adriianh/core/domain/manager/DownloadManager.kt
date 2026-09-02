@@ -16,6 +16,12 @@ interface DownloadManager {
     suspend fun downloadTrack(track: Track, customPath: String? = null): Boolean
 
     /**
+     * Auto-caches a track into the temporary LRU cache directory.
+     * @return true if caching succeeded, false otherwise.
+     */
+    suspend fun cacheTrack(track: Track): Boolean
+
+    /**
      * Downloads multiple tracks sequentially in the background.
      */
     suspend fun downloadTracks(tracks: List<Track>, customPath: String? = null)
