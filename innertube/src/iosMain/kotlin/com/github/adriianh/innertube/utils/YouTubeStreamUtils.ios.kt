@@ -14,4 +14,6 @@ actual object YouTubeStreamUtils {
     actual fun getSignatureTimestamp(videoId: String): Result<Int> {
         return Result.failure(Exception("Not implemented"))
     }
+
+    actual fun prewarm(videoId: String) {}
 }

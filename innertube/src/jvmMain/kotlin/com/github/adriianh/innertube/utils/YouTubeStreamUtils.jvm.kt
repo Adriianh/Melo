@@ -14,4 +14,8 @@ actual object YouTubeStreamUtils {
     actual fun getSignatureTimestamp(videoId: String): Result<Int> {
         return NewPipeExtractor.getSignatureTimestamp(videoId)
     }
+
+    actual fun prewarm(videoId: String) {
+        NewPipeExtractor.prewarm(videoId)
+    }
 }

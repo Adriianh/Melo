@@ -9,10 +9,14 @@ import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
 import com.github.adriianh.innertube.pages.getNewPipeStreamUrls
 import com.github.adriianh.innertube.utils.YouTubeStreamUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 class InnerTubeAudioProvider(
     private val configDirPath: String? = null,
@@ -28,6 +32,7 @@ class InnerTubeAudioProvider(
         private val CLIENTS_TO_TRY = listOf(
             YouTubeClient.WEB_REMIX,
             YouTubeClient.ANDROID_VR_NO_AUTH,
+            YouTubeClient.IOS,
         )
     }
 
@@ -35,9 +40,18 @@ class InnerTubeAudioProvider(
     private val sourceIdCache = mutableMapOf<String, String>()
     private val mutex = Mutex()
 
+    init {
+        CoroutineScope(MeloDispatchers.IO).launch {
+            try {
+                YouTubeStreamUtils.prewarm("dQw4w9WgXcQ")
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private suspend fun <T> withTimeoutOrNull(timeoutMs: Long, block: suspend () -> T): T? {
         return try {
-            kotlinx.coroutines.withTimeout(timeoutMs) { block() }
+            withTimeout(timeoutMs.milliseconds) { block() }
         } catch (_: Exception) {
             null
         }
@@ -75,7 +89,7 @@ class InnerTubeAudioProvider(
                 if (client.loginRequired && YouTube.cookie == null) continue
                 try {
                     val sts = if (client.useSignatureTimestamp) getSts(sourceId) else null
-                    val resp = withTimeoutOrNull(4000L) {
+                    val resp = withTimeoutOrNull(2500L) {
                         YouTube.player(sourceId, null, client, sts).getOrNull()
                     }
                     if (resp?.playabilityStatus?.status != "OK") continue

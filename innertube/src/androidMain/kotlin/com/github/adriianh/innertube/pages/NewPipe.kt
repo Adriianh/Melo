@@ -178,6 +178,17 @@ object NewPipeExtractor {
     ): Result<String> =
         utils.getStreamUrl(format, videoId)
 
+    fun prewarm(videoId: String = "dQw4w9WgXcQ") {
+        try {
+            utils.getSignatureTimestamp(videoId)
+            YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(
+                videoId,
+                "https://googlevideo.com/videoplayback?n=12345"
+            )
+        } catch (_: Exception) {
+        }
+    }
+
     /**
      * Extracts all available streams for a YouTube video using NewPipe.
      * Returns a list of (itag, url) pairs.

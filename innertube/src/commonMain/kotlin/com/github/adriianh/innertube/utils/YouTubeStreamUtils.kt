@@ -16,4 +16,9 @@ expect object YouTubeStreamUtils {
      * Fetches a signature timestamp (sts) for the given video.
      */
     fun getSignatureTimestamp(videoId: String): Result<Int>
+
+    /**
+     * Pre-warms the JavaScript player engine and STS cache in the background.
+     */
+    fun prewarm(videoId: String = "dQw4w9WgXcQ")
 }
