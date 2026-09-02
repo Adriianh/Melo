@@ -129,7 +129,9 @@ fun LibraryScreen(
                         }
                     },
                     onDeleteDownload = viewModel::deleteDownloadedTrack,
-                    onMoreClick = { interaction.openContextMenu(it) }
+                    onMoreClick = { interaction.openContextMenu(it) },
+                    onAlbumClick = onAlbumClick,
+                    onArtistClick = onArtistClick
                 )
 
                 LibraryTab.LOCAL -> LocalTabContent(

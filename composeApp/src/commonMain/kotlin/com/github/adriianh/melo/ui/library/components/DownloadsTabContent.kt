@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,27 +28,39 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.components.AlbumCard
+import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
+
+private enum class DownloadsFilter(val label: String) {
+    SONGS("Canciones"),
+    ALBUMS("Álbumes"),
+    ARTISTS("Artistas")
+}
 
 @Composable
 fun DownloadsTabContent(
@@ -53,7 +69,9 @@ fun DownloadsTabContent(
     onPlayAll: () -> Unit,
     onDeleteDownload: (String) -> Unit,
     onMoreClick: (Track) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAlbumClick: (String) -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
 ) {
     if (downloadedTracks.isEmpty()) {
         Box(
@@ -89,71 +107,194 @@ fun DownloadsTabContent(
         return
     }
 
+    var selectedFilter by remember { mutableStateOf(DownloadsFilter.SONGS) }
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     val totalSizeMb = downloadedTracks.sumOf { it.fileSize } / (1024.0 * 1024.0)
 
-    LazyColumn(
-        state = listState,
-        contentPadding = PaddingValues(bottom = 80.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxSize().desktopScroll(listState)
-    ) {
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+    val downloadedAlbums = remember(downloadedTracks) {
+        downloadedTracks
+            .groupBy { it.track.album.takeIf { a -> a.isNotBlank() } ?: "Varios" }
+            .map { (albumName, tracks) ->
+                DownloadedAlbumGroup(
+                    name = albumName,
+                    artist = tracks.firstOrNull()?.track?.artist ?: "Varios Artistas",
+                    artworkUrl = tracks.firstOrNull()?.track?.artworkUrl,
+                    tracks = tracks.map { it.track }
+                )
+            }
+    }
+
+    val downloadedArtists = remember(downloadedTracks) {
+        downloadedTracks
+            .groupBy { it.track.artist }
+            .map { (artistName, tracks) ->
+                DownloadedArtistGroup(
+                    name = artistName,
+                    artworkUrl = tracks.firstOrNull()?.track?.artworkUrl,
+                    tracks = tracks.map { it.track }
+                )
+            }
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DownloadsFilter.entries.forEach { filter ->
+                val isSelected = selectedFilter == filter
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { selectedFilter = filter },
+                    label = {
+                        val count = when (filter) {
+                            DownloadsFilter.SONGS -> downloadedTracks.size
+                            DownloadsFilter.ALBUMS -> downloadedAlbums.size
+                            DownloadsFilter.ARTISTS -> downloadedArtists.size
+                        }
+                        Text("${filter.label} ($count)")
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = MeloColors.surface1,
+                        labelColor = MeloColors.textSecondary,
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        borderColor = MeloColors.border,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                        enabled = true,
+                        selected = isSelected
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+            }
+        }
+
+        when (selectedFilter) {
+            DownloadsFilter.SONGS -> {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize().desktopScroll(listState)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${downloadedTracks.size} canciones descargadas",
-                            style = MeloType.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
-                        )
-                        Text(
-                            text = "Espacio ocupado: ${"%.1f".format(totalSizeMb)} MB",
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "${downloadedTracks.size} canciones descargadas",
+                                        style = MeloType.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MeloColors.textPrimary
+                                    )
+                                    Text(
+                                        text = "Espacio ocupado: ${"%.1f".format(totalSizeMb)} MB",
+                                        style = MeloType.labelSmall,
+                                        color = MeloColors.textSecondary
+                                    )
+                                }
+                            }
+
+                            if (downloadedTracks.isNotEmpty()) {
+                                Button(
+                                    onClick = onPlayAll,
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.size(8.dp))
+                                    Text("Reproducir todo")
+                                }
+                            }
+                        }
+                    }
+
+                    items(downloadedTracks, key = { it.track.id }) { offlineTrack ->
+                        DownloadedTrackRow(
+                            offlineTrack = offlineTrack,
+                            onClick = { onPlayTrack(offlineTrack.track) },
+                            onDelete = { onDeleteDownload(offlineTrack.track.id) },
+                            onMoreClick = { onMoreClick(offlineTrack.track) }
                         )
                     }
                 }
+            }
 
-                if (downloadedTracks.isNotEmpty()) {
-                    Button(
-                        onClick = onPlayAll,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+            DownloadsFilter.ALBUMS -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(150.dp),
+                    state = gridState,
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(downloadedAlbums, key = { it.name }) { album ->
+                        AlbumCard(
+                            title = album.name,
+                            subtitle = "${album.artist} • ${album.tracks.size} canciones",
+                            artworkUrl = album.artworkUrl,
+                            onClick = { onAlbumClick(album.name) }
                         )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("Reproducir todo")
+                    }
+                }
+            }
+
+            DownloadsFilter.ARTISTS -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(120.dp),
+                    state = gridState,
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(downloadedArtists, key = { it.name }) { artist ->
+                        ArtistCircle(
+                            name = artist.name,
+                            artworkUrl = artist.artworkUrl,
+                            onClick = { onArtistClick(artist.name) },
+                            size = 120.dp
+                        )
                     }
                 }
             }
         }
-
-        items(downloadedTracks, key = { it.track.id }) { offlineTrack ->
-            DownloadedTrackRow(
-                offlineTrack = offlineTrack,
-                onClick = { onPlayTrack(offlineTrack.track) },
-                onDelete = { onDeleteDownload(offlineTrack.track.id) },
-                onMoreClick = { onMoreClick(offlineTrack.track) }
-            )
-        }
     }
 }
+
+private data class DownloadedAlbumGroup(
+    val name: String,
+    val artist: String,
+    val artworkUrl: String?,
+    val tracks: List<Track>
+)
+
+private data class DownloadedArtistGroup(
+    val name: String,
+    val artworkUrl: String?,
+    val tracks: List<Track>
+)
 
 @Composable
 private fun DownloadedTrackRow(
