@@ -34,18 +34,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -54,10 +51,7 @@ fun LoginDialog(
     viewModel: LoginViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
     var cookies by remember { mutableStateOf("") }
-    var isWaitingBrowserAuth by remember { mutableStateOf(false) }
-    var browserAuthStatus by remember { mutableStateOf<String?>(null) }
     var showManualInput by remember { mutableStateOf(false) }
     var isShowingInAppBrowser by remember { mutableStateOf(false) }
     val autoBrowserAvailable = remember { isAutomatedBrowserLoginAvailable() }
@@ -65,7 +59,7 @@ fun LoginDialog(
 
     AlertDialog(
         onDismissRequest = {
-            if (!isWaitingBrowserAuth && !state.isVerifying) {
+            if (!state.isWaitingBrowserAuth && !state.isVerifying) {
                 onDismiss()
             }
         },
@@ -115,8 +109,7 @@ fun LoginDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when {
                     state.isVerifying -> VerifyingContent()
-
-                    isWaitingBrowserAuth -> WaitingBrowserContent(status = browserAuthStatus)
+                    state.isWaitingBrowserAuth -> WaitingBrowserContent(status = state.browserAuthStatus)
 
                     isShowingInAppBrowser -> {
                         Column(
@@ -172,40 +165,8 @@ fun LoginDialog(
                         autoBrowserAvailable = autoBrowserAvailable,
                         inAppBrowserAvailable = inAppBrowserAvailable,
                         onInAppLogin = { isShowingInAppBrowser = true },
-                        onAutomatedLogin = {
-                            isWaitingBrowserAuth = true
-                            browserAuthStatus = "Abriendo ventana de inicio de sesión seguro..."
-                            coroutineScope.launch {
-                                val captured = launchAutomatedBrowserLogin()
-                                isWaitingBrowserAuth = false
-                                browserAuthStatus = null
-                                if (!captured.isNullOrBlank()) {
-                                    viewModel.saveSessionCookies(captured)
-                                }
-                            }
-                        },
-                        onQuickImport = {
-                            isWaitingBrowserAuth = true
-                            browserAuthStatus =
-                                "Buscando sesión en navegadores locales (Chrome, Edge, Brave, Firefox)..."
-                            coroutineScope.launch {
-                                val captured = importExistingBrowserCookies()
-                                isWaitingBrowserAuth = false
-                                browserAuthStatus = null
-                                if (!captured.isNullOrBlank()) {
-                                    viewModel.saveSessionCookies(captured)
-                                } else {
-                                    isWaitingBrowserAuth = true
-                                    browserAuthStatus = "Iniciando ventana de navegador..."
-                                    val autoCaptured = launchAutomatedBrowserLogin()
-                                    isWaitingBrowserAuth = false
-                                    browserAuthStatus = null
-                                    if (!autoCaptured.isNullOrBlank()) {
-                                        viewModel.saveSessionCookies(autoCaptured)
-                                    }
-                                }
-                            }
-                        }
+                        onAutomatedLogin = viewModel::startAutomatedBrowserLogin,
+                        onQuickImport = viewModel::startQuickImport
                     )
                 }
             }
@@ -217,8 +178,8 @@ fun LoginDialog(
                         Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
                     }
 
-                state.isVerifying || isWaitingBrowserAuth ->
-                    TextButton(onClick = { isWaitingBrowserAuth = false }) {
+                state.isVerifying || state.isWaitingBrowserAuth ->
+                    TextButton(onClick = viewModel::cancelWaitingBrowserAuth) {
                         Text("Cancelar")
                     }
 

@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 data class LoginUiState(
     val isLoggedIn: Boolean = false,
     val isVerifying: Boolean = false,
+    val isWaitingBrowserAuth: Boolean = false,
+    val browserAuthStatus: String? = null,
     val accountName: String? = null,
     val error: String? = null,
 )
@@ -84,6 +86,52 @@ class LoginViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun startAutomatedBrowserLogin() {
+        if (_uiState.value.isWaitingBrowserAuth) return
+        _uiState.update {
+            it.copy(
+                isWaitingBrowserAuth = true,
+                browserAuthStatus = "Abriendo ventana de inicio de sesión seguro...",
+            )
+        }
+        viewModelScope.launch {
+            val captured = launchAutomatedBrowserLogin()
+            finishBrowserAuth(captured)
+        }
+    }
+
+    fun startQuickImport() {
+        if (_uiState.value.isWaitingBrowserAuth) return
+        _uiState.update {
+            it.copy(
+                isWaitingBrowserAuth = true,
+                browserAuthStatus =
+                    "Buscando sesión en navegadores locales (Chrome, Edge, Brave, Firefox)...",
+            )
+        }
+        viewModelScope.launch {
+            val captured = importExistingBrowserCookies()
+            if (!captured.isNullOrBlank()) {
+                finishBrowserAuth(captured)
+            } else {
+                _uiState.update { it.copy(browserAuthStatus = "Iniciando ventana de navegador...") }
+                val autoCaptured = launchAutomatedBrowserLogin()
+                finishBrowserAuth(autoCaptured)
+            }
+        }
+    }
+
+    fun cancelWaitingBrowserAuth() {
+        _uiState.update { it.copy(isWaitingBrowserAuth = false, browserAuthStatus = null) }
+    }
+
+    private fun finishBrowserAuth(cookies: String?) {
+        _uiState.update { it.copy(isWaitingBrowserAuth = false, browserAuthStatus = null) }
+        if (!cookies.isNullOrBlank()) {
+            saveSessionCookies(cookies)
         }
     }
 
