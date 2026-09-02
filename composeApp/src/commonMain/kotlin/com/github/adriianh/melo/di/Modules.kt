@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -28,6 +29,15 @@ import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
+import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
+import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
+import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.UpdateTrackMetadataUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
@@ -55,6 +65,7 @@ import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.data.manager.DownloadManagerImpl
 import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
 import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
@@ -161,6 +172,17 @@ val dataModule = module {
         )
     }
 
+    single<DownloadManager> {
+        DownloadManagerImpl(
+            httpClient = get(),
+            getStreamUseCase = get(),
+            getSettingsUseCase = get(),
+            offlineRepository = get(),
+            configDirPath = get(named("configDirPath")),
+            dispatcher = MeloDispatchers.IO
+        )
+    }
+
     single { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
     single<PlaybackManager> {
         PlaybackManagerImpl(
@@ -214,6 +236,15 @@ val useCaseModule = module {
     singleOf(::SaveSearchQueryUseCase)
     singleOf(::GetSearchSuggestionsUseCase)
     singleOf(::BrowseCategoryUseCase)
+    singleOf(::GetOfflineTracksUseCase)
+    singleOf(::DownloadTrackUseCase)
+    singleOf(::DeleteDownloadedTrackUseCase)
+    singleOf(::ScanLocalTracksUseCase)
+    singleOf(::EnrichLocalTracksUseCase)
+    singleOf(::SyncOfflineTracksUseCase)
+    singleOf(::AutoCleanupUseCase)
+    singleOf(::MarkTrackAccessedUseCase)
+    singleOf(::UpdateTrackMetadataUseCase)
 }
 
 /**

@@ -35,6 +35,7 @@ class GetStreamUseCase(
 
         if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.localFilePath != null) {
             if (PlatformFileSystem.fileExists(offlineTrack.localFilePath)) {
+                offlineRepository.markTrackAsAccessed(offlineTrack.track.id)
                 return PlatformFileSystem.toFileUri(offlineTrack.localFilePath)
             }
         }

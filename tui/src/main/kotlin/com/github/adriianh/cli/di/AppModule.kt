@@ -44,6 +44,7 @@ import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
 import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
+import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
@@ -279,6 +280,7 @@ val appModule = module {
     factory { MarkTrackAccessedUseCase(get()) }
     factory { AutoCleanupUseCase(get()) }
     factory { ScanLocalTracksUseCase(get()) }
+    factory { EnrichLocalTracksUseCase(get(), get()) }
     factory { UpdateTrackMetadataUseCase(get()) }
     factory { GetPlaylistsUseCase(get()) }
     factory { GetPlaylistTracksUseCase(get()) }
@@ -350,7 +352,7 @@ val appModule = module {
         )
     }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
-    factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { StatsInteractors(get(), get(), get()) }
     factory { SessionInteractors(get(), get(), get()) }
     factory { SettingsInteractors(get(), get()) }
