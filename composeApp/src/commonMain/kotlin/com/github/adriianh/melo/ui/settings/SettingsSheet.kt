@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -53,6 +54,8 @@ fun SettingsSheet(
     onThemeModeSelected: (ThemeMode) -> Unit,
     onThemePresetSelected: (ThemePreset) -> Unit,
     onDynamicColorToggle: (Boolean) -> Unit,
+    onDataSaverToggle: (Boolean) -> Unit,
+    onAudioQualitySelected: (AudioQuality) -> Unit,
     onOpenLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -80,6 +83,8 @@ fun SettingsSheet(
             onThemeModeSelected = onThemeModeSelected,
             onThemePresetSelected = onThemePresetSelected,
             onDynamicColorToggle = onDynamicColorToggle,
+            onDataSaverToggle = onDataSaverToggle,
+            onAudioQualitySelected = onAudioQualitySelected,
             onOpenLogin = onOpenLogin,
             onLogout = onLogout,
             modifier = Modifier
@@ -97,6 +102,8 @@ fun SettingsDialog(
     onThemeModeSelected: (ThemeMode) -> Unit,
     onThemePresetSelected: (ThemePreset) -> Unit,
     onDynamicColorToggle: (Boolean) -> Unit,
+    onDataSaverToggle: (Boolean) -> Unit,
+    onAudioQualitySelected: (AudioQuality) -> Unit,
     onOpenLogin: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -122,6 +129,8 @@ fun SettingsDialog(
                 onThemeModeSelected = onThemeModeSelected,
                 onThemePresetSelected = onThemePresetSelected,
                 onDynamicColorToggle = onDynamicColorToggle,
+                onDataSaverToggle = onDataSaverToggle,
+                onAudioQualitySelected = onAudioQualitySelected,
                 onOpenLogin = onOpenLogin,
                 onLogout = onLogout
             )
@@ -136,6 +145,8 @@ private fun SettingsContent(
     onThemeModeSelected: (ThemeMode) -> Unit,
     onThemePresetSelected: (ThemePreset) -> Unit,
     onDynamicColorToggle: (Boolean) -> Unit,
+    onDataSaverToggle: (Boolean) -> Unit,
+    onAudioQualitySelected: (AudioQuality) -> Unit,
     onOpenLogin: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
@@ -218,6 +229,61 @@ private fun SettingsContent(
                             selectedBorderWidth = 1.dp
                         )
                     )
+                }
+            }
+        }
+
+        SettingSection(
+            title = "Data saver",
+            subtitle = "Prioritize lower bitrate audio to reduce data usage."
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (settings.dataSaver) "Enabled (Low data usage)" else "Disabled",
+                    style = MeloType.body,
+                    color = MeloColors.textSecondary
+                )
+                Switch(
+                    checked = settings.dataSaver,
+                    onCheckedChange = onDataSaverToggle
+                )
+            }
+        }
+
+        if (!settings.dataSaver) {
+            SettingSection(
+                title = "Streaming audio quality",
+                subtitle = "Select audio streaming bitrate."
+            ) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(AudioQuality.entries) { quality ->
+                        val selected = quality == settings.audioQuality
+                        FilterChip(
+                            selected = selected,
+                            onClick = { onAudioQualitySelected(quality) },
+                            label = { Text(quality.displayName, style = MeloType.labelMedium) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = MeloColors.glassFill,
+                                labelColor = MeloColors.textSecondary,
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(
+                                    alpha = 0.2f
+                                ),
+                                selectedLabelColor = MaterialTheme.colorScheme.primary,
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = selected,
+                                borderColor = MeloColors.glassBorder,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 0.5.dp,
+                                selectedBorderWidth = 1.dp
+                            )
+                        )
+                    }
                 }
             }
         }

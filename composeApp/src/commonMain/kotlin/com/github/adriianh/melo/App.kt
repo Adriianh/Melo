@@ -322,6 +322,20 @@ fun App() {
                                         }
                                     }
                                 },
+                                onDataSaverToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(dataSaver = enabled)
+                                        }
+                                    }
+                                },
+                                onAudioQualitySelected = { quality ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(audioQuality = quality)
+                                        }
+                                    }
+                                },
                                 onOpenLogin = {
                                     showSettingsSheet = false
                                     showLoginDialog = true
@@ -354,6 +368,20 @@ fun App() {
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(dynamicColor = enabled)
+                                        }
+                                    }
+                                },
+                                onDataSaverToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(dataSaver = enabled)
+                                        }
+                                    }
+                                },
+                                onAudioQualitySelected = { quality ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(audioQuality = quality)
                                         }
                                     }
                                 },
