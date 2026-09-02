@@ -167,23 +167,26 @@ internal fun MainSidebar(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        CollapsedRailItem(
+                        SidebarNavItem(
                             label = "Inicio",
                             icon = Icons.Default.Home,
                             isSelected = selectedTab == "Home",
-                            onClick = { onTabSelected("Home") }
+                            onClick = { onTabSelected("Home") },
+                            collapsed = true
                         )
-                        CollapsedRailItem(
+                        SidebarNavItem(
                             label = "Explorar",
                             icon = Icons.Default.Explore,
                             isSelected = selectedTab == "Search",
-                            onClick = { onTabSelected("Search") }
+                            onClick = { onTabSelected("Search") },
+                            collapsed = true
                         )
-                        CollapsedRailItem(
+                        SidebarNavItem(
                             label = "Biblioteca",
                             icon = Icons.Default.LibraryMusic,
                             isSelected = selectedTab == "Library",
-                            onClick = { onTabSelected("Library") }
+                            onClick = { onTabSelected("Library") },
+                            collapsed = true
                         )
                     }
                 } else {
@@ -195,23 +198,26 @@ internal fun MainSidebar(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            SidebarRow(
+                            SidebarNavItem(
                                 label = "Inicio",
                                 icon = Icons.Default.Home,
                                 isSelected = selectedTab == "Home",
-                                onClick = { onTabSelected("Home") }
+                                onClick = { onTabSelected("Home") },
+                                collapsed = false
                             )
-                            SidebarRow(
+                            SidebarNavItem(
                                 label = "Explorar",
                                 icon = Icons.Default.Explore,
                                 isSelected = selectedTab == "Search",
-                                onClick = { onTabSelected("Search") }
+                                onClick = { onTabSelected("Search") },
+                                collapsed = false
                             )
-                            SidebarRow(
+                            SidebarNavItem(
                                 label = "Biblioteca",
                                 icon = Icons.Default.LibraryMusic,
                                 isSelected = selectedTab == "Library",
-                                onClick = { onTabSelected("Library") }
+                                onClick = { onTabSelected("Library") },
+                                collapsed = false
                             )
                         }
 
@@ -224,17 +230,19 @@ internal fun MainSidebar(
                                 color = MeloColors.textMuted,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
-                            SidebarRow(
+                            SidebarNavItem(
                                 label = "Canciones Favoritas",
                                 icon = Icons.Default.Favorite,
                                 isSelected = false,
-                                onClick = { onTabSelected("Library") }
+                                onClick = { onTabSelected("Library") },
+                                collapsed = false
                             )
-                            SidebarRow(
+                            SidebarNavItem(
                                 label = "Historial",
                                 icon = Icons.Default.History,
                                 isSelected = false,
-                                onClick = { onTabSelected("Library") }
+                                onClick = { onTabSelected("Library") },
+                                collapsed = false
                             )
                         }
 
@@ -390,71 +398,79 @@ private fun UtilIconButton(
 }
 
 @Composable
-private fun CollapsedRailItem(
-    label: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .width(64.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            label,
-            style = MeloType.labelSmall.copy(fontSize = 10.sp),
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun SidebarRow(
+private fun SidebarNavItem(
     label: String,
     icon: ImageVector,
     isSelected: Boolean,
     onClick: () -> Unit,
+    collapsed: Boolean,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
-            modifier = Modifier.size(20.dp)
-        )
-        Text(
-            label,
-            style = MeloType.body,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) MeloColors.textPrimary else MeloColors.textSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+    val iconTint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary
+    val labelStyle = if (collapsed) MeloType.labelSmall.copy(fontSize = 10.sp) else MeloType.body
+    val labelWeight = when {
+        isSelected && collapsed -> FontWeight.Bold
+        isSelected -> FontWeight.SemiBold
+        else -> FontWeight.Normal
+    }
+    val labelColor = if (isSelected) {
+        if (collapsed) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
+    } else {
+        if (collapsed) MeloColors.textMuted else MeloColors.textSecondary
+    }
+
+    if (collapsed) {
+        Column(
+            modifier = Modifier
+                .width(64.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                label,
+                style = labelStyle,
+                fontWeight = labelWeight,
+                color = labelColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                label,
+                style = labelStyle,
+                fontWeight = labelWeight,
+                color = labelColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

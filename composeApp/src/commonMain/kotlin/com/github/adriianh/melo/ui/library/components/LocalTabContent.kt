@@ -12,14 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MoreVert
@@ -33,8 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,12 +48,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.platform.PlatformFileSystem
+import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
 import com.github.adriianh.melo.util.rememberAudioPermissionRequester
-import com.github.adriianh.melo.util.rememberDirectoryPicker
 
 @Composable
 fun LocalTabContent(
@@ -284,7 +279,6 @@ private fun ManageFoldersDialog(
     onRemovePath: (String) -> Unit,
     onRescan: () -> Unit,
 ) {
-    var newPathInput by remember { mutableStateOf("") }
     val defaultPaths = remember { PlatformFileSystem.getDefaultMusicPaths() }
 
     AlertDialog(
@@ -309,99 +303,11 @@ private fun ManageFoldersDialog(
                     color = MeloColors.textSecondary
                 )
 
-                val pickDirectory = rememberDirectoryPicker { path ->
-                    onAddPath(path)
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = newPathInput,
-                        onValueChange = { newPathInput = it },
-                        placeholder = { Text("Ruta personalizada", style = MeloType.body) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MeloColors.borderStrong
-                        )
-                    )
-                    IconButton(
-                        onClick = {
-                            if (newPathInput.isNotBlank()) {
-                                onAddPath(newPathInput.trim())
-                                newPathInput = ""
-                            }
-                        },
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Añadir carpeta",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Button(
-                        onClick = pickDirectory,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FolderOpen,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Elegir")
-                    }
-                }
-
-                if (configuredPaths.isNotEmpty()) {
-                    Text(
-                        text = "Carpetas personalizadas:",
-                        style = MeloType.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MeloColors.textPrimary
-                    )
-                    configuredPaths.forEach { path ->
-                        Surface(
-                            color = MeloColors.surface2,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = path,
-                                    style = MeloType.labelSmall,
-                                    color = MeloColors.textPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                IconButton(
-                                    onClick = { onRemovePath(path) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = "Eliminar",
-                                        tint = MeloColors.textSecondary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                LocalFolderPathsEditor(
+                    configuredPaths = configuredPaths,
+                    onAddPath = onAddPath,
+                    onRemovePath = onRemovePath
+                )
 
                 if (defaultPaths.isNotEmpty()) {
                     Text(

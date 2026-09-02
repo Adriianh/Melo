@@ -34,6 +34,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -41,8 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.melo.ui.components.AnimatedEqualizerBars
@@ -50,6 +53,7 @@ import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlayerUiState
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -62,13 +66,7 @@ internal fun DesktopPlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val targetAccent =
-        if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
-    val activeAccent by animateColorAsState(
-        targetValue = targetAccent,
-        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
-        label = "DesktopPlayerBarAccent"
-    )
+    val activeAccent by rememberAnimatedPlayerAccent(state)
 
     if (!state.hasTrack) return
 
@@ -92,46 +90,15 @@ internal fun DesktopPlayerBar(
                     .padding(horizontal = 16.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
+                PlaybackTrackInfo(
+                    state = state,
+                    activeAccent = activeAccent,
                     modifier = Modifier
                         .width(260.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .clickable(onClick = onToggleDockedPane)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box {
-                        MeloAsyncImage(
-                            url = state.albumArt,
-                            contentDescription = state.title,
-                            size = 52.dp,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                state.title,
-                                style = MeloType.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MeloColors.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (state.isPlaying) {
-                                AnimatedEqualizerBars(accentColor = activeAccent)
-                            }
-                        }
-                        Text(
-                            state.artist,
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
+                        .padding(4.dp)
+                )
 
                 Row(
                     modifier = Modifier.weight(1f),
@@ -268,13 +235,7 @@ internal fun MobilePlayerBar(
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val targetAccent =
-        if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
-    val activeAccent by animateColorAsState(
-        targetValue = targetAccent,
-        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
-        label = "MobilePlayerBarAccent"
-    )
+    val activeAccent by rememberAnimatedPlayerAccent(state)
 
     if (!state.hasTrack) return
 
@@ -300,34 +261,13 @@ internal fun MobilePlayerBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                MeloAsyncImage(
-                    url = state.albumArt,
-                    contentDescription = state.title,
-                    size = 40.dp,
-                    shape = RoundedCornerShape(6.dp)
+                PlaybackTrackInfo(
+                    state = state,
+                    activeAccent = activeAccent,
+                    artworkSize = 40.dp,
+                    artworkShape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.weight(1f)
                 )
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            state.title,
-                            style = MeloType.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (state.isPlaying) {
-                            AnimatedEqualizerBars(accentColor = activeAccent)
-                        }
-                    }
-                    Text(
-                        state.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
                 IconButton(onClick = viewModel::togglePlayPause) {
                     if (state.isBuffering) {
                         CircularProgressIndicator(
@@ -374,5 +314,62 @@ internal fun MobilePlayerBar(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         )
+    }
+}
+
+@Composable
+private fun rememberAnimatedPlayerAccent(
+    state: PlayerUiState,
+): State<Color> {
+    val targetAccent =
+        if (state.accentColor != MeloColors.textMuted) state.accentColor else MaterialTheme.colorScheme.primary
+    return animateColorAsState(
+        targetValue = targetAccent,
+        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
+        label = "PlayerBarAccent"
+    )
+}
+
+@Composable
+private fun PlaybackTrackInfo(
+    state: PlayerUiState,
+    activeAccent: Color,
+    modifier: Modifier = Modifier,
+    artworkSize: Dp = 52.dp,
+    artworkShape: Shape = RoundedCornerShape(8.dp),
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MeloAsyncImage(
+            url = state.albumArt,
+            contentDescription = state.title,
+            size = artworkSize,
+            shape = artworkShape
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    state.title,
+                    style = MeloType.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (state.isPlaying) {
+                    AnimatedEqualizerBars(accentColor = activeAccent)
+                }
+            }
+            Text(
+                state.artist,
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

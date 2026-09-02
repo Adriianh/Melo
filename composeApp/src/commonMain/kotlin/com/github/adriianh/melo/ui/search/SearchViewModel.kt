@@ -99,6 +99,21 @@ class SearchViewModel(
     private var searchJob: Job = Job()
     private var suggestionsJob: Job = Job()
 
+    private fun resetResults() {
+        _uiState.update {
+            it.copy(
+                summarySections = emptyList(),
+                songResults = emptyList(),
+                albumResults = emptyList(),
+                artistResults = emptyList(),
+                playlistResults = emptyList(),
+                videoResults = emptyList(),
+                suggestions = emptyList(),
+                isSearching = false
+            )
+        }
+    }
+
     init {
         loadExplore()
         loadMoodAndGenres()
@@ -112,19 +127,8 @@ class SearchViewModel(
         suggestionsJob.cancel()
 
         if (query.isBlank()) {
-            _uiState.update {
-                it.copy(
-                    query = "",
-                    isSearching = false,
-                    summarySections = emptyList(),
-                    songResults = emptyList(),
-                    albumResults = emptyList(),
-                    artistResults = emptyList(),
-                    playlistResults = emptyList(),
-                    videoResults = emptyList(),
-                    suggestions = emptyList()
-                )
-            }
+            _uiState.update { it.copy(query = "") }
+            resetResults()
             loadRecentSearches()
             return
         }
@@ -233,17 +237,10 @@ class SearchViewModel(
     fun clearQuery() {
         searchJob.cancel()
         suggestionsJob.cancel()
+        _uiState.update { it.copy(query = "") }
+        resetResults()
         _uiState.update {
             it.copy(
-                query = "",
-                summarySections = emptyList(),
-                songResults = emptyList(),
-                albumResults = emptyList(),
-                artistResults = emptyList(),
-                playlistResults = emptyList(),
-                videoResults = emptyList(),
-                isSearching = false,
-                suggestions = emptyList(),
                 browseCategoryResult = null,
                 isBrowsingCategory = false
             )
@@ -324,16 +321,10 @@ class SearchViewModel(
     fun browseCategory(browseId: String, params: String?) {
         searchJob.cancel()
         suggestionsJob.cancel()
+        resetResults()
         _uiState.update {
             it.copy(
                 query = "",
-                summarySections = emptyList(),
-                songResults = emptyList(),
-                albumResults = emptyList(),
-                artistResults = emptyList(),
-                playlistResults = emptyList(),
-                videoResults = emptyList(),
-                suggestions = emptyList(),
                 isBrowsingCategory = true,
                 browseCategoryResult = null
             )
