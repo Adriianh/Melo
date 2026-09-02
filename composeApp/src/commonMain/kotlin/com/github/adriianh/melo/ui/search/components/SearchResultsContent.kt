@@ -32,8 +32,8 @@ fun SearchResultsContent(
         uiState.isSearching -> SearchResultsSkeleton(modifier, paddingValues)
 
         !uiState.hasResults -> MeloEmptyState(
-            title = "No se encontraron resultados",
-            message = "Intenta buscar con otras palabras o cambiar de filtro",
+            title = if (uiState.isOfflineSearch) "No se encontraron descargas ni archivos locales" else "No se encontraron resultados",
+            message = if (uiState.isOfflineSearch) "Intenta buscar el título de una canción guardada en tu dispositivo" else "Intenta buscar con otras palabras o cambiar de filtro",
             modifier = modifier
         )
 

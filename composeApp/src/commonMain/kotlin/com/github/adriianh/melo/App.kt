@@ -7,7 +7,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +25,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
+import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.melo.theme.MeloTheme
@@ -33,6 +36,7 @@ import com.github.adriianh.melo.ui.components.AmbientCanvas
 import com.github.adriianh.melo.ui.components.LocalMeloSnackbar
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
+import com.github.adriianh.melo.ui.components.OfflineModeBanner
 import com.github.adriianh.melo.ui.detail.AlbumDetailScreen
 import com.github.adriianh.melo.ui.detail.ArtistDetailScreen
 import com.github.adriianh.melo.ui.detail.PlaylistDetailScreen
@@ -87,6 +91,7 @@ fun App() {
     val loginViewModel: LoginViewModel = koinViewModel()
     val getSettingsUseCase: GetSettingsUseCase = koinInject()
     val updateSettingsUseCase: UpdateSettingsUseCase = koinInject()
+    val offlineRepository: OfflineRepository = koinInject()
     val coroutineScope = rememberCoroutineScope()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
     val settings by getSettingsUseCase().collectAsState(initial = Settings())
@@ -172,86 +177,104 @@ fun App() {
                             }
                         }
                     ) { _, paddingValues ->
-                        Box(
+                        Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            when (currentScreen) {
-                                ScreenDestination.Home -> HomeScreen(
-                                    onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                    onPlaylistClick = { id ->
-                                        navigateTo(
-                                            ScreenDestination.Playlist(
-                                                id
-                                            )
-                                        )
-                                    },
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                    onOpenSettings = { showSettingsSheet = true },
-                                    paddingValues = paddingValues
-                                )
-
-                                ScreenDestination.Search -> SearchScreen(
-                                    onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                    onPlaylistClick = { id ->
-                                        navigateTo(
-                                            ScreenDestination.Playlist(
-                                                id
-                                            )
-                                        )
-                                    },
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                    onOpenSettings = { showSettingsSheet = true },
-                                    paddingValues = paddingValues
-                                )
-
-                                ScreenDestination.Library -> LibraryScreen(
-                                    onOpenSettings = { showSettingsSheet = true },
-                                    onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                    onPlaylistClick = { id ->
-                                        navigateTo(
-                                            ScreenDestination.Playlist(
-                                                id
-                                            )
-                                        )
-                                    },
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                    paddingValues = paddingValues
-                                )
-
-                                is ScreenDestination.Album -> AlbumDetailScreen(
-                                    albumId = currentScreen.id,
-                                    initialTitle = currentScreen.title,
-                                    initialArtwork = currentScreen.artwork,
-                                    initialAuthor = currentScreen.author,
-                                    onBack = ::navigateBack,
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                    onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
-                                )
-
-                                is ScreenDestination.Playlist -> PlaylistDetailScreen(
-                                    playlistId = currentScreen.id,
-                                    initialTitle = currentScreen.title,
-                                    initialArtwork = currentScreen.artwork,
-                                    initialAuthor = currentScreen.author,
-                                    onBack = ::navigateBack,
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) }
-                                )
-
-                                is ScreenDestination.Artist -> ArtistDetailScreen(
-                                    artistId = currentScreen.id,
-                                    initialName = currentScreen.name,
-                                    initialArtwork = currentScreen.artwork,
-                                    onBack = ::navigateBack,
-                                    onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                    onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                    onPlaylistClick = { id ->
-                                        navigateTo(
-                                            ScreenDestination.Playlist(
-                                                id
-                                            )
-                                        )
+                            OfflineModeBanner(
+                                visible = settings.offlineMode,
+                                onReconnect = {
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(offlineMode = false)
+                                        }
+                                        snackbarState.show("Modo sin conexión desactivado")
                                     }
-                                )
+                                }
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                            ) {
+                                when (currentScreen) {
+                                    ScreenDestination.Home -> HomeScreen(
+                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                        onPlaylistClick = { id ->
+                                            navigateTo(
+                                                ScreenDestination.Playlist(
+                                                    id
+                                                )
+                                            )
+                                        },
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onOpenSettings = { showSettingsSheet = true },
+                                        paddingValues = paddingValues
+                                    )
+
+                                    ScreenDestination.Search -> SearchScreen(
+                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                        onPlaylistClick = { id ->
+                                            navigateTo(
+                                                ScreenDestination.Playlist(
+                                                    id
+                                                )
+                                            )
+                                        },
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onOpenSettings = { showSettingsSheet = true },
+                                        paddingValues = paddingValues
+                                    )
+
+                                    ScreenDestination.Library -> LibraryScreen(
+                                        onOpenSettings = { showSettingsSheet = true },
+                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                        onPlaylistClick = { id ->
+                                            navigateTo(
+                                                ScreenDestination.Playlist(
+                                                    id
+                                                )
+                                            )
+                                        },
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        paddingValues = paddingValues
+                                    )
+
+                                    is ScreenDestination.Album -> AlbumDetailScreen(
+                                        albumId = currentScreen.id,
+                                        initialTitle = currentScreen.title,
+                                        initialArtwork = currentScreen.artwork,
+                                        initialAuthor = currentScreen.author,
+                                        onBack = ::navigateBack,
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
+                                    )
+
+                                    is ScreenDestination.Playlist -> PlaylistDetailScreen(
+                                        playlistId = currentScreen.id,
+                                        initialTitle = currentScreen.title,
+                                        initialArtwork = currentScreen.artwork,
+                                        initialAuthor = currentScreen.author,
+                                        onBack = ::navigateBack,
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) }
+                                    )
+
+                                    is ScreenDestination.Artist -> ArtistDetailScreen(
+                                        artistId = currentScreen.id,
+                                        initialName = currentScreen.name,
+                                        initialArtwork = currentScreen.artwork,
+                                        onBack = ::navigateBack,
+                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onPlaylistClick = { id ->
+                                            navigateTo(
+                                                ScreenDestination.Playlist(
+                                                    id
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -345,6 +368,26 @@ fun App() {
                                     updateSettingsUseCase { current ->
                                         current.copy(downloadQuality = quality)
                                     }
+                                }
+                            },
+                            onCacheSizeLimitSelected = { limit ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(maxOfflineSizeMb = limit.sizeMb)
+                                    }
+                                }
+                            },
+                            onOfflineModeToggle = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(offlineMode = enabled)
+                                    }
+                                }
+                            },
+                            onClearCache = {
+                                coroutineScope.launch {
+                                    offlineRepository.cleanupCache(0)
+                                    snackbarState.show("Caché de audio liberada correctamente")
                                 }
                             },
                             onAutoplayToggle = { autoplay ->

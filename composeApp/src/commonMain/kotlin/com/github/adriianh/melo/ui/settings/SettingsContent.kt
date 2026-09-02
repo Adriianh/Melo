@@ -40,7 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.DeleteSweep
 import com.github.adriianh.core.domain.model.AudioQuality
+import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.Settings
@@ -180,9 +182,31 @@ private fun DownloadsSettingsSection(
     actions: SettingsActions,
 ) {
     SettingsGroupCard(
-        title = "Descargas y offline",
+        title = "Descargas y caché offline",
         icon = Icons.Default.Download
     ) {
+        SettingRow(
+            title = "Modo sin conexión",
+            subtitle = "Bloquea peticiones de red y prioriza únicamente contenido descargado y local."
+        ) {
+            MeloSettingsSwitch(
+                checked = settings.offlineMode,
+                onCheckedChange = actions.onOfflineModeToggle
+            )
+        }
+
+        SettingRow(
+            title = "Límite de tamaño de caché",
+            subtitle = "Espacio máximo para canciones escuchadas recientemente (limpieza LRU automática)."
+        ) {
+            SettingOptionChips(
+                options = CacheSizeLimit.entries,
+                isSelected = { it.sizeMb == settings.maxOfflineSizeMb },
+                onSelect = actions.onCacheSizeLimitSelected,
+                label = { it.displayName }
+            )
+        }
+
         SettingRow(
             title = "Formato de descarga",
             subtitle = "Extensión y contenedor preferido para guardar pistas."
@@ -205,6 +229,43 @@ private fun DownloadsSettingsSection(
                 onSelect = actions.onDownloadQualitySelected,
                 label = { "${it.name} (${it.displayName})" }
             )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Limpiar caché de audio",
+                    style = MeloType.body,
+                    fontWeight = FontWeight.Medium,
+                    color = MeloColors.textPrimary
+                )
+                Text(
+                    text = "Libera espacio eliminando las pistas cacheadas temporalmente.",
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            OutlinedButton(
+                onClick = actions.onClearCache,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DeleteSweep,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Limpiar", style = MeloType.labelMedium)
+            }
         }
     }
 }

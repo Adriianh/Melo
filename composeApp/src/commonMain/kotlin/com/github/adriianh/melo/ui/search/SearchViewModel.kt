@@ -3,11 +3,14 @@ package com.github.adriianh.melo.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.BrowseCategoryResult
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
@@ -23,12 +26,14 @@ import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -62,6 +67,7 @@ data class SearchUiState(
     val browseCategoryResult: BrowseCategoryResult? = null,
     val isBrowsingCategory: Boolean = false,
     val error: String? = null,
+    val isOfflineSearch: Boolean = false,
 ) {
     val hasResults: Boolean
         get() = when (selectedFilter) {
@@ -91,6 +97,9 @@ class SearchViewModel(
     private val getRecentTracksUseCase: GetRecentTracksUseCase,
     private val getRemoteHistoryUseCase: GetRemoteHistoryUseCase,
     private val browseCategoryUseCase: BrowseCategoryUseCase,
+    private val getSettingsUseCase: GetSettingsUseCase,
+    private val getOfflineTracksUseCase: GetOfflineTracksUseCase,
+    private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -109,7 +118,8 @@ class SearchViewModel(
                 playlistResults = emptyList(),
                 videoResults = emptyList(),
                 suggestions = emptyList(),
-                isSearching = false
+                isSearching = false,
+                isOfflineSearch = false,
             )
         }
     }
@@ -134,6 +144,8 @@ class SearchViewModel(
         }
 
         suggestionsJob = viewModelScope.launch {
+            val isOffline = getSettingsUseCase.getSnapshot().offlineMode
+            if (isOffline) return@launch
             delay(200.milliseconds)
             try {
                 val suggestions = getSearchSuggestionsUseCase(query)
@@ -172,12 +184,24 @@ class SearchViewModel(
 
     private suspend fun performSearch(query: String, filter: SearchFilterType) {
         _uiState.update { it.copy(isSearching = true) }
+        val isOffline = getSettingsUseCase.getSnapshot().offlineMode
+        if (isOffline) {
+            performOfflineSearch(query)
+            return
+        }
+
         try {
             when (filter) {
                 SearchFilterType.ALL -> {
                     val summary = searchSummaryUseCase(query)
                     if (summary.isNotEmpty()) {
-                        _uiState.update { it.copy(summarySections = summary, isSearching = false) }
+                        _uiState.update {
+                            it.copy(
+                                summarySections = summary,
+                                isSearching = false,
+                                isOfflineSearch = false
+                            )
+                        }
                     } else {
                         val tracks = searchTracksUseCase(query)
                         val fallbackSections = if (tracks.isNotEmpty()) {
@@ -191,7 +215,8 @@ class SearchViewModel(
                         _uiState.update {
                             it.copy(
                                 summarySections = fallbackSections,
-                                isSearching = false
+                                isSearching = false,
+                                isOfflineSearch = false
                             )
                         }
                     }
@@ -199,33 +224,94 @@ class SearchViewModel(
 
                 SearchFilterType.SONGS -> {
                     val results = searchTracksUseCase(query)
-                    _uiState.update { it.copy(songResults = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(
+                            songResults = results,
+                            isSearching = false,
+                            isOfflineSearch = false
+                        )
+                    }
                 }
 
                 SearchFilterType.ALBUMS -> {
                     val results = searchAlbumsUseCase(query)
-                    _uiState.update { it.copy(albumResults = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(
+                            albumResults = results,
+                            isSearching = false,
+                            isOfflineSearch = false
+                        )
+                    }
                 }
 
                 SearchFilterType.ARTISTS -> {
                     val results = searchArtistsUseCase(query)
-                    _uiState.update { it.copy(artistResults = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(
+                            artistResults = results,
+                            isSearching = false,
+                            isOfflineSearch = false
+                        )
+                    }
                 }
 
                 SearchFilterType.PLAYLISTS -> {
                     val results = searchPlaylistsUseCase(query)
-                    _uiState.update { it.copy(playlistResults = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(
+                            playlistResults = results,
+                            isSearching = false,
+                            isOfflineSearch = false
+                        )
+                    }
                 }
 
                 SearchFilterType.VIDEOS -> {
                     val results = searchVideosUseCase(query)
-                    _uiState.update { it.copy(videoResults = results, isSearching = false) }
+                    _uiState.update {
+                        it.copy(
+                            videoResults = results,
+                            isSearching = false,
+                            isOfflineSearch = false
+                        )
+                    }
                 }
             }
             saveSearchQueryUseCase(query)
             loadRecentSearches()
         } catch (_: Exception) {
-            _uiState.update { it.copy(isSearching = false) }
+            performOfflineSearch(query)
+        }
+    }
+
+    private suspend fun performOfflineSearch(query: String) {
+        val downloaded = getOfflineTracksUseCase().firstOrNull()
+            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+            ?.map { it.track } ?: emptyList()
+        val local = try {
+            scanLocalTracksUseCase()
+        } catch (_: Exception) {
+            emptyList()
+        }
+        val allLocal = (downloaded + local).distinctBy { it.id }.filter {
+            it.title.contains(query, ignoreCase = true) || it.artist.contains(
+                query,
+                ignoreCase = true
+            )
+        }
+        _uiState.update {
+            it.copy(
+                songResults = allLocal,
+                summarySections = if (allLocal.isNotEmpty()) listOf(
+                    HomeSection(
+                        "Resultados locales y descargados",
+                        com.github.adriianh.core.domain.model.HomeSectionType.SONGS,
+                        allLocal.map { SearchResult.Song(it) }
+                    )
+                ) else emptyList(),
+                isSearching = false,
+                isOfflineSearch = true
+            )
         }
     }
 

@@ -191,6 +191,8 @@ val dataModule = module {
             scope = get(),
             getRadioUseCase = get(),
             getSettingsUseCase = get(),
+            downloadManager = get(),
+            offlineRepository = get(),
         )
     }
 }
