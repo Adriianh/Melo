@@ -21,6 +21,9 @@ class JvmMeloPlayer : MeloPlayer {
         "--no-video",
         "--no-xlib",
         "--aout=pulse,alsa,dummy",
+        "--network-caching=1500",
+        "--file-caching=1000",
+        "--clock-jitter=0",
     )
     private val mediaPlayer = factory.mediaPlayers().newMediaPlayer()
     private val _state = MutableStateFlow(PlaybackState())

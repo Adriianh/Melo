@@ -2,12 +2,22 @@ package com.github.adriianh.core.domain.player
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,15 +28,64 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(UnstableApi::class)
 class AndroidMeloPlayer(context: Context) : MeloPlayer {
+    companion object {
+        @Volatile
+        private var simpleCache: SimpleCache? = null
+        private val cacheLock = Any()
+        private const val MAX_AUDIO_CACHE_SIZE_BYTES = 350L * 1024 * 1024 // 350 MB
+
+        fun getAudioCache(context: Context): SimpleCache {
+            return simpleCache ?: synchronized(cacheLock) {
+                simpleCache ?: run {
+                    val cacheDir = File(context.cacheDir, "melo_audio_cache")
+                    val databaseProvider = StandaloneDatabaseProvider(context)
+                    val evictor = LeastRecentlyUsedCacheEvictor(MAX_AUDIO_CACHE_SIZE_BYTES)
+                    SimpleCache(cacheDir, evictor, databaseProvider).also {
+                        simpleCache = it
+                    }
+                }
+            }
+        }
+    }
+
     private val audioAttributes = AudioAttributes.Builder()
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .setUsage(C.USAGE_MEDIA)
         .build()
 
+    private val loadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(
+            /* minBufferMs = */ 15_000,
+            /* maxBufferMs = */ 60_000,
+            /* bufferForPlaybackMs = */ 500,
+            /* bufferForPlaybackAfterRebufferMs = */ 1000
+        )
+        .setPrioritizeTimeOverSizeThresholds(true)
+        .build()
+
+    private val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+        .setAllowCrossProtocolRedirects(true)
+        .setConnectTimeoutMs(8000)
+        .setReadTimeoutMs(8000)
+
+    private val upstreamFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
+
+    private val cacheDataSourceFactory = CacheDataSource.Factory()
+        .setCache(getAudioCache(context))
+        .setUpstreamDataSourceFactory(upstreamFactory)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+    private val mediaSourceFactory = DefaultMediaSourceFactory(context)
+        .setDataSourceFactory(cacheDataSourceFactory)
+
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
+        .setMediaSourceFactory(mediaSourceFactory)
+        .setLoadControl(loadControl)
         .setAudioAttributes(audioAttributes, true)
         .setHandleAudioBecomingNoisy(true)
         .setWakeMode(C.WAKE_MODE_NETWORK)
