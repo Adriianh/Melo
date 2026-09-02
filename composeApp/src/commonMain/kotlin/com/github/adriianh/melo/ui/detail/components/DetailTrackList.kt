@@ -30,7 +30,10 @@ fun LazyListScope.detailTrackItems(
     onSwipeRight: (Track) -> Unit,
     accentColor: Color,
     keyPrefix: String = "detail",
-    itemModifier: Modifier = Modifier
+    itemModifier: Modifier = Modifier,
+    isDownloaded: (Track) -> Boolean = { false },
+    isDownloading: (Track) -> Boolean = { false },
+    downloadProgress: (Track) -> Float = { 0f },
 ) {
     itemsIndexed(
         tracks,
@@ -38,6 +41,10 @@ fun LazyListScope.detailTrackItems(
     ) { index, song ->
         val isPlayingThis = currentTrackId == song.id
         val liked = isLiked(song)
+        val downloaded = isDownloaded(song)
+        val downloading = isDownloading(song)
+        val progress = downloadProgress(song)
+
         Box(modifier = itemModifier) {
             MeloSwipeableItem(
                 onSwipeLeft = { onSwipeLeft(song) },
@@ -60,6 +67,9 @@ fun LazyListScope.detailTrackItems(
                         trackNumber = index + 1,
                         isCurrent = isPlayingThis,
                         isPlaying = isPlayingThis && isPlaying,
+                        isDownloaded = downloaded,
+                        isDownloading = downloading,
+                        downloadProgress = progress,
                         onClick = { onTrackClick(index, song) },
                         onMoreClick = { onMoreClick(song) }
                     )

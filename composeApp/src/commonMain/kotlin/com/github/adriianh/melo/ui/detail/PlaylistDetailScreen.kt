@@ -116,14 +116,14 @@ fun PlaylistDetailScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.isLoading && playlist?.songs == null) {
+        if (uiState.isLoading && songs.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
-        } else if (uiState.error != null && playlist?.songs == null) {
+        } else if (uiState.error != null && songs.isEmpty()) {
             MeloErrorState(
                 error = uiState.error,
                 onRetry = {
@@ -185,6 +185,13 @@ fun PlaylistDetailScreen(
                             onSubtitleClick = authorText?.let { { onArtistClick(it) } },
                             metadataText = metaParts,
                             isSaved = uiState.isSaved,
+                            isDownloaded = uiState.isDownloaded,
+                            isDownloading = uiState.isDownloading,
+                            downloadProgress = uiState.downloadProgress,
+                            downloadedCount = uiState.downloadedTrackCount,
+                            totalTrackCount = uiState.totalTrackCount,
+                            currentDownloadingTrackTitle = uiState.currentDownloadingTrackTitle,
+                            onDownloadClick = if (songs.isNotEmpty()) viewModel::toggleDownload else null,
                             onPlayClick = { queueViewModel.playTracks(songs, 0) },
                             onShuffleClick = { queueViewModel.playShuffled(songs) },
                             onToggleSave = viewModel::toggleSave,
@@ -211,6 +218,9 @@ fun PlaylistDetailScreen(
                             currentTrackId = queueState.currentTrack?.id,
                             isPlaying = playerUiState.isPlaying,
                             isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
+                            isDownloading = { song -> song.id in uiState.activeDownloadsMap },
+                            downloadProgress = { song -> uiState.activeDownloadsMap[song.id] ?: 0f },
                             onTrackClick = { index, _ -> queueViewModel.playTracks(songs, index) },
                             onMoreClick = { interaction.openContextMenu(it) },
                             onSwipeLeft = {

@@ -119,14 +119,21 @@ fun ArtistDetailScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.isLoading && artist?.topSongs == null && artist?.sections.isNullOrEmpty()) {
+        val downloadedSongs = uiState.downloadedArtistTracks
+        val topSongs = remember(artist) { artist?.topSongs.orEmpty() }
+        val allPlayableTracks = remember(downloadedSongs, topSongs) {
+            (downloadedSongs + topSongs).distinctBy { it.id }
+        }
+        val hasArtistContent = allPlayableTracks.isNotEmpty() || !artist?.sections.isNullOrEmpty()
+
+        if (uiState.isLoading && !hasArtistContent) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
-        } else if (uiState.error != null && artist?.topSongs == null && artist?.sections.isNullOrEmpty()) {
+        } else if (uiState.error != null && !hasArtistContent) {
             MeloErrorState(
                 error = uiState.error,
                 onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
@@ -143,10 +150,9 @@ fun ArtistDetailScreen(
                         )
                     )
             ) {
-                val topSongs = remember(artist) { artist?.topSongs.orEmpty() }
                 val effectiveArtwork = artist?.artworkUrl?.takeIf { it.isNotBlank() }
                     ?: initialArtwork?.takeIf { it.isNotBlank() }
-                    ?: topSongs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+                    ?: allPlayableTracks.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
 
                 val subtitleParts = listOfNotNull(
                     artist?.monthlyListenerCount?.takeIf { it.isNotBlank() },
@@ -166,17 +172,17 @@ fun ArtistDetailScreen(
                             name = effectiveName,
                             subtitleText = subtitleParts,
                             isSaved = uiState.isSaved,
-                            onPlayClick = { queueViewModel.playTracks(topSongs, 0) },
-                            onShuffleClick = { queueViewModel.playShuffled(topSongs) },
+                            onPlayClick = { queueViewModel.playTracks(allPlayableTracks, 0) },
+                            onShuffleClick = { queueViewModel.playShuffled(allPlayableTracks) },
                             onRadioClick = {
                                 queueViewModel.startArtistRadio(
                                     artistId = artistId,
-                                    fallbackTracks = topSongs
+                                    fallbackTracks = allPlayableTracks
                                 )
                             },
                             onToggleFollow = viewModel::toggleSave,
                             accentColor = accentColor,
-                            hasTracks = topSongs.isNotEmpty()
+                            hasTracks = allPlayableTracks.isNotEmpty()
                         )
                     }
 
@@ -192,6 +198,48 @@ fun ArtistDetailScreen(
                         }
                     }
 
+                    if (downloadedSongs.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "En tus descargas (${downloadedSongs.size})",
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                        detailTrackItems(
+                            tracks = downloadedSongs,
+                            currentTrackId = queueState.currentTrack?.id,
+                            isPlaying = playerUiState.isPlaying,
+                            isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            isDownloaded = { true },
+                            isDownloading = { false },
+                            downloadProgress = { 0f },
+                            onTrackClick = { index, _ ->
+                                queueViewModel.playTracks(
+                                    downloadedSongs,
+                                    index
+                                )
+                            },
+                            onMoreClick = { interaction.openContextMenu(it) },
+                            onSwipeLeft = {
+                                interaction.showAddedToQueueSnackbar(
+                                    it,
+                                    activeAccent
+                                )
+                            },
+                            onSwipeRight = { song ->
+                                val isLiked = libraryState.likedSongs.any { it.id == song.id }
+                                interaction.showToggledLikeSnackbar(
+                                    song,
+                                    isLiked,
+                                    activeAccent
+                                )
+                            },
+                            accentColor = accentColor,
+                            keyPrefix = "artist_downloaded",
+                            itemModifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+
                     if (topSongs.isNotEmpty()) {
                         item {
                             SectionHeader(
@@ -204,6 +252,9 @@ fun ArtistDetailScreen(
                             currentTrackId = queueState.currentTrack?.id,
                             isPlaying = playerUiState.isPlaying,
                             isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
+                            isDownloading = { song -> song.id in uiState.activeDownloadsMap },
+                            downloadProgress = { song -> uiState.activeDownloadsMap[song.id] ?: 0f },
                             onTrackClick = { index, _ ->
                                 queueViewModel.playTracks(
                                     topSongs,

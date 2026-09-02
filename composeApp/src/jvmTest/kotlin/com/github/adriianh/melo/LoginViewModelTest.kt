@@ -44,6 +44,8 @@ class LoginViewModelTest {
         Dispatchers.setMain(testDispatcher)
         coEvery { getSettings.getSnapshot() } returns Settings()
         mockkStatic("com.github.adriianh.melo.ui.login.InAppSignIn_jvmKt")
+        coEvery { launchAutomatedBrowserLogin() } returns null
+        coEvery { importExistingBrowserCookies() } returns null
     }
 
     @AfterTest
