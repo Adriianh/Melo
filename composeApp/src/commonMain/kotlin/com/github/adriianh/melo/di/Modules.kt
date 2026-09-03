@@ -15,12 +15,22 @@ import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistIdsForTrackUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
@@ -42,6 +52,7 @@ import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
+import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
@@ -106,6 +117,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -225,6 +237,16 @@ val useCaseModule = module {
     singleOf(::VerifySessionUseCase)
     singleOf(::GetAccountProfileUseCase)
     singleOf(::GetUserPlaylistsUseCase)
+    singleOf(::GetPlaylistsUseCase)
+    singleOf(::GetPlaylistTracksUseCase)
+    singleOf(::CreatePlaylistUseCase)
+    singleOf(::RenamePlaylistUseCase)
+    singleOf(::DeletePlaylistUseCase)
+    singleOf(::AddTrackToPlaylistUseCase)
+    singleOf(::AddTracksToPlaylistUseCase)
+    singleOf(::RemoveTrackFromPlaylistUseCase)
+    singleOf(::ReorderPlaylistTracksUseCase)
+    singleOf(::GetPlaylistIdsForTrackUseCase)
     singleOf(::GetLikedSongsUseCase)
     singleOf(::GetUserArtistsUseCase)
     singleOf(::GetUserAlbumsUseCase)
@@ -236,6 +258,7 @@ val useCaseModule = module {
     singleOf(::GetEntityDetailsUseCase)
     singleOf(::GetSearchHistoryUseCase)
     singleOf(::SaveSearchQueryUseCase)
+    singleOf(::DeleteSearchQueryUseCase)
     singleOf(::GetSearchSuggestionsUseCase)
     singleOf(::BrowseCategoryUseCase)
     singleOf(::GetOfflineTracksUseCase)
@@ -257,7 +280,34 @@ val viewModelModule = module {
     viewModelOf(::QueueViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::LoginViewModel)
-    viewModelOf(::LibraryViewModel)
+    viewModel {
+        LibraryViewModel(
+            getSettingsUseCase = get(),
+            updateSettingsUseCase = get(),
+            getAccountProfileUseCase = get(),
+            getUserPlaylistsUseCase = get(),
+            getPlaylistsUseCase = get(),
+            createPlaylistUseCase = get(),
+            renamePlaylistUseCase = get(),
+            deletePlaylistUseCase = get(),
+            addTrackToPlaylistUseCase = get(),
+            addTracksToPlaylistUseCase = get(),
+            removeTrackFromPlaylistUseCase = get(),
+            getPlaylistIdsForTrackUseCase = get(),
+            getLikedSongsUseCase = get(),
+            getUserArtistsUseCase = get(),
+            getUserAlbumsUseCase = get(),
+            getRemoteHistoryUseCase = get(),
+            toggleLikeTrackUseCase = get(),
+            getOfflineTracksUseCase = get(),
+            scanLocalTracksUseCase = get(),
+            enrichLocalTracksUseCase = get(),
+            deleteDownloadedTrackUseCase = get(),
+            syncOfflineTracksUseCase = get(),
+            downloadManager = get(),
+            playbackManager = get()
+        )
+    }
     viewModelOf(::SidebarViewModel)
     viewModelOf(::EntityDetailViewModel)
     viewModelOf(::SearchViewModel)

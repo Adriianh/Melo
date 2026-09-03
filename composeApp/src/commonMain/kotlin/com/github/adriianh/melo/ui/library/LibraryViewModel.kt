@@ -7,15 +7,24 @@ import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.OfflineTrack
+import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistIdsForTrackUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
@@ -24,6 +33,7 @@ import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +60,7 @@ data class LibraryUiState(
     val profile: AccountProfile? = null,
     val selectedTab: LibraryTab = LibraryTab.PLAYLISTS,
     val playlists: List<SearchResult.Playlist> = emptyList(),
+    val customPlaylists: List<Playlist> = emptyList(),
     val likedSongs: List<Track> = emptyList(),
     val downloadedTracks: List<OfflineTrack> = emptyList(),
     val localTracks: List<Track> = emptyList(),
@@ -66,6 +77,14 @@ class LibraryViewModel(
     private val updateSettingsUseCase: UpdateSettingsUseCase,
     private val getAccountProfileUseCase: GetAccountProfileUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    private val getPlaylistsUseCase: GetPlaylistsUseCase,
+    private val createPlaylistUseCase: CreatePlaylistUseCase,
+    private val renamePlaylistUseCase: RenamePlaylistUseCase,
+    private val deletePlaylistUseCase: DeletePlaylistUseCase,
+    private val addTrackToPlaylistUseCase: AddTrackToPlaylistUseCase,
+    private val addTracksToPlaylistUseCase: AddTracksToPlaylistUseCase,
+    private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase,
+    private val getPlaylistIdsForTrackUseCase: GetPlaylistIdsForTrackUseCase,
     private val getLikedSongsUseCase: GetLikedSongsUseCase,
     private val getUserArtistsUseCase: GetUserArtistsUseCase,
     private val getUserAlbumsUseCase: GetUserAlbumsUseCase,
@@ -84,6 +103,11 @@ class LibraryViewModel(
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            getPlaylistsUseCase().collectLatest { playlists ->
+                _uiState.value = _uiState.value.copy(customPlaylists = playlists)
+            }
+        }
         viewModelScope.launch {
             syncOfflineTracksUseCase()
             getOfflineTracksUseCase().collectLatest { tracks ->
@@ -243,4 +267,52 @@ class LibraryViewModel(
             }
         }
     }
+
+    fun createPlaylist(name: String, onCreated: ((Long) -> Unit)? = null) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val id = createPlaylistUseCase(name)
+            onCreated?.invoke(id)
+        }
+    }
+
+    fun renamePlaylist(id: Long, newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            renamePlaylistUseCase(id, newName)
+        }
+    }
+
+    fun deletePlaylist(id: Long) {
+        viewModelScope.launch {
+            deletePlaylistUseCase(id)
+        }
+    }
+
+    fun addTrackToPlaylist(playlistId: Long, track: Track, onAdded: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            addTrackToPlaylistUseCase(playlistId, track)
+            onAdded?.invoke()
+        }
+    }
+
+    fun addTracksToPlaylist(
+        playlistId: Long,
+        tracks: List<Track>,
+        onAdded: ((Int) -> Unit)? = null
+    ) {
+        viewModelScope.launch {
+            val count = addTracksToPlaylistUseCase(playlistId, tracks)
+            onAdded?.invoke(count)
+        }
+    }
+
+    fun removeTrackFromPlaylist(playlistId: Long, trackId: String) {
+        viewModelScope.launch {
+            removeTrackFromPlaylistUseCase(playlistId, trackId)
+        }
+    }
+
+    fun getPlaylistIdsForTrack(trackId: String): Flow<Set<Long>> =
+        getPlaylistIdsForTrackUseCase(trackId)
 }

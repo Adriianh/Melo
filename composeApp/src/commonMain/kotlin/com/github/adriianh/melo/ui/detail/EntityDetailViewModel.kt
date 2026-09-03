@@ -9,6 +9,11 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
@@ -17,6 +22,7 @@ import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -45,6 +51,11 @@ class EntityDetailViewModel(
     private val downloadManager: DownloadManager,
     private val offlineRepository: OfflineRepository,
     private val getSettingsUseCase: GetSettingsUseCase,
+    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
+    private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase? = null,
+    private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
+    private val renamePlaylistUseCase: RenamePlaylistUseCase? = null,
+    private val reorderPlaylistTracksUseCase: ReorderPlaylistTracksUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
@@ -180,6 +191,17 @@ class EntityDetailViewModel(
         initialArtwork: String? = null,
         initialAuthor: String = ""
     ) {
+        val isCustom = id.startsWith("local:")
+                || id.startsWith("custom:")
+                || (id.toLongOrNull() != null && !id.startsWith("VL") && !id.startsWith("PL") && !id.startsWith(
+            "RD"
+        ))
+        val localPlaylistId = id.removePrefix("local:").removePrefix("custom:").toLongOrNull()
+        if (isCustom && localPlaylistId != null) {
+            loadLocalPlaylist(localPlaylistId, id, initialTitle)
+            return
+        }
+
         loadEntity(
             SearchResult.Playlist(
                 id = id,
@@ -189,6 +211,97 @@ class EntityDetailViewModel(
                 artworkUrl = initialArtwork
             )
         )
+    }
+
+    private fun loadLocalPlaylist(playlistId: Long, rawId: String, initialTitle: String) {
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                entity = SearchResult.Playlist(
+                    id = rawId,
+                    title = initialTitle.ifBlank { "Mi playlist" },
+                    author = "Tú",
+                    trackCount = 0,
+                    artworkUrl = null,
+                    songs = emptyList()
+                ),
+                error = null
+            )
+        }
+        viewModelScope.launch {
+            if (getPlaylistTracksUseCase != null) {
+                getPlaylistTracksUseCase(playlistId).collectLatest { tracks ->
+                    val resolved = SearchResult.Playlist(
+                        id = rawId,
+                        title = initialTitle.ifBlank { "Mi playlist" },
+                        author = "Tú",
+                        trackCount = tracks.size,
+                        artworkUrl = tracks.firstOrNull()?.artworkUrl,
+                        songs = tracks
+                    )
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            entity = resolved,
+                            error = null
+                        )
+                    }
+                    val offlineTracks = offlineRepository.getOfflineTracks()
+                    updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    fun removeTrackFromLocalPlaylist(trackId: String) {
+        val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
+        val localPlaylistId =
+            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+        viewModelScope.launch {
+            removeTrackFromPlaylistUseCase?.invoke(localPlaylistId, trackId)
+        }
+    }
+
+    fun moveLocalPlaylistTrack(fromIndex: Int, toIndex: Int) {
+        val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
+        val localPlaylistId =
+            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+        val currentSongs = (entity.songs ?: emptyList()).toMutableList()
+        if (fromIndex !in currentSongs.indices || toIndex !in currentSongs.indices || fromIndex == toIndex) return
+        val movedTrack = currentSongs.removeAt(fromIndex)
+        currentSongs.add(toIndex, movedTrack)
+        _uiState.update {
+            it.copy(entity = entity.copy(songs = currentSongs))
+        }
+        viewModelScope.launch {
+            reorderPlaylistTracksUseCase?.invoke(localPlaylistId, currentSongs.map { it.id })
+        }
+    }
+
+    fun renameLocalPlaylist(newName: String) {
+        val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
+        val localPlaylistId =
+            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            renamePlaylistUseCase?.invoke(localPlaylistId, newName)
+            _uiState.update {
+                val current = it.entity as? SearchResult.Playlist ?: return@update it
+                it.copy(entity = current.copy(title = newName))
+            }
+        }
+    }
+
+    fun deleteLocalPlaylist(onDeleted: () -> Unit) {
+        val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
+        val localPlaylistId =
+            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+        viewModelScope.launch {
+            deletePlaylistUseCase?.invoke(localPlaylistId)
+            onDeleted()
+        }
     }
 
     fun loadArtist(id: String, initialName: String = "", initialArtwork: String? = null) {
