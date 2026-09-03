@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.MeloSearchBar
@@ -54,6 +56,16 @@ fun HomeScreen(
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
+
+    val selectionModeState = LocalSelectionMode.current
+    LaunchedEffect(isSelectionMode) {
+        selectionModeState.value = isSelectionMode
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            selectionModeState.value = false
+        }
+    }
 
     val visibleSongs = remember(uiState) {
         if (uiState.searchQuery.isNotBlank()) {

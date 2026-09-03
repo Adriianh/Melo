@@ -13,6 +13,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
@@ -59,6 +61,16 @@ fun LibraryScreen(
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
+
+    val selectionModeState = LocalSelectionMode.current
+    LaunchedEffect(isSelectionMode) {
+        selectionModeState.value = isSelectionMode
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            selectionModeState.value = false
+        }
+    }
 
     val visibleSongs = remember(
         state.selectedTab,

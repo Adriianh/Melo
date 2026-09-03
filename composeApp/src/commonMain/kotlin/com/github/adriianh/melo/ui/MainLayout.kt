@@ -5,6 +5,8 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -19,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +39,8 @@ import com.github.adriianh.melo.util.MeloMotion
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
 
+val LocalSelectionMode = compositionLocalOf { mutableStateOf(false) }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdaptiveScaffold(
@@ -47,6 +52,7 @@ fun AdaptiveScaffold(
     onAlbumClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     isDarkTheme: Boolean = true,
+    isSelectionMode: Boolean = false,
     onToggleTheme: () -> Unit = {},
     content: @Composable (String, PaddingValues) -> Unit
 ) {
@@ -70,6 +76,7 @@ fun AdaptiveScaffold(
             selectedTab = selectedTab,
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
+            isSelectionMode = isSelectionMode,
             content = { padding -> content(selectedTab, padding) }
         )
     }
@@ -187,29 +194,55 @@ private fun MobileMainLayout(
     selectedTab: String,
     onTabSelected: (String) -> Unit,
     onOpenNowPlaying: () -> Unit,
+    isSelectionMode: Boolean = false,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        content(PaddingValues(bottom = 160.dp))
+        content(PaddingValues(bottom = if (isSelectionMode) 80.dp else 160.dp))
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp)
+        AnimatedVisibility(
+            visible = !isSelectionMode,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = MeloMotion.medium()
+            ) + fadeIn(animationSpec = MeloMotion.fast()),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = MeloMotion.medium()
+            ) + fadeOut(animationSpec = MeloMotion.fast()),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 100.dp)
+            ) {
+                MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
+            }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 20.dp)
+        AnimatedVisibility(
+            visible = !isSelectionMode,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = MeloMotion.medium()
+            ) + fadeIn(animationSpec = MeloMotion.fast()),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = MeloMotion.medium()
+            ) + fadeOut(animationSpec = MeloMotion.fast()),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            FloatingNavigationBar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected
-            )
+            Box(
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 20.dp)
+            ) {
+                FloatingNavigationBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = onTabSelected
+                )
+            }
         }
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
@@ -97,6 +99,17 @@ fun AlbumDetailScreen(
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
+
+    val selectionModeState = LocalSelectionMode.current
+    LaunchedEffect(isSelectionMode) {
+        selectionModeState.value = isSelectionMode
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            selectionModeState.value = false
+        }
+    }
+
     var showTopMenu by remember { mutableStateOf(false) }
 
     TrackInteractionContextMenu(

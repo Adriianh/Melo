@@ -32,6 +32,7 @@ import com.github.adriianh.melo.theme.MeloTheme
 import com.github.adriianh.melo.theme.resolveDarkTheme
 import com.github.adriianh.melo.theme.toAccentColor
 import com.github.adriianh.melo.ui.AdaptiveScaffold
+import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AmbientCanvas
 import com.github.adriianh.melo.ui.components.LocalMeloSnackbar
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost
@@ -134,8 +135,11 @@ fun App() {
             }
         }
 
+        val isSelectionMode = remember { mutableStateOf(false) }
+
         CompositionLocalProvider(
-            LocalMeloSnackbar provides snackbarState
+            LocalMeloSnackbar provides snackbarState,
+            LocalSelectionMode provides isSelectionMode
         ) {
             AmbientCanvas(
                 accentColor = finalAccent,
@@ -144,6 +148,7 @@ fun App() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     AdaptiveScaffold(
                         selectedTab = selectedTab,
+                        isSelectionMode = isSelectionMode.value,
                         onTabSelected = { tab ->
                             selectedTab = tab
                             navigationStack = when (tab) {
