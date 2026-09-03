@@ -245,7 +245,7 @@ fun DownloadsTabContent(
 
             DownloadsFilter.ALBUMS -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(150.dp),
+                    columns = GridCells.Adaptive(140.dp),
                     state = gridState,
                     contentPadding = PaddingValues(bottom = 80.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -257,6 +257,7 @@ fun DownloadsTabContent(
                             title = album.name,
                             subtitle = "${album.artist} • ${album.tracks.size} canciones",
                             artworkUrl = album.artworkUrl,
+                            cardWidth = 140.dp,
                             onClick = {
                                 onAlbumClick(
                                     album.name,
@@ -272,11 +273,11 @@ fun DownloadsTabContent(
 
             DownloadsFilter.ARTISTS -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(120.dp),
+                    columns = GridCells.Adaptive(140.dp),
                     state = gridState,
                     contentPadding = PaddingValues(bottom = 80.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(downloadedArtists, key = { it.name }) { artist ->
@@ -284,7 +285,8 @@ fun DownloadsTabContent(
                             name = artist.name,
                             artworkUrl = artist.artworkUrl,
                             onClick = { onArtistClick(artist.name) },
-                            size = 120.dp
+                            size = 130.dp,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
