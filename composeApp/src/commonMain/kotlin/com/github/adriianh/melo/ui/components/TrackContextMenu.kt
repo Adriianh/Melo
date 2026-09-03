@@ -4,9 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +30,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,7 @@ fun TrackContextMenu(
     onShare: () -> Unit,
     onDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
+    onRemoveFromPlaylist: (() -> Unit)? = null,
     isDownloaded: Boolean = false,
     isDownloading: Boolean = false,
     downloadProgress: Float? = null
@@ -102,10 +104,9 @@ fun TrackContextMenu(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = track.artist,
-                        style = MeloType.body,
+                        style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -114,11 +115,16 @@ fun TrackContextMenu(
             }
 
             HorizontalDivider(
-                modifier = Modifier.padding(bottom = 8.dp),
-                thickness = DividerDefaults.Thickness,
-                color = MeloColors.glassBorder
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                color = MeloColors.border.copy(alpha = 0.5f),
+                thickness = DividerDefaults.Thickness
             )
 
+            ContextMenuItem(
+                icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+                text = "Reproducir siguiente",
+                onClick = { onPlayNext(); onDismissRequest() }
+            )
             if (inQueue) {
                 ContextMenuItem(
                     icon = Icons.AutoMirrored.Filled.QueueMusic,
@@ -127,11 +133,6 @@ fun TrackContextMenu(
                 )
             } else {
                 ContextMenuItem(
-                    icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                    text = "Reproducir a continuación",
-                    onClick = { onPlayNext(); onDismissRequest() }
-                )
-                ContextMenuItem(
                     icon = Icons.AutoMirrored.Filled.QueueMusic,
                     text = "Añadir a la cola",
                     onClick = { onAddToQueue(); onDismissRequest() }
@@ -139,22 +140,22 @@ fun TrackContextMenu(
             }
             ContextMenuItem(
                 icon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder,
-                text = if (isLiked) "Quitar de Me gusta" else "Me gusta",
-                onClick = { onToggleLike(); onDismissRequest() },
-                iconTint = if (isLiked) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
+                text = if (isLiked) "Eliminar de Me Gusta" else "Añadir a Me Gusta",
+                onClick = { onToggleLike(); onDismissRequest() }
             )
 
-            if (isDownloaded && onDeleteDownload != null) {
+            if (isDownloaded) {
                 ContextMenuItem(
                     icon = Icons.Default.DeleteOutline,
-                    text = "Eliminar descarga",
-                    onClick = { onDeleteDownload(); onDismissRequest() }
+                    text = "Eliminar de descargas",
+                    onClick = { onDeleteDownload?.invoke(); onDismissRequest() },
+                    iconTint = MaterialTheme.colorScheme.error
                 )
             } else if (isDownloading) {
                 ContextMenuItem(
                     icon = Icons.Default.Downloading,
-                    text = "Descargando... ${((downloadProgress ?: 0f) * 100).toInt()}%",
-                    onClick = { onDismissRequest() },
+                    text = "Descargando... ${downloadProgress?.let { "${(it * 100).toInt()}%" } ?: ""}",
+                    onClick = {},
                     iconTint = MaterialTheme.colorScheme.primary
                 )
             } else if (onDownload != null && !track.id.startsWith("local:")) {
@@ -170,6 +171,16 @@ fun TrackContextMenu(
                 text = "Añadir a playlist...",
                 onClick = { onAddToPlaylist(); onDismissRequest() }
             )
+
+            if (onRemoveFromPlaylist != null) {
+                ContextMenuItem(
+                    icon = Icons.Default.DeleteOutline,
+                    text = "Quitar de esta playlist",
+                    onClick = { onRemoveFromPlaylist(); onDismissRequest() },
+                    iconTint = MaterialTheme.colorScheme.error
+                )
+            }
+
             ContextMenuItem(
                 icon = Icons.Default.Person,
                 text = "Ir al artista",
@@ -198,57 +209,130 @@ fun TrackInteractionContextMenu(
     onAlbumClick: (String) -> Unit = {},
     inQueue: Boolean = false,
     onRemoveFromQueue: () -> Unit = {},
+    onRemoveFromPlaylist: ((Track) -> Unit)? = null,
 ) {
-    val track = interaction.contextMenuTrack ?: return
-    val isLiked = libraryState.likedSongs.any { it.id == track.id }
-    val isDownloaded =
-        libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
-    val isDownloading = libraryState.activeDownloads.containsKey(track.id)
-    val downloadProgress = libraryState.activeDownloads[track.id]
+    val track = interaction.contextMenuTrack
+    if (track != null) {
+        val isLiked = libraryState.likedSongs.any { it.id == track.id }
+        val isDownloaded =
+            libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
+        val isDownloading = libraryState.activeDownloads.containsKey(track.id)
+        val downloadProgress = libraryState.activeDownloads[track.id]
 
-    TrackContextMenu(
-        track = track,
-        onDismissRequest = interaction::dismissContextMenu,
-        onPlayNext = {
-            interaction.showPlayNextSnackbar(track, activeAccent)
-            interaction.dismissContextMenu()
-        },
-        onAddToQueue = {
-            interaction.showAddedToQueueSnackbar(track, activeAccent)
-            interaction.dismissContextMenu()
-        },
-        onRemoveFromQueue = {
-            onRemoveFromQueue()
-            interaction.dismissContextMenu()
-        },
-        inQueue = inQueue,
-        onToggleLike = {
-            interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
-            interaction.dismissContextMenu()
-        },
-        isLiked = isLiked,
-        onAddToPlaylist = { /* TODO */ },
-        onGoToArtist = {
-            interaction.dismissContextMenu()
-            onArtistClick(track.artist)
-        },
-        onGoToAlbum = {
-            interaction.dismissContextMenu()
-            if (track.album.isNotBlank()) onAlbumClick(track.album)
-        },
-        onShare = { /* TODO */ },
-        onDownload = {
-            interaction.downloadTrack(track, activeAccent)
-            interaction.dismissContextMenu()
-        },
-        onDeleteDownload = {
-            interaction.deleteDownloadedTrack(track.id, activeAccent)
-            interaction.dismissContextMenu()
-        },
-        isDownloaded = isDownloaded,
-        isDownloading = isDownloading,
-        downloadProgress = downloadProgress
-    )
+        TrackContextMenu(
+            track = track,
+            onDismissRequest = interaction::dismissContextMenu,
+            onPlayNext = {
+                interaction.showPlayNextSnackbar(track, activeAccent)
+                interaction.dismissContextMenu()
+            },
+            onAddToQueue = {
+                interaction.showAddedToQueueSnackbar(track, activeAccent)
+                interaction.dismissContextMenu()
+            },
+            onRemoveFromQueue = {
+                onRemoveFromQueue()
+                interaction.dismissContextMenu()
+            },
+            inQueue = inQueue,
+            onToggleLike = {
+                interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                interaction.dismissContextMenu()
+            },
+            isLiked = isLiked,
+            onAddToPlaylist = {
+                interaction.openAddToPlaylist(track)
+                interaction.dismissContextMenu()
+            },
+            onRemoveFromPlaylist = onRemoveFromPlaylist?.let { rem -> { rem(track) } },
+            onGoToArtist = {
+                interaction.dismissContextMenu()
+                onArtistClick(track.artist)
+            },
+            onGoToAlbum = {
+                interaction.dismissContextMenu()
+                if (track.album.isNotBlank()) onAlbumClick(track.album)
+            },
+            onShare = { /* TODO */ },
+            onDownload = {
+                interaction.downloadTrack(track, activeAccent)
+                interaction.dismissContextMenu()
+            },
+            onDeleteDownload = {
+                interaction.deleteDownloadedTrack(track.id, activeAccent)
+                interaction.dismissContextMenu()
+            },
+            isDownloaded = isDownloaded,
+            isDownloading = isDownloading,
+            downloadProgress = downloadProgress
+        )
+    }
+
+    val playlistTracks = interaction.addToPlaylistTracks
+    if (!playlistTracks.isNullOrEmpty()) {
+        val containingPlaylistIds by remember(playlistTracks) {
+            if (playlistTracks.size == 1) {
+                interaction.libraryViewModel.getPlaylistIdsForTrack(playlistTracks.first().id)
+            } else {
+                kotlinx.coroutines.flow.flowOf(emptySet())
+            }
+        }.collectAsState(initial = emptySet())
+
+        AddToPlaylistSheet(
+            tracks = playlistTracks,
+            playlists = libraryState.customPlaylists,
+            containingPlaylistIds = containingPlaylistIds,
+            onDismissRequest = interaction::dismissAddToPlaylist,
+            onSelectPlaylist = { playlist ->
+                if (playlistTracks.size == 1) {
+                    interaction.libraryViewModel.addTrackToPlaylist(
+                        playlist.id,
+                        playlistTracks.first()
+                    ) {
+                        interaction.showAddedToPlaylistSnackbar(
+                            playlistTracks.first(),
+                            playlist.name,
+                            activeAccent
+                        )
+                    }
+                } else {
+                    interaction.libraryViewModel.addTracksToPlaylist(
+                        playlist.id,
+                        playlistTracks
+                    ) { count ->
+                        interaction.showBatchAddedToPlaylistSnackbar(
+                            count,
+                            playlist.name,
+                            activeAccent
+                        )
+                    }
+                }
+            },
+            onCreatePlaylistAndAdd = { name ->
+                interaction.libraryViewModel.createPlaylist(name) { id ->
+                    if (playlistTracks.size == 1) {
+                        interaction.libraryViewModel.addTrackToPlaylist(
+                            id,
+                            playlistTracks.first()
+                        ) {
+                            interaction.showAddedToPlaylistSnackbar(
+                                playlistTracks.first(),
+                                name,
+                                activeAccent
+                            )
+                        }
+                    } else {
+                        interaction.libraryViewModel.addTracksToPlaylist(
+                            id,
+                            playlistTracks
+                        ) { count ->
+                            interaction.showBatchAddedToPlaylistSnackbar(count, name, activeAccent)
+                        }
+                    }
+                }
+            }
+        )
+    }
 }
 
 @Composable

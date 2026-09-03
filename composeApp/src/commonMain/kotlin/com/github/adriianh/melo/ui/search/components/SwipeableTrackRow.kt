@@ -18,17 +18,25 @@ fun SwipeableTrackRow(
     onSwipeRight: (Track) -> Unit = {},
     onMoreClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onSelectionToggle: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     MeloSwipeableItem(
-        onSwipeLeft = { onSwipeLeft(track) },
-        onSwipeRight = { onSwipeRight(track) },
+        onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
+        onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
         swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
         modifier = modifier
     ) {
         TrackRow(
             track = track,
             onClick = onPlay,
-            onMoreClick = onMoreClick
+            onMoreClick = if (isSelectionMode) null else onMoreClick,
+            isSelectionMode = isSelectionMode,
+            isSelected = isSelected,
+            onSelectionToggle = onSelectionToggle,
+            onLongClick = onLongClick
         )
     }
 }

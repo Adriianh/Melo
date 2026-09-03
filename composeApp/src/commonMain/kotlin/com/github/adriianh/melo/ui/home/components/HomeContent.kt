@@ -24,8 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -33,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSectionType
@@ -63,7 +63,11 @@ fun HomeContent(
     queueViewModel: QueueViewModel,
     paddingValues: PaddingValues,
     onMoreClick: (Track) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
 
@@ -171,7 +175,11 @@ fun HomeContent(
                         SongFourRowCarousel(
                             tracks = tracks,
                             onTrackClick = queueViewModel::playTrack,
-                            onMoreClick = onMoreClick
+                            onMoreClick = onMoreClick,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick
                         )
                     }
                 }

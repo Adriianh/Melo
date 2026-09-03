@@ -49,7 +49,11 @@ fun CategoryBrowsingContent(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     if (uiState.isBrowsingCategory) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -89,15 +93,22 @@ fun CategoryBrowsingContent(
                 items(section.items) { item ->
                     when (item) {
                         is SearchResult.Song -> {
+                            val isSelected = item.track.id in selectedTrackIds
                             MeloSwipeableItem(
-                                onSwipeLeft = { onSwipeLeft(item.track) },
-                                onSwipeRight = { onSwipeRight(item.track) },
+                                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(item.track) },
+                                onSwipeRight = { if (!isSelectionMode) onSwipeRight(item.track) },
                                 swipeRightIcon = if (isLiked(item.track)) Icons.Default.HeartBroken else Icons.Default.Favorite
                             ) {
                                 TrackRow(
                                     track = item.track,
                                     onClick = { queueViewModel.playTrack(item.track) },
-                                    onMoreClick = { onMoreClick(item.track) }
+                                    onMoreClick = if (isSelectionMode) null else {
+                                        { onMoreClick(item.track) }
+                                    },
+                                    isSelectionMode = isSelectionMode,
+                                    isSelected = isSelected,
+                                    onSelectionToggle = { onToggleSelectTrack?.invoke(item.track) },
+                                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } }
                                 )
                             }
                         }

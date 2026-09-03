@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.components.AddToPlaylistSheet
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.TrackContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
@@ -143,7 +144,10 @@ fun NowPlayingScreen(
                 interaction.contextMenuTrack = null
             },
             isLiked = isLiked,
-            onAddToPlaylist = { /* TODO */ },
+            onAddToPlaylist = {
+                interaction.openAddToPlaylist(track)
+                interaction.dismissContextMenu()
+            },
             onGoToArtist = {
                 interaction.contextMenuTrack = null
                 onArtistClick(track.artist)
@@ -292,5 +296,39 @@ fun NowPlayingScreen(
             onMoreClick = onMoreClick,
             isLiked = isLiked
         )
+
+        val playlistTrack = interaction.addToPlaylistTrack
+        if (playlistTrack != null) {
+            val containingPlaylistIds by remember(playlistTrack.id) {
+                libraryViewModel.getPlaylistIdsForTrack(playlistTrack.id)
+            }.collectAsState(initial = emptySet<Long>())
+
+            AddToPlaylistSheet(
+                track = playlistTrack,
+                playlists = libraryState.customPlaylists,
+                containingPlaylistIds = containingPlaylistIds,
+                onDismissRequest = interaction::dismissAddToPlaylist,
+                onSelectPlaylist = { playlist ->
+                    libraryViewModel.addTrackToPlaylist(playlist.id, playlistTrack) {
+                        interaction.showAddedToPlaylistSnackbar(
+                            playlistTrack,
+                            playlist.name,
+                            activeAccent
+                        )
+                    }
+                },
+                onCreatePlaylistAndAdd = { name ->
+                    libraryViewModel.createPlaylist(name) { id ->
+                        libraryViewModel.addTrackToPlaylist(id, playlistTrack) {
+                            interaction.showAddedToPlaylistSnackbar(
+                                playlistTrack,
+                                name,
+                                activeAccent
+                            )
+                        }
+                    }
+                }
+            )
+        }
     }
 }

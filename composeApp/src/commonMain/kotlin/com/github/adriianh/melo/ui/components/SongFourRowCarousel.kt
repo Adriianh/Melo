@@ -20,7 +20,11 @@ fun SongFourRowCarousel(
     tracks: List<Track>,
     onTrackClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
-    onMoreClick: ((Track) -> Unit)? = null
+    onMoreClick: ((Track) -> Unit)? = null,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     val columns = tracks.chunked(4)
     val listState = rememberLazyListState()
@@ -47,13 +51,18 @@ fun SongFourRowCarousel(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         columnTracks.forEach { track ->
+                            val isSelected = track.id in selectedTrackIds
                             TrackRow(
                                 track = track,
                                 onClick = { onTrackClick(track) },
                                 showGlassBackground = true,
-                                onMoreClick = if (onMoreClick != null) {
+                                onMoreClick = if (onMoreClick != null && !isSelectionMode) {
                                     { onMoreClick(track) }
-                                } else null
+                                } else null,
+                                isSelectionMode = isSelectionMode,
+                                isSelected = isSelected,
+                                onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                                onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
                             )
                         }
                     }

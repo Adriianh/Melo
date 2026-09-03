@@ -11,7 +11,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,7 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -34,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
+import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -85,6 +95,10 @@ fun AlbumDetailScreen(
             ?: "Álbum"
     }
 
+    var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode = selectedTrackIds.isNotEmpty()
+    var showTopMenu by remember { mutableStateOf(false) }
+
     TrackInteractionContextMenu(
         interaction = interaction,
         libraryState = libraryState,
@@ -99,19 +113,89 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        effectiveTitle,
+                        if (isSelectionMode) "${selectedTrackIds.size} seleccionadas" else effectiveTitle,
                         style = MeloType.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = MeloColors.textPrimary
-                        )
+                    if (isSelectionMode) {
+                        IconButton(onClick = { selectedTrackIds = emptySet() }) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Cancelar selección",
+                                tint = MeloColors.textPrimary
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Atrás",
+                                tint = MeloColors.textPrimary
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    if (isSelectionMode) {
+                        val isAllSelected = selectedTrackIds.size == songs.size
+                        IconButton(
+                            onClick = {
+                                selectedTrackIds =
+                                    if (isAllSelected) emptySet() else songs.map { it.id }.toSet()
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.SelectAll,
+                                contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
+                                tint = if (isAllSelected) accentColor else MeloColors.textPrimary
+                            )
+                        }
+                    } else if (songs.isNotEmpty()) {
+                        IconButton(onClick = { showTopMenu = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Más opciones",
+                                tint = MeloColors.textPrimary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showTopMenu,
+                            onDismissRequest = { showTopMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Añadir todo a playlist...", style = MeloType.body) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.PlaylistAdd,
+                                        contentDescription = null,
+                                        tint = accentColor
+                                    )
+                                },
+                                onClick = {
+                                    showTopMenu = false
+                                    interaction.openAddToPlaylist(songs)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Seleccionar canciones", style = MeloType.body) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Checklist,
+                                        contentDescription = null,
+                                        tint = MeloColors.textPrimary
+                                    )
+                                },
+                                onClick = {
+                                    showTopMenu = false
+                                    if (songs.isNotEmpty()) {
+                                        selectedTrackIds = setOf(songs.first().id)
+                                    }
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -228,6 +312,20 @@ fun AlbumDetailScreen(
                             downloadProgress = { song ->
                                 uiState.activeDownloadsMap[song.id] ?: 0f
                             },
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onTrackLongClick = { song ->
+                                if (!isSelectionMode) {
+                                    selectedTrackIds = setOf(song.id)
+                                }
+                            },
+                            onToggleSelectTrack = { song ->
+                                selectedTrackIds = if (song.id in selectedTrackIds) {
+                                    selectedTrackIds - song.id
+                                } else {
+                                    selectedTrackIds + song.id
+                                }
+                            },
                             onTrackClick = { index, _ -> queueViewModel.playTracks(songs, index) },
                             onMoreClick = { interaction.openContextMenu(it) },
                             onSwipeLeft = {
@@ -270,6 +368,43 @@ fun AlbumDetailScreen(
                         }
                     }
                 }
+
+                BatchSelectionBottomBar(
+                    isVisible = isSelectionMode,
+                    selectedCount = selectedTrackIds.size,
+                    totalCount = songs.size,
+                    onClearSelection = { selectedTrackIds = emptySet() },
+                    onSelectAllToggle = {
+                        selectedTrackIds =
+                            if (selectedTrackIds.size == songs.size) emptySet() else songs.map { it.id }
+                                .toSet()
+                    },
+                    onAddToPlaylist = {
+                        val selTracks = songs.filter { it.id in selectedTrackIds }
+                        interaction.openAddToPlaylist(selTracks)
+                        selectedTrackIds = emptySet()
+                    },
+                    onAddToQueue = {
+                        val selTracks = songs.filter { it.id in selectedTrackIds }
+                        queueViewModel.addAllToQueue(selTracks)
+                        interaction.snackbar.show(
+                            msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
+                            actionColor = activeAccent
+                        )
+                        selectedTrackIds = emptySet()
+                    },
+                    onDownload = {
+                        val selTracks = songs.filter { it.id in selectedTrackIds }
+                        selTracks.forEach { libraryViewModel.downloadTrack(it) }
+                        interaction.snackbar.show(
+                            msg = "Descargando ${selTracks.size} canciones...",
+                            actionColor = activeAccent
+                        )
+                        selectedTrackIds = emptySet()
+                    },
+                    accentColor = accentColor,
+                    modifier = Modifier.align(Alignment.BottomCenter)
+                )
             }
         }
     }

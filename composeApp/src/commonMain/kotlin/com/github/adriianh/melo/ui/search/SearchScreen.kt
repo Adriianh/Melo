@@ -16,18 +16,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloSearchBar
-import com.github.adriianh.melo.ui.components.TrackContextMenu
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryViewModel
@@ -61,6 +65,34 @@ fun SearchScreen(
 
     val focusManager = LocalFocusManager.current
     var isSearchActive by remember { mutableStateOf(false) }
+    var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
+    val isSelectionMode = selectedTrackIds.isNotEmpty()
+
+    val visibleSongs = remember(uiState) {
+        when {
+            uiState.isBrowsingCategory || uiState.browseCategoryResult != null -> {
+                uiState.browseCategoryResult?.sections.orEmpty()
+                    .flatMap { it.items }
+                    .filterIsInstance<SearchResult.Song>()
+                    .map { it.track }
+            }
+
+            uiState.selectedFilter == SearchFilterType.SONGS -> uiState.songResults
+            uiState.query.isNotBlank() -> {
+                uiState.summarySections
+                    .flatMap { it.items }
+                    .filterIsInstance<SearchResult.Song>()
+                    .map { it.track }
+                    .distinctBy { it.id }
+            }
+
+            else -> emptyList()
+        }
+    }
+
+    LaunchedEffect(uiState.query, uiState.selectedFilter, uiState.isBrowsingCategory) {
+        selectedTrackIds = emptySet()
+    }
 
     TrackInteractionContextMenu(
         interaction = interaction,
@@ -145,6 +177,15 @@ fun SearchScreen(
                         onSwipeRight = { track ->
                             val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
                             interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
+                        },
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = { track ->
+                            selectedTrackIds =
+                                if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
+                        },
+                        onTrackLongClick = { track ->
+                            if (!isSelectionMode) selectedTrackIds = setOf(track.id)
                         }
                     )
 
@@ -161,6 +202,15 @@ fun SearchScreen(
                         onSwipeRight = { track ->
                             val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
                             interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
+                        },
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = { track ->
+                            selectedTrackIds =
+                                if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
+                        },
+                        onTrackLongClick = { track ->
+                            if (!isSelectionMode) selectedTrackIds = setOf(track.id)
                         }
                     )
 
@@ -205,7 +255,45 @@ fun SearchScreen(
                     isSearchActive = false
                     focusManager.clearFocus()
                     viewModel.onSuggestionSelected(selectedQuery)
-                }
+                },
+                onDeleteRecentSearch = viewModel::deleteRecentSearch
+            )
+
+            BatchSelectionBottomBar(
+                isVisible = isSelectionMode,
+                selectedCount = selectedTrackIds.size,
+                totalCount = visibleSongs.size,
+                onClearSelection = { selectedTrackIds = emptySet() },
+                onSelectAllToggle = {
+                    selectedTrackIds =
+                        if (selectedTrackIds.size == visibleSongs.size) emptySet() else visibleSongs.map { it.id }
+                            .toSet()
+                },
+                onAddToPlaylist = {
+                    val selTracks = visibleSongs.filter { it.id in selectedTrackIds }
+                    interaction.openAddToPlaylist(selTracks)
+                    selectedTrackIds = emptySet()
+                },
+                onAddToQueue = {
+                    val selTracks = visibleSongs.filter { it.id in selectedTrackIds }
+                    queueViewModel.addAllToQueue(selTracks)
+                    interaction.snackbar.show(
+                        msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
+                        actionColor = activeAccent
+                    )
+                    selectedTrackIds = emptySet()
+                },
+                onDownload = {
+                    val selTracks = visibleSongs.filter { it.id in selectedTrackIds }
+                    selTracks.forEach { libraryViewModel.downloadTrack(it) }
+                    interaction.snackbar.show(
+                        msg = "Descargando ${selTracks.size} canciones...",
+                        actionColor = activeAccent
+                    )
+                    selectedTrackIds = emptySet()
+                },
+                accentColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }

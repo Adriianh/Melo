@@ -37,7 +37,11 @@ fun HomeSearchResultsView(
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
     interaction: TrackInteractionState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     if (isSearching) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -66,12 +70,20 @@ fun HomeSearchResultsView(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            items(results) { track ->
+            items(results, key = { it.id }) { track ->
                 val isLiked = likedSongs.any { it.id == track.id }
+                val isSelected = track.id in selectedTrackIds
                 MeloSwipeableItem(
-                    onSwipeLeft = { interaction.showAddedToQueueSnackbar(track, activeAccent) },
+                    onSwipeLeft = {
+                        if (!isSelectionMode) interaction.showAddedToQueueSnackbar(
+                            track,
+                            activeAccent
+                        )
+                    },
                     onSwipeRight = {
-                        interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                        if (!isSelectionMode) {
+                            interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                        }
                     },
                     swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
                     swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
@@ -80,7 +92,13 @@ fun HomeSearchResultsView(
                     TrackRow(
                         track = track,
                         onClick = { queueViewModel.playTrack(track) },
-                        onMoreClick = { onMoreClick(track) }
+                        onMoreClick = if (isSelectionMode) null else {
+                            { onMoreClick(track) }
+                        },
+                        isSelectionMode = isSelectionMode,
+                        isSelected = isSelected,
+                        onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
                     )
                 }
             }

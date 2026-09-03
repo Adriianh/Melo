@@ -13,6 +13,7 @@ import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.BrowseCategoryUseCase
+import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
 import com.github.adriianh.core.domain.usecase.search.GetMoodAndGenresUseCase
@@ -93,6 +94,7 @@ class SearchViewModel(
     private val getMoodAndGenresUseCase: GetMoodAndGenresUseCase,
     private val getSearchHistoryUseCase: GetSearchHistoryUseCase,
     private val saveSearchQueryUseCase: SaveSearchQueryUseCase,
+    private val deleteSearchQueryUseCase: DeleteSearchQueryUseCase? = null,
     private val getSearchSuggestionsUseCase: GetSearchSuggestionsUseCase,
     private val getRecentTracksUseCase: GetRecentTracksUseCase,
     private val getRemoteHistoryUseCase: GetRemoteHistoryUseCase,
@@ -339,6 +341,12 @@ class SearchViewModel(
             getSearchHistoryUseCase("", 10).collect { queries ->
                 _uiState.update { it.copy(recentSearches = queries) }
             }
+        }
+    }
+
+    fun deleteRecentSearch(query: String) {
+        viewModelScope.launch {
+            deleteSearchQueryUseCase?.invoke(query)
         }
     }
 

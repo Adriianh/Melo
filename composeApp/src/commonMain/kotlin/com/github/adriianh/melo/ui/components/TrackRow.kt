@@ -1,7 +1,8 @@
 package com.github.adriianh.melo.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +38,7 @@ import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrackRow(
     track: Track,
@@ -48,8 +52,14 @@ fun TrackRow(
     isDownloading: Boolean = false,
     downloadProgress: Float = 0f,
     onMoreClick: (() -> Unit)? = null,
+    dragHandle: (@Composable () -> Unit)? = null,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onSelectionToggle: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val backgroundColor = when {
+        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
         isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         showGlassBackground -> MeloColors.glassSurface.copy(alpha = 0.3f)
         else -> Transparent
@@ -60,11 +70,33 @@ fun TrackRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = {
+                    if (isSelectionMode) {
+                        onSelectionToggle?.invoke()
+                    } else {
+                        onClick()
+                    }
+                },
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        if (isSelectionMode) {
+            Box(
+                modifier = Modifier.size(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                    contentDescription = if (isSelected) "Seleccionada" else "No seleccionada",
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
         if (trackNumber != null) {
             Box(
                 modifier = Modifier.size(32.dp),
@@ -181,6 +213,10 @@ fun TrackRow(
                     modifier = Modifier.size(18.dp)
                 )
             }
+        }
+
+        if (dragHandle != null) {
+            dragHandle()
         }
     }
 }

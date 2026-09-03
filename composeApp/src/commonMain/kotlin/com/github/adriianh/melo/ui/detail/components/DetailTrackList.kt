@@ -34,6 +34,10 @@ fun LazyListScope.detailTrackItems(
     isDownloaded: (Track) -> Boolean = { false },
     isDownloading: (Track) -> Boolean = { false },
     downloadProgress: (Track) -> Float = { 0f },
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onTrackLongClick: ((Track) -> Unit)? = null,
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
 ) {
     itemsIndexed(
         tracks,
@@ -44,11 +48,12 @@ fun LazyListScope.detailTrackItems(
         val downloaded = isDownloaded(song)
         val downloading = isDownloading(song)
         val progress = downloadProgress(song)
+        val isSelected = song.id in selectedTrackIds
 
         Box(modifier = itemModifier) {
             MeloSwipeableItem(
-                onSwipeLeft = { onSwipeLeft(song) },
-                onSwipeRight = { onSwipeRight(song) },
+                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(song) },
+                onSwipeRight = { if (!isSelectionMode) onSwipeRight(song) },
                 swipeRightIcon = if (liked) Icons.Default.HeartBroken else Icons.Default.Favorite,
                 swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
                 swipeLeftColor = MeloColors.brandAccent
@@ -58,7 +63,8 @@ fun LazyListScope.detailTrackItems(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (isPlayingThis) accentColor.copy(alpha = 0.15f)
+                            if (isSelected) accentColor.copy(alpha = 0.18f)
+                            else if (isPlayingThis) accentColor.copy(alpha = 0.15f)
                             else Color.Transparent
                         )
                 ) {
@@ -70,8 +76,14 @@ fun LazyListScope.detailTrackItems(
                         isDownloaded = downloaded,
                         isDownloading = downloading,
                         downloadProgress = progress,
+                        isSelectionMode = isSelectionMode,
+                        isSelected = isSelected,
+                        onSelectionToggle = { onToggleSelectTrack?.invoke(song) },
+                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(song) } },
                         onClick = { onTrackClick(index, song) },
-                        onMoreClick = { onMoreClick(song) }
+                        onMoreClick = if (isSelectionMode) null else {
+                            { onMoreClick(song) }
+                        }
                     )
                 }
             }

@@ -26,7 +26,11 @@ fun SearchResultsContent(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     when {
         uiState.isSearching -> SearchResultsSkeleton(modifier, paddingValues)
@@ -49,6 +53,10 @@ fun SearchResultsContent(
                 onSwipeLeft = onSwipeLeft,
                 onSwipeRight = onSwipeRight,
                 isLiked = isLiked,
+                isSelectionMode = isSelectionMode,
+                selectedTrackIds = selectedTrackIds,
+                onToggleSelectTrack = onToggleSelectTrack,
+                onTrackLongClick = onTrackLongClick,
                 modifier = modifier
             )
 
@@ -56,6 +64,11 @@ fun SearchResultsContent(
                 uiState = uiState,
                 paddingValues = paddingValues,
                 queueViewModel = queueViewModel,
+                onMoreClick = onMoreClick,
+                isSelectionMode = isSelectionMode,
+                selectedTrackIds = selectedTrackIds,
+                onToggleSelectTrack = onToggleSelectTrack,
+                onTrackLongClick = onTrackLongClick,
                 modifier = modifier
             )
 

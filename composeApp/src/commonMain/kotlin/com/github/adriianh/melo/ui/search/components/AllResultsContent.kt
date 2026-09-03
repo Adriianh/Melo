@@ -38,6 +38,10 @@ fun AllResultsContent(
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
     modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     val allSongs = remember(uiState.summarySections) {
         uiState.summarySections
@@ -73,7 +77,11 @@ fun AllResultsContent(
                             onMoreClick = onMoreClick,
                             onSwipeLeft = onSwipeLeft,
                             onSwipeRight = onSwipeRight,
-                            isLiked = isLiked
+                            isLiked = isLiked,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick
                         )
                     } else {
                         NarrowTopResultColumn(
@@ -86,7 +94,11 @@ fun AllResultsContent(
                             onMoreClick = onMoreClick,
                             onSwipeLeft = onSwipeLeft,
                             onSwipeRight = onSwipeRight,
-                            isLiked = isLiked
+                            isLiked = isLiked,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick
                         )
                     }
                 } else if (allSongs.isNotEmpty()) {
@@ -98,7 +110,11 @@ fun AllResultsContent(
                         onSwipeLeft = onSwipeLeft,
                         onSwipeRight = onSwipeRight,
                         isLiked = isLiked,
-                        queueViewModel = queueViewModel
+                        queueViewModel = queueViewModel,
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = onToggleSelectTrack,
+                        onTrackLongClick = onTrackLongClick
                     )
                 }
             }
@@ -114,7 +130,11 @@ fun AllResultsContent(
                         onMoreClick = onMoreClick,
                         onSwipeLeft = onSwipeLeft,
                         onSwipeRight = onSwipeRight,
-                        isLiked = isLiked
+                        isLiked = isLiked,
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = onToggleSelectTrack,
+                        onTrackLongClick = onTrackLongClick
                     )
                 }
             }
@@ -151,7 +171,11 @@ fun AllResultsContent(
                             onPlaylistClick = onPlaylistClick,
                             onMoreClick = onMoreClick,
                             onSwipeLeft = onSwipeLeft,
-                            isLiked = isLiked
+                            isLiked = isLiked,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick
                         )
                     }
 
@@ -174,6 +198,10 @@ private fun WideTopResultRow(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -202,7 +230,11 @@ private fun WideTopResultRow(
                     onSwipeLeft = onSwipeLeft,
                     onSwipeRight = onSwipeRight,
                     isLiked = isLiked,
-                    queueViewModel = queueViewModel
+                    queueViewModel = queueViewModel,
+                    isSelectionMode = isSelectionMode,
+                    selectedTrackIds = selectedTrackIds,
+                    onToggleSelectTrack = onToggleSelectTrack,
+                    onTrackLongClick = onTrackLongClick
                 )
             }
         }
@@ -221,6 +253,10 @@ private fun NarrowTopResultColumn(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column {
@@ -246,7 +282,11 @@ private fun NarrowTopResultColumn(
                     onSwipeLeft = onSwipeLeft,
                     onSwipeRight = onSwipeRight,
                     isLiked = isLiked,
-                    queueViewModel = queueViewModel
+                    queueViewModel = queueViewModel,
+                    isSelectionMode = isSelectionMode,
+                    selectedTrackIds = selectedTrackIds,
+                    onToggleSelectTrack = onToggleSelectTrack,
+                    onTrackLongClick = onTrackLongClick
                 )
             }
         }
@@ -261,6 +301,10 @@ private fun SongListSections(
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
     queueViewModel: QueueViewModel,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     Column {
         sections.forEach { (title, tracks) ->
@@ -269,13 +313,18 @@ private fun SongListSections(
                 Spacer(modifier = Modifier.height(8.dp))
             }
             tracks.forEach { track ->
+                val isSelected = track.id in selectedTrackIds
                 SwipeableTrackRow(
                     track = track,
                     isLiked = isLiked(track),
                     onPlay = { queueViewModel.playTrack(track) },
                     onSwipeLeft = onSwipeLeft,
                     onSwipeRight = onSwipeRight,
-                    onMoreClick = { onMoreClick(track) }
+                    onMoreClick = { onMoreClick(track) },
+                    isSelectionMode = isSelectionMode,
+                    isSelected = isSelected,
+                    onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
                 )
             }
         }
@@ -292,19 +341,28 @@ private fun SearchResultSongList(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     Column {
         SectionHeader(title = title)
         Spacer(modifier = Modifier.height(8.dp))
         Column(verticalArrangement = if (spaced) Arrangement.spacedBy(4.dp) else Arrangement.Top) {
             tracks.forEach { track ->
+                val isSelected = track.id in selectedTrackIds
                 SwipeableTrackRow(
                     track = track,
                     isLiked = isLiked(track),
                     onPlay = { onPlay(track) },
                     onSwipeLeft = onSwipeLeft,
                     onSwipeRight = onSwipeRight,
-                    onMoreClick = { onMoreClick(track) }
+                    onMoreClick = { onMoreClick(track) },
+                    isSelectionMode = isSelectionMode,
+                    isSelected = isSelected,
+                    onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
                 )
             }
         }
@@ -398,6 +456,10 @@ private fun MixedResultSection(
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     SectionHeader(title = section.title)
     Spacer(modifier = Modifier.height(8.dp))
@@ -405,13 +467,20 @@ private fun MixedResultSection(
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         section.items.forEach { item ->
             when (item) {
-                is SearchResult.Song -> SwipeableTrackRow(
-                    track = item.track,
-                    isLiked = isLiked(item.track),
-                    onPlay = { queueViewModel.playTrack(item.track) },
-                    onSwipeLeft = { onSwipeLeft(item.track) },
-                    onMoreClick = { onMoreClick(item.track) }
-                )
+                is SearchResult.Song -> {
+                    val isSelected = item.track.id in selectedTrackIds
+                    SwipeableTrackRow(
+                        track = item.track,
+                        isLiked = isLiked(item.track),
+                        onPlay = { queueViewModel.playTrack(item.track) },
+                        onSwipeLeft = { onSwipeLeft(item.track) },
+                        onMoreClick = { onMoreClick(item.track) },
+                        isSelectionMode = isSelectionMode,
+                        isSelected = isSelected,
+                        onSelectionToggle = { onToggleSelectTrack?.invoke(item.track) },
+                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } }
+                    )
+                }
 
                 is SearchResult.Album -> AlbumCard(
                     item.title,

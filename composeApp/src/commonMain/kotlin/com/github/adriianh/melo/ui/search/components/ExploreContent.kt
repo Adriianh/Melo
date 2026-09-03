@@ -56,7 +56,7 @@ fun ExploreContent(
         if (uiState.recentHistory.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Búsquedas recientes",
+                    title = "Escuchado recientemente",
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
                 SongFourRowCarousel(

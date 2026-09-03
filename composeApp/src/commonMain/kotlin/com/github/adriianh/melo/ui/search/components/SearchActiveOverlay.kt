@@ -19,9 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ fun SearchOverlayWrapper(
     suggestions: List<String>,
     recentSearches: List<String>,
     onSelect: (String) -> Unit,
+    onDeleteRecentSearch: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -60,6 +63,7 @@ fun SearchOverlayWrapper(
                 suggestions = suggestions,
                 recentSearches = recentSearches,
                 onSelect = onSelect,
+                onDeleteRecentSearch = onDeleteRecentSearch,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 360.dp)
@@ -74,6 +78,7 @@ fun SearchActiveOverlay(
     suggestions: List<String>,
     recentSearches: List<String>,
     onSelect: (String) -> Unit,
+    onDeleteRecentSearch: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -99,16 +104,17 @@ fun SearchActiveOverlay(
                             )
                         )
                     }
-                    items(recentSearches) { search ->
+                    items(recentSearches, key = { it }) { search ->
                         SearchItemRow(
                             text = search,
                             icon = Icons.Default.History,
-                            onClick = { onSelect(search) }
+                            onClick = { onSelect(search) },
+                            onDelete = onDeleteRecentSearch?.let { del -> { del(search) } }
                         )
                     }
                 }
             } else {
-                items(suggestions) { suggestion ->
+                items(suggestions, key = { it }) { suggestion ->
                     SearchItemRow(
                         text = suggestion,
                         icon = Icons.Default.Search,
@@ -124,24 +130,39 @@ fun SearchActiveOverlay(
 private fun SearchItemRow(
     text: String,
     icon: ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+            .padding(vertical = 8.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Icon(icon, null, tint = MeloColors.textMuted, modifier = Modifier.size(20.dp))
         Text(
-            text,
+            text = text,
             style = MeloType.body,
             color = MeloColors.textPrimary,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
         )
+        if (onDelete != null) {
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Eliminar de búsquedas",
+                    tint = MeloColors.textSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
     }
 }

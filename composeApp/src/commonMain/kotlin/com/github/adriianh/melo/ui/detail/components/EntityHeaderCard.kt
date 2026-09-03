@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -69,6 +70,7 @@ fun EntityHeaderCard(
     downloadedCount: Int = 0,
     totalTrackCount: Int = 0,
     currentDownloadingTrackTitle: String? = null,
+    artworkUrls: List<String>? = null,
     onDownloadClick: (() -> Unit)? = null,
     onSubtitleClick: (() -> Unit)? = null,
 ) {
@@ -78,21 +80,38 @@ fun EntityHeaderCard(
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        MeloAsyncImage(
-            url = artworkUrl,
-            contentDescription = title,
-            modifier = Modifier
-                .size(200.dp)
-                .shadow(16.dp, RoundedCornerShape(14.dp))
-                .clip(RoundedCornerShape(14.dp))
-                .border(
-                    1.dp,
-                    MeloColors.borderStrong,
-                    RoundedCornerShape(14.dp)
-                ),
-            size = 200.dp,
-            shape = RoundedCornerShape(14.dp)
-        )
+        if (!artworkUrls.isNullOrEmpty()) {
+            PlaylistMosaicCover(
+                artworks = artworkUrls,
+                shape = RoundedCornerShape(14.dp),
+                placeholderIconSize = 64.dp,
+                modifier = Modifier
+                    .size(200.dp)
+                    .shadow(16.dp, RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(
+                        1.dp,
+                        MeloColors.borderStrong,
+                        RoundedCornerShape(14.dp)
+                    )
+            )
+        } else {
+            MeloAsyncImage(
+                url = artworkUrl,
+                contentDescription = title,
+                modifier = Modifier
+                    .size(200.dp)
+                    .shadow(16.dp, RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(
+                        1.dp,
+                        MeloColors.borderStrong,
+                        RoundedCornerShape(14.dp)
+                    ),
+                size = 200.dp,
+                shape = RoundedCornerShape(14.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
