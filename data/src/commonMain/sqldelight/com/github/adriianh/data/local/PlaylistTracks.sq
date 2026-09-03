@@ -25,3 +25,9 @@ DELETE FROM playlist_tracks WHERE playlist_id = ?;
 selectTracksForPlaylist:
 SELECT * FROM playlist_tracks WHERE playlist_id = ? ORDER BY position ASC;
 
+selectPlaylistIdsForTrack:
+SELECT playlist_id FROM playlist_tracks WHERE track_id = ?;
+
+updateTrackPosition:
+UPDATE playlist_tracks SET position = ? WHERE playlist_id = ? AND track_id = ?;
+

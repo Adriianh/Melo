@@ -32,8 +32,27 @@ class AddTrackToPlaylistUseCase(private val repository: PlaylistRepository) {
         repository.addTrackToPlaylist(playlistId, track)
 }
 
+class AddTracksToPlaylistUseCase(private val repository: PlaylistRepository) {
+    suspend operator fun invoke(
+        playlistId: Long,
+        tracks: List<Track>,
+        skipDuplicates: Boolean = true
+    ): Int =
+        repository.addTracksToPlaylist(playlistId, tracks, skipDuplicates)
+}
+
 class RemoveTrackFromPlaylistUseCase(private val repository: PlaylistRepository) {
     suspend operator fun invoke(playlistId: Long, trackId: String) =
         repository.removeTrackFromPlaylist(playlistId, trackId)
+}
+
+class GetPlaylistIdsForTrackUseCase(private val repository: PlaylistRepository) {
+    operator fun invoke(trackId: String): Flow<Set<Long>> =
+        repository.getPlaylistIdsForTrack(trackId)
+}
+
+class ReorderPlaylistTracksUseCase(private val repository: PlaylistRepository) {
+    suspend operator fun invoke(playlistId: Long, trackIds: List<String>) =
+        repository.reorderPlaylistTracks(playlistId, trackIds)
 }
 

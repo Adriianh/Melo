@@ -5,5 +5,6 @@ data class Playlist(
     val name: String,
     val trackCount: Int,
     val createdAt: Long,
+    val artworks: List<String> = emptyList(),
 )
 
