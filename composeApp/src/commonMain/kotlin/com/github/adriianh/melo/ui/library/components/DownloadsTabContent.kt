@@ -53,6 +53,7 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -116,11 +117,20 @@ fun DownloadsTabContent(
 
     val downloadedAlbums = remember(downloadedTracks) {
         downloadedTracks
-            .groupBy { it.track.album.takeIf { a -> a.isNotBlank() } ?: "Varios" }
+            .filter {
+                val album = it.track.album.trim()
+                album.isNotBlank() &&
+                        !album.equals("Varios", ignoreCase = true) &&
+                        !album.equals("Various Artists", ignoreCase = true) &&
+                        !album.equals("Desconocido", ignoreCase = true) &&
+                        !album.equals("Unknown", ignoreCase = true)
+            }
+            .groupBy { it.track.album.trim() }
             .map { (albumName, tracks) ->
                 DownloadedAlbumGroup(
                     name = albumName,
-                    artist = tracks.firstOrNull()?.track?.artist ?: "Varios Artistas",
+                    artist = tracks.firstOrNull()?.track?.artist?.takeIf { it.isNotBlank() }
+                        ?: "Varios Artistas",
                     artworkUrl = tracks.firstOrNull()?.track?.artworkUrl,
                     tracks = tracks.map { it.track }
                 )
@@ -129,7 +139,13 @@ fun DownloadsTabContent(
 
     val downloadedArtists = remember(downloadedTracks) {
         downloadedTracks
-            .groupBy { it.track.artist }
+            .filter {
+                val artist = it.track.artist.trim()
+                artist.isNotBlank() &&
+                        !artist.equals("Desconocido", ignoreCase = true) &&
+                        !artist.equals("Unknown", ignoreCase = true)
+            }
+            .groupBy { it.track.artist.trim() }
             .map { (artistName, tracks) ->
                 DownloadedArtistGroup(
                     name = artistName,
@@ -244,50 +260,64 @@ fun DownloadsTabContent(
             }
 
             DownloadsFilter.ALBUMS -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(140.dp),
-                    state = gridState,
-                    contentPadding = PaddingValues(bottom = 80.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(downloadedAlbums, key = { it.name }) { album ->
-                        AlbumCard(
-                            title = album.name,
-                            subtitle = "${album.artist} • ${album.tracks.size} canciones",
-                            artworkUrl = album.artworkUrl,
-                            cardWidth = 140.dp,
-                            onClick = {
-                                onAlbumClick(
-                                    album.name,
-                                    album.name,
-                                    album.artworkUrl,
-                                    album.artist
-                                )
-                            }
-                        )
+                if (downloadedAlbums.isEmpty()) {
+                    MeloEmptyState(
+                        message = "No tienes álbumes entre tus descargas",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(140.dp),
+                        state = gridState,
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(downloadedAlbums, key = { it.name }) { album ->
+                            AlbumCard(
+                                title = album.name,
+                                subtitle = "${album.artist} • ${album.tracks.size} canciones",
+                                artworkUrl = album.artworkUrl,
+                                cardWidth = 140.dp,
+                                onClick = {
+                                    onAlbumClick(
+                                        album.name,
+                                        album.name,
+                                        album.artworkUrl,
+                                        album.artist
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
 
             DownloadsFilter.ARTISTS -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(140.dp),
-                    state = gridState,
-                    contentPadding = PaddingValues(bottom = 80.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(downloadedArtists, key = { it.name }) { artist ->
-                        ArtistCircle(
-                            name = artist.name,
-                            artworkUrl = artist.artworkUrl,
-                            onClick = { onArtistClick(artist.name) },
-                            size = 130.dp,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                if (downloadedArtists.isEmpty()) {
+                    MeloEmptyState(
+                        message = "No tienes artistas entre tus descargas",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(140.dp),
+                        state = gridState,
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(downloadedArtists, key = { it.name }) { artist ->
+                            ArtistCircle(
+                                name = artist.name,
+                                artworkUrl = artist.artworkUrl,
+                                onClick = { onArtistClick(artist.name) },
+                                size = 130.dp,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }

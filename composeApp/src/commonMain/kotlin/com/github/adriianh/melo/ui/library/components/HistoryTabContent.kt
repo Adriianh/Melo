@@ -1,33 +1,20 @@
 package com.github.adriianh.melo.ui.library.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.util.MeloColors
-import com.github.adriianh.melo.util.PlatformAsyncImage
+import com.github.adriianh.melo.ui.components.TrackRow
 
 @Composable
 fun HistoryTabContent(
@@ -37,7 +24,11 @@ fun HistoryTabContent(
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectionMode: Boolean = false,
+    selectedTrackIds: Set<String> = emptySet(),
+    onToggleSelectTrack: ((Track) -> Unit)? = null,
+    onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     if (history.isEmpty()) {
         MeloEmptyState(message = "No hay reproducciones recientes registradas.", modifier = modifier)
@@ -48,45 +39,24 @@ fun HistoryTabContent(
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier.fillMaxSize()
     ) {
-        items(history) { entry ->
+        items(history, key = { it.track.id + "_" + it.playedAt }) { entry ->
+            val track = entry.track
+            val isSelected = track.id in selectedTrackIds
             MeloSwipeableItem(
-                onSwipeLeft = { onSwipeLeft(entry.track) },
-                onSwipeRight = { onSwipeRight(entry.track) },
-                swipeRightIcon = if (isLiked(entry.track)) Icons.Default.HeartBroken else Icons.Default.Favorite
+                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
+                onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
+                swipeRightIcon = if (isLiked(track)) Icons.Default.HeartBroken else Icons.Default.Favorite
             ) {
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            entry.track.title,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                TrackRow(
+                    track = track,
+                    onClick = { onPlayTrack(entry) },
+                    onMoreClick = if (isSelectionMode) null else {
+                        { onMoreClick(track) }
                     },
-                    supportingContent = {
-                        Text(
-                            entry.track.artist,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MeloColors.textSecondary
-                        )
-                    },
-                    leadingContent = {
-                        PlatformAsyncImage(
-                            url = entry.track.artworkUrl,
-                            contentDescription = entry.track.title,
-                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
-                            size = 48.dp,
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                    },
-                    trailingContent = {
-                        IconButton(onClick = { onMoreClick(entry.track) }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
-                        }
-                    },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onPlayTrack(entry) }
+                    isSelectionMode = isSelectionMode,
+                    isSelected = isSelected,
+                    onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
                 )
             }
         }
