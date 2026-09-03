@@ -2,10 +2,13 @@ package com.github.adriianh.melo.ui.detail.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,14 +17,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -94,14 +98,16 @@ fun ArtistHeaderCard(
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
                 onClick = onPlayClick,
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 shape = RoundedCornerShape(24.dp),
-                enabled = hasTracks
+                enabled = hasTracks,
+                modifier = Modifier.weight(1f).height(44.dp)
             ) {
                 Icon(
                     Icons.Default.PlayArrow,
@@ -119,7 +125,8 @@ fun ArtistHeaderCard(
                     contentColor = MeloColors.textPrimary
                 ),
                 shape = RoundedCornerShape(24.dp),
-                enabled = hasTracks
+                enabled = hasTracks,
+                modifier = Modifier.weight(1f).height(44.dp)
             ) {
                 Icon(
                     Icons.Default.Shuffle,
@@ -129,22 +136,35 @@ fun ArtistHeaderCard(
                 Spacer(modifier = Modifier.size(6.dp))
                 Text("Aleatorio", color = MeloColors.textPrimary)
             }
+        }
 
-            Button(
-                onClick = onRadioClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeloColors.surface2,
-                    contentColor = MeloColors.textPrimary
-                ),
-                shape = RoundedCornerShape(24.dp)
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MeloColors.surface2,
+                border = BorderStroke(0.5.dp, MeloColors.border),
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .clickable(onClick = onRadioClick)
             ) {
-                Icon(
-                    Icons.Default.GraphicEq,
-                    contentDescription = "Radio",
-                    tint = MeloColors.textPrimary
-                )
-                Spacer(modifier = Modifier.size(6.dp))
-                Text("Radio", color = MeloColors.textPrimary)
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Radio,
+                        contentDescription = "Radio",
+                        tint = MeloColors.textPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Button(
@@ -157,7 +177,8 @@ fun ArtistHeaderCard(
                     0.5.dp,
                     if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.height(44.dp)
             ) {
                 Icon(
                     if (isSaved) Icons.Default.Check else Icons.Default.PersonAdd,

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -155,14 +156,16 @@ fun EntityHeaderCard(
         Spacer(modifier = Modifier.height(16.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
                 onClick = onPlayClick,
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 shape = RoundedCornerShape(24.dp),
-                enabled = hasTracks
+                enabled = hasTracks,
+                modifier = Modifier.weight(1f).height(44.dp)
             ) {
                 Icon(
                     Icons.Default.PlayArrow,
@@ -180,7 +183,8 @@ fun EntityHeaderCard(
                     contentColor = MeloColors.textPrimary
                 ),
                 shape = RoundedCornerShape(24.dp),
-                enabled = hasTracks
+                enabled = hasTracks,
+                modifier = Modifier.weight(1f).height(44.dp)
             ) {
                 Icon(
                     Icons.Default.Shuffle,
@@ -190,7 +194,15 @@ fun EntityHeaderCard(
                 Spacer(modifier = Modifier.size(6.dp))
                 Text("Aleatorio", color = MeloColors.textPrimary)
             }
+        }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
@@ -199,11 +211,12 @@ fun EntityHeaderCard(
                     if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
                 ),
                 modifier = Modifier
+                    .size(44.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .clickable(onClick = onToggleSave)
             ) {
                 Box(
-                    modifier = Modifier.padding(10.dp),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -220,11 +233,12 @@ fun EntityHeaderCard(
                 color = MeloColors.surface2,
                 border = BorderStroke(0.5.dp, MeloColors.border),
                 modifier = Modifier
+                    .size(44.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .clickable(onClick = onAddToQueue)
             ) {
                 Box(
-                    modifier = Modifier.padding(10.dp),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -245,11 +259,13 @@ fun EntityHeaderCard(
                         if (isDownloaded) accentColor.copy(alpha = 0.4f) else MeloColors.border
                     ),
                     modifier = Modifier
+                        .height(44.dp)
+                        .then(if (isDownloading) Modifier else Modifier.size(44.dp))
                         .clip(RoundedCornerShape(24.dp))
                         .clickable(onClick = onDownloadClick)
                 ) {
                     Box(
-                        modifier = Modifier.padding(10.dp),
+                        modifier = Modifier.padding(horizontal = if (isDownloading) 12.dp else 0.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         when {
