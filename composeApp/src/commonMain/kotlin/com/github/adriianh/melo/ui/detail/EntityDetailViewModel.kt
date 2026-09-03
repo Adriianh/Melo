@@ -19,6 +19,7 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -213,7 +214,10 @@ class EntityDetailViewModel(
         )
     }
 
+    private var currentLoadJob: Job? = null
+
     private fun loadLocalPlaylist(playlistId: Long, rawId: String, initialTitle: String) {
+        currentLoadJob?.cancel()
         _uiState.update {
             it.copy(
                 isLoading = true,
@@ -228,19 +232,23 @@ class EntityDetailViewModel(
                 error = null
             )
         }
-        viewModelScope.launch {
+        currentLoadJob = viewModelScope.launch {
             if (getPlaylistTracksUseCase != null) {
                 getPlaylistTracksUseCase(playlistId).collectLatest { tracks ->
-                    val resolved = SearchResult.Playlist(
-                        id = rawId,
-                        title = initialTitle.ifBlank { "Mi playlist" },
-                        author = "Tú",
-                        trackCount = tracks.size,
-                        artworkUrl = tracks.firstOrNull()?.artworkUrl,
-                        songs = tracks
-                    )
-                    _uiState.update {
-                        it.copy(
+                    _uiState.update { current ->
+                        val currentPlaylist = current.entity as? SearchResult.Playlist
+                        val title =
+                            currentPlaylist?.title?.takeIf { t -> t.isNotBlank() && t != "Mi playlist" }
+                                ?: initialTitle.ifBlank { "Mi playlist" }
+                        val resolved = SearchResult.Playlist(
+                            id = rawId,
+                            title = title,
+                            author = "Tú",
+                            trackCount = tracks.size,
+                            artworkUrl = tracks.firstOrNull()?.artworkUrl,
+                            songs = tracks
+                        )
+                        current.copy(
                             isLoading = false,
                             entity = resolved,
                             error = null
@@ -259,6 +267,10 @@ class EntityDetailViewModel(
         val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
         val localPlaylistId =
             entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+        val currentSongs = (entity.songs ?: emptyList()).filter { it.id != trackId }
+        _uiState.update {
+            it.copy(entity = entity.copy(songs = currentSongs, trackCount = currentSongs.size))
+        }
         viewModelScope.launch {
             removeTrackFromPlaylistUseCase?.invoke(localPlaylistId, trackId)
         }
@@ -349,8 +361,9 @@ class EntityDetailViewModel(
     }
 
     private fun loadEntity(initial: SearchResult) {
+        currentLoadJob?.cancel()
         _uiState.update { it.copy(isLoading = true, entity = initial, error = null) }
-        viewModelScope.launch {
+        currentLoadJob = viewModelScope.launch {
             val loadedOffline = loadEntityOffline(initial)
             if (loadedOffline) {
                 val offlineTracks = offlineRepository.getOfflineTracks()
