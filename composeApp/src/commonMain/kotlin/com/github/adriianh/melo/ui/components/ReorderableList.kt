@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.components
 
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -19,10 +21,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class ReorderableState(
     val lazyListState: LazyListState,
     val density: Density,
+    val coroutineScope: CoroutineScope,
     val onMove: (fromIndex: Int, toIndex: Int) -> Unit,
 ) {
     var draggingItemKey by mutableStateOf<Any?>(null)
@@ -34,17 +43,37 @@ class ReorderableState(
     var dragOffsetY by mutableFloatStateOf(0f)
         private set
 
+    private var autoScrollJob: Job? = null
+    private var totalItems = 0
+    private var pointerViewportY by mutableFloatStateOf(0f)
+
     fun isDragging(key: Any): Boolean = draggingItemKey == key
 
-    fun onDragStart(key: Any, index: Int) {
+    fun onDragStart(key: Any, index: Int, totalItemsCount: Int) {
         draggingItemKey = key
         draggingIndex = index
         dragOffsetY = 0f
+        totalItems = totalItemsCount
+
+        val currentItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == key }
+        pointerViewportY = if (currentItem != null) {
+            currentItem.offset.toFloat() + (currentItem.size.toFloat() / 2f)
+        } else {
+            0f
+        }
+
+        startAutoScrollLoop()
     }
 
     fun onDrag(dragAmount: Float, totalItemsCount: Int) {
-        val currentIdx = draggingIndex ?: return
+        totalItems = totalItemsCount
         dragOffsetY += dragAmount
+        pointerViewportY += dragAmount
+        checkItemSwap(totalItemsCount)
+    }
+
+    private fun checkItemSwap(totalItemsCount: Int) {
+        val currentIdx = draggingIndex ?: return
 
         val estimatedItemHeight = with(density) { 56.dp.toPx() }
         val itemHeight = lazyListState.layoutInfo.visibleItemsInfo
@@ -66,10 +95,53 @@ class ReorderableState(
         }
     }
 
+    private fun startAutoScrollLoop() {
+        autoScrollJob?.cancel()
+        autoScrollJob = coroutineScope.launch {
+            val scrollEdgeThreshold = with(density) { 110.dp.toPx() }
+            val maxScrollStep = with(density) { 16.dp.toPx() }
+
+            while (isActive && draggingItemKey != null) {
+                val layoutInfo = lazyListState.layoutInfo
+                val viewportStart = layoutInfo.viewportStartOffset.toFloat()
+                val viewportEnd = layoutInfo.viewportEndOffset.toFloat()
+
+                val scrollAmount = when {
+                    pointerViewportY < viewportStart + scrollEdgeThreshold -> {
+                        val dist = (viewportStart + scrollEdgeThreshold) - pointerViewportY
+                        val factor = (dist / scrollEdgeThreshold).coerceIn(0.15f, 2.5f)
+                        -maxScrollStep * factor
+                    }
+
+                    pointerViewportY > viewportEnd - scrollEdgeThreshold -> {
+                        val dist = pointerViewportY - (viewportEnd - scrollEdgeThreshold)
+                        val factor = (dist / scrollEdgeThreshold).coerceIn(0.15f, 2.5f)
+                        maxScrollStep * factor
+                    }
+
+                    else -> 0f
+                }
+
+                if (scrollAmount != 0f) {
+                    val consumed = lazyListState.scrollBy(scrollAmount)
+                    if (consumed != 0f) {
+                        dragOffsetY += consumed
+                        checkItemSwap(totalItems)
+                    }
+                }
+
+                delay(16.milliseconds)
+            }
+        }
+    }
+
     fun onDragStopped() {
+        autoScrollJob?.cancel()
+        autoScrollJob = null
         draggingItemKey = null
         draggingIndex = null
         dragOffsetY = 0f
+        pointerViewportY = 0f
     }
 }
 
@@ -79,8 +151,9 @@ fun rememberReorderableState(
     onMove: (fromIndex: Int, toIndex: Int) -> Unit
 ): ReorderableState {
     val density = LocalDensity.current
-    return remember(lazyListState, onMove, density) {
-        ReorderableState(lazyListState, density, onMove)
+    val coroutineScope = rememberCoroutineScope()
+    return remember(lazyListState, onMove, density, coroutineScope) {
+        ReorderableState(lazyListState, density, coroutineScope, onMove)
     }
 }
 
@@ -101,7 +174,7 @@ fun Modifier.reorderDragHandle(
         detectVerticalDragGestures(
             onDragStart = {
                 currentHaptic?.performHapticFeedback(HapticFeedbackType.LongPress)
-                state.onDragStart(currentKey, currentIndex)
+                state.onDragStart(currentKey, currentIndex, currentCount)
             },
             onVerticalDrag = { change, dragAmount ->
                 change.consume()
