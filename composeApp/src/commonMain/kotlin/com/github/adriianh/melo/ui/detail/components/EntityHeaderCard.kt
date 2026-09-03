@@ -59,9 +59,9 @@ fun EntityHeaderCard(
     isSaved: Boolean,
     onPlayClick: () -> Unit,
     onShuffleClick: () -> Unit,
-    onToggleSave: () -> Unit,
     onAddToQueue: () -> Unit,
     accentColor: Color,
+    onToggleSave: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     hasTracks: Boolean = true,
     isDownloaded: Boolean = false,
@@ -222,28 +222,30 @@ fun EntityHeaderCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
-                border = BorderStroke(
-                    0.5.dp,
-                    if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
-                ),
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable(onClick = onToggleSave)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            if (onToggleSave != null) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
+                    border = BorderStroke(
+                        0.5.dp,
+                        if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
+                    ),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable(onClick = onToggleSave)
                 ) {
-                    Icon(
-                        if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = if (isSaved) "Guardado" else "Guardar",
-                        tint = if (isSaved) accentColor else MeloColors.textPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = if (isSaved) "Guardado" else "Guardar",
+                            tint = if (isSaved) accentColor else MeloColors.textPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 

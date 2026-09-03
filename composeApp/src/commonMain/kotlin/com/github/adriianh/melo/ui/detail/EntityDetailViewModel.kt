@@ -9,6 +9,8 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
@@ -57,6 +59,8 @@ class EntityDetailViewModel(
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
     private val renamePlaylistUseCase: RenamePlaylistUseCase? = null,
     private val reorderPlaylistTracksUseCase: ReorderPlaylistTracksUseCase? = null,
+    private val createPlaylistUseCase: CreatePlaylistUseCase? = null,
+    private val addTracksToPlaylistUseCase: AddTracksToPlaylistUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
@@ -334,7 +338,24 @@ class EntityDetailViewModel(
             try {
                 when (entity) {
                     is SearchResult.Album -> toggleLikeAlbumUseCase(entity.id, newSaved)
-                    is SearchResult.Playlist -> toggleLikePlaylistUseCase(entity.id, newSaved)
+                    is SearchResult.Playlist -> {
+                        val isCustom =
+                            entity.id.startsWith("local:") || entity.id.startsWith("custom:") || (entity.id.toLongOrNull() != null && !entity.id.startsWith(
+                                "VL"
+                            ) && !entity.id.startsWith("PL") && !entity.id.startsWith("RD"))
+                        if (!isCustom) {
+                            toggleLikePlaylistUseCase(entity.id, newSaved)
+                            if (newSaved && createPlaylistUseCase != null && addTracksToPlaylistUseCase != null) {
+                                val songs = entity.songs.orEmpty()
+                                val newId = createPlaylistUseCase(
+                                    name = entity.title.ifBlank { "Playlist importada" }
+                                )
+                                if (songs.isNotEmpty()) {
+                                    addTracksToPlaylistUseCase(newId, songs, skipDuplicates = true)
+                                }
+                            }
+                        }
+                    }
                     is SearchResult.Artist -> subscribeChannelUseCase?.invoke(entity.id, newSaved)
                     else -> {}
                 }

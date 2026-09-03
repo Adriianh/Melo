@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -93,6 +95,16 @@ fun PlaylistDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
+
+    val selectionModeState = LocalSelectionMode.current
+    LaunchedEffect(isSelectionMode) {
+        selectionModeState.value = isSelectionMode
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            selectionModeState.value = false
+        }
+    }
 
     LaunchedEffect(playlistId) {
         viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor)
@@ -297,7 +309,7 @@ fun PlaylistDetailScreen(
                             onDownloadClick = if (songs.isNotEmpty()) viewModel::toggleDownload else null,
                             onPlayClick = { queueViewModel.playTracks(songs, 0) },
                             onShuffleClick = { queueViewModel.playShuffled(songs) },
-                            onToggleSave = viewModel::toggleSave,
+                            onToggleSave = if (isCustomPlaylist) null else viewModel::toggleSave,
                             onAddToQueue = { queueViewModel.addAllToQueue(songs) },
                             accentColor = accentColor,
                             hasTracks = songs.isNotEmpty()
