@@ -20,7 +20,7 @@ fun SearchResultsContent(
     paddingValues: PaddingValues,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,

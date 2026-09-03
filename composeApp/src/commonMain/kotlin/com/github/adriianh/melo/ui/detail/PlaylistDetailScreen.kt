@@ -110,7 +110,10 @@ fun PlaylistDetailScreen(
         viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor)
     }
 
-    val playlist = uiState.entity as? SearchResult.Playlist
+    val playlist = (uiState.entity as? SearchResult.Playlist)?.takeIf {
+        it.id == playlistId || it.id == "local:$playlistId" ||
+                it.id.removePrefix("local:") == playlistId.removePrefix("local:")
+    }
     val songs = remember(playlist) { playlist?.songs.orEmpty() }
     val effectiveTitle = remember(playlist, initialTitle) {
         playlist?.title?.takeIf { it.isNotBlank() }
@@ -266,8 +269,18 @@ fun PlaylistDetailScreen(
                     }
                 }
 
+                val isGenericAuthor = { s: String? ->
+                    val c = s?.trim()?.lowercase() ?: ""
+                    c.isBlank() || c == "unknown" || c == "desconocido" || c == "playlist" ||
+                            c == "lista de reproducción" || c == "lista de reproduccion" ||
+                            c == "álbum" || c == "album" || c == "youtube music"
+                }
+
                 val authorText =
-                    playlist?.author?.ifEmpty { null } ?: initialAuthor.ifEmpty { null }
+                    playlist?.author?.takeIf { !isGenericAuthor(it) }
+                        ?: initialAuthor.takeIf { !isGenericAuthor(it) }
+                        ?: if (isCustomPlaylist) "Tú" else playlist?.author?.takeIf { it.isNotBlank() }
+                            ?: initialAuthor.takeIf { it.isNotBlank() } ?: "YouTube Music"
                 val metaParts = listOfNotNull(
                     if (songs.isNotEmpty()) "${songs.size} canciones" else null,
                     totalDurationFormatted.takeIf { it.isNotBlank() }
@@ -297,7 +310,13 @@ fun PlaylistDetailScreen(
                             artworkUrls = if (isCustomPlaylist) songs.mapNotNull { it.artworkUrl } else null,
                             title = effectiveTitle,
                             subtitle = authorText,
-                            onSubtitleClick = authorText?.let { { onArtistClick(it) } },
+                            onSubtitleClick = if (isCustomPlaylist || authorText.equals(
+                                    "Tú",
+                                    ignoreCase = true
+                                )
+                            ) null else {
+                                { onArtistClick(authorText) }
+                            },
                             metadataText = metaParts,
                             isSaved = uiState.isSaved,
                             isDownloaded = uiState.isDownloaded,

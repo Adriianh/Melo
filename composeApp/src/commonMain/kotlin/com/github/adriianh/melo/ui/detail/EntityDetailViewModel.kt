@@ -233,7 +233,16 @@ class EntityDetailViewModel(
                     artworkUrl = null,
                     songs = emptyList()
                 ),
-                error = null
+                error = null,
+                isDownloaded = false,
+                isDownloading = false,
+                downloadProgress = 0f,
+                downloadedTrackCount = 0,
+                totalTrackCount = 0,
+                currentDownloadingTrackTitle = null,
+                downloadedTrackIds = emptySet(),
+                activeDownloadsMap = emptyMap(),
+                downloadedArtistTracks = emptyList()
             )
         }
         currentLoadJob = viewModelScope.launch {
@@ -345,15 +354,6 @@ class EntityDetailViewModel(
                             ) && !entity.id.startsWith("PL") && !entity.id.startsWith("RD"))
                         if (!isCustom) {
                             toggleLikePlaylistUseCase(entity.id, newSaved)
-                            if (newSaved && createPlaylistUseCase != null && addTracksToPlaylistUseCase != null) {
-                                val songs = entity.songs.orEmpty()
-                                val newId = createPlaylistUseCase(
-                                    name = entity.title.ifBlank { "Playlist importada" }
-                                )
-                                if (songs.isNotEmpty()) {
-                                    addTracksToPlaylistUseCase(newId, songs, skipDuplicates = true)
-                                }
-                            }
                         }
                     }
                     is SearchResult.Artist -> subscribeChannelUseCase?.invoke(entity.id, newSaved)
@@ -383,7 +383,22 @@ class EntityDetailViewModel(
 
     private fun loadEntity(initial: SearchResult) {
         currentLoadJob?.cancel()
-        _uiState.update { it.copy(isLoading = true, entity = initial, error = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                entity = initial,
+                error = null,
+                isDownloaded = false,
+                isDownloading = false,
+                downloadProgress = 0f,
+                downloadedTrackCount = 0,
+                totalTrackCount = 0,
+                currentDownloadingTrackTitle = null,
+                downloadedTrackIds = emptySet(),
+                activeDownloadsMap = emptyMap(),
+                downloadedArtistTracks = emptyList()
+            )
+        }
         currentLoadJob = viewModelScope.launch {
             val loadedOffline = loadEntityOffline(initial)
             if (loadedOffline) {
@@ -522,17 +537,7 @@ class EntityDetailViewModel(
                 }
             }
             is SearchResult.Playlist -> {
-                val matchingTracks = allOffline
-                    .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                    .map { it.track }
-                if (matchingTracks.isNotEmpty()) {
-                    val resolved = initial.copy(
-                        songs = matchingTracks,
-                        artworkUrl = initial.artworkUrl ?: matchingTracks.firstOrNull()?.artworkUrl
-                    )
-                    _uiState.update { it.copy(isLoading = false, entity = resolved, error = null) }
-                    return true
-                }
+                return false
             }
             is SearchResult.Artist -> {
                 val artistQuery = initial.name.ifBlank { initial.id }

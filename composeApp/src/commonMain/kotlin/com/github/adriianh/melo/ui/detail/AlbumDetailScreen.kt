@@ -88,7 +88,7 @@ fun AlbumDetailScreen(
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
     }
 
-    val album = uiState.entity as? SearchResult.Album
+    val album = (uiState.entity as? SearchResult.Album)?.takeIf { it.id == albumId }
     val songs = remember(album) { album?.songs.orEmpty() }
     val effectiveTitle = remember(album, initialTitle, songs) {
         album?.title?.takeIf { it.isNotBlank() }
