@@ -128,9 +128,11 @@ data class BrowseResponse(
             val title: Runs,
             val subtitle: Runs,
             val secondSubtitle: Runs,
-            val description: Runs?,
+            val description: Runs? = null,
             val thumbnail: ThumbnailRenderer,
-            val menu: Menu,
+            val menu: Menu? = null,
+            val straplineTextOne: Runs? = null,
+            val strapline: Runs? = null,
         )
 
         @Serializable
@@ -158,13 +160,15 @@ data class BrowseResponse(
 
         @Serializable
         data class MusicHeaderRenderer(
-            val buttons: List<Buttons>?,
-            val title: Runs?,
-            val thumbnail: MusicThumbnailRenderer?,
-            val subtitle: Runs?,
-            val secondSubtitle: Runs?,
-            val straplineTextOne: Runs?,
-            val straplineThumbnail: MusicThumbnailRenderer?,
+            val buttons: List<Buttons>? = null,
+            val title: Runs? = null,
+            val thumbnail: MusicThumbnailRenderer? = null,
+            val subtitle: Runs? = null,
+            val secondSubtitle: Runs? = null,
+            val straplineTextOne: Runs? = null,
+            val straplineTextTwo: Runs? = null,
+            val strapline: Runs? = null,
+            val straplineThumbnail: MusicThumbnailRenderer? = null,
         )
 
         @Serializable

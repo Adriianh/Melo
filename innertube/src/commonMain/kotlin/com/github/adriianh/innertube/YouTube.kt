@@ -579,43 +579,148 @@ object YouTube {
 
 
     suspend fun playlist(playlistId: String): Result<PlaylistPage> = runCatching {
+        val targetBrowseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
         val response = innerTube.browse(
             client = WEB_REMIX,
-            browseId = "VL$playlistId",
+            browseId = targetBrowseId,
             setLogin = true
         ).body<BrowseResponse>()
-        val base =
-            response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()
-        val header = base?.musicResponsiveHeaderRenderer
-            ?: base?.musicEditablePlaylistDetailHeaderRenderer?.header?.musicResponsiveHeaderRenderer
 
-        val editable = base?.musicEditablePlaylistDetailHeaderRenderer != null
+        val sectionContents =
+            response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents
+                ?: response.contents?.sectionListRenderer?.contents
+                ?: response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents
+                ?: emptyList()
 
-        val playlistTitle = header?.title?.runs?.firstOrNull()?.text
-            ?: response.header?.musicDetailHeaderRenderer?.title?.runs?.firstOrNull()?.text
-            ?: response.header?.musicHeaderRenderer?.title?.runs?.firstOrNull()?.text
-            ?: ""
+        val editableHeader =
+            sectionContents.firstNotNullOfOrNull { it.musicEditablePlaylistDetailHeaderRenderer }
+                ?: response.header?.musicEditablePlaylistDetailHeaderRenderer
+
+        val responsiveHeader =
+            sectionContents.firstNotNullOfOrNull { it.musicResponsiveHeaderRenderer }
+                ?: editableHeader?.header?.musicResponsiveHeaderRenderer
+                ?: response.header?.musicHeaderRenderer
+
+        val detailHeader =
+            editableHeader?.header?.musicDetailHeaderRenderer
+                ?: response.header?.musicDetailHeaderRenderer
+
+        val editable = editableHeader != null
+
+        val playlistTitle =
+            responsiveHeader?.title?.runs?.firstOrNull()?.text
+                ?: detailHeader?.title?.runs?.firstOrNull()?.text
+                ?: response.header?.musicHeaderRenderer?.title?.runs?.firstOrNull()?.text
+                ?: ""
 
         val playlistThumbnail =
-            header?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+            responsiveHeader?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                ?: detailHeader?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                ?: detailHeader?.thumbnail?.croppedSquareThumbnailRenderer?.getThumbnailUrl()
                 ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
+                ?: response.header?.musicDetailHeaderRenderer?.thumbnail?.croppedSquareThumbnailRenderer?.getThumbnailUrl()
                 ?: ""
+
+        val extractedAuthor =
+            // 1. Strapline on responsive header
+            responsiveHeader?.straplineTextOne?.runs?.firstOrNull { isLikelyAuthorName(it.text) }
+                ?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+            // 2. Strapline on detail header
+                ?: detailHeader?.straplineTextOne?.runs?.firstOrNull { isLikelyAuthorName(it.text) }
+                    ?.let {
+                        Artist(
+                            name = it.text.trim(),
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId
+                        )
+                    }
+                ?: responsiveHeader?.strapline?.runs?.firstOrNull { isLikelyAuthorName(it.text) }
+                    ?.let {
+                        Artist(
+                            name = it.text.trim(),
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId
+                        )
+                    }
+                ?: detailHeader?.strapline?.runs?.firstOrNull { isLikelyAuthorName(it.text) }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+                // 3. Subtitle with browse endpoint on responsive header
+                ?: responsiveHeader?.subtitle?.runs?.find {
+                    it.navigationEndpoint?.browseEndpoint != null && isLikelyAuthorName(
+                        it.text
+                    )
+                }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+                // 4. Subtitle with browse endpoint on detail header (e.g. user playlists)
+                ?: detailHeader?.subtitle?.runs?.find {
+                    it.navigationEndpoint?.browseEndpoint != null && isLikelyAuthorName(
+                        it.text
+                    )
+                }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+                // 5. Any likely author run in detail header subtitle
+                ?: detailHeader?.subtitle?.runs?.firstOrNull { isLikelyAuthorName(it.text) }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+                // 6. Any likely author run in responsive header subtitle
+                ?: responsiveHeader?.subtitle?.runs?.firstOrNull { isLikelyAuthorName(it.text) }
+                    ?.let {
+                        Artist(
+                            name = it.text.trim(),
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId
+                        )
+                    }
+                // 7. Subtitle with browse endpoint on secondSubtitle
+                ?: detailHeader?.secondSubtitle?.runs?.find {
+                    it.navigationEndpoint?.browseEndpoint != null && isLikelyAuthorName(
+                        it.text
+                    )
+                }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
+                ?: responsiveHeader?.secondSubtitle?.runs?.find {
+                    it.navigationEndpoint?.browseEndpoint != null && isLikelyAuthorName(
+                        it.text
+                    )
+                }?.let {
+                    Artist(
+                        name = it.text.trim(),
+                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                    )
+                }
 
         PlaylistPage(
             playlist = PlaylistItem(
                 id = playlistId,
                 title = playlistTitle,
-                author = header?.straplineTextOne?.runs?.firstOrNull()?.let {
-                    Artist(
-                        name = it.text,
-                        id = it.navigationEndpoint?.browseEndpoint?.browseId
-                    )
-                },
-                songCountText = header?.secondSubtitle?.runs?.firstOrNull()?.text,
+                author = extractedAuthor,
+                songCountText = responsiveHeader?.secondSubtitle?.runs?.firstOrNull()?.text
+                    ?: detailHeader?.secondSubtitle?.runs?.firstOrNull()?.text,
                 thumbnail = playlistThumbnail,
                 playEndpoint = null,
-                shuffleEndpoint = header?.buttons?.lastOrNull()?.menuRenderer?.items?.firstOrNull()?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
-                radioEndpoint = header?.buttons?.getOrNull(2)?.menuRenderer?.items?.find {
+                shuffleEndpoint = responsiveHeader?.buttons?.lastOrNull()?.menuRenderer?.items?.firstOrNull()?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
+                radioEndpoint = responsiveHeader?.buttons?.getOrNull(2)?.menuRenderer?.items?.find {
                     it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
                 }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
                 isEditable = editable
@@ -1274,6 +1379,32 @@ object YouTube {
             val FILTER_FEATURED_PLAYLIST = SearchFilter("EgeKAQQoADgBagwQDhAKEAMQBRAJEAQ%3D")
             val FILTER_COMMUNITY_PLAYLIST = SearchFilter("EgeKAQQoAEABagoQAxAEEAoQCRAF")
         }
+    }
+
+    private fun isLikelyAuthorName(text: String?): Boolean {
+        if (text.isNullOrBlank()) return false
+        val clean = text.trim().lowercase()
+        if (clean == "•" || clean == "·" || clean == "|" || clean == "-") return false
+        val ignored = setOf(
+            "playlist",
+            "lista de reproducción",
+            "lista de reproduccion",
+            "álbum",
+            "album",
+            "ep",
+            "single",
+            "sencillo",
+            "public playlist",
+            "private playlist",
+            "lista pública",
+            "lista publica",
+            "lista privada",
+            "unknown",
+            "desconocido"
+        )
+        if (clean in ignored) return false
+        if (clean.matches(Regex("^[0-9]+(\\s*(canciones|canción|songs|song|tracks|track|videos|video|vistas|views|min|horas|hrs|hr|s))?$"))) return false
+        return true
     }
 
     private const val MAX_GET_QUEUE_SIZE = 1000

@@ -39,11 +39,23 @@ class GetEntityDetailsUseCase(
 
             is SearchResult.Playlist -> {
                 val details = musicProvider.getPlaylistDetails(entity.id) ?: return entity
+                val isGeneric = { s: String? ->
+                    val c = s?.trim()?.lowercase() ?: ""
+                    c.isBlank() || c == "unknown" || c == "desconocido" || c == "playlist" ||
+                            c == "lista de reproducción" || c == "lista de reproduccion" ||
+                            c == "álbum" || c == "album" || c == "youtube music"
+                }
+                val resolvedAuthor = details.author.takeIf { !isGeneric(it) }
+                    ?: entity.author.takeIf { !isGeneric(it) }
+                    ?: details.author.takeIf { it.isNotBlank() }
+                    ?: entity.author.takeIf { it.isNotBlank() }
+                    ?: "YouTube Music"
+
                 details.copy(
                     title = details.title.takeIf { it.isNotBlank() }
                         ?: entity.title.takeIf { it.isNotBlank() }
                         ?: "Playlist",
-                    author = if (details.author == "Unknown" && entity.author.isNotBlank()) entity.author else details.author,
+                    author = resolvedAuthor,
                     description = details.description ?: entity.description,
                     trackCount = details.trackCount ?: entity.trackCount,
                     artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl

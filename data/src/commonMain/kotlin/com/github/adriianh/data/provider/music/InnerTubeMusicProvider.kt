@@ -498,11 +498,20 @@ class InnerTubeMusicProvider(
         val playlistArtwork = result.playlist.thumbnail.takeIf { it.isNotBlank() }
             ?: tracks.firstOrNull()?.artworkUrl
         val playlistTitle = result.playlist.title.takeIf { it.isNotBlank() } ?: "Playlist"
+        val rawAuthor = result.playlist.author?.name?.trim()
+        val authorName = rawAuthor?.takeIf {
+            it.isNotBlank() &&
+                    !it.equals("Unknown", ignoreCase = true) &&
+                    !it.equals("Playlist", ignoreCase = true) &&
+                    !it.equals("Álbum", ignoreCase = true) &&
+                    !it.equals("Album", ignoreCase = true) &&
+                    !it.equals("Lista de reproducción", ignoreCase = true)
+        } ?: "YouTube Music"
 
         return SearchResult.Playlist(
             id = result.playlist.id,
             title = playlistTitle,
-            author = result.playlist.author?.name ?: "Unknown",
+            author = authorName,
             trackCount = result.songs.size,
             artworkUrl = playlistArtwork,
             songs = tracks,
