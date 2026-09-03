@@ -32,7 +32,7 @@ fun AllResultsContent(
     queueViewModel: QueueViewModel,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
@@ -192,7 +192,7 @@ private fun WideTopResultRow(
     allSongs: List<Track>,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
@@ -247,7 +247,7 @@ private fun NarrowTopResultColumn(
     allSongs: List<Track>,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
@@ -423,7 +423,7 @@ private fun ArtistResultCarousel(
 @Composable
 private fun PlaylistResultCarousel(
     section: HomeSection,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
 ) {
     val playlists = section.items.filterIsInstance<SearchResult.Playlist>()
     if (playlists.isEmpty()) return
@@ -441,7 +441,14 @@ private fun PlaylistResultCarousel(
             subtitle = playlist.author,
             artworkUrl = playlist.artworkUrl,
             cardWidth = width,
-            onClick = { onPlaylistClick(playlist.id) }
+            onClick = {
+                onPlaylistClick(
+                    playlist.id,
+                    playlist.title,
+                    playlist.artworkUrl,
+                    playlist.author
+                )
+            }
         )
     }
 }
@@ -452,7 +459,7 @@ private fun MixedResultSection(
     queueViewModel: QueueViewModel,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
@@ -500,7 +507,14 @@ private fun MixedResultSection(
                     item.title,
                     item.author,
                     item.artworkUrl,
-                    onClick = { onPlaylistClick(item.id) },
+                    onClick = {
+                        onPlaylistClick(
+                            item.id,
+                            item.title,
+                            item.artworkUrl,
+                            item.author
+                        )
+                    },
                 )
             }
         }

@@ -58,7 +58,7 @@ fun HomeContent(
     onChipClick: (HomeFeedChip) -> Unit,
     onLoadMore: () -> Unit,
     onAlbumClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     onArtistClick: (String) -> Unit,
     queueViewModel: QueueViewModel,
     paddingValues: PaddingValues,
@@ -214,7 +214,14 @@ fun HomeContent(
                                     subtitle = item.author,
                                     artworkUrl = item.artworkUrl,
                                     cardWidth = cardWidth,
-                                    onClick = { onPlaylistClick(item.id) }
+                                    onClick = {
+                                        onPlaylistClick(
+                                            item.id,
+                                            item.title,
+                                            item.artworkUrl,
+                                            item.author
+                                        )
+                                    }
                                 )
 
                                 is SearchResult.Artist -> ArtistCircle(
@@ -242,7 +249,14 @@ fun HomeContent(
                                     subtitle = item.author,
                                     artworkUrl = item.artworkUrl,
                                     cardWidth = cardWidth,
-                                    onClick = { onPlaylistClick(item.id) }
+                                    onClick = {
+                                        onPlaylistClick(
+                                            item.id,
+                                            item.title,
+                                            item.artworkUrl,
+                                            item.author
+                                        )
+                                    }
                                 )
 
                                 is SearchResult.Album -> AlbumCard(
@@ -309,7 +323,14 @@ fun HomeContent(
                                     subtitle = item.author,
                                     artworkUrl = item.artworkUrl,
                                     cardWidth = cardWidth,
-                                    onClick = { onPlaylistClick(item.id) }
+                                    onClick = {
+                                        onPlaylistClick(
+                                            item.id,
+                                            item.title,
+                                            item.artworkUrl,
+                                            item.author
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -346,9 +367,15 @@ fun HomeContent(
                                     subtitle = item.author,
                                     artworkUrl = item.artworkUrl,
                                     cardWidth = cardWidth,
-                                    onClick = { onPlaylistClick(item.id) }
+                                    onClick = {
+                                        onPlaylistClick(
+                                            item.id,
+                                            item.title,
+                                            item.artworkUrl,
+                                            item.author
+                                        )
+                                    }
                                 )
-
                                 is SearchResult.Artist -> ArtistCircle(
                                     name = item.name,
                                     artworkUrl = item.artworkUrl,
@@ -369,7 +396,12 @@ fun HomeContent(
                                 when (item) {
                                     is SearchResult.Song -> queueViewModel.playTrack(item.track)
                                     is SearchResult.Album -> onAlbumClick(item.id)
-                                    is SearchResult.Playlist -> onPlaylistClick(item.id)
+                                    is SearchResult.Playlist -> onPlaylistClick(
+                                        item.id,
+                                        item.title,
+                                        item.artworkUrl,
+                                        item.author
+                                    )
                                     is SearchResult.Artist -> onArtistClick(item.id)
                                 }
                             }

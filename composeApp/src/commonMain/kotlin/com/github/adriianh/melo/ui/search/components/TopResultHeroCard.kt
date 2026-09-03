@@ -41,7 +41,7 @@ fun TopResultHeroCard(
     item: SearchResult,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     queueViewModel: QueueViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -88,7 +88,12 @@ fun TopResultHeroCard(
                     is SearchResult.Artist -> onArtistClick(item.id)
                     is SearchResult.Song -> queueViewModel.playTrack(item.track)
                     is SearchResult.Album -> onAlbumClick(item.id)
-                    is SearchResult.Playlist -> onPlaylistClick(item.id)
+                    is SearchResult.Playlist -> onPlaylistClick(
+                        item.id,
+                        item.title,
+                        item.artworkUrl,
+                        item.author
+                    )
                 }
             }
             .padding(20.dp)
@@ -167,7 +172,12 @@ fun TopResultHeroCard(
                             is SearchResult.Song -> queueViewModel.playTrack(item.track)
                             is SearchResult.Artist -> onArtistClick(item.id)
                             is SearchResult.Album -> onAlbumClick(item.id)
-                            is SearchResult.Playlist -> onPlaylistClick(item.id)
+                            is SearchResult.Playlist -> onPlaylistClick(
+                                item.id,
+                                item.title,
+                                item.artworkUrl,
+                                item.author
+                            )
                         }
                     },
                     modifier = Modifier

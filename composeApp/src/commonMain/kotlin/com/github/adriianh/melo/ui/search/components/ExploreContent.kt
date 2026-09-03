@@ -39,7 +39,7 @@ fun ExploreContent(
     uiState: SearchUiState,
     paddingValues: PaddingValues,
     onAlbumClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     onBrowseCategory: (String, String?) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
@@ -106,7 +106,14 @@ fun ExploreContent(
                                     item.title,
                                     item.author,
                                     item.artworkUrl,
-                                    onClick = { onPlaylistClick(item.id) },
+                                    onClick = {
+                                        onPlaylistClick(
+                                            item.id,
+                                            item.title,
+                                            item.artworkUrl,
+                                            item.author
+                                        )
+                                    },
                                     cardWidth = cardWidth
                                 )
 

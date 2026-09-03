@@ -38,7 +38,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onAlbumClick: (String) -> Unit = {},
-    onPlaylistClick: (String) -> Unit = {},
+    onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),

@@ -63,7 +63,7 @@ fun ArtistsResultsContent(
 fun PlaylistsResultsContent(
     uiState: SearchUiState,
     paddingValues: PaddingValues,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SearchResultsGrid(
@@ -79,7 +79,14 @@ fun PlaylistsResultsContent(
             title = playlist.title,
             subtitle = playlist.author,
             artworkUrl = playlist.artworkUrl,
-            onClick = { onPlaylistClick(playlist.id) }
+            onClick = {
+                onPlaylistClick(
+                    playlist.id,
+                    playlist.title,
+                    playlist.artworkUrl,
+                    playlist.author
+                )
+            }
         )
     }
 }

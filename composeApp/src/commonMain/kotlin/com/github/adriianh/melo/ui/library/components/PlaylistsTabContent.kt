@@ -59,7 +59,7 @@ fun PlaylistsTabContent(
     onCreatePlaylist: (String) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,
     onDeletePlaylist: (Long) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -276,7 +276,14 @@ fun PlaylistsTabContent(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onPlaylistClick("local:${playlist.id}") },
+                    .clickable {
+                        onPlaylistClick(
+                            "local:${playlist.id}",
+                            playlist.name,
+                            playlist.artworks.firstOrNull(),
+                            "Tú"
+                        )
+                    },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
             ) {
@@ -384,7 +391,14 @@ fun PlaylistsTabContent(
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { onPlaylistClick(playlist.id) },
+                    .clickable {
+                        onPlaylistClick(
+                            playlist.id,
+                            playlist.title,
+                            playlist.artworkUrl,
+                            playlist.author
+                        )
+                    },
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
             ) {

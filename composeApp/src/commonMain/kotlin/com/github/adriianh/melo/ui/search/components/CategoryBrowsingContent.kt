@@ -43,7 +43,7 @@ fun CategoryBrowsingContent(
     onBack: () -> Unit,
     onAlbumClick: (String) -> Unit,
     onArtistClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (String, String, String?, String) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
@@ -132,7 +132,14 @@ fun CategoryBrowsingContent(
                             item.title,
                             item.author,
                             item.artworkUrl,
-                            onClick = { onPlaylistClick(item.id) },
+                            onClick = {
+                                onPlaylistClick(
+                                    item.id,
+                                    item.title,
+                                    item.artworkUrl,
+                                    item.author
+                                )
+                            },
                             cardWidth = 140.dp
                         )
                     }

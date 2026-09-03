@@ -205,10 +205,13 @@ fun App() {
                                 when (currentScreen) {
                                     ScreenDestination.Home -> HomeScreen(
                                         onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                        onPlaylistClick = { id ->
+                                        onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
                                                 ScreenDestination.Playlist(
-                                                    id
+                                                    id,
+                                                    title,
+                                                    artwork,
+                                                    author
                                                 )
                                             )
                                         },
@@ -219,10 +222,13 @@ fun App() {
 
                                     ScreenDestination.Search -> SearchScreen(
                                         onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                        onPlaylistClick = { id ->
+                                        onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
                                                 ScreenDestination.Playlist(
-                                                    id
+                                                    id,
+                                                    title,
+                                                    artwork,
+                                                    author
                                                 )
                                             )
                                         },
@@ -243,10 +249,13 @@ fun App() {
                                                 )
                                             )
                                         },
-                                        onPlaylistClick = { id ->
+                                        onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
                                                 ScreenDestination.Playlist(
-                                                    id
+                                                    id,
+                                                    title,
+                                                    artwork,
+                                                    author
                                                 )
                                             )
                                         },
@@ -280,10 +289,13 @@ fun App() {
                                         onBack = ::navigateBack,
                                         onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
                                         onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                        onPlaylistClick = { id ->
+                                        onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
                                                 ScreenDestination.Playlist(
-                                                    id
+                                                    id,
+                                                    title,
+                                                    artwork,
+                                                    author
                                                 )
                                             )
                                         }

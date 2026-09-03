@@ -49,7 +49,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchScreen(
     onAlbumClick: (String) -> Unit,
-    onPlaylistClick: (String) -> Unit,
+    onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit,
     onArtistClick: (String) -> Unit,
     onOpenSettings: () -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),

@@ -56,7 +56,7 @@ fun ArtistDetailScreen(
     onBack: () -> Unit,
     onAlbumClick: (String) -> Unit = {},
     onArtistClick: (String) -> Unit = {},
-    onPlaylistClick: (String) -> Unit = {},
+    onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     initialName: String = "",
     initialArtwork: String? = null,
     viewModel: EntityDetailViewModel = koinViewModel(),
@@ -77,7 +77,7 @@ fun ArtistDetailScreen(
         viewModel.loadArtist(artistId, initialName, initialArtwork)
     }
 
-    val artist = uiState.entity as? SearchResult.Artist
+    val artist = (uiState.entity as? SearchResult.Artist)?.takeIf { it.id == artistId }
     val effectiveName = remember(artist, initialName) {
         artist?.name?.takeIf { it.isNotBlank() }
             ?: initialName.takeIf { it.isNotBlank() }
@@ -325,7 +325,14 @@ fun ArtistDetailScreen(
                                         subtitle = item.author,
                                         artworkUrl = item.artworkUrl,
                                         cardWidth = cardWidth,
-                                        onClick = { onPlaylistClick(item.id) }
+                                        onClick = {
+                                            onPlaylistClick(
+                                                item.id,
+                                                item.title,
+                                                item.artworkUrl,
+                                                item.author
+                                            )
+                                        }
                                     )
                                 }
                             }

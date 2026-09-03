@@ -46,7 +46,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LibraryScreen(
     onOpenSettings: () -> Unit = {},
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
-    onPlaylistClick: (String) -> Unit = {},
+    onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: LibraryViewModel = koinViewModel(),
