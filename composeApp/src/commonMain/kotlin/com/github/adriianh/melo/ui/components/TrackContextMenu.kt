@@ -290,7 +290,6 @@ fun TrackInteractionContextMenu(
                         playlistTracks.first()
                     ) {
                         interaction.showAddedToPlaylistSnackbar(
-                            playlistTracks.first(),
                             playlist.name,
                             activeAccent
                         )
@@ -316,7 +315,6 @@ fun TrackInteractionContextMenu(
                             playlistTracks.first()
                         ) {
                             interaction.showAddedToPlaylistSnackbar(
-                                playlistTracks.first(),
                                 name,
                                 activeAccent
                             )

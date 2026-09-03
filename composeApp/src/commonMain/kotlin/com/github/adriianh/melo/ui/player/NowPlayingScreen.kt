@@ -311,7 +311,6 @@ fun NowPlayingScreen(
                 onSelectPlaylist = { playlist ->
                     libraryViewModel.addTrackToPlaylist(playlist.id, playlistTrack) {
                         interaction.showAddedToPlaylistSnackbar(
-                            playlistTrack,
                             playlist.name,
                             activeAccent
                         )
@@ -321,7 +320,6 @@ fun NowPlayingScreen(
                     libraryViewModel.createPlaylist(name) { id ->
                         libraryViewModel.addTrackToPlaylist(id, playlistTrack) {
                             interaction.showAddedToPlaylistSnackbar(
-                                playlistTrack,
                                 name,
                                 activeAccent
                             )

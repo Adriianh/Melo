@@ -54,7 +54,6 @@ class TrackInteractionState(
     }
 
     fun showAddedToPlaylistSnackbar(
-        track: Track,
         playlistName: String,
         actionColor: Color? = null
     ) {
