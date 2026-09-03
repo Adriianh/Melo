@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.search.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -147,31 +148,41 @@ fun ExploreContent(
                             color = MeloColors.textPrimary,
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
-                        val columns = 5
-                        group.items.chunked(columns).forEach { rowItems ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                rowItems.forEach { category ->
-                                    CategoryCard(
-                                        title = category.title,
-                                        color = Color(category.stripeColor.toInt()),
-                                        onClick = {
-                                            onBrowseCategory(
-                                                category.browseId,
-                                                category.params
+                        BoxWithConstraints(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                        ) {
+                            val availableWidth = maxWidth
+                            val minCardWidth = 140.dp
+                            val spacing = 10.dp
+                            val columns = ((availableWidth + spacing) / (minCardWidth + spacing))
+                                .toInt()
+                                .coerceIn(2, 6)
+
+                            Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                                group.items.chunked(columns).forEach { rowItems ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(spacing)
+                                    ) {
+                                        rowItems.forEach { category ->
+                                            CategoryCard(
+                                                title = category.title,
+                                                color = Color(category.stripeColor.toInt()),
+                                                onClick = {
+                                                    onBrowseCategory(
+                                                        category.browseId,
+                                                        category.params
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f)
                                             )
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                repeat(columns - rowItems.size) {
-                                    Spacer(
-                                        modifier = Modifier.weight(
-                                            1f
-                                        )
-                                    )
+                                        }
+                                        repeat(columns - rowItems.size) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
                                 }
                             }
                         }
