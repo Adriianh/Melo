@@ -138,7 +138,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.VideoTarget(videoId)
+                target = LikeBody.Target(videoId = videoId)
             )
         )
     }
@@ -151,7 +151,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.VideoTarget(videoId)
+                target = LikeBody.Target(videoId = videoId)
             )
         )
     }
@@ -164,7 +164,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.PlaylistTarget(playlistId)
+                target = LikeBody.Target(playlistId = playlistId)
             )
         )
     }
@@ -177,7 +177,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.PlaylistTarget(playlistId)
+                target = LikeBody.Target(playlistId = playlistId)
             )
         )
     }
@@ -190,7 +190,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.AlbumTarget(browseId)
+                target = LikeBody.Target(playlistId = browseId)
             )
         )
     }
@@ -203,7 +203,7 @@ class InnerTube(
         setBody(
             LikeBody(
                 context = client.toContext(locale, visitorData, dataSyncId),
-                target = LikeBody.Target.AlbumTarget(browseId)
+                target = LikeBody.Target(playlistId = browseId)
             )
         )
     }
@@ -325,6 +325,27 @@ class InnerTube(
         parameter("ver", "2")
         parameter("c", client.clientName)
         parameter("cpn", cpn)
+
+        if (playlistId != null) {
+            parameter("list", playlistId)
+            parameter("referrer", "https://music.youtube.com/playlist?list=$playlistId")
+        }
+    }
+
+    suspend fun registerWatchtime(
+        url: String,
+        cpn: String,
+        playlistId: String?,
+        client: YouTubeClient = YouTubeClient.WEB_REMIX,
+    ) = httpClient.get(url) {
+        ytClient(client, true)
+        parameter("ver", "2")
+        parameter("c", client.clientName)
+        parameter("cpn", cpn)
+        parameter("state", "playing")
+        parameter("st", "0")
+        parameter("et", "10")
+        parameter("cmt", "10")
 
         if (playlistId != null) {
             parameter("list", playlistId)

@@ -58,8 +58,13 @@ class HistoryRepositoryImpl(
                                 .getOrNull()
                         val trackingUrl =
                             playerRes?.playbackTracking?.videostatsPlaybackUrl?.baseUrl
+                        val watchtimeUrl =
+                            playerRes?.playbackTracking?.videostatsWatchtimeUrl?.baseUrl
                         if (trackingUrl != null) {
-                            YouTube.registerPlayback(playbackTracking = trackingUrl)
+                            YouTube.registerPlayback(
+                                playbackTracking = trackingUrl,
+                                watchtimeTracking = watchtimeUrl
+                            )
                         }
                     }
                 }

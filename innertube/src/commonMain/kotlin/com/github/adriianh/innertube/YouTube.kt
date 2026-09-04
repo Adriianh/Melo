@@ -1140,19 +1140,24 @@ object YouTube {
 
     suspend fun likeAlbum(browseId: String, like: Boolean) = runCatching {
         val cleanId = browseId.removePrefix("VL")
-        if (cleanId.startsWith("OLAK") || cleanId.startsWith("PL") || cleanId.startsWith("RD")) {
-            if (like) innerTube.likePlaylist(WEB_REMIX, cleanId)
-            else innerTube.unlikePlaylist(WEB_REMIX, cleanId)
-        } else {
-            val res = runCatching {
-                if (like) innerTube.likeAlbum(WEB_REMIX, browseId)
-                else innerTube.unlikeAlbum(WEB_REMIX, browseId)
+        val targetPlaylistId =
+            if (cleanId.startsWith("OLAK") || cleanId.startsWith("PL") || cleanId.startsWith("RD")) {
+                cleanId
+            } else if (cleanId.startsWith("MPREb")) {
+                val browseRes =
+                    innerTube.browse(WEB_REMIX, cleanId, setLogin = true).body<BrowseResponse>()
+                val canonicalList = browseRes.microformat?.microformatDataRenderer?.urlCanonical
+                    ?.substringAfter("list=", "")?.substringBefore('&')?.takeIf { it.isNotBlank() }
+                    ?: browseRes.microformat?.microformatDataRenderer?.urlCanonical?.substringAfterLast(
+                        '='
+                    )?.takeIf { it.isNotBlank() }
+                canonicalList ?: cleanId
+            } else {
+                cleanId
             }
-            if (res.isFailure) {
-                if (like) innerTube.likePlaylist(WEB_REMIX, cleanId)
-                else innerTube.unlikePlaylist(WEB_REMIX, cleanId)
-            }
-        }
+
+        if (like) innerTube.likePlaylist(WEB_REMIX, targetPlaylistId)
+        else innerTube.unlikePlaylist(WEB_REMIX, targetPlaylistId)
     }
 
     suspend fun musicHistory() = runCatching {
@@ -1182,26 +1187,41 @@ object YouTube {
         innerTube.player(client, videoId, playlistId, signatureTimestamp).body<PlayerResponse>()
     }
 
-    suspend fun registerPlayback(playlistId: String? = null, playbackTracking: String) =
-        runCatching {
-            val cpn = (1..16).map {
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"[Random.nextInt(
-                    0,
-                    64
-                )]
-            }.joinToString("")
+    suspend fun registerPlayback(
+        playbackTracking: String,
+        watchtimeTracking: String? = null,
+        playlistId: String? = null
+    ) = runCatching {
+        val cpn = (1..16).map {
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"[Random.nextInt(
+                0,
+                64
+            )]
+        }.joinToString("")
 
-            val playbackUrl = playbackTracking.replace(
+        val playbackUrl = playbackTracking.replace(
+            "https://s.youtube.com",
+            "https://music.youtube.com",
+        )
+
+        innerTube.registerPlayback(
+            url = playbackUrl,
+            playlistId = playlistId,
+            cpn = cpn
+        )
+
+        if (watchtimeTracking != null) {
+            val watchtimeUrl = watchtimeTracking.replace(
                 "https://s.youtube.com",
                 "https://music.youtube.com",
             )
-
-            innerTube.registerPlayback(
-                url = playbackUrl,
+            innerTube.registerWatchtime(
+                url = watchtimeUrl,
                 playlistId = playlistId,
                 cpn = cpn
             )
         }
+    }
 
     suspend fun libraryRecentActivity(): Result<LibraryPage> = runCatching {
         val continuation =

@@ -2,18 +2,15 @@ package com.github.adriianh.innertube.models.body
 
 import com.github.adriianh.innertube.models.Context
 import kotlinx.serialization.Serializable
+
 @Serializable
 data class LikeBody(
     val context: Context,
     val target: Target,
 ) {
     @Serializable
-    sealed class Target {
-        @Serializable
-        data class VideoTarget(val videoId: String) : Target()
-        @Serializable
-        data class PlaylistTarget(val playlistId: String) : Target()
-        @Serializable
-        data class AlbumTarget(val browseId: String) : Target()
-    }
+    data class Target(
+        val videoId: String? = null,
+        val playlistId: String? = null,
+    )
 }

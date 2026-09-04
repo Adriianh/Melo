@@ -3,6 +3,7 @@ package com.github.adriianh.innertube
 import com.github.adriianh.innertube.models.Context
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.YouTubeLocale
+import com.github.adriianh.innertube.models.body.LikeBody
 import com.github.adriianh.innertube.models.body.PlayerBody
 import com.github.adriianh.innertube.models.body.SearchBody
 import io.ktor.client.HttpClient
@@ -276,5 +277,55 @@ class InnerTubeHttpTest {
         assertEquals(original.client.clientName, decoded.client.clientName)
         assertEquals(original.client.gl, decoded.client.gl)
         assertEquals(original.client.visitorData, decoded.client.visitorData)
+    }
+
+    @Test
+    fun `LikeBody serializes playlist target without polymorphic type discriminator`() {
+        val context = Context(
+            client = Context.Client(
+                clientName = "WEB_REMIX",
+                clientVersion = "1.0",
+                osVersion = null,
+                gl = "US",
+                hl = "en",
+                visitorData = null
+            )
+        )
+        val body = LikeBody(
+            context = context,
+            target = LikeBody.Target(playlistId = "OLAK5uy_test")
+        )
+        val encoded = json.encodeToString(LikeBody.serializer(), body)
+
+        assertTrue(encoded.contains("\"playlistId\":\"OLAK5uy_test\""))
+        assertTrue(
+            !encoded.contains("\"type\""),
+            "Should not contain polymorphic class discriminator"
+        )
+    }
+
+    @Test
+    fun `LikeBody serializes video target without polymorphic type discriminator`() {
+        val context = Context(
+            client = Context.Client(
+                clientName = "WEB_REMIX",
+                clientVersion = "1.0",
+                osVersion = null,
+                gl = "US",
+                hl = "en",
+                visitorData = null
+            )
+        )
+        val body = LikeBody(
+            context = context,
+            target = LikeBody.Target(videoId = "vid123")
+        )
+        val encoded = json.encodeToString(LikeBody.serializer(), body)
+
+        assertTrue(encoded.contains("\"videoId\":\"vid123\""))
+        assertTrue(
+            !encoded.contains("\"type\""),
+            "Should not contain polymorphic class discriminator"
+        )
     }
 }
