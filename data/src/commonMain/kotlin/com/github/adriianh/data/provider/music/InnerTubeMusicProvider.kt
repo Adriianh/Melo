@@ -337,6 +337,7 @@ class InnerTubeMusicProvider(
             year = albumItem.year?.toString(),
             artworkUrl = albumArtwork,
             songs = tracks,
+            description = albumItem.description,
             otherVersions = otherVersions
         )
 
@@ -515,7 +516,7 @@ class InnerTubeMusicProvider(
             trackCount = result.songs.size,
             artworkUrl = playlistArtwork,
             songs = tracks,
-            description = null
+            description = result.playlist.description
         )
     }
 

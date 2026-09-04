@@ -379,6 +379,14 @@ object YouTube {
                 albumThumbnail = songsList.firstOrNull()?.thumbnail.orEmpty()
             }
 
+            val albumDescription =
+                allContents.mapNotNull { it.musicDescriptionShelfRenderer }
+                    .firstOrNull()?.description?.runs?.joinToString("") { it.text }
+                    ?: response.header?.musicDetailHeaderRenderer?.description?.runs?.joinToString("") { it.text }
+                    ?: initialResponse?.header?.musicDetailHeaderRenderer?.description?.runs?.joinToString(
+                        ""
+                    ) { it.text }
+
             val albumItem = AlbumItem(
                 browseId = browseId,
                 playlistId = actualPlaylistId,
@@ -386,6 +394,7 @@ object YouTube {
                 artists = albumArtists,
                 year = albumYear,
                 thumbnail = albumThumbnail,
+                description = albumDescription,
             )
 
             AlbumPage(
@@ -710,6 +719,12 @@ object YouTube {
                     )
                 }
 
+        val playlistDescription =
+            sectionContents.mapNotNull { it.musicDescriptionShelfRenderer }
+                .firstOrNull()?.description?.runs?.joinToString("") { it.text }
+                ?: detailHeader?.description?.runs?.joinToString("") { it.text }
+                ?: response.header?.musicDetailHeaderRenderer?.description?.runs?.joinToString("") { it.text }
+
         PlaylistPage(
             playlist = PlaylistItem(
                 id = playlistId,
@@ -723,7 +738,8 @@ object YouTube {
                 radioEndpoint = responsiveHeader?.buttons?.getOrNull(2)?.menuRenderer?.items?.find {
                     it.menuNavigationItemRenderer?.icon?.iconType == "MIX"
                 }?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint,
-                isEditable = editable
+                isEditable = editable,
+                description = playlistDescription,
             ),
             songs = response.contents?.twoColumnBrowseResultsRenderer?.secondaryContents?.sectionListRenderer
                 ?.contents?.firstOrNull()?.musicPlaylistShelfRenderer?.contents?.getItems()
@@ -1123,10 +1139,20 @@ object YouTube {
     }
 
     suspend fun likeAlbum(browseId: String, like: Boolean) = runCatching {
-        if (like)
-            innerTube.likeAlbum(WEB_REMIX, browseId)
-        else
-            innerTube.unlikeAlbum(WEB_REMIX, browseId)
+        val cleanId = browseId.removePrefix("VL")
+        if (cleanId.startsWith("OLAK") || cleanId.startsWith("PL") || cleanId.startsWith("RD")) {
+            if (like) innerTube.likePlaylist(WEB_REMIX, cleanId)
+            else innerTube.unlikePlaylist(WEB_REMIX, cleanId)
+        } else {
+            val res = runCatching {
+                if (like) innerTube.likeAlbum(WEB_REMIX, browseId)
+                else innerTube.unlikeAlbum(WEB_REMIX, browseId)
+            }
+            if (res.isFailure) {
+                if (like) innerTube.likePlaylist(WEB_REMIX, cleanId)
+                else innerTube.unlikePlaylist(WEB_REMIX, cleanId)
+            }
+        }
     }
 
     suspend fun musicHistory() = runCatching {

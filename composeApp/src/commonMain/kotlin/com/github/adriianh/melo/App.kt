@@ -446,6 +446,13 @@ fun App() {
                                     }
                                 }
                             },
+                            onSyncHistoryToYouTubeChanged = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(syncHistoryToYouTube = enabled)
+                                    }
+                                }
+                            },
                             onOpenLogin = {
                                 showSettingsSheet = false
                                 showLoginDialog = true

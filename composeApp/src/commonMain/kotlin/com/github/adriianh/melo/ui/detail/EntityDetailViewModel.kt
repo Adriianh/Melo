@@ -9,10 +9,11 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.repository.OfflineRepository
-import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
-import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
@@ -51,6 +52,9 @@ class EntityDetailViewModel(
     private val toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
     private val toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
     private val subscribeChannelUseCase: SubscribeChannelUseCase? = null,
+    private val getUserAlbumsUseCase: GetUserAlbumsUseCase? = null,
+    private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase? = null,
+    private val getUserArtistsUseCase: GetUserArtistsUseCase? = null,
     private val downloadManager: DownloadManager,
     private val offlineRepository: OfflineRepository,
     private val getSettingsUseCase: GetSettingsUseCase,
@@ -59,8 +63,6 @@ class EntityDetailViewModel(
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
     private val renamePlaylistUseCase: RenamePlaylistUseCase? = null,
     private val reorderPlaylistTracksUseCase: ReorderPlaylistTracksUseCase? = null,
-    private val createPlaylistUseCase: CreatePlaylistUseCase? = null,
-    private val addTracksToPlaylistUseCase: AddTracksToPlaylistUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
@@ -114,7 +116,11 @@ class EntityDetailViewModel(
             completedKeys.add(ot.track.id.removePrefix("piped:"))
             completedKeys.add("piped:${ot.track.id.removePrefix("piped:")}")
             ot.track.sourceId?.let { completedKeys.add(it) }
-            completedSignatures.add("${ot.track.title.trim().lowercase()}:::${ot.track.artist.trim().lowercase()}")
+            completedSignatures.add(
+                "${ot.track.title.trim().lowercase()}:::${
+                    ot.track.artist.trim().lowercase()
+                }"
+            )
         }
 
         val completedTrackIds = mutableSetOf<String>()
@@ -133,17 +139,22 @@ class EntityDetailViewModel(
             }
         }
 
-        val isDownloading = songs.any { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }
+        val isDownloading =
+            songs.any { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }
         val isDownloaded = completedCount == songs.size && songs.isNotEmpty()
 
-        val currentDownloading = songs.firstOrNull { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }?.title
+        val currentDownloading =
+            songs.firstOrNull { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }?.title
 
         val progress = if (songs.isNotEmpty()) {
             val totalTrackProgress = songs.sumOf { track ->
                 when {
                     track.id in completedTrackIds -> 1.0
                     track.id in activeDownloads -> activeDownloads[track.id]?.toDouble() ?: 0.0
-                    track.id.removePrefix("piped:") in activeDownloads -> activeDownloads[track.id.removePrefix("piped:")]?.toDouble() ?: 0.0
+                    track.id.removePrefix("piped:") in activeDownloads -> activeDownloads[track.id.removePrefix(
+                        "piped:"
+                    )]?.toDouble() ?: 0.0
+
                     else -> 0.0
                 }
             }
@@ -356,6 +367,7 @@ class EntityDetailViewModel(
                             toggleLikePlaylistUseCase(entity.id, newSaved)
                         }
                     }
+
                     is SearchResult.Artist -> subscribeChannelUseCase?.invoke(entity.id, newSaved)
                     else -> {}
                 }
@@ -381,6 +393,41 @@ class EntityDetailViewModel(
         }
     }
 
+    private fun checkSavedStatus(entity: SearchResult) {
+        viewModelScope.launch {
+            try {
+                val isSaved = when (entity) {
+                    is SearchResult.Album -> {
+                        getUserAlbumsUseCase?.invoke()?.getOrNull()?.any {
+                            it.id == entity.id ||
+                                    (it.title.equals(
+                                        entity.title,
+                                        ignoreCase = true
+                                    ) && it.author.equals(entity.author, ignoreCase = true))
+                        } == true
+                    }
+
+                    is SearchResult.Playlist -> {
+                        val cleanId = entity.id.removePrefix("VL")
+                        getUserPlaylistsUseCase?.invoke()?.getOrNull()?.any {
+                            it.id == entity.id || it.id.removePrefix("VL") == cleanId
+                        } == true
+                    }
+
+                    is SearchResult.Artist -> {
+                        getUserArtistsUseCase?.invoke()?.getOrNull()?.any {
+                            it.id == entity.id || it.name.equals(entity.name, ignoreCase = true)
+                        } == true
+                    }
+
+                    else -> false
+                }
+                _uiState.update { it.copy(isSaved = isSaved) }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun loadEntity(initial: SearchResult) {
         currentLoadJob?.cancel()
         _uiState.update {
@@ -388,6 +435,7 @@ class EntityDetailViewModel(
                 isLoading = true,
                 entity = initial,
                 error = null,
+                isSaved = false,
                 isDownloaded = false,
                 isDownloading = false,
                 downloadProgress = 0f,
@@ -399,6 +447,7 @@ class EntityDetailViewModel(
                 downloadedArtistTracks = emptyList()
             )
         }
+        checkSavedStatus(initial)
         currentLoadJob = viewModelScope.launch {
             val loadedOffline = loadEntityOffline(initial)
             if (loadedOffline) {
@@ -463,7 +512,10 @@ class EntityDetailViewModel(
                             .map { it.track }
                             .filter {
                                 it.artist.contains(fullDetails.name, ignoreCase = true) ||
-                                        (initialArtistId.isNotBlank() && it.artist.contains(initialArtistId, ignoreCase = true))
+                                        (initialArtistId.isNotBlank() && it.artist.contains(
+                                            initialArtistId,
+                                            ignoreCase = true
+                                        ))
                             }
                     } else emptyList()
 
@@ -536,9 +588,11 @@ class EntityDetailViewModel(
                     return true
                 }
             }
+
             is SearchResult.Playlist -> {
                 return false
             }
+
             is SearchResult.Artist -> {
                 val artistQuery = initial.name.ifBlank { initial.id }
                 val matchingTracks = allOffline
@@ -562,6 +616,7 @@ class EntityDetailViewModel(
                     return true
                 }
             }
+
             else -> {}
         }
         return false
