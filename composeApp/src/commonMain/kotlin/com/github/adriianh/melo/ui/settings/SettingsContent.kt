@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headphones
@@ -40,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.DeleteSweep
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
@@ -72,7 +72,7 @@ internal fun SettingsContent(
         PlaybackSettingsSection(settings, actions)
         DownloadsSettingsSection(settings, actions)
         LocalFoldersSection(settings, actions)
-        AccountSettingsSection(isLoggedIn, actions)
+        AccountSettingsSection(settings, isLoggedIn, actions)
 
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -295,6 +295,7 @@ private fun LocalFoldersSection(
 
 @Composable
 private fun AccountSettingsSection(
+    settings: Settings,
     isLoggedIn: Boolean,
     actions: SettingsActions,
 ) {
@@ -338,6 +339,19 @@ private fun AccountSettingsSection(
                 ) {
                     Text("Iniciar sesión")
                 }
+            }
+        }
+
+        if (isLoggedIn) {
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingRow(
+                title = "Registrar reproducciones en YouTube",
+                subtitle = "Sincroniza automáticamente las pistas que escuchas con tu historial de YouTube Music."
+            ) {
+                MeloSettingsSwitch(
+                    checked = settings.syncHistoryToYouTube,
+                    onCheckedChange = actions.onSyncHistoryToYouTubeChanged
+                )
             }
         }
     }

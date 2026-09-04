@@ -1,20 +1,24 @@
-
 package com.github.adriianh.data.repository
-import com.github.adriianh.core.util.MeloDispatchers
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.HistoryRepository
+import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.local.Play_history
-import kotlinx.coroutines.Dispatchers
+import com.github.adriianh.innertube.YouTube
+import com.github.adriianh.innertube.models.YouTubeClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-class HistoryRepositoryImpl(database: MeloDatabase) : HistoryRepository {
+class HistoryRepositoryImpl(
+    database: MeloDatabase,
+    private val settingsRepository: SettingsRepository? = null,
+) : HistoryRepository {
 
     private val queries = database.playHistoryQueries
 
@@ -36,6 +40,31 @@ class HistoryRepositoryImpl(database: MeloDatabase) : HistoryRepository {
                 source_id = entry.track.sourceId,
                 played_at = entry.playedAt,
             )
+
+            try {
+                val settings = settingsRepository?.getSettings()
+                val isLoggedIn = !settings?.sessionCookies.isNullOrBlank()
+                val shouldSync = settings?.syncHistoryToYouTube != false
+                if (isLoggedIn && shouldSync) {
+                    val rawVideoId = entry.track.sourceId?.takeIf { it.isNotBlank() }
+                        ?: entry.track.id.removePrefix("piped:").takeIf {
+                            !it.startsWith("local:") && !it.startsWith("itunes:") && !it.startsWith(
+                                "spotify:"
+                            )
+                        }
+                    if (rawVideoId != null) {
+                        val playerRes =
+                            YouTube.player(videoId = rawVideoId, client = YouTubeClient.WEB_REMIX)
+                                .getOrNull()
+                        val trackingUrl =
+                            playerRes?.playbackTracking?.videostatsPlaybackUrl?.baseUrl
+                        if (trackingUrl != null) {
+                            YouTube.registerPlayback(playbackTracking = trackingUrl)
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 

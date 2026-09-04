@@ -125,4 +125,5 @@ data class Settings(
     val autoplay: Boolean = true,
     val dataSaver: Boolean = false,
     val audioQuality: AudioQuality = AudioQuality.AUTO,
+    val syncHistoryToYouTube: Boolean = true,
 )
