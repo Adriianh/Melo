@@ -21,7 +21,8 @@ data class YouTubeClient(
     val loginRequired: Boolean = false,
     val useSignatureTimestamp: Boolean = false,
     val isEmbedded: Boolean = false,
-    val apiUrl: String = API_URL_YOUTUBE_MUSIC
+    val apiUrl: String = API_URL_YOUTUBE_MUSIC,
+    val origin: String = ORIGIN_YOUTUBE_MUSIC,
 ) {
     fun toContext(locale: YouTubeLocale, visitorData: String?, dataSyncId: String?) = Context(
         client = Context.Client(
@@ -46,6 +47,7 @@ data class YouTubeClient(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
         const val USER_AGENT_CHROME =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        const val ORIGIN_YOUTUBE = "https://www.youtube.com"
         const val ORIGIN_YOUTUBE_MUSIC = "https://music.youtube.com"
         const val REFERER_YOUTUBE_MUSIC = "$ORIGIN_YOUTUBE_MUSIC/"
         const val API_URL_YOUTUBE = "https://www.youtube.com/youtubei/v1/"
@@ -106,7 +108,8 @@ data class YouTubeClient(
             userAgent = "com.google.ios.youtube/20.51.39 (iPhone16,2; U; CPU iOS 18_2 like Mac OS X;)",
             osVersion = "18.2.22C152",
             useSignatureTimestamp = true,
-            apiUrl = API_URL_YOUTUBE
+            apiUrl = API_URL_YOUTUBE,
+            origin = ORIGIN_YOUTUBE,
         )
 
         val MOBILE = YouTubeClient(
@@ -116,7 +119,8 @@ data class YouTubeClient(
             userAgent = "com.google.android.youtube/20.51.39 (Linux; U; Android 14) gzip",
             loginSupported = true,
             useSignatureTimestamp = false,
-            apiUrl = API_URL_YOUTUBE
+            apiUrl = API_URL_YOUTUBE,
+            origin = ORIGIN_YOUTUBE,
         )
 
         val ANDROID_VR_NO_AUTH = YouTubeClient(
@@ -126,7 +130,8 @@ data class YouTubeClient(
             userAgent = "com.google.android.apps.youtube.vr.oculus/1.61.48 (Linux; U; Android 12; en_US; Oculus Quest 3; Build/SQ3A.220605.009.A1; Cronet/132.0.6808.3)",
             loginSupported = false,
             useSignatureTimestamp = false,
-            apiUrl = API_URL_YOUTUBE
+            apiUrl = API_URL_YOUTUBE,
+            origin = ORIGIN_YOUTUBE,
         )
 
         val ANDROID_VR_1_61_48 = YouTubeClient(

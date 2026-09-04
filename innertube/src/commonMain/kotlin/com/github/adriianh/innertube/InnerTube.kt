@@ -112,17 +112,23 @@ class InnerTube(
             append("X-Goog-Api-Format-Version", "1")
             append("X-YouTube-Client-Name", client.clientId)
             append("X-YouTube-Client-Version", client.clientVersion)
-            append("X-Origin", YouTubeClient.ORIGIN_YOUTUBE_MUSIC)
-            append("Referer", YouTubeClient.REFERER_YOUTUBE_MUSIC)
+            append("X-Origin", client.origin)
+            append("Origin", client.origin)
+            append("Referer", "${client.origin}/")
             if (setLogin && client.loginSupported) {
                 cookie?.let { cookie ->
                     append("cookie", cookie)
                     append("X-Goog-AuthUser", "0")
-                    if ("SAPISID" !in cookieMap) return@let
-                    val currentTime = currentTimeSeconds()
-                    val sapisidHash =
-                        sha1("$currentTime ${cookieMap["SAPISID"]} ${YouTubeClient.ORIGIN_YOUTUBE_MUSIC}")
-                    append("Authorization", "SAPISIDHASH ${currentTime}_${sapisidHash}")
+                    val sapisid = cookieMap["SAPISID"]
+                        ?: cookieMap["__Secure-3PAPISID"]
+                        ?: cookieMap["__Secure-1PAPISID"]
+                        ?: cookieMap["APISID"]
+                    if (sapisid != null) {
+                        val currentTime = currentTimeSeconds()
+                        val sapisidHash =
+                            sha1("$currentTime $sapisid ${client.origin}")
+                        append("Authorization", "SAPISIDHASH ${currentTime}_${sapisidHash}")
+                    }
                 }
             }
         }
@@ -324,6 +330,7 @@ class InnerTube(
         ytClient(client, true)
         parameter("ver", "2")
         parameter("c", client.clientName)
+        parameter("cver", client.clientVersion)
         parameter("cpn", cpn)
 
         if (playlistId != null) {
@@ -341,6 +348,7 @@ class InnerTube(
         ytClient(client, true)
         parameter("ver", "2")
         parameter("c", client.clientName)
+        parameter("cver", client.clientVersion)
         parameter("cpn", cpn)
         parameter("state", "playing")
         parameter("st", "0")
