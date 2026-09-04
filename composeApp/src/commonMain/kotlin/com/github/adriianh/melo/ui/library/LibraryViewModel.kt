@@ -45,12 +45,29 @@ import kotlinx.coroutines.launch
 
 enum class LibraryTab(val label: String) {
     PLAYLISTS("Playlists"),
-    LIKED("Canciones que me gustan"),
+    LIKED("Me Gusta"),
     DOWNLOADS("Descargas"),
     LOCAL("Archivos locales"),
     ARTISTS("Artistas"),
     ALBUMS("Álbumes"),
     HISTORY("Historial")
+}
+
+enum class LibraryCategory(
+    val label: String,
+    val tabs: List<LibraryTab>
+) {
+    COLLECTION(
+        "Tu Colección",
+        listOf(LibraryTab.PLAYLISTS, LibraryTab.LIKED, LibraryTab.ALBUMS, LibraryTab.ARTISTS)
+    ),
+    DEVICE("En tu Dispositivo", listOf(LibraryTab.DOWNLOADS, LibraryTab.LOCAL)),
+    HISTORY("Historial", listOf(LibraryTab.HISTORY));
+
+    companion object {
+        fun fromTab(tab: LibraryTab): LibraryCategory =
+            entries.firstOrNull { tab in it.tabs } ?: COLLECTION
+    }
 }
 
 data class LibraryUiState(
