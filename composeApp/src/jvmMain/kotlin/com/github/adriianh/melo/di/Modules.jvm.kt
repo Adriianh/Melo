@@ -5,11 +5,13 @@ import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
+import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
 import com.github.adriianh.melo.player.JvmMediaSessionManager
 import kotlinx.coroutines.Dispatchers
@@ -35,22 +37,22 @@ actual val platformModule: Module = module {
     single(named("configDirPath")) { dataDir.absolutePath }
 
     single<AudioProvider>(createdAtStart = true) {
-        val ytDlpProvider = YtDlpAudioProvider(pipedApiClient = get())
+        val ytDlpProvider = YtDlpAudioProvider(pipedApiClient = get<PipedApiClient>())
         val pipedProvider = PipedAudioProvider(
-            apiClient = get(),
+            apiClient = get<PipedApiClient>(),
             fallback = ytDlpProvider
         )
         InnerTubeAudioProvider(
-            configDirPath = get(named("configDirPath")),
+            configDirPath = get<String>(named("configDirPath")),
             fallback = pipedProvider,
-            settingsRepository = get()
+            settingsRepository = get<SettingsRepository>()
         )
     }
 
     single<OfflineRepository> {
         OfflineRepositoryImpl(
             dataDir = dataDir,
-            settingsRepository = get(),
+            settingsRepository = get<SettingsRepository>(),
             dispatcher = Dispatchers.IO
         )
     }

@@ -1167,15 +1167,21 @@ object YouTube {
             setLogin = true
         ).body<BrowseResponse>()
 
-        HistoryPage(
-            sections = response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()
-                ?.tabRenderer?.content?.sectionListRenderer?.contents
-                ?.mapNotNull {
-                    it.musicShelfRenderer?.let { musicShelfRenderer ->
-                        HistoryPage.fromMusicShelfRenderer(musicShelfRenderer)
-                    }
-                }
-        )
+        val allContents = listOfNotNull(
+            response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents,
+            response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents,
+            response.contents?.sectionListRenderer?.contents
+        ).flatten()
+
+        val sections = allContents.mapNotNull {
+            it.musicShelfRenderer?.let { musicShelfRenderer ->
+                HistoryPage.fromMusicShelfRenderer(musicShelfRenderer)
+            } ?: it.itemSectionRenderer?.let { itemSectionRenderer ->
+                HistoryPage.fromItemSectionRenderer(itemSectionRenderer)
+            }
+        }.filter { it.songs.isNotEmpty() }
+
+        HistoryPage(sections = sections)
     }
 
     suspend fun player(
@@ -1199,24 +1205,15 @@ object YouTube {
             )]
         }.joinToString("")
 
-        val playbackUrl = playbackTracking.replace(
-            "https://s.youtube.com",
-            "https://music.youtube.com",
-        )
-
         innerTube.registerPlayback(
-            url = playbackUrl,
+            url = playbackTracking,
             playlistId = playlistId,
             cpn = cpn
         )
 
         if (watchtimeTracking != null) {
-            val watchtimeUrl = watchtimeTracking.replace(
-                "https://s.youtube.com",
-                "https://music.youtube.com",
-            )
             innerTube.registerWatchtime(
-                url = watchtimeUrl,
+                url = watchtimeTracking,
                 playlistId = playlistId,
                 cpn = cpn
             )

@@ -172,14 +172,19 @@ val dataModule = module {
     }
 
     singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
-    singleOf(::HistoryRepositoryImpl) { bind<HistoryRepository>() }
+    single<HistoryRepository> {
+        HistoryRepositoryImpl(
+            database = get(),
+            settingsRepository = get()
+        )
+    }
     singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
     singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
-    single<RemoteLibraryRepository> { RemoteLibraryRepositoryImpl() }
+    singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
     single<SettingsRepository> {
         SettingsRepositoryImpl(
-            configDirPath = get(named("configDirPath")),
+            configDirPath = get<String>(named("configDirPath")),
             dispatcher = MeloDispatchers.IO
         )
     }
@@ -190,7 +195,7 @@ val dataModule = module {
             getStreamUseCase = get(),
             getSettingsUseCase = get(),
             offlineRepository = get(),
-            configDirPath = get(named("configDirPath")),
+            configDirPath = get<String>(named("configDirPath")),
             dispatcher = MeloDispatchers.IO
         )
     }
@@ -201,10 +206,11 @@ val dataModule = module {
             meloPlayer = get(),
             getStreamUseCase = get(),
             scope = get(),
-            getRadioUseCase = get(),
-            getSettingsUseCase = get(),
-            downloadManager = get(),
-            offlineRepository = get(),
+            getRadioUseCase = getOrNull(),
+            getSettingsUseCase = getOrNull(),
+            downloadManager = getOrNull(),
+            offlineRepository = getOrNull(),
+            recordPlayUseCase = getOrNull(),
         )
     }
 }
@@ -298,6 +304,7 @@ val viewModelModule = module {
             getUserArtistsUseCase = get(),
             getUserAlbumsUseCase = get(),
             getRemoteHistoryUseCase = get(),
+            getRecentTracksUseCase = get(),
             toggleLikeTrackUseCase = get(),
             getOfflineTracksUseCase = get(),
             scanLocalTracksUseCase = get(),

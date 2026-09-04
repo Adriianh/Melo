@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,7 @@ class PlaybackManagerImpl(
     private val getSettingsUseCase: GetSettingsUseCase? = null,
     private val downloadManager: DownloadManager? = null,
     private val offlineRepository: OfflineRepository? = null,
+    private val recordPlayUseCase: RecordPlayUseCase? = null,
 ) : PlaybackManager {
 
     override val playbackState: StateFlow<PlaybackState> = meloPlayer.state
@@ -247,6 +249,13 @@ class PlaybackManagerImpl(
                     return@launch
                 }
             meloPlayer.load(url, track)
+
+            launch {
+                try {
+                    recordPlayUseCase?.invoke(track)
+                } catch (_: Exception) {
+                }
+            }
 
             if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
                 launch {
