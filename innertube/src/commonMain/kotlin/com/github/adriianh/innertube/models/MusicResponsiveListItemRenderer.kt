@@ -52,6 +52,14 @@ data class MusicResponsiveListItemRenderer(
             ?: navigationEndpoint?.watchEndpoint?.videoId
             ?: overlay?.musicItemThumbnailOverlayRenderer?.content
                 ?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint?.videoId
+            ?: flexColumns.firstNotNullOfOrNull { col ->
+                col.musicResponsiveListItemFlexColumnRenderer
+                    ?.text?.runs?.firstNotNullOfOrNull { it.navigationEndpoint?.watchEndpoint?.videoId }
+            }
+            ?: menu?.menuRenderer?.items?.firstNotNullOfOrNull {
+                it.menuNavigationItemRenderer?.navigationEndpoint?.watchEndpoint?.videoId
+                    ?: it.menuServiceItemRenderer?.serviceEndpoint?.queueAddEndpoint?.queueTarget?.videoId
+            }
     val isAudioTrack: Boolean
         get() =
             overlay

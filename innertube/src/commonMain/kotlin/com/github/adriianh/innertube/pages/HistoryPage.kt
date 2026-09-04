@@ -19,18 +19,34 @@ data class HistoryPage(
     companion object {
         fun fromMusicShelfRenderer(renderer: MusicShelfRenderer): HistorySection {
             return HistorySection(
-                title = renderer.title?.runs?.firstOrNull()?.text!!,
+                title = renderer.title?.runs?.firstOrNull()?.text ?: "",
                 songs = renderer.contents?.getItems()?.mapNotNull {
                     fromMusicResponsiveListItemRenderer(it)
-                }!!
+                } ?: emptyList()
             )
         }
+
+        fun fromItemSectionRenderer(renderer: com.github.adriianh.innertube.models.ItemSectionRenderer): HistorySection {
+            return HistorySection(
+                title = "",
+                songs = renderer.contents?.mapNotNull {
+                    it.musicResponsiveListItemRenderer?.let { r ->
+                        fromMusicResponsiveListItemRenderer(
+                            r
+                        )
+                    }
+                } ?: emptyList()
+            )
+        }
+
         private fun fromMusicResponsiveListItemRenderer(renderer: MusicResponsiveListItemRenderer): SongItem? {
+            val title = renderer.flexColumns.firstOrNull()
+                ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
+                ?.text ?: return null
+            if (title.isBlank()) return null
             return SongItem(
                 id = renderer.videoId ?: return null,
-                title = renderer.flexColumns.firstOrNull()
-                    ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
-                    ?.text ?: return null,
+                title = title,
                 artists = renderer.flexColumns.getOrNull(1)?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.oddElements()
                     ?.map {
                         Artist(
@@ -50,7 +66,7 @@ data class HistoryPage(
                     },
                 duration = renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer
                     ?.text?.runs?.firstOrNull()?.text?.parseTime(),
-                thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
+                thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl().orEmpty(),
                 explicit = renderer.badges?.find {
                     it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
                 } != null,
