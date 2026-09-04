@@ -328,4 +328,85 @@ class InnerTubeHttpTest {
             "Should not contain polymorphic class discriminator"
         )
     }
+
+    @Test
+    fun `registerPlayback and registerWatchtime send correct URLs and headers`() = runTest {
+        val requests = mutableListOf<io.ktor.client.request.HttpRequestData>()
+        val mockEngine = MockEngine { request ->
+            requests.add(request)
+            respond(
+                content = "",
+                status = HttpStatusCode.NoContent,
+            )
+        }
+
+        val innerTube = InnerTube(mockEngine)
+        innerTube.cookie = "SAPISID=test-sapisid; SID=test-sid"
+
+        innerTube.registerPlayback(
+            url = "https://s.youtube.com/api/stats/playback?ns=yt&docid=dQw4w9WgXcQ",
+            cpn = "test_cpn_123456",
+            playlistId = "PLtest",
+            client = YouTubeClient.WEB_REMIX
+        )
+
+        innerTube.registerWatchtime(
+            url = "https://s.youtube.com/api/stats/watchtime?ns=yt&docid=dQw4w9WgXcQ",
+            cpn = "test_cpn_123456",
+            playlistId = "PLtest",
+            client = YouTubeClient.WEB_REMIX
+        )
+
+        assertEquals(2, requests.size)
+        val playbackReq = requests[0]
+        println("Playback URL: " + playbackReq.url.toString())
+        assertTrue(
+            playbackReq.url.encodedPath.contains("api/stats/playback"),
+            "Path should contain api/stats/playback, got: ${playbackReq.url.encodedPath}"
+        )
+        assertEquals("2", playbackReq.url.parameters["ver"])
+        assertEquals("WEB_REMIX", playbackReq.url.parameters["c"])
+        assertEquals("test_cpn_123456", playbackReq.url.parameters["cpn"])
+        assertEquals("PLtest", playbackReq.url.parameters["list"])
+        assertTrue(
+            playbackReq.headers.contains("Authorization"),
+            "Should contain SAPISIDHASH Authorization header"
+        )
+        assertTrue(playbackReq.headers.contains("Origin"), "Should contain Origin header")
+
+        val watchtimeReq = requests[1]
+        println("Watchtime URL: " + watchtimeReq.url.toString())
+        assertTrue(
+            watchtimeReq.url.encodedPath.contains("api/stats/watchtime"),
+            "Path should contain api/stats/watchtime, got: ${watchtimeReq.url.encodedPath}"
+        )
+        assertEquals("playing", watchtimeReq.url.parameters["state"])
+        assertEquals("10", watchtimeReq.url.parameters["cmt"])
+    }
+
+    @Test
+    fun `player request URL is properly formed`() = runTest {
+        val requests = mutableListOf<io.ktor.client.request.HttpRequestData>()
+        val mockEngine = MockEngine { request ->
+            requests.add(request)
+            respond(
+                content = "{}",
+                status = HttpStatusCode.OK,
+            )
+        }
+
+        val innerTube = InnerTube(mockEngine)
+        innerTube.player(
+            client = YouTubeClient.WEB_REMIX,
+            videoId = "test_vid_123",
+            playlistId = null,
+            signatureTimestamp = null
+        )
+
+        assertEquals(1, requests.size)
+        val playerReq = requests[0]
+        println("Player request full URL: " + playerReq.url.toString())
+        println("Player request path: " + playerReq.url.encodedPath)
+        assertEquals("/youtubei/v1/player", playerReq.url.encodedPath)
+    }
 }
