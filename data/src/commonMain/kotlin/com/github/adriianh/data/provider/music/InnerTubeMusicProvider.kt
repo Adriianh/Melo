@@ -218,12 +218,12 @@ class InnerTubeMusicProvider(
                 if (details != null) {
                     Track(
                         id = "piped:$videoId",
-                        title = details.title,
-                        artist = details.author,
-                        durationMs = details.lengthSeconds.toLong() * 1000L,
+                        title = details.title.orEmpty(),
+                        artist = details.author.orEmpty(),
+                        durationMs = (details.lengthSeconds?.toLongOrNull() ?: 0L) * 1000L,
                         album = "",
                         genres = emptyList(),
-                        artworkUrl = details.thumbnail.thumbnails.lastOrNull()?.url,
+                        artworkUrl = details.thumbnail?.thumbnails?.lastOrNull()?.url,
                         sourceId = videoId
                     )
                 } else {

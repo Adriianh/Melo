@@ -206,19 +206,23 @@ class InnerTubeAudioProvider(
         targetQuality: AudioQuality
     ): PlayerResponse.StreamingData.Format? {
         val audioFormats = (response.streamingData?.adaptiveFormats ?: emptyList())
-            .filter { it.mimeType.startsWith("audio/") && it.audioTrack?.isAutoDubbed != true }
+            .filter {
+                (it.mimeType ?: "").startsWith("audio/") && it.audioTrack?.isAutoDubbed != true
+            }
         if (audioFormats.isEmpty()) return null
         return when (targetQuality) {
             AudioQuality.LOW -> {
-                audioFormats.minByOrNull { it.bitrate }
+                audioFormats.minByOrNull { it.bitrate ?: 0 }
             }
 
             AudioQuality.MEDIUM -> {
-                audioFormats.minByOrNull { abs(it.bitrate - 128000) }
+                audioFormats.minByOrNull { abs((it.bitrate ?: 0) - 128000) }
             }
 
             AudioQuality.HIGH, AudioQuality.AUTO -> {
-                audioFormats.maxByOrNull { it.bitrate + (if (it.mimeType.contains("webm")) 10240 else 0) }
+                audioFormats.maxByOrNull {
+                    (it.bitrate ?: 0) + (if (it.mimeType?.contains("webm") == true) 10240 else 0)
+                }
             }
         }
     }
