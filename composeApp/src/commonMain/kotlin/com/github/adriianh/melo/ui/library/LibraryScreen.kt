@@ -122,7 +122,8 @@ fun LibraryScreen(
         val isOfflineTab =
             state.selectedTab == LibraryTab.DOWNLOADS ||
                     state.selectedTab == LibraryTab.LOCAL ||
-                    state.selectedTab == LibraryTab.PLAYLISTS
+                    state.selectedTab == LibraryTab.PLAYLISTS ||
+                    state.selectedTab == LibraryTab.HISTORY
         if (!state.isLoggedIn && !isOfflineTab) {
             LibraryNotLoggedInCard(onLoginClick = onOpenSettings)
         } else if (state.isLoading && !isOfflineTab) {

@@ -31,6 +31,7 @@ import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
+import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import kotlinx.coroutines.flow.Flow
@@ -106,6 +107,7 @@ class LibraryViewModel(
     private val getUserArtistsUseCase: GetUserArtistsUseCase,
     private val getUserAlbumsUseCase: GetUserAlbumsUseCase,
     private val getRemoteHistoryUseCase: GetRemoteHistoryUseCase,
+    private val getRecentTracksUseCase: GetRecentTracksUseCase,
     private val toggleLikeTrackUseCase: ToggleLikeTrackUseCase,
     private val getOfflineTracksUseCase: GetOfflineTracksUseCase,
     private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
@@ -119,10 +121,39 @@ class LibraryViewModel(
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
+    private var localHistory: List<HistoryEntry> = emptyList()
+    private var remoteHistory: List<HistoryEntry> = emptyList()
+
+    private fun updateMergedHistory() {
+        val merged = if (localHistory.isEmpty()) {
+            remoteHistory
+        } else if (remoteHistory.isEmpty()) {
+            localHistory
+        } else {
+            val localIds = localHistory.map { it.track.id }.toSet()
+            val localSourceIds =
+                localHistory.mapNotNull { it.track.sourceId }.filter { it.isNotBlank() }.toSet()
+            val filteredRemote = remoteHistory.filterNot { remote ->
+                val remoteSourceId = remote.track.sourceId
+                remote.track.id in localIds ||
+                        (!remoteSourceId.isNullOrBlank() && remoteSourceId in localSourceIds) ||
+                        (remote.track.id.removePrefix("piped:") in localSourceIds)
+            }
+            localHistory + filteredRemote
+        }
+        _uiState.value = _uiState.value.copy(history = merged)
+    }
+
     init {
         viewModelScope.launch {
             getPlaylistsUseCase().collectLatest { playlists ->
                 _uiState.value = _uiState.value.copy(customPlaylists = playlists)
+            }
+        }
+        viewModelScope.launch {
+            getRecentTracksUseCase(limit = 100).collectLatest { recent ->
+                localHistory = recent
+                updateMergedHistory()
             }
         }
         viewModelScope.launch {
@@ -178,6 +209,20 @@ class LibraryViewModel(
         _uiState.value = _uiState.value.copy(selectedTab = tab)
         if (tab == LibraryTab.LOCAL && _uiState.value.localTracks.isEmpty()) {
             scanLocalTracks()
+        }
+        if (tab == LibraryTab.HISTORY && _uiState.value.isLoggedIn) {
+            refreshRemoteHistory()
+        }
+    }
+
+    fun refreshRemoteHistory() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            val result = getRemoteHistoryUseCase()
+            if (result.isSuccess) {
+                remoteHistory = result.getOrDefault(emptyList())
+                updateMergedHistory()
+            }
         }
     }
 
@@ -250,6 +295,7 @@ class LibraryViewModel(
             val artistsResult = getUserArtistsUseCase()
             val albumsResult = getUserAlbumsUseCase()
             val historyResult = getRemoteHistoryUseCase()
+            remoteHistory = historyResult.getOrDefault(emptyList())
 
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
@@ -258,11 +304,11 @@ class LibraryViewModel(
                 likedSongs = likedSongsResult.getOrDefault(emptyList()),
                 artists = artistsResult.getOrDefault(emptyList()),
                 albums = albumsResult.getOrDefault(emptyList()),
-                history = historyResult.getOrDefault(emptyList()),
                 error = if (playlistsResult.isFailure && likedSongsResult.isFailure) {
                     "No se pudo cargar la biblioteca. Verifica tu conexión o sesión."
                 } else null
             )
+            updateMergedHistory()
         }
     }
 
