@@ -42,6 +42,7 @@ class PlaybackManagerImpl(
 
     private val prefetchCache = mutableMapOf<String, String>()
     private val cacheMutex = Mutex()
+    private var playJob: Job? = null
     private var prefetchJob: Job? = null
     private var isAutoplayFetching = false
     private var lastHandledFinishedTrackId: String? = null
@@ -89,6 +90,7 @@ class PlaybackManagerImpl(
     }
 
     override fun release() {
+        playJob?.cancel()
         prefetchJob?.cancel()
         meloPlayer.release()
     }
@@ -218,7 +220,8 @@ class PlaybackManagerImpl(
 
     private fun playCurrentQueueTrack() {
         val track = _queueState.value.currentTrack ?: return
-        scope.launch {
+        playJob?.cancel()
+        playJob = scope.launch {
             val settings = getSettingsUseCase?.invoke()?.firstOrNull()
             val isOfflineMode = settings?.offlineMode == true
             val isTrackAvailableOffline = track.id.startsWith("local:") ||
