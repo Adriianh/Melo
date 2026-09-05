@@ -37,6 +37,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.formatDuration
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -51,6 +52,7 @@ fun TrackRow(
     isDownloaded: Boolean = false,
     isDownloading: Boolean = false,
     downloadProgress: Float = 0f,
+    subtitleOverride: String? = null,
     onMoreClick: (() -> Unit)? = null,
     dragHandle: (@Composable () -> Unit)? = null,
     isSelectionMode: Boolean = false,
@@ -125,20 +127,20 @@ fun TrackRow(
             }
         } else {
             Box(
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(48.dp),
                 contentAlignment = Alignment.Center
             ) {
                 MeloAsyncImage(
                     url = track.artworkUrl,
                     contentDescription = track.title,
-                    size = 44.dp,
-                    shape = RoundedCornerShape(6.dp)
+                    size = 48.dp,
+                    shape = RoundedCornerShape(8.dp)
                 )
                 if (isCurrent) {
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .background(Color.Black.copy(alpha = 0.45f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -165,8 +167,13 @@ fun TrackRow(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(2.dp))
+            val subtitle = when {
+                !subtitleOverride.isNullOrBlank() -> subtitleOverride
+                track.album.isNotBlank() && track.album != track.title -> "${track.artist} • ${track.album}"
+                else -> track.artist
+            }
             Text(
-                text = track.artist,
+                text = subtitle,
                 style = MeloType.labelSmall,
                 color = MeloColors.textMuted,
                 maxLines = 1,
@@ -198,6 +205,15 @@ fun TrackRow(
                 contentDescription = "Descargado",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
+            )
+        }
+
+        val durationText = formatDuration(track.durationMs)
+        if (durationText.isNotEmpty()) {
+            Text(
+                text = durationText,
+                style = MeloType.labelSmall,
+                color = MeloColors.textMuted
             )
         }
 

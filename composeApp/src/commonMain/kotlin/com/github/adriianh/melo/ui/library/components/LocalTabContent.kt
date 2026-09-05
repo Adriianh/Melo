@@ -53,6 +53,7 @@ import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
+import com.github.adriianh.melo.util.formatDuration
 import com.github.adriianh.melo.util.rememberAudioPermissionRequester
 
 @Composable
@@ -423,12 +424,4 @@ private fun LocalTrackRow(
             }
         }
     }
-}
-
-private fun formatDuration(durationMs: Long): String {
-    if (durationMs <= 0) return ""
-    val totalSeconds = durationMs / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }

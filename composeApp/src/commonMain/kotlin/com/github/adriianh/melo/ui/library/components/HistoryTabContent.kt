@@ -15,6 +15,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.util.formatRelativeTime
 
 @Composable
 fun HistoryTabContent(
@@ -31,7 +32,10 @@ fun HistoryTabContent(
     onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
     if (history.isEmpty()) {
-        MeloEmptyState(message = "No hay reproducciones recientes registradas.", modifier = modifier)
+        MeloEmptyState(
+            message = "No hay reproducciones recientes registradas.",
+            modifier = modifier
+        )
         return
     }
 
@@ -42,6 +46,19 @@ fun HistoryTabContent(
         items(history, key = { it.track.id + "_" + it.playedAt }) { entry ->
             val track = entry.track
             val isSelected = track.id in selectedTrackIds
+            val relTime = formatRelativeTime(entry.playedAt)
+            val subtitleWithTime = buildString {
+                append(track.artist)
+                if (track.album.isNotBlank() && track.album != track.title) {
+                    append(" • ")
+                    append(track.album)
+                }
+                if (relTime.isNotBlank()) {
+                    append(" • ")
+                    append(relTime)
+                }
+            }
+
             MeloSwipeableItem(
                 onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
                 onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
@@ -49,6 +66,7 @@ fun HistoryTabContent(
             ) {
                 TrackRow(
                     track = track,
+                    subtitleOverride = subtitleWithTime,
                     onClick = { onPlayTrack(entry) },
                     onMoreClick = if (isSelectionMode) null else {
                         { onMoreClick(track) }

@@ -54,6 +54,18 @@ enum class LibraryTab(val label: String) {
     HISTORY("Historial")
 }
 
+enum class LibrarySortOrder(val label: String) {
+    RECENTLY_ADDED("Añadido recientemente"),
+    TITLE_A_Z("Título (A-Z)"),
+    ARTIST_A_Z("Artista (A-Z)"),
+    DURATION("Duración")
+}
+
+enum class LibraryViewMode {
+    GRID,
+    COMPACT_LIST
+}
+
 enum class LibraryCategory(
     val label: String,
     val tabs: List<LibraryTab>
@@ -77,6 +89,10 @@ data class LibraryUiState(
     val isScanningLocal: Boolean = false,
     val profile: AccountProfile? = null,
     val selectedTab: LibraryTab = LibraryTab.PLAYLISTS,
+    val searchQuery: String = "",
+    val isSearchActive: Boolean = false,
+    val sortOrder: LibrarySortOrder = LibrarySortOrder.RECENTLY_ADDED,
+    val viewMode: LibraryViewMode = LibraryViewMode.GRID,
     val playlists: List<SearchResult.Playlist> = emptyList(),
     val customPlaylists: List<Playlist> = emptyList(),
     val likedSongs: List<Track> = emptyList(),
@@ -378,4 +394,24 @@ class LibraryViewModel(
 
     fun getPlaylistIdsForTrack(trackId: String): Flow<Set<Long>> =
         getPlaylistIdsForTrackUseCase(trackId)
+
+    fun setSearchQuery(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+    }
+
+    fun toggleSearchActive(active: Boolean? = null) {
+        val newActive = active ?: !_uiState.value.isSearchActive
+        _uiState.value = _uiState.value.copy(
+            isSearchActive = newActive,
+            searchQuery = if (!newActive) "" else _uiState.value.searchQuery
+        )
+    }
+
+    fun setSortOrder(order: LibrarySortOrder) {
+        _uiState.value = _uiState.value.copy(sortOrder = order)
+    }
+
+    fun setViewMode(mode: LibraryViewMode) {
+        _uiState.value = _uiState.value.copy(viewMode = mode)
+    }
 }
