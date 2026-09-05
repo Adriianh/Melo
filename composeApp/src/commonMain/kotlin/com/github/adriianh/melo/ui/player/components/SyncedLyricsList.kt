@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import kotlin.math.abs
 
 @Composable
 internal fun SyncedLyricsList(
@@ -51,12 +52,17 @@ internal fun SyncedLyricsList(
     val listState = rememberLazyListState()
 
     LaunchedEffect(activeIndex) {
-        if (activeIndex >= 0 && activeIndex < lines.size) {
+        if (activeIndex >= 0 && activeIndex < lines.size && !listState.isScrollInProgress) {
             val targetIndex = (activeIndex - 1).coerceAtLeast(0)
-            listState.animateScrollToItem(
-                index = targetIndex,
-                scrollOffset = 0
-            )
+            val currentFirstVisible = listState.firstVisibleItemIndex
+            if (abs(targetIndex - currentFirstVisible) > 6) {
+                listState.scrollToItem(targetIndex)
+            } else {
+                listState.animateScrollToItem(
+                    index = targetIndex,
+                    scrollOffset = 0
+                )
+            }
         }
     }
 
