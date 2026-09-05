@@ -6,13 +6,17 @@ import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
+import com.github.adriianh.core.util.CircuitBreaker
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * MusicProvider that fans out a query to multiple providers **in parallel** and
  * merges the results, deduplicating by `(artist, normalised-title, duration-bucket)`.
+ *
+ * Employs per-provider [CircuitBreaker]s to fail-fast and isolate failing providers.
  *
  * Result ordering: each provider's results keep their original relevance order;
  * providers are interleaved round-robin so the merged list starts with the most
@@ -22,21 +26,49 @@ class MergedMusicProvider(
     private val providers: List<MusicProvider>
 ) : MusicProvider {
 
+    private val circuitBreakers = providers.associateWith { provider ->
+        CircuitBreaker(
+            name = provider::class.simpleName ?: "MusicProvider",
+            failureThreshold = 3,
+            cooldownDuration = 60.seconds,
+        )
+    }
+
+    private suspend fun <T> runWithBreaker(
+        provider: MusicProvider,
+        block: suspend (MusicProvider) -> T
+    ): T? {
+        val breaker = circuitBreakers[provider]
+        return if (breaker != null) {
+            breaker.executeOrNull { block(provider) }
+        } else {
+            runCatching { block(provider) }.getOrNull()
+        }
+    }
+
     override suspend fun search(query: String): List<Track> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.search(query) }.getOrDefault(emptyList()) } }
+            providers.map { async { runWithBreaker(it) { p -> p.search(query) } ?: emptyList() } }
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun searchAlbums(query: String): List<SearchResult.Album> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.searchAlbums(query) }.getOrDefault(emptyList()) } }
+            providers.map {
+                async {
+                    runWithBreaker(it) { p -> p.searchAlbums(query) } ?: emptyList()
+                }
+            }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
     override suspend fun searchArtists(query: String): List<SearchResult.Artist> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.searchArtists(query) }.getOrDefault(emptyList()) } }
+            providers.map {
+                async {
+                    runWithBreaker(it) { p -> p.searchArtists(query) } ?: emptyList()
+                }
+            }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
@@ -44,7 +76,7 @@ class MergedMusicProvider(
         coroutineScope {
             val jobs = providers.map {
                 async {
-                    runCatching { it.searchPlaylists(query) }.getOrDefault(emptyList())
+                    runWithBreaker(it) { p -> p.searchPlaylists(query) } ?: emptyList()
                 }
             }
             mergeLists(jobs.awaitAll()).distinctBy { it.id }
@@ -52,13 +84,17 @@ class MergedMusicProvider(
 
     override suspend fun searchVideos(query: String): List<Track> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.searchVideos(query) }.getOrDefault(emptyList()) } }
+            providers.map {
+                async {
+                    runWithBreaker(it) { p -> p.searchVideos(query) } ?: emptyList()
+                }
+            }
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun searchSummary(query: String): List<HomeSection> {
         for (p in providers) {
-            val sections = runCatching { p.searchSummary(query) }.getOrNull()
+            val sections = runWithBreaker(p) { it.searchSummary(query) }
             if (!sections.isNullOrEmpty()) return sections
         }
         return emptyList()
@@ -66,13 +102,21 @@ class MergedMusicProvider(
 
     override suspend fun searchAll(query: String): List<Track> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.searchAll(query) }.getOrDefault(emptyList()) } }
+            providers.map {
+                async {
+                    runWithBreaker(it) { p -> p.searchAll(query) } ?: emptyList()
+                }
+            }
         deduplicate(mergeLists(jobs.awaitAll()))
     }
 
     override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = coroutineScope {
         val jobs =
-            providers.map { async { runCatching { it.searchAllAlbums(query) }.getOrDefault(emptyList()) } }
+            providers.map {
+                async {
+                    runWithBreaker(it) { p -> p.searchAllAlbums(query) } ?: emptyList()
+                }
+            }
         mergeLists(jobs.awaitAll()).distinctBy { it.id }
     }
 
@@ -80,7 +124,7 @@ class MergedMusicProvider(
         coroutineScope {
             val jobs = providers.map {
                 async {
-                    runCatching { it.searchAllArtists(query) }.getOrDefault(emptyList())
+                    runWithBreaker(it) { p -> p.searchAllArtists(query) } ?: emptyList()
                 }
             }
             mergeLists(jobs.awaitAll()).distinctBy { it.id }
@@ -90,7 +134,7 @@ class MergedMusicProvider(
         coroutineScope {
             val jobs = providers.map {
                 async {
-                    runCatching { it.searchAllPlaylists(query) }.getOrDefault(emptyList())
+                    runWithBreaker(it) { p -> p.searchAllPlaylists(query) } ?: emptyList()
                 }
             }
             mergeLists(jobs.awaitAll()).distinctBy { it.id }
@@ -98,7 +142,7 @@ class MergedMusicProvider(
 
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
         for (provider in providers) {
-            val result = runCatching { provider.getAlbumDetails(id) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getAlbumDetails(id) }
             if (result != null && !result.songs.isNullOrEmpty()) return result
         }
         return null
@@ -106,7 +150,7 @@ class MergedMusicProvider(
 
     override suspend fun getArtistDetails(id: String): SearchResult.Artist? {
         for (provider in providers) {
-            val result = runCatching { provider.getArtistDetails(id) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getArtistDetails(id) }
             if (result != null && (!result.topSongs.isNullOrEmpty() || result.description != null)) return result
         }
         return null
@@ -114,7 +158,7 @@ class MergedMusicProvider(
 
     override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
         for (provider in providers) {
-            val result = runCatching { provider.getPlaylistDetails(id) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getPlaylistDetails(id) }
             if (result != null) return result
         }
         return null
@@ -122,7 +166,7 @@ class MergedMusicProvider(
 
     override suspend fun getSearchSuggestions(query: String): List<String> {
         for (provider in providers) {
-            val result = runCatching { provider.getSearchSuggestions(query) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getSearchSuggestions(query) }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -130,7 +174,7 @@ class MergedMusicProvider(
 
     override suspend fun getHome(): List<HomeSection> {
         for (provider in providers) {
-            val result = runCatching { provider.getHome() }.getOrNull()
+            val result = runWithBreaker(provider) { it.getHome() }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -138,7 +182,7 @@ class MergedMusicProvider(
 
     override suspend fun getExplore(): List<HomeSection> {
         for (provider in providers) {
-            val result = runCatching { provider.getExplore() }.getOrNull()
+            val result = runWithBreaker(provider) { it.getExplore() }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -146,7 +190,7 @@ class MergedMusicProvider(
 
     override suspend fun getCharts(): List<HomeSection> {
         for (provider in providers) {
-            val result = runCatching { provider.getCharts() }.getOrNull()
+            val result = runWithBreaker(provider) { it.getCharts() }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -154,7 +198,7 @@ class MergedMusicProvider(
 
     override suspend fun getTrending(): List<Track> {
         for (provider in providers) {
-            val result = runCatching { provider.getTrending() }.getOrNull()
+            val result = runWithBreaker(provider) { it.getTrending() }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -162,7 +206,7 @@ class MergedMusicProvider(
 
     override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> {
         for (provider in providers) {
-            val result = runCatching { provider.getMoodAndGenres() }.getOrNull()
+            val result = runWithBreaker(provider) { it.getMoodAndGenres() }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -170,7 +214,7 @@ class MergedMusicProvider(
 
     override suspend fun getRadio(videoId: String): List<Track> {
         for (provider in providers) {
-            val result = runCatching { provider.getRadio(videoId) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getRadio(videoId) }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -178,7 +222,7 @@ class MergedMusicProvider(
 
     override suspend fun getArtistRadio(artistId: String): List<Track> {
         for (provider in providers) {
-            val result = runCatching { provider.getArtistRadio(artistId) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getArtistRadio(artistId) }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -186,7 +230,7 @@ class MergedMusicProvider(
 
     override suspend fun getRelated(videoId: String): List<Track> {
         for (provider in providers) {
-            val result = runCatching { provider.getRelated(videoId) }.getOrNull()
+            val result = runWithBreaker(provider) { it.getRelated(videoId) }
             if (!result.isNullOrEmpty()) return result
         }
         return emptyList()
@@ -194,7 +238,7 @@ class MergedMusicProvider(
 
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
         for (provider in providers) {
-            val result = runCatching { provider.browseCategory(browseId, params) }.getOrNull()
+            val result = runWithBreaker(provider) { it.browseCategory(browseId, params) }
             if (result != null) return result
         }
         return null
@@ -213,10 +257,10 @@ class MergedMusicProvider(
 
             else -> null
         }
-        if (provider != null) return runCatching { provider.getTrack(id) }.getOrNull()
+        if (provider != null) return runWithBreaker(provider) { it.getTrack(id) }
 
         for (p in providers) {
-            val track = runCatching { p.getTrack(id) }.getOrNull()
+            val track = runWithBreaker(p) { it.getTrack(id) }
             if (track != null) return track
         }
         return null

@@ -6,6 +6,7 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.core.util.retryWithBackoff
 import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YouTubeClient
@@ -67,8 +68,10 @@ class InnerTubeAudioProvider(
         mutex.withLock { sourceIdCache[cacheKey]?.let { return it } }
         return try {
             val query = "$artist - $title"
-            val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
-            val firstItem = result?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id
+            val firstItem = retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
+                val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                result?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id
+            }
             if (firstItem != null) {
                 mutex.withLock { sourceIdCache[cacheKey] = firstItem }
                 firstItem
@@ -97,8 +100,10 @@ class InnerTubeAudioProvider(
                 if (client.loginRequired && YouTube.cookie == null) continue
                 try {
                     val sts = if (client.useSignatureTimestamp) getSts(sourceId) else null
-                    val resp = withTimeoutOrNull(2500L) {
-                        YouTube.player(sourceId, null, client, sts).getOrNull()
+                    val resp = withTimeoutOrNull(3000L) {
+                        retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
+                            YouTube.player(sourceId, null, client, sts).getOrNull()
+                        }
                     }
                     if (resp?.playabilityStatus?.status != "OK") continue
                     val fmt = findAudioFormat(resp, targetQuality) ?: continue
@@ -119,7 +124,12 @@ class InnerTubeAudioProvider(
                 }
             }
             if (resolvedUrl.isNullOrEmpty()) {
-                val streams = getNewPipeStreamUrls(sourceId)
+                val streams = runCatching {
+                    retryWithBackoff(maxRetries = 1, initialDelayMs = 300L) {
+                        getNewPipeStreamUrls(sourceId)
+                    }
+                }.getOrDefault(emptyList())
+
                 val preferredItags = when (targetQuality) {
                     AudioQuality.LOW -> listOf(249, 250, 139, 140, 251)
                     AudioQuality.MEDIUM -> listOf(140, 250, 251, 139, 249)
