@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -94,22 +95,25 @@ internal fun HoverableProgressBar(
             }
         }
 
-        val pathMeasure = remember { PathMeasure() }
-        pathMeasure.setPath(fullPath, false)
-        val totalLength = pathMeasure.length
+        val pathMeasure = remember(fullPath) {
+            PathMeasure().apply { setPath(fullPath, false) }
+        }
+        val totalLength = remember(pathMeasure) { pathMeasure.length }
         val progressDistance =
             (totalLength * progressFraction.coerceIn(0f, 1f)).coerceIn(0f, totalLength)
 
-        val activePath = remember(fullPath, progressDistance) {
-            Path().apply {
-                if (progressDistance > 0f) {
-                    pathMeasure.getSegment(0f, progressDistance, this, true)
-                }
+        val activePath = remember { Path() }
+        remember(progressDistance, totalLength) {
+            activePath.reset()
+            if (progressDistance > 0f) {
+                pathMeasure.getSegment(0f, progressDistance, activePath, true)
             }
         }
 
-        val playHeadPos = remember(pathMeasure, progressDistance) {
+        val playHeadPos = if (activeHover) {
             pathMeasure.getPosition(progressDistance)
+        } else {
+            Offset.Zero
         }
 
         val trackBgColor = MeloColors.borderStrong
