@@ -45,6 +45,8 @@ import com.github.adriianh.melo.ui.home.HomeScreen
 import com.github.adriianh.melo.ui.library.LibraryScreen
 import com.github.adriianh.melo.ui.login.LoginDialog
 import com.github.adriianh.melo.ui.login.LoginViewModel
+import com.github.adriianh.melo.ui.navigation.MainTab
+import com.github.adriianh.melo.ui.navigation.ScreenRoute
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
@@ -58,28 +60,6 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
-sealed interface ScreenDestination {
-    data object Home : ScreenDestination
-    data object Library : ScreenDestination
-    data class Album(
-        val id: String,
-        val title: String = "",
-        val artwork: String? = null,
-        val author: String = ""
-    ) : ScreenDestination
-
-    data class Playlist(
-        val id: String,
-        val title: String = "",
-        val artwork: String? = null,
-        val author: String = ""
-    ) : ScreenDestination
-
-    data class Artist(val id: String, val name: String = "", val artwork: String? = null) :
-        ScreenDestination
-
-    data object Search : ScreenDestination
-}
 
 @Composable
 expect fun InitImageLoader()
@@ -108,10 +88,10 @@ fun App() {
         accentColor = finalAccent,
         isDarkTheme = isDarkTheme
     ) {
-        var selectedTab by remember { mutableStateOf("Home") }
+        var selectedTab by remember { mutableStateOf(MainTab.HOME) }
         var showLoginDialog by remember { mutableStateOf(false) }
         var isNowPlayingExpanded by remember { mutableStateOf(false) }
-        var navigationStack by remember { mutableStateOf(listOf<ScreenDestination>(ScreenDestination.Home)) }
+        var navigationStack by remember { mutableStateOf(listOf<ScreenRoute>(ScreenRoute.Home)) }
 
         val focusManager = LocalFocusManager.current
         val keyboardController = LocalSoftwareKeyboardController.current
@@ -123,9 +103,9 @@ fun App() {
             }
         }
 
-        val currentScreen = navigationStack.lastOrNull() ?: ScreenDestination.Home
+        val currentScreen = navigationStack.lastOrNull() ?: ScreenRoute.Home
 
-        fun navigateTo(destination: ScreenDestination) {
+        fun navigateTo(destination: ScreenRoute) {
             navigationStack = navigationStack + destination
         }
 
@@ -152,21 +132,21 @@ fun App() {
                         onTabSelected = { tab ->
                             selectedTab = tab
                             navigationStack = when (tab) {
-                                "Home" -> listOf(ScreenDestination.Home)
-                                "Search" -> listOf(ScreenDestination.Search)
-                                else -> listOf(ScreenDestination.Library)
+                                MainTab.HOME -> listOf(ScreenRoute.Home)
+                                MainTab.SEARCH -> listOf(ScreenRoute.Search)
+                                MainTab.LIBRARY -> listOf(ScreenRoute.Library)
                             }
                         },
                         onOpenNowPlaying = { isNowPlayingExpanded = true },
                         onOpenSettings = { showSettingsSheet = true },
                         onPlaylistClick = { id, title, artwork, author ->
-                            navigateTo(ScreenDestination.Playlist(id, title, artwork, author))
+                            navigateTo(ScreenRoute.Playlist(id, title, artwork, author))
                         },
                         onAlbumClick = { id ->
-                            navigateTo(ScreenDestination.Album(id))
+                            navigateTo(ScreenRoute.Album(id))
                         },
                         onArtistClick = { id ->
-                            navigateTo(ScreenDestination.Artist(id))
+                            navigateTo(ScreenRoute.Artist(id))
                         },
                         isDarkTheme = isDarkTheme,
                         onToggleTheme = {
@@ -203,11 +183,11 @@ fun App() {
                                     .fillMaxWidth()
                             ) {
                                 when (currentScreen) {
-                                    ScreenDestination.Home -> HomeScreen(
-                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                    ScreenRoute.Home -> HomeScreen(
+                                        onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) },
                                         onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
-                                                ScreenDestination.Playlist(
+                                                ScreenRoute.Playlist(
                                                     id,
                                                     title,
                                                     artwork,
@@ -215,16 +195,16 @@ fun App() {
                                                 )
                                             )
                                         },
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
                                         onOpenSettings = { showSettingsSheet = true },
                                         paddingValues = paddingValues
                                     )
 
-                                    ScreenDestination.Search -> SearchScreen(
-                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
+                                    ScreenRoute.Search -> SearchScreen(
+                                        onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) },
                                         onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
-                                                ScreenDestination.Playlist(
+                                                ScreenRoute.Playlist(
                                                     id,
                                                     title,
                                                     artwork,
@@ -232,16 +212,16 @@ fun App() {
                                                 )
                                             )
                                         },
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
                                         onOpenSettings = { showSettingsSheet = true },
                                         paddingValues = paddingValues
                                     )
 
-                                    ScreenDestination.Library -> LibraryScreen(
+                                    ScreenRoute.Library -> LibraryScreen(
                                         onOpenSettings = { showSettingsSheet = true },
                                         onAlbumClick = { id, title, artwork, author ->
                                             navigateTo(
-                                                ScreenDestination.Album(
+                                                ScreenRoute.Album(
                                                     id,
                                                     title,
                                                     artwork,
@@ -251,7 +231,7 @@ fun App() {
                                         },
                                         onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
-                                                ScreenDestination.Playlist(
+                                                ScreenRoute.Playlist(
                                                     id,
                                                     title,
                                                     artwork,
@@ -259,39 +239,39 @@ fun App() {
                                                 )
                                             )
                                         },
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
                                         paddingValues = paddingValues
                                     )
 
-                                    is ScreenDestination.Album -> AlbumDetailScreen(
+                                    is ScreenRoute.Album -> AlbumDetailScreen(
                                         albumId = currentScreen.id,
                                         initialTitle = currentScreen.title,
                                         initialArtwork = currentScreen.artwork,
                                         initialAuthor = currentScreen.author,
                                         onBack = ::navigateBack,
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
-                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) }
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
+                                        onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) }
                                     )
 
-                                    is ScreenDestination.Playlist -> PlaylistDetailScreen(
+                                    is ScreenRoute.Playlist -> PlaylistDetailScreen(
                                         playlistId = currentScreen.id,
                                         initialTitle = currentScreen.title,
                                         initialArtwork = currentScreen.artwork,
                                         initialAuthor = currentScreen.author,
                                         onBack = ::navigateBack,
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) }
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) }
                                     )
 
-                                    is ScreenDestination.Artist -> ArtistDetailScreen(
+                                    is ScreenRoute.Artist -> ArtistDetailScreen(
                                         artistId = currentScreen.id,
                                         initialName = currentScreen.name,
                                         initialArtwork = currentScreen.artwork,
                                         onBack = ::navigateBack,
-                                        onAlbumClick = { id -> navigateTo(ScreenDestination.Album(id)) },
-                                        onArtistClick = { id -> navigateTo(ScreenDestination.Artist(id)) },
+                                        onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) },
+                                        onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
                                         onPlaylistClick = { id, title, artwork, author ->
                                             navigateTo(
-                                                ScreenDestination.Playlist(
+                                                ScreenRoute.Playlist(
                                                     id,
                                                     title,
                                                     artwork,
@@ -325,15 +305,15 @@ fun App() {
                             onCollapse = { isNowPlayingExpanded = false },
                             onArtistClick = { id ->
                                 isNowPlayingExpanded = false
-                                navigateTo(ScreenDestination.Artist(id))
+                                navigateTo(ScreenRoute.Artist(id))
                             },
                             onAlbumClick = { id ->
                                 isNowPlayingExpanded = false
-                                navigateTo(ScreenDestination.Album(id))
+                                navigateTo(ScreenRoute.Album(id))
                             },
                             onPlaylistClick = { id ->
                                 isNowPlayingExpanded = false
-                                navigateTo(ScreenDestination.Playlist(id))
+                                navigateTo(ScreenRoute.Playlist(id))
                             }
                         )
                     }
