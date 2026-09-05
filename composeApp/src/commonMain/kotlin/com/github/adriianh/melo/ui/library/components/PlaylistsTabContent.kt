@@ -22,6 +22,7 @@ import com.github.adriianh.melo.ui.library.LibraryViewMode
 fun PlaylistsTabContent(
     customPlaylists: List<Playlist>,
     remotePlaylists: List<SearchResult.Playlist>,
+    userArtists: List<String> = emptyList(),
     onCreatePlaylist: (String) -> Unit,
     onRenamePlaylist: (Long, String) -> Unit,
     onDeletePlaylist: (Long) -> Unit,
@@ -38,6 +39,8 @@ fun PlaylistsTabContent(
             title = "Nueva playlist",
             placeholder = "Nombre de la playlist",
             confirmLabel = "Crear",
+            existingPlaylistNames = customPlaylists.map { it.name } + remotePlaylists.map { it.title },
+            userArtists = userArtists,
             onConfirm = { name ->
                 onCreatePlaylist(name)
                 showCreateDialog = false

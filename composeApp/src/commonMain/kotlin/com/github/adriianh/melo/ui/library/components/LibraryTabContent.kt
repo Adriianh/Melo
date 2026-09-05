@@ -58,6 +58,7 @@ fun LibraryTabContent(
                 LibraryTab.PLAYLISTS -> PlaylistsTabContent(
                     customPlaylists = filters.customPlaylists,
                     remotePlaylists = filters.remotePlaylists,
+                    userArtists = (state.artists.map { it.name } + state.likedSongs.map { it.artist }).distinct(),
                     onCreatePlaylist = viewModel::createPlaylist,
                     onRenamePlaylist = viewModel::renamePlaylist,
                     onDeletePlaylist = viewModel::deletePlaylist,
