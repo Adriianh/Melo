@@ -30,7 +30,10 @@ internal fun MeloScreen.deleteDownloadedTrackAction(trackId: String) {
     }
 }
 
-internal fun MeloScreen.downloadTrackAction(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) {
+internal fun MeloScreen.downloadTrackAction(
+    track: Track,
+    downloadType: DownloadType = DownloadType.PREFETCH
+) {
     scope.launch {
         downloadSemaphore.withPermit {
             try {
@@ -45,14 +48,13 @@ internal fun MeloScreen.downloadTrackAction(track: Track, downloadType: Download
                         DownloadType.MANUAL -> settingsViewState.currentSettings.downloadPath
                             ?: File(shareDir, "downloads").absolutePath
 
-                        DownloadType.PREFETCH -> settingsViewState.currentSettings.cachePath
+                        DownloadType.PREFETCH, DownloadType.CACHE -> settingsViewState.currentSettings.cachePath
                             ?: File(shareDir, "cache").absolutePath
                     }
                 )
                 if (!downloadsDir.exists()) downloadsDir.mkdirs()
 
                 if (existing != null && (existing.downloadStatus == DownloadStatus.COMPLETED || existing.downloadStatus == DownloadStatus.DOWNLOADING)) {
-                    // If it's completed as cache and user wants manual, just copy the file
                     if (existing.downloadStatus == DownloadStatus.COMPLETED &&
                         existing.downloadType == DownloadType.PREFETCH &&
                         downloadType == DownloadType.MANUAL &&
