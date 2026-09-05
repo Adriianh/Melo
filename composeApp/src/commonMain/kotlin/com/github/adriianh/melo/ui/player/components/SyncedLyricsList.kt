@@ -66,71 +66,92 @@ internal fun SyncedLyricsList(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
     ) {
-        itemsIndexed(lines) { index, line ->
+        itemsIndexed(
+            items = lines,
+            key = { index, line -> "${line.timeMs}_$index" }
+        ) { index, line ->
             val isActive = index == activeIndex
-            val alpha by animateFloatAsState(
-                targetValue = if (isActive) 1f else 0.45f,
-                animationSpec = spring(stiffness = 320f),
-                label = "LyricAlphaAnim"
+            SyncedLyricItem(
+                line = line,
+                isActive = isActive,
+                showTranslation = showTranslation,
+                activeAccent = activeAccent,
+                onSeekTo = onSeekTo
             )
-            val scale by animateFloatAsState(
-                targetValue = if (isActive) 1.02f else 1.0f,
-                animationSpec = spring(stiffness = 320f),
-                label = "LyricScaleAnim"
-            )
-            val textColor by animateColorAsState(
-                targetValue = if (isActive) activeAccent else MeloColors.textPrimary,
-                animationSpec = tween(220),
-                label = "LyricColorAnim"
-            )
+        }
+    }
+}
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .scale(scale)
-                    .alpha(alpha)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { onSeekTo(line.timeMs) }
-                    )
-                    .padding(vertical = 4.dp, horizontal = 6.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                if (line.text.isNotBlank()) {
-                    Text(
-                        text = line.text,
-                        style = MeloType.body.copy(
-                            fontSize = if (isActive) 18.sp else 15.5.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                            lineHeight = if (isActive) 24.sp else 21.sp
-                        ),
-                        color = textColor
-                    )
-                } else {
-                    DancingMelodyIndicator(
-                        isActive = isActive,
-                        tint = textColor,
-                        baseFontSize = if (isActive) 18.sp else 15.5.sp,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
-                }
+@Composable
+private fun SyncedLyricItem(
+    line: SyncedLine,
+    isActive: Boolean,
+    showTranslation: Boolean,
+    activeAccent: Color,
+    onSeekTo: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val alpha by animateFloatAsState(
+        targetValue = if (isActive) 1f else 0.45f,
+        animationSpec = spring(stiffness = 320f),
+        label = "LyricAlphaAnim"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1.02f else 1.0f,
+        animationSpec = spring(stiffness = 320f),
+        label = "LyricScaleAnim"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (isActive) activeAccent else MeloColors.textPrimary,
+        animationSpec = tween(220),
+        label = "LyricColorAnim"
+    )
 
-                val translation = line.translation
-                if (showTranslation && !translation.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = translation,
-                        style = MeloType.body.copy(
-                            fontStyle = FontStyle.Italic,
-                            fontSize = 13.sp,
-                            lineHeight = 17.sp
-                        ),
-                        color = if (isActive) activeAccent.copy(alpha = 0.88f) else MeloColors.textMuted
-                    )
-                }
-            }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .alpha(alpha)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { onSeekTo(line.timeMs) }
+            )
+            .padding(vertical = 4.dp, horizontal = 6.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        if (line.text.isNotBlank()) {
+            Text(
+                text = line.text,
+                style = MeloType.body.copy(
+                    fontSize = if (isActive) 18.sp else 15.5.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    lineHeight = if (isActive) 24.sp else 21.sp
+                ),
+                color = textColor
+            )
+        } else {
+            DancingMelodyIndicator(
+                isActive = isActive,
+                tint = textColor,
+                baseFontSize = if (isActive) 18.sp else 15.5.sp,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+
+        val translation = line.translation
+        if (showTranslation && !translation.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = translation,
+                style = MeloType.body.copy(
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp
+                ),
+                color = if (isActive) activeAccent.copy(alpha = 0.88f) else MeloColors.textMuted
+            )
         }
     }
 }
