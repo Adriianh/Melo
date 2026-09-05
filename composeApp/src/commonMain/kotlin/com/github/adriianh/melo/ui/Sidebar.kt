@@ -29,11 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
@@ -59,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -67,8 +65,8 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 internal fun MainSidebar(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     collapsed: Boolean,
     onToggleCollapsed: () -> Unit,
@@ -128,7 +126,7 @@ internal fun MainSidebar(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = { onTabSelected("Home") })
+                            .clickable(onClick = { onTabSelected(MainTab.HOME) })
                     ) {
                         Surface(
                             shape = CircleShape,
@@ -167,27 +165,15 @@ internal fun MainSidebar(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SidebarNavItem(
-                            label = "Inicio",
-                            icon = Icons.Default.Home,
-                            isSelected = selectedTab == "Home",
-                            onClick = { onTabSelected("Home") },
-                            collapsed = true
-                        )
-                        SidebarNavItem(
-                            label = "Explorar",
-                            icon = Icons.Default.Explore,
-                            isSelected = selectedTab == "Search",
-                            onClick = { onTabSelected("Search") },
-                            collapsed = true
-                        )
-                        SidebarNavItem(
-                            label = "Biblioteca",
-                            icon = Icons.Default.LibraryMusic,
-                            isSelected = selectedTab == "Library",
-                            onClick = { onTabSelected("Library") },
-                            collapsed = true
-                        )
+                        MainTab.entries.forEach { tab ->
+                            SidebarNavItem(
+                                label = tab.title,
+                                icon = tab.icon,
+                                isSelected = selectedTab == tab,
+                                onClick = { onTabSelected(tab) },
+                                collapsed = true
+                            )
+                        }
                     }
                 } else {
                     Column(
@@ -198,27 +184,15 @@ internal fun MainSidebar(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            SidebarNavItem(
-                                label = "Inicio",
-                                icon = Icons.Default.Home,
-                                isSelected = selectedTab == "Home",
-                                onClick = { onTabSelected("Home") },
-                                collapsed = false
-                            )
-                            SidebarNavItem(
-                                label = "Explorar",
-                                icon = Icons.Default.Explore,
-                                isSelected = selectedTab == "Search",
-                                onClick = { onTabSelected("Search") },
-                                collapsed = false
-                            )
-                            SidebarNavItem(
-                                label = "Biblioteca",
-                                icon = Icons.Default.LibraryMusic,
-                                isSelected = selectedTab == "Library",
-                                onClick = { onTabSelected("Library") },
-                                collapsed = false
-                            )
+                            MainTab.entries.forEach { tab ->
+                                SidebarNavItem(
+                                    label = tab.title,
+                                    icon = tab.icon,
+                                    isSelected = selectedTab == tab,
+                                    onClick = { onTabSelected(tab) },
+                                    collapsed = false
+                                )
+                            }
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -234,14 +208,14 @@ internal fun MainSidebar(
                                 label = "Canciones Favoritas",
                                 icon = Icons.Default.Favorite,
                                 isSelected = false,
-                                onClick = { onTabSelected("Library") },
+                                onClick = { onTabSelected(MainTab.LIBRARY) },
                                 collapsed = false
                             )
                             SidebarNavItem(
                                 label = "Historial",
                                 icon = Icons.Default.History,
                                 isSelected = false,
-                                onClick = { onTabSelected("Library") },
+                                onClick = { onTabSelected(MainTab.LIBRARY) },
                                 collapsed = false
                             )
                         }
@@ -262,7 +236,7 @@ internal fun MainSidebar(
                                     color = MeloColors.textMuted
                                 )
                                 IconButton(
-                                    onClick = { onTabSelected("Library") },
+                                    onClick = { onTabSelected(MainTab.LIBRARY) },
                                     modifier = Modifier.size(20.dp)
                                 ) {
                                     Icon(

@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.ui.player.DesktopNowPlayingDockedPane
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.util.LocalMeloColors
@@ -44,8 +45,8 @@ val LocalSelectionMode = compositionLocalOf { mutableStateOf(false) }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdaptiveScaffold(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
     onOpenNowPlaying: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
@@ -54,7 +55,7 @@ fun AdaptiveScaffold(
     isDarkTheme: Boolean = true,
     isSelectionMode: Boolean = false,
     onToggleTheme: () -> Unit = {},
-    content: @Composable (String, PaddingValues) -> Unit
+    content: @Composable (MainTab, PaddingValues) -> Unit
 ) {
     val platform = remember { getPlatform() }
 
@@ -85,8 +86,8 @@ fun AdaptiveScaffold(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DesktopMainLayout(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
     onOpenNowPlaying: () -> Unit,
     onOpenSettings: () -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
@@ -191,8 +192,8 @@ private fun DesktopMainLayout(
 
 @Composable
 private fun MobileMainLayout(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
     onOpenNowPlaying: () -> Unit,
     isSelectionMode: Boolean = false,
     content: @Composable (PaddingValues) -> Unit

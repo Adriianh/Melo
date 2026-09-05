@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,13 +27,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 @Composable
 internal fun FloatingNavigationBar(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
+    selectedTab: MainTab,
+    onTabSelected: (MainTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -57,24 +54,14 @@ internal fun FloatingNavigationBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FloatingNavItem(
-                selected = selectedTab == "Home",
-                onClick = { onTabSelected("Home") },
-                icon = Icons.Default.Home,
-                label = "Inicio"
-            )
-            FloatingNavItem(
-                selected = selectedTab == "Search",
-                onClick = { onTabSelected("Search") },
-                icon = Icons.Default.Explore,
-                label = "Explorar"
-            )
-            FloatingNavItem(
-                selected = selectedTab == "Library",
-                onClick = { onTabSelected("Library") },
-                icon = Icons.Default.LibraryMusic,
-                label = "Biblioteca"
-            )
+            MainTab.entries.forEach { tab ->
+                FloatingNavItem(
+                    selected = selectedTab == tab,
+                    onClick = { onTabSelected(tab) },
+                    icon = tab.icon,
+                    label = tab.title
+                )
+            }
         }
     }
 }
