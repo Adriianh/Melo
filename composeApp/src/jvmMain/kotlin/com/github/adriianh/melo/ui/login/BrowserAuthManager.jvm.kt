@@ -578,7 +578,7 @@ object BrowserAuthManager {
             }
             result
         } catch (e: Exception) {
-            log.warning("withTempCopy failed for ${dbFile.absolutePath}: ${e.message}")
+            log.fine("withTempCopy attempt for ${dbFile.name}: ${e.message}")
             null
         } finally {
             tempCopy?.delete()
@@ -660,7 +660,7 @@ object BrowserAuthManager {
         log.fine("readChromiumCookies read ${cookies.size} cookies from ${dbFile.name}: ${cookies.keys}")
         cookies
     }.getOrElse { e ->
-        log.warning("readChromiumCookies failed for ${dbFile.absolutePath}: ${e.message}")
+        log.fine("readChromiumCookies attempt for ${dbFile.name}: ${e.message}")
         null
     }
 

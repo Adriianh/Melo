@@ -333,8 +333,8 @@ class OfflineRepositoryImpl(
                         album?.let { tag.setField(FieldKey.ALBUM, it) }
 
                         audioFile.commit()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (_: Exception) {
+                        // Non-music audio or voice messages may lack tag headers; ignore gracefully
                     }
                 }
             }

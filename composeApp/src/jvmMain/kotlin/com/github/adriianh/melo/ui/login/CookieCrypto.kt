@@ -102,7 +102,16 @@ internal object CookieCrypto {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
             init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, nonce))
         }
-        String(cipher.doFinal(ciphertextAndTag), Charsets.UTF_8)
+        val raw = cipher.doFinal(ciphertextAndTag)
+        // In modern Chromium (v127+), decrypted cookie payload includes a 32-byte host prefix.
+        // If the first 32 bytes contain non-printable control characters, strip them.
+        val hasBinaryPrefix = raw.size > 32 && (0 until 32).any { i ->
+            val b = raw[i].toInt() and 0xFF
+            b !in 0x20..<0x7F
+        }
+        val cleanBytes = if (hasBinaryPrefix) raw.copyOfRange(32, raw.size) else raw
+        val decoded = String(cleanBytes, Charsets.UTF_8).filter { it.code in 0x20..0x7E }
+        decoded.takeIf { it.isNotBlank() }
     }.getOrElse {
         log.fine("Cookie decryption failed: ${it.message}")
         null

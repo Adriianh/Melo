@@ -23,9 +23,65 @@ object CookieHeader {
         return result
     }
 
+    private val ESSENTIAL_AUTH_COOKIES = listOf(
+        "SAPISID",
+        "__Secure-3PAPISID",
+        "__Secure-1PAPISID",
+        "APISID",
+        "LOGIN_INFO",
+        "__Secure-3PSID",
+        "__Secure-1PSID",
+        "SID",
+        "HSID",
+        "SSID",
+        "__Secure-3PSIDTS",
+        "__Secure-1PSIDTS",
+        "__Secure-3PSIDCC",
+        "__Secure-1PSIDCC",
+        "SIDCC",
+        "VISITOR_INFO1_LIVE",
+        "VISITOR_PRIVACY_METADATA",
+        "PREF",
+        "YSC",
+        "CONSISTENCY",
+        "__Secure-ROLLOUT_TOKEN",
+        "__Secure-YNID",
+        "SOCS",
+        "GPS",
+    )
+
     /** Renders a cookie map back into `"name=value; name2=value2"` form, or `null` if empty. */
-    fun Map<String, String>.toHeaderStringOrNull(): String? =
-        takeIf { it.isNotEmpty() }?.entries?.joinToString("; ") { (name, value) -> "$name=$value" }
+    fun Map<String, String>.toHeaderStringOrNull(): String? {
+        if (isEmpty()) return null
+
+        val selected = LinkedHashMap<String, String>()
+        for (key in ESSENTIAL_AUTH_COOKIES) {
+            val value = get(key)
+            if (!value.isNullOrBlank()) {
+                selected[key] = value
+            }
+        }
+
+        for ((key, value) in this) {
+            if (selected.containsKey(key)) continue
+            if (key.startsWith("ST-", ignoreCase = true) || key.startsWith("_ga") || key.startsWith("_gid")) continue
+            if (value.isNotBlank()) {
+                selected[key] = value
+            }
+        }
+
+        val result = StringBuilder()
+        for ((name, value) in selected) {
+            val entry = "$name=$value"
+            if (result.length + entry.length + 2 > 3800 && selected.containsKey("SAPISID")) {
+                break
+            }
+            if (result.isNotEmpty()) result.append("; ")
+            result.append(entry)
+        }
+
+        return result.toString().takeIf { it.isNotEmpty() }
+    }
 
     /**
      * Whether this cookie map carries a complete, authenticated YouTube session.

@@ -82,6 +82,7 @@ kotlin {
                 implementation(libs.sqliteJdbc)
                 implementation(libs.jmtc)
                 implementation(libs.jnaPlatform)
+                implementation(libs.slf4jSimple)
             }
         }
         commonTest {
