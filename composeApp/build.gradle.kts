@@ -127,13 +127,20 @@ compose.desktop {
         mainClass = "com.github.adriianh.melo.MainKt"
 
         jvmArgs += listOf(
+            "-XX:-UseJVMCICompiler",
             "-Xms32m",
             "-Xmx256m",
+            "-Xss384k",
             "-XX:+UseG1GC",
             "-XX:G1PeriodicGCInterval=10000",
             "-XX:MinHeapFreeRatio=15",
             "-XX:MaxHeapFreeRatio=30",
             "-XX:+UseStringDeduplication",
+
+            "-XX:CICompilerCount=2",
+            "-XX:ParallelGCThreads=2",
+            "-XX:ConcGCThreads=1",
+            "-XX:G1ConcRefinementThreads=2",
 
             "-XX:ReservedCodeCacheSize=48m",
             "-XX:MaxMetaspaceSize=96m",
