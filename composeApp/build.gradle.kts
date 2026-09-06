@@ -220,11 +220,11 @@ val generateLinuxLauncher = tasks.register("generateLinuxLauncher") {
     doLast {
         val script = appDir.get().file("melo.sh").asFile
         script.writeText(
-            """
+            $$"""
             #!/bin/sh
             export MALLOC_ARENA_MAX=2
-            SCRIPT_DIR="${'$'}(cd "${'$'}(dirname "${'$'}0")" && pwd)"
-            exec "${'$'}SCRIPT_DIR/bin/Melo" "${'$'}@"
+            SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+            exec "$SCRIPT_DIR/bin/Melo" "$@"
             """.trimIndent() + "\n"
         )
         script.setExecutable(true, false)
