@@ -27,10 +27,24 @@ object CookieHeader {
     fun Map<String, String>.toHeaderStringOrNull(): String? =
         takeIf { it.isNotEmpty() }?.entries?.joinToString("; ") { (name, value) -> "$name=$value" }
 
+    /**
+     * Whether this cookie map carries a complete, authenticated YouTube session.
+     * YouTube requires:
+     * 1. A cryptographic auth token (SAPISID, __Secure-3PAPISID, __Secure-1PAPISID, or APISID)
+     * 2. A session identifier (LOGIN_INFO, __Secure-3PSID, __Secure-1PSID, or SID)
+     */
+    fun Map<String, String>.hasValidSession(): Boolean {
+        val hasAuthToken = containsKey("SAPISID") ||
+                containsKey("__Secure-3PAPISID") ||
+                containsKey("__Secure-1PAPISID") ||
+                containsKey("APISID")
+        val hasSessionId = containsKey("LOGIN_INFO") ||
+                containsKey("__Secure-3PSID") ||
+                containsKey("__Secure-1PSID") ||
+                containsKey("SID")
+        return hasAuthToken && hasSessionId
+    }
+
     /** Whether this cookie map carries the YouTube/Google session-identity cookie. */
-    fun Map<String, String>.hasSapisid(): Boolean =
-        containsKey("SAPISID") ||
-        containsKey("__Secure-3PAPISID") ||
-        containsKey("__Secure-1PAPISID") ||
-        containsKey("APISID")
+    fun Map<String, String>.hasSapisid(): Boolean = hasValidSession()
 }

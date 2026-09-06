@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.login
 
 import com.github.adriianh.melo.ui.login.BrowserAuthManager.LAUNCH_TIMEOUT
 import com.github.adriianh.melo.ui.login.CookieHeader.hasSapisid
+import com.github.adriianh.melo.ui.login.CookieHeader.hasValidSession
 import com.github.adriianh.melo.ui.login.CookieHeader.toHeaderStringOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -50,9 +51,9 @@ object BrowserAuthManager {
     private val log = Logger.getLogger("Melo.BrowserAuthManager")
 
     private const val FIREFOX_COOKIE_QUERY =
-        "SELECT name, value FROM moz_cookies WHERE host LIKE '%youtube.com' ORDER BY LENGTH(host) ASC"
+        "SELECT name, value, expiry FROM moz_cookies WHERE host LIKE '%youtube.com' ORDER BY lastAccessed DESC, creationTime DESC"
     private const val CHROMIUM_COOKIE_QUERY =
-        "SELECT name, value, encrypted_value FROM cookies WHERE host_key LIKE '%youtube.com' ORDER BY LENGTH(host_key) ASC"
+        "SELECT name, value, encrypted_value, expires_utc FROM cookies WHERE host_key LIKE '%youtube.com' ORDER BY last_access_utc DESC, creation_utc DESC"
 
     private enum class WinRoot(private val envVar: String?, private val fallback: String) {
         PROGRAM_FILES("ProgramFiles", "C:\\Program Files"),
@@ -293,14 +294,14 @@ object BrowserAuthManager {
             }
 
         try {
-            val session = pollForSessionCookies(tempDir, browser)
+            val session = pollForSessionCookies(tempDir, browser, process)
             if (session != null) return@withContext session
 
             val cookieDb = cookieDbFile(tempDir, browser.engine)
             if (cookieDb != null) {
                 val cookies = readCookies(cookieDb, browser)
-                if (cookies != null && cookies.hasSapisid()) {
-                    log.info("Found YouTube session on final check with ${cookies.size} cookies!")
+                if (cookies != null && cookies.hasValidSession()) {
+                    log.info("Found YouTube session on final check with ${cookies.size} cookies: ${cookies.keys}")
                     val header = cookies.toHeaderStringOrNull()
                     if (header != null) return@withContext BrowserAuthResult.Success(header)
                 }
@@ -333,19 +334,28 @@ object BrowserAuthManager {
     /** Polls the profile directory's cookie store until an authenticated YouTube session appears. */
     private suspend fun pollForSessionCookies(
         tempDir: File,
-        browser: BrowserCandidate
+        browser: BrowserCandidate,
+        process: Process,
     ): BrowserAuthResult? {
         return withTimeoutOrNull(LAUNCH_TIMEOUT) {
+            var postExitChecks = 0
             while (isActive) {
                 val cookieDb = cookieDbFile(tempDir, browser.engine)
                 if (cookieDb != null && cookieDb.length() > 0L) {
                     val cookies = readCookies(cookieDb, browser)
-                    if (cookies != null && cookies.hasSapisid()) {
-                        log.info("Found YouTube session with ${cookies.size} cookies!")
+                    if (cookies != null && cookies.hasValidSession()) {
+                        log.info("Found YouTube session with ${cookies.size} cookies: ${cookies.keys}")
                         val header = cookies.toHeaderStringOrNull()
                         if (header != null) {
                             return@withTimeoutOrNull BrowserAuthResult.Success(header)
                         }
+                    }
+                }
+                if (!process.isAlive) {
+                    postExitChecks++
+                    if (postExitChecks >= 3) {
+                        log.info("Browser process has exited. Exiting poll loop.")
+                        break
                     }
                 }
                 delay(POLL_INTERVAL)
@@ -457,7 +467,11 @@ object BrowserAuthManager {
                 val cookieDb = File(profile, "cookies.sqlite")
                 if (!cookieDb.exists() || cookieDb.length() == 0L) continue
                 val cookies = withTempCopy(cookieDb) { readFirefoxCookies(it) }
-                if (cookies?.hasSapisid() == true) return cookies.toHeaderStringOrNull()
+                if (cookies != null && cookies.hasValidSession()) {
+                    log.info("Found valid session in ${profile.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
+                    val header = cookies.toHeaderStringOrNull()
+                    if (header != null) return header
+                }
             }
         }
         return null
@@ -479,7 +493,13 @@ object BrowserAuthManager {
                 val cookies = withTempCopy(cookieDb) { tempDb ->
                     readChromiumCookies(tempDb, keychainService, localStateFile)
                 }
-                if (cookies?.hasSapisid() == true) return cookies.toHeaderStringOrNull()
+                if (cookies != null && cookies.hasValidSession()) {
+                    log.info("Found valid session in ${profileDir.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
+                    val header = cookies.toHeaderStringOrNull()
+                    if (header != null) return header
+                } else {
+                    log.fine("Profile ${profileDir.name} in ${root.name} did not contain a complete session (found ${cookies?.size ?: 0} cookies)")
+                }
             }
         }
         return null
@@ -506,75 +526,150 @@ object BrowserAuthManager {
             }
         }
 
+    private fun safeCopyFile(source: File, target: File): Boolean = runCatching {
+        if (!source.exists() || source.length() == 0L) return false
+        java.io.FileInputStream(source).use { input ->
+            java.io.FileOutputStream(target).use { output ->
+                val buf = ByteArray(64 * 1024)
+                var read: Int
+                while (input.read(buf).also { read = it } != -1) {
+                    output.write(buf, 0, read)
+                }
+                output.flush()
+            }
+        }
+        target.length() > 0L
+    }.getOrElse { e ->
+        log.fine("safeCopyFile failed for ${source.name}: ${e.message}")
+        false
+    }
+
     /** Copies a (possibly locked) sqlite DB to a scratch file so it can be safely opened. */
     private fun <T> withTempCopy(dbFile: File, block: (File) -> T): T? {
-        val tempCopy = File.createTempFile("melo_cookie_read_", ".sqlite")
+        if (!dbFile.exists() || dbFile.length() == 0L) return null
+
+        val tempCopy = runCatching { File.createTempFile("melo_cookie_read_", ".sqlite") }.getOrNull()
         val walFile = File(dbFile.path + "-wal")
         val shmFile = File(dbFile.path + "-shm")
-        val tempWal = File(tempCopy.path + "-wal")
-        val tempShm = File(tempCopy.path + "-shm")
+        val tempWal = tempCopy?.let { File(it.path + "-wal") }
+        val tempShm = tempCopy?.let { File(it.path + "-shm") }
 
         return try {
-            dbFile.copyTo(tempCopy, overwrite = true)
-            if (walFile.exists()) {
-                runCatching { walFile.copyTo(tempWal, overwrite = true) }
+            var result: T? = null
+            if (tempCopy != null && safeCopyFile(dbFile, tempCopy)) {
+                if (walFile.exists()) {
+                    safeCopyFile(walFile, tempWal!!)
+                }
+                if (shmFile.exists()) {
+                    safeCopyFile(shmFile, tempShm!!)
+                }
+                result = runCatching { block(tempCopy) }.getOrElse { e ->
+                    log.fine("Reading temp cookie db failed: ${e.message}")
+                    null
+                }
             }
-            if (shmFile.exists()) {
-                runCatching { shmFile.copyTo(tempShm, overwrite = true) }
+
+            // Fallback: if temp copy didn't yield a result, attempt direct read of dbFile
+            if (result == null) {
+                result = runCatching { block(dbFile) }.getOrElse { e ->
+                    log.fine("Direct read of ${dbFile.name} failed: ${e.message}")
+                    null
+                }
             }
-            block(tempCopy)
-        } catch (_: Exception) {
+            result
+        } catch (e: Exception) {
+            log.warning("withTempCopy failed for ${dbFile.absolutePath}: ${e.message}")
             null
         } finally {
-            tempCopy.delete()
-            tempWal.delete()
-            tempShm.delete()
+            tempCopy?.delete()
+            tempWal?.delete()
+            tempShm?.delete()
         }
     }
 
+    private fun isFirefoxCookieExpired(expirySeconds: Long): Boolean {
+        if (expirySeconds == 0L) return false
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        return expirySeconds < nowSeconds
+    }
+
     private fun readFirefoxCookies(dbFile: File): Map<String, String>? = runCatching {
-        queryCookies(dbFile, FIREFOX_COOKIE_QUERY) { rs ->
-            rs.getString("name") to rs.getString("value")
+        val cookies = LinkedHashMap<String, String>()
+        openConnection(dbFile).use { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(FIREFOX_COOKIE_QUERY).use { rs ->
+                    while (rs.next()) {
+                        val name = rs.getString("name")
+                        if (name.isNullOrBlank() || cookies.containsKey(name)) continue
+
+                        val expiry = rs.getLong("expiry")
+                        if (isFirefoxCookieExpired(expiry)) continue
+
+                        val value = rs.getString("value")
+                        if (!value.isNullOrBlank()) {
+                            cookies[name] = value
+                        }
+                    }
+                }
+            }
         }
-    }.getOrNull()
+        log.fine("readFirefoxCookies read ${cookies.size} cookies from ${dbFile.name}: ${cookies.keys}")
+        cookies
+    }.getOrElse { e ->
+        log.warning("readFirefoxCookies failed for ${dbFile.absolutePath}: ${e.message}")
+        null
+    }
+
+    private fun isChromiumCookieExpired(expiresUtc: Long): Boolean {
+        if (expiresUtc == 0L) return false // Session cookie
+        val nowWebKitMicros = (System.currentTimeMillis() + 11644473600000L) * 1000L
+        return expiresUtc < nowWebKitMicros
+    }
 
     private fun readChromiumCookies(
         dbFile: File,
         macKeychainService: String,
         localStateFile: File? = null,
     ): Map<String, String>? = runCatching {
-        queryCookies(dbFile, CHROMIUM_COOKIE_QUERY) { rs ->
-            val name = rs.getString("name")
-            val plainValue = rs.getString("value")
-            val value = if (!plainValue.isNullOrBlank()) {
-                plainValue
-            } else {
-                rs.getBytes("encrypted_value")
-                    ?.let { CookieCrypto.decryptChromiumCookie(it, macKeychainService, localStateFile) }
-            }
-            name to value
-        }
-    }.getOrNull()
-
-    private inline fun queryCookies(
-        dbFile: File,
-        query: String,
-        extract: (java.sql.ResultSet) -> Pair<String?, String?>,
-    ): Map<String, String> {
         val cookies = LinkedHashMap<String, String>()
         openConnection(dbFile).use { conn ->
             conn.createStatement().use { stmt ->
-                stmt.executeQuery(query).use { rs ->
+                stmt.executeQuery(CHROMIUM_COOKIE_QUERY).use { rs ->
                     while (rs.next()) {
-                        val (name, value) = extract(rs)
-                        if (!name.isNullOrBlank() && !value.isNullOrBlank()) cookies[name] = value
+                        val name = rs.getString("name")
+                        if (name.isNullOrBlank() || cookies.containsKey(name)) continue
+
+                        val expiresUtc = rs.getLong("expires_utc")
+                        if (isChromiumCookieExpired(expiresUtc)) continue
+
+                        val plainValue = rs.getString("value")
+                        val value = if (!plainValue.isNullOrBlank()) {
+                            plainValue
+                        } else {
+                            rs.getBytes("encrypted_value")?.let {
+                                CookieCrypto.decryptChromiumCookie(it, macKeychainService, localStateFile)
+                            }
+                        }
+                        if (!value.isNullOrBlank()) {
+                            cookies[name] = value
+                        }
                     }
                 }
             }
         }
-        return cookies
+        log.fine("readChromiumCookies read ${cookies.size} cookies from ${dbFile.name}: ${cookies.keys}")
+        cookies
+    }.getOrElse { e ->
+        log.warning("readChromiumCookies failed for ${dbFile.absolutePath}: ${e.message}")
+        null
     }
 
-    private fun openConnection(dbFile: File): Connection =
-        DriverManager.getConnection("jdbc:sqlite:${dbFile.absolutePath}")
+    private fun openConnection(dbFile: File): Connection {
+        val props = java.util.Properties().apply {
+            setProperty("open_mode", "1") // 1 = OPEN_READONLY
+            setProperty("busy_timeout", "5000")
+        }
+        val url = "jdbc:sqlite:${dbFile.absolutePath.replace('\\', '/')}"
+        return DriverManager.getConnection(url, props)
+    }
 }

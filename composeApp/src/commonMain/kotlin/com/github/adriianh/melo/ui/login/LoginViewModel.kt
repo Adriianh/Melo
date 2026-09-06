@@ -58,7 +58,7 @@ class LoginViewModel(
                         it.copy(
                             isVerifying = false,
                             isLoggedIn = false,
-                            error = "Those cookies did not authenticate. Copy them from an active music.youtube.com session and try again.",
+                            error = "Las cookies no pudieron autenticar la sesión. Asegúrate de tener una sesión activa en music.youtube.com o inicia sesión con el navegador.",
                         )
                     }
                 } else {

@@ -47,7 +47,12 @@ internal object CookieCrypto {
     ): String? {
         if (encryptedValue.size < 3) return null
         val prefix = String(encryptedValue, 0, 3, Charsets.US_ASCII)
-        if (prefix != V10_PREFIX && prefix != V11_PREFIX) return null
+        if (prefix != V10_PREFIX && prefix != V11_PREFIX) {
+            if (prefix == "v20") {
+                log.fine("Encountered v20 (App-Bound Encryption) cookie. External DPAPI reading not supported for v20.")
+            }
+            return null
+        }
         val payload = encryptedValue.copyOfRange(3, encryptedValue.size)
 
         return when (HostOs.current) {
