@@ -12,6 +12,7 @@ import java.io.File
 import java.nio.file.Files
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.logging.Logger
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -46,12 +47,12 @@ object BrowserAuthManager {
 
     private val LAUNCH_TIMEOUT = 5.minutes
     private val POLL_INTERVAL = 1.seconds
+    private val log = Logger.getLogger("Melo.BrowserAuthManager")
 
     private const val FIREFOX_COOKIE_QUERY =
-        "SELECT name, value FROM moz_cookies WHERE host LIKE '%youtube.com' OR host LIKE '%google.com'"
+        "SELECT name, value FROM moz_cookies WHERE host LIKE '%youtube.com' ORDER BY LENGTH(host) ASC"
     private const val CHROMIUM_COOKIE_QUERY =
-        "SELECT name, value, encrypted_value FROM cookies " +
-                "WHERE host_key LIKE '%youtube.com' OR host_key LIKE '%google.com'"
+        "SELECT name, value, encrypted_value FROM cookies WHERE host_key LIKE '%youtube.com' ORDER BY LENGTH(host_key) ASC"
 
     private enum class WinRoot(private val envVar: String?, private val fallback: String) {
         PROGRAM_FILES("ProgramFiles", "C:\\Program Files"),
@@ -292,10 +293,20 @@ object BrowserAuthManager {
             }
 
         try {
-            pollForSessionCookies(tempDir, browser) ?: run {
-                if (process.isAlive) return@withContext BrowserAuthResult.TimedOut
-                BrowserAuthResult.NoBrowserFound
+            val session = pollForSessionCookies(tempDir, browser)
+            if (session != null) return@withContext session
+
+            val cookieDb = cookieDbFile(tempDir, browser.engine)
+            if (cookieDb != null) {
+                val cookies = readCookies(cookieDb, browser)
+                if (cookies != null && cookies.hasSapisid()) {
+                    log.info("Found YouTube session on final check with ${cookies.size} cookies!")
+                    val header = cookies.toHeaderStringOrNull()
+                    if (header != null) return@withContext BrowserAuthResult.Success(header)
+                }
             }
+
+            if (process.isAlive) BrowserAuthResult.TimedOut else BrowserAuthResult.NoBrowserFound
         } finally {
             runCatching { if (process.isAlive) process.destroy() }
             runCatching { tempDir.deleteRecursively() }
@@ -319,28 +330,21 @@ object BrowserAuthManager {
             ).start()
         }
 
-    /** Polls the profile directory's cookie store, re-reading only when the file changes. */
+    /** Polls the profile directory's cookie store until an authenticated YouTube session appears. */
     private suspend fun pollForSessionCookies(
         tempDir: File,
         browser: BrowserCandidate
     ): BrowserAuthResult? {
-        var lastReadMTime = -1L
         return withTimeoutOrNull(LAUNCH_TIMEOUT) {
             while (isActive) {
                 val cookieDb = cookieDbFile(tempDir, browser.engine)
                 if (cookieDb != null && cookieDb.length() > 0L) {
-                    val walFile = File(cookieDb.path + "-wal")
-                    val currentMTime = maxOf(
-                        cookieDb.lastModified(),
-                        walFile.takeIf { it.exists() }?.lastModified() ?: 0L
-                    )
-                    if (currentMTime != lastReadMTime) {
-                        lastReadMTime = currentMTime
-                        val cookies = readCookies(cookieDb, browser)
-                        if (cookies != null && cookies.hasSapisid()) {
-                            return@withTimeoutOrNull BrowserAuthResult.Success(
-                                cookies.toHeaderStringOrNull() ?: continue
-                            )
+                    val cookies = readCookies(cookieDb, browser)
+                    if (cookies != null && cookies.hasSapisid()) {
+                        log.info("Found YouTube session with ${cookies.size} cookies!")
+                        val header = cookies.toHeaderStringOrNull()
+                        if (header != null) {
+                            return@withTimeoutOrNull BrowserAuthResult.Success(header)
                         }
                     }
                 }
@@ -351,11 +355,26 @@ object BrowserAuthManager {
     }
 
     private fun cookieDbFile(profileDir: File, engine: BrowserEngine): File? = when (engine) {
-        BrowserEngine.GECKO -> File(profileDir, "cookies.sqlite").takeIf { it.exists() }
-        BrowserEngine.CHROMIUM -> listOf(
-            File(profileDir, "Default/Network/Cookies"),
-            File(profileDir, "Default/Cookies"),
-        ).firstOrNull { it.exists() }
+        BrowserEngine.GECKO -> {
+            val direct = File(profileDir, "cookies.sqlite")
+            if (direct.exists()) direct
+            else profileDir.listFiles { f -> f.isDirectory }
+                ?.map { File(it, "cookies.sqlite") }
+                ?.firstOrNull { it.exists() }
+        }
+        BrowserEngine.CHROMIUM -> {
+            val candidates = mutableListOf(
+                File(profileDir, "Default/Network/Cookies"),
+                File(profileDir, "Default/Cookies"),
+                File(profileDir, "Network/Cookies"),
+                File(profileDir, "Cookies"),
+            )
+            profileDir.listFiles { f -> f.isDirectory && f.name.startsWith("Profile") }?.forEach { p ->
+                candidates.add(File(p, "Network/Cookies"))
+                candidates.add(File(p, "Cookies"))
+            }
+            candidates.firstOrNull { it.exists() && it.length() > 0L }
+        }
     }
 
     /**

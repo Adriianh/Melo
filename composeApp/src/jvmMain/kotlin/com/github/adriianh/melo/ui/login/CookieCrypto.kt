@@ -4,6 +4,8 @@ import com.sun.jna.platform.win32.Crypt32Util
 import java.io.File
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.logging.Logger
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
@@ -82,6 +84,8 @@ internal object CookieCrypto {
         return (keychainPassword ?: "").toCharArray()
     }
 
+    private val log = Logger.getLogger("Melo.CookieCrypto")
+
     private fun decryptWindows(payload: ByteArray, localStateFile: File?): String? = runCatching {
         val nonceSize = 12
         val minTagSize = 16
@@ -94,7 +98,10 @@ internal object CookieCrypto {
             init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, nonce))
         }
         String(cipher.doFinal(ciphertextAndTag), Charsets.UTF_8)
-    }.getOrNull()
+    }.getOrElse {
+        log.fine("Cookie decryption failed: ${it.message}")
+        null
+    }
 
     private val LOCAL_STATE_CANDIDATES = listOf(
         "Google\\Chrome\\User Data\\Local State",
@@ -106,9 +113,15 @@ internal object CookieCrypto {
     private fun getWindowsAesKey(localStateFile: File?): ByteArray? {
         if (localStateFile != null && localStateFile.exists()) {
             val path = runCatching { localStateFile.canonicalPath }.getOrDefault(localStateFile.absolutePath)
-            return windowsKeyCache.computeIfAbsent(path) {
-                loadWindowsAesKeyFromFile(localStateFile) ?: ByteArray(0)
-            }.takeIf { it.isNotEmpty() }
+            val cached = windowsKeyCache[path]
+            if (cached != null) return cached
+
+            val loaded = loadWindowsAesKeyFromFile(localStateFile)
+            if (loaded != null && loaded.isNotEmpty()) {
+                windowsKeyCache[path] = loaded
+                return loaded
+            }
+            return null
         }
 
         val localAppData = System.getenv("LOCALAPPDATA") ?: return null
@@ -123,31 +136,46 @@ internal object CookieCrypto {
     }
 
     private fun loadWindowsAesKeyFromFile(localStateFile: File): ByteArray? = runCatching {
+        val text = localStateFile.readText()
         val encryptedKeyBase64 = Regex(""""encrypted_key"\s*:\s*"([^"]+)"""")
-            .find(localStateFile.readText())
+            .find(text)
             ?.groupValues
             ?.get(1)
-            ?: return null
+        if (encryptedKeyBase64 == null) {
+            log.warning("No encrypted_key regex match in: ${localStateFile.absolutePath}")
+            return null
+        }
 
         val dpapiBlob = Base64.getDecoder().decode(encryptedKeyBase64)
         val dpapiPrefixSize = 5 // "DPAPI"
-        if (dpapiBlob.size <= dpapiPrefixSize) return null
-        unprotectWithDpapi(dpapiBlob.copyOfRange(dpapiPrefixSize, dpapiBlob.size))
-    }.getOrNull()
+        if (dpapiBlob.size <= dpapiPrefixSize) {
+            log.warning("DPAPI blob too small in: ${localStateFile.absolutePath}")
+            return null
+        }
+        val key = unprotectWithDpapi(dpapiBlob.copyOfRange(dpapiPrefixSize, dpapiBlob.size))
+        if (key != null) {
+            log.info("Successfully loaded Windows AES key (${key.size} bytes) from: ${localStateFile.absolutePath}")
+        }
+        key
+    }.getOrElse {
+        log.warning("Failed to parse Local State from ${localStateFile.absolutePath}: ${it.message}")
+        null
+    }
 
     private fun unprotectWithDpapi(blob: ByteArray): ByteArray? {
-        // Fast path: native Win32 DPAPI via JNA Crypt32Util
-        val jnaResult = runCatching {
-            Crypt32Util.cryptUnprotectData(blob)
-        }.getOrNull()
-        if (jnaResult != null && jnaResult.isNotEmpty()) {
-            return jnaResult
+        try {
+            val jnaResult = Crypt32Util.cryptUnprotectData(blob)
+            if (jnaResult != null && jnaResult.isNotEmpty()) {
+                return jnaResult
+            }
+        } catch (e: Throwable) {
+            log.warning("JNA Crypt32Util.cryptUnprotectData failed: ${e.message}, attempting PowerShell fallback")
         }
 
-        // Fallback: PowerShell ProtectedData.Unprotect
         return runCatching {
             val blobBase64 = Base64.getEncoder().encodeToString(blob)
-            val script = "Add-Type -AssemblyName System.Security; [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('$blobBase64'), \$null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser))"
+            val script =
+                $$"Add-Type -AssemblyName System.Security; [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('$$blobBase64'), $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser))"
             val decodedBase64 = runCommand("powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-Command", script)
             decodedBase64?.let { Base64.getDecoder().decode(it) }
         }.getOrNull()
@@ -156,7 +184,7 @@ internal object CookieCrypto {
     private fun runCommand(vararg command: String): String? = runCatching {
         val process = ProcessBuilder(*command).redirectErrorStream(false).start()
         val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
-        val finished = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)
+        val finished = process.waitFor(5, TimeUnit.SECONDS)
         if (!finished) {
             process.destroyForcibly()
             return null

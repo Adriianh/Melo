@@ -28,5 +28,9 @@ object CookieHeader {
         takeIf { it.isNotEmpty() }?.entries?.joinToString("; ") { (name, value) -> "$name=$value" }
 
     /** Whether this cookie map carries the YouTube/Google session-identity cookie. */
-    fun Map<String, String>.hasSapisid(): Boolean = containsKey(SAPISID_COOKIE_NAME)
+    fun Map<String, String>.hasSapisid(): Boolean =
+        containsKey("SAPISID") ||
+        containsKey("__Secure-3PAPISID") ||
+        containsKey("__Secure-1PAPISID") ||
+        containsKey("APISID")
 }
