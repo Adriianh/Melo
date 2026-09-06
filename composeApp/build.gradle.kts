@@ -217,6 +217,7 @@ compose.desktop {
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
     description = "Downloads and bundles VLC native libraries for Windows distribution"
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isWindows }
     val vlcDir = layout.buildDirectory.dir("app-resources/windows/vlc")
     outputs.dir(vlcDir)
 
@@ -265,7 +266,9 @@ val prepareVlcWindows = tasks.register("prepareVlcWindows") {
 }
 
 tasks.matching {
-    it.name.contains("packageMsi") || it.name.contains("packageExe") ||
+    it.name == "prepareAppResources" ||
+            it.name.contains("packageMsi") ||
+            it.name.contains("packageExe") ||
             (org.gradle.internal.os.OperatingSystem.current().isWindows && it.name == "createDistributable")
 }.configureEach {
     dependsOn(prepareVlcWindows)
