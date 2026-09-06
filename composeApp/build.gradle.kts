@@ -1,6 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.net.URI
+import java.util.zip.ZipFile
 
 plugins {
     kotlin("multiplatform")
@@ -204,8 +206,69 @@ compose.desktop {
                 "jdk.crypto.ec",
                 "jdk.security.auth",
             )
+
+            appResourcesRootDir.set(layout.buildDirectory.dir("app-resources"))
         }
     }
+}
+
+// Automatically downloads VLC 64-bit for Windows and extracts libvlc.dll, libvlccore.dll,
+// and plugins/ into the Windows app-resources directory so the installer works standalone.
+val prepareVlcWindows = tasks.register("prepareVlcWindows") {
+    group = "compose desktop"
+    description = "Downloads and bundles VLC native libraries for Windows distribution"
+    val vlcDir = layout.buildDirectory.dir("app-resources/windows/vlc")
+    outputs.dir(vlcDir)
+
+    doLast {
+        val targetDir = vlcDir.get().asFile
+        if (File(targetDir, "libvlc.dll").exists()) {
+            return@doLast
+        }
+        targetDir.mkdirs()
+
+        val downloadDir = layout.buildDirectory.dir("tmp/vlc-download").get().asFile
+        downloadDir.mkdirs()
+        val zipFile = File(downloadDir, "vlc-3.0.21-win64.zip")
+
+        if (!zipFile.exists() || zipFile.length() < 70_000_000L) {
+            logger.lifecycle("Downloading VLC 3.0.21 x64 for Windows distribution (~74 MB)...")
+            URI.create("https://download.videolan.org/pub/videolan/vlc/3.0.21/win64/vlc-3.0.21-win64.zip")
+                .toURL().openStream().use { input ->
+                    zipFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+        }
+
+        logger.lifecycle("Extracting VLC native libraries for Windows...")
+        ZipFile(zipFile).use { zip ->
+            for (entry in zip.entries().asSequence()) {
+                val name = entry.name.substringAfter('/') // strip "vlc-3.0.21/"
+                if (name == "libvlc.dll" || name == "libvlccore.dll" || name.startsWith("plugins/")) {
+                    val destFile = File(targetDir, name)
+                    if (entry.isDirectory) {
+                        destFile.mkdirs()
+                    } else {
+                        destFile.parentFile.mkdirs()
+                        zip.getInputStream(entry).use { input ->
+                            destFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        logger.lifecycle("VLC Windows native libraries ready at: ${targetDir.absolutePath}")
+    }
+}
+
+tasks.matching {
+    it.name.contains("packageMsi") || it.name.contains("packageExe") ||
+            (org.gradle.internal.os.OperatingSystem.current().isWindows && it.name == "createDistributable")
+}.configureEach {
+    dependsOn(prepareVlcWindows)
 }
 
 // For distros that don't use .deb/.rpm (Arch, Gentoo, NixOS, Void, etc.)
