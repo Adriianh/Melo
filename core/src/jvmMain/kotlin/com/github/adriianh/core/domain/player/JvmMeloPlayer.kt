@@ -1,6 +1,7 @@
 package com.github.adriianh.core.domain.player
 
 import com.github.adriianh.core.domain.model.Track
+import com.sun.jna.NativeLibrary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,25 +14,36 @@ import kotlinx.coroutines.launch
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.logging.Logger
 import kotlin.time.Duration.Companion.milliseconds
 
 class JvmMeloPlayer : MeloPlayer {
-    private val factory = MediaPlayerFactory(
-        "--no-video",
-        "--no-xlib",
-        "--no-osd",
-        "--no-sub-autodetect-file",
-        "--no-spu",
-        "--no-stats",
-        "--no-snapshot-preview",
-        "--aout=pulse,alsa,dummy",
-        "--network-caching=1500",
-        "--file-caching=1000",
-        "--clock-jitter=0",
+    private val factory: MediaPlayerFactory? = try {
+        MediaPlayerFactory(
+            "--no-video",
+            "--no-xlib",
+            "--no-osd",
+            "--no-sub-autodetect-file",
+            "--no-spu",
+            "--no-stats",
+            "--no-snapshot-preview",
+            "--aout=pulse,alsa,dummy",
+            "--network-caching=1500",
+            "--file-caching=1000",
+            "--clock-jitter=0",
+        )
+    } catch (e: Throwable) {
+        log.warning("Could not initialize VLC MediaPlayerFactory: ${e.message}")
+        null
+    }
+    private val mediaPlayer: MediaPlayer? = factory?.mediaPlayers()?.newMediaPlayer()
+    private val _state = MutableStateFlow(
+        PlaybackState(
+            error = if (mediaPlayer == null) "VLC media engine could not be loaded." else null
+        )
     )
-    private val mediaPlayer = factory.mediaPlayers().newMediaPlayer()
-    private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
     private val scope = CoroutineScope(Dispatchers.Default + Job())
@@ -40,7 +52,7 @@ class JvmMeloPlayer : MeloPlayer {
     private var lastLoadedTrackId: String? = null
 
     init {
-        mediaPlayer.events().addMediaPlayerEventListener(
+        mediaPlayer?.events()?.addMediaPlayerEventListener(
             object : MediaPlayerEventAdapter() {
                 override fun playing(mediaPlayer: MediaPlayer?) {
                     _state.update {
@@ -100,11 +112,22 @@ class JvmMeloPlayer : MeloPlayer {
                 }
             }
         )
-        mediaPlayer.audio().setVolume(75)
+        mediaPlayer?.audio()?.setVolume(75)
     }
 
     override fun load(url: String, track: Track) {
-        mediaPlayer.controls().stop()
+        val player = mediaPlayer ?: run {
+            _state.update {
+                it.copy(
+                    currentTrack = track,
+                    isPlaying = false,
+                    isBuffering = false,
+                    error = "VLC media engine is not available. Please install VLC 64-bit."
+                )
+            }
+            return
+        }
+        player.controls().stop()
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -120,7 +143,7 @@ class JvmMeloPlayer : MeloPlayer {
         loadStartTimes[track.id] = now
         val options = buildVlcOptions(url)
         try {
-            mediaPlayer.media().play(url, *options)
+            player.media().play(url, *options)
         } catch (e: Throwable) {
             _state.update {
                 it.copy(
@@ -133,26 +156,35 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun play() {
-        mediaPlayer.controls().play()
-        mediaPlayer.audio().setVolume(75)
+        mediaPlayer?.controls()?.play()
+        mediaPlayer?.audio()?.setVolume(75)
     }
 
     override fun pause() {
-        mediaPlayer.controls().pause()
+        mediaPlayer?.controls()?.pause()
     }
 
     override fun stop() {
-        mediaPlayer.controls().stop()
+        mediaPlayer?.controls()?.stop()
+        stopProgressUpdate()
+        _state.update {
+            it.copy(
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null
+            )
+        }
     }
 
     override fun seekTo(positionMs: Long) {
-        mediaPlayer.controls().setTime(positionMs)
+        mediaPlayer?.controls()?.setTime(positionMs)
     }
 
     override fun release() {
         stopProgressUpdate()
-        mediaPlayer.release()
-        factory.release()
+        mediaPlayer?.release()
+        factory?.release()
     }
 
     private fun buildVlcOptions(url: String): Array<String> {
@@ -216,7 +248,8 @@ class JvmMeloPlayer : MeloPlayer {
         progressJob?.cancel()
         progressJob = scope.launch {
             while (true) {
-                _state.update { it.copy(progressMs = mediaPlayer.status().time()) }
+                val time = mediaPlayer?.status()?.time() ?: 0L
+                _state.update { it.copy(progressMs = time) }
                 delay(200.milliseconds)
             }
         }
@@ -228,7 +261,49 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     companion object {
+        private val log = Logger.getLogger("Melo.JvmMeloPlayer")
         private const val BROWSER_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/605.1.15"
+
+        init {
+            initVlcSearchPaths()
+        }
+
+        private fun initVlcSearchPaths() {
+            val resourcesDir =
+                System.getProperty("compose.application.resources.dir")?.let { File(it) }
+            val appDir = resourcesDir?.parentFile
+            val candidates = listOfNotNull(
+                resourcesDir?.resolve("vlc"),
+                resourcesDir?.resolve("windows/vlc"),
+                appDir?.resolve("resources/vlc"),
+                appDir?.resolve("vlc"),
+                File("resources/vlc"),
+                File("app/resources/vlc"),
+                File("vlc"),
+                File("C:\\Program Files\\VideoLAN\\VLC"),
+                File("C:\\Program Files (x86)\\VideoLAN\\VLC"),
+            )
+            for (dir in candidates) {
+                if (dir.exists() && (File(dir, "libvlc.dll").exists() || File(
+                        dir,
+                        "libvlc.so"
+                    ).exists())
+                ) {
+                    log.info("Found VLC libraries in: ${dir.absolutePath}")
+                    try {
+                        NativeLibrary.addSearchPath("libvlc", dir.absolutePath)
+                        NativeLibrary.addSearchPath("libvlccore", dir.absolutePath)
+                        val pluginsDir = File(dir, "plugins")
+                        if (pluginsDir.exists()) {
+                            System.setProperty("VLC_PLUGIN_PATH", pluginsDir.absolutePath)
+                        }
+                    } catch (e: Throwable) {
+                        log.warning("Could not set VLC search paths for ${dir.absolutePath}: ${e.message}")
+                    }
+                    break
+                }
+            }
+        }
     }
 }
