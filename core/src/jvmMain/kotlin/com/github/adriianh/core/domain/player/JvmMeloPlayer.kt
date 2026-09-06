@@ -21,7 +21,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class JvmMeloPlayer : MeloPlayer {
     private val factory: MediaPlayerFactory? = try {
-        MediaPlayerFactory(
+        val args = mutableListOf(
             "--no-video",
             "--no-xlib",
             "--no-osd",
@@ -29,11 +29,14 @@ class JvmMeloPlayer : MeloPlayer {
             "--no-spu",
             "--no-stats",
             "--no-snapshot-preview",
-            "--aout=pulse,alsa,dummy",
             "--network-caching=1500",
             "--file-caching=1000",
             "--clock-jitter=0",
         )
+        detectedPluginsDir?.let {
+            args.add("--plugin-path=${it.absolutePath}")
+        }
+        MediaPlayerFactory(args)
     } catch (e: Throwable) {
         log.warning("Could not initialize VLC MediaPlayerFactory: ${e.message}")
         null
@@ -141,9 +144,9 @@ class JvmMeloPlayer : MeloPlayer {
         val now = System.currentTimeMillis()
         lastLoadedTrackId = track.id
         loadStartTimes[track.id] = now
-        val options = buildVlcOptions(url)
+        val (mediaTarget, options) = resolveMediaTarget(url)
         try {
-            player.media().play(url, *options)
+            player.media().play(mediaTarget, *options)
         } catch (e: Throwable) {
             _state.update {
                 it.copy(
@@ -153,6 +156,32 @@ class JvmMeloPlayer : MeloPlayer {
                 )
             }
         }
+    }
+
+    private fun resolveMediaTarget(url: String): Pair<String, Array<String>> {
+        val localPath = when {
+            url.startsWith("file://") || url.startsWith("file:/") -> {
+                runCatching {
+                    val cleanUri = if (url.startsWith("file://") && !url.startsWith("file:///")) {
+                        "file:///" + url.removePrefix("file://")
+                    } else url
+                    File(java.net.URI(cleanUri.replace('\\', '/'))).absolutePath
+                }.getOrNull() ?: url.removePrefix("file://").removePrefix("file:/")
+            }
+            File(url).exists() -> url
+            else -> null
+        }
+
+        if (localPath != null && File(localPath).exists()) {
+            val localOptions = arrayOf(
+                ":file-caching=1000",
+                ":no-video",
+                ":no-spu",
+            )
+            return Pair(File(localPath).absolutePath, localOptions)
+        }
+
+        return Pair(url, buildVlcOptions(url))
     }
 
     override fun play() {
@@ -264,6 +293,7 @@ class JvmMeloPlayer : MeloPlayer {
         private val log = Logger.getLogger("Melo.JvmMeloPlayer")
         private const val BROWSER_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/605.1.15"
+        private var detectedPluginsDir: File? = null
 
         init {
             initVlcSearchPaths()
@@ -296,6 +326,7 @@ class JvmMeloPlayer : MeloPlayer {
                         NativeLibrary.addSearchPath("libvlccore", dir.absolutePath)
                         val pluginsDir = File(dir, "plugins")
                         if (pluginsDir.exists()) {
+                            detectedPluginsDir = pluginsDir
                             System.setProperty("VLC_PLUGIN_PATH", pluginsDir.absolutePath)
                         }
                     } catch (e: Throwable) {

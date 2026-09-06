@@ -5,7 +5,7 @@ import java.io.File
 actual object PlatformFileSystem {
     actual fun fileExists(path: String): Boolean = File(path).exists()
 
-    actual fun toFileUri(path: String): String = "file://${File(path).absolutePath}"
+    actual fun toFileUri(path: String): String = File(path).toURI().toString()
 
     actual fun readText(path: String): String? = try {
         File(path).takeIf { it.exists() }?.readText()

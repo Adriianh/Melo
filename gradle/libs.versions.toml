@@ -101,6 +101,7 @@ androidx-media3-session = { module = "androidx.media3:media3-session", version.r
 coilCompose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coilNetworkKtor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
+jnaPlatform = { module = "net.java.dev.jna:jna-platform", version = "5.14.0" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeGradlePlugin" }
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeGradlePlugin" }
 composeRuntime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeGradlePlugin" }

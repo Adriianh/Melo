@@ -1,7 +1,9 @@
 package com.github.adriianh.melo.ui.login
 
+import com.sun.jna.platform.win32.Crypt32Util
 import java.io.File
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
@@ -13,23 +15,14 @@ import javax.crypto.spec.SecretKeySpec
  * Decrypts the `encrypted_value` column that modern Chromium-based browsers (Chrome 80+, Brave,
  * Edge, Vivaldi...) use for sensitive cookies instead of the plaintext `value` column.
  *
- * The original implementation only read `value`, which is blank for these cookies on any
- * reasonably up-to-date Chromium browser -- meaning `SAPISID` would silently never be found
- * through the profile-import/automated-login paths on most machines.
- *
  * Chromium's `os_crypt` protects the AES key differently per platform:
  *  - **Linux**: PBKDF2 over a password from the OS keyring (`secret-tool`), falling back to the
- *    well-known constant `"peanuts"` when no keyring backend is configured -- this is Chromium's
- *    own documented fallback, not a workaround of ours. AES-128-CBC, `v10`/`v11` prefix.
+ *    well-known constant `"peanuts"` when no keyring backend is configured. AES-128-CBC, `v10`/`v11` prefix.
  *  - **macOS**: PBKDF2 over a password stored in the login Keychain under `"<Browser> Safe
  *    Storage"`. AES-128-CBC, `v10` prefix.
  *  - **Windows**: AES-256-GCM. The key itself is DPAPI-protected inside the browser's
- *    `Local State` file and is unwrapped via `ProtectedData.Unprotect` (invoked through a small
- *    PowerShell call, since the JDK has no DPAPI binding). `v10` prefix.
- *
- * This is intentionally best-effort: any failure (missing keyring, locked/denied Keychain entry,
- * PowerShell unavailable, corrupted blob) yields `null` instead of throwing, so callers can fall
- * back to other auth methods (e.g. the in-app WebView login) instead of crashing.
+ *    `Local State` file and is unwrapped via native Win32 `CryptUnprotectData` (via JNA Crypt32Util)
+ *    with a PowerShell fallback. `v10` prefix.
  */
 internal object CookieCrypto {
 
@@ -38,19 +31,25 @@ internal object CookieCrypto {
     private val POSIX_SALT = "saltysalt".toByteArray()
     private val POSIX_IV = ByteArray(16) { ' '.code.toByte() }
 
+    private val windowsKeyCache = ConcurrentHashMap<String, ByteArray>()
+
     /**
      * @param encryptedValue the raw `encrypted_value` BLOB, prefix included.
-     * @param macKeychainService the Keychain service name to query on macOS,
-     *   e.g. `"Chrome Safe Storage"`, `"Brave Safe Storage"`.
+     * @param macKeychainService the Keychain service name to query on macOS.
+     * @param localStateFile optional path to the `Local State` file that holds the DPAPI key for this profile.
      */
-    fun decryptChromiumCookie(encryptedValue: ByteArray, macKeychainService: String): String? {
+    fun decryptChromiumCookie(
+        encryptedValue: ByteArray,
+        macKeychainService: String,
+        localStateFile: File? = null,
+    ): String? {
         if (encryptedValue.size < 3) return null
         val prefix = String(encryptedValue, 0, 3, Charsets.US_ASCII)
         if (prefix != V10_PREFIX && prefix != V11_PREFIX) return null
         val payload = encryptedValue.copyOfRange(3, encryptedValue.size)
 
         return when (HostOs.current) {
-            HostOs.WINDOWS -> decryptWindows(payload)
+            HostOs.WINDOWS -> decryptWindows(payload, localStateFile)
             HostOs.MACOS -> decryptPosix(
                 payload,
                 macKeychainPassword(macKeychainService),
@@ -83,15 +82,13 @@ internal object CookieCrypto {
         return (keychainPassword ?: "").toCharArray()
     }
 
-    private val windowsAesKey: ByteArray? by lazy { runCatching { loadWindowsAesKey() }.getOrNull() }
-
-    private fun decryptWindows(payload: ByteArray): String? = runCatching {
+    private fun decryptWindows(payload: ByteArray, localStateFile: File?): String? = runCatching {
         val nonceSize = 12
         val minTagSize = 16
         if (payload.size < nonceSize + minTagSize) return null
         val nonce = payload.copyOfRange(0, nonceSize)
         val ciphertextAndTag = payload.copyOfRange(nonceSize, payload.size)
-        val key = windowsAesKey ?: return null
+        val key = getWindowsAesKey(localStateFile) ?: return null
 
         val cipher = Cipher.getInstance("AES/GCM/NoPadding").apply {
             init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, nonce))
@@ -106,39 +103,54 @@ internal object CookieCrypto {
         "Vivaldi\\User Data\\Local State",
     )
 
-    private fun loadWindowsAesKey(): ByteArray? {
-        val localAppData = System.getenv("LOCALAPPDATA") ?: return null
-        val localState = LOCAL_STATE_CANDIDATES
-            .map { File(localAppData, it) }
-            .firstOrNull { it.exists() } ?: return null
+    private fun getWindowsAesKey(localStateFile: File?): ByteArray? {
+        if (localStateFile != null && localStateFile.exists()) {
+            val path = runCatching { localStateFile.canonicalPath }.getOrDefault(localStateFile.absolutePath)
+            return windowsKeyCache.computeIfAbsent(path) {
+                loadWindowsAesKeyFromFile(localStateFile) ?: ByteArray(0)
+            }.takeIf { it.isNotEmpty() }
+        }
 
+        val localAppData = System.getenv("LOCALAPPDATA") ?: return null
+        for (candidate in LOCAL_STATE_CANDIDATES) {
+            val file = File(localAppData, candidate)
+            if (file.exists()) {
+                val key = getWindowsAesKey(file)
+                if (key != null) return key
+            }
+        }
+        return null
+    }
+
+    private fun loadWindowsAesKeyFromFile(localStateFile: File): ByteArray? = runCatching {
         val encryptedKeyBase64 = Regex(""""encrypted_key"\s*:\s*"([^"]+)"""")
-            .find(localState.readText())
+            .find(localStateFile.readText())
             ?.groupValues
             ?.get(1)
             ?: return null
 
         val dpapiBlob = Base64.getDecoder().decode(encryptedKeyBase64)
-        val dpapiPrefixSize = 5
+        val dpapiPrefixSize = 5 // "DPAPI"
         if (dpapiBlob.size <= dpapiPrefixSize) return null
-        return unprotectWithDpapi(dpapiBlob.copyOfRange(dpapiPrefixSize, dpapiBlob.size))
-    }
+        unprotectWithDpapi(dpapiBlob.copyOfRange(dpapiPrefixSize, dpapiBlob.size))
+    }.getOrNull()
 
     private fun unprotectWithDpapi(blob: ByteArray): ByteArray? {
-        val blobBase64 = Base64.getEncoder().encodeToString(blob)
-        val script = """
-            Add-Type -AssemblyName System.Security
-            [Convert]::ToBase64String(
-                [System.Security.Cryptography.ProtectedData]::Unprotect(
-                    [Convert]::FromBase64String('$blobBase64'),
-                    ${'$'}null,
-                    [System.Security.Cryptography.DataProtectionScope]::CurrentUser
-                )
-            )
-        """.trimIndent()
-        val decodedBase64 =
-            runCommand("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
-        return decodedBase64?.let { Base64.getDecoder().decode(it) }
+        // Fast path: native Win32 DPAPI via JNA Crypt32Util
+        val jnaResult = runCatching {
+            Crypt32Util.cryptUnprotectData(blob)
+        }.getOrNull()
+        if (jnaResult != null && jnaResult.isNotEmpty()) {
+            return jnaResult
+        }
+
+        // Fallback: PowerShell ProtectedData.Unprotect
+        return runCatching {
+            val blobBase64 = Base64.getEncoder().encodeToString(blob)
+            val script = "Add-Type -AssemblyName System.Security; [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('$blobBase64'), \$null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser))"
+            val decodedBase64 = runCommand("powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-Command", script)
+            decodedBase64?.let { Base64.getDecoder().decode(it) }
+        }.getOrNull()
     }
 
     private fun runCommand(vararg command: String): String? = runCatching {

@@ -314,6 +314,7 @@ object BrowserAuthManager {
                 "--user-data-dir=${tempDir.absolutePath}",
                 "--no-first-run",
                 "--no-default-browser-check",
+                "--disable-features=AppBoundEncryptionProvider",
                 "--password-store=basic",
             ).start()
         }
@@ -327,13 +328,20 @@ object BrowserAuthManager {
         return withTimeoutOrNull(LAUNCH_TIMEOUT) {
             while (isActive) {
                 val cookieDb = cookieDbFile(tempDir, browser.engine)
-                if (cookieDb != null && cookieDb.length() > 0L && cookieDb.lastModified() != lastReadMTime) {
-                    lastReadMTime = cookieDb.lastModified()
-                    val cookies = readCookies(cookieDb, browser)
-                    if (cookies != null && cookies.hasSapisid()) {
-                        return@withTimeoutOrNull BrowserAuthResult.Success(
-                            cookies.toHeaderStringOrNull() ?: continue
-                        )
+                if (cookieDb != null && cookieDb.length() > 0L) {
+                    val walFile = File(cookieDb.path + "-wal")
+                    val currentMTime = maxOf(
+                        cookieDb.lastModified(),
+                        walFile.takeIf { it.exists() }?.lastModified() ?: 0L
+                    )
+                    if (currentMTime != lastReadMTime) {
+                        lastReadMTime = currentMTime
+                        val cookies = readCookies(cookieDb, browser)
+                        if (cookies != null && cookies.hasSapisid()) {
+                            return@withTimeoutOrNull BrowserAuthResult.Success(
+                                cookies.toHeaderStringOrNull() ?: continue
+                            )
+                        }
                     }
                 }
                 delay(POLL_INTERVAL)
@@ -448,31 +456,60 @@ object BrowserAuthManager {
                     listOf(File(profileDir, "Network/Cookies"), File(profileDir, "Cookies"))
                         .firstOrNull { it.exists() && it.length() > 0L } ?: continue
                 val keychainService = "${root.parentFile?.name ?: root.name} Safe Storage"
-                val cookies = withTempCopy(cookieDb) { readChromiumCookies(it, keychainService) }
+                val localStateFile = findLocalState(cookieDb)
+                val cookies = withTempCopy(cookieDb) { tempDb ->
+                    readChromiumCookies(tempDb, keychainService, localStateFile)
+                }
                 if (cookies?.hasSapisid() == true) return cookies.toHeaderStringOrNull()
             }
         }
         return null
     }
 
+    private fun findLocalState(cookieDb: File): File? {
+        var curr: File? = cookieDb.parentFile
+        while (curr != null) {
+            val candidate = File(curr, "Local State")
+            if (candidate.exists() && candidate.isFile) {
+                return candidate
+            }
+            curr = curr.parentFile
+        }
+        return null
+    }
+
     private fun readCookies(cookieDb: File, browser: BrowserCandidate): Map<String, String>? =
-        withTempCopy(cookieDb) {
+        withTempCopy(cookieDb) { tempDb ->
+            val localStateFile = findLocalState(cookieDb)
             when (browser.engine) {
-                BrowserEngine.GECKO -> readFirefoxCookies(it)
-                BrowserEngine.CHROMIUM -> readChromiumCookies(it, browser.macKeychainService)
+                BrowserEngine.GECKO -> readFirefoxCookies(tempDb)
+                BrowserEngine.CHROMIUM -> readChromiumCookies(tempDb, browser.macKeychainService, localStateFile)
             }
         }
 
     /** Copies a (possibly locked) sqlite DB to a scratch file so it can be safely opened. */
     private fun <T> withTempCopy(dbFile: File, block: (File) -> T): T? {
         val tempCopy = File.createTempFile("melo_cookie_read_", ".sqlite")
+        val walFile = File(dbFile.path + "-wal")
+        val shmFile = File(dbFile.path + "-shm")
+        val tempWal = File(tempCopy.path + "-wal")
+        val tempShm = File(tempCopy.path + "-shm")
+
         return try {
             dbFile.copyTo(tempCopy, overwrite = true)
+            if (walFile.exists()) {
+                runCatching { walFile.copyTo(tempWal, overwrite = true) }
+            }
+            if (shmFile.exists()) {
+                runCatching { shmFile.copyTo(tempShm, overwrite = true) }
+            }
             block(tempCopy)
         } catch (_: Exception) {
             null
         } finally {
             tempCopy.delete()
+            tempWal.delete()
+            tempShm.delete()
         }
     }
 
@@ -484,7 +521,8 @@ object BrowserAuthManager {
 
     private fun readChromiumCookies(
         dbFile: File,
-        macKeychainService: String
+        macKeychainService: String,
+        localStateFile: File? = null,
     ): Map<String, String>? = runCatching {
         queryCookies(dbFile, CHROMIUM_COOKIE_QUERY) { rs ->
             val name = rs.getString("name")
@@ -493,7 +531,7 @@ object BrowserAuthManager {
                 plainValue
             } else {
                 rs.getBytes("encrypted_value")
-                    ?.let { CookieCrypto.decryptChromiumCookie(it, macKeychainService) }
+                    ?.let { CookieCrypto.decryptChromiumCookie(it, macKeychainService, localStateFile) }
             }
             name to value
         }

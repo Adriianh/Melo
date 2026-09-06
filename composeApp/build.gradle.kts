@@ -81,6 +81,7 @@ kotlin {
                 implementation(libs.coilNetworkKtor)
                 implementation(libs.sqliteJdbc)
                 implementation(libs.jmtc)
+                implementation(libs.jnaPlatform)
             }
         }
         commonTest {
