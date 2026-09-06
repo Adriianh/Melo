@@ -168,7 +168,7 @@ compose.desktop {
             vendor = "Adriianh"
             description = "Modern, fast, and cross-platform music player"
             copyright = "© 2025 Adriianh. Licensed under GPLv3."
-            licenseFile.set(project.rootProject.file("LICENSE"))
+            // licenseFile.set(project.rootProject.file("LICENSE"))
 
             linux {
                 packageName = "melo"
