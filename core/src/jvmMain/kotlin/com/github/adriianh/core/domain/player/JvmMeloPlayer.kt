@@ -20,6 +20,11 @@ class JvmMeloPlayer : MeloPlayer {
     private val factory = MediaPlayerFactory(
         "--no-video",
         "--no-xlib",
+        "--no-osd",
+        "--no-sub-autodetect-file",
+        "--no-spu",
+        "--no-stats",
+        "--no-snapshot-preview",
         "--aout=pulse,alsa,dummy",
         "--network-caching=1500",
         "--file-caching=1000",
