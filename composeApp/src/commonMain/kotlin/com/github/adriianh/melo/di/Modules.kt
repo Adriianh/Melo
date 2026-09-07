@@ -318,7 +318,6 @@ val viewModelModule = module {
             deletePlaylistUseCase = get(),
             addTrackToPlaylistUseCase = get(),
             addTracksToPlaylistUseCase = get(),
-            removeTrackFromPlaylistUseCase = get(),
             getPlaylistIdsForTrackUseCase = get(),
             getLikedSongsUseCase = get(),
             getUserArtistsUseCase = get(),

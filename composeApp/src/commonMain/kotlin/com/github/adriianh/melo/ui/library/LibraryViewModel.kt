@@ -25,7 +25,6 @@ import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
-import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
@@ -121,7 +120,6 @@ class LibraryViewModel(
     private val deletePlaylistUseCase: DeletePlaylistUseCase,
     private val addTrackToPlaylistUseCase: AddTrackToPlaylistUseCase,
     private val addTracksToPlaylistUseCase: AddTracksToPlaylistUseCase,
-    private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase,
     private val getPlaylistIdsForTrackUseCase: GetPlaylistIdsForTrackUseCase,
     private val getLikedSongsUseCase: GetLikedSongsUseCase,
     private val getUserArtistsUseCase: GetUserArtistsUseCase,
@@ -136,7 +134,7 @@ class LibraryViewModel(
     private val syncOfflineTracksUseCase: SyncOfflineTracksUseCase,
     private val downloadManager: DownloadManager,
     private val playbackManager: PlaybackManager,
-    private val observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
+    observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
