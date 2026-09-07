@@ -4,13 +4,20 @@ import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
 import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.AlbumItem
 import com.github.adriianh.innertube.models.ArtistItem
 import com.github.adriianh.innertube.models.PlaylistItem
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class RemoteLibraryRepositoryImpl : RemoteLibraryRepository {
+
+    private val _libraryUpdates = MutableSharedFlow<LibraryUpdateEvent>(extraBufferCapacity = 64)
+    override val libraryUpdates: SharedFlow<LibraryUpdateEvent> = _libraryUpdates.asSharedFlow()
 
     override suspend fun getAccountProfile(): Result<AccountProfile> = runCatching {
         val info = YouTube.accountInfo().getOrThrow()
@@ -101,20 +108,24 @@ class RemoteLibraryRepositoryImpl : RemoteLibraryRepository {
     override suspend fun toggleLike(videoId: String, isLiked: Boolean): Result<Unit> = runCatching {
         val rawId = videoId.removePrefix("piped:")
         YouTube.likeVideo(rawId, isLiked).getOrThrow()
+        _libraryUpdates.tryEmit(LibraryUpdateEvent.TrackLiked(videoId, isLiked))
     }
 
     override suspend fun toggleLikeAlbum(browseId: String, isLiked: Boolean): Result<Unit> =
         runCatching {
             YouTube.likeAlbum(browseId, isLiked).getOrThrow()
+            _libraryUpdates.tryEmit(LibraryUpdateEvent.AlbumSaved(browseId, isLiked))
         }
 
     override suspend fun toggleLikePlaylist(playlistId: String, isLiked: Boolean): Result<Unit> =
         runCatching {
             YouTube.likePlaylist(playlistId, isLiked).getOrThrow()
+            _libraryUpdates.tryEmit(LibraryUpdateEvent.PlaylistSaved(playlistId, isLiked))
         }
 
     override suspend fun subscribeChannel(channelId: String, isSubscribed: Boolean): Result<Unit> =
         runCatching {
             YouTube.subscribeChannel(channelId, isSubscribed).getOrThrow()
+            _libraryUpdates.tryEmit(LibraryUpdateEvent.ArtistSubscribed(channelId, isSubscribed))
         }
 }

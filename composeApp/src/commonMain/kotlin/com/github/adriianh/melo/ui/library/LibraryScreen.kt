@@ -63,6 +63,10 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.onScreenVisible()
+    }
+
     LaunchedEffect(state.selectedTab) {
         selectedTrackIds = emptySet()
     }

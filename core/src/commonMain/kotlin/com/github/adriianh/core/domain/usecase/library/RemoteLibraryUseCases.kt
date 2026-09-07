@@ -4,7 +4,9 @@ import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
 import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
+import kotlinx.coroutines.flow.SharedFlow
 
 class GetAccountProfileUseCase(
     private val repository: RemoteLibraryRepository,
@@ -68,4 +70,11 @@ class SubscribeChannelUseCase(
 ) {
     suspend operator fun invoke(channelId: String, isSubscribed: Boolean): Result<Unit> =
         repository.subscribeChannel(channelId, isSubscribed)
+}
+
+class ObserveLibraryUpdatesUseCase(
+    private val repository: RemoteLibraryRepository,
+) {
+    operator fun invoke(): SharedFlow<LibraryUpdateEvent> =
+        repository.libraryUpdates
 }

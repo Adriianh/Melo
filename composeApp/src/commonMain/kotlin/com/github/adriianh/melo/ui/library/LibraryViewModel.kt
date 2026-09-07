@@ -11,6 +11,7 @@ import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
@@ -23,6 +24,7 @@ import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
@@ -34,6 +36,7 @@ import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +45,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class LibraryTab(val label: String) {
@@ -132,6 +136,7 @@ class LibraryViewModel(
     private val syncOfflineTracksUseCase: SyncOfflineTracksUseCase,
     private val downloadManager: DownloadManager,
     private val playbackManager: PlaybackManager,
+    private val observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -219,15 +224,83 @@ class LibraryViewModel(
                     }
                 }
         }
+
+        observeLibraryUpdatesUseCase?.let { observeUseCase ->
+            viewModelScope.launch {
+                observeUseCase().collectLatest { event ->
+                    when (event) {
+                        is LibraryUpdateEvent.TrackLiked -> {
+                            if (!event.isLiked) {
+                                _uiState.update { current ->
+                                    current.copy(likedSongs = current.likedSongs.filterNot { it.id == event.videoId || it.sourceId == event.videoId })
+                                }
+                            }
+                            refreshLikedSongs()
+                        }
+
+                        is LibraryUpdateEvent.AlbumSaved -> {
+                            refreshAlbums()
+                        }
+
+                        is LibraryUpdateEvent.PlaylistSaved -> {
+                            refreshPlaylists()
+                        }
+
+                        is LibraryUpdateEvent.ArtistSubscribed -> {
+                            refreshArtists()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun onScreenVisible() {
+        if (_uiState.value.isLoggedIn) {
+            refreshAll(silent = true)
+        }
     }
 
     fun selectTab(tab: LibraryTab) {
-        _uiState.value = _uiState.value.copy(selectedTab = tab)
-        if (tab == LibraryTab.LOCAL && _uiState.value.localTracks.isEmpty()) {
-            scanLocalTracks()
-        }
-        if (tab == LibraryTab.HISTORY && _uiState.value.isLoggedIn) {
-            refreshRemoteHistory()
+        _uiState.update { it.copy(selectedTab = tab) }
+        when (tab) {
+            LibraryTab.LOCAL -> {
+                if (_uiState.value.localTracks.isEmpty()) {
+                    scanLocalTracks()
+                }
+            }
+
+            LibraryTab.HISTORY -> {
+                if (_uiState.value.isLoggedIn) {
+                    refreshRemoteHistory()
+                }
+            }
+
+            LibraryTab.LIKED -> {
+                if (_uiState.value.isLoggedIn && _uiState.value.likedSongs.isEmpty()) {
+                    refreshLikedSongs()
+                }
+            }
+
+            LibraryTab.PLAYLISTS -> {
+                if (_uiState.value.isLoggedIn && _uiState.value.playlists.isEmpty()) {
+                    refreshPlaylists()
+                }
+            }
+
+            LibraryTab.ALBUMS -> {
+                if (_uiState.value.isLoggedIn && _uiState.value.albums.isEmpty()) {
+                    refreshAlbums()
+                }
+            }
+
+            LibraryTab.ARTISTS -> {
+                if (_uiState.value.isLoggedIn && _uiState.value.artists.isEmpty()) {
+                    refreshArtists()
+                }
+            }
+
+            else -> {}
         }
     }
 
@@ -238,6 +311,46 @@ class LibraryViewModel(
             if (result.isSuccess) {
                 remoteHistory = result.getOrDefault(emptyList())
                 updateMergedHistory()
+            }
+        }
+    }
+
+    fun refreshLikedSongs() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            val result = getLikedSongsUseCase()
+            if (result.isSuccess) {
+                _uiState.update { it.copy(likedSongs = result.getOrDefault(it.likedSongs)) }
+            }
+        }
+    }
+
+    fun refreshPlaylists() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            val result = getUserPlaylistsUseCase()
+            if (result.isSuccess) {
+                _uiState.update { it.copy(playlists = result.getOrDefault(it.playlists)) }
+            }
+        }
+    }
+
+    fun refreshAlbums() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            val result = getUserAlbumsUseCase()
+            if (result.isSuccess) {
+                _uiState.update { it.copy(albums = result.getOrDefault(it.albums)) }
+            }
+        }
+    }
+
+    fun refreshArtists() {
+        if (!_uiState.value.isLoggedIn) return
+        viewModelScope.launch {
+            val result = getUserArtistsUseCase()
+            if (result.isSuccess) {
+                _uiState.update { it.copy(artists = result.getOrDefault(it.artists)) }
             }
         }
     }
@@ -297,33 +410,45 @@ class LibraryViewModel(
         }
     }
 
-    fun refreshAll() {
+    fun refreshAll(silent: Boolean = false) {
         viewModelScope.launch {
             syncOfflineTracksUseCase()
             scanLocalTracks()
             if (!_uiState.value.isLoggedIn) return@launch
 
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            if (!silent) {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+            }
 
-            val profileResult = getAccountProfileUseCase()
-            val playlistsResult = getUserPlaylistsUseCase()
-            val likedSongsResult = getLikedSongsUseCase()
-            val artistsResult = getUserArtistsUseCase()
-            val albumsResult = getUserAlbumsUseCase()
-            val historyResult = getRemoteHistoryUseCase()
-            remoteHistory = historyResult.getOrDefault(emptyList())
+            val profileDeferred = async { getAccountProfileUseCase() }
+            val playlistsDeferred = async { getUserPlaylistsUseCase() }
+            val likedSongsDeferred = async { getLikedSongsUseCase() }
+            val artistsDeferred = async { getUserArtistsUseCase() }
+            val albumsDeferred = async { getUserAlbumsUseCase() }
+            val historyDeferred = async { getRemoteHistoryUseCase() }
 
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                profile = profileResult.getOrNull() ?: _uiState.value.profile,
-                playlists = playlistsResult.getOrDefault(emptyList()),
-                likedSongs = likedSongsResult.getOrDefault(emptyList()),
-                artists = artistsResult.getOrDefault(emptyList()),
-                albums = albumsResult.getOrDefault(emptyList()),
-                error = if (playlistsResult.isFailure && likedSongsResult.isFailure) {
-                    "No se pudo cargar la biblioteca. Verifica tu conexión o sesión."
-                } else null
-            )
+            val profileResult = profileDeferred.await()
+            val playlistsResult = playlistsDeferred.await()
+            val likedSongsResult = likedSongsDeferred.await()
+            val artistsResult = artistsDeferred.await()
+            val albumsResult = albumsDeferred.await()
+            val historyResult = historyDeferred.await()
+
+            remoteHistory = historyResult.getOrDefault(remoteHistory)
+
+            _uiState.update { current ->
+                current.copy(
+                    isLoading = false,
+                    profile = profileResult.getOrNull() ?: current.profile,
+                    playlists = playlistsResult.getOrDefault(current.playlists),
+                    likedSongs = likedSongsResult.getOrDefault(current.likedSongs),
+                    artists = artistsResult.getOrDefault(current.artists),
+                    albums = albumsResult.getOrDefault(current.albums),
+                    error = if (!silent && playlistsResult.isFailure && likedSongsResult.isFailure) {
+                        "No se pudo cargar la biblioteca. Verifica tu conexión o sesión."
+                    } else current.error
+                )
+            }
             updateMergedHistory()
         }
     }
@@ -339,10 +464,15 @@ class LibraryViewModel(
 
     fun toggleLike(trackId: String, isLiked: Boolean) {
         viewModelScope.launch {
+            if (!isLiked) {
+                _uiState.update { current ->
+                    current.copy(likedSongs = current.likedSongs.filterNot { it.id == trackId })
+                }
+            }
             toggleLikeTrackUseCase(trackId, isLiked)
             val updatedLiked = getLikedSongsUseCase().getOrNull()
             if (updatedLiked != null) {
-                _uiState.value = _uiState.value.copy(likedSongs = updatedLiked)
+                _uiState.update { it.copy(likedSongs = updatedLiked) }
             }
         }
     }
@@ -383,12 +513,6 @@ class LibraryViewModel(
         viewModelScope.launch {
             val count = addTracksToPlaylistUseCase(playlistId, tracks)
             onAdded?.invoke(count)
-        }
-    }
-
-    fun removeTrackFromPlaylist(playlistId: Long, trackId: String) {
-        viewModelScope.launch {
-            removeTrackFromPlaylistUseCase(playlistId, trackId)
         }
     }
 

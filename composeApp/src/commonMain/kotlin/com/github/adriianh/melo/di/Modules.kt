@@ -29,6 +29,7 @@ import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
@@ -273,6 +274,7 @@ val useCaseModule = module {
     singleOf(::GetUserArtistsUseCase)
     singleOf(::GetUserAlbumsUseCase)
     singleOf(::GetRemoteHistoryUseCase)
+    singleOf(::ObserveLibraryUpdatesUseCase)
     singleOf(::ToggleLikeTrackUseCase)
     singleOf(::ToggleLikeAlbumUseCase)
     singleOf(::ToggleLikePlaylistUseCase)
@@ -330,7 +332,8 @@ val viewModelModule = module {
             deleteDownloadedTrackUseCase = get(),
             syncOfflineTracksUseCase = get(),
             downloadManager = get(),
-            playbackManager = get()
+            playbackManager = get(),
+            observeLibraryUpdatesUseCase = get()
         )
     }
     viewModelOf(::SidebarViewModel)
