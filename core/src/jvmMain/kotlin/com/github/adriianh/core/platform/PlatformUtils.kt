@@ -1,5 +1,6 @@
 package com.github.adriianh.core.platform
 
+import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -18,3 +19,13 @@ actual fun md5(str: String): String =
     MessageDigest.getInstance("MD5")
         .digest(str.toByteArray())
         .joinToString("") { "%02x".format(it) }
+
+actual fun currentUpdatePlatform(): UpdatePlatform {
+    val os = System.getProperty("os.name", "").lowercase()
+    return when {
+        os.contains("win") -> UpdatePlatform.WINDOWS
+        os.contains("mac") -> UpdatePlatform.MACOS
+        os.contains("nux") || os.contains("nix") -> UpdatePlatform.LINUX
+        else -> UpdatePlatform.UNKNOWN
+    }
+}

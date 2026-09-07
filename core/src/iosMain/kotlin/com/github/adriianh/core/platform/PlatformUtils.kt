@@ -1,9 +1,20 @@
 package com.github.adriianh.core.platform
 
-import platform.Foundation.*
-import platform.posix.*
-import kotlinx.cinterop.*
-import platform.CoreCrypto.*
+import com.github.adriianh.core.domain.model.update.UpdatePlatform
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.reinterpret
+import kotlinx.cinterop.usePinned
+import platform.CoreCrypto.CC_MD5
+import platform.CoreCrypto.CC_MD5_DIGEST_LENGTH
+import platform.CoreCrypto.CC_SHA1
+import platform.CoreCrypto.CC_SHA1_DIGEST_LENGTH
+import platform.Foundation.NSDate
+import platform.Foundation.NSLocale
+import platform.Foundation.countryCode
+import platform.Foundation.currentLocale
+import platform.Foundation.localeIdentifier
+import platform.Foundation.timeIntervalSince1970
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun sha1(str: String): String {
@@ -37,3 +48,6 @@ actual fun md5(str: String): String {
     }
     return hash.joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 }
+
+actual fun currentUpdatePlatform(): UpdatePlatform =
+    UpdatePlatform.UNKNOWN

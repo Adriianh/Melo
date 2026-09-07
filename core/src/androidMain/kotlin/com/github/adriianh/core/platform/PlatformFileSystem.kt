@@ -104,4 +104,12 @@ actual object PlatformFileSystem {
 
         return paths.distinct()
     }
+
+    actual fun getTempDirectory(): String = try {
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)?.absolutePath
+            ?: System.getProperty("java.io.tmpdir")
+            ?: Environment.getExternalStorageDirectory().path
+    } catch (_: Exception) {
+        Environment.getExternalStorageDirectory().path
+    }
 }

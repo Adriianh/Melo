@@ -69,4 +69,6 @@ actual object PlatformFileSystem {
             .map { it.absolutePath }
             .ifEmpty { listOf(musicDir.absolutePath) }
     }
+
+    actual fun getTempDirectory(): String = System.getProperty("java.io.tmpdir") ?: "/tmp"
 }

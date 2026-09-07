@@ -64,4 +64,9 @@ expect object PlatformFileSystem {
      * Returns standard system directories where audio/music files typically reside on the platform.
      */
     fun getDefaultMusicPaths(): List<String>
+
+    /**
+     * Returns the path to the system temporary directory.
+     */
+    fun getTempDirectory(): String
 }

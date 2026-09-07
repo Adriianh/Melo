@@ -28,3 +28,8 @@ expect fun currentTimeSeconds(): Long
  * Computes the MD5 hash of the given string and returns it as a hex string.
  */
 expect fun md5(str: String): String
+
+/**
+ * Returns the current platform for auto-update targeting.
+ */
+expect fun currentUpdatePlatform(): com.github.adriianh.core.domain.model.update.UpdatePlatform

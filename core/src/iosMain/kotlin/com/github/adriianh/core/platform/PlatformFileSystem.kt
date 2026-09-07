@@ -4,6 +4,7 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSString
+import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.create
 import platform.Foundation.stringWithContentsOfFile
@@ -57,4 +58,6 @@ actual object PlatformFileSystem {
     } catch (_: Exception) { false }
 
     actual fun getDefaultMusicPaths(): List<String> = emptyList()
+
+    actual fun getTempDirectory(): String = NSTemporaryDirectory()
 }
