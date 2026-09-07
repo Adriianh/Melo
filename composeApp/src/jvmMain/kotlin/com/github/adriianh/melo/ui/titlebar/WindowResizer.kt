@@ -1,7 +1,5 @@
 package com.github.adriianh.melo.ui.titlebar
 
-import androidx.compose.ui.awt.ComposeWindow
-import androidx.compose.ui.window.WindowPlacement
 import java.awt.Cursor
 import java.awt.Point
 import java.awt.Rectangle
@@ -15,8 +13,9 @@ import javax.swing.SwingUtilities
  */
 class WindowResizer(
     private val window: Window,
-    private val minWidth: Int = 900,
-    private val minHeight: Int = 600,
+    private val isMaximized: () -> Boolean,
+    private val minWidth: Int = 800,
+    private val minHeight: Int = 540,
     private val borderThickness: Int = 6
 ) : MouseAdapter() {
 
@@ -25,10 +24,7 @@ class WindowResizer(
     private var dragStartBounds: Rectangle? = null
 
     override fun mouseMoved(e: MouseEvent) {
-        val composeWindow = window as? ComposeWindow
-        if (composeWindow?.placement == WindowPlacement.Maximized ||
-            composeWindow?.placement == WindowPlacement.Fullscreen
-        ) {
+        if (isMaximized()) {
             if (window.cursor.type != Cursor.DEFAULT_CURSOR) {
                 window.cursor = Cursor.getDefaultCursor()
             }
@@ -43,10 +39,7 @@ class WindowResizer(
 
     override fun mousePressed(e: MouseEvent) {
         if (!SwingUtilities.isLeftMouseButton(e)) return
-        val composeWindow = window as? ComposeWindow
-        if (composeWindow?.placement == WindowPlacement.Maximized ||
-            composeWindow?.placement == WindowPlacement.Fullscreen
-        ) return
+        if (isMaximized()) return
 
         val cursorType = getCursorForPosition(e.x, e.y, window.width, window.height)
         if (cursorType != Cursor.DEFAULT_CURSOR) {
@@ -72,16 +65,13 @@ class WindowResizer(
             Cursor.E_RESIZE_CURSOR -> {
                 newW = (startBounds.width + dx).coerceAtLeast(minWidth)
             }
-
             Cursor.S_RESIZE_CURSOR -> {
                 newH = (startBounds.height + dy).coerceAtLeast(minHeight)
             }
-
             Cursor.SE_RESIZE_CURSOR -> {
                 newW = (startBounds.width + dx).coerceAtLeast(minWidth)
                 newH = (startBounds.height + dy).coerceAtLeast(minHeight)
             }
-
             Cursor.W_RESIZE_CURSOR -> {
                 val proposedW = startBounds.width - dx
                 if (proposedW >= minWidth) {
@@ -92,7 +82,6 @@ class WindowResizer(
                     newW = minWidth
                 }
             }
-
             Cursor.N_RESIZE_CURSOR -> {
                 val proposedH = startBounds.height - dy
                 if (proposedH >= minHeight) {
@@ -103,7 +92,6 @@ class WindowResizer(
                     newH = minHeight
                 }
             }
-
             Cursor.NW_RESIZE_CURSOR -> {
                 val proposedW = startBounds.width - dx
                 if (proposedW >= minWidth) {
@@ -122,7 +110,6 @@ class WindowResizer(
                     newH = minHeight
                 }
             }
-
             Cursor.NE_RESIZE_CURSOR -> {
                 newW = (startBounds.width + dx).coerceAtLeast(minWidth)
                 val proposedH = startBounds.height - dy
@@ -134,7 +121,6 @@ class WindowResizer(
                     newH = minHeight
                 }
             }
-
             Cursor.SW_RESIZE_CURSOR -> {
                 val proposedW = startBounds.width - dx
                 if (proposedW >= minWidth) {
