@@ -178,7 +178,7 @@ class JvmMeloPlayer : MeloPlayer {
 
         if (localPath != null && File(localPath).exists()) {
             val localOptions = arrayOf(
-                ":file-caching=1000",
+                ":file-caching=500",
                 ":no-video",
                 ":no-spu",
             )
@@ -189,12 +189,15 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun play() {
+        _state.update { it.copy(isPlaying = true) }
         mediaPlayer?.controls()?.play()
         mediaPlayer?.audio()?.setVolume(currentVolume)
     }
 
     override fun pause() {
-        mediaPlayer?.controls()?.pause()
+        _state.update { it.copy(isPlaying = false) }
+        stopProgressUpdate()
+        mediaPlayer?.controls()?.setPause(true)
     }
 
     override fun stop() {
@@ -211,11 +214,14 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun seekTo(positionMs: Long) {
+        _state.update { it.copy(progressMs = positionMs) }
         mediaPlayer?.controls()?.setTime(positionMs)
     }
 
     override fun setVolume(volume: Float) {
-        currentVolume = (volume * 100).toInt().coerceIn(0, 100)
+        val target = (volume * 100).toInt().coerceIn(0, 100)
+        if (currentVolume == target) return
+        currentVolume = target
         mediaPlayer?.audio()?.setVolume(currentVolume)
     }
 
@@ -227,7 +233,7 @@ class JvmMeloPlayer : MeloPlayer {
 
     private fun buildVlcOptions(url: String): Array<String> {
         val baseOptions = arrayOf(
-            ":network-caching=5000",
+            ":network-caching=1500",
             ":http-reconnect=true",
             ":no-check-certificates",
             ":no-video",

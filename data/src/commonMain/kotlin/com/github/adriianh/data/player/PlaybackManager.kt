@@ -18,6 +18,7 @@ import com.github.adriianh.core.util.MeloDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 class PlaybackManagerImpl(
     private val meloPlayer: MeloPlayer,
@@ -59,6 +62,7 @@ class PlaybackManagerImpl(
     private val cacheMutex = Mutex()
     private var playJob: Job? = null
     private var prefetchJob: Job? = null
+    private var saveVolumeJob: Job? = null
     private var isAutoplayFetching = false
     private var lastHandledFinishedTrackId: String? = null
 
@@ -70,7 +74,7 @@ class PlaybackManagerImpl(
                 if (newVol > 0.05f) {
                     lastUnmutedVolume = newVol
                 }
-                if (kotlin.math.abs(_volume.value - newVol) > 0.01f) {
+                if (saveVolumeJob?.isActive != true && abs(_volume.value - newVol) > 0.01f) {
                     _volume.value = newVol
                     meloPlayer.setVolume(newVol)
                 }
@@ -126,7 +130,9 @@ class PlaybackManagerImpl(
         meloPlayer.setVolume(clamped)
         getSettingsUseCase?.let { getSettings ->
             updateSettingsUseCase?.let { updateSettings ->
-                scope.launch(dispatcher) {
+                saveVolumeJob?.cancel()
+                saveVolumeJob = scope.launch(dispatcher) {
+                    delay(300.milliseconds)
                     val currentSettings = getSettings.getSnapshot()
                     val volInt = (clamped * 100).toInt()
                     if (currentSettings.volume != volInt) {
@@ -149,6 +155,7 @@ class PlaybackManagerImpl(
     override fun release() {
         playJob?.cancel()
         prefetchJob?.cancel()
+        saveVolumeJob?.cancel()
         meloPlayer.release()
     }
 
