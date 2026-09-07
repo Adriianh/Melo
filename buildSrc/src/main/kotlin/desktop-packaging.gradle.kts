@@ -98,6 +98,9 @@ tasks.register<Tar>("packageLinuxTarGz") {
 
     into("melo-1.0.1") {
         from(layout.buildDirectory.dir("compose/binaries/main/app/Melo"))
+        from(rootProject.file("packaging/linux/melo.desktop"))
+        from(rootProject.file("packaging/linux/install.sh"))
+        from(rootProject.file("packaging/linux/uninstall.sh"))
 
         eachFile {
             if (path.contains("/bin/") || path.endsWith(".so") || path.contains("/runtime/bin/") || path.endsWith(
@@ -109,6 +112,96 @@ tasks.register<Tar>("packageLinuxTarGz") {
                 }
             }
         }
+    }
+}
+
+val packageAppImage = tasks.register("packageAppImage") {
+    group = "compose desktop"
+    description = "Packages a standalone AppImage for generic Linux distributions"
+    dependsOn("createDistributable", generateLinuxLauncher)
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isLinux }
+
+    val appDir = layout.buildDirectory.dir("compose/binaries/main/app/Melo")
+    val appImageDir = layout.buildDirectory.dir("compose/binaries/main/appimage")
+    val outputDir = layout.buildDirectory.dir("compose/binaries/main/appimage/output")
+    outputs.dir(outputDir)
+
+    doLast {
+        val appDirFile = appDir.get().asFile
+        val targetAppDir = File(appImageDir.get().asFile, "AppDir")
+        val outDirFile = outputDir.get().asFile
+        outDirFile.mkdirs()
+        targetAppDir.deleteRecursively()
+        targetAppDir.mkdirs()
+
+        appDirFile.copyRecursively(targetAppDir, overwrite = true)
+
+        val desktopFile = rootProject.file("packaging/linux/melo.desktop")
+        val iconFile = project.file("src/jvmMain/resources/icons/icon.png")
+        if (desktopFile.exists()) {
+            desktopFile.copyTo(File(targetAppDir, "melo.desktop"), overwrite = true)
+        }
+        if (iconFile.exists()) {
+            iconFile.copyTo(File(targetAppDir, "melo.png"), overwrite = true)
+        }
+
+        val appRun = File(targetAppDir, "AppRun")
+        appRun.writeText(
+            """
+            #!/bin/sh
+            HERE="${'$'}(dirname "${'$'}(readlink -f "${'$'}{0}")")"
+            export MALLOC_ARENA_MAX=2
+            export PATH="${'$'}{HERE}/bin:${'$'}{PATH}"
+            export LD_LIBRARY_PATH="${'$'}{HERE}/lib:${'$'}{LD_LIBRARY_PATH}"
+            exec "${'$'}{HERE}/bin/Melo" "${'$'}@"
+            """.trimIndent() + "\n"
+        )
+        appRun.setExecutable(true, false)
+
+        val toolDir = layout.buildDirectory.dir("tmp/appimagetool").get().asFile
+        toolDir.mkdirs()
+        val toolBin = File(toolDir, "appimagetool")
+
+        val systemTool = listOf("/usr/bin/appimagetool", "/usr/local/bin/appimagetool")
+            .firstOrNull { File(it).exists() }
+
+        val toolExec = if (systemTool != null) {
+            systemTool
+        } else {
+            if (!toolBin.exists() || toolBin.length() < 1_000_000L) {
+                logger.lifecycle("Downloading appimagetool for AppImage generation (~14 MB)...")
+                URI.create("https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage")
+                    .toURL().openStream().use { input ->
+                        toolBin.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                toolBin.setExecutable(true, false)
+            }
+            toolBin.absolutePath
+        }
+
+        logger.lifecycle("Building AppImage with ${toolExec}...")
+        val appImageOutputFile = File(outDirFile, "Melo-1.0.1-x86_64.AppImage")
+
+        val process = ProcessBuilder(
+            toolExec,
+            "--appimage-extract-and-run",
+            targetAppDir.absolutePath,
+            appImageOutputFile.absolutePath
+        )
+            .directory(targetAppDir)
+            .apply {
+                environment()["ARCH"] = "x86_64"
+            }
+            .inheritIO()
+            .start()
+
+        val exitCode = process.waitFor()
+        if (exitCode != 0) {
+            throw GradleException("appimagetool failed with exit code $exitCode")
+        }
+        logger.lifecycle("AppImage generated at: ${appImageOutputFile.absolutePath}")
     }
 }
 

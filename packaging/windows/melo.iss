@@ -58,8 +58,8 @@ CloseApplicationsFilter=*.exe
 RestartApplications=no
 
 [Languages]
-Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -84,8 +84,8 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     MsgResult := MsgBox(
-      '¿Deseas eliminar también todos tus datos de configuración, historial y caché de Melo?' + #13#10#13#10 +
-      'Si seleccionas "No", tus preferencias y biblioteca se mantendrán por si decides reinstalar la aplicación.',
+      'Do you also want to delete all your Melo settings, playback history, and cache?' + #13#10#13#10 +
+      'If you select "No", your preferences and library will be preserved in case you reinstall the application.',
       mbConfirmation, MB_YESNO or MB_DEFBUTTON2
     );
     if MsgResult = IDYES then

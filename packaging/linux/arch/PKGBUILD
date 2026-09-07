@@ -1,0 +1,102 @@
+# Maintainer: Adriianh <https://github.com/Adriianh>
+pkgname=melo-bin
+_pkgname=melo
+pkgver=1.0.1
+pkgrel=1
+pkgdesc="Modern, fast music player for desktop (Compose Multiplatform GUI & TUI)"
+arch=('x86_64')
+url="https://github.com/Adriianh/Melo"
+license=('GPL-3.0-or-later')
+depends=(
+    'vlc'
+    'hicolor-icon-theme'
+    'glibc'
+    'alsa-lib'
+)
+optdepends=(
+    'pipewire-pulse: Modern low-latency audio server'
+    'pulseaudio: Traditional Linux audio server'
+)
+provides=('melo' 'melo-gui')
+conflicts=('melo')
+options=('!strip')
+
+source=(
+    "https://github.com/Adriianh/Melo/releases/download/v${pkgver}/melo-${pkgver}-linux-x64.tar.gz"
+    "melo.desktop"
+)
+sha256sums=(
+    'SKIP'
+    'SKIP'
+)
+
+package() {
+    install -dm755 "${pkgdir}/opt/${_pkgname}-gui"
+    cp -r "${srcdir}/${_pkgname}-${pkgver}/"* "${pkgdir}/opt/${_pkgname}-gui/"
+    chmod 755 "${pkgdir}/opt/${_pkgname}-gui/bin/Melo"
+    if [ -f "${pkgdir}/opt/${_pkgname}-gui/melo.sh" ]; then
+        chmod 755 "${pkgdir}/opt/${_pkgname}-gui/melo.sh"
+    fi
+
+    install -dm755 "${pkgdir}/usr/bin"
+
+    cat << 'EOF' > "${pkgdir}/usr/bin/${_pkgname}-gui"
+#!/bin/sh
+export MALLOC_ARENA_MAX=2
+EXEC="/opt/melo-gui/bin/Melo"
+if [ -f "/opt/melo-gui/melo.sh" ]; then
+    EXEC="/opt/melo-gui/melo.sh"
+fi
+exec "$EXEC" "$@"
+EOF
+    chmod 755 "${pkgdir}/usr/bin/${_pkgname}-gui"
+
+    cat << 'EOF' > "${pkgdir}/usr/bin/${_pkgname}"
+#!/usr/bin/env sh
+export MALLOC_ARENA_MAX=2
+
+GUI_BIN="/usr/bin/melo-gui"
+TUI_BIN=""
+if [ -x "/usr/bin/melo-tui" ]; then
+    TUI_BIN="/usr/bin/melo-tui"
+elif [ -x "$HOME/.local/bin/melo-tui" ]; then
+    TUI_BIN="$HOME/.local/bin/melo-tui"
+fi
+
+if [ "$1" = "--gui" ] || [ "$1" = "-g" ]; then
+    shift
+    exec "$GUI_BIN" "$@"
+fi
+
+if [ "$1" = "--tui" ] || [ "$1" = "-t" ]; then
+    shift
+    if [ -n "$TUI_BIN" ]; then
+        exec "$TUI_BIN" "$@"
+    else
+        echo "Error: Melo TUI is not installed." >&2
+        exit 1
+    fi
+fi
+
+if [ $# -gt 0 ]; then
+    if [ -n "$TUI_BIN" ]; then
+        exec "$TUI_BIN" "$@"
+    else
+        exec "$GUI_BIN" "$@"
+    fi
+fi
+
+if [ -n "$TUI_BIN" ] && [ -t 0 ] && [ -t 1 ]; then
+    exec "$TUI_BIN" "$@"
+fi
+
+exec "$GUI_BIN" "$@"
+EOF
+    chmod 755 "${pkgdir}/usr/bin/${_pkgname}"
+
+    install -Dm644 "${srcdir}/melo.desktop" "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+
+    if [ -f "${srcdir}/${_pkgname}-${pkgver}/lib/Melo.png" ]; then
+        install -Dm644 "${srcdir}/${_pkgname}-${pkgver}/lib/Melo.png" "${pkgdir}/usr/share/icons/hicolor/512x512/apps/${_pkgname}.png"
+    fi
+}

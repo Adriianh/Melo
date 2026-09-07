@@ -1,5 +1,5 @@
 param(
-    [string]$InstallDir = "$env:LOCALAPPDATA\melo",
+    [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui",
     [string]$ConfigDir  = "$env:APPDATA\melo"
 )
 
@@ -21,4 +21,4 @@ if (Test-Path $ConfigDir) {
     }
 }
 
-Write-Host "✓ Melo native binary uninstalled."
+Write-Host "✓ Melo TUI uninstalled successfully."
