@@ -23,6 +23,7 @@ data class SettingsActions(
     val onAddLocalPath: (String) -> Unit = {},
     val onRemoveLocalPath: (String) -> Unit = {},
     val onSyncHistoryToYouTubeChanged: (Boolean) -> Unit = {},
+    val onToggleAutoCheckUpdates: (Boolean) -> Unit = {},
     val onOpenLogin: () -> Unit,
     val onLogout: () -> Unit,
 )

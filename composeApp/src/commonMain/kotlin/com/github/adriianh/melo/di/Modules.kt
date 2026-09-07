@@ -15,6 +15,7 @@ import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.domain.repository.UpdateRepository
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
@@ -75,6 +76,8 @@ import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
+import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.manager.DownloadManagerImpl
 import com.github.adriianh.data.player.PlaybackManagerImpl
@@ -98,6 +101,7 @@ import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
+import com.github.adriianh.data.repository.UpdateRepositoryImpl
 import com.github.adriianh.melo.ui.SidebarViewModel
 import com.github.adriianh.melo.ui.detail.EntityDetailViewModel
 import com.github.adriianh.melo.ui.home.HomeViewModel
@@ -106,6 +110,8 @@ import com.github.adriianh.melo.ui.login.LoginViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchViewModel
+import com.github.adriianh.melo.ui.settings.UpdateViewModel
+import com.github.adriianh.melo.util.PlatformUpdateInstaller
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -215,6 +221,14 @@ val dataModule = module {
             ioDispatcher = MeloDispatchers.IO,
         )
     }
+
+    single<UpdateRepository> {
+        UpdateRepositoryImpl(
+            httpClient = get(),
+            dispatcher = MeloDispatchers.IO
+        )
+    }
+    singleOf(::PlatformUpdateInstaller)
 }
 
 val useCaseModule = module {
@@ -278,6 +292,8 @@ val useCaseModule = module {
     singleOf(::AutoCleanupUseCase)
     singleOf(::MarkTrackAccessedUseCase)
     singleOf(::UpdateTrackMetadataUseCase)
+    singleOf(::CheckForUpdateUseCase)
+    singleOf(::DownloadUpdateUseCase)
 }
 
 /**
@@ -320,6 +336,7 @@ val viewModelModule = module {
     viewModelOf(::SidebarViewModel)
     viewModelOf(::EntityDetailViewModel)
     viewModelOf(::SearchViewModel)
+    viewModelOf(::UpdateViewModel)
 }
 
 expect val platformModule: Module

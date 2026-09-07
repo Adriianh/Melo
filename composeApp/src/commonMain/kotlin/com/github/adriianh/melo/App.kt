@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -22,8 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
+import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
@@ -52,6 +55,7 @@ import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsDialog
 import com.github.adriianh.melo.ui.settings.SettingsSheet
+import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.MeloMotion
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
@@ -71,12 +75,20 @@ fun App(
 
     val playerViewModel: PlayerViewModel = koinViewModel()
     val loginViewModel: LoginViewModel = koinViewModel()
+    val updateViewModel: UpdateViewModel = koinViewModel()
     val getSettingsUseCase: GetSettingsUseCase = koinInject()
     val updateSettingsUseCase: UpdateSettingsUseCase = koinInject()
     val offlineRepository: OfflineRepository = koinInject()
     val coroutineScope = rememberCoroutineScope()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
     val settings by getSettingsUseCase().collectAsState(initial = Settings())
+    val updateState by updateViewModel.uiState.collectAsState()
+
+    LaunchedEffect(settings.autoCheckUpdates) {
+        if (settings.autoCheckUpdates) {
+            updateViewModel.checkForUpdates()
+        }
+    }
     val isSystemDark = isSystemInDarkTheme()
     val platform = remember { getPlatform() }
     val isDarkTheme = settings.themeMode.resolveDarkTheme(isSystemDark)
@@ -183,6 +195,40 @@ fun App(
                                     }
                                 }
                             )
+
+                            val currentUpdate = updateState
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = currentUpdate is UpdateState.UpdateAvailable,
+                                enter = slideInVertically() + fadeIn(),
+                                exit = slideOutVertically() + fadeOut()
+                            ) {
+                                if (currentUpdate is UpdateState.UpdateAvailable) {
+                                    androidx.compose.material3.Surface(
+                                        color = androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        androidx.compose.foundation.layout.Row(
+                                            modifier = Modifier.padding(
+                                                horizontal = 16.dp,
+                                                vertical = 8.dp
+                                            ),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            androidx.compose.material3.Text(
+                                                text = "Nueva versión ${currentUpdate.release.version} disponible",
+                                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                                                color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            androidx.compose.material3.TextButton(
+                                                onClick = { showSettingsSheet = true }
+                                            ) {
+                                                androidx.compose.material3.Text("Actualizar")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
 
                             Box(
                                 modifier = Modifier
@@ -437,6 +483,13 @@ fun App(
                                 coroutineScope.launch {
                                     updateSettingsUseCase { current ->
                                         current.copy(syncHistoryToYouTube = enabled)
+                                    }
+                                }
+                            },
+                            onToggleAutoCheckUpdates = { enabled ->
+                                coroutineScope.launch {
+                                    updateSettingsUseCase { current ->
+                                        current.copy(autoCheckUpdates = enabled)
                                     }
                                 }
                             },

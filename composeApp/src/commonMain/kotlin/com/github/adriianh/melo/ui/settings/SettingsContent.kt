@@ -73,6 +73,10 @@ internal fun SettingsContent(
         DownloadsSettingsSection(settings, actions)
         LocalFoldersSection(settings, actions)
         AccountSettingsSection(settings, isLoggedIn, actions)
+        UpdateSettingsSection(
+            autoCheckUpdates = settings.autoCheckUpdates,
+            onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
