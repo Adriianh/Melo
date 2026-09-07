@@ -28,6 +28,8 @@ import com.github.adriianh.melo.ui.library.components.LibraryNotLoggedInCard
 import com.github.adriianh.melo.ui.library.components.LibraryTabContent
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.getPlatform
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,14 +106,17 @@ fun LibraryScreen(
         onArtistClick = onArtistClick
     )
 
+    val platform = remember { getPlatform() }
+    val horizontalPadding = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .padding(
                 top = 16.dp,
-                start = 24.dp,
-                end = 24.dp,
+                start = horizontalPadding,
+                end = horizontalPadding,
                 bottom = paddingValues.calculateBottomPadding() + 16.dp
             ),
         verticalArrangement = Arrangement.spacedBy(16.dp)

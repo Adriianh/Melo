@@ -131,13 +131,16 @@ fun LibraryHeader(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = summaryText.ifBlank { profile?.channelHandle.orEmpty() },
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    val handle = profile?.channelHandle
+                    if (!handle.isNullOrBlank()) {
+                        Text(
+                            text = handle,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 
@@ -209,6 +212,17 @@ fun LibraryHeader(
                     )
                 }
             }
+        }
+
+        if (summaryText.isNotBlank()) {
+            Text(
+                text = summaryText,
+                style = MeloType.labelMedium,
+                color = MeloColors.textSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
+            )
         }
 
         AnimatedVisibility(

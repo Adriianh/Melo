@@ -363,6 +363,7 @@ internal fun DesktopPlayerBar(
 @Composable
 internal fun MobilePlayerBar(
     onOpenNowPlaying: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -371,9 +372,9 @@ internal fun MobilePlayerBar(
     if (!state.hasTrack) return
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth(0.94f)
-            .padding(horizontal = 4.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
     ) {
         Column(
             modifier = Modifier
