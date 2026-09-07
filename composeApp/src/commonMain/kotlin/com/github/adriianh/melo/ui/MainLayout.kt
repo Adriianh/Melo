@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -198,8 +201,11 @@ private fun MobileMainLayout(
     isSelectionMode: Boolean = false,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomClearance = navBarBottom + if (isSelectionMode) 90.dp else 180.dp
+
     Box(modifier = Modifier.fillMaxSize()) {
-        content(PaddingValues(bottom = if (isSelectionMode) 80.dp else 160.dp))
+        content(PaddingValues(bottom = bottomClearance))
 
         AnimatedVisibility(
             visible = !isSelectionMode,
@@ -216,7 +222,9 @@ private fun MobileMainLayout(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 100.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 86.dp),
+                contentAlignment = Alignment.Center
             ) {
                 MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
             }
@@ -237,7 +245,8 @@ private fun MobileMainLayout(
             Box(
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 20.dp)
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
                 FloatingNavigationBar(
                     selectedTab = selectedTab,

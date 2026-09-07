@@ -303,6 +303,7 @@ fun App(
                                         initialTitle = currentScreen.title,
                                         initialArtwork = currentScreen.artwork,
                                         initialAuthor = currentScreen.author,
+                                        bottomPadding = paddingValues,
                                         onBack = ::navigateBack,
                                         onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },
                                         onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) }
@@ -313,6 +314,7 @@ fun App(
                                         initialTitle = currentScreen.title,
                                         initialArtwork = currentScreen.artwork,
                                         initialAuthor = currentScreen.author,
+                                        bottomPadding = paddingValues,
                                         onBack = ::navigateBack,
                                         onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) }
                                     )
@@ -321,6 +323,7 @@ fun App(
                                         artistId = currentScreen.id,
                                         initialName = currentScreen.name,
                                         initialArtwork = currentScreen.artwork,
+                                        bottomPadding = paddingValues,
                                         onBack = ::navigateBack,
                                         onAlbumClick = { id -> navigateTo(ScreenRoute.Album(id)) },
                                         onArtistClick = { id -> navigateTo(ScreenRoute.Artist(id)) },

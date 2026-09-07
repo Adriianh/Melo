@@ -70,6 +70,7 @@ fun PlaylistDetailScreen(
     initialTitle: String = "",
     initialArtwork: String? = null,
     initialAuthor: String = "",
+    bottomPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     playerViewModel: PlayerViewModel = koinViewModel(),
@@ -297,7 +298,7 @@ fun PlaylistDetailScreen(
                         .padding(paddingValues)
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
+                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding())
                 ) {
                     item {
                         EntityHeaderCard(

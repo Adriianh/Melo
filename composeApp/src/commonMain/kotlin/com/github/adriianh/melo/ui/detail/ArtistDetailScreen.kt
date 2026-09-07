@@ -59,6 +59,7 @@ fun ArtistDetailScreen(
     onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     initialName: String = "",
     initialArtwork: String? = null,
+    bottomPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: EntityDetailViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     playerViewModel: PlayerViewModel = koinViewModel(),
@@ -164,7 +165,7 @@ fun ArtistDetailScreen(
                         .fillMaxSize()
                         .padding(paddingValues),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
+                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding())
                 ) {
                     item {
                         ArtistHeaderCard(
