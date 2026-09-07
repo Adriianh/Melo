@@ -2,6 +2,8 @@ package com.github.adriianh.core.domain.player
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -22,6 +24,7 @@ import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -83,7 +86,18 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     private val mediaSourceFactory = DefaultMediaSourceFactory(context)
         .setDataSourceFactory(cacheDataSourceFactory)
 
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private inline fun runOnMain(crossinline action: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            action()
+        } else {
+            mainHandler.post { action() }
+        }
+    }
+
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
+        .setLooper(Looper.getMainLooper())
         .setMediaSourceFactory(mediaSourceFactory)
         .setLoadControl(loadControl)
         .setAudioAttributes(audioAttributes, true)
@@ -130,56 +144,75 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
             .setMediaMetadata(metadata)
             .build()
 
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        _state.update {
-            it.copy(
-                currentTrack = track,
-                progressMs = 0,
-                durationMs = track.durationMs,
-                isFinished = false
-            )
+        runOnMain {
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            _state.update {
+                it.copy(
+                    currentTrack = track,
+                    progressMs = 0,
+                    durationMs = track.durationMs,
+                    isFinished = false
+                )
+            }
+            exoPlayer.play()
         }
-        play()
     }
 
     override fun play() {
-        exoPlayer.play()
+        runOnMain {
+            exoPlayer.play()
+        }
     }
 
     override fun pause() {
-        exoPlayer.pause()
+        runOnMain {
+            exoPlayer.pause()
+        }
     }
 
     override fun stop() {
-        exoPlayer.stop()
+        runOnMain {
+            exoPlayer.stop()
+        }
     }
 
     override fun seekTo(positionMs: Long) {
-        exoPlayer.seekTo(positionMs)
+        runOnMain {
+            exoPlayer.seekTo(positionMs)
+        }
     }
 
     override fun setVolume(volume: Float) {
-        exoPlayer.volume = volume.coerceIn(0f, 1f)
+        runOnMain {
+            exoPlayer.volume = volume.coerceIn(0f, 1f)
+        }
     }
 
     override fun release() {
         stopProgressUpdate()
-        exoPlayer.release()
+        scope.cancel()
+        runOnMain {
+            exoPlayer.release()
+        }
     }
 
     private fun startProgressUpdate() {
-        progressJob?.cancel()
-        progressJob = scope.launch {
-            while (true) {
-                _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
-                delay(200.milliseconds)
+        runOnMain {
+            progressJob?.cancel()
+            progressJob = scope.launch {
+                while (true) {
+                    _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
+                    delay(200.milliseconds)
+                }
             }
         }
     }
 
     private fun stopProgressUpdate() {
-        progressJob?.cancel()
-        progressJob = null
+        runOnMain {
+            progressJob?.cancel()
+            progressJob = null
+        }
     }
 }
