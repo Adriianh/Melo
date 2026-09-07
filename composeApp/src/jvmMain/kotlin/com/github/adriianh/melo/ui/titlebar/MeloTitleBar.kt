@@ -1,34 +1,42 @@
 package com.github.adriianh.melo.ui.titlebar
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowScope
-import com.github.adriianh.melo.util.DarkMeloColors
-import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.util.LocalMeloColors
 
 @Composable
 fun WindowScope.MeloTitleBar(
@@ -37,12 +45,13 @@ fun WindowScope.MeloTitleBar(
     modifier: Modifier = Modifier
 ) {
     val isMaximized = windowManager.isMaximized
+    val meloColors = LocalMeloColors.current
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(32.dp)
-            .background(DarkMeloColors.surface0),
+            .height(36.dp)
+            .background(Color.Transparent),
         verticalAlignment = Alignment.CenterVertically
     ) {
         WindowDraggableArea(
@@ -64,55 +73,82 @@ fun WindowScope.MeloTitleBar(
         }
 
         Row(
-            modifier = Modifier.fillMaxHeight(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             TitleBarButton(
                 onClick = { windowManager.minimize() },
-                hoverBackground = Color.White.copy(alpha = 0.08f)
+                hoverBackground = if (meloColors.isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(
+                    alpha = 0.08f
+                ),
+                hoverContentColor = meloColors.textPrimary,
+                normalTint = meloColors.textMuted
             ) { tint ->
-                Canvas(modifier = Modifier.size(10.dp)) {
-                    val y = size.height * 0.85f
+                Canvas(modifier = Modifier.size(11.dp)) {
+                    val y = size.height / 2f
+                    val stroke = 1.8.dp.toPx()
                     drawLine(
                         color = tint,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = 1.5f
+                        start = Offset(1.2.dp.toPx(), y),
+                        end = Offset(size.width - 1.2.dp.toPx(), y),
+                        strokeWidth = stroke,
+                        cap = StrokeCap.Round
                     )
                 }
             }
 
             TitleBarButton(
                 onClick = { windowManager.toggleMaximize() },
-                hoverBackground = Color.White.copy(alpha = 0.08f)
+                hoverBackground = if (meloColors.isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(
+                    alpha = 0.08f
+                ),
+                hoverContentColor = meloColors.textPrimary,
+                normalTint = meloColors.textMuted
             ) { tint ->
-                Canvas(modifier = Modifier.size(10.dp)) {
+                Canvas(modifier = Modifier.size(11.dp)) {
                     if (isMaximized) {
-                        // Restore icon: two overlapping rectangles
-                        val offset = 2.5f
-                        val rectSize = size.width - offset
+                        val stroke = 1.3.dp.toPx()
+                        val offset = 2.4.dp.toPx()
+                        val rWidth = size.width - offset
+                        val rHeight = size.height - offset
+                        val cr = CornerRadius(1.8.dp.toPx(), 1.8.dp.toPx())
 
-                        drawLine(tint, Offset(offset, 0f), Offset(size.width, 0f), 1.5f)
-                        drawLine(tint, Offset(size.width, 0f), Offset(size.width, rectSize), 1.5f)
-                        drawLine(
-                            tint,
-                            Offset(rectSize, rectSize),
-                            Offset(size.width, rectSize),
-                            1.5f
+                        val backPath = Path().apply {
+                            moveTo(offset + cr.x, 0f)
+                            lineTo(size.width - cr.x, 0f)
+                            quadraticTo(size.width, 0f, size.width, cr.y)
+                            lineTo(size.width, rHeight)
+                        }
+                        drawPath(
+                            path = backPath,
+                            color = tint.copy(alpha = 0.75f),
+                            style = Stroke(
+                                width = stroke,
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round
+                            )
                         )
-                        drawLine(tint, Offset(offset, 0f), Offset(offset, offset), 1.5f)
-                        drawRect(
+
+                        drawRoundRect(
                             color = tint,
                             topLeft = Offset(0f, offset),
-                            size = Size(rectSize, rectSize),
-                            style = Stroke(width = 1.5f)
+                            size = Size(rWidth, rHeight),
+                            cornerRadius = cr,
+                            style = Stroke(width = stroke)
                         )
                     } else {
-                        drawRect(
+                        val stroke = 1.4.dp.toPx()
+                        val halfStroke = stroke / 2f
+                        val cr = CornerRadius(2.2.dp.toPx(), 2.2.dp.toPx())
+                        drawRoundRect(
                             color = tint,
-                            topLeft = Offset.Zero,
-                            size = size,
-                            style = Stroke(width = 1.5f)
+                            topLeft = Offset(halfStroke, halfStroke),
+                            size = Size(size.width - stroke, size.height - stroke),
+                            cornerRadius = cr,
+                            style = Stroke(width = stroke)
                         )
                     }
                 }
@@ -120,21 +156,26 @@ fun WindowScope.MeloTitleBar(
 
             TitleBarButton(
                 onClick = onClose,
-                hoverBackground = Color(0xFFE81123),
-                hoverContentColor = Color.White
+                hoverBackground = Color(0xFFFF2D55),
+                hoverContentColor = Color.White,
+                normalTint = meloColors.textMuted
             ) { tint ->
-                Canvas(modifier = Modifier.size(10.dp)) {
+                Canvas(modifier = Modifier.size(11.dp)) {
+                    val pad = 1.2.dp.toPx()
+                    val stroke = 1.6.dp.toPx()
                     drawLine(
                         color = tint,
-                        start = Offset(0.5f, 0.5f),
-                        end = Offset(size.width - 0.5f, size.height - 0.5f),
-                        strokeWidth = 1.5f
+                        start = Offset(pad, pad),
+                        end = Offset(size.width - pad, size.height - pad),
+                        strokeWidth = stroke,
+                        cap = StrokeCap.Round
                     )
                     drawLine(
                         color = tint,
-                        start = Offset(size.width - 0.5f, 0.5f),
-                        end = Offset(0.5f, size.height - 0.5f),
-                        strokeWidth = 1.5f
+                        start = Offset(size.width - pad, pad),
+                        end = Offset(pad, size.height - pad),
+                        strokeWidth = stroke,
+                        cap = StrokeCap.Round
                     )
                 }
             }
@@ -146,19 +187,28 @@ fun WindowScope.MeloTitleBar(
 private fun TitleBarButton(
     onClick: () -> Unit,
     hoverBackground: Color,
-    hoverContentColor: Color = Color.White,
+    hoverContentColor: Color,
+    normalTint: Color,
     content: @Composable (tint: Color) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
-    val currentBg = if (isHovered) hoverBackground else Color.Transparent
-    val currentTint = if (isHovered) hoverContentColor else MeloColors.textMuted
+    val currentBg by animateColorAsState(
+        targetValue = if (isHovered) hoverBackground else Color.Transparent,
+        animationSpec = tween(durationMillis = 150),
+        label = "TitleBarButtonBg"
+    )
+    val currentTint by animateColorAsState(
+        targetValue = if (isHovered) hoverContentColor else normalTint,
+        animationSpec = tween(durationMillis = 150),
+        label = "TitleBarButtonTint"
+    )
 
     Box(
         modifier = Modifier
-            .width(46.dp)
-            .fillMaxHeight()
+            .size(28.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(currentBg)
             .clickable(
                 interactionSource = interactionSource,

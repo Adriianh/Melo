@@ -1,6 +1,5 @@
 package com.github.adriianh.melo
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -65,7 +64,9 @@ import org.koin.compose.viewmodel.koinViewModel
 expect fun InitImageLoader()
 
 @Composable
-fun App() {
+fun App(
+    titleBar: @Composable () -> Unit = {}
+) {
     InitImageLoader()
 
     val playerViewModel: PlayerViewModel = koinViewModel()
@@ -125,8 +126,14 @@ fun App() {
                 accentColor = finalAccent,
                 modifier = Modifier.fillMaxSize()
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AdaptiveScaffold(
+                Column(modifier = Modifier.fillMaxSize()) {
+                    titleBar()
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        AdaptiveScaffold(
                         selectedTab = selectedTab,
                         isSelectionMode = isSelectionMode.value,
                         onTabSelected = { tab ->
@@ -285,7 +292,7 @@ fun App() {
                         }
                     }
 
-                    AnimatedVisibility(
+                        androidx.compose.animation.AnimatedVisibility(
                         visible = isNowPlayingExpanded,
                         enter = slideInVertically(
                             initialOffsetY = { it },
@@ -470,4 +477,5 @@ fun App() {
             }
         }
     }
+}
 }

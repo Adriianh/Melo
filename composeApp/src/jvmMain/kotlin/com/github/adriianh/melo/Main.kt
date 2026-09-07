@@ -1,14 +1,8 @@
 package com.github.adriianh.melo
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -21,7 +15,6 @@ import com.github.adriianh.melo.di.initKoin
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
-import com.github.adriianh.melo.util.DarkMeloColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,26 +83,17 @@ fun main() {
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(DarkMeloColors.surface0)
-            ) {
-                MeloTitleBar(
-                    windowManager = windowManager,
-                    onClose = {
-                        koinApp.koin.getOrNull<MediaSessionManager>()?.release()
-                        exitApplication()
-                    }
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) {
-                    App()
+            App(
+                titleBar = {
+                    MeloTitleBar(
+                        windowManager = windowManager,
+                        onClose = {
+                            koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                            exitApplication()
+                        }
+                    )
                 }
-            }
+            )
         }
     }
 }
