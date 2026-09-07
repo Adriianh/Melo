@@ -159,6 +159,10 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         exoPlayer.seekTo(positionMs)
     }
 
+    override fun setVolume(volume: Float) {
+        exoPlayer.volume = volume.coerceIn(0f, 1f)
+    }
+
     override fun release() {
         stopProgressUpdate()
         exoPlayer.release()

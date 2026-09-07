@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -32,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -179,10 +184,38 @@ internal fun DesktopPlayerBar(
                 }
 
                 Row(
-                    modifier = Modifier.width(220.dp),
+                    modifier = Modifier.width(320.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val volume by viewModel.volume.collectAsState()
+                    val volumeIcon = when {
+                        volume <= 0.01f -> Icons.AutoMirrored.Filled.VolumeOff
+                        volume < 0.5f -> Icons.AutoMirrored.Filled.VolumeDown
+                        else -> Icons.AutoMirrored.Filled.VolumeUp
+                    }
+
+                    IconButton(onClick = viewModel::toggleMute) {
+                        Icon(
+                            imageVector = volumeIcon,
+                            contentDescription = if (volume <= 0.01f) "Activar sonido" else "Silenciar",
+                            tint = if (volume <= 0.01f) MeloColors.textMuted else MeloColors.textPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Slider(
+                        value = volume,
+                        onValueChange = viewModel::setVolume,
+                        valueRange = 0f..1f,
+                        modifier = Modifier.width(84.dp).padding(end = 6.dp),
+                        colors = SliderDefaults.colors(
+                            thumbColor = activeAccent,
+                            activeTrackColor = activeAccent,
+                            inactiveTrackColor = MeloColors.border
+                        )
+                    )
+
                     IconButton(onClick = onToggleLyrics) {
                         Icon(
                             Icons.Outlined.Mic,

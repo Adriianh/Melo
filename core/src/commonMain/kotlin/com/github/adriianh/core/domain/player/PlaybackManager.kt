@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface PlaybackManager {
     val playbackState: StateFlow<PlaybackState>
     val queueState: StateFlow<QueueState>
+    val volume: StateFlow<Float>
 
     fun playTrack(track: Track)
     fun playTrackInQueue(track: Track)
@@ -20,5 +21,7 @@ interface PlaybackManager {
     fun toggleShuffle()
     fun toggleRepeat()
     fun seekTo(positionMs: Long)
+    fun setVolume(volume: Float)
+    fun toggleMute()
     fun release()
 }

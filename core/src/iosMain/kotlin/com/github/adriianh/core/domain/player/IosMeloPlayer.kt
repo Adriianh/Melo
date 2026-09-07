@@ -68,6 +68,10 @@ class IosMeloPlayer : MeloPlayer {
         player.seekToTime(time)
     }
 
+    override fun setVolume(volume: Float) {
+        player.volume = volume.coerceIn(0f, 1f)
+    }
+
     override fun release() {
         stopProgressUpdate()
         stop()

@@ -53,6 +53,7 @@ class JvmMeloPlayer : MeloPlayer {
     private var progressJob: Job? = null
     private val loadStartTimes = ConcurrentHashMap<String, Long>()
     private var lastLoadedTrackId: String? = null
+    private var currentVolume = 75
 
     init {
         mediaPlayer?.events()?.addMediaPlayerEventListener(
@@ -68,9 +69,9 @@ class JvmMeloPlayer : MeloPlayer {
                     }
                     scope.launch {
                         delay(500.milliseconds)
-                        mediaPlayer?.audio()?.setVolume(75)
+                        mediaPlayer?.audio()?.setVolume(currentVolume)
                         delay(2000.milliseconds)
-                        mediaPlayer?.audio()?.setVolume(75)
+                        mediaPlayer?.audio()?.setVolume(currentVolume)
                     }
                     startProgressUpdate()
                     val id = lastLoadedTrackId ?: _state.value.currentTrack?.id
@@ -115,7 +116,7 @@ class JvmMeloPlayer : MeloPlayer {
                 }
             }
         )
-        mediaPlayer?.audio()?.setVolume(75)
+        mediaPlayer?.audio()?.setVolume(currentVolume)
     }
 
     override fun load(url: String, track: Track) {
@@ -130,7 +131,6 @@ class JvmMeloPlayer : MeloPlayer {
             }
             return
         }
-        player.controls().stop()
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -144,16 +144,20 @@ class JvmMeloPlayer : MeloPlayer {
         val now = System.currentTimeMillis()
         lastLoadedTrackId = track.id
         loadStartTimes[track.id] = now
-        val (mediaTarget, options) = resolveMediaTarget(url)
-        try {
-            player.media().play(mediaTarget, *options)
-        } catch (e: Throwable) {
-            _state.update {
-                it.copy(
-                    isBuffering = false,
-                    isPlaying = false,
-                    error = "Playback error: ${e.message}"
-                )
+        scope.launch(Dispatchers.IO) {
+            try {
+                player.controls().stop()
+                val (mediaTarget, options) = resolveMediaTarget(url)
+                player.media().play(mediaTarget, *options)
+                player.audio().setVolume(currentVolume)
+            } catch (e: Throwable) {
+                _state.update {
+                    it.copy(
+                        isBuffering = false,
+                        isPlaying = false,
+                        error = "Playback error: ${e.message}"
+                    )
+                }
             }
         }
     }
@@ -186,7 +190,7 @@ class JvmMeloPlayer : MeloPlayer {
 
     override fun play() {
         mediaPlayer?.controls()?.play()
-        mediaPlayer?.audio()?.setVolume(75)
+        mediaPlayer?.audio()?.setVolume(currentVolume)
     }
 
     override fun pause() {
@@ -208,6 +212,11 @@ class JvmMeloPlayer : MeloPlayer {
 
     override fun seekTo(positionMs: Long) {
         mediaPlayer?.controls()?.setTime(positionMs)
+    }
+
+    override fun setVolume(volume: Float) {
+        currentVolume = (volume * 100).toInt().coerceIn(0, 100)
+        mediaPlayer?.audio()?.setVolume(currentVolume)
     }
 
     override fun release() {

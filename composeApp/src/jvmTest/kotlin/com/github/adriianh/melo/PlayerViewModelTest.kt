@@ -38,6 +38,7 @@ class PlayerViewModelTest {
     private val playbackManager = mockk<PlaybackManager>(relaxed = true)
     private val playbackFlow = MutableStateFlow(PlaybackState())
     private val queueFlow = MutableStateFlow(QueueState())
+    private val volumeFlow = MutableStateFlow(1f)
     private val httpClient = mockk<HttpClient>(relaxed = true)
     private val toggleLikeTrackUseCase = mockk<ToggleLikeTrackUseCase>(relaxed = true)
     private val recordPlayUseCase = mockk<RecordPlayUseCase>(relaxed = true)
@@ -50,6 +51,7 @@ class PlayerViewModelTest {
         Dispatchers.setMain(testDispatcher)
         every { playbackManager.playbackState } returns playbackFlow
         every { playbackManager.queueState } returns queueFlow
+        every { playbackManager.volume } returns volumeFlow
     }
 
     @AfterTest
@@ -185,5 +187,17 @@ class PlayerViewModelTest {
     fun `toggleRepeat calls manager`() {
         createVm().toggleRepeat()
         verify { playbackManager.toggleRepeat() }
+    }
+
+    @Test
+    fun `setVolume calls manager`() {
+        createVm().setVolume(0.5f)
+        verify { playbackManager.setVolume(0.5f) }
+    }
+
+    @Test
+    fun `toggleMute calls manager`() {
+        createVm().toggleMute()
+        verify { playbackManager.toggleMute() }
     }
 }

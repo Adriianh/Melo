@@ -421,6 +421,7 @@ class PlaybackManagerTest {
     fun `auto-caching invokes downloadManager cacheTrack`() = runTest {
         coEvery { getStreamUseCase(any()) } returns "http://stream.url"
         val downloadManager = mockk<com.github.adriianh.core.domain.manager.DownloadManager>(relaxed = true)
+        every { downloadManager.activeDownloads } returns MutableStateFlow(emptyMap())
         coEvery { downloadManager.cacheTrack(any()) } returns true
 
         val scope = managerScope()

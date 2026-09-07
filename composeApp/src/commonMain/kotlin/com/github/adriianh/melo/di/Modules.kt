@@ -211,6 +211,8 @@ val dataModule = module {
             downloadManager = getOrNull(),
             offlineRepository = getOrNull(),
             recordPlayUseCase = getOrNull(),
+            updateSettingsUseCase = getOrNull(),
+            ioDispatcher = MeloDispatchers.IO,
         )
     }
 }

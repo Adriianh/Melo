@@ -11,5 +11,6 @@ interface MeloPlayer {
     fun pause()
     fun stop()
     fun seekTo(positionMs: Long)
+    fun setVolume(volume: Float)
     fun release()
 }

@@ -233,6 +233,12 @@ class PlayerViewModel(
 
     fun toggleRepeat() = manager.toggleRepeat()
 
+    val volume: StateFlow<Float> = manager.volume
+
+    fun setVolume(volume: Float) = manager.setVolume(volume)
+
+    fun toggleMute() = manager.toggleMute()
+
     fun toggleFavorite() {
         val track = manager.playbackState.value.currentTrack ?: return
         val videoId = track.sourceId ?: return

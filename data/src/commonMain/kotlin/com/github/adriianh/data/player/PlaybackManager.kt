@@ -13,11 +13,15 @@ import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,12 +37,23 @@ class PlaybackManagerImpl(
     private val downloadManager: DownloadManager? = null,
     private val offlineRepository: OfflineRepository? = null,
     private val recordPlayUseCase: RecordPlayUseCase? = null,
+    private val updateSettingsUseCase: UpdateSettingsUseCase? = null,
+    ioDispatcher: CoroutineDispatcher? = null,
 ) : PlaybackManager {
+
+    private val dispatcher: CoroutineDispatcher =
+        ioDispatcher
+            ?: (scope.coroutineContext[kotlin.coroutines.ContinuationInterceptor] as? CoroutineDispatcher)
+            ?: MeloDispatchers.IO
 
     override val playbackState: StateFlow<PlaybackState> = meloPlayer.state
 
     private val _queueState = MutableStateFlow(QueueState())
     override val queueState: StateFlow<QueueState> = _queueState.asStateFlow()
+
+    private val _volume = MutableStateFlow(0.75f)
+    override val volume: StateFlow<Float> = _volume.asStateFlow()
+    private var lastUnmutedVolume: Float = 0.75f
 
     private val prefetchCache = mutableMapOf<String, String>()
     private val cacheMutex = Mutex()
@@ -48,7 +63,20 @@ class PlaybackManagerImpl(
     private var lastHandledFinishedTrackId: String? = null
 
     init {
-        scope.launch {
+        meloPlayer.setVolume(_volume.value)
+        scope.launch(dispatcher) {
+            getSettingsUseCase?.invoke()?.collectLatest { s ->
+                val newVol = (s.volume.toFloat() / 100f).coerceIn(0f, 1f)
+                if (newVol > 0.05f) {
+                    lastUnmutedVolume = newVol
+                }
+                if (kotlin.math.abs(_volume.value - newVol) > 0.01f) {
+                    _volume.value = newVol
+                    meloPlayer.setVolume(newVol)
+                }
+            }
+        }
+        scope.launch(dispatcher) {
             meloPlayer.state.collect { state ->
                 val trackId = state.currentTrack?.id
                 if (state.isFinished && state.error == null) {
@@ -89,6 +117,35 @@ class PlaybackManagerImpl(
         meloPlayer.seekTo(positionMs)
     }
 
+    override fun setVolume(volume: Float) {
+        val clamped = volume.coerceIn(0f, 1f)
+        _volume.value = clamped
+        if (clamped > 0.05f) {
+            lastUnmutedVolume = clamped
+        }
+        meloPlayer.setVolume(clamped)
+        getSettingsUseCase?.let { getSettings ->
+            updateSettingsUseCase?.let { updateSettings ->
+                scope.launch(dispatcher) {
+                    val currentSettings = getSettings.getSnapshot()
+                    val volInt = (clamped * 100).toInt()
+                    if (currentSettings.volume != volInt) {
+                        updateSettings(currentSettings.copy(volume = volInt))
+                    }
+                }
+            }
+        }
+    }
+
+    override fun toggleMute() {
+        if (_volume.value > 0.01f) {
+            lastUnmutedVolume = _volume.value
+            setVolume(0f)
+        } else {
+            setVolume(lastUnmutedVolume)
+        }
+    }
+
     override fun release() {
         playJob?.cancel()
         prefetchJob?.cancel()
@@ -96,7 +153,7 @@ class PlaybackManagerImpl(
     }
 
     override fun setQueue(tracks: List<Track>, startIndex: Int) {
-        scope.launch { cacheMutex.withLock { prefetchCache.clear() } }
+        scope.launch(dispatcher) { cacheMutex.withLock { prefetchCache.clear() } }
         val validIndex = if (tracks.isEmpty()) -1 else startIndex.coerceIn(0, tracks.lastIndex)
         _queueState.update { it.copy(tracks = tracks, currentIndex = validIndex) }
         if (validIndex >= 0) {
@@ -221,11 +278,28 @@ class PlaybackManagerImpl(
     private fun playCurrentQueueTrack() {
         val track = _queueState.value.currentTrack ?: return
         playJob?.cancel()
-        playJob = scope.launch {
+        playJob = scope.launch(dispatcher) {
+            val isActivelyDownloading = downloadManager?.activeDownloads?.value?.let { activeMap ->
+                activeMap.isNotEmpty() && (activeMap.containsKey(track.id) || activeMap.containsKey(
+                    track.id.removePrefix("piped:")
+                ))
+            } == true
+            if (isActivelyDownloading) {
+                // Do not attempt to play an incomplete/actively downloading file
+                if (_queueState.value.hasNext) {
+                    playNext()
+                } else {
+                    meloPlayer.stop()
+                }
+                return@launch
+            }
+
             val settings = getSettingsUseCase?.invoke()?.firstOrNull()
             val isOfflineMode = settings?.offlineMode == true
+            val offlineTrack = offlineRepository?.getOfflineTrack(track.id)
+            val offlinePath = offlineTrack?.localFilePath
             val isTrackAvailableOffline = track.id.startsWith("local:") ||
-                (offlineRepository?.getOfflineTrack(track.id)?.downloadStatus == DownloadStatus.COMPLETED)
+                    (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED)
 
             if (isOfflineMode && !isTrackAvailableOffline) {
                 val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
@@ -253,7 +327,7 @@ class PlaybackManagerImpl(
                 }
             meloPlayer.load(url, track)
 
-            launch {
+            launch(dispatcher) {
                 try {
                     recordPlayUseCase?.invoke(track)
                 } catch (_: Exception) {
@@ -261,7 +335,7 @@ class PlaybackManagerImpl(
             }
 
             if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
-                launch {
+                launch(dispatcher) {
                     downloadManager?.cacheTrack(track)
                 }
             }
@@ -281,7 +355,7 @@ class PlaybackManagerImpl(
         val nextIndices = (q.currentIndex + 1 until minOf(queueTracks.size, q.currentIndex + 4))
         if (nextIndices.isEmpty()) return
 
-        prefetchJob = scope.launch {
+        prefetchJob = scope.launch(dispatcher) {
             for (idx in nextIndices) {
                 val nextTrack = queueTracks.getOrNull(idx) ?: continue
                 val alreadyCached = cacheMutex.withLock { nextTrack.id in prefetchCache }
