@@ -20,117 +20,113 @@ import java.util.logging.Logger
 import kotlin.time.Duration.Companion.milliseconds
 
 class JvmMeloPlayer : MeloPlayer {
-    private val factory: MediaPlayerFactory? = try {
-        val args = mutableListOf(
-            "--no-video",
-            "--no-xlib",
-            "--no-osd",
-            "--no-sub-autodetect-file",
-            "--no-spu",
-            "--no-stats",
-            "--no-snapshot-preview",
-            "--network-caching=1500",
-            "--file-caching=1000",
-            "--clock-jitter=0",
-        )
-        detectedPluginsDir?.let {
-            args.add("--plugin-path=${it.absolutePath}")
-        }
-        MediaPlayerFactory(args)
-    } catch (e: Throwable) {
-        log.warning("Could not initialize VLC MediaPlayerFactory: ${e.message}")
-        null
-    }
-    private val mediaPlayer: MediaPlayer? = factory?.mediaPlayers()?.newMediaPlayer()
-    private val _state = MutableStateFlow(
-        PlaybackState(
-            error = if (mediaPlayer == null) "VLC media engine could not be loaded." else null
-        )
-    )
+    private var factory: MediaPlayerFactory? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
+    private val scope = CoroutineScope(Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
     private var progressJob: Job? = null
     private val loadStartTimes = ConcurrentHashMap<String, Long>()
     private var lastLoadedTrackId: String? = null
     private var currentVolume = 75
 
-    init {
-        mediaPlayer?.events()?.addMediaPlayerEventListener(
-            object : MediaPlayerEventAdapter() {
-                override fun playing(mediaPlayer: MediaPlayer?) {
-                    _state.update {
-                        it.copy(
-                            isPlaying = true,
-                            isBuffering = false,
-                            isFinished = false,
-                            error = null
-                        )
-                    }
-                    scope.launch {
-                        delay(500.milliseconds)
-                        mediaPlayer?.audio()?.setVolume(currentVolume)
-                        delay(2000.milliseconds)
-                        mediaPlayer?.audio()?.setVolume(currentVolume)
-                    }
-                    startProgressUpdate()
-                    val id = lastLoadedTrackId ?: _state.value.currentTrack?.id
-                    if (id != null) {
-                        loadStartTimes.remove(id)
-                    }
-                }
+    private val initJob: Job = scope.launch(Dispatchers.IO) {
+        initializePlayer()
+    }
 
-                override fun buffering(mediaPlayer: MediaPlayer?, newCache: Float) {
-                    val isBuffering = newCache < 100f
-                    _state.update { it.copy(isBuffering = isBuffering) }
-                }
-
-                override fun paused(mediaPlayer: MediaPlayer?) {
-                    _state.update { it.copy(isPlaying = false) }
-                    stopProgressUpdate()
-                }
-
-                override fun stopped(mediaPlayer: MediaPlayer?) {
-                    _state.update { it.copy(isPlaying = false) }
-                    stopProgressUpdate()
-                }
-
-                override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) {
-                    _state.update { it.copy(durationMs = newLength) }
-                }
-
-                override fun error(mediaPlayer: MediaPlayer?) {
-                    _state.update {
-                        it.copy(
-                            isPlaying = false,
-                            isBuffering = false,
-                            isFinished = false,
-                            error = "Playback error: Check your internet connection or stream source."
-                        )
-                    }
-                }
-
-                override fun finished(mediaPlayer: MediaPlayer?) {
-                    _state.update { it.copy(isPlaying = false, isFinished = true) }
-                    stopProgressUpdate()
-                }
+    private fun initializePlayer() {
+        try {
+            val args = mutableListOf(
+                "--no-video",
+                "--no-xlib",
+                "--no-osd",
+                "--no-sub-autodetect-file",
+                "--no-spu",
+                "--no-stats",
+                "--no-snapshot-preview",
+                "--network-caching=1500",
+                "--file-caching=1000",
+                "--clock-jitter=0",
+            )
+            detectedPluginsDir?.let {
+                args.add("--plugin-path=${it.absolutePath}")
             }
-        )
-        mediaPlayer?.audio()?.setVolume(currentVolume)
+            val createdFactory = MediaPlayerFactory(args)
+            factory = createdFactory
+            val player = createdFactory.mediaPlayers().newMediaPlayer()
+            mediaPlayer = player
+
+            player.events().addMediaPlayerEventListener(
+                object : MediaPlayerEventAdapter() {
+                    override fun playing(mediaPlayer: MediaPlayer?) {
+                        _state.update {
+                            it.copy(
+                                isPlaying = true,
+                                isBuffering = false,
+                                isFinished = false,
+                                error = null
+                            )
+                        }
+                        scope.launch {
+                            delay(500.milliseconds)
+                            mediaPlayer?.audio()?.setVolume(currentVolume)
+                            delay(2000.milliseconds)
+                            mediaPlayer?.audio()?.setVolume(currentVolume)
+                        }
+                        startProgressUpdate()
+                        val id = lastLoadedTrackId ?: _state.value.currentTrack?.id
+                        if (id != null) {
+                            loadStartTimes.remove(id)
+                        }
+                    }
+
+                    override fun buffering(mediaPlayer: MediaPlayer?, newCache: Float) {
+                        val isBuffering = newCache < 100f
+                        _state.update { it.copy(isBuffering = isBuffering) }
+                    }
+
+                    override fun paused(mediaPlayer: MediaPlayer?) {
+                        _state.update { it.copy(isPlaying = false) }
+                        stopProgressUpdate()
+                    }
+
+                    override fun stopped(mediaPlayer: MediaPlayer?) {
+                        _state.update { it.copy(isPlaying = false) }
+                        stopProgressUpdate()
+                    }
+
+                    override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) {
+                        _state.update { it.copy(durationMs = newLength) }
+                    }
+
+                    override fun error(mediaPlayer: MediaPlayer?) {
+                        _state.update {
+                            it.copy(
+                                isPlaying = false,
+                                isBuffering = false,
+                                isFinished = false,
+                                error = "Playback error: Check your internet connection or stream source."
+                            )
+                        }
+                    }
+
+                    override fun finished(mediaPlayer: MediaPlayer?) {
+                        _state.update { it.copy(isPlaying = false, isFinished = true) }
+                        stopProgressUpdate()
+                    }
+                }
+            )
+            player.audio().setVolume(currentVolume)
+        } catch (e: Throwable) {
+            log.warning("Could not initialize VLC MediaPlayerFactory: ${e.message}")
+            _state.update {
+                it.copy(error = "VLC media engine could not be loaded: ${e.message}")
+            }
+        }
     }
 
     override fun load(url: String, track: Track) {
-        val player = mediaPlayer ?: run {
-            _state.update {
-                it.copy(
-                    currentTrack = track,
-                    isPlaying = false,
-                    isBuffering = false,
-                    error = "VLC media engine is not available. Please install VLC 64-bit."
-                )
-            }
-            return
-        }
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -145,6 +141,19 @@ class JvmMeloPlayer : MeloPlayer {
         lastLoadedTrackId = track.id
         loadStartTimes[track.id] = now
         scope.launch(Dispatchers.IO) {
+            initJob.join()
+            val player = mediaPlayer
+            if (player == null) {
+                _state.update {
+                    it.copy(
+                        currentTrack = track,
+                        isPlaying = false,
+                        isBuffering = false,
+                        error = "VLC media engine is not available. Please install VLC 64-bit."
+                    )
+                }
+                return@launch
+            }
             try {
                 player.controls().stop()
                 val (mediaTarget, options) = resolveMediaTarget(url)
@@ -190,18 +199,23 @@ class JvmMeloPlayer : MeloPlayer {
 
     override fun play() {
         _state.update { it.copy(isPlaying = true) }
-        mediaPlayer?.controls()?.play()
-        mediaPlayer?.audio()?.setVolume(currentVolume)
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.controls()?.play()
+            mediaPlayer?.audio()?.setVolume(currentVolume)
+        }
     }
 
     override fun pause() {
         _state.update { it.copy(isPlaying = false) }
         stopProgressUpdate()
-        mediaPlayer?.controls()?.setPause(true)
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.controls()?.setPause(true)
+        }
     }
 
     override fun stop() {
-        mediaPlayer?.controls()?.stop()
         stopProgressUpdate()
         _state.update {
             it.copy(
@@ -211,24 +225,37 @@ class JvmMeloPlayer : MeloPlayer {
                 error = null
             )
         }
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.controls()?.stop()
+        }
     }
 
     override fun seekTo(positionMs: Long) {
         _state.update { it.copy(progressMs = positionMs) }
-        mediaPlayer?.controls()?.setTime(positionMs)
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.controls()?.setTime(positionMs)
+        }
     }
 
     override fun setVolume(volume: Float) {
         val target = (volume * 100).toInt().coerceIn(0, 100)
         if (currentVolume == target) return
         currentVolume = target
-        mediaPlayer?.audio()?.setVolume(currentVolume)
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.audio()?.setVolume(currentVolume)
+        }
     }
 
     override fun release() {
         stopProgressUpdate()
-        mediaPlayer?.release()
-        factory?.release()
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            mediaPlayer?.release()
+            factory?.release()
+        }
     }
 
     private fun buildVlcOptions(url: String): Array<String> {

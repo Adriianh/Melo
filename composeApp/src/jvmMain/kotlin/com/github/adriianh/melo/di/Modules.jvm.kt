@@ -24,7 +24,7 @@ actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { JvmMeloPlayer() }
 
-    single<MediaSessionManager>(createdAtStart = true) {
+    single<MediaSessionManager> {
         JvmMediaSessionManager(
             playbackManager = get(),
             httpClient = get()
@@ -36,7 +36,7 @@ actual val platformModule: Module = module {
 
     single(named("configDirPath")) { dataDir.absolutePath }
 
-    single<AudioProvider>(createdAtStart = true) {
+    single<AudioProvider> {
         val ytDlpProvider = YtDlpAudioProvider(pipedApiClient = get<PipedApiClient>())
         val pipedProvider = PipedAudioProvider(
             apiClient = get<PipedApiClient>(),
