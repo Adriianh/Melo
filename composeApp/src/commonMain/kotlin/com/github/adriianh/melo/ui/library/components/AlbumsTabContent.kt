@@ -78,7 +78,7 @@ fun AlbumsTabContent(
                             text = album.title,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
@@ -122,13 +122,12 @@ fun AlbumsTabContent(
                             text = album.title,
                             style = MeloType.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             color = MeloColors.textPrimary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         val albumSubtitle = buildString {
-                            append("Álbum • ")
                             append(album.author)
                             if (!album.year.isNullOrBlank()) {
                                 append(" • ")

@@ -111,13 +111,13 @@ fun CustomPlaylistCompactRow(
                 text = playlist.name,
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = MeloColors.textPrimary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Playlist • Tuya • ${playlist.trackCount} canciones",
+                text = "Tuya • ${playlist.trackCount} canciones",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
@@ -172,13 +172,13 @@ fun RemotePlaylistCompactRow(
                 text = playlist.title,
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 color = MeloColors.textPrimary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Playlist • De ${playlist.author} • ${playlist.trackCount ?: 0} canciones",
+                text = "${playlist.author} • ${playlist.trackCount ?: 0} canciones",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,

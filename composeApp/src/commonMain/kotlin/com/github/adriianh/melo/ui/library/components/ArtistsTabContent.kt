@@ -73,7 +73,7 @@ fun ArtistsTabContent(
                         style = MeloType.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -109,16 +109,13 @@ fun ArtistsTabContent(
                             text = artist.name,
                             style = MeloType.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             color = MeloColors.textPrimary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        val artistSubtitle = if (!artist.subscriberCountText.isNullOrBlank()) {
-                            "Artista • ${artist.subscriberCountText}"
-                        } else {
-                            "Artista • En tu biblioteca"
-                        }
+                        val artistSubtitle = artist.subscriberCountText?.takeIf { it.isNotBlank() }
+                            ?: "En tu biblioteca"
                         Text(
                             text = artistSubtitle,
                             style = MeloType.labelSmall,

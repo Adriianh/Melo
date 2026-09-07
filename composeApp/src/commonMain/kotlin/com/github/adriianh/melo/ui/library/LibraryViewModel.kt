@@ -71,10 +71,10 @@ enum class LibraryCategory(
     val tabs: List<LibraryTab>
 ) {
     COLLECTION(
-        "Tu Colección",
+        "Colección",
         listOf(LibraryTab.PLAYLISTS, LibraryTab.LIKED, LibraryTab.ALBUMS, LibraryTab.ARTISTS)
     ),
-    DEVICE("En tu Dispositivo", listOf(LibraryTab.DOWNLOADS, LibraryTab.LOCAL)),
+    DEVICE("Dispositivo", listOf(LibraryTab.DOWNLOADS, LibraryTab.LOCAL)),
     HISTORY("Historial", listOf(LibraryTab.HISTORY));
 
     companion object {
