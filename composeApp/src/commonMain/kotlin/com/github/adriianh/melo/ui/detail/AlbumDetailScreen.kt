@@ -58,6 +58,7 @@ import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.formatCollectionDuration
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,13 +252,7 @@ fun AlbumDetailScreen(
             ) {
                 val totalDurationMs = remember(songs) { songs.sumOf { it.durationMs } }
                 val totalDurationFormatted = remember(totalDurationMs) {
-                    if (totalDurationMs <= 0) ""
-                    else {
-                        val minutes = (totalDurationMs / 1000) / 60
-                        val hours = minutes / 60
-                        val remainingMinutes = minutes % 60
-                        if (hours > 0) "$hours h $remainingMinutes min" else "$minutes min"
-                    }
+                    formatCollectionDuration(totalDurationMs)
                 }
 
                 val authorText = album?.author?.ifEmpty { null } ?: initialAuthor.ifEmpty { null }
