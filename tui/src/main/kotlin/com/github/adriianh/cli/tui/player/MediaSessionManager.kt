@@ -40,6 +40,9 @@ class MediaSessionManager(
     private var initialized = false
 
     private var currentArtFile: File? = null
+    private val isLinux = System.getProperty("os.name")?.lowercase()?.contains("linux") == true
+
+    private fun toMediaSessionTime(timeMs: Long): Long = if (isLinux) timeMs * 1_000L else timeMs
 
     fun init() {
         if (initialized) return
@@ -102,9 +105,9 @@ class MediaSessionManager(
             instance.setTimelineProperties(
                 JMTCTimelineProperties(
                     /* start     */ 0L,
-                    /* end       */ durationMs * 1_000L, // JMTC uses microseconds
+                    /* end       */ toMediaSessionTime(durationMs),
                     /* seekStart */ 0L,
-                    /* seekEnd   */ durationMs * 1_000L,
+                    /* seekEnd   */ toMediaSessionTime(durationMs),
                 )
             )
             instance.playingState = JMTCPlayingState.PLAYING
@@ -118,9 +121,9 @@ class MediaSessionManager(
             jmtc?.setTimelineProperties(
                 JMTCTimelineProperties(
                     /* start     */ 0L,
-                    /* end       */ durationMs * 1_000L,
+                    /* end       */ toMediaSessionTime(durationMs),
                     /* seekStart */ 0L,
-                    /* seekEnd   */ durationMs * 1_000L,
+                    /* seekEnd   */ toMediaSessionTime(durationMs),
                 )
             )
             jmtc?.updateDisplay()
@@ -147,7 +150,7 @@ class MediaSessionManager(
     /** Called when playback position changes. [positionMs] in milliseconds. */
     fun updatePosition(positionMs: Long) {
         try {
-            jmtc?.setPosition(positionMs * 1_000L) // JMTC uses microseconds
+            jmtc?.setPosition(toMediaSessionTime(positionMs))
         } catch (_: Exception) { }
     }
 

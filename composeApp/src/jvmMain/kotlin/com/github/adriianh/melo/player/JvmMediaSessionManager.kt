@@ -48,6 +48,9 @@ class JvmMediaSessionManager(
     private var currentTrackId: String? = null
     private var currentDurationMs: Long = 0L
     private var currentArtFile: File? = null
+    private val isLinux = System.getProperty("os.name")?.lowercase()?.contains("linux") == true
+
+    private fun toMediaSessionTime(timeMs: Long): Long = if (isLinux) timeMs * 1_000L else timeMs
 
     override fun init() {
         if (initialized) return
@@ -140,9 +143,9 @@ class JvmMediaSessionManager(
                             instance.setTimelineProperties(
                                 JMTCTimelineProperties(
                                     /* start     */ 0L,
-                                    /* end       */ effectiveDurationMs * 1_000L,
+                                    /* end       */ toMediaSessionTime(effectiveDurationMs),
                                     /* seekStart */ 0L,
-                                    /* seekEnd   */ effectiveDurationMs * 1_000L
+                                    /* seekEnd   */ toMediaSessionTime(effectiveDurationMs)
                                 )
                             )
                             instance.updateDisplay()
@@ -159,7 +162,7 @@ class JvmMediaSessionManager(
                         }
 
                         if (state.progressMs >= 0) {
-                            instance.setPosition(state.progressMs * 1_000L)
+                            instance.setPosition(toMediaSessionTime(state.progressMs))
                         }
                     } catch (_: Throwable) {
                     }
@@ -184,9 +187,9 @@ class JvmMediaSessionManager(
             instance.setTimelineProperties(
                 JMTCTimelineProperties(
                     /* start     */ 0L,
-                    /* end       */ durationMs * 1_000L,
+                    /* end       */ toMediaSessionTime(durationMs),
                     /* seekStart */ 0L,
-                    /* seekEnd   */ durationMs * 1_000L
+                    /* seekEnd   */ toMediaSessionTime(durationMs)
                 )
             )
             instance.playingState = JMTCPlayingState.PLAYING

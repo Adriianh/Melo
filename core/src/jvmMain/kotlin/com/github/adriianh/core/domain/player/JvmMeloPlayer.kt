@@ -45,7 +45,7 @@ class JvmMeloPlayer : MeloPlayer {
                 "--no-spu",
                 "--no-stats",
                 "--no-snapshot-preview",
-                "--network-caching=1500",
+                "--network-caching=500",
                 "--file-caching=1000",
                 "--clock-jitter=0",
             )
