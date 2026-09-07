@@ -19,9 +19,11 @@ import platform.AVFoundation.pause
 import platform.AVFoundation.play
 import platform.AVFoundation.replaceCurrentItemWithPlayerItem
 import platform.AVFoundation.seekToTime
+import platform.AVFoundation.volume
 import platform.CoreMedia.CMTimeGetSeconds
 import platform.CoreMedia.CMTimeMakeWithSeconds
 import platform.Foundation.NSURL
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalForeignApi::class)
 class IosMeloPlayer : MeloPlayer {
@@ -88,7 +90,7 @@ class IosMeloPlayer : MeloPlayer {
                         _state.update { it.copy(progressMs = (currentTime * 1000).toLong()) }
                     }
                 }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }

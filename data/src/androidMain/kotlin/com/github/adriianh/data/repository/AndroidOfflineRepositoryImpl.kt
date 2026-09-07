@@ -134,7 +134,7 @@ class AndroidOfflineRepositoryImpl(
                 return TrackMetadata(safeTitle, safeArtist, album ?: "", durationMs, null)
             } catch (_: CannotReadVideoException) {
                 return null
-            } catch (__: Exception) {
+            } catch (_: Exception) {
                 val name = file.nameWithoutExtension
                 val parts = name.split(" - ", limit = 2)
                 val (artistPart, titlePart) = if (parts.size == 2) parts[0].trim() to parts[1].trim() else "Artista Desconocido" to name
@@ -436,7 +436,7 @@ class AndroidOfflineRepositoryImpl(
                                         } else null
 
                                         val trackId =
-                                            if (dataPath != null && dataPath.isNotBlank()) {
+                                            if (!dataPath.isNullOrBlank()) {
                                                 "local:$dataPath"
                                             } else if (id >= 0) {
                                                 "local:content://media/external/audio/media/$id"
@@ -467,7 +467,7 @@ class AndroidOfflineRepositoryImpl(
             }
 
             val effectivePaths =
-                if (paths.isNotEmpty()) paths else PlatformFileSystem.getDefaultMusicPaths()
+                paths.ifEmpty { PlatformFileSystem.getDefaultMusicPaths() }
             effectivePaths.forEach { path ->
                 val dir = File(path)
                 if (dir.exists() && dir.isDirectory) {

@@ -210,10 +210,10 @@ class PlaybackManagerImpl(
             val item = newTracks.removeAt(fromIndex)
             newTracks.add(toIndex, item)
 
-            val newCurrentIndex = when {
-                current.currentIndex == fromIndex -> toIndex
-                fromIndex < current.currentIndex && toIndex >= current.currentIndex -> current.currentIndex - 1
-                fromIndex > current.currentIndex && toIndex <= current.currentIndex -> current.currentIndex + 1
+            val newCurrentIndex = when (current.currentIndex) {
+                fromIndex -> toIndex
+                in (fromIndex + 1)..toIndex -> current.currentIndex - 1
+                in toIndex..<fromIndex -> current.currentIndex + 1
                 else -> current.currentIndex
             }
             current.copy(tracks = newTracks, currentIndex = newCurrentIndex)
@@ -297,7 +297,6 @@ class PlaybackManagerImpl(
             val settings = getSettingsUseCase?.invoke()?.firstOrNull()
             val isOfflineMode = settings?.offlineMode == true
             val offlineTrack = offlineRepository?.getOfflineTrack(track.id)
-            val offlinePath = offlineTrack?.localFilePath
             val isTrackAvailableOffline = track.id.startsWith("local:") ||
                     (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED)
 
