@@ -340,8 +340,9 @@ fun App(
                         }
                     }
                         }
+                    }
 
-                        AnimatedVisibility(
+                    AnimatedVisibility(
                             visible = isNowPlayingExpanded,
                             enter = slideInVertically(
                                 initialOffsetY = { it },
@@ -534,5 +535,4 @@ fun App(
             }
         }
     }
-}
 }
