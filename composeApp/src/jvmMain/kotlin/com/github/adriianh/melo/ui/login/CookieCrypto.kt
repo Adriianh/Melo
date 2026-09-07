@@ -103,8 +103,6 @@ internal object CookieCrypto {
             init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, nonce))
         }
         val raw = cipher.doFinal(ciphertextAndTag)
-        // In modern Chromium (v127+), decrypted cookie payload includes a 32-byte host prefix.
-        // If the first 32 bytes contain non-printable control characters, strip them.
         val hasBinaryPrefix = raw.size > 32 && (0 until 32).any { i ->
             val b = raw[i].toInt() and 0xFF
             b !in 0x20..<0x7F
@@ -161,7 +159,7 @@ internal object CookieCrypto {
         }
 
         val dpapiBlob = Base64.getDecoder().decode(encryptedKeyBase64)
-        val dpapiPrefixSize = 5 // "DPAPI"
+        val dpapiPrefixSize = 5
         if (dpapiBlob.size <= dpapiPrefixSize) {
             log.warning("DPAPI blob too small in: ${localStateFile.absolutePath}")
             return null

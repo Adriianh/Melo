@@ -2,9 +2,6 @@ package com.github.adriianh.melo.ui.login
 
 /**
  * Shared helpers for building/parsing raw `"name=value; name2=value2"` cookie headers.
- *
- * Consolidates logic that used to be duplicated across [SessionCookieStore],
- * [BrowserAuthManager]'s Firefox reader and its Chromium reader.
  */
 object CookieHeader {
 
@@ -83,12 +80,7 @@ object CookieHeader {
         return result.toString().takeIf { it.isNotEmpty() }
     }
 
-    /**
-     * Whether this cookie map carries a complete, authenticated YouTube session.
-     * YouTube requires:
-     * 1. A cryptographic auth token (SAPISID, __Secure-3PAPISID, __Secure-1PAPISID, or APISID)
-     * 2. A session identifier (LOGIN_INFO, __Secure-3PSID, __Secure-1PSID, or SID)
-     */
+    /** Whether this cookie map carries a complete, authenticated YouTube session. */
     fun Map<String, String>.hasValidSession(): Boolean {
         val hasAuthToken = containsKey("SAPISID") ||
                 containsKey("__Secure-3PAPISID") ||

@@ -10,13 +10,6 @@ class InnerTubeLoginRepository : LoginRepository {
         YouTube.useLoginForBrowse = !cookies.isNullOrBlank()
     }
 
-    override suspend fun verifySession(): String? {
-        val result = YouTube.accountInfo()
-        result.onSuccess { info ->
-            println("[Melo Auth] Successfully verified session for user: ${info.name}")
-        }.onFailure { error ->
-            println("[Melo Auth] verifySession failed: ${error.javaClass.simpleName}: ${error.message}")
-        }
-        return result.getOrNull()?.name
-    }
+    override suspend fun verifySession(): String? =
+        YouTube.accountInfo().getOrNull()?.name
 }

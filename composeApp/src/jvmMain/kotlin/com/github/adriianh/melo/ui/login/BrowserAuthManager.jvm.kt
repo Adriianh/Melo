@@ -1,7 +1,6 @@
 package com.github.adriianh.melo.ui.login
 
 import com.github.adriianh.melo.ui.login.BrowserAuthManager.LAUNCH_TIMEOUT
-import com.github.adriianh.melo.ui.login.CookieHeader.hasSapisid
 import com.github.adriianh.melo.ui.login.CookieHeader.hasValidSession
 import com.github.adriianh.melo.ui.login.CookieHeader.toHeaderStringOrNull
 import kotlinx.coroutines.Dispatchers
@@ -569,7 +568,6 @@ object BrowserAuthManager {
                 }
             }
 
-            // Fallback: if temp copy didn't yield a result, attempt direct read of dbFile
             if (result == null) {
                 result = runCatching { block(dbFile) }.getOrElse { e ->
                     log.fine("Direct read of ${dbFile.name} failed: ${e.message}")
@@ -621,7 +619,7 @@ object BrowserAuthManager {
     }
 
     private fun isChromiumCookieExpired(expiresUtc: Long): Boolean {
-        if (expiresUtc == 0L) return false // Session cookie
+        if (expiresUtc == 0L) return false
         val nowWebKitMicros = (System.currentTimeMillis() + 11644473600000L) * 1000L
         return expiresUtc < nowWebKitMicros
     }
@@ -666,7 +664,7 @@ object BrowserAuthManager {
 
     private fun openConnection(dbFile: File): Connection {
         val props = java.util.Properties().apply {
-            setProperty("open_mode", "1") // 1 = OPEN_READONLY
+            setProperty("open_mode", "1")
             setProperty("busy_timeout", "5000")
         }
         val url = "jdbc:sqlite:${dbFile.absolutePath.replace('\\', '/')}"
