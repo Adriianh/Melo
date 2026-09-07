@@ -36,6 +36,7 @@ agp = "9.3.2"
 compose-plugin = "1.10.3"
 androidx-activityCompose = "1.13.0"
 kmpalette = "3.1.0"
+reorderable = "3.1.0"
 
 [libraries]
 kotlinMultiplatformPlugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "kotlinMultiplatformPlugin" }
@@ -110,6 +111,7 @@ composeResources = { module = "org.jetbrains.compose.components:components-resou
 composeUiToolingPreview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "composeGradlePlugin" }
 kmpaletteCore = { module = "com.kmpalette:kmpalette-core", version.ref = "kmpalette" }
 kmpaletteByteArray = { module = "com.kmpalette:extensions-bytearray", version.ref = "kmpalette" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]

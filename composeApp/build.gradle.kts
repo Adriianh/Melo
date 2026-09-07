@@ -55,6 +55,8 @@ kotlin {
                 // Dynamic Palette
                 implementation(libs.kmpaletteCore)
                 implementation(libs.kmpaletteByteArray)
+
+                implementation(libs.reorderable)
             }
         }
         val androidMain by getting {
