@@ -119,11 +119,24 @@ val packageInnoSetup = tasks.register<Exec>("packageInnoSetup") {
     onlyIf { org.gradle.internal.os.OperatingSystem.current().isWindows }
 
     val issFile = rootProject.file("packaging/windows/melo.iss")
+    val appSourceDir = layout.buildDirectory.dir("compose/binaries/main/app/Melo").get().asFile
+    val outputDir = rootProject.file("packaging/windows/Output")
+
     val isccCandidate = listOf(
         "ISCC.exe",
         "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe",
         "C:\\Program Files\\Inno Setup 6\\ISCC.exe"
     ).firstOrNull { File(it).exists() } ?: "ISCC.exe"
 
-    commandLine(isccCandidate, "/DMyAppVersion=1.0.1", issFile.absolutePath)
+    doFirst {
+        outputDir.mkdirs()
+    }
+
+    commandLine(
+        isccCandidate,
+        "/DMyAppVersion=1.0.1",
+        "/DAppSourceDir=${appSourceDir.absolutePath}",
+        "/DOutputDir=${outputDir.absolutePath}",
+        issFile.absolutePath
+    )
 }

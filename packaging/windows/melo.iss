@@ -18,7 +18,7 @@ x64); =====================================================================
 #define AppSourceDir "..\..\composeApp\build\compose\binaries\main\app\Melo"
 #endif
 #ifndef OutputDir
-#define OutputDir "..\..\build\dist"
+#define OutputDir "Output"
 #endif
 
 [Setup]
@@ -63,7 +63,7 @@ DefaultGroupName = {
 AllowNoIcons = yes
 OutputDir={
 #OutputDir}
-OutputBaseFilename = Melo - Setup - x64
+OutputBaseFilename = Melo - Setup
 Compression = lzma2 / ultra64
 SolidCompression = yes
 WizardStyle = modern
