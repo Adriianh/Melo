@@ -65,24 +65,24 @@ class InnerTubeAudioProvider(
 
     override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? =
         withContext(MeloDispatchers.IO) {
-        val cacheKey = "$artist$title$durationMs"
+            val cacheKey = "$artist$title$durationMs"
             mutex.withLock { sourceIdCache[cacheKey]?.let { return@withContext it } }
             try {
-            val query = "$artist - $title"
-            val firstItem = retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
-                val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
-                result?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id
-            }
-            if (firstItem != null) {
-                mutex.withLock { sourceIdCache[cacheKey] = firstItem }
-                firstItem
-            } else {
+                val query = "$artist - $title"
+                val firstItem = retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
+                    val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                    result?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id
+                }
+                if (firstItem != null) {
+                    mutex.withLock { sourceIdCache[cacheKey] = firstItem }
+                    firstItem
+                } else {
+                    fallback?.getSourceId(artist, title, durationMs)
+                }
+            } catch (_: Exception) {
                 fallback?.getSourceId(artist, title, durationMs)
             }
-        } catch (_: Exception) {
-            fallback?.getSourceId(artist, title, durationMs)
         }
-    }
 
     override suspend fun getStreamUrl(sourceId: String): String? {
         val now = Clock.System.now().toEpochMilliseconds()
