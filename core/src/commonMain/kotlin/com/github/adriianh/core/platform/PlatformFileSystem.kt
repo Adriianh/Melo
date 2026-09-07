@@ -10,6 +10,11 @@ expect object PlatformFileSystem {
     fun fileExists(path: String): Boolean
 
     /**
+     * Returns the size in bytes of the file at [path], or 0L if it does not exist or an error occurs.
+     */
+    fun fileSize(path: String): Long
+
+    /**
      * Converts a local file [path] to a URI string suitable for playback
      * (e.g. `file:///absolute/path`).
      */

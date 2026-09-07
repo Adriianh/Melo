@@ -5,6 +5,12 @@ import java.io.File
 actual object PlatformFileSystem {
     actual fun fileExists(path: String): Boolean = File(path).exists()
 
+    actual fun fileSize(path: String): Long = try {
+        File(path).takeIf { it.exists() }?.length() ?: 0L
+    } catch (_: Exception) {
+        0L
+    }
+
     actual fun toFileUri(path: String): String = File(path).toURI().toString()
 
     actual fun readText(path: String): String? = try {

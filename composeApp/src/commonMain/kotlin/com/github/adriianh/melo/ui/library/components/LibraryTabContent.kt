@@ -103,6 +103,7 @@ fun LibraryTabContent(
 
                     DownloadsTabContent(
                         downloadedTracks = manualDownloads,
+                        activeDownloads = state.activeDownloads,
                         onPlayTrack = { track ->
                             viewModel.playTrack(track, prioritizedOfflineQueue)
                         },

@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.library.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -73,6 +75,7 @@ fun DownloadsTabContent(
     onDeleteDownload: (String) -> Unit,
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    activeDownloads: Map<String, Float> = emptyMap(),
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
 ) {
@@ -86,25 +89,46 @@ fun DownloadsTabContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(32.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.FileDownloadOff,
-                    contentDescription = null,
-                    tint = MeloColors.textMuted,
-                    modifier = Modifier.size(56.dp)
-                )
-                Text(
-                    text = "No tienes canciones descargadas",
-                    style = MeloType.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MeloColors.textPrimary,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos.",
-                    style = MeloType.body,
-                    color = MeloColors.textSecondary,
-                    textAlign = TextAlign.Center
-                )
+                if (activeDownloads.isNotEmpty()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 3.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Descargando ${activeDownloads.size} canción(es)...",
+                        style = MeloType.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Las canciones aparecerán aquí en cuanto finalice la descarga.",
+                        style = MeloType.body,
+                        color = MeloColors.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.FileDownloadOff,
+                        contentDescription = null,
+                        tint = MeloColors.textMuted,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Text(
+                        text = "No tienes canciones descargadas",
+                        style = MeloType.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textPrimary,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos.",
+                        style = MeloType.body,
+                        color = MeloColors.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
         return
@@ -226,6 +250,36 @@ fun DownloadsTabContent(
                                         style = MeloType.labelSmall,
                                         color = MeloColors.textSecondary
                                     )
+                                }
+                            }
+
+                            if (activeDownloads.isNotEmpty()) {
+                                Surface(
+                                    color = MeloColors.surface1,
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(
+                                        0.5.dp,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "Descargando ${activeDownloads.size} canción(es) en segundo plano...",
+                                            style = MeloType.labelMedium,
+                                            color = MeloColors.textPrimary
+                                        )
+                                    }
                                 }
                             }
 

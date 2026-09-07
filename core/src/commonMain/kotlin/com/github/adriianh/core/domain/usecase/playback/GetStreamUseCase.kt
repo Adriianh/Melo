@@ -5,6 +5,8 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.platform.PlatformFileSystem
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.withContext
 
 class GetStreamUseCase(
     private val audioProvider: AudioProvider,
@@ -18,11 +20,11 @@ class GetStreamUseCase(
      *
      * @return the stream URL, or null if resolution failed.
      */
-    suspend operator fun invoke(track: Track): String? {
+    suspend operator fun invoke(track: Track): String? = withContext(MeloDispatchers.IO) {
         if (track.id.startsWith("local:")) {
             val path = track.id.removePrefix("local:")
-            if (PlatformFileSystem.fileExists(path)) {
-                return PlatformFileSystem.toFileUri(path)
+            if (PlatformFileSystem.fileExists(path) && PlatformFileSystem.fileSize(path) > 1024) {
+                return@withContext PlatformFileSystem.toFileUri(path)
             }
         }
 
@@ -34,9 +36,10 @@ class GetStreamUseCase(
             }
 
         if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.localFilePath != null) {
-            if (PlatformFileSystem.fileExists(offlineTrack.localFilePath)) {
+            val localPath = offlineTrack.localFilePath
+            if (PlatformFileSystem.fileExists(localPath) && PlatformFileSystem.fileSize(localPath) > 64 * 1024) {
                 offlineRepository.markTrackAsAccessed(offlineTrack.track.id)
-                return PlatformFileSystem.toFileUri(offlineTrack.localFilePath)
+                return@withContext PlatformFileSystem.toFileUri(localPath)
             }
         }
 
@@ -46,8 +49,8 @@ class GetStreamUseCase(
                 artist = track.artist,
                 title = track.title,
                 durationMs = track.durationMs,
-            ) ?: return null
+            ) ?: return@withContext null
 
-        return audioProvider.getStreamUrl(sourceId)
+        audioProvider.getStreamUrl(sourceId)
     }
 }

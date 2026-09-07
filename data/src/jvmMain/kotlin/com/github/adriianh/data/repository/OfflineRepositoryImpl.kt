@@ -195,19 +195,46 @@ class OfflineRepositoryImpl(
                 defaultDownloadsDir.parentFile, "cache"
             )
             val customDownloadDir = settings.downloadPath?.let { File(it) }
-            val current = _offlineTracksFlow.value.toMutableList()
+            // Clean up any leftover temporary partial download files
+            listOfNotNull(customCacheDir, customDownloadDir, defaultDownloadsDir).forEach { dir ->
+                if (dir.exists() && dir.isDirectory) {
+                    dir.listFiles()
+                        ?.filter { it.isFile && (it.name.endsWith(".tmp") || it.name.endsWith(".part")) }
+                        ?.forEach {
+                            try {
+                                it.delete()
+                            } catch (_: Exception) {
+                            }
+                        }
+                }
+            }
 
+            val current = _offlineTracksFlow.value
             val updated = current.mapNotNull { track ->
                 val localPath = track.localFilePath
 
                 if (localPath != null) {
                     val file = File(localPath)
                     when {
-                        file.exists() && track.downloadStatus != DownloadStatus.COMPLETED -> track.copy(
+                        file.exists() && file.length() > 64 * 1024 && track.downloadStatus == DownloadStatus.COMPLETED -> track
+
+                        file.exists() && file.length() > 64 * 1024 && track.downloadStatus != DownloadStatus.COMPLETED && track.downloadStatus != DownloadStatus.DOWNLOADING -> track.copy(
                             downloadStatus = DownloadStatus.COMPLETED,
                             fileSize = file.length(),
                             downloadedAt = track.downloadedAt ?: file.lastModified()
                         )
+
+                        file.exists() && (file.length() <= 64 * 1024 || track.downloadStatus == DownloadStatus.DOWNLOADING) -> {
+                            try {
+                                file.delete()
+                            } catch (_: Exception) {
+                            }
+                            track.copy(
+                                localFilePath = null,
+                                downloadStatus = DownloadStatus.FAILED,
+                                fileSize = 0L
+                            )
+                        }
 
                         !file.exists() && track.downloadStatus == DownloadStatus.COMPLETED -> track.copy(
                             localFilePath = null,

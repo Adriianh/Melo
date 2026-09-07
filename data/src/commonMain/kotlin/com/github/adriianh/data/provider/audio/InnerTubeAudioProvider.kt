@@ -63,10 +63,11 @@ class InnerTubeAudioProvider(
         }
     }
 
-    override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? {
+    override suspend fun getSourceId(artist: String, title: String, durationMs: Long): String? =
+        withContext(MeloDispatchers.IO) {
         val cacheKey = "$artist$title$durationMs"
-        mutex.withLock { sourceIdCache[cacheKey]?.let { return it } }
-        return try {
+            mutex.withLock { sourceIdCache[cacheKey]?.let { return@withContext it } }
+            try {
             val query = "$artist - $title"
             val firstItem = retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
                 val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()

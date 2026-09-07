@@ -91,11 +91,16 @@ class DownloadManagerImpl(
             offlineRepository.saveOfflineTrack(offlineTrack)
             _activeDownloads.update { it + (track.id to 0f) }
 
+            val tempFilePath = "$targetFilePath.tmp"
+
             try {
                 val streamUrl = getStreamUseCase(track)
                 if (streamUrl == null) {
                     offlineRepository.saveOfflineTrack(
-                        offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
+                        offlineTrack.copy(
+                            downloadStatus = DownloadStatus.FAILED,
+                            localFilePath = null
+                        )
                     )
                     _activeDownloads.update { it - track.id }
                     return@withContext false
@@ -115,9 +120,16 @@ class DownloadManagerImpl(
                 }
 
                 val bytes = response.bodyAsBytes()
-                PlatformFileSystem.writeBytes(targetFilePath, bytes)
+                if (bytes.size <= 64 * 1024) {
+                    throw IllegalStateException("Downloaded audio file is too small (${bytes.size} bytes)")
+                }
+
+                PlatformFileSystem.writeBytes(tempFilePath, bytes)
+                PlatformFileSystem.copyFile(tempFilePath, targetFilePath)
+                PlatformFileSystem.deleteFile(tempFilePath)
 
                 val completedTrack = offlineTrack.copy(
+                    localFilePath = targetFilePath,
                     downloadStatus = DownloadStatus.COMPLETED,
                     downloadedAt = Clock.System.now().toEpochMilliseconds(),
                     fileSize = bytes.size.toLong()
@@ -127,9 +139,10 @@ class DownloadManagerImpl(
                 true
             } catch (_: Exception) {
                 offlineRepository.saveOfflineTrack(
-                    offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
+                    offlineTrack.copy(downloadStatus = DownloadStatus.FAILED, localFilePath = null)
                 )
                 _activeDownloads.update { it - track.id }
+                PlatformFileSystem.deleteFile(tempFilePath)
                 PlatformFileSystem.deleteFile(targetFilePath)
                 false
             }
@@ -143,7 +156,8 @@ class DownloadManagerImpl(
             val existingPath = existing?.localFilePath
             if (existing?.downloadStatus == DownloadStatus.COMPLETED &&
                 existingPath != null &&
-                PlatformFileSystem.fileExists(existingPath)
+                PlatformFileSystem.fileExists(existingPath) &&
+                PlatformFileSystem.fileSize(existingPath) > 64 * 1024
             ) {
                 offlineRepository.markTrackAsAccessed(track.id)
                 return@withContext true
@@ -156,12 +170,19 @@ class DownloadManagerImpl(
 
             PlatformFileSystem.makeDirs(targetFolder)
             val targetFilePath = "$targetFolder/$safeFileName"
+            val tempFilePath = "$targetFilePath.tmp"
 
             try {
                 val streamUrl = getStreamUseCase(track) ?: return@withContext false
                 val response = httpClient.get(streamUrl)
                 val bytes = response.bodyAsBytes()
-                PlatformFileSystem.writeBytes(targetFilePath, bytes)
+                if (bytes.size <= 64 * 1024) {
+                    throw IllegalStateException("Cached audio file is too small (${bytes.size} bytes)")
+                }
+
+                PlatformFileSystem.writeBytes(tempFilePath, bytes)
+                PlatformFileSystem.copyFile(tempFilePath, targetFilePath)
+                PlatformFileSystem.deleteFile(tempFilePath)
 
                 val cachedTrack = OfflineTrack(
                     track = track,
@@ -179,6 +200,7 @@ class DownloadManagerImpl(
                 }
                 true
             } catch (_: Exception) {
+                PlatformFileSystem.deleteFile(tempFilePath)
                 PlatformFileSystem.deleteFile(targetFilePath)
                 false
             }
@@ -218,6 +240,7 @@ class DownloadManagerImpl(
         return track.downloadStatus == DownloadStatus.COMPLETED &&
                 track.downloadType == DownloadType.MANUAL &&
                 path != null &&
-                PlatformFileSystem.fileExists(path)
+                PlatformFileSystem.fileExists(path) &&
+                PlatformFileSystem.fileSize(path) > 64 * 1024
     }
 }

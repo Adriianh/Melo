@@ -74,6 +74,10 @@ fun TrackRow(
             .background(backgroundColor)
             .combinedClickable(
                 onClick = {
+                    if (isDownloading) {
+                        // Incomplete/downloading track cannot be played yet
+                        return@combinedClickable
+                    }
                     if (isSelectionMode) {
                         onSelectionToggle?.invoke()
                     } else {

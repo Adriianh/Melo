@@ -11,6 +11,12 @@ actual object PlatformFileSystem {
         false
     }
 
+    actual fun fileSize(path: String): Long = try {
+        File(path.removePrefix("file://")).takeIf { it.exists() }?.length() ?: 0L
+    } catch (_: Exception) {
+        0L
+    }
+
     actual fun toFileUri(path: String): String {
         if (path.startsWith("content://") || path.startsWith("file://") || path.startsWith("http://") || path.startsWith(
                 "https://"

@@ -80,7 +80,11 @@ fun LazyListScope.detailTrackItems(
                         isSelected = isSelected,
                         onSelectionToggle = { onToggleSelectTrack?.invoke(song) },
                         onLongClick = onTrackLongClick?.let { onLong -> { onLong(song) } },
-                        onClick = { onTrackClick(index, song) },
+                        onClick = {
+                            if (!downloading) {
+                                onTrackClick(index, song)
+                            }
+                        },
                         onMoreClick = if (isSelectionMode) null else {
                             { onMoreClick(song) }
                         }

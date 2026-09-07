@@ -14,6 +14,13 @@ actual object PlatformFileSystem {
     actual fun fileExists(path: String): Boolean =
         NSFileManager.defaultManager.fileExistsAtPath(path)
 
+    actual fun fileSize(path: String): Long = try {
+        (NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
+            ?.get("NSFileSize") as? Number)?.toLong() ?: 0L
+    } catch (_: Exception) {
+        0L
+    }
+
     actual fun toFileUri(path: String): String =
         "file://$path"
 
