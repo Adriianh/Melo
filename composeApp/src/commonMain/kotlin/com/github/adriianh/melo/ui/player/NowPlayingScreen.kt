@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -56,6 +57,7 @@ fun NowPlayingScreen(
     onAlbumClick: (String) -> Unit = {},
     onPlaylistClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
+    titleBar: @Composable () -> Unit = {},
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel()
@@ -208,66 +210,74 @@ fun NowPlayingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(
-                    horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
-                    vertical = 8.dp
-                ),
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.Top
         ) {
-            NowPlayingTopBar(
-                title = state.title,
-                onCollapse = onCollapse
-            )
+            titleBar()
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
+                        vertical = 8.dp
+                    )
+            ) {
+                NowPlayingTopBar(
+                    title = state.title,
+                    onCollapse = onCollapse
+                )
 
-            if (platform.type == PlatformType.DESKTOP) {
-                NowPlayingDesktopLayout(
-                    state = state,
-                    activeAccent = activeAccent,
-                    showLyrics = showLyrics,
-                    onToggleLyrics = { showLyrics = !showLyrics },
-                    selectedSection = selectedSection,
-                    onSelectSection = { selectedSection = it },
-                    artistDetails = artistDetails,
-                    onMoreClick = onMoreClick,
-                    onSwipeQueueItem = onSwipeQueueItem,
-                    onSwipeSuggestionItem = onSwipeSuggestionItem,
-                    onPlayNextSuggestionItem = { track ->
-                        interaction.showPlayNextSnackbar(
-                            track,
-                            activeAccent
-                        )
-                    },
-                    onSwipeRight = onSwipeRight,
-                    isLiked = isLiked,
-                    onToggleFavorite = viewModel::toggleFavorite,
-                    onArtistClick = { id -> onCollapse(); onArtistClick(id) },
-                    onAlbumClick = { id -> onCollapse(); onAlbumClick(id) },
-                    onPlaylistClick = { id -> onCollapse(); onPlaylistClick(id) },
-                    viewModel = viewModel,
-                    modifier = Modifier.weight(1f)
-                )
-            } else {
-                NowPlayingMobileLayout(
-                    state = state,
-                    activeAccent = activeAccent,
-                    showLyrics = showLyrics,
-                    onToggleLyrics = { showLyrics = !showLyrics },
-                    onToggleFavorite = viewModel::toggleFavorite,
-                    onArtistClick = {
-                        artistDetails?.id?.let { id ->
-                            onCollapse()
-                            onArtistClick(id)
-                        }
-                    },
-                    onOpenQueue = { expandedBottomSection = PanelSection.QUEUE },
-                    onStartRadio = { track -> queueViewModel.startRadio(track) },
-                    onOpenArtist = { expandedBottomSection = PanelSection.ARTIST },
-                    viewModel = viewModel,
-                    modifier = Modifier.weight(1f)
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                if (platform.type == PlatformType.DESKTOP) {
+                    NowPlayingDesktopLayout(
+                        state = state,
+                        activeAccent = activeAccent,
+                        showLyrics = showLyrics,
+                        onToggleLyrics = { showLyrics = !showLyrics },
+                        selectedSection = selectedSection,
+                        onSelectSection = { selectedSection = it },
+                        artistDetails = artistDetails,
+                        onMoreClick = onMoreClick,
+                        onSwipeQueueItem = onSwipeQueueItem,
+                        onSwipeSuggestionItem = onSwipeSuggestionItem,
+                        onPlayNextSuggestionItem = { track ->
+                            interaction.showPlayNextSnackbar(
+                                track,
+                                activeAccent
+                            )
+                        },
+                        onSwipeRight = onSwipeRight,
+                        isLiked = isLiked,
+                        onToggleFavorite = viewModel::toggleFavorite,
+                        onArtistClick = { id -> onCollapse(); onArtistClick(id) },
+                        onAlbumClick = { id -> onCollapse(); onAlbumClick(id) },
+                        onPlaylistClick = { id -> onCollapse(); onPlaylistClick(id) },
+                        viewModel = viewModel,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    NowPlayingMobileLayout(
+                        state = state,
+                        activeAccent = activeAccent,
+                        showLyrics = showLyrics,
+                        onToggleLyrics = { showLyrics = !showLyrics },
+                        onToggleFavorite = viewModel::toggleFavorite,
+                        onArtistClick = {
+                            artistDetails?.id?.let { id ->
+                                onCollapse()
+                                onArtistClick(id)
+                            }
+                        },
+                        onOpenQueue = { expandedBottomSection = PanelSection.QUEUE },
+                        onStartRadio = { track -> queueViewModel.startRadio(track) },
+                        onOpenArtist = { expandedBottomSection = PanelSection.ARTIST },
+                        viewModel = viewModel,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 

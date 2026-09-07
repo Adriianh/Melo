@@ -1,5 +1,6 @@
 package com.github.adriianh.melo
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -138,14 +139,15 @@ fun App(
                 accentColor = finalAccent,
                 modifier = Modifier.fillMaxSize()
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    titleBar()
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
-                        AdaptiveScaffold(
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        titleBar()
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        ) {
+                            AdaptiveScaffold(
                         selectedTab = selectedTab,
                         isSelectionMode = isSelectionMode.value,
                         onTabSelected = { tab ->
@@ -337,39 +339,41 @@ fun App(
                             }
                         }
                     }
+                        }
 
-                        androidx.compose.animation.AnimatedVisibility(
-                        visible = isNowPlayingExpanded,
-                        enter = slideInVertically(
-                            initialOffsetY = { it },
-                            animationSpec = MeloMotion.slow()
-                        ) + fadeIn(
-                            animationSpec = MeloMotion.medium()
-                        ),
-                        exit = slideOutVertically(
-                            targetOffsetY = { it },
-                            animationSpec = MeloMotion.slow()
-                        ) + fadeOut(
-                            animationSpec = MeloMotion.medium()
-                        ),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        NowPlayingScreen(
-                            onCollapse = { isNowPlayingExpanded = false },
-                            onArtistClick = { id ->
-                                isNowPlayingExpanded = false
-                                navigateTo(ScreenRoute.Artist(id))
-                            },
-                            onAlbumClick = { id ->
-                                isNowPlayingExpanded = false
-                                navigateTo(ScreenRoute.Album(id))
-                            },
-                            onPlaylistClick = { id ->
-                                isNowPlayingExpanded = false
-                                navigateTo(ScreenRoute.Playlist(id))
-                            }
-                        )
-                    }
+                        AnimatedVisibility(
+                            visible = isNowPlayingExpanded,
+                            enter = slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = MeloMotion.slow()
+                            ) + fadeIn(
+                                animationSpec = MeloMotion.medium()
+                            ),
+                            exit = slideOutVertically(
+                                targetOffsetY = { it },
+                                animationSpec = MeloMotion.slow()
+                            ) + fadeOut(
+                                animationSpec = MeloMotion.medium()
+                            ),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            NowPlayingScreen(
+                                titleBar = titleBar,
+                                onCollapse = { isNowPlayingExpanded = false },
+                                onArtistClick = { id ->
+                                    isNowPlayingExpanded = false
+                                    navigateTo(ScreenRoute.Artist(id))
+                                },
+                                onAlbumClick = { id ->
+                                    isNowPlayingExpanded = false
+                                    navigateTo(ScreenRoute.Album(id))
+                                },
+                                onPlaylistClick = { id ->
+                                    isNowPlayingExpanded = false
+                                    navigateTo(ScreenRoute.Playlist(id))
+                                }
+                            )
+                        }
 
                     if (showLoginDialog) {
                         LoginDialog(
