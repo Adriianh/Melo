@@ -132,23 +132,22 @@ compose.desktop {
 
         jvmArgs += listOf(
             "-XX:-UseJVMCICompiler",
-            "-Xms32m",
-            "-Xmx256m",
-            "-Xss384k",
+            "-Xms64m",
+            "-Xmx384m",
+            "-Xss512k",
             "-XX:+UseG1GC",
             "-XX:G1PeriodicGCInterval=10000",
             "-XX:MinHeapFreeRatio=15",
             "-XX:MaxHeapFreeRatio=30",
             "-XX:+UseStringDeduplication",
 
-            "-XX:CICompilerCount=2",
             "-XX:ParallelGCThreads=2",
             "-XX:ConcGCThreads=1",
             "-XX:G1ConcRefinementThreads=2",
 
-            "-XX:ReservedCodeCacheSize=48m",
-            "-XX:MaxMetaspaceSize=96m",
-            "-XX:CompressedClassSpaceSize=32m",
+            "-XX:ReservedCodeCacheSize=64m",
+            "-XX:MaxMetaspaceSize=160m",
+            "-XX:CompressedClassSpaceSize=48m",
 
             "-Dskia.resource.cache.maxBytes=33554432",
 
@@ -170,7 +169,7 @@ compose.desktop {
             packageName = "Melo"
             packageVersion = "1.0.1"
             vendor = "Adriianh"
-            description = "Modern, fast, and cross-platform music player"
+            description = "Melo"
             copyright = "© 2025 Adriianh. Licensed under GPLv3."
             // licenseFile.set(project.rootProject.file("LICENSE"))
 
