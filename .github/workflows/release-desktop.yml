@@ -31,10 +31,10 @@ jobs:
             label: macos
 
           - os: windows-latest
-            tasks: "packageMsi packageExe"
+            tasks: "packageMsi packageInnoSetup"
             artifacts: |
               composeApp/build/compose/binaries/main/msi/*.msi
-              composeApp/build/compose/binaries/main/exe/*.exe
+              packaging/windows/Output/*.exe
             label: windows
 
     runs-on: ${{ matrix.os }}
@@ -47,6 +47,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Set up Inno Setup
+        if: matrix.os == 'windows-latest'
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          version: '6.2.2'
 
       - name: Run JVM tests
         run: ./gradlew :composeApp:jvmTest
