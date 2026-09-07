@@ -20,15 +20,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.file.Files
 import java.util.UUID
 
 /**
  * Integrates Melo with the Desktop OS media session layer via JMTC:
- *   - Linux   → MPRIS2 over D-Bus
+ *   - Linux → MPRIS2 over D-Bus
  *   - Windows → SystemMediaTransportControls (SMTC)
- *   - macOS   → not yet supported by JMTC (gracefully no-ops)
+ *   - macOS → not yet supported by JMTC (gracefully no-ops)
  *
  * Bridges the OS media keys / notification widgets directly to [PlaybackManager].
  */
@@ -235,7 +236,9 @@ class JvmMediaSessionManager(
         if (bytes.isEmpty()) null
         else {
             val tempFile =
-                Files.createTempFile("melo-art-${System.currentTimeMillis()}-", ".jpg").toFile()
+                withContext(Dispatchers.IO) {
+                    Files.createTempFile("melo-art-${System.currentTimeMillis()}-", ".jpg")
+                }.toFile()
                     .also {
                         it.deleteOnExit()
                     }
