@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -40,12 +41,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.ReorderableItem
-import com.github.adriianh.melo.ui.components.ReorderableState
 import com.github.adriianh.melo.ui.components.TrackRow
-import com.github.adriianh.melo.ui.components.reorderDragHandle
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.ReorderableLazyListState
 
 @Composable
 fun RenamePlaylistDialog(
@@ -268,11 +268,10 @@ fun PlaylistTopBarActions(
 }
 
 @Composable
-fun ReorderablePlaylistTrackItem(
+fun LazyItemScope.ReorderablePlaylistTrackItem(
     song: Track,
     index: Int,
-    totalCount: Int,
-    reorderState: ReorderableState,
+    reorderState: ReorderableLazyListState,
     isSelectionMode: Boolean,
     isSelected: Boolean,
     isCurrent: Boolean,
@@ -337,12 +336,7 @@ fun ReorderablePlaylistTrackItem(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .padding(6.dp)
-                                    .reorderDragHandle(
-                                        state = reorderState,
-                                        key = itemKey,
-                                        index = index,
-                                        totalItemsCount = totalCount
-                                    )
+                                    .draggableHandle()
                             )
                         }
                     }

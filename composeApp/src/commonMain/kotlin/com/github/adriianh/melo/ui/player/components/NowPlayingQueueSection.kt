@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,17 +44,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.ReorderableItem
 import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.SuggestionTrackCard
-import com.github.adriianh.melo.ui.components.rememberReorderableState
-import com.github.adriianh.melo.ui.components.reorderDragHandle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
 import org.koin.compose.viewmodel.koinViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun NowPlayingQueueSection(
@@ -100,10 +100,14 @@ fun NowPlayingQueueSection(
 
     val listState = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
-    val reorderState = rememberReorderableState(listState) { fromRel, toRel ->
-        val fromAbs = queueState.currentIndex + 1 + fromRel
-        val toAbs = queueState.currentIndex + 1 + toRel
-        queueViewModel.moveTrack(fromAbs, toAbs)
+    val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+        val fromRel = upNextKeys.indexOf(from.key)
+        val toRel = upNextKeys.indexOf(to.key)
+        if (fromRel != -1 && toRel != -1 && fromRel != toRel) {
+            val fromAbs = queueState.currentIndex + 1 + fromRel
+            val toAbs = queueState.currentIndex + 1 + toRel
+            queueViewModel.moveTrack(fromAbs, toAbs)
+        }
     }
 
     LazyColumn(
@@ -248,12 +252,10 @@ fun NowPlayingQueueSection(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .padding(4.dp)
-                                    .reorderDragHandle(
-                                        state = reorderState,
-                                        key = itemKey,
-                                        index = index,
-                                        totalItemsCount = upNextTracks.size,
-                                        hapticFeedback = haptic
+                                    .draggableHandle(
+                                        onDragStarted = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
                                     )
                             )
                         }

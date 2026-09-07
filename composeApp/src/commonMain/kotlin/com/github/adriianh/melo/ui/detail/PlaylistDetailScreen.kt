@@ -43,7 +43,6 @@ import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
-import com.github.adriianh.melo.ui.components.rememberReorderableState
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.DeletePlaylistDialog
 import com.github.adriianh.melo.ui.detail.components.EntityHeaderCard
@@ -59,6 +58,7 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.formatCollectionDuration
 import org.koin.compose.viewmodel.koinViewModel
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -287,8 +287,12 @@ fun PlaylistDetailScreen(
                     ?: songs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
 
                 val lazyListState = rememberLazyListState()
-                val reorderState = rememberReorderableState(lazyListState) { from, to ->
-                    viewModel.moveLocalPlaylistTrack(from, to)
+                val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                    val fromIndex = songs.indexOfFirst { "custom_pl_${it.id}" == from.key }
+                    val toIndex = songs.indexOfFirst { "custom_pl_${it.id}" == to.key }
+                    if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                        viewModel.moveLocalPlaylistTrack(fromIndex, toIndex)
+                    }
                 }
 
                 LazyColumn(
@@ -351,7 +355,6 @@ fun PlaylistDetailScreen(
                                 ReorderablePlaylistTrackItem(
                                     song = song,
                                     index = index,
-                                    totalCount = songs.size,
                                     reorderState = reorderState,
                                     isSelectionMode = isSelectionMode,
                                     isSelected = song.id in selectedTrackIds,
