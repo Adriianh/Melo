@@ -342,6 +342,7 @@ class PlaybackManagerImpl(
 
             if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
                 launch(dispatcher) {
+                    delay(4000.milliseconds)
                     downloadManager?.cacheTrack(track)
                 }
             }
@@ -358,19 +359,17 @@ class PlaybackManagerImpl(
         }
 
         val queueTracks = q.tracks
-        val nextIndices = (q.currentIndex + 1 until minOf(queueTracks.size, q.currentIndex + 4))
+        val nextIndices = (q.currentIndex + 1 until minOf(queueTracks.size, q.currentIndex + 3))
         if (nextIndices.isEmpty()) return
 
         prefetchJob = scope.launch(dispatcher) {
+            delay(2000.milliseconds)
             for (idx in nextIndices) {
                 val nextTrack = queueTracks.getOrNull(idx) ?: continue
                 val alreadyCached = cacheMutex.withLock { nextTrack.id in prefetchCache }
                 if (!alreadyCached) {
                     val url = getStreamUseCase(nextTrack) ?: continue
                     cacheMutex.withLock { prefetchCache[nextTrack.id] = url }
-                }
-                if (!nextTrack.id.startsWith("local:")) {
-                    downloadManager?.cacheTrack(nextTrack)
                 }
             }
         }

@@ -36,8 +36,8 @@ class InnerTubeAudioProvider(
         private val stsMutex = Mutex()
 
         private val CLIENTS_TO_TRY = listOf(
-            YouTubeClient.WEB_REMIX,
             YouTubeClient.ANDROID_VR_NO_AUTH,
+            YouTubeClient.WEB_REMIX,
             YouTubeClient.IOS,
         )
     }
