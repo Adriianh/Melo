@@ -174,7 +174,7 @@ compose.desktop {
                 appCategory = "Audio"
                 shortcut = true
                 menuGroup = "AudioVideo"
-                // iconFile.set(project.file("src/jvmMain/resources/icons/icon.png"))
+                iconFile.set(project.file("src/jvmMain/resources/icons/icon.png"))
             }
             macOS {
                 bundleID = "com.github.adriianh.melo"
@@ -187,7 +187,7 @@ compose.desktop {
                 shortcut = true
                 dirChooser = true
                 upgradeUuid = "d3b07384-d9a1-4e3b-8c1a-2f0e5a8d7b42"
-                // iconFile.set(project.file("src/jvmMain/resources/icons/icon.ico"))
+                iconFile.set(project.file("src/jvmMain/resources/icons/icon.ico"))
             }
 
             modules(

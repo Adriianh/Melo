@@ -28,20 +28,34 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
 AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir={#OutputDir}
 OutputBaseFilename=Melo-Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
-WizardStyle=modern
+
+; Modern visual styling and system theme adaptation
+WizardStyle=modern dynamic
+WizardResizable=no
+WizardImageFile=assets\wizard_large.bmp
+WizardSmallImageFile=assets\wizard_small.bmp
+SetupIconFile=assets\melo.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
+
+; Streamlined modern UX (clean and fast installation)
+DisableWelcomePage=no
+DisableProgramGroupPage=yes
+DisableReadyPage=yes
+
+; User-mode installation by default (no UAC prompt required, defaults to %LocalAppData%\Programs)
+PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
+
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 CloseApplications=yes
 CloseApplicationsFilter=*.exe
 RestartApplications=no
-UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -54,8 +68,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#AppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
