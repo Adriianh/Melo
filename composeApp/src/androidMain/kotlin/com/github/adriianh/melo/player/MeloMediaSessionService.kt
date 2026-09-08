@@ -83,20 +83,23 @@ class MeloMediaSessionService : MediaSessionService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        val session = (mediaSessionManager as? AndroidMediaSessionManager)?.mediaSession
-        val player = session?.player
-        if (player == null || !player.playWhenReady || player.mediaItemCount == 0) {
-            stopSelf()
+        super.onTaskRemoved(rootIntent)
+        try {
+            val session = (mediaSessionManager as? AndroidMediaSessionManager)?.mediaSession
+            session?.player?.pause()
+        } catch (_: Throwable) {
         }
+        stopSelf()
     }
 
     override fun onDestroy() {
-        val session = (mediaSessionManager as? AndroidMediaSessionManager)?.mediaSession
-        if (session != null) {
-            try {
+        try {
+            val session = (mediaSessionManager as? AndroidMediaSessionManager)?.mediaSession
+            session?.player?.pause()
+            if (session != null) {
                 removeSession(session)
-            } catch (_: Throwable) {
             }
+        } catch (_: Throwable) {
         }
         super.onDestroy()
     }

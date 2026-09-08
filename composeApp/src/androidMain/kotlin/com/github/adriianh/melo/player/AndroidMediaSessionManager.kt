@@ -64,7 +64,9 @@ class AndroidMediaSessionManager(
                         val queue = playbackManager.queueState.value
                         val hasNext = queue.currentIndex < queue.tracks.lastIndex
                         val hasPrev = queue.currentIndex > 0
+                        val hasTrack = queue.currentTrack != null
                         return when (command) {
+                            COMMAND_PLAY_PAUSE -> hasTrack || super.isCommandAvailable(command)
                             COMMAND_SEEK_TO_NEXT,
                             COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> hasNext
 
@@ -79,7 +81,11 @@ class AndroidMediaSessionManager(
                         val queue = playbackManager.queueState.value
                         val hasNext = queue.currentIndex < queue.tracks.lastIndex
                         val hasPrev = queue.currentIndex > 0
+                        val hasTrack = queue.currentTrack != null
                         val builder = super.getAvailableCommands().buildUpon()
+                        if (hasTrack) {
+                            builder.add(COMMAND_PLAY_PAUSE)
+                        }
                         if (hasNext) {
                             builder.add(COMMAND_SEEK_TO_NEXT)
                             builder.add(COMMAND_SEEK_TO_NEXT_MEDIA_ITEM)
@@ -95,6 +101,22 @@ class AndroidMediaSessionManager(
                             builder.remove(COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
                         }
                         return builder.build()
+                    }
+
+                    override fun play() {
+                        if (androidPlayer.exoPlayer.mediaItemCount == 0 && playbackManager.queueState.value.currentTrack != null) {
+                            playbackManager.togglePlayPause()
+                        } else {
+                            super.play()
+                        }
+                    }
+
+                    override fun seekTo(positionMs: Long) {
+                        if (androidPlayer.exoPlayer.mediaItemCount == 0 && playbackManager.queueState.value.currentTrack != null) {
+                            playbackManager.seekTo(positionMs)
+                        } else {
+                            super.seekTo(positionMs)
+                        }
                     }
 
                     override fun seekToNext() {

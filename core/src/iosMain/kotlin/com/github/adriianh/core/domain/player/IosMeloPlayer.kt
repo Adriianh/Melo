@@ -34,14 +34,18 @@ class IosMeloPlayer : MeloPlayer {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
 
-    override fun load(url: String, track: Track) {
+    override fun load(url: String, track: Track, initialPositionMs: Long) {
         val nsUrl = NSURL.URLWithString(url) ?: return
         val playerItem = AVPlayerItem.playerItemWithURL(nsUrl)
         player.replaceCurrentItemWithPlayerItem(playerItem)
+        if (initialPositionMs > 0) {
+            val time = CMTimeMakeWithSeconds(initialPositionMs / 1000.0, 1000)
+            player.seekToTime(time)
+        }
         _state.update {
             it.copy(
                 currentTrack = track,
-                progressMs = 0,
+                progressMs = initialPositionMs,
                 durationMs = track.durationMs
             )
         }
@@ -77,6 +81,20 @@ class IosMeloPlayer : MeloPlayer {
     override fun release() {
         stopProgressUpdate()
         stop()
+    }
+
+    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+        _state.update {
+            it.copy(
+                currentTrack = track,
+                progressMs = initialPositionMs,
+                durationMs = track.durationMs,
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null
+            )
+        }
     }
 
     private fun startProgressUpdate() {

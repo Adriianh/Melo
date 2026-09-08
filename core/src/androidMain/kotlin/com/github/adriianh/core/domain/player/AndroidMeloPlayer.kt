@@ -129,7 +129,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         })
     }
 
-    override fun load(url: String, track: Track) {
+    override fun load(url: String, track: Track, initialPositionMs: Long) {
         val metadata = MediaMetadata.Builder()
             .setTitle(track.title)
             .setArtist(track.artist)
@@ -145,12 +145,16 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
             .build()
 
         runOnMain {
-            exoPlayer.setMediaItem(mediaItem)
+            if (initialPositionMs > 0) {
+                exoPlayer.setMediaItem(mediaItem, initialPositionMs)
+            } else {
+                exoPlayer.setMediaItem(mediaItem)
+            }
             exoPlayer.prepare()
             _state.update {
                 it.copy(
                     currentTrack = track,
-                    progressMs = 0,
+                    progressMs = initialPositionMs,
                     durationMs = track.durationMs,
                     isFinished = false
                 )
@@ -194,6 +198,30 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         scope.cancel()
         runOnMain {
             exoPlayer.release()
+        }
+    }
+
+    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+        runOnMain {
+            val metadata = MediaMetadata.Builder()
+                .setTitle(track.title)
+                .setArtist(track.artist)
+                .setAlbumTitle(track.album)
+                .setAlbumArtist(track.artist)
+                .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
+                .build()
+            exoPlayer.playlistMetadata = metadata
+            _state.update {
+                it.copy(
+                    currentTrack = track,
+                    progressMs = initialPositionMs,
+                    durationMs = track.durationMs,
+                    isPlaying = false,
+                    isBuffering = false,
+                    isFinished = false,
+                    error = null
+                )
+            }
         }
     }
 

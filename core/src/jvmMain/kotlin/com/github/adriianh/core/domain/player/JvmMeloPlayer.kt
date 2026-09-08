@@ -126,11 +126,11 @@ class JvmMeloPlayer : MeloPlayer {
         }
     }
 
-    override fun load(url: String, track: Track) {
+    override fun load(url: String, track: Track, initialPositionMs: Long) {
         _state.update {
             it.copy(
                 currentTrack = track,
-                progressMs = 0,
+                progressMs = initialPositionMs,
                 durationMs = track.durationMs,
                 isBuffering = true,
                 isFinished = false,
@@ -156,7 +156,12 @@ class JvmMeloPlayer : MeloPlayer {
             }
             try {
                 player.controls().stop()
-                val (mediaTarget, options) = resolveMediaTarget(url)
+                val (mediaTarget, baseOptions) = resolveMediaTarget(url)
+                val options = if (initialPositionMs > 0) {
+                    baseOptions + ":start-time=${initialPositionMs / 1000.0}"
+                } else {
+                    baseOptions
+                }
                 player.media().play(mediaTarget, *options)
                 player.audio().setVolume(currentVolume)
             } catch (e: Throwable) {
@@ -255,6 +260,20 @@ class JvmMeloPlayer : MeloPlayer {
             initJob.join()
             mediaPlayer?.release()
             factory?.release()
+        }
+    }
+
+    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+        _state.update {
+            it.copy(
+                currentTrack = track,
+                progressMs = initialPositionMs,
+                durationMs = track.durationMs,
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null
+            )
         }
     }
 
