@@ -75,6 +75,9 @@ import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
+import com.github.adriianh.core.domain.usecase.session.ClearSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
@@ -219,6 +222,9 @@ val dataModule = module {
             offlineRepository = getOrNull(),
             recordPlayUseCase = getOrNull(),
             updateSettingsUseCase = getOrNull(),
+            saveSessionUseCase = getOrNull(),
+            restoreSessionUseCase = getOrNull(),
+            clearSessionUseCase = getOrNull(),
             ioDispatcher = MeloDispatchers.IO,
         )
     }
@@ -296,6 +302,9 @@ val useCaseModule = module {
     singleOf(::UpdateTrackMetadataUseCase)
     singleOf(::CheckForUpdateUseCase)
     singleOf(::DownloadUpdateUseCase)
+    singleOf(::SaveSessionUseCase)
+    singleOf(::RestoreSessionUseCase)
+    singleOf(::ClearSessionUseCase)
 }
 
 /**

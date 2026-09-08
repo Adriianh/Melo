@@ -9,9 +9,13 @@ import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.repository.SavedSession
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
+import com.github.adriianh.core.domain.usecase.session.ClearSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
+import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
@@ -41,6 +45,9 @@ class PlaybackManagerImpl(
     private val offlineRepository: OfflineRepository? = null,
     private val recordPlayUseCase: RecordPlayUseCase? = null,
     private val updateSettingsUseCase: UpdateSettingsUseCase? = null,
+    private val saveSessionUseCase: SaveSessionUseCase? = null,
+    private val restoreSessionUseCase: RestoreSessionUseCase? = null,
+    private val clearSessionUseCase: ClearSessionUseCase? = null,
     ioDispatcher: CoroutineDispatcher? = null,
 ) : PlaybackManager {
 
@@ -63,8 +70,12 @@ class PlaybackManagerImpl(
     private var playJob: Job? = null
     private var prefetchJob: Job? = null
     private var saveVolumeJob: Job? = null
+    private var saveSessionJob: Job? = null
     private var isAutoplayFetching = false
     private var lastHandledFinishedTrackId: String? = null
+    private var isTrackLoaded = false
+    private var pendingRestorePositionMs: Long = 0L
+    private var lastSavedPositionMs: Long = 0L
 
     init {
         meloPlayer.setVolume(_volume.value)
@@ -81,6 +92,21 @@ class PlaybackManagerImpl(
             }
         }
         scope.launch(dispatcher) {
+            val session = restoreSessionUseCase?.invoke()
+            if (session != null && session.queue.isNotEmpty()) {
+                val validIndex = session.queueIndex.coerceIn(0, session.queue.lastIndex)
+                _queueState.update {
+                    it.copy(tracks = session.queue, currentIndex = validIndex)
+                }
+                val track = session.queue.getOrNull(validIndex)
+                if (track != null) {
+                    pendingRestorePositionMs = session.positionMs
+                    lastSavedPositionMs = session.positionMs
+                    meloPlayer.setIdleTrack(track, session.positionMs)
+                }
+            }
+        }
+        scope.launch(dispatcher) {
             meloPlayer.state.collect { state ->
                 val trackId = state.currentTrack?.id
                 if (state.isFinished && state.error == null) {
@@ -90,6 +116,11 @@ class PlaybackManagerImpl(
                     }
                 } else if (state.isPlaying) {
                     lastHandledFinishedTrackId = null
+                    if (abs(state.progressMs - lastSavedPositionMs) >= 5000) {
+                        persistCurrentSession(immediate = true)
+                    }
+                } else if (isTrackLoaded && !state.isPlaying && !state.isBuffering && state.currentTrack != null) {
+                    persistCurrentSession(immediate = true)
                 }
             }
         }
@@ -112,13 +143,30 @@ class PlaybackManagerImpl(
     override fun togglePlayPause() {
         if (playbackState.value.isPlaying) {
             meloPlayer.pause()
-        } else if (playbackState.value.currentTrack != null) {
+            persistCurrentSession(immediate = true)
+        } else if (playbackState.value.isFinished) {
+            meloPlayer.seekTo(0)
             meloPlayer.play()
+        } else if (isTrackLoaded) {
+            meloPlayer.play()
+        } else if (_queueState.value.currentTrack != null) {
+            playCurrentQueueTrack(initialSeekMs = pendingRestorePositionMs)
         }
     }
 
     override fun seekTo(positionMs: Long) {
-        meloPlayer.seekTo(positionMs)
+        if (!isTrackLoaded) {
+            pendingRestorePositionMs = positionMs
+            lastSavedPositionMs = positionMs
+            val track = _queueState.value.currentTrack
+            if (track != null) {
+                meloPlayer.setIdleTrack(track, positionMs)
+            }
+            persistCurrentSession(immediate = false)
+        } else {
+            meloPlayer.seekTo(positionMs)
+            persistCurrentSession(immediate = false)
+        }
     }
 
     override fun setVolume(volume: Float) {
@@ -153,9 +201,11 @@ class PlaybackManagerImpl(
     }
 
     override fun release() {
+        persistCurrentSession(immediate = true)
         playJob?.cancel()
         prefetchJob?.cancel()
         saveVolumeJob?.cancel()
+        saveSessionJob?.cancel()
         meloPlayer.release()
     }
 
@@ -165,6 +215,9 @@ class PlaybackManagerImpl(
         _queueState.update { it.copy(tracks = tracks, currentIndex = validIndex) }
         if (validIndex >= 0) {
             playCurrentQueueTrack()
+        } else {
+            meloPlayer.stop()
+            persistCurrentSession(immediate = true)
         }
     }
 
@@ -173,6 +226,8 @@ class PlaybackManagerImpl(
         if (_queueState.value.currentIndex == -1) {
             _queueState.update { it.copy(currentIndex = 0) }
             playCurrentQueueTrack()
+        } else {
+            persistCurrentSession(immediate = false)
         }
     }
 
@@ -184,6 +239,7 @@ class PlaybackManagerImpl(
                 if (safeIndex <= it.currentIndex) it.currentIndex + 1 else it.currentIndex
             it.copy(tracks = newTracks, currentIndex = newIndex)
         }
+        persistCurrentSession(immediate = false)
     }
 
     override fun removeFromQueue(index: Int) {
@@ -203,9 +259,12 @@ class PlaybackManagerImpl(
         if (wasCurrent) {
             if (_queueState.value.tracks.isEmpty()) {
                 meloPlayer.stop()
+                persistCurrentSession(immediate = true)
             } else {
                 playCurrentQueueTrack()
             }
+        } else {
+            persistCurrentSession(immediate = true)
         }
     }
 
@@ -225,6 +284,7 @@ class PlaybackManagerImpl(
             }
             current.copy(tracks = newTracks, currentIndex = newCurrentIndex)
         }
+        persistCurrentSession(immediate = false)
     }
 
     override fun playNext() {
@@ -268,6 +328,7 @@ class PlaybackManagerImpl(
                 q.copy(tracks = shuffled, currentIndex = 0, shuffleEnabled = true)
             }
         }
+        persistCurrentSession(immediate = false)
     }
 
     override fun toggleRepeat() {
@@ -282,8 +343,12 @@ class PlaybackManagerImpl(
         }
     }
 
-    private fun playCurrentQueueTrack() {
+    private fun playCurrentQueueTrack(initialSeekMs: Long? = null) {
         val track = _queueState.value.currentTrack ?: return
+        val targetSeek = initialSeekMs
+            ?: if (!isTrackLoaded && pendingRestorePositionMs > 0) pendingRestorePositionMs else 0L
+        isTrackLoaded = true
+        pendingRestorePositionMs = 0L
         playJob?.cancel()
         playJob = scope.launch(dispatcher) {
             val isActivelyDownloading = downloadManager?.activeDownloads?.value?.let { activeMap ->
@@ -331,7 +396,8 @@ class PlaybackManagerImpl(
                     }
                     return@launch
                 }
-            meloPlayer.load(url, track)
+            meloPlayer.load(url, track, targetSeek)
+            persistCurrentSession(immediate = true)
 
             launch(dispatcher) {
                 try {
@@ -428,20 +494,44 @@ class PlaybackManagerImpl(
         }
     }
 
-    private fun nextTrackForPrefetch(): Track? {
-        val q = _queueState.value
-        return when (q.repeatMode) {
-            RepeatMode.ONE -> q.currentTrack
-            RepeatMode.ALL -> q.tracks.getOrNull((q.currentIndex + 1) % q.tracks.size)
-            RepeatMode.NONE -> q.tracks.getOrNull(q.currentIndex + 1)
-        }
-    }
-
     private fun handleTrackFinished() {
         if (_queueState.value.hasNext) {
             playNext()
         } else {
             handleAutoplay(forcePlayNext = true)
+        }
+    }
+
+    private fun persistCurrentSession(immediate: Boolean = false) {
+        if (saveSessionUseCase == null) return
+        saveSessionJob?.cancel()
+        val action = suspend {
+            val q = _queueState.value
+            if (q.tracks.isEmpty() || q.currentIndex < 0) {
+                clearSessionUseCase?.invoke()
+            } else {
+                val currentPos = if (!isTrackLoaded && pendingRestorePositionMs > 0) {
+                    pendingRestorePositionMs
+                } else {
+                    playbackState.value.progressMs
+                }
+                lastSavedPositionMs = currentPos
+                saveSessionUseCase(
+                    SavedSession(
+                        queue = q.tracks,
+                        queueIndex = q.currentIndex,
+                        positionMs = currentPos,
+                    )
+                )
+            }
+        }
+        if (immediate) {
+            scope.launch(dispatcher) { action() }
+        } else {
+            saveSessionJob = scope.launch(dispatcher) {
+                delay(1000.milliseconds)
+                action()
+            }
         }
     }
 }
