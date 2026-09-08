@@ -84,9 +84,30 @@ fun NowPlayingScreen(
     val sheetSnackbarState = remember { MeloSnackbarState() }
     var contextMenuInQueue by remember { mutableStateOf(false) }
 
+    val isTrackLiked: (Track) -> Boolean = remember(libraryState.likedSongs) {
+        { track ->
+            val rawId = track.sourceId ?: track.id.removePrefix("piped:")
+            libraryState.likedSongs.any {
+                it.id == track.id ||
+                        (!it.sourceId.isNullOrBlank() && it.sourceId == track.sourceId) ||
+                        (rawId.isNotBlank() && (it.id.removePrefix("piped:") == rawId || it.sourceId == rawId))
+            }
+        }
+    }
+
+    val currentTrackIsLiked =
+        remember(state.currentTrack, state.isFavorite, libraryState.likedSongs) {
+            val track = state.currentTrack
+            if (track == null) false
+            else state.isFavorite || isTrackLiked(track)
+        }
+    val effectiveState = remember(state, currentTrackIsLiked) {
+        state.copy(isFavorite = currentTrackIsLiked)
+    }
+
     if (interaction.contextMenuTrack != null) {
         val track = interaction.contextMenuTrack!!
-        val isLiked = libraryState.likedSongs.any { it.id == track.id }
+        val isLiked = isTrackLiked(track)
         val isDownloaded =
             libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
         val isDownloading = libraryState.activeDownloads.containsKey(track.id)
@@ -192,10 +213,10 @@ fun NowPlayingScreen(
         interaction.showAddedToQueueSnackbar(track, activeAccent)
     }
     val onSwipeRight: (Track) -> Unit = { track ->
-        val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
+        val trackIsLiked = isTrackLiked(track)
         interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
     }
-    val isLiked: (Track) -> Boolean = { track -> libraryState.likedSongs.any { it.id == track.id } }
+    val isLiked: (Track) -> Boolean = isTrackLiked
 
     Box(
         modifier = modifier
@@ -204,7 +225,7 @@ fun NowPlayingScreen(
                 detectTapGestures { }
             }
     ) {
-        NowPlayingBackground(artworkUrl = state.albumArt)
+        NowPlayingBackground(artworkUrl = effectiveState.albumArt)
 
         Column(
             modifier = Modifier
@@ -225,7 +246,7 @@ fun NowPlayingScreen(
                     )
             ) {
                 NowPlayingTopBar(
-                    title = state.title,
+                    title = effectiveState.title,
                     onCollapse = onCollapse
                 )
 
@@ -233,7 +254,7 @@ fun NowPlayingScreen(
 
                 if (platform.type == PlatformType.DESKTOP) {
                     NowPlayingDesktopLayout(
-                        state = state,
+                        state = effectiveState,
                         activeAccent = activeAccent,
                         showLyrics = showLyrics,
                         onToggleLyrics = { showLyrics = !showLyrics },
@@ -260,7 +281,7 @@ fun NowPlayingScreen(
                     )
                 } else {
                     NowPlayingMobileLayout(
-                        state = state,
+                        state = effectiveState,
                         activeAccent = activeAccent,
                         showLyrics = showLyrics,
                         onToggleLyrics = { showLyrics = !showLyrics },
@@ -311,7 +332,7 @@ fun NowPlayingScreen(
         if (playlistTrack != null) {
             val containingPlaylistIds by remember(playlistTrack.id) {
                 libraryViewModel.getPlaylistIdsForTrack(playlistTrack.id)
-            }.collectAsState(initial = emptySet<Long>())
+            }.collectAsState(initial = emptySet())
 
             AddToPlaylistSheet(
                 track = playlistTrack,

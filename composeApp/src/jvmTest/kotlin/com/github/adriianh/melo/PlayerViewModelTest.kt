@@ -6,6 +6,7 @@ import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.domain.provider.MusicProvider
+import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
@@ -13,6 +14,8 @@ import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.AccentColorExtractor
 import io.ktor.client.HttpClient
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -199,5 +202,45 @@ class PlayerViewModelTest {
     fun `toggleMute calls manager`() {
         createVm().toggleMute()
         verify { playbackManager.toggleMute() }
+    }
+
+    @Test
+    fun `isFavorite reflects liked songs from use case`() = runTest {
+        val track = Track("piped:v1", "Song", "Artist", "Album", 180_000, emptyList(), null, "v1")
+        playbackFlow.value = PlaybackState(currentTrack = track, isPlaying = true)
+
+        val getLikedSongsUseCase = mockk<GetLikedSongsUseCase>()
+        coEvery { getLikedSongsUseCase() } returns Result.success(listOf(track))
+
+        val vm = PlayerViewModel(
+            playbackManager,
+            httpClient,
+            toggleLikeTrackUseCase,
+            recordPlayUseCase,
+            musicProvider,
+            getTrackLyricsUseCase,
+            translateLyricsUseCase,
+            getLikedSongsUseCase = getLikedSongsUseCase
+        )
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isFavorite)
+    }
+
+    @Test
+    fun `toggleFavorite toggles state and invokes use case`() = runTest {
+        val track = Track("piped:v1", "Song", "Artist", "Album", 180_000, emptyList(), null, "v1")
+        playbackFlow.value = PlaybackState(currentTrack = track, isPlaying = true)
+        coEvery { toggleLikeTrackUseCase("v1", true) } returns Result.success(Unit)
+
+        val vm = createVm()
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.isFavorite)
+
+        vm.toggleFavorite()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isFavorite)
+        coVerify { toggleLikeTrackUseCase("v1", true) }
     }
 }

@@ -311,7 +311,19 @@ val useCaseModule = module {
  * ViewModel module for all shared ViewModels.
  */
 val viewModelModule = module {
-    viewModelOf(::PlayerViewModel)
+    viewModel {
+        PlayerViewModel(
+            manager = get(),
+            httpClient = get(),
+            toggleLikeTrackUseCase = get(),
+            recordPlayUseCase = get(),
+            musicProvider = get(),
+            getTrackLyricsUseCase = get(),
+            translateLyricsUseCase = get(),
+            getLikedSongsUseCase = getOrNull<GetLikedSongsUseCase>(),
+            observeLibraryUpdatesUseCase = getOrNull<ObserveLibraryUpdatesUseCase>(),
+        )
+    }
     viewModelOf(::QueueViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::LoginViewModel)

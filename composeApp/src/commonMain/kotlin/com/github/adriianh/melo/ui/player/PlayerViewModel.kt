@@ -6,6 +6,9 @@ import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.MusicProvider
+import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
+import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
+import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
@@ -28,6 +31,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,6 +43,8 @@ class PlayerViewModel(
     private val musicProvider: MusicProvider,
     private val getTrackLyricsUseCase: GetTrackLyricsUseCase,
     private val translateLyricsUseCase: TranslateLyricsUseCase,
+    private val getLikedSongsUseCase: GetLikedSongsUseCase? = null,
+    observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
@@ -46,6 +52,8 @@ class PlayerViewModel(
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     private val _isFavorite = MutableStateFlow(false)
+    private val _likedTrackIds = MutableStateFlow<Set<String>>(emptySet())
+    private var hasFetchedLikedSongs = false
 
     private val _artistDetails = MutableStateFlow<SearchResult.Artist?>(null)
     val artistDetails: StateFlow<SearchResult.Artist?> = _artistDetails.asStateFlow()
@@ -96,6 +104,26 @@ class PlayerViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PlayerUiState())
 
     init {
+        fetchLikedSongs()
+
+        observeLibraryUpdatesUseCase?.let { observeUseCase ->
+            viewModelScope.launch {
+                observeUseCase().collectLatest { event ->
+                    if (event is LibraryUpdateEvent.TrackLiked) {
+                        val rawId = event.videoId.removePrefix("piped:")
+                        _likedTrackIds.update { current ->
+                            if (event.isLiked) {
+                                current + setOf(rawId, event.videoId, "piped:$rawId")
+                            } else {
+                                current - setOf(rawId, event.videoId, "piped:$rawId")
+                            }
+                        }
+                        updateFavoriteForCurrentTrack()
+                    }
+                }
+            }
+        }
+
         viewModelScope.launch {
             manager.playbackState
                 .map { it.currentTrack?.artworkUrl }
@@ -113,21 +141,15 @@ class PlayerViewModel(
         }
         viewModelScope.launch {
             manager.playbackState
-                .map { it.currentTrack?.sourceId }
-                .distinctUntilChanged()
-                .collectLatest {
-                    _isFavorite.value = false
-                }
-        }
-        viewModelScope.launch {
-            manager.playbackState
                 .map { it.currentTrack }
                 .distinctUntilChanged()
                 .collectLatest { track ->
                     if (track != null) {
+                        updateFavoriteForCurrentTrack()
                         recordPlayUseCase(track)
                         loadLyrics(track.artist, track.title, track.id)
                     } else {
+                        _isFavorite.value = false
                         _trackLyrics.value = null
                         _isLyricsLoading.value = false
                     }
@@ -239,17 +261,66 @@ class PlayerViewModel(
 
     fun toggleMute() = manager.toggleMute()
 
+    private fun fetchLikedSongs() {
+        if (getLikedSongsUseCase == null) return
+        viewModelScope.launch {
+            val result = getLikedSongsUseCase().getOrNull()
+            if (result != null) {
+                hasFetchedLikedSongs = true
+                val ids = result.flatMap { track ->
+                    listOfNotNull(
+                        track.id,
+                        track.sourceId,
+                        track.id.removePrefix("piped:").takeIf { it.isNotBlank() }
+                    )
+                }.toSet()
+                _likedTrackIds.value = ids
+                updateFavoriteForCurrentTrack()
+            }
+        }
+    }
+
+    private fun updateFavoriteForCurrentTrack() {
+        val track = manager.playbackState.value.currentTrack
+        if (track == null) {
+            _isFavorite.value = false
+            return
+        }
+        val rawId = track.sourceId ?: track.id.removePrefix("piped:")
+        val ids = _likedTrackIds.value
+        _isFavorite.value =
+            track.id in ids || (rawId.isNotBlank() && rawId in ids) || ("piped:$rawId" in ids)
+        if (!hasFetchedLikedSongs && getLikedSongsUseCase != null) {
+            fetchLikedSongs()
+        }
+    }
+
     fun toggleFavorite() {
         val track = manager.playbackState.value.currentTrack ?: return
-        val videoId = track.sourceId ?: return
+        val videoId = track.sourceId ?: track.id.removePrefix("piped:")
+        if (videoId.isBlank()) return
         val newFavorite = !_isFavorite.value
         _isFavorite.value = newFavorite
+        val rawId = videoId.removePrefix("piped:")
+        _likedTrackIds.update { current ->
+            if (newFavorite) {
+                current + setOf(rawId, videoId, "piped:$rawId", track.id)
+            } else {
+                current - setOf(rawId, videoId, "piped:$rawId", track.id)
+            }
+        }
         viewModelScope.launch {
             val result = toggleLikeTrackUseCase(videoId, newFavorite)
             if (result.isFailure) {
                 _isFavorite.value = !newFavorite
+                _likedTrackIds.update { current ->
+                    if (!newFavorite) {
+                        current + setOf(rawId, videoId, "piped:$rawId", track.id)
+                    } else {
+                        current - setOf(rawId, videoId, "piped:$rawId", track.id)
+                    }
+                }
             }
         }
     }
 }
-
