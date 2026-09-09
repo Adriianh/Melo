@@ -112,9 +112,31 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        create("release") {
+            val keystorePath =
+                System.getenv("KEYSTORE_PATH") ?: (project.findProperty("KEYSTORE_PATH") as? String)
+            if (keystorePath != null && file(keystorePath).exists()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    ?: (project.findProperty("KEYSTORE_PASSWORD") as? String)
+                keyAlias =
+                    System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS") as? String)
+                keyPassword = System.getenv("KEY_PASSWORD")
+                    ?: (project.findProperty("KEY_PASSWORD") as? String)
+            } else {
+                val debugConfig = getByName("debug")
+                storeFile = debugConfig.storeFile
+                storePassword = debugConfig.storePassword
+                keyAlias = debugConfig.keyAlias
+                keyPassword = debugConfig.keyPassword
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
