@@ -44,13 +44,15 @@ import com.github.adriianh.melo.ui.search.components.ExploreContent
 import com.github.adriianh.melo.ui.search.components.SearchFilterChipsRow
 import com.github.adriianh.melo.ui.search.components.SearchOverlayWrapper
 import com.github.adriianh.melo.ui.search.components.SearchResultsContent
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SearchScreen(
-    onAlbumClick: (String) -> Unit,
-    onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit,
-    onArtistClick: (String) -> Unit,
+    onAlbumClick: (String) -> Unit = {},
+    onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
+    onArtistClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: SearchViewModel = koinViewModel(),
@@ -60,10 +62,14 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val playerViewModel: PlayerViewModel = koinViewModel()
-    val playerState by playerViewModel.uiState.collectAsState()
+    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
+        .distinctUntilChanged().collectAsState(Color.Transparent)
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(playerState)
+    val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
+    val likedTrackIds = remember(libraryState.likedSongs) {
+        libraryState.likedSongs.map { it.id }.toSet()
+    }
 
     val focusManager = LocalFocusManager.current
     var isSearchActive by remember { mutableStateOf(false) }
@@ -185,9 +191,9 @@ fun SearchScreen(
                         queueViewModel = queueViewModel,
                         onMoreClick = { interaction.openContextMenu(it) },
                         onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
-                        isLiked = { track -> libraryState.likedSongs.any { it.id == track.id } },
+                        isLiked = { track -> track.id in likedTrackIds },
                         onSwipeRight = { track ->
-                            val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
+                            val trackIsLiked = track.id in likedTrackIds
                             interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
                         },
                         isSelectionMode = isSelectionMode,
@@ -210,9 +216,9 @@ fun SearchScreen(
                         queueViewModel = queueViewModel,
                         onMoreClick = { interaction.openContextMenu(it) },
                         onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
-                        isLiked = { track -> libraryState.likedSongs.any { it.id == track.id } },
+                        isLiked = { track -> track.id in likedTrackIds },
                         onSwipeRight = { track ->
-                            val trackIsLiked = libraryState.likedSongs.any { it.id == track.id }
+                            val trackIsLiked = track.id in likedTrackIds
                             interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
                         },
                         isSelectionMode = isSelectionMode,

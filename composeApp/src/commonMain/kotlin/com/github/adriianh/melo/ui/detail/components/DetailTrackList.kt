@@ -40,8 +40,9 @@ fun LazyListScope.detailTrackItems(
     onToggleSelectTrack: ((Track) -> Unit)? = null,
 ) {
     itemsIndexed(
-        tracks,
-        key = { index, song -> "${keyPrefix}_${song.id}_$index" }
+        items = tracks,
+        key = { index, song -> "${keyPrefix}_${song.id}_$index" },
+        contentType = { _, _ -> "detail_track_row" }
     ) { index, song ->
         val isPlayingThis = currentTrackId == song.id
         val liked = isLiked(song)

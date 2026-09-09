@@ -5,9 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
@@ -66,13 +72,19 @@ fun ArtistDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val playerUiState by playerViewModel.uiState.collectAsState()
+    val isPlaying by playerViewModel.uiState.map { it.isPlaying }.distinctUntilChanged()
+        .collectAsState(false)
+    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
+        .distinctUntilChanged().collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(playerUiState)
+    val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
     val accentColor = MaterialTheme.colorScheme.primary
+    val likedTrackIds = remember(libraryState.likedSongs) {
+        libraryState.likedSongs.map { it.id }.toSet()
+    }
 
     LaunchedEffect(artistId) {
         viewModel.loadArtist(artistId, initialName, initialArtwork)
@@ -127,14 +139,14 @@ fun ArtistDetailScreen(
         }
         val hasArtistContent = allPlayableTracks.isNotEmpty() || !artist?.sections.isNullOrEmpty()
 
-        if (uiState.isLoading && !hasArtistContent) {
+        if (uiState.isLoading && !hasArtistContent && initialName.isBlank() && initialArtwork == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
-        } else if (uiState.error != null && !hasArtistContent) {
+        } else if (uiState.error != null && !hasArtistContent && initialName.isBlank()) {
             MeloErrorState(
                 error = uiState.error,
                 onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
@@ -209,8 +221,8 @@ fun ArtistDetailScreen(
                         detailTrackItems(
                             tracks = downloadedSongs,
                             currentTrackId = queueState.currentTrack?.id,
-                            isPlaying = playerUiState.isPlaying,
-                            isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            isPlaying = isPlaying,
+                            isLiked = { song -> song.id in likedTrackIds },
                             isDownloaded = { true },
                             isDownloading = { false },
                             downloadProgress = { 0f },
@@ -228,7 +240,7 @@ fun ArtistDetailScreen(
                                 )
                             },
                             onSwipeRight = { song ->
-                                val isLiked = libraryState.likedSongs.any { it.id == song.id }
+                                val isLiked = song.id in likedTrackIds
                                 interaction.showToggledLikeSnackbar(
                                     song,
                                     isLiked,
@@ -251,11 +263,13 @@ fun ArtistDetailScreen(
                         detailTrackItems(
                             tracks = topSongs,
                             currentTrackId = queueState.currentTrack?.id,
-                            isPlaying = playerUiState.isPlaying,
-                            isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                            isPlaying = isPlaying,
+                            isLiked = { song -> song.id in likedTrackIds },
                             isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
                             isDownloading = { song -> song.id in uiState.activeDownloadsMap },
-                            downloadProgress = { song -> uiState.activeDownloadsMap[song.id] ?: 0f },
+                            downloadProgress = { song ->
+                                uiState.activeDownloadsMap[song.id] ?: 0f
+                            },
                             onTrackClick = { index, _ ->
                                 queueViewModel.playTracks(
                                     topSongs,
@@ -270,7 +284,7 @@ fun ArtistDetailScreen(
                                 )
                             },
                             onSwipeRight = { song ->
-                                val isLiked = libraryState.likedSongs.any { it.id == song.id }
+                                val isLiked = song.id in likedTrackIds
                                 interaction.showToggledLikeSnackbar(
                                     song,
                                     isLiked,
@@ -281,6 +295,23 @@ fun ArtistDetailScreen(
                             keyPrefix = "artist_top",
                             itemModifier = Modifier.padding(horizontal = 16.dp)
                         )
+                    } else if (uiState.isLoading && downloadedSongs.isEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Canciones populares",
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                        items(5) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .height(56.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MeloColors.surface2.copy(alpha = 0.5f))
+                            )
+                        }
                     }
 
                     val sections = artist?.sections.orEmpty()

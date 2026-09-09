@@ -20,7 +20,7 @@ import org.koin.dsl.module
 actual val platformModule: Module = module {
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
-    single<MediaSessionManager>(createdAtStart = true) {
+    single<MediaSessionManager> {
         AndroidMediaSessionManager(
             context = androidContext(),
             playbackManager = get(),
@@ -31,7 +31,7 @@ actual val platformModule: Module = module {
 
     single(named("configDirPath")) { androidContext().filesDir.absolutePath }
 
-    single<AudioProvider>(createdAtStart = true) {
+    single<AudioProvider> {
         val pipedProvider = PipedAudioProvider(apiClient = get())
         InnerTubeAudioProvider(
             configDirPath = get(named("configDirPath")),

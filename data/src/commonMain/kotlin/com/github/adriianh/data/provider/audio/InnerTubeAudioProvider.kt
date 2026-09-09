@@ -13,8 +13,6 @@ import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
 import com.github.adriianh.innertube.pages.getNewPipeStreamUrls
 import com.github.adriianh.innertube.utils.YouTubeStreamUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -45,15 +43,6 @@ class InnerTubeAudioProvider(
     private val resolvedUrlCache = mutableMapOf<String, Pair<String, Long>>()
     private val sourceIdCache = mutableMapOf<String, String>()
     private val mutex = Mutex()
-
-    init {
-        CoroutineScope(MeloDispatchers.IO).launch {
-            try {
-                YouTubeStreamUtils.prewarm("dQw4w9WgXcQ")
-            } catch (_: Exception) {
-            }
-        }
-    }
 
     private suspend fun <T> withTimeoutOrNull(timeoutMs: Long, block: suspend () -> T): T? {
         return try {

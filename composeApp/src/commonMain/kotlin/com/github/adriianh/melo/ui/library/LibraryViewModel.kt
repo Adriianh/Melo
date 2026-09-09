@@ -35,7 +35,10 @@ import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,6 +49,7 @@ import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class LibraryTab(val label: String) {
     PLAYLISTS("Playlists"),
@@ -135,6 +139,7 @@ class LibraryViewModel(
     private val downloadManager: DownloadManager,
     private val playbackManager: PlaybackManager,
     observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
+    private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -160,55 +165,56 @@ class LibraryViewModel(
             }
             localHistory + filteredRemote
         }
-        _uiState.value = _uiState.value.copy(history = merged)
+        _uiState.update { it.copy(history = merged) }
     }
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             getPlaylistsUseCase().collectLatest { playlists ->
-                _uiState.value = _uiState.value.copy(customPlaylists = playlists)
+                _uiState.update { it.copy(customPlaylists = playlists) }
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             getRecentTracksUseCase(limit = 100).collectLatest { recent ->
                 localHistory = recent
                 updateMergedHistory()
             }
         }
-        viewModelScope.launch {
-            syncOfflineTracksUseCase()
+        viewModelScope.launch(ioDispatcher) {
             getOfflineTracksUseCase().collectLatest { tracks ->
-                _uiState.value = _uiState.value.copy(
-                    downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                )
+                _uiState.update {
+                    it.copy(
+                        downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                    )
+                }
             }
         }
+        viewModelScope.launch(ioDispatcher) {
+            delay(3500.milliseconds)
+            syncOfflineTracksUseCase()
+        }
 
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             downloadManager.activeDownloads.collectLatest { downloads ->
-                _uiState.value = _uiState.value.copy(activeDownloads = downloads)
+                _uiState.update { it.copy(activeDownloads = downloads) }
             }
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             getSettingsUseCase().collectLatest { settings ->
-                _uiState.value = _uiState.value.copy(
-                    localLibraryPaths = settings.localLibraryPaths
-                )
+                _uiState.update {
+                    it.copy(
+                        localLibraryPaths = settings.localLibraryPaths
+                    )
+                }
             }
         }
-        scanLocalTracks()
-
-        // Account / Online library sync
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
                 ?.takeIf { it.isNotBlank() }
 
             val initiallyLoggedIn = initialCookies != null
-            _uiState.value = _uiState.value.copy(isLoggedIn = initiallyLoggedIn)
-            if (initiallyLoggedIn) {
-                refreshAll()
-            }
+            _uiState.update { it.copy(isLoggedIn = initiallyLoggedIn) }
 
             getSettingsUseCase()
                 .map { it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } }
@@ -216,7 +222,7 @@ class LibraryViewModel(
                 .distinctUntilChanged()
                 .collectLatest { cookies ->
                     val loggedIn = cookies != null
-                    _uiState.value = _uiState.value.copy(isLoggedIn = loggedIn)
+                    _uiState.update { it.copy(isLoggedIn = loggedIn) }
                     if (loggedIn) {
                         refreshAll()
                     }
@@ -224,7 +230,7 @@ class LibraryViewModel(
         }
 
         observeLibraryUpdatesUseCase?.let { observeUseCase ->
-            viewModelScope.launch {
+            viewModelScope.launch(ioDispatcher) {
                 observeUseCase().collectLatest { event ->
                     when (event) {
                         is LibraryUpdateEvent.TrackLiked -> {
@@ -304,7 +310,7 @@ class LibraryViewModel(
 
     fun refreshRemoteHistory() {
         if (!_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val result = getRemoteHistoryUseCase()
             if (result.isSuccess) {
                 remoteHistory = result.getOrDefault(emptyList())
@@ -315,7 +321,7 @@ class LibraryViewModel(
 
     fun refreshLikedSongs() {
         if (!_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val result = getLikedSongsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(likedSongs = result.getOrDefault(it.likedSongs)) }
@@ -325,7 +331,7 @@ class LibraryViewModel(
 
     fun refreshPlaylists() {
         if (!_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val result = getUserPlaylistsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(playlists = result.getOrDefault(it.playlists)) }
@@ -335,7 +341,7 @@ class LibraryViewModel(
 
     fun refreshAlbums() {
         if (!_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val result = getUserAlbumsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(albums = result.getOrDefault(it.albums)) }
@@ -345,7 +351,7 @@ class LibraryViewModel(
 
     fun refreshArtists() {
         if (!_uiState.value.isLoggedIn) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val result = getUserArtistsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(artists = result.getOrDefault(it.artists)) }
@@ -354,62 +360,64 @@ class LibraryViewModel(
     }
 
     fun scanLocalTracks() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isScanningLocal = true)
+        viewModelScope.launch(ioDispatcher) {
+            _uiState.update { it.copy(isScanningLocal = true) }
             val settings = getSettingsUseCase.getSnapshot()
             val paths = settings.localLibraryPaths
             val scanned = scanLocalTracksUseCase(paths)
-            _uiState.value = _uiState.value.copy(
-                localTracks = scanned,
-                localLibraryPaths = paths,
-                isScanningLocal = false
-            )
+            _uiState.update {
+                it.copy(
+                    localTracks = scanned,
+                    localLibraryPaths = paths,
+                    isScanningLocal = false
+                )
+            }
 
             if (scanned.isNotEmpty()) {
                 val enriched = enrichLocalTracksUseCase(scanned)
-                _uiState.value = _uiState.value.copy(localTracks = enriched)
+                _uiState.update { it.copy(localTracks = enriched) }
             }
         }
     }
 
     fun addLocalLibraryPath(path: String) {
         if (path.isBlank()) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val currentSettings = getSettingsUseCase.getSnapshot()
             val cleanPath = path.trim()
             if (cleanPath !in currentSettings.localLibraryPaths) {
                 val updatedPaths = currentSettings.localLibraryPaths + cleanPath
                 updateSettingsUseCase(currentSettings.copy(localLibraryPaths = updatedPaths))
-                _uiState.value = _uiState.value.copy(localLibraryPaths = updatedPaths)
+                _uiState.update { it.copy(localLibraryPaths = updatedPaths) }
                 scanLocalTracks()
             }
         }
     }
 
     fun removeLocalLibraryPath(path: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val currentSettings = getSettingsUseCase.getSnapshot()
             val updatedPaths = currentSettings.localLibraryPaths.filter { it != path }
             updateSettingsUseCase(currentSettings.copy(localLibraryPaths = updatedPaths))
-            _uiState.value = _uiState.value.copy(localLibraryPaths = updatedPaths)
+            _uiState.update { it.copy(localLibraryPaths = updatedPaths) }
             scanLocalTracks()
         }
     }
 
     fun downloadTrack(track: Track) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             downloadManager.downloadTrack(track)
         }
     }
 
     fun deleteDownloadedTrack(trackId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             deleteDownloadedTrackUseCase(trackId)
         }
     }
 
     fun refreshAll(silent: Boolean = false) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             syncOfflineTracksUseCase()
             scanLocalTracks()
             if (!_uiState.value.isLoggedIn) return@launch
@@ -461,7 +469,7 @@ class LibraryViewModel(
     }
 
     fun toggleLike(trackId: String, isLiked: Boolean) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             if (!isLiked) {
                 _uiState.update { current ->
                     current.copy(likedSongs = current.likedSongs.filterNot { it.id == trackId })
@@ -477,7 +485,7 @@ class LibraryViewModel(
 
     fun createPlaylist(name: String, onCreated: ((Long) -> Unit)? = null) {
         if (name.isBlank()) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val id = createPlaylistUseCase(name)
             onCreated?.invoke(id)
         }
@@ -485,19 +493,19 @@ class LibraryViewModel(
 
     fun renamePlaylist(id: Long, newName: String) {
         if (newName.isBlank()) return
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             renamePlaylistUseCase(id, newName)
         }
     }
 
     fun deletePlaylist(id: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             deletePlaylistUseCase(id)
         }
     }
 
     fun addTrackToPlaylist(playlistId: Long, track: Track, onAdded: (() -> Unit)? = null) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             addTrackToPlaylistUseCase(playlistId, track)
             onAdded?.invoke()
         }
@@ -508,7 +516,7 @@ class LibraryViewModel(
         tracks: List<Track>,
         onAdded: ((Int) -> Unit)? = null
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val count = addTracksToPlaylistUseCase(playlistId, tracks)
             onAdded?.invoke(count)
         }

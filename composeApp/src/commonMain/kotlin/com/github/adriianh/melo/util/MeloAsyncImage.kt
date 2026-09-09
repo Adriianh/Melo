@@ -12,23 +12,49 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.internal.SynchronizedObject
+import kotlinx.coroutines.internal.synchronized
 
-fun normalizeArtworkUrl(url: String?, size: Int = 1080): String? {
+private val GOOGLE_USERCONTENT_WH_REGEX = Regex("=w\\d+-h\\d+[^?&]*")
+private val GOOGLE_USERCONTENT_S_REGEX = Regex("=s\\d+[^?&]*")
+private val normalizedUrlCache = mutableMapOf<Pair<String, Int>, String>()
+private val normalizedUrlCacheLock = Any()
+
+@OptIn(InternalCoroutinesApi::class)
+fun normalizeArtworkUrl(url: String?, size: Int = 360): String? {
     if (url.isNullOrBlank()) return url
-    var result = url
-    if (result.contains("googleusercontent.com") || result.contains("ggpht.com")) {
-        result = result.replace(Regex("=w\\d+-h\\d+[^?&]*"), "=w$size-h$size-l90-rj")
-        result = result.replace(Regex("=s\\d+[^?&]*"), "=s$size-c")
-        if (!result.contains("=") && !result.contains("?")) {
-            result = "$result=w$size-h$size-l90-rj"
+    val cacheKey = Pair(url, size)
+    synchronized(normalizedUrlCacheLock as SynchronizedObject) {
+        val cached = normalizedUrlCache[cacheKey]
+        if (cached != null) return cached
+
+        var result = url
+        if (result.contains("googleusercontent.com") || result.contains("ggpht.com")) {
+            result = result.replace(GOOGLE_USERCONTENT_WH_REGEX, "=w$size-h$size-l90-rj")
+            result = result.replace(GOOGLE_USERCONTENT_S_REGEX, "=s$size-c")
+            if (!result.contains("=") && !result.contains("?")) {
+                result = "$result=w$size-h$size-l90-rj"
+            }
+        } else if (result.contains("i.ytimg.com/vi/") || result.contains("img.youtube.com/vi/")) {
+            result = if (size <= 120) {
+                result.replace("/default.jpg", "/mqdefault.jpg")
+                    .replace("/hq720.jpg", "/mqdefault.jpg")
+                    .replace("/sddefault.jpg", "/mqdefault.jpg")
+                    .replace("/hqdefault.jpg", "/mqdefault.jpg")
+            } else {
+                result.replace("/default.jpg", "/hqdefault.jpg")
+                    .replace("/hq720.jpg", "/hqdefault.jpg")
+                    .replace("/sddefault.jpg", "/hqdefault.jpg")
+                    .replace("/mqdefault.jpg", "/hqdefault.jpg")
+            }
         }
-    } else if (result.contains("i.ytimg.com/vi/") || result.contains("img.youtube.com/vi/")) {
-        result = result.replace("/default.jpg", "/hq720.jpg")
-            .replace("/mqdefault.jpg", "/hq720.jpg")
-            .replace("/sddefault.jpg", "/hq720.jpg")
-            .replace("/hqdefault.jpg", "/hq720.jpg")
+        if (normalizedUrlCache.size > 500) {
+            normalizedUrlCache.clear()
+        }
+        normalizedUrlCache[cacheKey] = result
+        return result
     }
-    return result
 }
 
 @Composable
@@ -49,7 +75,13 @@ fun MeloAsyncImage(
     shape: Shape = RoundedCornerShape(4.dp),
 ) {
     if (!url.isNullOrBlank()) {
-        val highResUrl = remember(url) { normalizeArtworkUrl(url) }
+        val targetPx = when {
+            size == null -> 544
+            size <= 64.dp -> 180
+            size <= 160.dp -> 360
+            else -> 544
+        }
+        val highResUrl = remember(url, targetPx) { normalizeArtworkUrl(url, targetPx) }
         PlatformAsyncImage(
             url = highResUrl,
             contentDescription = contentDescription,

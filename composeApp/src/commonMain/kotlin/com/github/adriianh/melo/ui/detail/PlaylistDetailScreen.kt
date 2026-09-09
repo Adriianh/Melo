@@ -5,10 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -40,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -77,13 +83,19 @@ fun PlaylistDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val playerUiState by playerViewModel.uiState.collectAsState()
+    val isPlaying by playerViewModel.uiState.map { it.isPlaying }.distinctUntilChanged()
+        .collectAsState(false)
+    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
+        .distinctUntilChanged().collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(playerUiState)
+    val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
     val accentColor = MaterialTheme.colorScheme.primary
+    val likedTrackIds = remember(libraryState.likedSongs) {
+        libraryState.likedSongs.map { it.id }.toSet()
+    }
 
     val isCustomPlaylist = remember(playlistId) {
         playlistId.startsWith("local:")
@@ -229,14 +241,14 @@ fun PlaylistDetailScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.isLoading && songs.isEmpty()) {
+        if (uiState.isLoading && songs.isEmpty() && initialTitle.isBlank() && initialArtwork == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
-        } else if (uiState.error != null && songs.isEmpty()) {
+        } else if (uiState.error != null && songs.isEmpty() && initialTitle.isBlank()) {
             MeloErrorState(
                 error = uiState.error,
                 onRetry = {
@@ -359,7 +371,7 @@ fun PlaylistDetailScreen(
                                     isSelectionMode = isSelectionMode,
                                     isSelected = song.id in selectedTrackIds,
                                     isCurrent = queueState.currentTrack?.id == song.id,
-                                    isPlaying = queueState.currentTrack?.id == song.id && playerUiState.isPlaying,
+                                    isPlaying = queueState.currentTrack?.id == song.id && isPlaying,
                                     isDownloaded = song.id in uiState.downloadedTrackIds,
                                     isDownloading = song.id in uiState.activeDownloadsMap,
                                     downloadProgress = uiState.activeDownloadsMap[song.id] ?: 0f,
@@ -386,12 +398,12 @@ fun PlaylistDetailScreen(
                                     onSwipeRight = {
                                         interaction.showToggledLikeSnackbar(
                                             song,
-                                            libraryState.likedSongs.any { it.id == song.id },
+                                            song.id in likedTrackIds,
                                             activeAccent
                                         )
                                     },
                                     swipeRightIcon = if (
-                                        libraryState.likedSongs.any { it.id == song.id }
+                                        song.id in likedTrackIds
                                     ) Icons.Default.HeartBroken else Icons.Default.Favorite
                                 )
                             }
@@ -399,8 +411,8 @@ fun PlaylistDetailScreen(
                             detailTrackItems(
                                 tracks = songs,
                                 currentTrackId = queueState.currentTrack?.id,
-                                isPlaying = playerUiState.isPlaying,
-                                isLiked = { song -> libraryState.likedSongs.any { it.id == song.id } },
+                                isPlaying = isPlaying,
+                                isLiked = { song -> song.id in likedTrackIds },
                                 isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
                                 isDownloading = { song -> song.id in uiState.activeDownloadsMap },
                                 downloadProgress = { song ->
@@ -434,7 +446,7 @@ fun PlaylistDetailScreen(
                                     )
                                 },
                                 onSwipeRight = { song ->
-                                    val isLiked = libraryState.likedSongs.any { it.id == song.id }
+                                    val isLiked = song.id in likedTrackIds
                                     interaction.showToggledLikeSnackbar(
                                         song,
                                         isLiked,
@@ -443,6 +455,16 @@ fun PlaylistDetailScreen(
                                 },
                                 accentColor = accentColor,
                                 keyPrefix = "playlist"
+                            )
+                        }
+                    } else if (uiState.isLoading) {
+                        items(6) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MeloColors.surface2.copy(alpha = 0.5f))
                             )
                         }
                     }

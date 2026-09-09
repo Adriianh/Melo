@@ -7,6 +7,9 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +17,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 data class SidebarUiState(
     val isLoggedIn: Boolean = false,
@@ -26,19 +31,21 @@ class SidebarViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val getAccountProfileUseCase: GetAccountProfileUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SidebarUiState())
     val uiState: StateFlow<SidebarUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
                 ?.takeIf { it.isNotBlank() }
 
             val initiallyLoggedIn = initialCookies != null
-            _uiState.value = _uiState.value.copy(isLoggedIn = initiallyLoggedIn)
+            _uiState.update { it.copy(isLoggedIn = initiallyLoggedIn) }
             if (initiallyLoggedIn) {
+                delay(1500.milliseconds)
                 refreshLibrary()
             }
 
@@ -48,7 +55,7 @@ class SidebarViewModel(
                 .distinctUntilChanged()
                 .collectLatest { cookies ->
                     val loggedIn = cookies != null
-                    _uiState.value = _uiState.value.copy(isLoggedIn = loggedIn)
+                    _uiState.update { it.copy(isLoggedIn = loggedIn) }
                     if (loggedIn) {
                         refreshLibrary()
                     }
@@ -59,14 +66,16 @@ class SidebarViewModel(
     fun refreshLibrary() {
         if (!_uiState.value.isLoggedIn) return
 
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             val profileResult = getAccountProfileUseCase()
             val playlistsResult = getUserPlaylistsUseCase()
 
-            _uiState.value = _uiState.value.copy(
-                profile = profileResult.getOrNull() ?: _uiState.value.profile,
-                playlists = playlistsResult.getOrDefault(emptyList())
-            )
+            _uiState.update {
+                it.copy(
+                    profile = profileResult.getOrNull() ?: it.profile,
+                    playlists = playlistsResult.getOrDefault(emptyList())
+                )
+            }
         }
     }
 }

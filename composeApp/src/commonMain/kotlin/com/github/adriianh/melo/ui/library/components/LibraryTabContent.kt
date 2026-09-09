@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,9 @@ fun LibraryTabContent(
     queueViewModel: QueueViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val likedTrackIds = remember(state.likedSongs) {
+        state.likedSongs.map { it.id }.toSet()
+    }
     val visibleSongs = when (tab) {
         LibraryTab.LIKED -> filters.likedSongs
         LibraryTab.HISTORY -> filters.history.map { it.track }
@@ -157,7 +161,7 @@ fun LibraryTabContent(
 
                 LibraryTab.HISTORY -> HistoryTabContent(
                     history = filters.history,
-                    isLiked = { track -> state.likedSongs.any { it.id == track.id } },
+                    isLiked = { track -> track.id in likedTrackIds },
                     onPlayTrack = { entry ->
                         viewModel.playTrack(entry.track)
                     },
@@ -166,7 +170,7 @@ fun LibraryTabContent(
                         interaction.showAddedToQueueSnackbar(it, activeAccent)
                     },
                     onSwipeRight = { track ->
-                        val trackIsLiked = state.likedSongs.any { it.id == track.id }
+                        val trackIsLiked = track.id in likedTrackIds
                         interaction.showToggledLikeSnackbar(
                             track,
                             trackIsLiked,
