@@ -29,6 +29,7 @@ class HistoryRepositoryImpl(
         settingsRepository = object : SettingsRepository {
             private val flow = MutableStateFlow(Settings(syncHistoryToYouTube = false))
             override fun getSettingsFlow() = flow
+            override fun getSettingsSync() = flow.value
             override suspend fun getSettings() = flow.value
             override suspend fun updateSettings(settings: Settings) {}
         }

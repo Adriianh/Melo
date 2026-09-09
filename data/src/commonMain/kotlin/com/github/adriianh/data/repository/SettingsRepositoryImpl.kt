@@ -1,4 +1,3 @@
-
 package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.Settings
@@ -6,8 +5,8 @@ import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.innertube.YouTube
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -21,6 +20,7 @@ class SettingsRepositoryImpl(
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
+        encodeDefaults = true
     }
 
     private val _settingsFlow = MutableStateFlow(loadSettingsSync())
@@ -29,7 +29,9 @@ class SettingsRepositoryImpl(
         syncYouTubeSession(_settingsFlow.value.sessionCookies)
     }
 
-    override fun getSettingsFlow(): Flow<Settings> = _settingsFlow.asStateFlow()
+    override fun getSettingsFlow(): StateFlow<Settings> = _settingsFlow.asStateFlow()
+
+    override fun getSettingsSync(): Settings = _settingsFlow.value
 
     override suspend fun getSettings(): Settings = _settingsFlow.value
 

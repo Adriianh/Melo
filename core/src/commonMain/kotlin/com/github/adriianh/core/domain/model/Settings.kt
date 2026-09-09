@@ -127,4 +127,5 @@ data class Settings(
     val audioQuality: AudioQuality = AudioQuality.AUTO,
     val syncHistoryToYouTube: Boolean = true,
     val autoCheckUpdates: Boolean = true,
+    val lastAccentColor: Long? = null,
 )
