@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.TrackLyrics
@@ -13,6 +14,8 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.LrcParser
 import com.github.adriianh.melo.util.AccentColorExtractor
 import com.github.adriianh.melo.util.AccentPalette
@@ -45,10 +48,23 @@ class PlayerViewModel(
     private val translateLyricsUseCase: TranslateLyricsUseCase,
     private val getLikedSongsUseCase: GetLikedSongsUseCase? = null,
     observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
+    private val updateSettingsUseCase: UpdateSettingsUseCase? = null,
+    getSettingsUseCase: GetSettingsUseCase? = null,
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
-    private val _accentPalette = MutableStateFlow(AccentColorExtractor.fallback)
+    private val initialAccent =
+        getSettingsUseCase?.getInitial()?.lastAccentColor?.let { Color(it.toULong()) }
+    private val _accentPalette = MutableStateFlow(
+        initialAccent?.let {
+            AccentPalette(
+                dominant = it,
+                onDominant = Color.White,
+                rawDominant = it
+            )
+        }
+            ?: AccentColorExtractor.fallback
+    )
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     private val _isFavorite = MutableStateFlow(false)
@@ -104,8 +120,6 @@ class PlayerViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PlayerUiState())
 
     init {
-        fetchLikedSongs()
-
         observeLibraryUpdatesUseCase?.let { observeUseCase ->
             viewModelScope.launch {
                 observeUseCase().collectLatest { event ->
@@ -132,11 +146,21 @@ class PlayerViewModel(
                     if (artworkUrl.isNullOrBlank()) {
                         flowOf(AccentColorExtractor.fallback)
                     } else {
-                        flow { emit(AccentColorExtractor.fromImageUrl(artworkUrl, httpClient)) }
+                        flow {
+                            emit(AccentColorExtractor.fromImageUrl(artworkUrl, httpClient))
+                        }
                     }
                 }
                 .collectLatest { palette ->
                     _accentPalette.value = palette
+                    if (manager.playbackState.value.currentTrack != null) {
+                        updateSettingsUseCase?.invoke { current ->
+                            val colorLong = palette.dominant.value.toLong()
+                            if (current.lastAccentColor != colorLong) {
+                                current.copy(lastAccentColor = colorLong)
+                            } else current
+                        }
+                    }
                 }
         }
         viewModelScope.launch {
@@ -152,6 +176,11 @@ class PlayerViewModel(
                         _isFavorite.value = false
                         _trackLyrics.value = null
                         _isLyricsLoading.value = false
+                        updateSettingsUseCase?.invoke { current ->
+                            if (current.lastAccentColor != null) {
+                                current.copy(lastAccentColor = null)
+                            } else current
+                        }
                     }
                 }
         }

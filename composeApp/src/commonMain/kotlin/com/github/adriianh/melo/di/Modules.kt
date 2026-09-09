@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.core.domain.cache.HomeFeedCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
@@ -83,6 +84,7 @@ import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.data.cache.HomeFeedCacheImpl
 import com.github.adriianh.data.manager.DownloadManagerImpl
 import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
@@ -194,6 +196,12 @@ val dataModule = module {
     singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
     single<SettingsRepository> {
         SettingsRepositoryImpl(
+            configDirPath = get<String>(named("configDirPath")),
+            dispatcher = MeloDispatchers.IO
+        )
+    }
+    single<HomeFeedCache> {
+        HomeFeedCacheImpl(
             configDirPath = get<String>(named("configDirPath")),
             dispatcher = MeloDispatchers.IO
         )
@@ -322,10 +330,25 @@ val viewModelModule = module {
             translateLyricsUseCase = get(),
             getLikedSongsUseCase = getOrNull<GetLikedSongsUseCase>(),
             observeLibraryUpdatesUseCase = getOrNull<ObserveLibraryUpdatesUseCase>(),
+            updateSettingsUseCase = getOrNull(),
+            getSettingsUseCase = getOrNull(),
         )
     }
     viewModelOf(::QueueViewModel)
-    viewModelOf(::HomeViewModel)
+    viewModel {
+        HomeViewModel(
+            getHomeUseCase = get(),
+            getExploreUseCase = get(),
+            getChartsUseCase = get(),
+            getTrendingUseCase = get(),
+            searchTracksUseCase = get(),
+            getSettingsUseCase = get(),
+            getOfflineTracksUseCase = get(),
+            scanLocalTracksUseCase = get(),
+            getRecentTracksUseCase = get(),
+            homeFeedCache = get(),
+        )
+    }
     viewModelOf(::LoginViewModel)
     viewModel {
         LibraryViewModel(
@@ -357,7 +380,25 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::SidebarViewModel)
-    viewModelOf(::EntityDetailViewModel)
+    viewModel {
+        EntityDetailViewModel(
+            getEntityDetailsUseCase = get(),
+            toggleLikeAlbumUseCase = get(),
+            toggleLikePlaylistUseCase = get(),
+            subscribeChannelUseCase = getOrNull(),
+            getUserAlbumsUseCase = getOrNull(),
+            getUserPlaylistsUseCase = getOrNull(),
+            getUserArtistsUseCase = getOrNull(),
+            downloadManager = get(),
+            offlineRepository = get(),
+            getSettingsUseCase = get(),
+            getPlaylistTracksUseCase = getOrNull(),
+            removeTrackFromPlaylistUseCase = getOrNull(),
+            deletePlaylistUseCase = getOrNull(),
+            renamePlaylistUseCase = getOrNull(),
+            reorderPlaylistTracksUseCase = getOrNull(),
+        )
+    }
     viewModelOf(::SearchViewModel)
     viewModelOf(::UpdateViewModel)
 }

@@ -8,6 +8,7 @@ import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.search.entityId
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
@@ -22,6 +23,8 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -63,17 +66,20 @@ class EntityDetailViewModel(
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
     private val renamePlaylistUseCase: RenamePlaylistUseCase? = null,
     private val reorderPlaylistTracksUseCase: ReorderPlaylistTracksUseCase? = null,
+    private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
     val uiState: StateFlow<EntityDetailUiState> = _uiState.asStateFlow()
+
+    private val entityCache = mutableMapOf<String, SearchResult>()
 
     init {
         observeDownloads()
     }
 
     private fun observeDownloads() {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             combine(
                 offlineRepository.getOfflineTracksFlow(),
                 downloadManager.activeDownloads
@@ -256,7 +262,7 @@ class EntityDetailViewModel(
                 downloadedArtistTracks = emptyList()
             )
         }
-        currentLoadJob = viewModelScope.launch {
+        currentLoadJob = viewModelScope.launch(ioDispatcher) {
             if (getPlaylistTracksUseCase != null) {
                 getPlaylistTracksUseCase(playlistId).collectLatest { tracks ->
                     _uiState.update { current ->
@@ -394,7 +400,7 @@ class EntityDetailViewModel(
     }
 
     private fun checkSavedStatus(entity: SearchResult) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             try {
                 val isSaved = when (entity) {
                     is SearchResult.Album -> {
@@ -430,26 +436,37 @@ class EntityDetailViewModel(
 
     private fun loadEntity(initial: SearchResult) {
         currentLoadJob?.cancel()
-        _uiState.update {
-            it.copy(
-                isLoading = true,
-                entity = initial,
-                error = null,
-                isSaved = false,
-                isDownloaded = false,
-                isDownloading = false,
-                downloadProgress = 0f,
-                downloadedTrackCount = 0,
-                totalTrackCount = 0,
-                currentDownloadingTrackTitle = null,
-                downloadedTrackIds = emptySet(),
-                activeDownloadsMap = emptyMap(),
-                downloadedArtistTracks = emptyList()
-            )
+        val cached = entityCache[initial.entityId]
+        if (cached != null) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    entity = cached,
+                    error = null
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    entity = initial,
+                    error = null,
+                    isSaved = false,
+                    isDownloaded = false,
+                    isDownloading = false,
+                    downloadProgress = 0f,
+                    downloadedTrackCount = 0,
+                    totalTrackCount = 0,
+                    currentDownloadingTrackTitle = null,
+                    downloadedTrackIds = emptySet(),
+                    activeDownloadsMap = emptyMap(),
+                    downloadedArtistTracks = emptyList()
+                )
+            }
         }
         checkSavedStatus(initial)
-        currentLoadJob = viewModelScope.launch {
-            val loadedOffline = loadEntityOffline(initial)
+        currentLoadJob = viewModelScope.launch(ioDispatcher) {
+            val loadedOffline = if (cached == null) loadEntityOffline(initial) else false
             if (loadedOffline) {
                 val offlineTracks = offlineRepository.getOfflineTracks()
                 updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
@@ -457,7 +474,7 @@ class EntityDetailViewModel(
 
             val isOffline = getSettingsUseCase.getSnapshot().offlineMode
             if (isOffline) {
-                if (!loadedOffline) {
+                if (!loadedOffline && cached == null) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -492,6 +509,7 @@ class EntityDetailViewModel(
                 }
 
                 if (hasContent) {
+                    entityCache[initial.entityId] = fullDetails
                     if (loadedOffline && fullDetails is SearchResult.Album && initial is SearchResult.Album) {
                         val initialAuthor =
                             initial.author.takeIf { it.isNotBlank() && it != "Unknown" }
@@ -529,7 +547,7 @@ class EntityDetailViewModel(
                     }
                     val offlineTracks = offlineRepository.getOfflineTracks()
                     updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
-                } else if (!loadedOffline) {
+                } else if (!loadedOffline && cached == null) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -538,7 +556,7 @@ class EntityDetailViewModel(
                     }
                 }
             } catch (e: Exception) {
-                if (!loadedOffline) {
+                if (!loadedOffline && cached == null) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,

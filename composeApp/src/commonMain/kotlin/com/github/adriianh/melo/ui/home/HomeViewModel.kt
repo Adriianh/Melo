@@ -2,8 +2,10 @@ package com.github.adriianh.melo.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.cache.HomeFeedCache
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.HomeSectionType
@@ -18,7 +20,11 @@ import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
 import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +61,8 @@ class HomeViewModel(
     private val getOfflineTracksUseCase: GetOfflineTracksUseCase,
     private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
     private val getRecentTracksUseCase: GetRecentTracksUseCase,
+    private val homeFeedCache: HomeFeedCache,
+    private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -62,8 +70,42 @@ class HomeViewModel(
 
     private var previousBaseFeed: HomeUiState? = null
     private var searchJob: Job? = null
+    private var loadFeedJob: Job? = null
 
     init {
+        val cached = homeFeedCache.getSync()
+        if (cached != null && cached.sections.isNotEmpty()) {
+            _uiState.value = HomeUiState(
+                isLoading = false,
+                chips = cached.chips,
+                sections = cached.sections,
+                continuation = cached.continuation,
+                isOfflineFeed = false
+            )
+            loadFeed(silent = true, delayMs = 1800L)
+        } else {
+            viewModelScope.launch(ioDispatcher) {
+                val cachedAsync = homeFeedCache.get()
+                if (cachedAsync != null && cachedAsync.sections.isNotEmpty() && _uiState.value.sections.isEmpty()) {
+                    _uiState.update { current ->
+                        if (current.sections.isEmpty()) {
+                            current.copy(
+                                isLoading = false,
+                                chips = cachedAsync.chips,
+                                sections = cachedAsync.sections,
+                                continuation = cachedAsync.continuation,
+                                isOfflineFeed = false
+                            )
+                        } else current
+                    }
+                }
+                loadFeed(
+                    silent = cachedAsync != null && cachedAsync.sections.isNotEmpty(),
+                    delayMs = if (cachedAsync != null && cachedAsync.sections.isNotEmpty()) 1800L else 0L
+                )
+            }
+        }
+
         viewModelScope.launch {
             getSettingsUseCase()
                 .map { it.offlineMode }
@@ -76,7 +118,6 @@ class HomeViewModel(
                     }
                 }
         }
-        loadFeed()
     }
 
     fun onSearchQueryChange(query: String) {
@@ -109,9 +150,16 @@ class HomeViewModel(
         val downloaded = getOfflineTracksUseCase().firstOrNull()
             ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
             ?.map { it.track } ?: emptyList()
-        val local = try { scanLocalTracksUseCase() } catch (_: Exception) { emptyList() }
+        val local = try {
+            scanLocalTracksUseCase()
+        } catch (_: Exception) {
+            emptyList()
+        }
         val allLocal = (downloaded + local).distinctBy { it.id }.filter {
-            it.title.contains(query, ignoreCase = true) || it.artist.contains(query, ignoreCase = true)
+            it.title.contains(query, ignoreCase = true) || it.artist.contains(
+                query,
+                ignoreCase = true
+            )
         }
         _uiState.update { it.copy(searchResults = allLocal, isSearching = false) }
     }
@@ -127,9 +175,57 @@ class HomeViewModel(
         }
     }
 
-    fun loadFeed() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, selectedChip = null) }
+    /**
+     * Emits sections to the UI state progressively in small batches, with a short
+     * delay between each batch. This prevents Compose from receiving all sections in
+     * a single recomposition (which causes a multi-frame lag on the compositor thread),
+     * producing a smooth incremental render instead.
+     *
+     * A 16ms delay between batches corresponds to one compositor frame at 60fps,
+     * giving Compose enough time to measure, layout, and draw each batch before the
+     * next one arrives.
+     */
+    private suspend fun emitSectionsProgressively(
+        sections: List<HomeSection>,
+        chips: List<HomeFeedChip>,
+        continuation: String?,
+        batchSize: Int = 2,
+        frameDelayMs: Long = 16L,
+    ) {
+        if (sections.isEmpty()) return
+        val batches = sections.chunked(batchSize)
+        batches.forEachIndexed { index, batch ->
+            _uiState.update { current ->
+                if (index == 0) {
+                    current.copy(
+                        isLoading = false,
+                        chips = chips,
+                        sections = batch,
+                        continuation = continuation,
+                        isOfflineFeed = false
+                    )
+                } else {
+                    current.copy(sections = current.sections + batch)
+                }
+            }
+            if (index < batches.lastIndex) {
+                delay(frameDelayMs.milliseconds)
+            }
+        }
+    }
+
+    fun loadFeed(silent: Boolean = false, delayMs: Long = 0L) {
+        if (silent && loadFeedJob?.isActive == true) return
+        loadFeedJob?.cancel()
+        loadFeedJob = viewModelScope.launch(ioDispatcher) {
+            if (delayMs > 0L) {
+                delay(delayMs.milliseconds)
+            }
+            if (!silent) {
+                _uiState.update { it.copy(isLoading = true, error = null, selectedChip = null) }
+            } else {
+                _uiState.update { it.copy(error = null, selectedChip = null) }
+            }
             val settings = getSettingsUseCase.getSnapshot()
             if (settings.offlineMode) {
                 loadOfflineFeed()
@@ -138,42 +234,77 @@ class HomeViewModel(
 
             try {
                 val homeFeed = getHomeUseCase()
-                val exploreSections =
-                    if (homeFeed.sections.size < 4) getExploreUseCase() else emptyList()
-                val chartsSections =
-                    if (homeFeed.sections.size < 6) getChartsUseCase() else emptyList()
-                val trending = if (homeFeed.sections.size < 4) getTrendingUseCase() else emptyList()
-
-                val combinedSections = buildList {
-                    addAll(homeFeed.sections)
-                    addAll(exploreSections)
-                    addAll(chartsSections)
-                    if (trending.isNotEmpty()) {
-                        add(
-                            HomeSection(
-                                title = "Trending",
-                                type = HomeSectionType.SONGS,
-                                items = trending.map { SearchResult.Song(it) }
-                            )
-                        )
+                val needsMore = homeFeed.sections.isEmpty()
+                val (exploreSections, chartsSections, trending) = if (needsMore) {
+                    coroutineScope {
+                        val exp =
+                            async { runCatching { getExploreUseCase() }.getOrDefault(emptyList()) }
+                        val chr =
+                            async { runCatching { getChartsUseCase() }.getOrDefault(emptyList()) }
+                        val trn =
+                            async { runCatching { getTrendingUseCase() }.getOrDefault(emptyList()) }
+                        Triple(exp.await(), chr.await(), trn.await())
                     }
-                }.distinctBy { it.title }
+                } else {
+                    Triple(emptyList(), emptyList(), emptyList())
+                }
+
+                val combinedSections = homeFeed.sections.ifEmpty {
+                    buildList {
+                        addAll(exploreSections)
+                        addAll(chartsSections)
+                        if (trending.isNotEmpty()) {
+                            add(
+                                HomeSection(
+                                    title = "Trending",
+                                    type = HomeSectionType.SONGS,
+                                    items = trending.map { SearchResult.Song(it) }
+                                )
+                            )
+                        }
+                    }.distinctBy { it.title }
+                }
 
                 if (combinedSections.isEmpty()) {
-                    loadOfflineFeed()
+                    if (_uiState.value.sections.isEmpty()) {
+                        loadOfflineFeed()
+                    }
                 } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
+                    if (_uiState.value.sections != combinedSections || _uiState.value.chips != homeFeed.chips) {
+                        val fullFeed = HomeFeed(
                             chips = homeFeed.chips,
                             sections = combinedSections,
-                            continuation = homeFeed.continuation,
-                            isOfflineFeed = false
+                            continuation = homeFeed.continuation
                         )
+                        homeFeedCache.save(fullFeed)
+
+                        if (!silent && _uiState.value.isLoading) {
+                            emitSectionsProgressively(
+                                sections = combinedSections,
+                                chips = homeFeed.chips,
+                                continuation = homeFeed.continuation
+                            )
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    chips = homeFeed.chips,
+                                    sections = combinedSections,
+                                    continuation = homeFeed.continuation,
+                                    isOfflineFeed = false
+                                )
+                            }
+                        }
+                    } else {
+                        _uiState.update { it.copy(isLoading = false) }
                     }
                 }
             } catch (_: Exception) {
-                loadOfflineFeed()
+                if (_uiState.value.sections.isEmpty()) {
+                    loadOfflineFeed()
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
+                }
             }
         }
     }
@@ -255,7 +386,7 @@ class HomeViewModel(
             previousBaseFeed = _uiState.value
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             _uiState.update { it.copy(isLoading = true, selectedChip = chip, error = null) }
             try {
                 val filteredFeed = getHomeUseCase(params = chip.params)
@@ -278,7 +409,7 @@ class HomeViewModel(
         val currentContinuation = _uiState.value.continuation ?: return
         if (_uiState.value.isLoadingMore || _uiState.value.isLoading) return
 
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             _uiState.update { it.copy(isLoadingMore = true) }
             try {
                 val nextFeed = getHomeUseCase(continuation = currentContinuation)
