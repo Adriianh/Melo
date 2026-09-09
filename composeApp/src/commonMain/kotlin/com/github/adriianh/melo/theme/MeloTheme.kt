@@ -14,9 +14,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
+import com.github.adriianh.melo.util.AnimatedMeloColors
 import com.github.adriianh.melo.util.ColorUtils
 import com.github.adriianh.melo.util.DarkMeloColors
 import com.github.adriianh.melo.util.LightMeloColors
@@ -155,24 +157,31 @@ fun MeloTheme(
         label = "chromePillBorder"
     )
 
-    val meloColors = com.github.adriianh.melo.util.AnimatedMeloColors(
-        isDark = isDarkTheme,
-        surface0 = surface0,
-        surface1 = surface1,
-        surface2 = surface2,
-        border = border,
-        borderStrong = borderStrong,
-        textPrimary = textPrimary,
-        textSecondary = textSecondary,
-        textMuted = textMuted,
-        glassSurface = glassSurface,
-        glassFill = glassFill,
-        glassBorder = glassBorder,
-        playerBarFill = playerBarFill,
-        playerBarBorder = playerBarBorder,
-        chromePillFill = chromePillFill,
-        chromePillBorder = chromePillBorder
-    )
+    val meloColors = remember(
+        surface0, surface1, surface2, border, borderStrong,
+        textPrimary, textSecondary, textMuted, glassSurface, glassFill, glassBorder,
+        playerBarFill, playerBarBorder, chromePillFill, chromePillBorder,
+        isDarkTheme
+    ) {
+        AnimatedMeloColors(
+            isDark = isDarkTheme,
+            surface0 = surface0,
+            surface1 = surface1,
+            surface2 = surface2,
+            border = border,
+            borderStrong = borderStrong,
+            textPrimary = textPrimary,
+            textSecondary = textSecondary,
+            textMuted = textMuted,
+            glassSurface = glassSurface,
+            glassFill = glassFill,
+            glassBorder = glassBorder,
+            playerBarFill = playerBarFill,
+            playerBarBorder = playerBarBorder,
+            chromePillFill = chromePillFill,
+            chromePillBorder = chromePillBorder
+        )
+    }
 
     val rawPrimary = accentColor ?: Color(0xFFFF2D55)
     val harmonizedPrimary = ColorUtils.harmonize(rawPrimary, isDarkTheme)
