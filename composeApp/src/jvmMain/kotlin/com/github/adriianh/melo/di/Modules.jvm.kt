@@ -14,6 +14,8 @@ import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
 import com.github.adriianh.melo.player.JvmMediaSessionManager
+import com.github.adriianh.core.util.MeloDispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
@@ -21,6 +23,8 @@ import org.koin.dsl.module
 import java.io.File
 
 actual val platformModule: Module = module {
+    single<CoroutineDispatcher> { MeloDispatchers.IO }
+
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { JvmMeloPlayer() }
 

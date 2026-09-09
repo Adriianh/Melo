@@ -17,6 +17,7 @@ import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.LrcParser
+import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.melo.util.AccentColorExtractor
 import com.github.adriianh.melo.util.AccentPalette
 import com.github.adriianh.melo.util.PlayerUiState
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerViewModel(
@@ -147,7 +149,11 @@ class PlayerViewModel(
                         flowOf(AccentColorExtractor.fallback)
                     } else {
                         flow {
-                            emit(AccentColorExtractor.fromImageUrl(artworkUrl, httpClient))
+                            emit(
+                                withContext(MeloDispatchers.IO) {
+                                    AccentColorExtractor.fromImageUrl(artworkUrl, httpClient)
+                                }
+                            )
                         }
                     }
                 }
