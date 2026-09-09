@@ -256,8 +256,6 @@ fun NowPlayingScreen(
                     NowPlayingDesktopLayout(
                         state = effectiveState,
                         activeAccent = activeAccent,
-                        showLyrics = showLyrics,
-                        onToggleLyrics = { showLyrics = !showLyrics },
                         selectedSection = selectedSection,
                         onSelectSection = { selectedSection = it },
                         artistDetails = artistDetails,

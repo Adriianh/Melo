@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +37,6 @@ import com.github.adriianh.melo.util.PlayerUiState
 internal fun NowPlayingDesktopLayout(
     state: PlayerUiState,
     activeAccent: Color,
-    showLyrics: Boolean,
-    onToggleLyrics: () -> Unit,
     selectedSection: PanelSection,
     onSelectSection: (PanelSection) -> Unit,
     artistDetails: SearchResult.Artist?,
@@ -78,6 +78,16 @@ internal fun NowPlayingDesktopLayout(
                         .clickable { onSelectSection(PanelSection.LYRICS) },
                     shape = RoundedCornerShape(22.dp)
                 )
+                if (state.isBuffering) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = activeAccent)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
