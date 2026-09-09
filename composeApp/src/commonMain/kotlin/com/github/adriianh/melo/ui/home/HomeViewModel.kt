@@ -214,6 +214,35 @@ class HomeViewModel(
         }
     }
 
+    /**
+     * Merges refreshed sections into the currently displayed ones so that
+     * unchanged sections keep their existing composition (and scroll state),
+     * avoiding a full re-render of the feed when only a few sections changed.
+     */
+    private fun mergeSections(
+        current: List<HomeSection>,
+        incoming: List<HomeSection>,
+    ): List<HomeSection> {
+        if (incoming.isEmpty()) return current
+        if (current.isEmpty()) return incoming
+        val incomingByKey = incoming.associateBy { sectionKey(it) }
+        val merged = current.mapNotNull { old ->
+            incomingByKey[sectionKey(old)]?.let { next -> if (next == old) old else next }
+        }
+        val seen = merged.map { sectionKey(it) }.toMutableSet()
+        val result = merged.toMutableList()
+        for (next in incoming) {
+            if (seen.add(sectionKey(next))) {
+                result.add(next)
+            }
+        }
+        return result
+    }
+
+    private fun sectionKey(section: HomeSection): String =
+        if (section.title.isNotBlank()) "${section.type}_${section.title}"
+        else "blank_${System.identityHashCode(section)}"
+
     fun loadFeed(silent: Boolean = false, delayMs: Long = 0L) {
         if (silent && loadFeedJob?.isActive == true) return
         loadFeedJob?.cancel()
@@ -278,7 +307,7 @@ class HomeViewModel(
                         )
                         homeFeedCache.save(fullFeed)
 
-                        if (!silent && _uiState.value.isLoading) {
+                        if (_uiState.value.isLoading) {
                             emitSectionsProgressively(
                                 sections = combinedSections,
                                 chips = homeFeed.chips,
@@ -289,7 +318,7 @@ class HomeViewModel(
                                 it.copy(
                                     isLoading = false,
                                     chips = homeFeed.chips,
-                                    sections = combinedSections,
+                                    sections = mergeSections(it.sections, combinedSections),
                                     continuation = homeFeed.continuation,
                                     isOfflineFeed = false
                                 )
