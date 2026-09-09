@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -32,7 +33,9 @@ actual fun PlatformAsyncImage(
         else {
             val builder = ImageRequest.Builder(context)
                 .data(url)
-                .crossfade(150)
+            if (size == null || size >= 160.dp) {
+                builder.crossfade(150)
+            }
             if (size != null) {
                 val px = with(density) { size.roundToPx() }
                 if (px > 0) {
