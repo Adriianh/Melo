@@ -347,6 +347,11 @@ class PlaybackManagerImpl(
         val track = _queueState.value.currentTrack ?: return
         val targetSeek = initialSeekMs
             ?: if (!isTrackLoaded && pendingRestorePositionMs > 0) pendingRestorePositionMs else 0L
+        val replayingLoadedTrack =
+            isTrackLoaded && playbackState.value.currentTrack?.id == track.id
+        if (!replayingLoadedTrack) {
+            meloPlayer.stop()
+        }
         isTrackLoaded = true
         pendingRestorePositionMs = 0L
         playJob?.cancel()
@@ -429,7 +434,7 @@ class PlaybackManagerImpl(
         if (nextIndices.isEmpty()) return
 
         prefetchJob = scope.launch(dispatcher) {
-            delay(2000.milliseconds)
+            delay(750.milliseconds)
             for (idx in nextIndices) {
                 val nextTrack = queueTracks.getOrNull(idx) ?: continue
                 val alreadyCached = cacheMutex.withLock { nextTrack.id in prefetchCache }
