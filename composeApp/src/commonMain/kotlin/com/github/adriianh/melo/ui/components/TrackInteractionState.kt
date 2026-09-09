@@ -131,13 +131,17 @@ class TrackInteractionState(
     }
 
     @Composable
-    fun resolveActiveAccent(playerState: PlayerUiState): Color {
-        val color = playerState.accentColor
-        return if (color != Color.Transparent && color != MeloColors.textMuted && color != Color.Black) {
-            ColorUtils.harmonize(color, MeloColors.isDark)
+    fun resolveActiveAccent(accentColor: Color): Color {
+        return if (accentColor != Color.Transparent && accentColor != MeloColors.textMuted && accentColor != Color.Black) {
+            ColorUtils.harmonize(accentColor, MeloColors.isDark)
         } else {
             MeloColors.brandAccent
         }
+    }
+
+    @Composable
+    fun resolveActiveAccent(playerState: PlayerUiState): Color {
+        return resolveActiveAccent(playerState.accentColor)
     }
 }
 

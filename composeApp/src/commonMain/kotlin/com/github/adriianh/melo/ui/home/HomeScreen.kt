@@ -1,5 +1,10 @@
 package com.github.adriianh.melo.ui.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,15 +34,19 @@ import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.home.components.HomeContent
 import com.github.adriianh.melo.ui.home.components.HomeSearchResultsView
 import com.github.adriianh.melo.ui.home.components.HomeSkeletonLoading
+import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.ui.library.LibraryViewModel
-import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import kotlinx.coroutines.flow.flowOf
 import org.koin.compose.viewmodel.koinViewModel
+
+/** Represents the four mutually exclusive display states of the home feed. */
+private enum class HomeFeedState { Loading, Content, Error, Search }
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onAlbumClick: (String) -> Unit = {},
+    onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
@@ -47,12 +56,20 @@ fun HomeScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val libraryState by libraryViewModel.uiState.collectAsState()
-    val playerViewModel: PlayerViewModel = koinViewModel()
-    val playerState by playerViewModel.uiState.collectAsState()
-
+    val currentAccent = MaterialTheme.colorScheme.primary
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(playerState)
+    val activeAccent = interaction.resolveActiveAccent(currentAccent)
+
+    val isLibraryNeeded = interaction.contextMenuTrack != null ||
+            !interaction.addToPlaylistTracks.isNullOrEmpty() ||
+            uiState.searchQuery.isNotBlank()
+    val libraryState by remember(isLibraryNeeded) {
+        if (isLibraryNeeded) {
+            libraryViewModel.uiState
+        } else {
+            flowOf(LibraryUiState())
+        }
+    }.collectAsState(initial = LibraryUiState())
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
@@ -67,17 +84,20 @@ fun HomeScreen(
         }
     }
 
-    val visibleSongs = remember(uiState) {
-        if (uiState.searchQuery.isNotBlank()) {
-            uiState.searchResults
-        } else {
-            uiState.sections
-                .filter { it.type == HomeSectionType.SONGS }
-                .flatMap { it.items }
-                .filterIsInstance<SearchResult.Song>()
-                .map { it.track }
+    val visibleSongs =
+        remember(isSelectionMode, uiState.searchQuery, uiState.searchResults, uiState.sections) {
+            if (!isSelectionMode) {
+                emptyList()
+            } else if (uiState.searchQuery.isNotBlank()) {
+                uiState.searchResults
+            } else {
+                uiState.sections
+                    .filter { it.type == HomeSectionType.SONGS }
+                    .flatMap { it.items }
+                    .filterIsInstance<SearchResult.Song>()
+                    .map { it.track }
+            }
         }
-    }
 
     LaunchedEffect(uiState.searchQuery, uiState.selectedChip) {
         selectedTrackIds = emptySet()
@@ -104,9 +124,36 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            when {
-                uiState.searchQuery.isNotBlank() -> {
-                    HomeSearchResultsView(
+            val feedState = when {
+                uiState.searchQuery.isNotBlank() -> HomeFeedState.Search
+                uiState.isLoading -> HomeFeedState.Loading
+                uiState.error != null -> HomeFeedState.Error
+                else -> HomeFeedState.Content
+            }
+
+            AnimatedContent(
+                targetState = feedState,
+                transitionSpec = {
+                    val isLoadingToContent = initialState == HomeFeedState.Loading &&
+                            targetState == HomeFeedState.Content
+                    if (isLoadingToContent) {
+                        (fadeIn(animationSpec = tween(220)) togetherWith fadeOut(
+                            animationSpec = tween(
+                                220
+                            )
+                        ))
+                    } else {
+                        (fadeIn(animationSpec = tween(150)) togetherWith fadeOut(
+                            animationSpec = tween(
+                                150
+                            )
+                        ))
+                    }
+                },
+                label = "HomeFeedState"
+            ) { state ->
+                when (state) {
+                    HomeFeedState.Search -> HomeSearchResultsView(
                         activeAccent = activeAccent,
                         isSearching = uiState.isSearching,
                         results = uiState.searchResults,
@@ -124,41 +171,39 @@ fun HomeScreen(
                             if (!isSelectionMode) selectedTrackIds = setOf(track.id)
                         }
                     )
-                }
 
-                uiState.isLoading -> {
-                    HomeSkeletonLoading(
+                    HomeFeedState.Loading -> HomeSkeletonLoading(
                         chips = uiState.chips,
                         onChipClick = viewModel::toggleChip,
                         selectedChip = uiState.selectedChip
                     )
+
+                    HomeFeedState.Error -> MeloErrorState(
+                        uiState.error,
+                        onRetry = viewModel::loadFeed
+                    )
+
+                    HomeFeedState.Content -> HomeContent(
+                        uiState = uiState,
+                        onChipClick = viewModel::toggleChip,
+                        onLoadMore = viewModel::loadMore,
+                        onAlbumClick = onAlbumClick,
+                        onPlaylistClick = onPlaylistClick,
+                        onArtistClick = onArtistClick,
+                        queueViewModel = queueViewModel,
+                        paddingValues = paddingValues,
+                        onMoreClick = { interaction.openContextMenu(it) },
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = { track ->
+                            selectedTrackIds =
+                                if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
+                        },
+                        onTrackLongClick = { track ->
+                            if (!isSelectionMode) selectedTrackIds = setOf(track.id)
+                        }
+                    )
                 }
-
-                uiState.error != null -> MeloErrorState(
-                    uiState.error,
-                    onRetry = viewModel::loadFeed
-                )
-
-                else -> HomeContent(
-                    uiState = uiState,
-                    onChipClick = viewModel::toggleChip,
-                    onLoadMore = viewModel::loadMore,
-                    onAlbumClick = onAlbumClick,
-                    onPlaylistClick = onPlaylistClick,
-                    onArtistClick = onArtistClick,
-                    queueViewModel = queueViewModel,
-                    paddingValues = paddingValues,
-                    onMoreClick = { interaction.openContextMenu(it) },
-                    isSelectionMode = isSelectionMode,
-                    selectedTrackIds = selectedTrackIds,
-                    onToggleSelectTrack = { track ->
-                        selectedTrackIds =
-                            if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
-                    },
-                    onTrackLongClick = { track ->
-                        if (!isSelectionMode) selectedTrackIds = setOf(track.id)
-                    }
-                )
             }
 
             BatchSelectionBottomBar(
