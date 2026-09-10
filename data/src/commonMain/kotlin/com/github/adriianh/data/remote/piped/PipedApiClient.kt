@@ -9,6 +9,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.utils.io.CancellationException
 import kotlin.math.abs
+import kotlinx.coroutines.sync.withLock
 
 class PipedApiClient(
     private val httpClient: HttpClient
@@ -17,15 +18,33 @@ class PipedApiClient(
         private val PARENS_RE = Regex("""\s*\(.*?\)""")
         private val BRACKETS_RE = Regex("""\s*\[.*?]""")
         private val NON_ALNUM_RE = Regex("[^a-z0-9 ]")
+        private val initialInstances = listOf(
+            "https://api.piped.private.coffee",
+            "https://pipedapi.kavin.rocks",
+            "https://api.piped.privacydev.net",
+            "https://pipedapi.tokhmi.xyz",
+            "https://piped-api.garudalinux.org",
+            "https://pipedapi.adminforge.de",
+            "https://pipedapi.ducks.party",
+            "https://pipedapi.drgns.space",
+            "https://pipedapi.leptons.xyz"
+        )
     }
 
-    private val instances = listOf(
-        "https://api.piped.private.coffee",
-        "https://pipedapi.kavin.rocks",
-        "https://api.piped.privacydev.net",
-        "https://pipedapi.tokhmi.xyz",
-        "https://piped-api.garudalinux.org"
-    )
+    private val instanceOrder = initialInstances.toMutableList()
+    private val instanceLock = kotlinx.coroutines.sync.Mutex()
+
+    private suspend fun currentInstances(): List<String> =
+        instanceLock.withLock { instanceOrder.toList() }
+
+    private suspend fun promoteInstance(baseUrl: String) {
+        instanceLock.withLock {
+            val index = instanceOrder.indexOf(baseUrl)
+            if (index > 0) {
+                instanceOrder.add(0, instanceOrder.removeAt(index))
+            }
+        }
+    }
 
     private fun HttpRequestBuilder.commonHeaders() {
         header(
@@ -35,7 +54,7 @@ class PipedApiClient(
     }
 
     suspend fun search(query: String, title: String, artist: String, durationMs: Long): String? {
-        for (baseUrl in instances) {
+        for (baseUrl in currentInstances()) {
             try {
                 val cleanTitle = normalize(title)
                 val cleanArtist = normalize(artist)
@@ -59,18 +78,20 @@ class PipedApiClient(
                         titleMatches && artistMatches && durationMatches
                     }
 
-                if (best != null) return best.url.substringAfter("v=")
+                if (best != null) {
+                    promoteInstance(baseUrl)
+                    return best.url.substringAfter("v=")
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                continue
+            } catch (e: Exception) {
             }
         }
         return null
     }
 
     suspend fun getStreamUrl(videoId: String): String? {
-        for (baseUrl in instances) {
+        for (baseUrl in currentInstances()) {
             try {
                 val response = httpClient.get("$baseUrl/streams/$videoId") {
                     commonHeaders()
@@ -78,19 +99,21 @@ class PipedApiClient(
                 if (response.status.value in 200..299) {
                     val body = response.body<PipedStreamsResponse>()
                     val url = body.audioStreams.maxByOrNull { it.bitrate }?.url
-                    if (url != null) return url
+                    if (url != null) {
+                        promoteInstance(baseUrl)
+                        return url
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                continue
+            } catch (e: Exception) {
             }
         }
         return null
     }
 
     suspend fun getTrackDetails(videoId: String): Track? {
-        for (baseUrl in instances) {
+        for (baseUrl in currentInstances()) {
             try {
                 val response = httpClient.get("$baseUrl/streams/$videoId") {
                     commonHeaders()
@@ -98,6 +121,7 @@ class PipedApiClient(
                 if (response.status.value in 200..299) {
                     val body = response.body<PipedStreamsResponse>()
                     if (body.title.isBlank()) continue
+                    promoteInstance(baseUrl)
                     return Track(
                         id = "piped:$videoId",
                         title = body.title,
@@ -140,7 +164,7 @@ class PipedApiClient(
         expectedType: String,
         limit: Int
     ): List<PipedStreamDto> {
-        for (baseUrl in instances) {
+        for (baseUrl in currentInstances()) {
             try {
                 val response = httpClient.get("$baseUrl/search") {
                     commonHeaders()
@@ -148,6 +172,7 @@ class PipedApiClient(
                     parameter("filter", filter)
                 }.body<PipedSearchResponse>()
 
+                promoteInstance(baseUrl)
                 return response.items
                     .filter { it.type == expectedType }
                     .take(limit)
@@ -169,7 +194,7 @@ class PipedApiClient(
         val seen = mutableSetOf(videoId)
         val results = mutableListOf<Track>()
 
-        for (baseUrl in instances) {
+        for (baseUrl in currentInstances()) {
             try {
                 val response = httpClient.get("$baseUrl/streams/$videoId") {
                     commonHeaders()
@@ -205,7 +230,10 @@ class PipedApiClient(
                     }
 
                 results += related
-                if (results.isNotEmpty()) break
+                if (results.isNotEmpty()) {
+                    promoteInstance(baseUrl)
+                    break
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

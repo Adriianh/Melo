@@ -1,11 +1,14 @@
 package com.github.adriianh.innertube.pages
 
 import android.util.Log
+import com.github.adriianh.core.platform.currentTimeSeconds
+import com.github.adriianh.core.platform.sha1
 import com.github.adriianh.innertube.ProxyConfig
 import com.github.adriianh.innertube.ProxyType
 import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
+import com.github.adriianh.innertube.utils.parseCookieString
 import io.ktor.http.URLBuilder
 import io.ktor.http.parseQueryString
 import okhttp3.OkHttpClient
@@ -22,6 +25,7 @@ import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -61,6 +65,9 @@ class NewPipeDownloaderImpl(
                         .build()
                 } ?: response.request
             }
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 
     @Throws(IOException::class, ReCaptchaException::class)
@@ -76,6 +83,34 @@ class NewPipeDownloaderImpl(
                 .method(httpMethod, dataToSend?.toRequestBody())
                 .url(url)
                 .addHeader("User-Agent", YouTubeClient.USER_AGENT_CHROME)
+
+        YouTube.cookie?.let { rawCookie ->
+            val requestUrl = okhttp3.Request.Builder().url(url).build()
+            val host = requestUrl.url.host
+            if (host.endsWith("youtube.com") || host.endsWith("googlevideo.com")) {
+                requestBuilder.addHeader("Cookie", rawCookie)
+            }
+            if (host.endsWith("youtube.com")) {
+                val cookieMap = parseCookieString(rawCookie)
+                val origin = if (host.endsWith("music.youtube.com")) {
+                    YouTubeClient.ORIGIN_YOUTUBE_MUSIC
+                } else {
+                    YouTubeClient.ORIGIN_YOUTUBE
+                }
+                requestBuilder.addHeader("X-Origin", origin)
+                val sapisid = cookieMap["SAPISID"]
+                    ?: cookieMap["__Secure-3PAPISID"]
+                    ?: cookieMap["__Secure-1PAPISID"]
+                    ?: cookieMap["APISID"]
+                if (sapisid != null) {
+                    val currentTime = currentTimeSeconds()
+                    requestBuilder.addHeader(
+                        "Authorization",
+                        "SAPISIDHASH ${currentTime}_${sha1("$currentTime $sapisid $origin")}"
+                    )
+                }
+            }
+        }
 
         headers.forEach { (headerName, headerValueList) ->
             if (headerValueList.size > 1) {
