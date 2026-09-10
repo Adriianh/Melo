@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=Melo
+GenericName=Music Player
+Comment=Modern, fast music player for desktop
+Exec=melo-gui %U
+Icon=melo
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;Player;Music;
+MimeType=audio/mpeg;audio/x-mpeg;audio/mp3;audio/x-mp3;audio/flac;audio/x-flac;audio/ogg;audio/x-ogg;audio/wav;audio/x-wav;
+StartupWMClass=com-github-adriianh-melo-MainKt;Melo
+Keywords=music;player;audio;streaming;youtube;spotify;
+Actions=TUI;
+
+[Desktop Action TUI]
+Name=Open Terminal UI (TUI)
+Exec=x-terminal-emulator -e melo-tui

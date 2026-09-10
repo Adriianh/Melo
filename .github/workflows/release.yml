@@ -19,15 +19,15 @@ jobs:
         include:
           - os: ubuntu-latest
             task: distUnix
-            artifact: "cli/build/dist/melo-*-linux.tar.gz"
+            artifact: "tui/build/dist/melo-*-linux.tar.gz"
             label: linux
           - os: macos-latest
             task: distUnix
-            artifact: "cli/build/dist/melo-*-macos.tar.gz"
+            artifact: "tui/build/dist/melo-*-macos.tar.gz"
             label: macos
           - os: windows-latest
             task: distWindows
-            artifact: "cli/build/dist/melo-*-windows.zip"
+            artifact: "tui/build/dist/melo-*-windows.zip"
             label: windows
 
     runs-on: ${{ matrix.os }}
@@ -56,8 +56,11 @@ jobs:
           java-version: '25'
           distribution: 'graalvm'
 
+      - name: Run tests
+        run: ./gradlew test
+
       - name: Build distribution
-        run: ./gradlew :cli:${{ matrix.task }}
+        run: ./gradlew :tui:${{ matrix.task }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.0
