@@ -108,6 +108,9 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
         versionName = "1.0"
     }
     packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }

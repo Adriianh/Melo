@@ -33,6 +33,7 @@ newpipe = "v0.26.1"
 media3 = "1.11.0"
 vlcj = "4.12.1"
 agp = "9.3.2"
+chaquopy = "17.0.0"
 compose-plugin = "1.10.3"
 androidx-activityCompose = "1.13.0"
 kmpalette = "3.1.0"
@@ -123,5 +124,6 @@ graalvmNative = { id = "org.graalvm.buildtools.native", version.ref = "graalvm" 
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 androidKotlinMultiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+chaquopy = { id = "com.chaquo.python", version.ref = "chaquopy" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
