@@ -9,6 +9,7 @@ import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
+import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.repository.AndroidOfflineRepositoryImpl
 import com.github.adriianh.melo.player.AndroidMediaSessionManager
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,8 @@ actual val platformModule: Module = module {
         InnerTubeAudioProvider(
             configDirPath = get(named("configDirPath")),
             fallback = pipedProvider,
-            settingsRepository = get()
+            settingsRepository = get(),
+            ageGateProvider = YtDlpAudioProvider(context = androidContext()),
         )
     }
 

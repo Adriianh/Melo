@@ -49,7 +49,8 @@ actual val platformModule: Module = module {
         InnerTubeAudioProvider(
             configDirPath = get<String>(named("configDirPath")),
             fallback = pipedProvider,
-            settingsRepository = get<SettingsRepository>()
+            settingsRepository = get<SettingsRepository>(),
+            ageGateProvider = ytDlpProvider
         )
     }
 

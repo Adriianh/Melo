@@ -2,9 +2,12 @@ package com.github.adriianh.data.provider.audio
 
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
+import com.github.adriianh.innertube.YouTube
+import com.github.adriianh.innertube.utils.parseCookieString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -183,6 +186,58 @@ class YtDlpAudioProvider(
                 null
             }
         }
+
+    /**
+     * Resolves an age-restricted stream using the logged-in session: copies the
+     * current cookies to a Netscape file and lets yt-dlp generate the BotGuard
+     * PO token via its JS runtime (deno). This is the only path that clears the
+     * "Sign in to confirm your age" gate as of 2026.
+     */
+    override suspend fun getAgeRestrictedStreamUrl(sourceId: String): String? =
+        withContext(Dispatchers.IO) {
+            val cookie = YouTube.cookie ?: return@withContext null
+            val cookieFile = writeNetscapeCookies(cookie) ?: return@withContext null
+            try {
+                val url = "https://www.youtube.com/watch?v=$sourceId"
+                val streamUrl = runYtDlp(
+                    "--quiet",
+                    "--no-warnings",
+                    "--no-playlist",
+                    "--skip-download",
+                    "--no-check-certificates",
+                    "--ignore-config",
+                    "--cookies", cookieFile.absolutePath,
+                    "--extractor-args", "youtube:js_use_po_token=true",
+                    "-f", "bestaudio/best",
+                    "--get-url",
+                    url
+                ).lines().firstOrNull { it.startsWith("http") }
+                streamUrl
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+    /**
+     * Builds a Netscape-format cookie file from the current session so a yt-dlp
+     * subprocess can authenticate as the logged-in user.
+     */
+    private fun writeNetscapeCookies(cookie: String): File? = try {
+        val file = File.createTempFile("melo_ytdlp_cookies", ".txt")
+        file.deleteOnExit()
+        file.writeText(
+            buildString {
+                appendLine("# Netscape HTTP Cookie File")
+                for ((name, value) in parseCookieString(cookie)) {
+                    appendLine(".youtube.com\tTRUE\t/\tFALSE\t0\t$name\t$value")
+                }
+            },
+            StandardCharsets.UTF_8
+        )
+        file
+    } catch (_: Exception) {
+        null
+    }
 
     private fun runYtDlp(vararg args: String): String {
         val process = ProcessBuilder(listOf(ytDlpBin) + args.toList())

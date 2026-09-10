@@ -29,6 +29,7 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
+                implementation(project(":ytdlpipe"))
                 implementation(libs.sqldelightAndroidDriver)
                 implementation(libs.jaudiotagger)
             }

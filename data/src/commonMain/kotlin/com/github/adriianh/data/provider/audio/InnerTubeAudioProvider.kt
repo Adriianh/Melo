@@ -2,6 +2,7 @@ package com.github.adriianh.data.provider.audio
 
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.Settings
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.platform.PlatformFileSystem
@@ -25,6 +26,7 @@ class InnerTubeAudioProvider(
     private val configDirPath: String? = null,
     private val fallback: AudioProvider? = null,
     private val settingsRepository: SettingsRepository? = null,
+    private val ageGateProvider: AudioProvider? = null,
 ) : AudioProvider {
 
     companion object {
@@ -86,16 +88,41 @@ class InnerTubeAudioProvider(
             val targetQuality = if (settings.dataSaver) AudioQuality.LOW else settings.audioQuality
 
             var resolvedUrl: String? = null
-            for (client in CLIENTS_TO_TRY) {
+            var ageRestricted = false
+            val clientsToTry = CLIENTS_TO_TRY + if (YouTube.cookie != null) {
+                listOf(
+                    YouTubeClient.ANDROID_MUSIC,
+                    YouTubeClient.TVHTML5,
+                    YouTubeClient.WEB.copy(
+                        loginSupported = true,
+                        apiUrl = YouTubeClient.API_URL_YOUTUBE,
+                        origin = YouTubeClient.ORIGIN_YOUTUBE,
+                    ),
+                )
+            } else {
+                emptyList()
+            }
+            for (client in clientsToTry) {
                 if (client.loginRequired && YouTube.cookie == null) continue
                 try {
                     val sts = if (client.useSignatureTimestamp) getSts(sourceId) else null
-                    val resp = withTimeoutOrNull(3000L) {
-                        retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
-                            YouTube.player(sourceId, null, client, sts).getOrNull()
-                        }
+                    val resp = withTimeoutOrNull(6000L) {
+                        YouTube.player(sourceId, null, client, sts).getOrNull()
                     }
-                    if (resp?.playabilityStatus?.status != "OK") continue
+                    val playability = resp?.playabilityStatus
+                    if (playability?.status != "OK") {
+                        if (playability != null &&
+                            (playability.status == "AGE_CHECK_REQUIRED" ||
+                                (playability.status == "LOGIN_REQUIRED" &&
+                                    playability.reason?.contains(
+                                        "age",
+                                        ignoreCase = true
+                                    ) == true))
+                        ) {
+                            ageRestricted = true
+                        }
+                        continue
+                    }
                     val fmt = findAudioFormat(resp, targetQuality) ?: continue
                     val urlResult = YouTubeStreamUtils.getStreamUrl(fmt, sourceId)
                     urlResult.exceptionOrNull()?.let { e ->
@@ -114,11 +141,18 @@ class InnerTubeAudioProvider(
                 }
             }
             if (resolvedUrl.isNullOrEmpty()) {
-                val streams = runCatching {
+                val streams = try {
                     retryWithBackoff(maxRetries = 1, initialDelayMs = 300L) {
                         getNewPipeStreamUrls(sourceId)
                     }
-                }.getOrDefault(emptyList())
+                } catch (e: Exception) {
+                    if (e.message?.contains("age", ignoreCase = true) == true ||
+                        e.message?.contains("restricted", ignoreCase = true) == true
+                    ) {
+                        ageRestricted = true
+                    }
+                    emptyList()
+                }
 
                 val preferredItags = when (targetQuality) {
                     AudioQuality.LOW -> listOf(249, 250, 139, 140, 251)
@@ -128,6 +162,22 @@ class InnerTubeAudioProvider(
                 resolvedUrl = preferredItags
                     .firstNotNullOfOrNull { itag -> streams.firstOrNull { it.first == itag }?.second }
                     ?: streams.firstOrNull()?.second
+            }
+            if (resolvedUrl.isNullOrEmpty() && ageRestricted) {
+                val ageGateUrl = try {
+                    ageGateProvider?.getAgeRestrictedStreamUrl(sourceId)
+                } catch (_: Exception) {
+                    null
+                }
+                if (!ageGateUrl.isNullOrEmpty()) {
+                    val ageGateExpiry = extractExpiry(ageGateUrl)
+                        ?: (Clock.System.now().toEpochMilliseconds() + 5 * 60 * 1000L)
+                    mutex.withLock {
+                        resolvedUrlCache[sourceId] = ageGateUrl to ageGateExpiry
+                    }
+                    return@withContext ageGateUrl
+                }
+                throw AgeRestrictedException(sourceId)
             }
             if (resolvedUrl.isNullOrEmpty()) {
                 return@withContext fallback?.getStreamUrl(sourceId)
