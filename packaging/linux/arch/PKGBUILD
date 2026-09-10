@@ -1,7 +1,7 @@
 # Maintainer: Adriianh <https://github.com/Adriianh>
 pkgname=melo-bin
 _pkgname=melo
-pkgver=1.0.1
+pkgver=2.0.0
 pkgrel=1
 pkgdesc="Modern, fast music player for desktop (Compose Multiplatform GUI & TUI)"
 arch=('x86_64')
