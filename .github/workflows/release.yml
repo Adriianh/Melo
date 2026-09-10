@@ -57,7 +57,7 @@ jobs:
           distribution: 'graalvm'
 
       - name: Run tests
-        run: ./gradlew test
+        run: ./gradlew :tui:test
 
       - name: Build distribution
         run: ./gradlew :tui:${{ matrix.task }}
