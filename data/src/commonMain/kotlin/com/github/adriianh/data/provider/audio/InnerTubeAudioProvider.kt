@@ -14,6 +14,10 @@ import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
 import com.github.adriianh.innertube.pages.getNewPipeStreamUrls
 import com.github.adriianh.innertube.utils.YouTubeStreamUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -84,111 +88,130 @@ class InnerTubeAudioProvider(
             }
         }
         return withContext(MeloDispatchers.IO) {
-            val settings = settingsRepository?.getSettings() ?: Settings()
-            val targetQuality = if (settings.dataSaver) AudioQuality.LOW else settings.audioQuality
+            coroutineScope {
+                resolveStreamUrl(sourceId)
+            }
+        }
+    }
 
-            var resolvedUrl: String? = null
-            var ageRestricted = false
-            val clientsToTry = CLIENTS_TO_TRY + if (YouTube.cookie != null) {
-                listOf(
-                    YouTubeClient.ANDROID_MUSIC,
-                    YouTubeClient.TVHTML5,
-                    YouTubeClient.WEB.copy(
-                        loginSupported = true,
-                        apiUrl = YouTubeClient.API_URL_YOUTUBE,
-                        origin = YouTubeClient.ORIGIN_YOUTUBE,
-                    ),
-                )
-            } else {
+    private suspend fun CoroutineScope.resolveStreamUrl(sourceId: String): String? {
+        val settings = settingsRepository?.getSettings() ?: Settings()
+        val targetQuality = if (settings.dataSaver) AudioQuality.LOW else settings.audioQuality
+
+        var resolvedUrl: String? = null
+        var ageRestricted = false
+        var ageGateDeferred: Deferred<String?>? = null
+        val clientsToTry = CLIENTS_TO_TRY + if (YouTube.cookie != null) {
+            listOf(
+                YouTubeClient.ANDROID_MUSIC,
+                YouTubeClient.TVHTML5,
+                YouTubeClient.WEB.copy(
+                    loginSupported = true,
+                    apiUrl = YouTubeClient.API_URL_YOUTUBE,
+                    origin = YouTubeClient.ORIGIN_YOUTUBE,
+                ),
+            )
+        } else {
+            emptyList()
+        }
+        for (client in clientsToTry) {
+            if (client.loginRequired && YouTube.cookie == null) continue
+            try {
+                val sts = if (client.useSignatureTimestamp) getSts(sourceId) else null
+                val resp = withTimeoutOrNull(6000L) {
+                    YouTube.player(sourceId, null, client, sts).getOrNull()
+                }
+                val playability = resp?.playabilityStatus
+                val isAgeGated = playability != null &&
+                    (playability.status == "AGE_CHECK_REQUIRED" ||
+                        (playability.status == "LOGIN_REQUIRED" &&
+                            playability.reason?.contains(
+                                "age",
+                                ignoreCase = true
+                            ) == true))
+                if (isAgeGated) {
+                    ageRestricted = true
+                    if (ageGateDeferred == null && ageGateProvider != null) {
+                        ageGateDeferred = async {
+                            ageGateProvider.getAgeRestrictedStreamUrl(sourceId)
+                        }
+                    }
+                }
+                if (playability?.status != "OK") {
+                    continue
+                }
+                val fmt = findAudioFormat(resp, targetQuality) ?: continue
+                val urlResult = YouTubeStreamUtils.getStreamUrl(fmt, sourceId)
+                urlResult.exceptionOrNull()?.let { e ->
+                    if (e.message?.contains("deobfuscat", ignoreCase = true) == true ||
+                        e.message?.contains("parse", ignoreCase = true) == true
+                    ) {
+                        invalidateStsCache()
+                    }
+                }
+                val url = urlResult.getOrNull()
+                if (url.isNullOrEmpty()) continue
+                if (url.contains("rqh=1")) continue
+                resolvedUrl = url
+                ageGateDeferred?.cancel()
+                break
+            } catch (_: Exception) {
+            }
+        }
+        if (resolvedUrl.isNullOrEmpty()) {
+            val streams = try {
+                retryWithBackoff(maxRetries = 1, initialDelayMs = 300L) {
+                    getNewPipeStreamUrls(sourceId)
+                }
+            } catch (e: Exception) {
+                if (e.message?.contains("age", ignoreCase = true) == true ||
+                    e.message?.contains("restricted", ignoreCase = true) == true
+                ) {
+                    ageRestricted = true
+                }
                 emptyList()
             }
-            for (client in clientsToTry) {
-                if (client.loginRequired && YouTube.cookie == null) continue
-                try {
-                    val sts = if (client.useSignatureTimestamp) getSts(sourceId) else null
-                    val resp = withTimeoutOrNull(6000L) {
-                        YouTube.player(sourceId, null, client, sts).getOrNull()
-                    }
-                    val playability = resp?.playabilityStatus
-                    if (playability?.status != "OK") {
-                        if (playability != null &&
-                            (playability.status == "AGE_CHECK_REQUIRED" ||
-                                (playability.status == "LOGIN_REQUIRED" &&
-                                    playability.reason?.contains(
-                                        "age",
-                                        ignoreCase = true
-                                    ) == true))
-                        ) {
-                            ageRestricted = true
-                        }
-                        continue
-                    }
-                    val fmt = findAudioFormat(resp, targetQuality) ?: continue
-                    val urlResult = YouTubeStreamUtils.getStreamUrl(fmt, sourceId)
-                    urlResult.exceptionOrNull()?.let { e ->
-                        if (e.message?.contains("deobfuscat", ignoreCase = true) == true ||
-                            e.message?.contains("parse", ignoreCase = true) == true
-                        ) {
-                            invalidateStsCache()
-                        }
-                    }
-                    val url = urlResult.getOrNull()
-                    if (url.isNullOrEmpty()) continue
-                    if (url.contains("rqh=1")) continue
-                    resolvedUrl = url
-                    break
-                } catch (_: Exception) {
-                }
-            }
-            if (resolvedUrl.isNullOrEmpty()) {
-                val streams = try {
-                    retryWithBackoff(maxRetries = 1, initialDelayMs = 300L) {
-                        getNewPipeStreamUrls(sourceId)
-                    }
-                } catch (e: Exception) {
-                    if (e.message?.contains("age", ignoreCase = true) == true ||
-                        e.message?.contains("restricted", ignoreCase = true) == true
-                    ) {
-                        ageRestricted = true
-                    }
-                    emptyList()
-                }
 
-                val preferredItags = when (targetQuality) {
-                    AudioQuality.LOW -> listOf(249, 250, 139, 140, 251)
-                    AudioQuality.MEDIUM -> listOf(140, 250, 251, 139, 249)
-                    AudioQuality.HIGH, AudioQuality.AUTO -> listOf(140, 141, 251, 250, 139)
-                }
-                resolvedUrl = preferredItags
-                    .firstNotNullOfOrNull { itag -> streams.firstOrNull { it.first == itag }?.second }
-                    ?: streams.firstOrNull()?.second
+            val preferredItags = when (targetQuality) {
+                AudioQuality.LOW -> listOf(249, 250, 139, 140, 251)
+                AudioQuality.MEDIUM -> listOf(140, 250, 251, 139, 249)
+                AudioQuality.HIGH, AudioQuality.AUTO -> listOf(140, 141, 251, 250, 139)
             }
-            if (resolvedUrl.isNullOrEmpty() && ageRestricted) {
-                val ageGateUrl = try {
-                    ageGateProvider?.getAgeRestrictedStreamUrl(sourceId)
-                } catch (_: Exception) {
-                    null
-                }
-                if (!ageGateUrl.isNullOrEmpty()) {
-                    val ageGateExpiry = extractExpiry(ageGateUrl)
-                        ?: (Clock.System.now().toEpochMilliseconds() + 5 * 60 * 1000L)
-                    mutex.withLock {
-                        resolvedUrlCache[sourceId] = ageGateUrl to ageGateExpiry
-                    }
-                    return@withContext ageGateUrl
-                }
-                throw AgeRestrictedException(sourceId)
+            resolvedUrl = preferredItags
+                .firstNotNullOfOrNull { itag -> streams.firstOrNull { it.first == itag }?.second }
+                ?: streams.firstOrNull()?.second
+            if (!resolvedUrl.isNullOrEmpty()) {
+                ageGateDeferred?.cancel()
             }
-            if (resolvedUrl.isNullOrEmpty()) {
-                return@withContext fallback?.getStreamUrl(sourceId)
-            }
-            val expiry = extractExpiry(resolvedUrl) ?: (Clock.System.now()
-                .toEpochMilliseconds() + 5 * 60 * 1000L)
-            mutex.withLock {
-                resolvedUrlCache[sourceId] = resolvedUrl to expiry
-            }
-            resolvedUrl
         }
+        if (resolvedUrl.isNullOrEmpty() && (ageRestricted || ageGateDeferred != null)) {
+            val ageGateUrl = try {
+                ageGateDeferred?.await()
+                    ?: ageGateProvider?.getAgeRestrictedStreamUrl(sourceId)
+            } catch (_: Exception) {
+                null
+            }
+            if (!ageGateUrl.isNullOrEmpty()) {
+                val ageGateExpiry = extractExpiry(ageGateUrl)
+                    ?: (Clock.System.now().toEpochMilliseconds() + 5 * 60 * 1000L)
+                mutex.withLock {
+                    resolvedUrlCache[sourceId] = ageGateUrl to ageGateExpiry
+                }
+                return ageGateUrl
+            }
+            ageGateDeferred?.cancel()
+            throw AgeRestrictedException(sourceId)
+        }
+        if (resolvedUrl.isNullOrEmpty()) {
+            ageGateDeferred?.cancel()
+            return fallback?.getStreamUrl(sourceId)
+        }
+        val expiry = extractExpiry(resolvedUrl) ?: (Clock.System.now()
+            .toEpochMilliseconds() + 5 * 60 * 1000L)
+        mutex.withLock {
+            resolvedUrlCache[sourceId] = resolvedUrl to expiry
+        }
+        return resolvedUrl
     }
 
     private suspend fun getSts(sourceId: String): Int? {
