@@ -3,6 +3,8 @@ package buildsrc.convention
 import java.net.URI
 import java.util.zip.ZipFile
 
+val desktopAppVersion = "2.0.0"
+
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
     description = "Downloads and bundles VLC native libraries for Windows distribution"
@@ -89,14 +91,14 @@ tasks.register<Tar>("packageLinuxTarGz") {
     dependsOn(generateLinuxLauncher)
 
     archiveBaseName.set("melo")
-    archiveVersion.set("1.0.1")
+    archiveVersion.set(desktopAppVersion)
     archiveClassifier.set("linux-x64")
     archiveExtension.set("tar.gz")
     compression = Compression.GZIP
 
     destinationDirectory.set(layout.buildDirectory.dir("compose/binaries/main/tar"))
 
-    into("melo-1.0.1") {
+    into("melo-$desktopAppVersion") {
         from(layout.buildDirectory.dir("compose/binaries/main/app/Melo"))
         from(rootProject.file("packaging/linux/melo.desktop"))
         from(rootProject.file("packaging/linux/install.sh"))
@@ -134,7 +136,34 @@ val packageAppImage = tasks.register("packageAppImage") {
         targetAppDir.deleteRecursively()
         targetAppDir.mkdirs()
 
-        appDirFile.copyRecursively(targetAppDir, overwrite = true)
+        // Copy files preserving permissions and symlinks on Linux
+        val cpExit = try {
+            ProcessBuilder("cp", "-a", "${appDirFile.absolutePath}/.", targetAppDir.absolutePath)
+                .inheritIO()
+                .start()
+                .waitFor()
+        } catch (e: Exception) {
+            -1
+        }
+        if (cpExit != 0) {
+            appDirFile.copyRecursively(targetAppDir, overwrite = true)
+        }
+
+        // Ensure all executables, binaries, and scripts have execution permissions
+        targetAppDir.walkTopDown().forEach { file ->
+            if (file.isFile) {
+                val relPath = file.relativeTo(targetAppDir).path
+                val srcFile = File(appDirFile, relPath)
+                if (srcFile.canExecute() ||
+                    file.parentFile?.name == "bin" ||
+                    file.name.endsWith(".sh") ||
+                    file.name == "jspawnhelper" ||
+                    file.name == "jexec"
+                ) {
+                    file.setExecutable(true, false)
+                }
+            }
+        }
 
         val desktopFile = rootProject.file("packaging/linux/melo.desktop")
         val iconFile = project.file("src/jvmMain/resources/icons/icon.png")
@@ -182,7 +211,7 @@ val packageAppImage = tasks.register("packageAppImage") {
         }
 
         logger.lifecycle("Building AppImage with ${toolExec}...")
-        val appImageOutputFile = File(outDirFile, "Melo-1.0.1-x86_64.AppImage")
+        val appImageOutputFile = File(outDirFile, "Melo-${desktopAppVersion}-x86_64.AppImage")
 
         val process = ProcessBuilder(
             toolExec,
@@ -227,7 +256,7 @@ val packageInnoSetup = tasks.register<Exec>("packageInnoSetup") {
 
     commandLine(
         isccCandidate,
-        "/DMyAppVersion=1.0.1",
+        "/DMyAppVersion=$desktopAppVersion",
         "/DAppSourceDir=${appSourceDir.absolutePath}",
         "/DOutputDir=${outputDir.absolutePath}",
         issFile.absolutePath
