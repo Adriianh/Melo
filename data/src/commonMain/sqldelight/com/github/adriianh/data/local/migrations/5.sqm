@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS stream_cache (
+    track_id    TEXT NOT NULL PRIMARY KEY,
+    stream_url  TEXT NOT NULL,
+    resolved_at INTEGER NOT NULL  -- epoch millis
+);

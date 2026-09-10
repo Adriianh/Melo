@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS stream_cache (
+    track_id    TEXT NOT NULL PRIMARY KEY,
+    stream_url  TEXT NOT NULL,
+    resolved_at INTEGER NOT NULL  -- epoch millis
+);
+
+upsertStream:
+INSERT OR REPLACE INTO stream_cache (track_id, stream_url, resolved_at)
+VALUES (?, ?, ?);
+
+selectStream:
+SELECT * FROM stream_cache WHERE track_id = ?;
+
+deleteStream:
+DELETE FROM stream_cache WHERE track_id = ?;
+
+deleteExpiredStreams:
+DELETE FROM stream_cache WHERE resolved_at < ?;

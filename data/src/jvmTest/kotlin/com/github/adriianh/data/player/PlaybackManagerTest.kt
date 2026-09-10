@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.repository.StreamCacheRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -420,7 +421,8 @@ class PlaybackManagerTest {
     @Test
     fun `auto-caching invokes downloadManager cacheTrack`() = runTest {
         coEvery { getStreamUseCase(any()) } returns "http://stream.url"
-        val downloadManager = mockk<com.github.adriianh.core.domain.manager.DownloadManager>(relaxed = true)
+        val downloadManager =
+            mockk<com.github.adriianh.core.domain.manager.DownloadManager>(relaxed = true)
         every { downloadManager.activeDownloads } returns MutableStateFlow(emptyMap())
         coEvery { downloadManager.cacheTrack(any()) } returns true
 
@@ -440,7 +442,8 @@ class PlaybackManagerTest {
 
     @Test
     fun `smart fallback advances to next offline track when online stream fails`() = runTest {
-        val offlineRepo = mockk<com.github.adriianh.core.domain.repository.OfflineRepository>(relaxed = true)
+        val offlineRepo =
+            mockk<com.github.adriianh.core.domain.repository.OfflineRepository>(relaxed = true)
         coEvery { getStreamUseCase(match { it.id == "1" }) } returns null
         coEvery { getStreamUseCase(match { it.id == "2" }) } returns "file:///local/2.mp3"
         coEvery { offlineRepo.getOfflineTrack("2") } returns com.github.adriianh.core.domain.model.OfflineTrack(
@@ -462,5 +465,115 @@ class PlaybackManagerTest {
 
         assertEquals(1, manager.queueState.value.currentIndex)
         assertEquals("2", manager.queueState.value.currentTrack?.id)
+    }
+
+    private fun cacheRepo() =
+        mockk<StreamCacheRepository>(relaxed = true)
+
+    @Test
+    fun `uses cached stream URL and skips network resolution`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl("1", any()) } returns "http://cached.url"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 0) { getStreamUseCase(any()) }
+        verify { meloPlayer.load("http://cached.url", any()) }
+    }
+
+    @Test
+    fun `persists resolved stream URL to stream cache`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl(any(), any()) } returns null
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        coVerify { repo.cacheUrl("1", "http://stream.url") }
+    }
+
+    @Test
+    fun `does not persist file URLs to stream cache`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl(any(), any()) } returns null
+        coEvery { getStreamUseCase(any()) } returns "file:///local/1.mp3"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 0) { repo.cacheUrl(any(), any()) }
+        verify { meloPlayer.load("file:///local/1.mp3", any()) }
+    }
+
+    @Test
+    fun `prefetch persists resolved URL to stream cache`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl(any(), any()) } returns null
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        coVerify { repo.cacheUrl("2", "http://stream.url") }
+    }
+
+    @Test
+    fun `invalidates cached URL when playback error occurs`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl(any(), any()) } returns null
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.setQueue(listOf(fakeTrack("1")))
+        scope.advanceUntilIdle()
+        coVerify { repo.cacheUrl("1", "http://stream.url") }
+
+        meloPlayerState.value = PlaybackState(
+            currentTrack = fakeTrack("1"),
+            isPlaying = false,
+            isBuffering = false,
+            progressMs = 0L,
+            durationMs = 180_000,
+            error = "Source error"
+        )
+        scope.advanceUntilIdle()
+
+        coVerify { repo.invalidate("1") }
     }
 }

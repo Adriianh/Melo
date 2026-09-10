@@ -8,8 +8,10 @@ import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SavedSession
+import com.github.adriianh.core.domain.repository.StreamCacheRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -48,12 +51,13 @@ class PlaybackManagerImpl(
     private val saveSessionUseCase: SaveSessionUseCase? = null,
     private val restoreSessionUseCase: RestoreSessionUseCase? = null,
     private val clearSessionUseCase: ClearSessionUseCase? = null,
+    private val streamCacheRepository: StreamCacheRepository? = null,
     ioDispatcher: CoroutineDispatcher? = null,
 ) : PlaybackManager {
 
     private val dispatcher: CoroutineDispatcher =
         ioDispatcher
-            ?: (scope.coroutineContext[kotlin.coroutines.ContinuationInterceptor] as? CoroutineDispatcher)
+            ?: (scope.coroutineContext[ContinuationInterceptor] as? CoroutineDispatcher)
             ?: MeloDispatchers.IO
 
     override val playbackState: StateFlow<PlaybackState> = meloPlayer.state
@@ -73,6 +77,7 @@ class PlaybackManagerImpl(
     private var saveSessionJob: Job? = null
     private var isAutoplayFetching = false
     private var lastHandledFinishedTrackId: String? = null
+    private var lastHandledErrorTrackId: String? = null
     private var isTrackLoaded = false
     private var pendingRestorePositionMs: Long = 0L
     private var lastSavedPositionMs: Long = 0L
@@ -109,7 +114,11 @@ class PlaybackManagerImpl(
         scope.launch(dispatcher) {
             meloPlayer.state.collect { state ->
                 val trackId = state.currentTrack?.id
-                if (state.isFinished && state.error == null) {
+                val loadError = state.error
+                if (loadError != null && trackId != null && trackId != lastHandledErrorTrackId) {
+                    lastHandledErrorTrackId = trackId
+                    streamCacheRepository?.invalidate(trackId)
+                } else if (state.isFinished && state.error == null) {
                     if (trackId != null && trackId != lastHandledFinishedTrackId) {
                         lastHandledFinishedTrackId = trackId
                         handleTrackFinished()
@@ -362,7 +371,6 @@ class PlaybackManagerImpl(
                 ))
             } == true
             if (isActivelyDownloading) {
-                // Do not attempt to play an incomplete/actively downloading file
                 if (_queueState.value.hasNext) {
                     playNext()
                 } else {
@@ -387,20 +395,31 @@ class PlaybackManagerImpl(
             }
 
             val cachedUrl = cacheMutex.withLock { prefetchCache.remove(track.id) }
-            val url = cachedUrl
-                ?: getStreamUseCase(track)
-                ?: run {
-                    val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
-                    if (nextOfflineIndex != null) {
-                        _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
-                        playCurrentQueueTrack()
-                    } else if (_queueState.value.hasNext) {
-                        playNext()
-                    } else {
-                        handleAutoplay(forcePlayNext = true)
+            val url = try {
+                cachedUrl
+                    ?: streamCacheRepository?.getCachedUrl(track.id, STREAM_URL_TTL_MS)
+                    ?: getStreamUseCase(track)?.also { resolved ->
+                        if (!resolved.startsWith("file:")) {
+                            streamCacheRepository?.cacheUrl(track.id, resolved)
+                        }
                     }
-                    return@launch
-                }
+                    ?: run {
+                        val nextOfflineIndex =
+                            findNextOfflineTrackIndex(_queueState.value.currentIndex)
+                        if (nextOfflineIndex != null) {
+                            _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+                            playCurrentQueueTrack()
+                        } else if (_queueState.value.hasNext) {
+                            playNext()
+                        } else {
+                            handleAutoplay(forcePlayNext = true)
+                        }
+                        return@launch
+                    }
+            } catch (_: AgeRestrictedException) {
+                meloPlayer.stop()
+                return@launch
+            }
             meloPlayer.load(url, track, targetSeek)
             persistCurrentSession(immediate = true)
 
@@ -440,6 +459,9 @@ class PlaybackManagerImpl(
                 val alreadyCached = cacheMutex.withLock { nextTrack.id in prefetchCache }
                 if (!alreadyCached) {
                     val url = getStreamUseCase(nextTrack) ?: continue
+                    if (!url.startsWith("file:")) {
+                        streamCacheRepository?.cacheUrl(nextTrack.id, url)
+                    }
                     cacheMutex.withLock { prefetchCache[nextTrack.id] = url }
                 }
             }
@@ -538,5 +560,9 @@ class PlaybackManagerImpl(
                 action()
             }
         }
+    }
+
+    private companion object {
+        private const val STREAM_URL_TTL_MS = 3 * 60 * 60 * 1000L
     }
 }

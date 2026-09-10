@@ -9,6 +9,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
@@ -126,6 +127,10 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                     )
                 }
             }
+
+            override fun onPlayerError(error: PlaybackException) {
+                _state.update { it.copy(error = error.message ?: "Playback error") }
+            }
         })
     }
 
@@ -156,7 +161,8 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                     currentTrack = track,
                     progressMs = initialPositionMs,
                     durationMs = track.durationMs,
-                    isFinished = false
+                    isFinished = false,
+                    error = null
                 )
             }
             exoPlayer.play()

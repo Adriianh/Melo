@@ -16,6 +16,7 @@ import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.core.domain.repository.StreamCacheRepository
 import com.github.adriianh.core.domain.repository.UpdateRepository
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
@@ -107,6 +108,7 @@ import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
+import com.github.adriianh.data.repository.StreamCacheRepositoryImpl
 import com.github.adriianh.data.repository.UpdateRepositoryImpl
 import com.github.adriianh.melo.ui.SidebarViewModel
 import com.github.adriianh.melo.ui.detail.EntityDetailViewModel
@@ -192,6 +194,7 @@ val dataModule = module {
     }
     singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
     singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
+    singleOf(::StreamCacheRepositoryImpl) { bind<StreamCacheRepository>() }
     singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
     singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
     single<SettingsRepository> {
@@ -233,6 +236,7 @@ val dataModule = module {
             saveSessionUseCase = getOrNull(),
             restoreSessionUseCase = getOrNull(),
             clearSessionUseCase = getOrNull(),
+            streamCacheRepository = getOrNull(),
             ioDispatcher = MeloDispatchers.IO,
         )
     }
