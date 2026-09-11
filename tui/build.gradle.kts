@@ -48,6 +48,19 @@ tasks {
         }
     }
 
+    register<JavaExec>("run") {
+        group = "application"
+        description = "Runs the Melo CLI/TUI application"
+        mainClass.set("com.github.adriianh.cli.MeloKt")
+        classpath = sourceSets["main"].runtimeClasspath
+        standardInput = System.`in`
+        javaLauncher.set(
+            project.extensions.getByType<JavaToolchainService>().launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(25))
+            }
+        )
+    }
+
     build {
         dependsOn(shadowJar)
     }
@@ -75,7 +88,6 @@ graalvmNative {
         named("main") {
             imageName.set(appName)
             mainClass.set("com.github.adriianh.cli.MeloKt")
-            fallback.set(false)
             verbose.set(true)
 
             // Optimized for modern GraalVM
