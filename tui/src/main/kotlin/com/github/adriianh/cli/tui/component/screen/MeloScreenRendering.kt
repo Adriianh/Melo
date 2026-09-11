@@ -8,7 +8,6 @@ import com.github.adriianh.cli.tui.component.buildCommandBar
 import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.handleHomeKey
 import com.github.adriianh.cli.tui.handler.handleLibraryKey
@@ -60,8 +59,12 @@ internal fun MeloScreen.renderRoot(): Element {
         playerBar
     }
 
-    val mainLayout = dock()
-        .top(
+    val isSearch =
+        state.navigation.activeSection == SidebarSection.SEARCH || state.screen is ScreenState.Search
+
+    val layoutDock = dock()
+    if (isSearch) {
+        layoutDock.top(
             buildSearchBar(
                 searchInputState,
                 state.screen as? ScreenState.Search,
@@ -70,6 +73,9 @@ internal fun MeloScreen.renderRoot(): Element {
             ),
             Constraint.length(3)
         )
+    }
+
+    val mainLayout = layoutDock
         .bottom(
             bottomContent,
             Constraint.length(if (state.commandBar.isVisible) 5 else 4),
@@ -141,7 +147,11 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         }
         val targetContent = when (targetSection) {
             SidebarSection.HOME -> renderHomeScreen(
-                state, homeRecentList, homeFavoritesList,
+                state,
+                homeFeedSectionList,
+                homeFeedItemList,
+                homeRecentList,
+                homeFavoritesList,
                 onKeyEvent = ::handleHomeKey,
             )
 
@@ -179,17 +189,23 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             SidebarSection.OFFLINE -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
             SidebarSection.SETTINGS -> renderHomeScreen(
                 state,
+                homeFeedSectionList,
+                homeFeedItemList,
                 homeRecentList,
                 homeFavoritesList,
                 onKeyEvent = ::handleHomeKey
             )
         }
-        return stack(ClearGraphicsElement().fill(), targetContent)
+        return targetContent
     }
 
     return when (state.screen) {
         is ScreenState.Home -> renderHomeScreen(
-            state, homeRecentList, homeFavoritesList,
+            state,
+            homeFeedSectionList,
+            homeFeedItemList,
+            homeRecentList,
+            homeFavoritesList,
             onKeyEvent = ::handleHomeKey,
         )
 

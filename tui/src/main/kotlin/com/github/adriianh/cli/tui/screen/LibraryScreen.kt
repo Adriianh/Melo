@@ -1,10 +1,8 @@
 package com.github.adriianh.cli.tui.screen
 
-import com.github.adriianh.cli.tui.*
-import com.github.adriianh.cli.tui.component.SettingsViewState
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
@@ -14,14 +12,22 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.component.SettingsViewState
+import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import java.io.File
 import dev.tamboui.layout.Margin
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
+import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
+import java.io.File
 
 fun renderLibraryScreen(
     state: MeloState,
@@ -40,7 +46,7 @@ fun renderLibraryScreen(
     val tabBar = row(favTab, text("  "), plTab, text("  "), locTab, spacer())
         .margin(Margin.horizontal(1))
 
-    val content = when (actualState.libraryTab) {
+    val content: StyledElement<*> = when (actualState.libraryTab) {
         LibraryTab.FAVORITES -> buildFavoritesContent(state, favoritesList)
         LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
             buildPlaylistDetailContent(state, actualState, playlistTracksList)
@@ -60,30 +66,36 @@ fun renderLibraryScreen(
             else "[Tab/f/l] directory  [/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
     }
 
+    val footer = row(
+        text(" $hints").fg(TEXT_DIM)
+    )
+
     val body = column(
         tabBar,
         text("").length(1),
-        content,
+        content.fill(),
+        text("").length(1),
+        footer,
     )
 
-    return stack(
-        ClearGraphicsElement().fill(),
-        panel(body)
-            .title("$ICON_LIBRARY Your Library  $hints")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("library-panel")
-            .onKeyEvent(onKeyEvent)
-            .fill()
-    )
+    return panel(body)
+        .title(" $ICON_LIBRARY Your Library ")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("library-panel")
+        .onKeyEvent(onKeyEvent)
+        .fill()
 }
 
 private fun tabLabel(label: String, active: Boolean): Element =
     text(label).fg(if (active) PRIMARY_COLOR else TEXT_DIM).apply { if (active) bold() }
 
-private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*>): Element {
+private fun buildFavoritesContent(
+    state: MeloState,
+    favoritesList: ListElement<*>
+): StyledElement<*> {
     if (state.collections.favorites.isEmpty()) {
         return column(
             spacer(),
@@ -121,7 +133,10 @@ private fun buildFavoritesContent(state: MeloState, favoritesList: ListElement<*
     )
 }
 
-private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*>): Element {
+private fun buildPlaylistsContent(
+    state: MeloState,
+    playlistsList: ListElement<*>
+): StyledElement<*> {
     if (state.collections.playlists.isEmpty()) {
         return column(
             spacer(),
@@ -151,7 +166,11 @@ private fun buildPlaylistsContent(state: MeloState, playlistsList: ListElement<*
     )
 }
 
-private fun buildPlaylistDetailContent(state: MeloState, actualState: ScreenState.Library, tracksList: ListElement<*>): Element {
+private fun buildPlaylistDetailContent(
+    state: MeloState,
+    actualState: ScreenState.Library,
+    tracksList: ListElement<*>
+): StyledElement<*> {
     val playlist = actualState.selectedPlaylist
     val tracks   = actualState.playlistTracks
 
@@ -206,7 +225,7 @@ private fun buildLocalContent(
     settingsViewState: SettingsViewState,
     actualState: ScreenState.Library,
     localLibraryList: ListElement<*>
-): Element {
+): StyledElement<*> {
     val allPaths = settingsViewState.currentSettings.localLibraryPaths
     val filterTabs = if (allPaths.size > 1) {
         val tabNames = listOf("All") + allPaths.map { File(it).name }

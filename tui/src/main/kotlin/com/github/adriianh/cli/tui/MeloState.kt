@@ -54,12 +54,15 @@ enum class LibraryTab {
 }
 
 /**
- * Active section within the Home screen.
+ * Active tab within the Home screen.
  */
-enum class HomeSection {
-    RECENT,
-    FAVORITES,
+enum class HomeTab() {
+    FEED(),
+    RECENT(),
+    FAVORITES(),
 }
+
+typealias HomeSection = HomeTab
 
 /**
  * Input mode for playlist create/rename/picker overlay.
@@ -161,10 +164,16 @@ sealed interface ScreenState {
     ) : ScreenState
 
     data class Home(
-        val homeSection: HomeSection = HomeSection.RECENT,
+        val homeTab: HomeTab = HomeTab.FEED,
+        val feedSections: List<HomeSection> = emptyList(),
+        val selectedSectionIndex: Int = 0,
+        val selectedItemIndex: Int = 0,
+        val isLoadingFeed: Boolean = false,
+        val feedError: String? = null,
         val homeRecentCursor: Int = 0,
         val homeFavoritesCursor: Int = 0,
-    ) : ScreenState
+    ) : ScreenState {
+    }
 
     data class Library(
         val libraryTab: LibraryTab = LibraryTab.FAVORITES,
@@ -271,26 +280,12 @@ data class CollectionsState(
 data class MeloState(
     val player: PlayerState = PlayerState(),
     val navigation: NavigationState = NavigationState(),
-
-    // Current primary screen
     val screen: ScreenState = ScreenState.Home(),
-
-    // Persistent detail side-panel
     val detail: DetailState = DetailState(),
-
-    // Persistent collections
     val collections: CollectionsState = CollectionsState(),
-
-    // Global Playlist interactions (overlays)
     val playlistInteraction: PlaylistInteractionState = PlaylistInteractionState(),
-
-    // Global Track options (context menu)
     val trackOptions: TrackOptionsMenuState = TrackOptionsMenuState(),
-
-    // Global command bar
     val commandBar: CommandBarState = CommandBarState(),
-
-    // Global UI/System flags
     val isSettingsVisible: Boolean = false,
     val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,

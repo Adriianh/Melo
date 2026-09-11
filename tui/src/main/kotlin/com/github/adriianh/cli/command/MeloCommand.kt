@@ -29,6 +29,7 @@ import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.interactor.PlaybackInteractors
@@ -92,6 +93,7 @@ class MeloCommand : CliktCommand(
         startKoin { modules(appModule) }
 
         val searchInteractors: SearchInteractors by inject()
+        val discoveryInteractors: DiscoveryInteractors by inject()
         val libraryInteractors: LibraryInteractors by inject()
         val playbackInteractors: PlaybackInteractors by inject()
         val offlineInteractors: OfflineInteractors by inject()
@@ -112,6 +114,7 @@ class MeloCommand : CliktCommand(
                 httpClient = httpClient,
                 pipedApiClient = pipedApiClient,
                 searchInteractors = searchInteractors,
+                discoveryInteractors = discoveryInteractors,
                 libraryInteractors = libraryInteractors,
                 playbackInteractors = playbackInteractors,
                 offlineInteractors = offlineInteractors,

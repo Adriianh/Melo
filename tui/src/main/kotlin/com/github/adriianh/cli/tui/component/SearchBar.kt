@@ -2,7 +2,7 @@ package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_SEARCH
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.ScreenState
 import dev.tamboui.toolkit.Toolkit.panel
@@ -21,12 +21,13 @@ fun buildSearchBar(
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val searchInput =
-        textInput(inputState).placeholder("Search for songs, artists...").onSubmit { onSubmit() }
+        textInput(inputState).placeholder("Search songs, artists, albums, playlists...")
+            .onSubmit { onSubmit() }
             .fill()
 
     val searchBarPanel = panel(
         row(
-            text("$ICON_NOTE Melo").bold().fg(PRIMARY_COLOR).length(8), searchInput
+            text(" $ICON_SEARCH ").bold().fg(PRIMARY_COLOR).length(3), searchInput
         )
     ).rounded().borderColor(BORDER_DEFAULT).focusedBorderColor(BORDER_FOCUSED).focusable()
         .id("search-bar").onKeyEvent(onKeyEvent)

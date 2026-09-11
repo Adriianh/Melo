@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.screen
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -10,11 +8,16 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.StatsTimeUnit
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.core.domain.model.StatsPeriod
 import dev.tamboui.layout.Constraint
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
@@ -160,30 +163,28 @@ fun renderStatsScreen(
         "  [Tab/l] next period   [h] prev period   [u] cycle time unit   [r] refresh"
     ).fg(TEXT_DIM)
 
-    return stack(
-        ClearGraphicsElement().fill(),
-        panel(
-            column(
-                row(periodTabs, spacer(), unitTabs),
-                text(""),
-                summaryPanel.length(5),
-                text(""),
-                dock()
-                    .left(topTracksPanel.fill(), Constraint.percentage(55))
-                    .center(topArtistsPanel.fill()),
-                text(""),
-                hints,
-            )
+    return panel(
+        column(
+            row(periodTabs, spacer(), unitTabs),
+            text(""),
+            summaryPanel.length(5),
+            text(""),
+            dock()
+                .left(topTracksPanel.fill(), Constraint.percentage(55))
+                .center(topArtistsPanel.fill())
+                .fill(),
+            text(""),
+            hints,
         )
-            .title("${MeloTheme.ICON_STATS} Statistics")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("stats-panel")
-            .onKeyEvent(onKeyEvent)
-            .fill()
     )
+        .title("${MeloTheme.ICON_STATS} Statistics")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("stats-panel")
+        .onKeyEvent(onKeyEvent)
+        .fill()
 }
 
 private fun buildPeriodTabs(current: StatsPeriod): Element {

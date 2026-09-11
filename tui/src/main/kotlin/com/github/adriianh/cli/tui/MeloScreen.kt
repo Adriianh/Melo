@@ -30,6 +30,7 @@ import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.interactor.PlaybackInteractors
@@ -59,6 +60,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import kotlin.time.Duration.Companion.milliseconds
 
 class MeloScreen(
     // Shared infrastructure
@@ -66,6 +68,7 @@ class MeloScreen(
     internal val pipedApiClient: PipedApiClient,
     // Interactors
     internal val searchInteractors: SearchInteractors,
+    internal val discoveryInteractors: DiscoveryInteractors,
     internal val libraryInteractors: LibraryInteractors,
     internal val playbackInteractors: PlaybackInteractors,
     internal val offlineInteractors: OfflineInteractors,
@@ -82,6 +85,7 @@ class MeloScreen(
 ) : ToolkitApp() {
 
     // Bridging properties to keep existing code working during refactor
+    internal val getHome get() = discoveryInteractors.getHome
     internal val searchTracks get() = searchInteractors.searchTracks
     internal val searchAlbums get() = searchInteractors.searchAlbums
     internal val searchArtists get() = searchInteractors.searchArtists
@@ -208,7 +212,7 @@ class MeloScreen(
                 }
 
                 lastObservedFocus = isFocused
-                delay(100)
+                delay(100.milliseconds)
             }
         }
     }
@@ -280,6 +284,22 @@ class MeloScreen(
         .focusable()
         .id("local-library-list")
 
+    internal val homeFeedSectionList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("home-feed-sections")
+
+    internal val homeFeedItemList: ListElement<*> = list()
+        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightColor(MeloTheme.PRIMARY_COLOR)
+        .autoScroll()
+        .scrollbar()
+        .focusable()
+        .id("home-feed-items")
+
     internal val sidebarNavList: ListElement<*> = list()
         .items(
             "${MeloTheme.ICON_HOME} Home",
@@ -295,7 +315,7 @@ class MeloScreen(
         .items(
             "${MeloTheme.ICON_STATS} Statistics",
             "${MeloTheme.ICON_OFFLINE} Downloads",
-            "${MeloTheme.ICON_SETTINGS}  Settings",
+            "${MeloTheme.ICON_SETTINGS} Settings",
         )
         .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
@@ -383,4 +403,34 @@ class MeloScreen(
 
     internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) =
         downloadTrackAction(track, downloadType)
+
+    internal fun loadHomeFeed() {
+        updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = true, feedError = null) }
+        scope.launch {
+            try {
+                val feed = getHome()
+                val sections = feed.sections
+                appRunner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Home> {
+                        it.copy(
+                            feedSections = sections,
+                            isLoadingFeed = false,
+                            feedError = null,
+                            selectedSectionIndex = 0,
+                            selectedItemIndex = 0
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                appRunner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Home> {
+                        it.copy(
+                            isLoadingFeed = false,
+                            feedError = e.message ?: "Failed to load feed"
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

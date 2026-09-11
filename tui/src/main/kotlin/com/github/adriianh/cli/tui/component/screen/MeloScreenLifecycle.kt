@@ -52,6 +52,7 @@ internal fun MeloScreen.onStartLifecycle() {
         }
     }
     scope.launch { restoreLastSession() }
+    scope.launch { loadHomeFeed() }
     scope.launch {
         getSettings().collect { settings ->
             appRunner()?.runOnRenderThread {
