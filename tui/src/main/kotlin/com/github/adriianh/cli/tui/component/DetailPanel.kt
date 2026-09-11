@@ -8,7 +8,6 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -21,7 +20,6 @@ import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel
 import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
-import dev.tamboui.toolkit.Toolkit.stack
 import dev.tamboui.toolkit.Toolkit.tabs
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.Toolkit.widget
@@ -56,10 +54,7 @@ fun buildDetailPanel(
     }
 
     val layeredContent = if (state.detail.detailTab != DetailTab.INFO) {
-        stack(
-            ClearGraphicsElement().fill(),
-            tabContent.fill()
-        )
+        tabContent.fill()
     } else {
         column(
             renderArtwork(state),
@@ -70,7 +65,7 @@ fun buildDetailPanel(
     return panel(
         detailTabs.length(1),
         layeredContent.fill()
-    ).title("Now Playing")
+    ).title(" Track Details ")
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
@@ -207,10 +202,7 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
                 .build()
         ).length(18)
     } else {
-        stack(
-            ClearGraphicsElement(),
-            panel(text(" [ No Artwork ] ").dim().centered()).rounded().length(5)
-        ).length(5)
+        panel(text(" [ No Artwork ] ").dim().centered()).rounded().length(5)
     }
 
 private fun renderLyricsTab(

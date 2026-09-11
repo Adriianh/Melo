@@ -2,7 +2,6 @@ package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
@@ -20,7 +19,6 @@ import dev.tamboui.tui.event.KeyEvent
 class CommandBarSuggestionsOverlay(
     private val stateProvider: () -> MeloState
 ) : Element {
-    private val clearGraphics = ClearGraphicsWidget()
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
         val commandBarState = state.commandBar
@@ -41,7 +39,6 @@ class CommandBarSuggestionsOverlay(
         // Determine Y based on height of suggestions, put it just above the command bar
         val overlayY = area.y() + area.height() - (overlayH + 1)
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
         val hint = "[Tab] Complete - [Enter] Execute - [Esc] Cancel"
         val subtitle = "Commands"

@@ -15,7 +15,6 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.component.buildDetailPanel
 import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsElement
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.Track
@@ -27,7 +26,6 @@ import dev.tamboui.toolkit.Toolkit.dock
 import dev.tamboui.toolkit.Toolkit.panel
 import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
-import dev.tamboui.toolkit.Toolkit.stack
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
@@ -312,7 +310,7 @@ private fun renderResultsArea(
                 Constraint.percentage(35)
             )
     } else {
-        dock().center(resultsPanel).bottom(ClearGraphicsElement(), Constraint.length(1))
+        resultsPanel
     }
 }
 
@@ -544,7 +542,5 @@ private fun buildArtistDashboardPanel(
         .focusedBorderColor(BORDER_FOCUSED).focusable().id("artist-dashboard-list")
         .onKeyEvent(onEntityDetailKeyEvent).fill()
 
-    return stack(
-        ClearGraphicsElement().fill(), dashboardPanel
-    ).fill()
+    return dashboardPanel
 }

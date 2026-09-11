@@ -3,7 +3,6 @@ package com.github.adriianh.cli.tui.component
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
@@ -21,7 +20,6 @@ import dev.tamboui.tui.event.KeyEvent
 class SearchSuggestionsOverlay(
     private val stateProvider: () -> MeloState
 ) : Element {
-    private val clearGraphics = ClearGraphicsWidget()
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
@@ -36,7 +34,6 @@ class SearchSuggestionsOverlay(
         val overlayY = area.y() + 3
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val hint = "[d] Delete - [Enter] Select - [Esc] Cancel"

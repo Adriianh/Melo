@@ -4,13 +4,15 @@ import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -104,8 +106,6 @@ class SettingsOverlay(
     private val onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
 ) : Element {
 
-    private val clearGraphics = ClearGraphicsWidget()
-
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
         if (!state.isSettingsVisible) return
@@ -118,7 +118,6 @@ class SettingsOverlay(
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val currentSection = SettingsSection.entries[viewState.sectionCursor]
