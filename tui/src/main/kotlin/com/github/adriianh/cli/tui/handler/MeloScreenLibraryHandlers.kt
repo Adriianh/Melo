@@ -28,15 +28,15 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "library-panel"
     if (!isFocused) return handleGlobalShortcuts(event)
 
-    if (event.code() == KeyCode.CHAR && event.character() == '1') {
+    if (event.isChar('1')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.FAVORITES) }
         return EventResult.HANDLED
     }
-    if (event.code() == KeyCode.CHAR && event.character() == '2') {
+    if (event.isChar('2')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false) }
         return EventResult.HANDLED
     }
-    if (event.code() == KeyCode.CHAR && event.character() == '3') {
+    if (event.isChar('3')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.LOCAL) }
         loadLocalTracks()
         return EventResult.HANDLED
@@ -87,8 +87,8 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             }
 
             event.code() == KeyCode.CHAR -> {
-                val character = event.character()
-                updateScreen<ScreenState.Library> { it.copy(searchQuery = it.searchQuery + character) }
+                val text = event.string()
+                updateScreen<ScreenState.Library> { it.copy(searchQuery = it.searchQuery + text) }
                 return EventResult.HANDLED
             }
         }
@@ -96,21 +96,21 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
     }
 
     when {
-        event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'l') -> {
+        event.code() == KeyCode.TAB || event.isCharIgnoreCase('l') -> {
             val next = (actualState.localFilterIndex + 1) % (allPaths.size + 1)
             updateScreen<ScreenState.Library> { it.copy(localFilterIndex = next, selectedIndex = 0) }
             localLibraryList.selected(0)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'f' -> {
+        event.isCharIgnoreCase('f') -> {
             val prev = if (actualState.localFilterIndex == 0) allPaths.size else actualState.localFilterIndex - 1
             updateScreen<ScreenState.Library> { it.copy(localFilterIndex = prev, selectedIndex = 0) }
             localLibraryList.selected(0)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == '/' -> {
+        event.isChar('/') -> {
             updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
             return EventResult.HANDLED
         }

@@ -29,7 +29,7 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
     val codeStr = binding.code
     val charVal = binding.char
     return (codeStr != null && code() == KeyCode.valueOf(codeStr)) ||
-            (charVal != null && character() == charVal)
+            (charVal != null && isChar(charVal))
 }
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
@@ -126,7 +126,7 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
 
     when (event.code()) {
         KeyCode.CHAR -> {
-            if (event.character() == ':') {
+            if (event.isChar(':')) {
                 val currentFocus = appRunner()?.focusManager()?.focusedId()
                 state = state.copy(
                     commandBar = state.commandBar.copy(
@@ -142,12 +142,12 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
                 appRunner()?.focusManager()?.setFocus("command-bar")
                 return EventResult.HANDLED
             }
-            if (event.character() == '/') {
+            if (event.isChar('/')) {
                 applySidebarSelection(SidebarSection.SEARCH)
                 activateSidebarSelection(SidebarSection.SEARCH)
                 return EventResult.HANDLED
             }
-            if (event.character() == 'L') {
+            if (event.isChar('L')) {
                 applySidebarSelection(SidebarSection.LIBRARY)
                 activateSidebarSelection(SidebarSection.LIBRARY)
                 return EventResult.HANDLED

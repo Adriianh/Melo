@@ -35,23 +35,25 @@ internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
     val units = StatsTimeUnit.entries
     val current = s.statsPeriod
     when {
-        event.code() == KeyCode.TAB ||
-        event.code() == KeyCode.CHAR && event.character() == 'l' -> {
+        event.code() == KeyCode.TAB || event.isCharIgnoreCase('l') -> {
             val next = periods[(current.ordinal + 1) % periods.size]
             loadStats(next)
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'h' -> {
+
+        event.isCharIgnoreCase('h') -> {
             val prev = periods[(current.ordinal - 1 + periods.size) % periods.size]
             loadStats(prev)
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'u' -> {
+
+        event.isCharIgnoreCase('u') -> {
             val next = units[(s.statsTimeUnit.ordinal + 1) % units.size]
             updateScreen<ScreenState.Stats> { it.copy(statsTimeUnit = next) }
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'r' -> {
+
+        event.isCharIgnoreCase('r') -> {
             loadStats(current)
             return EventResult.HANDLED
         }

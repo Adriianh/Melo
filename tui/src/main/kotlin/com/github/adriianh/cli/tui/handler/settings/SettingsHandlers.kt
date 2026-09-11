@@ -1,7 +1,15 @@
 package com.github.adriianh.cli.tui.handler.settings
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.component.*
+import com.github.adriianh.cli.tui.component.DirectoryPickerState
+import com.github.adriianh.cli.tui.component.SettingsFocus
+import com.github.adriianh.cli.tui.component.SettingsItem
+import com.github.adriianh.cli.tui.component.SettingsSection
+import com.github.adriianh.cli.tui.component.cancelDelete
+import com.github.adriianh.cli.tui.component.cancelMkdir
+import com.github.adriianh.cli.tui.component.clearError
+import com.github.adriianh.cli.tui.component.refresh
+import com.github.adriianh.cli.tui.component.sectionItems
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
@@ -142,7 +150,7 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.CHAR -> {
             val item = items.getOrNull(settingsViewState.cursor)
-            if (item == SettingsItem.LOCAL_FOLDERS && (event.character() == 'd' || event.character() == 'D')) {
+            if (item == SettingsItem.LOCAL_FOLDERS && event.isCharIgnoreCase('d')) {
                 val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = emptyList())
                 settingsViewState = settingsViewState.copy(currentSettings = newSettings)
                 scope.launch { updateSettings(newSettings) }

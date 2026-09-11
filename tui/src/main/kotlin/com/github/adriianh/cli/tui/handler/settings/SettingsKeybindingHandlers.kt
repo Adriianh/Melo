@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 internal fun MeloScreen.handleListeningForKey(event: KeyEvent): EventResult {
     val action = MeloAction.entries[settingsViewState.keybindingCursor]
     val newKey = when {
-        event.code() == KeyCode.CHAR -> MeloKey(char = event.character())
+        event.code() == KeyCode.CHAR -> MeloKey(char = event.string().firstOrNull())
         else -> MeloKey(code = event.code().name)
     }
     val conflictAction = settingsViewState.currentSettings.keybindings.entries

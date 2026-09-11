@@ -368,12 +368,12 @@ object CommandBarHandlers {
             }
 
             KeyCode.CHAR -> {
-                val c = event.character()
-                val newInput = barState.input + c
+                val str = event.string()
+                val newInput = barState.input + str
                 state = state.copy(
                     commandBar = barState.copy(
                         input = newInput,
-                        cursorPosition = barState.cursorPosition + 1,
+                        cursorPosition = barState.cursorPosition + str.length,
                         errorMessage = null,
                         suggestions = computeSuggestions(newInput),
                         selectedSuggestionIndex = null

@@ -424,19 +424,19 @@ internal fun MeloScreen.loadLyrics() {
 
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
     when {
-        event.code() == KeyCode.CHAR && event.character() == '1' -> {
+        event.isChar('1') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.INFO))
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == '2' -> {
+        event.isChar('2') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.LYRICS))
             if (state.detail.lyrics == null && !state.detail.isLoadingLyrics) loadLyrics()
             appRunner()?.focusManager()?.setFocus("lyrics-area")
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == '3' -> {
+        event.isChar('3') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.SIMILAR))
             appRunner()?.focusManager()?.setFocus("similar-area")
             return EventResult.HANDLED
@@ -599,7 +599,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 }
             }
 
-            event.code() == KeyCode.CHAR && event.character() == 'd' && listSize > 0 -> {
+            event.isCharIgnoreCase('d') && listSize > 0 -> {
                 val desc = when (val e = state.detail.selectedEntity) {
                     is SearchResult.Artist -> e.description
                     is SearchResult.Album -> e.description
@@ -737,7 +737,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        (event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'd')) && listSize > 0 -> {
+        (event.code() == KeyCode.TAB || event.isCharIgnoreCase('d')) && listSize > 0 -> {
             val desc = when (val e = state.detail.selectedEntity) {
                 is SearchResult.Artist -> e.description
                 is SearchResult.Album -> e.description

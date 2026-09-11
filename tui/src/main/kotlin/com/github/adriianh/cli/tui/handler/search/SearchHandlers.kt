@@ -512,9 +512,9 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
     }
 
     if (event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt()) {
-        val c = event.character()
-        if (c >= '\u007F') {
-            searchInputState.insert(c)
+        val str = event.string()
+        if (str.isNotEmpty() && str[0] >= '\u007F') {
+            searchInputState.insert(str)
             return EventResult.HANDLED
         }
     }
@@ -722,28 +722,30 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
+        actualState.tab == SearchTab.SONGS && (event.isCharIgnoreCase('m') || event.isCharIgnoreCase(
+            'o'
+        )) -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && event.character() == 'A' -> {
+        actualState.tab == SearchTab.SONGS && event.isChar('A') -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null && track.artist.isNotBlank()) {
                 searchInputState.clear()
-                for (c in track.artist) searchInputState.insert(c)
+                searchInputState.insert(track.artist)
                 updateScreen<ScreenState.Search> { it.copy(tab = SearchTab.ARTISTS) }
                 performSearch()
             }
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && event.code() == KeyCode.CHAR && event.character() == 'B' -> {
+        actualState.tab == SearchTab.SONGS && event.isChar('B') -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null && track.album.isNotBlank()) {
                 searchInputState.clear()
-                for (c in track.album) searchInputState.insert(c)
+                searchInputState.insert(track.album)
                 updateScreen<ScreenState.Search> { it.copy(tab = SearchTab.ALBUMS) }
                 performSearch()
             }

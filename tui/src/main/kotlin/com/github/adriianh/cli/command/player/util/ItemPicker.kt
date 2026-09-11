@@ -45,16 +45,16 @@ object ItemPicker {
             }.runUntilSignal {
                 onKeyPressed {
                     when (key) {
-                        Keys.UP -> selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
-                        Keys.DOWN -> selectedIndex =
+                        Keys.Up -> selectedIndex = (selectedIndex - 1).coerceAtLeast(0)
+                        Keys.Down -> selectedIndex =
                             (selectedIndex + 1).coerceAtMost(items.size - 1)
 
-                        Keys.ENTER -> {
+                        Keys.Enter -> {
                             accepted = true
                             signal()
                         }
 
-                        Keys.ESC -> signal()
+                        Keys.Escape -> signal()
                     }
                 }
             }

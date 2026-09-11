@@ -28,23 +28,26 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
             openPlaylistDetail(playlistsList.selected())
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'n' -> {
+        event.isCharIgnoreCase('n') -> {
             state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = ""))
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'r' -> {
+
+        event.isCharIgnoreCase('r') -> {
             val pl =
                 playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
             state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.RENAME, playlistInput = pl.name))
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
+
+        event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val pl =
                 playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
             scope.launch { deletePlaylist(pl.id) }
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'p' -> {
+
+        event.isCharIgnoreCase('p') -> {
             openPlaylistDetail(playlistsList.selected(), autoPlay = true)
             return EventResult.HANDLED
         }
@@ -74,11 +77,12 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'q' -> {
+        event.isCharIgnoreCase('q') -> {
             screen.playlistTracks.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
-        event.code() == KeyCode.CHAR && event.character() == 'd' || event.code() == KeyCode.DELETE -> {
+
+        event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val pl = screen.selectedPlaylist ?: return handleGlobalShortcuts(event)
             val track = screen.playlistTracks.getOrNull(playlistTracksList.selected())
                 ?: return handleGlobalShortcuts(event)
@@ -116,9 +120,10 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt() -> {
-            val c = event.character()
-            if (c >= ' ') {
-                state = state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput + c))
+            val str = event.string()
+            if (str.isNotBlank() || str == " ") {
+                state =
+                    state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput + str))
             }
             return EventResult.HANDLED
         }

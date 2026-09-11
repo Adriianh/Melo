@@ -14,7 +14,6 @@ import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
-import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -292,18 +291,18 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
             seekForward(); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && (event.character() == '<' || event.character() == ',') -> {
+        event.isChar('<') || event.isChar(',') -> {
             seekTo(state.player.progress - 0.05); return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && (event.character() == '>' || event.character() == '.') -> {
+        event.isChar('>') || event.isChar('.') -> {
             seekTo(state.player.progress + 0.05); return EventResult.HANDLED
         }
 
         event.matchesAction(
             MeloAction.PLAY_PAUSE,
             settings
-        ) || (event.code() == KeyCode.CHAR && event.character() == ' ') -> {
+        ) || event.isChar(' ') -> {
             togglePlayPause(); return EventResult.HANDLED
         }
 

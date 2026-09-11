@@ -138,7 +138,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
         event.matchesAction(
             MeloAction.DELETE,
             settingsViewState.currentSettings
-        ) || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
+        ) || event.isCharIgnoreCase('d') -> {
             if (!isFocused) return handleGlobalShortcuts(event)
             removeFromQueue(state.player.queueCursor)
             return EventResult.HANDLED
