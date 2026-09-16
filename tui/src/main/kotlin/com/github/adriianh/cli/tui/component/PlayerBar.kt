@@ -96,18 +96,25 @@ fun buildPlayerBar(
     }
 
     val centerTop = if (nowPlaying != null) {
-        val currentMs = (state.player.progress * nowPlaying.durationMs).toLong()
+        val currentMs = state.player.nowPlayingPositionMs
         val elapsed = formatDuration(currentMs)
-        val total = formatDuration(nowPlaying.durationMs)
+        val total =
+            if (nowPlaying.durationMs > 0L) formatDuration(nowPlaying.durationMs) else "--:--"
+        val gaugePercent = if (nowPlaying.durationMs > 0L) {
+            (state.player.progress * 100).toInt().coerceIn(0, 100)
+        } else {
+            0
+        }
+        val timeLen = maxOf(5, elapsed.length, total.length)
         row(
-            text(elapsed).fg(TEXT_DIM).length(5),
+            text(elapsed).fg(TEXT_DIM).length(timeLen),
             text(" ").length(1),
-            lineGauge((state.player.progress * 100).toInt())
+            lineGauge(gaugePercent)
                 .filledColor(PRIMARY_COLOR)
                 .unfilledColor(BG_ELEVATED)
                 .fill(),
             text(" ").length(1),
-            text(total).fg(TEXT_DIM).length(5),
+            text(total).fg(TEXT_DIM).length(timeLen),
         ).percent(40)
     } else {
         row(

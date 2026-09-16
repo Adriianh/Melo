@@ -407,7 +407,7 @@ private fun renderTracksDetail(
 
     val tracks = detail.tracks
     val items = tracks.mapIndexed { index, track ->
-        val duration = formatDuration(track.durationMs)
+        val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val nowPlayingIndicator =
             if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isSelected = index == entityTracksList.selected()

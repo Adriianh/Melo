@@ -68,21 +68,40 @@ internal fun MeloScreen.playTrack(track: Track) {
         if (resolvedTrack.durationMs <= 0L) {
             try {
                 getTrack(resolvedTrack.id)?.let { fetched ->
-                    resolvedTrack = fetched
+                    val updated = resolvedTrack.copy(
+                        durationMs = if (fetched.durationMs > 0L) fetched.durationMs else resolvedTrack.durationMs,
+                        title = if (resolvedTrack.title.isNotBlank()) resolvedTrack.title else fetched.title,
+                        artist = if (resolvedTrack.artist != "Unknown" && resolvedTrack.artist.isNotBlank()) resolvedTrack.artist else fetched.artist,
+                        album = if (resolvedTrack.album.isNotBlank()) resolvedTrack.album else fetched.album,
+                        artworkUrl = resolvedTrack.artworkUrl ?: fetched.artworkUrl
+                    )
+                    resolvedTrack = updated
                     appRunner()?.runOnRenderThread {
                         val currentQ = state.player.queue.toMutableList()
                         if (state.player.queueIndex in currentQ.indices) {
-                            currentQ[state.player.queueIndex] = fetched
+                            currentQ[state.player.queueIndex] = updated
                         }
-                        if (state.player.nowPlaying?.id == fetched.id) {
+                        val isSameTrack =
+                            state.player.nowPlaying?.id?.removePrefix("piped:") == fetched.id.removePrefix(
+                                "piped:"
+                            )
+                        if (isSameTrack) {
+                            val curDuration = updated.durationMs
+                            val curPos = state.player.nowPlayingPositionMs
+                            val newProgress =
+                                if (curDuration > 0L) (curPos.toDouble() / curDuration).coerceIn(
+                                    0.0,
+                                    1.0
+                                ) else 0.0
                             state = state.copy(
                                 player = state.player.copy(
-                                    nowPlaying = fetched,
-                                    queue = currentQ
+                                    nowPlaying = updated,
+                                    queue = currentQ,
+                                    progress = newProgress
                                 )
                             )
-                            if (fetched.durationMs > 0L) {
-                                mediaSession.updateTimeline(fetched.durationMs)
+                            if (updated.durationMs > 0L) {
+                                mediaSession.updateTimeline(updated.durationMs)
                             }
                         }
                     }
@@ -167,7 +186,7 @@ internal fun MeloScreen.togglePlayPause() {
         state = state.copy(player = state.player.copy(isPlaying = true))
         mediaSession.notifyResumed()
         if (settingsViewState.currentSettings.discordRpcEnabled) {
-            val elapsedMs = (state.player.progress * (state.player.nowPlaying?.durationMs ?: 0L)).toLong()
+            val elapsedMs = state.player.nowPlayingPositionMs
             discordRpcManager.updateActivity(state.player.nowPlaying, true, elapsedMs)
         }
     }
@@ -192,7 +211,7 @@ internal fun MeloScreen.seekTo(progress: Double) {
 
 internal fun MeloScreen.seekBackward() {
     if (state.player.isLoadingAudio) return
-    val elapsedMs = (state.player.progress * (state.player.nowPlaying?.durationMs ?: 0L)).toLong()
+    val elapsedMs = state.player.nowPlayingPositionMs
     if (elapsedMs > 3000L || state.player.queueIndex <= 0) state.player.nowPlaying?.let { playTrack(it) }
     else playFromQueue(state.player.queueIndex - 1)
 }

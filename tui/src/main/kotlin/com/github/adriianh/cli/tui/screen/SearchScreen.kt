@@ -134,7 +134,7 @@ private fun renderResultsArea(
         SearchTab.SONGS -> {
             isPlayable = true
             val items = actualState.results.mapIndexed { index, track ->
-                val duration = formatDuration(track.durationMs)
+                val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
                 val nowPlayingIndicator =
                     if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
                 val isSelected = index == actualState.selectedIndex
@@ -236,7 +236,7 @@ private fun renderResultsArea(
 
         val tracks = actualState.entityTracks
         val items = tracks.mapIndexed { index, track ->
-            val duration = formatDuration(track.durationMs)
+            val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
             val nowPlayingIndicator =
                 if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
             val isSelected = index == entityTracksList.selected()

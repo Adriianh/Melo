@@ -77,7 +77,7 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
             if (next) {
                 discordRpcManager.connect()
                 state.player.nowPlaying?.let {
-                    val elapsedMs = (state.player.progress * it.durationMs).toLong()
+                    val elapsedMs = state.player.nowPlayingPositionMs
                     discordRpcManager.updateActivity(it, state.player.isPlaying, elapsedMs)
                 }
             } else {

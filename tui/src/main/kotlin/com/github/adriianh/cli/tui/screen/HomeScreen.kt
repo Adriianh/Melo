@@ -167,7 +167,9 @@ private fun renderFeedTab(
                         .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
                     text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
-                    text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6),
+                    text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                        TEXT_DIM
+                    ).length(6),
                 )
             }
 
@@ -419,7 +421,8 @@ private fun renderRecentTab(
                 .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
-            text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
+                .length(6)
         )
     }
     recentList.elements(*items.toTypedArray())
@@ -471,7 +474,8 @@ private fun renderFavoritesTab(
                 .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(ICON_HEART).fg(PRIMARY_COLOR).length(2),
-            text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
+                .length(6)
         )
     }
     favoritesList.elements(*items.toTypedArray())

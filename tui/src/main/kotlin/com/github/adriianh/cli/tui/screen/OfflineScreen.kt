@@ -1,18 +1,24 @@
 package com.github.adriianh.cli.tui.screen
 
-import com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.ICON_OFFLINE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_OFFLINE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.OfflineFilterType
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.event.EventResult
@@ -63,7 +69,9 @@ fun renderOfflineScreen(
                     text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
                     text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+                    text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                        TEXT_DIM
+                    ).length(6)
                 )
             }
         offlineList.elements(*items.toTypedArray())

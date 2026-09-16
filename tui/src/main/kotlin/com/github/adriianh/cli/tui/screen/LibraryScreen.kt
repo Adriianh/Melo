@@ -105,7 +105,7 @@ private fun buildFavoritesContent(
         )
     }
     val items = state.collections.favorites.mapIndexed { index, track ->
-        val duration = formatDuration(track.durationMs)
+        val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
         row(
@@ -198,7 +198,8 @@ private fun buildPlaylistDetailContent(
             text("${index + 1}").dim().length(3),
             text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6),
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
+                .length(6),
         )
     }
     tracksList.elements(*items.toTypedArray())
@@ -274,7 +275,7 @@ private fun buildLocalContent(
     }
 
     val items = filtered.mapIndexed { index, track ->
-        val duration = formatDuration(track.durationMs)
+        val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
         row(
