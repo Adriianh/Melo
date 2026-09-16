@@ -208,6 +208,23 @@ sealed interface ScreenState {
         val isTyping: Boolean = false,
         val isLoading: Boolean = false
     ) : ScreenState
+
+    data class EntityDetail(
+        val entity: SearchResult,
+        val title: String,
+        val subtitle: String? = null,
+        val description: String? = null,
+        val tracks: List<Track> = emptyList(),
+        val artistDashboardItems: List<Any> = emptyList(),
+        val artistDashboardX: Int = 0,
+        val artistDashboardY: Int = 0,
+        val artistDashboardPositions: Map<String, Int> = emptyMap(),
+        val selectedIndex: Int = 0,
+        val isLoading: Boolean = true,
+        val errorMessage: String? = null,
+        val returnScreen: ScreenState,
+        val returnSection: SidebarSection,
+    ) : ScreenState
 }
 
 /**

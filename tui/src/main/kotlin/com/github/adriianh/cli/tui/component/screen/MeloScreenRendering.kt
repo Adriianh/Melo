@@ -27,6 +27,7 @@ import com.github.adriianh.cli.tui.handler.search.handleEntityDetailKey
 import com.github.adriianh.cli.tui.handler.search.handleResultsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
 import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.cli.tui.screen.renderEntityDetailScreen
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
 import com.github.adriianh.cli.tui.screen.renderNowPlayingScreen
@@ -163,5 +164,13 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
 
         is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
         is ScreenState.Offline -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
+        is ScreenState.EntityDetail -> renderEntityDetailScreen(
+            state,
+            entityTracksList,
+            artistDashboardList,
+            entityDescriptionArea,
+            ::marqueeText,
+            ::handleEntityDetailKey,
+        )
     }
 }
