@@ -6,6 +6,7 @@ import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
 
@@ -47,7 +48,8 @@ data class PlaylistPage(
                             id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return@let null
                         )
                     },
-                duration = renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text?.parseTime(),
+                duration = renderer.extractDuration()
+                    ?: renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text?.parseTime(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: return null,
                 explicit = renderer.badges?.find {

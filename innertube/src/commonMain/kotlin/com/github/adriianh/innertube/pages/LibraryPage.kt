@@ -10,6 +10,7 @@ import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.Run
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.utils.parseTime
 
@@ -97,10 +98,11 @@ data class LibraryPage(
                             Album(
                                 name = it.text,
                                 id = it.navigationEndpoint?.browseEndpoint?.browseId
-                                    ?: return null
+                                    ?: return@let null
                             )
                         },
-                    duration = renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text?.parseTime(),
+                    duration = renderer.extractDuration()
+                        ?: renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text?.parseTime(),
                     thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                         ?: return null,
                     explicit = renderer.badges?.find {

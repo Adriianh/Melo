@@ -42,3 +42,7 @@ data class MusicTwoRowItemRenderer(
                 ?:navigationEndpoint.musicVideoType
 
 }
+
+fun MusicTwoRowItemRenderer.extractDuration(): Int? {
+    return subtitle?.runs?.extractDuration()
+}

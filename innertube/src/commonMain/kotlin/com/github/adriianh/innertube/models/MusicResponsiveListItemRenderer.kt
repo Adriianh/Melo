@@ -7,6 +7,7 @@ import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContext
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_AUDIOBOOK
 import com.github.adriianh.innertube.models.BrowseEndpoint.BrowseEndpointContextSupportedConfigs.BrowseEndpointContextMusicConfig.Companion.MUSIC_PAGE_TYPE_PLAYLIST
 import com.github.adriianh.innertube.models.WatchEndpoint.WatchEndpointMusicSupportedConfigs.WatchEndpointMusicConfig.Companion.MUSIC_VIDEO_TYPE_ATV
+import com.github.adriianh.innertube.utils.parseTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -110,4 +111,22 @@ data class MusicResponsiveListItemRenderer(
             }
         }
     }
+}
+
+fun MusicResponsiveListItemRenderer.extractDuration(): Int? {
+    fixedColumns?.forEach { col ->
+        col.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.let { runs ->
+            val parsed = runs.extractDuration() ?: runs.firstOrNull()?.text?.parseTime()
+            if (parsed != null) return parsed
+        }
+    }
+
+    flexColumns.reversed().forEach { col ->
+        col.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.let { runs ->
+            val parsed = runs.extractDuration()
+            if (parsed != null) return parsed
+        }
+    }
+
+    return null
 }

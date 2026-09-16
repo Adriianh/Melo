@@ -8,6 +8,7 @@ import com.github.adriianh.innertube.models.MusicTwoRowItemRenderer
 import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
@@ -46,10 +47,11 @@ data class ArtistItemsPage(
                     ?.runs?.firstOrNull()?.text ?: return null,
                 artists = artists ?: return null,
                 album = album,
-                duration = renderer.fixedColumns?.firstOrNull()
-                    ?.musicResponsiveListItemFlexColumnRenderer?.text
-                    ?.runs?.firstOrNull()
-                    ?.text?.parseTime(),
+                duration = renderer.extractDuration()
+                    ?: renderer.fixedColumns?.firstOrNull()
+                        ?.musicResponsiveListItemFlexColumnRenderer?.text
+                        ?.runs?.firstOrNull()
+                        ?.text?.parseTime(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: return null,
                 explicit = renderer.badges?.find {

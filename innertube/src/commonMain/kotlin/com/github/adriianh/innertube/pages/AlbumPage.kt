@@ -6,6 +6,7 @@ import com.github.adriianh.innertube.models.Artist
 import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
 
@@ -61,9 +62,10 @@ data class AlbumPage(
                     if (albumId != null) Album(name = it.text, id = albumId) else null
                 }
 
-            val duration = renderer.fixedColumns?.firstOrNull()
-                ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
-                ?.text?.parseTime()
+            val duration = renderer.extractDuration()
+                ?: renderer.fixedColumns?.firstOrNull()
+                    ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()
+                    ?.text?.parseTime()
 
             val setVideoId = renderer.playlistItemData?.playlistSetVideoId
                 ?: renderer.navigationEndpoint?.watchEndpoint?.playlistSetVideoId

@@ -1,5 +1,6 @@
 package com.github.adriianh.innertube.models
 
+import com.github.adriianh.innertube.utils.parseTime
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,8 +34,28 @@ fun List<Run>.splitBySeparator(): List<List<Run>> {
 }
 
 fun String.isTimeDuration(): Boolean {
-    val trimmed = this.trim()
+    val trimmed = this.replace('\u00A0', ' ').replace('\u202F', ' ').trim()
     return trimmed.matches(Regex("""^\d{1,2}:\d{2}(:\d{2})?$"""))
+}
+
+fun List<Run>.extractDuration(): Int? {
+    for (run in this) {
+        val trimmed = run.text.replace('\u00A0', ' ').replace('\u202F', ' ').trim()
+        if (trimmed.isTimeDuration()) {
+            val parsed = trimmed.parseTime()
+            if (parsed != null) return parsed
+        }
+        if (trimmed.contains("•") || trimmed.contains("·")) {
+            for (part in trimmed.split('•', '·')) {
+                val cleanPart = part.replace('\u00A0', ' ').replace('\u202F', ' ').trim()
+                if (cleanPart.isTimeDuration()) {
+                    val parsed = cleanPart.parseTime()
+                    if (parsed != null) return parsed
+                }
+            }
+        }
+    }
+    return null
 }
 
 fun String.isKnownTypeLabel(): Boolean {
