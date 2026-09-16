@@ -63,7 +63,7 @@ fun renderHomeScreen(
     ).margin(Margin.horizontal(1)).length(1)
 
     val content: StyledElement<*> = when (s.homeTab) {
-        HomeTab.FEED -> renderFeedTab(state, s, feedSectionList, feedItemList, onKeyEvent)
+        HomeTab.FEED -> renderFeedTab(state, s, feedSectionList, feedItemList)
         HomeTab.RECENT -> renderRecentTab(state, s, recentList)
         HomeTab.FAVORITES -> renderFavoritesTab(state, s, favoritesList)
     }
@@ -105,8 +105,7 @@ private fun renderFeedTab(
     state: MeloState,
     s: ScreenState.Home,
     feedSectionList: ListElement<*>,
-    feedItemList: ListElement<*>,
-    onKeyEvent: (KeyEvent) -> EventResult
+    feedItemList: ListElement<*>
 ): StyledElement<*> {
     if (s.isLoadingFeed) {
         return column(
@@ -134,7 +133,6 @@ private fun renderFeedTab(
         )
     }
 
-    // Sections List (Left Pane)
     val sectionItems = s.feedSections.mapIndexed { index, section ->
         val isSelected = index == s.selectedSectionIndex
         val count = section.items.size

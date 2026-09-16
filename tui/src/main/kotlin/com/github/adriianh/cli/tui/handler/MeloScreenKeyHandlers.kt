@@ -108,7 +108,6 @@ internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
         SidebarSection.NOW_PLAYING -> appRunner()?.focusManager()?.setFocus("now-playing-panel")
         SidebarSection.STATS -> appRunner()?.focusManager()?.setFocus("stats-panel")
         SidebarSection.OFFLINE -> appRunner()?.focusManager()?.setFocus("offline-panel")
-        SidebarSection.SETTINGS -> {}
     }
 }
 

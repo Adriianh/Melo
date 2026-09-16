@@ -31,7 +31,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handleSearchQueryChange(query: String) {
-    val currentScreen = state.screen as? ScreenState.Search ?: return
 
     if (query.isBlank()) {
         updateScreen<ScreenState.Search> {
@@ -161,7 +160,6 @@ internal fun MeloScreen.performSearch() {
             .filter { track ->
                 val title = track.title.lowercase()
                 val artist = track.artist.lowercase()
-                // Require all query tokens to match somewhere (exactly or fuzzy)
                 queryTokens.all { token ->
                     token in title || token in artist || fuzzyMatch(token, title) || fuzzyMatch(
                         token,
