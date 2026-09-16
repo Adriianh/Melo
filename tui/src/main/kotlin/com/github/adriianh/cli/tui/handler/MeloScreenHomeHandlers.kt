@@ -3,7 +3,6 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.HomeTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playTrack
@@ -108,12 +107,6 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                         }
 
                         is SearchResult.Album, is SearchResult.Playlist, is SearchResult.Artist -> {
-                            val searchState =
-                                (state.screen as? ScreenState.Search) ?: ScreenState.Search()
-                            state = state.copy(
-                                navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH),
-                                screen = searchState
-                            )
                             openEntityDetails(item)
                             return EventResult.HANDLED
                         }

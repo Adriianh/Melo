@@ -2,7 +2,7 @@ package com.github.adriianh.cli.tui.screen
 
 import com.github.adriianh.cli.tui.HomeTab
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -13,6 +13,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
+import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
@@ -20,10 +21,16 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.StyledElement
 import dev.tamboui.toolkit.elements.ListElement
@@ -63,7 +70,7 @@ fun renderHomeScreen(
 
     val footer = row(
         spacer(),
-        text("[1..3] Tabs  [Tab] Switch Pane  [↑↓] Move  [Enter] Play/Open  [Q] Queue  [F] Favorite  [R] Refresh")
+        text("[1..3] Tabs  [←→] Sections  [↑↓] Move  [Enter] Play/Open  [Q] Queue  [F] Favorite  [R] Refresh")
             .fg(TEXT_DIM)
             .ellipsis(),
         spacer()
@@ -130,10 +137,12 @@ private fun renderFeedTab(
     // Sections List (Left Pane)
     val sectionItems = s.feedSections.mapIndexed { index, section ->
         val isSelected = index == s.selectedSectionIndex
+        val count = section.items.size
         row(
             text(if (isSelected) "$ICON_ARROW " else "  ").fg(PRIMARY_COLOR).length(2),
             text(section.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
-                .apply { if (isSelected) bold() }.ellipsis().fill()
+                .apply { if (isSelected) bold() }.ellipsis().fill(),
+            text(" ($count)").fg(TEXT_DIM).length(count.toString().length + 3)
         )
     }
     feedSectionList.elements(*sectionItems.toTypedArray())
@@ -165,7 +174,7 @@ private fun renderFeedTab(
             is SearchResult.Album -> {
                 row(
                     text("  ").length(2),
-                    text("[Album]").fg(MeloTheme.ACCENT_BLUE).length(8),
+                    text("[Album]").fg(ACCENT_BLUE).length(8),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
                     text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25),
@@ -174,20 +183,25 @@ private fun renderFeedTab(
             }
 
             is SearchResult.Playlist -> {
+                val countText = when {
+                    item.trackCount != null && item.trackCount!! > 0 -> "${item.trackCount} tracks"
+                    !item.songs.isNullOrEmpty() -> "${item.songs!!.size} tracks"
+                    else -> "Playlist"
+                }
                 row(
                     text("  ").length(2),
-                    text("[List]").fg(MeloTheme.SECONDARY_COLOR).length(7),
+                    text("[List]").fg(SECONDARY_COLOR).length(7),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
                     text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text("${item.trackCount ?: 0} tracks").fg(TEXT_DIM).length(10)
+                    text(countText).fg(TEXT_DIM).length(12)
                 )
             }
 
             is SearchResult.Artist -> {
                 row(
                     text("  ").length(2),
-                    text("[Artist]").fg(MeloTheme.SECONDARY_COLOR).length(9),
+                    text("[Artist]").fg(SECONDARY_COLOR).length(9),
                     text(item.name).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsis().fill()
                 )
@@ -202,7 +216,7 @@ private fun renderFeedTab(
         feedSectionList.fill()
     )
 
-    val rightPane = column(
+    val centerPane = column(
         row(
             text("  $sectionTitle").bold().fg(PRIMARY_COLOR),
             spacer(),
@@ -211,10 +225,171 @@ private fun renderFeedTab(
         feedItemList.fill()
     )
 
+    val selectedItem = rawItems.getOrNull(s.selectedItemIndex)
+    val rightPane = buildHomeItemPreview(selectedItem, state)
+
     return dock()
-        .left(leftPane, Constraint.percentage(28))
-        .center(rightPane)
+        .left(leftPane, Constraint.percentage(24))
+        .right(rightPane, Constraint.percentage(32))
+        .center(centerPane)
         .fill()
+}
+
+private fun buildHomeItemPreview(
+    item: SearchResult?,
+    state: MeloState
+): Element {
+    if (item == null) {
+        return panel(
+            column(
+                spacer(),
+                text("Select an item to view preview").fg(TEXT_DIM).centered(),
+                spacer()
+            )
+        ).title(" Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+    }
+
+    return when (item) {
+        is SearchResult.Song -> {
+            val track = item.track
+            val isPlaying = track.id == state.player.nowPlaying?.id
+            val isFav = state.collections.favorites.any { it.id == track.id }
+            val nowPlayingText = if (isPlaying) " $ICON_NOTE Now Playing" else ""
+            panel(
+                column(
+                    row(
+                        text("[Song]").bold().fg(PRIMARY_COLOR),
+                        if (isFav) text(" $ICON_HEART Favorited").fg(PRIMARY_COLOR) else text(""),
+                        if (isPlaying) text(nowPlayingText).fg(PRIMARY_COLOR) else text("")
+                    ).length(1),
+                    text(""),
+                    text(track.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                    text("by ${track.artist}").fg(TEXT_SECONDARY).ellipsis(),
+                    if (track.album.isNotBlank()) text("Album: ${track.album}").dim()
+                        .ellipsis() else text(""),
+                    if (track.durationMs > 0L) text("Duration: ${formatDuration(track.durationMs)}").dim() else text(
+                        ""
+                    ),
+                    spacer(),
+                    text("────────────────────────────────").fg(BORDER_DEFAULT),
+                    text("[Enter] Play track").fg(PRIMARY_COLOR),
+                    text("[Q] Add to queue").fg(TEXT_DIM),
+                    text("[F] Toggle favorite").fg(TEXT_DIM),
+                    text("[O] Track options").fg(TEXT_DIM),
+                ).margin(Margin.symmetric(1, 1))
+            ).title(" Song Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+        }
+
+        is SearchResult.Album -> {
+            val songsCount =
+                if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else null
+            panel(
+                column(
+                    row(text("[Album]").bold().fg(ACCENT_BLUE)).length(1),
+                    text(""),
+                    text(item.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                    text("by ${item.author}").fg(TEXT_SECONDARY).ellipsis(),
+                    if (item.year != null) text("Year: ${item.year}").dim() else text(""),
+                    if (songsCount != null) text(songsCount).dim() else text(""),
+                    if (!item.description.isNullOrBlank()) {
+                        text("")
+                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
+                    } else text(""),
+                    spacer(),
+                    text("────────────────────────────────").fg(BORDER_DEFAULT),
+                    text("[Enter] View album tracks").fg(PRIMARY_COLOR),
+                    text("Explore tracklist & play").fg(TEXT_DIM),
+                ).margin(Margin.symmetric(1, 1))
+            ).title(" Album Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+        }
+
+        is SearchResult.Playlist -> {
+            val countStr = when {
+                item.trackCount != null && item.trackCount!! > 0 -> "${item.trackCount} tracks"
+                !item.songs.isNullOrEmpty() -> "${item.songs!!.size} tracks"
+                else -> "Playlist"
+            }
+            panel(
+                column(
+                    row(text("[Playlist]").bold().fg(SECONDARY_COLOR)).length(1),
+                    text(""),
+                    text(item.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                    if (item.author.isNotBlank()) text("Curator: ${item.author}").fg(TEXT_SECONDARY)
+                        .ellipsis() else text(""),
+                    text(countStr).dim(),
+                    if (!item.description.isNullOrBlank()) {
+                        text("")
+                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
+                    } else text(""),
+                    spacer(),
+                    text("────────────────────────────────").fg(BORDER_DEFAULT),
+                    text("[Enter] View playlist tracks").fg(PRIMARY_COLOR),
+                    text("Explore tracklist & play").fg(TEXT_DIM),
+                ).margin(Margin.symmetric(1, 1))
+            ).title(" Playlist Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+        }
+
+        is SearchResult.Artist -> {
+            panel(
+                column(
+                    row(text("[Artist]").bold().fg(SECONDARY_COLOR)).length(1),
+                    text(""),
+                    text(item.name).bold().fg(TEXT_PRIMARY).ellipsis(),
+                    if (!item.subscriberCountText.isNullOrBlank() || !item.monthlyListenerCount.isNullOrBlank()) {
+                        text("${item.subscriberCountText ?: ""} ${item.monthlyListenerCount ?: ""}").dim()
+                    } else text(""),
+                    if (!item.description.isNullOrBlank()) {
+                        text("")
+                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
+                    } else text(""),
+                    spacer(),
+                    text("────────────────────────────────").fg(BORDER_DEFAULT),
+                    text("[Enter] View artist profile").fg(PRIMARY_COLOR),
+                    text("Top songs, albums & bio").fg(TEXT_DIM),
+                ).margin(Margin.symmetric(1, 1))
+            ).title(" Artist Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+        }
+    }
+}
+
+private fun buildTrackPreview(track: Track?, state: MeloState, title: String): Element {
+    if (track == null) {
+        return panel(
+            column(
+                spacer(),
+                text("Select a track to view preview").fg(TEXT_DIM).centered(),
+                spacer()
+            )
+        ).title(" $title ").rounded().borderColor(BORDER_DEFAULT).fill()
+    }
+
+    val isPlaying = track.id == state.player.nowPlaying?.id
+    val isFav = state.collections.favorites.any { it.id == track.id }
+    val nowPlayingText = if (isPlaying) " $ICON_NOTE Now Playing" else ""
+
+    return panel(
+        column(
+            row(
+                text("[Track]").bold().fg(PRIMARY_COLOR),
+                if (isFav) text(" $ICON_HEART Favorited").fg(PRIMARY_COLOR) else text(""),
+                if (isPlaying) text(nowPlayingText).fg(PRIMARY_COLOR) else text("")
+            ).length(1),
+            text(""),
+            text(track.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+            text("by ${track.artist}").fg(TEXT_SECONDARY).ellipsis(),
+            if (track.album.isNotBlank()) text("Album: ${track.album}").dim()
+                .ellipsis() else text(""),
+            if (track.durationMs > 0L) text("Duration: ${formatDuration(track.durationMs)}").dim() else text(
+                ""
+            ),
+            spacer(),
+            text("────────────────────────────────").fg(BORDER_DEFAULT),
+            text("[Enter] Play track").fg(PRIMARY_COLOR),
+            text("[Q] Add to queue").fg(TEXT_DIM),
+            text("[F] Toggle favorite").fg(TEXT_DIM),
+            text("[O] Track options").fg(TEXT_DIM),
+        ).margin(Margin.symmetric(1, 1))
+    ).title(" $title ").rounded().borderColor(BORDER_DEFAULT).fill()
 }
 
 private fun renderRecentTab(
@@ -250,7 +425,10 @@ private fun renderRecentTab(
     recentList.elements(*items.toTypedArray())
     recentList.selected(s.homeRecentCursor)
 
-    return column(
+    val selectedTrack = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+    val previewPane = buildTrackPreview(selectedTrack, state, "Recent Track")
+
+    val centerContent = column(
         row(
             text("  #").dim().length(4),
             text("Title").dim().fill(),
@@ -261,6 +439,11 @@ private fun renderRecentTab(
         text("").length(1),
         recentList.fill()
     ).fill()
+
+    return dock()
+        .center(centerContent)
+        .right(previewPane, Constraint.percentage(32))
+        .fill()
 }
 
 private fun renderFavoritesTab(
@@ -294,7 +477,10 @@ private fun renderFavoritesTab(
     favoritesList.elements(*items.toTypedArray())
     favoritesList.selected(s.homeFavoritesCursor)
 
-    return column(
+    val selectedTrack = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+    val previewPane = buildTrackPreview(selectedTrack, state, "Favorite Track")
+
+    val centerContent = column(
         row(
             text("  #").dim().length(4),
             text("Title").dim().fill(),
@@ -305,4 +491,9 @@ private fun renderFavoritesTab(
         text("").length(1),
         favoritesList.fill()
     ).fill()
+
+    return dock()
+        .center(centerContent)
+        .right(previewPane, Constraint.percentage(32))
+        .fill()
 }
