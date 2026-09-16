@@ -202,13 +202,15 @@ class MeloScreen(
                 val currentQuery = searchInputState.text()
                 val isFocused = appRunner()?.focusManager()?.focusedId() == "search-bar"
 
-                if (currentQuery != lastObservedSearchQuery) {
-                    lastObservedSearchQuery = currentQuery
-                    handleSearchQueryChange(currentQuery)
-                } else if (isFocused && !lastObservedFocus && state.screen is ScreenState.Search) {
-                    handleSearchQueryChange(currentQuery)
-                } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
-                    updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+                if (state.screen is ScreenState.Search) {
+                    if (currentQuery != lastObservedSearchQuery) {
+                        lastObservedSearchQuery = currentQuery
+                        handleSearchQueryChange(currentQuery)
+                    } else if (isFocused && !lastObservedFocus) {
+                        handleSearchQueryChange(currentQuery)
+                    } else if (!isFocused && lastObservedFocus) {
+                        updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+                    }
                 }
 
                 lastObservedFocus = isFocused

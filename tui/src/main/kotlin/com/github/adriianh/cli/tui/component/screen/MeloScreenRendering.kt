@@ -60,7 +60,7 @@ internal fun MeloScreen.renderRoot(): Element {
     }
 
     val isSearch =
-        state.navigation.activeSection == SidebarSection.SEARCH || state.screen is ScreenState.Search
+        state.navigation.activeSection == SidebarSection.SEARCH && state.screen is ScreenState.Search
 
     val layoutDock = dock()
     if (isSearch) {
@@ -121,84 +121,6 @@ internal fun MeloScreen.renderRoot(): Element {
 }
 
 internal fun MeloScreen.renderMainContentInternal(): Element {
-    if (state.needsGraphicsClear) {
-        val pending = state.navigation.pendingSection
-        val targetSection = pending ?: state.navigation.activeSection
-        val targetScreen = when (targetSection) {
-            SidebarSection.HOME -> ScreenState.Home()
-            SidebarSection.SEARCH -> ScreenState.Search()
-            SidebarSection.LIBRARY -> ScreenState.Library()
-            SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
-            SidebarSection.STATS -> ScreenState.Stats()
-            SidebarSection.OFFLINE -> ScreenState.Offline(downloads = state.collections.offlineTracks)
-            SidebarSection.SETTINGS -> state.screen
-        }
-        state = state.copy(
-            needsGraphicsClear = false,
-            navigation = state.navigation.copy(
-                activeSection = targetSection,
-                pendingSection = null
-            ),
-            screen = targetScreen,
-            detail = state.detail.copy(artworkData = if (targetSection != SidebarSection.SEARCH) null else state.detail.artworkData),
-        )
-        if (targetSection == SidebarSection.NOW_PLAYING) {
-            appRunner()?.focusManager()?.setFocus("now-playing-panel")
-        }
-        val targetContent = when (targetSection) {
-            SidebarSection.HOME -> renderHomeScreen(
-                state,
-                homeFeedSectionList,
-                homeFeedItemList,
-                homeRecentList,
-                homeFavoritesList,
-                onKeyEvent = ::handleHomeKey,
-            )
-
-            SidebarSection.SEARCH -> renderSearchScreen(
-                state,
-                resultList,
-                entityTracksList,
-                artistDashboardList,
-                lyricsArea,
-                similarArea,
-                entityDescriptionArea,
-                ::marqueeText,
-                ::handleResultsKey,
-                ::handleEntityDetailKey,
-                ::handleDetailKey,
-            )
-
-            SidebarSection.LIBRARY -> renderLibraryScreen(
-                state,
-                settingsViewState,
-                favoritesList,
-                playlistsList,
-                playlistTracksList,
-                localLibraryList,
-                ::handleLibraryKey,
-            )
-
-            SidebarSection.NOW_PLAYING -> renderNowPlayingScreen(
-                state,
-                ::marqueeText,
-                ::handlePlayerBarKey
-            )
-
-            SidebarSection.STATS -> renderStatsScreen(state, ::handleStatsKey)
-            SidebarSection.OFFLINE -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
-            SidebarSection.SETTINGS -> renderHomeScreen(
-                state,
-                homeFeedSectionList,
-                homeFeedItemList,
-                homeRecentList,
-                homeFavoritesList,
-                onKeyEvent = ::handleHomeKey
-            )
-        }
-        return targetContent
-    }
-
     return when (state.screen) {
         is ScreenState.Home -> renderHomeScreen(
             state,
