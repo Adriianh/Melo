@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.ListeningStats
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
@@ -61,8 +62,6 @@ enum class HomeTab() {
     RECENT(),
     FAVORITES(),
 }
-
-typealias HomeSection = HomeTab
 
 /**
  * Input mode for playlist create/rename/picker overlay.
