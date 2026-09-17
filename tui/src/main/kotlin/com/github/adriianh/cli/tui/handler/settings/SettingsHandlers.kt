@@ -150,6 +150,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.CHAR -> {
             val item = items.getOrNull(settingsViewState.cursor)
+            if (item == SettingsItem.YOUTUBE_ACCOUNT && event.isCharIgnoreCase('d')) {
+                logoutYouTubeAuth()
+                return EventResult.HANDLED
+            }
             if (item == SettingsItem.LOCAL_FOLDERS && event.isCharIgnoreCase('d')) {
                 val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = emptyList())
                 settingsViewState = settingsViewState.copy(currentSettings = newSettings)
@@ -166,6 +170,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.ENTER -> {
             val item = items.getOrNull(settingsViewState.cursor) ?: return EventResult.HANDLED
+            if (item == SettingsItem.YOUTUBE_ACCOUNT) {
+                importYouTubeAuth()
+                return EventResult.HANDLED
+            }
             settingsViewState = when (item) {
                 SettingsItem.KEYBINDINGS ->
                     settingsViewState.copy(isKeybindingMode = true, keybindingCursor = 0)

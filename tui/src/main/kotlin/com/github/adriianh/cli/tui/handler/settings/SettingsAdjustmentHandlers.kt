@@ -72,6 +72,7 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         SettingsItem.DOWNLOAD_PATH -> current
         SettingsItem.CACHE_PATH -> current
         SettingsItem.LOCAL_FOLDERS -> current
+        SettingsItem.YOUTUBE_ACCOUNT -> current
         SettingsItem.DISCORD_RPC -> {
             val next = !current.discordRpcEnabled
             if (next) {

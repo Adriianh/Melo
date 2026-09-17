@@ -306,6 +306,7 @@ data class MeloState(
     val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
+    val youtubeAccountName: String? = null,
 )
 
 /**

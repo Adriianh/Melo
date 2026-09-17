@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.login
+package com.github.adriianh.data.auth
 
 /**
  * Shared helpers for building/parsing raw `"name=value; name2=value2"` cookie headers.
@@ -61,7 +61,10 @@ object CookieHeader {
 
         for ((key, value) in this) {
             if (selected.containsKey(key)) continue
-            if (key.startsWith("ST-", ignoreCase = true) || key.startsWith("_ga") || key.startsWith("_gid")) continue
+            if (key.startsWith("ST-", ignoreCase = true) || key.startsWith("_ga") || key.startsWith(
+                    "_gid"
+                )
+            ) continue
             if (value.isNotBlank()) {
                 selected[key] = value
             }

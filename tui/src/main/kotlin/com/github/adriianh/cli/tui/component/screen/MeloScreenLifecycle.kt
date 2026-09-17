@@ -51,15 +51,24 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }
+    scope.launch { checkYouTubeAuth() }
     scope.launch { restoreLastSession() }
     scope.launch { loadHomeFeed() }
     scope.launch {
+        var lastCookies: String? = null
+        var isFirstEmit = true
         getSettings().collect { settings ->
+            val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
+            lastCookies = settings.sessionCookies
+            isFirstEmit = false
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 audioPlayer.setVolume(settings.volume)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
                 state = state.copy(isOfflineMode = settings.offlineMode)
+            }
+            if (cookiesChanged) {
+                checkYouTubeAuth()
             }
         }
     }

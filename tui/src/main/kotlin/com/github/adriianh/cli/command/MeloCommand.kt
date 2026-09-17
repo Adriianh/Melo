@@ -26,6 +26,7 @@ import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.command.player.TagCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
@@ -108,6 +109,7 @@ class MeloCommand : CliktCommand(
         val dispatcher: CoroutineDispatcher by inject()
         val audioProvider: AudioProvider by inject()
         val discordRpcManager: DiscordRpcManager by inject()
+        val youTubeAuthService: YouTubeAuthService by inject()
 
         try {
             MeloScreen(
@@ -126,6 +128,7 @@ class MeloCommand : CliktCommand(
                 metadataProvider = metadataProvider,
                 audioProvider = audioProvider,
                 discordRpcManager = discordRpcManager,
+                youTubeAuthService = youTubeAuthService,
                 dispatcher = dispatcher
             ).run()
         } finally {

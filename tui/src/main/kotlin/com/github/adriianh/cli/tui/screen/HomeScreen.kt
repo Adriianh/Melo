@@ -52,9 +52,16 @@ fun renderHomeScreen(
     val recentTab = tabPill("2: Recently Played", s.homeTab == HomeTab.RECENT)
     val favTab = tabPill("3: Favorites", s.homeTab == HomeTab.FAVORITES)
 
+    val userBadge = if (state.youtubeAccountName != null) {
+        text("👤 ${state.youtubeAccountName}  ").fg(ACCENT_BLUE).bold()
+    } else {
+        text("○ Guest  ").fg(TEXT_DIM)
+    }
+
     val headerRow = row(
         text(buildGreeting()).bold().fg(PRIMARY_COLOR),
         spacer(),
+        userBadge,
         feedTab,
         text("  ").length(2),
         recentTab,
@@ -129,6 +136,13 @@ private fun renderFeedTab(
             spacer(),
             text("No recommendations found").fg(TEXT_SECONDARY).centered(),
             text("Press R to reload feed or search music").fg(TEXT_DIM).centered(),
+            if (state.youtubeAccountName == null) {
+                text("Tip: Log in to YouTube Music for personalized feeds [melo auth youtube import]").fg(
+                    TEXT_DIM
+                ).centered()
+            } else {
+                text("").length(1)
+            },
             spacer()
         )
     }

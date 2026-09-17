@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.login
+package com.github.adriianh.data.auth
 
 /** The host operating system, resolved once and reused across the login/auth code. */
 enum class HostOs {

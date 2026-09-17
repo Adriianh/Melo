@@ -24,6 +24,7 @@ import dev.tamboui.tui.event.KeyEvent
  * Sections available in the settings panel.
  */
 enum class SettingsSection(val label: String) {
+    ACCOUNT("Account"),
     PERSONALIZATION("Personalization"),
     STORAGE("Storage"),
     DOWNLOADS("Downloads"),
@@ -34,6 +35,7 @@ enum class SettingsSection(val label: String) {
  * Items available in the settings panel.
  */
 enum class SettingsItem(val label: String) {
+    YOUTUBE_ACCOUNT("YouTube Music"),
     THEME("Theme Preset"),
     VOLUME("Default Volume"),
     LANGUAGE("Search Language"),
@@ -54,6 +56,9 @@ enum class SettingsItem(val label: String) {
 enum class SettingsFocus { SECTION, ITEMS }
 
 val sectionItems = mapOf(
+    SettingsSection.ACCOUNT to listOf(
+        SettingsItem.YOUTUBE_ACCOUNT
+    ),
     SettingsSection.PERSONALIZATION to listOf(
         SettingsItem.THEME,
         SettingsItem.VOLUME,
@@ -95,7 +100,9 @@ data class SettingsViewState(
     val textInput: String = "",
     val editingTextItem: SettingsItem? = null,
     val isPickingDirectory: Boolean = false,
-    val directoryPicker: DirectoryPickerState = DirectoryPickerState()
+    val directoryPicker: DirectoryPickerState = DirectoryPickerState(),
+    val isImportingAuth: Boolean = false,
+    val authStatusMessage: String? = null,
 )
 
 class SettingsOverlay(
@@ -178,6 +185,18 @@ class SettingsOverlay(
                 val isFocused = viewState.focus == SettingsFocus.ITEMS
 
                 val valueStr = when (item) {
+                    SettingsItem.YOUTUBE_ACCOUNT -> {
+                        val cookies = viewState.currentSettings.sessionCookies
+                        val accountName = state.youtubeAccountName
+                        when {
+                            viewState.isImportingAuth -> "Importing from browser..."
+                            viewState.authStatusMessage != null -> viewState.authStatusMessage
+                            !cookies.isNullOrBlank() -> accountName?.let { "✓ $it" }
+                                ?: "✓ Logged in"
+
+                            else -> "Not logged in [Enter to import]"
+                        }
+                    }
                     SettingsItem.THEME -> viewState.currentSettings.theme.displayName
                     SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
                     SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
@@ -227,12 +246,17 @@ class SettingsOverlay(
             .focusable()
             .id("settings-list")
 
+        val isAccountSection = currentSection == SettingsSection.ACCOUNT
+        val isAccountLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+
         val helpText = when {
             viewState.isListeningForKey -> "Press any key to bind... [Esc] cancel"
             viewState.isKeybindingMode -> "[↑↓] navigate  [Enter] change  [Esc] back"
             viewState.isEditing -> "[←/→] change  [Esc] apply"
             viewState.focus == SettingsFocus.SECTION -> "[↑↓] navigate  [→] enter section  [Esc] close"
             viewState.isEditingText -> "[Enter] confirm  [Esc] cancel  [Backspace] delete"
+            isAccountSection && isAccountLoggedIn -> "[Enter] re-import  [D] log out  [←] back  [Esc] close"
+            isAccountSection -> "[Enter] import from browser  [←] back  [Esc] close"
             else -> "[↑↓] navigate  [Enter] edit  [←] back  [Esc] close"
         }
 

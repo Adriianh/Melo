@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
@@ -81,6 +82,7 @@ class MeloScreen(
     internal val metadataProvider: MetadataProvider,
     internal val audioProvider: AudioProvider,
     internal val discordRpcManager: DiscordRpcManager,
+    internal val youTubeAuthService: YouTubeAuthService,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 
@@ -432,6 +434,57 @@ class MeloScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    internal fun checkYouTubeAuth() {
+        scope.launch {
+            val status = youTubeAuthService.getStatus()
+            appRunner()?.runOnRenderThread {
+                state = state.copy(youtubeAccountName = status.accountName)
+            }
+        }
+    }
+
+    internal fun importYouTubeAuth() {
+        if (settingsViewState.isImportingAuth) return
+        settingsViewState = settingsViewState.copy(
+            isImportingAuth = true,
+            authStatusMessage = "Importing from browser..."
+        )
+        scope.launch {
+            val result = youTubeAuthService.importFromBrowser()
+            appRunner()?.runOnRenderThread {
+                result.fold(
+                    onSuccess = { name ->
+                        state = state.copy(youtubeAccountName = name)
+                        settingsViewState = settingsViewState.copy(
+                            isImportingAuth = false,
+                            authStatusMessage = "✓ $name"
+                        )
+                        loadHomeFeed()
+                    },
+                    onFailure = { err ->
+                        settingsViewState = settingsViewState.copy(
+                            isImportingAuth = false,
+                            authStatusMessage = "No browser session found"
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    internal fun logoutYouTubeAuth() {
+        scope.launch {
+            youTubeAuthService.logout()
+            appRunner()?.runOnRenderThread {
+                state = state.copy(youtubeAccountName = null)
+                settingsViewState = settingsViewState.copy(
+                    authStatusMessage = "Logged out"
+                )
+                loadHomeFeed()
             }
         }
     }

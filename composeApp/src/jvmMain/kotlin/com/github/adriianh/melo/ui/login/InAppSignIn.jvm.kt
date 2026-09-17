@@ -2,6 +2,8 @@ package com.github.adriianh.melo.ui.login
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.github.adriianh.data.auth.BrowserAuthManager
+import com.github.adriianh.data.auth.BrowserAuthResult
 import java.util.logging.Logger
 
 private val log = Logger.getLogger("Melo.InAppSignIn")

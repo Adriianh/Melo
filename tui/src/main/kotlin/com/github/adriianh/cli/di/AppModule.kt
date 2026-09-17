@@ -3,6 +3,7 @@ package com.github.adriianh.cli.di
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.config.shareDir
+import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
@@ -21,6 +22,7 @@ import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.DiscoveryRepository
 import com.github.adriianh.core.domain.repository.FavoritesRepository
 import com.github.adriianh.core.domain.repository.HistoryRepository
+import com.github.adriianh.core.domain.repository.LoginRepository
 import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -41,6 +43,8 @@ import com.github.adriianh.core.domain.usecase.library.IsFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
+import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
 import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
@@ -117,6 +121,7 @@ import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
 import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
+import com.github.adriianh.data.repository.InnerTubeLoginRepository
 import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
@@ -308,6 +313,11 @@ val appModule = module {
     factory { GetChartsUseCase(get()) }
     factory { GetTrendingUseCase(get()) }
     factory { GetRadioUseCase(get()) }
+
+    single<LoginRepository> { InnerTubeLoginRepository() }
+    factory { SetSessionCookiesUseCase(get()) }
+    factory { VerifySessionUseCase(get()) }
+    single { YouTubeAuthService(get(), get(), get(), get()) }
 
     factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
     factory { GetSearchHistoryUseCase(get()) }
