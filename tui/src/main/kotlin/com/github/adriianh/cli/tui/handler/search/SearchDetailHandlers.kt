@@ -744,6 +744,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             val targetFocus = when (actualDetail.returnScreen) {
                 is ScreenState.Home -> "home-panel"
                 is ScreenState.Search -> "results-panel"
+                is ScreenState.Library -> "library-panel"
                 is ScreenState.EntityDetail -> {
                     if (actualDetail.returnScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
                 }

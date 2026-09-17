@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.screen
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
@@ -13,6 +14,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryPlaylists
 import com.github.adriianh.cli.tui.component.SettingsViewState
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -61,7 +63,7 @@ fun renderLibraryScreen(
         LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
             "[Enter] play  [Q] queue  [D] remove  [Esc] back"
         else
-            "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
+            "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [Y] sync YT  [1..3] tabs"
         LibraryTab.LOCAL -> if (actualState.isTyping) "[Enter] finish  [Esc] clear  [Bksp] del"
             else "[Tab/f/l] directory  [/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
     }
@@ -100,12 +102,12 @@ private fun buildFavoritesContent(
         return column(
             spacer(),
             text("  No favorites yet").fg(TEXT_SECONDARY).centered(),
-            text("  Press F on any track to add it").fg(TEXT_DIM).centered(),
+            text("  Press F on any track to add it here, or Y to sync from YouTube").fg(TEXT_DIM)
+                .centered(),
             spacer(),
         )
     }
     val items = state.collections.favorites.mapIndexed { index, track ->
-        val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
         row(
@@ -113,7 +115,9 @@ private fun buildFavoritesContent(
             text("${index + 1}").dim().length(3),
             text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(duration).fg(TEXT_DIM).length(6),
+            text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
+                .length(6),
         )
     }
     favoritesList.elements(*items.toTypedArray())
@@ -123,6 +127,7 @@ private fun buildFavoritesContent(
         text("#").dim().length(3),
         text("Title").dim().fill(),
         text("Artist").dim().percent(25),
+        text("Album").dim().percent(25),
         text("Time").dim().length(6),
     ).margin(Margin.horizontal(1))
 
@@ -137,26 +142,31 @@ private fun buildPlaylistsContent(
     state: MeloState,
     playlistsList: ListElement<*>
 ): StyledElement<*> {
-    if (state.collections.playlists.isEmpty()) {
+    val allPlaylists = state.allLibraryPlaylists()
+    if (allPlaylists.isEmpty()) {
         return column(
             spacer(),
             text("  No playlists yet").fg(TEXT_SECONDARY).centered(),
-            text("  Press N to create your first playlist").fg(TEXT_DIM).centered(),
+            text("  Press N to create a playlist or Y to sync from YouTube").fg(TEXT_DIM)
+                .centered(),
             spacer(),
         )
     }
-    val items = state.collections.playlists.map { playlist ->
-        val count = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
+    val items = allPlaylists.map { item ->
+        val badge = if (item.isRemote) "[YT]   " else "[Local]"
+        val badgeColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
         row(
-            text(playlist.name).fg(TEXT_PRIMARY).ellipsis().fill(),
-            text(count).fg(TEXT_DIM).length(12),
+            text(badge).fg(badgeColor).length(8),
+            text(item.title).fg(TEXT_PRIMARY).ellipsis().fill(),
+            text(item.trackCountText).fg(TEXT_DIM).length(14),
         )
     }
     playlistsList.elements(*items.toTypedArray())
 
     val header = row(
+        text("Source").dim().length(8),
         text("Name").dim().fill(),
-        text("Tracks").dim().length(12),
+        text("Tracks").dim().length(14),
     ).margin(Margin.horizontal(1))
 
     return column(

@@ -300,9 +300,36 @@ data class CommandBarState(
 data class CollectionsState(
     val favorites: List<Track> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
+    val remotePlaylists: List<SearchResult.Playlist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
     val offlineTracks: List<OfflineTrack> = emptyList()
 )
+
+sealed interface LibraryPlaylistItem {
+    val title: String
+    val trackCountText: String
+    val isRemote: Boolean
+
+    data class Local(val playlist: Playlist) : LibraryPlaylistItem {
+        override val title: String get() = playlist.name
+        override val trackCountText: String get() = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
+        override val isRemote: Boolean get() = false
+    }
+
+    data class Remote(val playlist: SearchResult.Playlist) : LibraryPlaylistItem {
+        override val title: String get() = playlist.title
+        override val trackCountText: String
+            get() = playlist.trackCount?.let { "$it track${if (it != 1) "s" else ""}" }
+                ?: "Playlist"
+        override val isRemote: Boolean get() = true
+    }
+}
+
+fun MeloState.allLibraryPlaylists(): List<LibraryPlaylistItem> {
+    val local = collections.playlists.map { LibraryPlaylistItem.Local(it) }
+    val remote = collections.remotePlaylists.map { LibraryPlaylistItem.Remote(it) }
+    return local + remote
+}
 
 /**
  * Unified application state for the Melo TUI.

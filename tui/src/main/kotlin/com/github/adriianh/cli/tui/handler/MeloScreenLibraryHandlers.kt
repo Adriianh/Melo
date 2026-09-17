@@ -189,7 +189,7 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.isCharIgnoreCase('y') -> {
-            syncYouTubeFavorites()
+            syncYouTubeLibrary()
             return EventResult.HANDLED
         }
     }

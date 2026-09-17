@@ -1,11 +1,15 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.LibraryPlaylistItem
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.playFromQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
+import com.github.adriianh.cli.tui.handler.search.openEntityDetails
+import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
@@ -14,10 +18,15 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
-    val playlists = state.collections.playlists
+    val allPlaylists = state.allLibraryPlaylists()
     when {
         event.matches(Actions.MOVE_DOWN) -> {
-            playlistsList.selected(minOf(playlists.lastIndex.coerceAtLeast(0), playlistsList.selected() + 1))
+            playlistsList.selected(
+                minOf(
+                    allPlaylists.lastIndex.coerceAtLeast(0),
+                    playlistsList.selected() + 1
+                )
+            )
             return EventResult.HANDLED
         }
         event.matches(Actions.MOVE_UP) -> {
@@ -25,7 +34,12 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
-            openPlaylistDetail(playlistsList.selected())
+            val item =
+                allPlaylists.getOrNull(playlistsList.selected()) ?: return EventResult.HANDLED
+            when (item) {
+                is LibraryPlaylistItem.Local -> openLocalPlaylistDetail(item.playlist)
+                is LibraryPlaylistItem.Remote -> openEntityDetails(item.playlist)
+            }
             return EventResult.HANDLED
         }
         event.isCharIgnoreCase('n') -> {
@@ -34,21 +48,50 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
         }
 
         event.isCharIgnoreCase('r') -> {
-            val pl =
-                playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
-            state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.RENAME, playlistInput = pl.name))
-            return EventResult.HANDLED
+            val item =
+                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                    event
+                )
+            if (item is LibraryPlaylistItem.Local) {
+                state = state.copy(
+                    playlistInteraction = state.playlistInteraction.copy(
+                        playlistInputMode = PlaylistInputMode.RENAME,
+                        playlistInput = item.playlist.name
+                    )
+                )
+                return EventResult.HANDLED
+            }
         }
 
         event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
-            val pl =
-                playlists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
-            scope.launch { deletePlaylist(pl.id) }
-            return EventResult.HANDLED
+            val item =
+                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                    event
+                )
+            if (item is LibraryPlaylistItem.Local) {
+                scope.launch { deletePlaylist(item.playlist.id) }
+                return EventResult.HANDLED
+            }
         }
 
         event.isCharIgnoreCase('p') -> {
-            openPlaylistDetail(playlistsList.selected(), autoPlay = true)
+            val item =
+                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                    event
+                )
+            when (item) {
+                is LibraryPlaylistItem.Local -> openLocalPlaylistDetail(
+                    item.playlist,
+                    autoPlay = true
+                )
+
+                is LibraryPlaylistItem.Remote -> openEntityDetails(item.playlist)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('y') -> {
+            syncYouTubeLibrary()
             return EventResult.HANDLED
         }
     }
@@ -159,10 +202,7 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
     return handleGlobalShortcuts(event)
 }
 
-// ─── Playlist Actions ─────────────────────────────────────────────────────────
-
-internal fun MeloScreen.openPlaylistDetail(index: Int, autoPlay: Boolean = false) {
-    val pl = state.collections.playlists.getOrNull(index) ?: return
+internal fun MeloScreen.openLocalPlaylistDetail(pl: Playlist, autoPlay: Boolean = false) {
     updateScreen<ScreenState.Library> { it.copy(selectedPlaylist = pl, isInPlaylistDetail = true, playlistTracks = emptyList()) }
     playlistTracksJob?.cancel()
     playlistTracksJob = scope.launch {
@@ -176,6 +216,34 @@ internal fun MeloScreen.openPlaylistDetail(index: Int, autoPlay: Boolean = false
             }
         }
     }
+}
+
+internal fun MeloScreen.openPlaylistDetail(index: Int, autoPlay: Boolean = false) {
+    val pl = state.collections.playlists.getOrNull(index) ?: return
+    openLocalPlaylistDetail(pl, autoPlay)
+}
+
+internal fun MeloScreen.syncYouTubePlaylists() {
+    val settings = settingsViewState.currentSettings
+    val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+    if (!isLoggedIn) return
+    scope.launch {
+        try {
+            val result = getUserPlaylists?.invoke() ?: return@launch
+            val playlists = result.getOrNull().orEmpty()
+            appRunner()?.runOnRenderThread {
+                state = state.copy(
+                    collections = state.collections.copy(remotePlaylists = playlists)
+                )
+            }
+        } catch (_: Exception) {
+        }
+    }
+}
+
+internal fun MeloScreen.syncYouTubeLibrary() {
+    syncYouTubeFavorites()
+    syncYouTubePlaylists()
 }
 
 internal fun MeloScreen.openPlaylistPicker(track: Track) {

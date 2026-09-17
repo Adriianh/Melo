@@ -28,7 +28,7 @@ import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
-import com.github.adriianh.cli.tui.handler.syncYouTubeFavorites
+import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
@@ -687,7 +687,7 @@ class MeloScreen(
                             authStatusMessage = "✓ $name"
                         )
                         loadHomeFeed()
-                        syncYouTubeFavorites()
+                        syncYouTubeLibrary()
                     },
                     onFailure = { err ->
                         settingsViewState = settingsViewState.copy(
@@ -704,7 +704,10 @@ class MeloScreen(
         scope.launch {
             youTubeAuthService.logout()
             appRunner()?.runOnRenderThread {
-                state = state.copy(youtubeAccountName = null)
+                state = state.copy(
+                    youtubeAccountName = null,
+                    collections = state.collections.copy(remotePlaylists = emptyList())
+                )
                 settingsViewState = settingsViewState.copy(
                     authStatusMessage = "Logged out"
                 )
