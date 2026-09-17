@@ -210,6 +210,33 @@ class InnerTubeMusicProvider(
         val videoId = id.removePrefix("piped:")
         if (videoId.isBlank()) return null
 
+        try {
+            val nextResult = YouTube.next(WatchEndpoint(videoId = videoId)).getOrNull()
+            val songItem = nextResult?.items?.firstOrNull()
+            if (songItem != null) {
+                val validArtists = songItem.artists.map { it.name.trim() }
+                    .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
+                val artistName = if (validArtists.isNotEmpty()) {
+                    validArtists.joinToString(", ")
+                } else {
+                    "Unknown"
+                }
+                val durationMs = songItem.duration?.times(1000L) ?: 0L
+                val albumName = songItem.album?.name.orEmpty()
+                return Track(
+                    id = "piped:$videoId",
+                    title = songItem.title,
+                    artist = artistName,
+                    durationMs = durationMs,
+                    album = albumName,
+                    genres = emptyList(),
+                    artworkUrl = songItem.thumbnail,
+                    sourceId = videoId
+                )
+            }
+        } catch (_: Exception) {
+        }
+
         return try {
             val response = YouTube.player(videoId, null, YouTubeClient.WEB_REMIX).getOrNull()
 

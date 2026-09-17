@@ -237,7 +237,7 @@ private fun renderFeedTab(
                 val isFav = state.collections.favorites.any { it.id == track.id }
                 row(
                     text(indicator).fg(if (isPlaying) PRIMARY_COLOR else TEXT_DIM).length(4),
-                    text("[Song]").fg(PRIMARY_COLOR).length(7),
+                    text("[Song]").fg(PRIMARY_COLOR).length(9),
                     text(track.title).fg(if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM)
                         .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
@@ -250,18 +250,19 @@ private fun renderFeedTab(
             }
 
             is SearchResult.Album -> {
-                val songsCount =
-                    if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else item.year
-                        ?: "Album"
+                val albumExtra = listOfNotNull(
+                    item.year,
+                    if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else null
+                ).joinToString(" • ").ifBlank { "Album" }
                 row(
                     text("${index + 1} ").dim().length(4),
-                    text("[Album]").fg(ACCENT_BLUE).length(8),
+                    text("[Album]").fg(ACCENT_BLUE).length(9),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
                     text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text(songsCount).fg(TEXT_DIM).ellipsis().percent(25),
+                    text(albumExtra).fg(TEXT_DIM).ellipsis().percent(25),
                     text(" ").length(2),
-                    text(item.year ?: "—").fg(TEXT_DIM).length(6)
+                    text("—").fg(TEXT_DIM).length(6)
                 )
             }
 
@@ -273,7 +274,7 @@ private fun renderFeedTab(
                 }
                 row(
                     text("${index + 1} ").dim().length(4),
-                    text("[List]").fg(SECONDARY_COLOR).length(7),
+                    text("[List]").fg(SECONDARY_COLOR).length(9),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
                     text(item.author.ifBlank { "Curator" }).fg(TEXT_SECONDARY).ellipsis()
@@ -292,7 +293,8 @@ private fun renderFeedTab(
                     text("[Artist]").fg(SECONDARY_COLOR).length(9),
                     text(item.name).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsis().fill(),
-                    text(subsText).fg(TEXT_SECONDARY).ellipsis().percent(50),
+                    text("Artist Profile").fg(TEXT_SECONDARY).ellipsis().percent(25),
+                    text(subsText).fg(TEXT_DIM).ellipsis().percent(25),
                     text(" ").length(2),
                     text("—").fg(TEXT_DIM).length(6)
                 )
@@ -305,14 +307,15 @@ private fun renderFeedTab(
     }
 
     val tableHeader = row(
+        text("  ").length(2),
         text("  #").dim().length(4),
-        text("Type").dim().length(7),
+        text("Type").dim().length(9),
         text("Title").dim().fill(),
         text("Artist / Curator").dim().percent(25),
         text("Album / Extra").dim().percent(25),
         text(ICON_HEART).dim().length(2),
         text("Time").dim().length(6)
-    ).margin(Margin.horizontal(1)).length(1)
+    ).length(1)
 
     val selectedItem = rawItems.getOrNull(s.selectedItemIndex)
     val bottomBar = when (selectedItem) {
@@ -325,6 +328,7 @@ private fun renderFeedTab(
                 text(t.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
                 text(" by ${t.artist}").fg(TEXT_SECONDARY).ellipsis(),
                 if (t.album.isNotBlank()) text(" • ${t.album}").dim().ellipsis() else text(""),
+                if (t.durationMs > 0L) text(" • ${formatDuration(t.durationMs)}").dim() else text(""),
                 if (isFav) text(" $ICON_HEART").fg(PRIMARY_COLOR) else text(""),
                 if (isPlaying) text(" [Now Playing]").fg(PRIMARY_COLOR) else text(""),
                 spacer(),

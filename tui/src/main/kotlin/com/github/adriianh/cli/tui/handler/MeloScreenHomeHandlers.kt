@@ -54,6 +54,9 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                 HomeTab.FAVORITES -> HomeTab.FEED
             }
             updateScreen<ScreenState.Home> { it.copy(homeTab = nextTab) }
+            if (nextTab == HomeTab.FEED) {
+                enrichActiveSectionTracks()
+            }
             return EventResult.HANDLED
         }
     }
@@ -71,6 +74,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     updateScreen<ScreenState.Home> {
                         it.copy(selectedSectionIndex = prevSection, selectedItemIndex = 0)
                     }
+                    enrichActiveSectionTracks()
                 }
                 return EventResult.HANDLED
             }
@@ -80,6 +84,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     updateScreen<ScreenState.Home> {
                         it.copy(selectedSectionIndex = nextSection, selectedItemIndex = 0)
                     }
+                    enrichActiveSectionTracks()
                     if (nextSection >= s.feedSections.size - 2 && s.feedContinuation != null) {
                         loadMoreHomeSections()
                     }
@@ -126,6 +131,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                                 updateScreen<ScreenState.Home> {
                                     it.copy(selectedSectionIndex = next, selectedItemIndex = 0)
                                 }
+                                enrichActiveSectionTracks()
                                 if (next >= s.feedSections.size - 2 && s.feedContinuation != null) {
                                     loadMoreHomeSections()
                                 }
@@ -144,6 +150,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                                 updateScreen<ScreenState.Home> {
                                     it.copy(selectedSectionIndex = prev, selectedItemIndex = 0)
                                 }
+                                enrichActiveSectionTracks()
                             }
                             return EventResult.HANDLED
                         }

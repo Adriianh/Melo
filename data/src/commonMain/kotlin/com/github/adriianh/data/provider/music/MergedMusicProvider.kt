@@ -249,8 +249,8 @@ class MergedMusicProvider(
             id.startsWith("itunes:") -> providers.filterIsInstance<ItunesMusicProvider>()
                 .firstOrNull()
 
-            id.startsWith("piped:") -> providers.filterIsInstance<PipedMusicProvider>()
-                .firstOrNull()
+            id.startsWith("piped:") -> providers.filterIsInstance<InnerTubeMusicProvider>()
+                .firstOrNull() ?: providers.filterIsInstance<PipedMusicProvider>().firstOrNull()
 
             id.startsWith("spotify:") || !id.contains(':') ->
                 providers.filterIsInstance<SpotifyMusicProvider>().firstOrNull()

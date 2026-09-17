@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
@@ -41,6 +42,7 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -56,11 +58,15 @@ import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.milliseconds
 
 class MeloScreen(
@@ -155,6 +161,13 @@ class MeloScreen(
     internal var updateNowPlayingJob: Job? = null
     internal var scrobbleJob: Job? = null
     internal val downloadSemaphore = Semaphore(2)
+    internal var enrichSectionJob: Job? = null
+    internal val trackMetadataCache =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, Long>>()
+
+    init {
+        loadDiskMetadataCache()
+    }
 
     internal var settingsViewState = SettingsViewState()
 
@@ -289,7 +302,7 @@ class MeloScreen(
         .id("local-library-list")
 
     internal val homeFeedSectionList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
+        .highlightSymbol("")
         .highlightColor(MeloTheme.PRIMARY_COLOR)
         .autoScroll()
         .scrollbar()
@@ -462,6 +475,7 @@ class MeloScreen(
                             selectedItemIndex = 0
                         )
                     }
+                    enrichActiveSectionTracks()
                 }
             } catch (e: Exception) {
                 appRunner()?.runOnRenderThread {
@@ -500,6 +514,145 @@ class MeloScreen(
                 appRunner()?.runOnRenderThread {
                     updateScreen<ScreenState.Home> { it.copy(isLoadingMoreSections = false) }
                 }
+            }
+        }
+    }
+
+    internal fun enrichActiveSectionTracks() {
+        val s = state.screen as? ScreenState.Home ?: return
+        val sectionIndex = s.selectedSectionIndex
+        val currentSection = s.feedSections.getOrNull(sectionIndex) ?: return
+
+        val songsToEnrich = currentSection.items.mapIndexedNotNull { index, item ->
+            if (item is SearchResult.Song) {
+                val track = item.track
+                if (track.album.isBlank() || track.durationMs <= 0L) {
+                    index to track
+                } else null
+            } else null
+        }
+
+        if (songsToEnrich.isEmpty()) return
+
+        enrichSectionJob?.cancel()
+        enrichSectionJob = scope.launch(Dispatchers.IO) {
+            val semaphore = Semaphore(6)
+            val immediateUpdates = mutableListOf<Pair<Int, Track>>()
+            val pendingNetwork = mutableListOf<Pair<Int, Track>>()
+
+            for ((itemIndex, track) in songsToEnrich) {
+                val cached = trackMetadataCache[track.id]
+                if (cached != null && (cached.first.isNotBlank() || cached.second > 0L)) {
+                    val updated = track.copy(
+                        album = track.album.ifBlank { cached.first },
+                        durationMs = if (track.durationMs > 0L) track.durationMs else cached.second
+                    )
+                    immediateUpdates.add(itemIndex to updated)
+                    continue
+                }
+
+                val fav = state.collections.favorites.find { it.id == track.id }
+                if (fav != null && (fav.album.isNotBlank() || fav.durationMs > 0L)) {
+                    val updated = track.copy(
+                        album = track.album.ifBlank { fav.album },
+                        durationMs = if (track.durationMs > 0L) track.durationMs else fav.durationMs
+                    )
+                    trackMetadataCache[track.id] = updated.album to updated.durationMs
+                    immediateUpdates.add(itemIndex to updated)
+                    continue
+                }
+
+                pendingNetwork.add(itemIndex to track)
+            }
+
+            if (immediateUpdates.isNotEmpty()) {
+                appRunner()?.runOnRenderThread {
+                    applyEnrichedTracksBatch(sectionIndex, immediateUpdates)
+                }
+            }
+
+            if (pendingNetwork.isEmpty()) return@launch
+
+            val networkBatch = java.util.concurrent.ConcurrentLinkedQueue<Pair<Int, Track>>()
+            coroutineScope {
+                pendingNetwork.forEach { (itemIndex, track) ->
+                    launch {
+                        semaphore.withPermit {
+                            if (!isActive) return@withPermit
+                            try {
+                                val fetched = getTrack(track.id)
+                                if (fetched != null && (fetched.album.isNotBlank() || fetched.durationMs > 0L)) {
+                                    val updated = track.copy(
+                                        album = track.album.ifBlank { fetched.album },
+                                        durationMs = if (track.durationMs > 0L) track.durationMs else fetched.durationMs
+                                    )
+                                    trackMetadataCache[track.id] =
+                                        updated.album to updated.durationMs
+                                    networkBatch.add(itemIndex to updated)
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (networkBatch.isNotEmpty() && isActive) {
+                appRunner()?.runOnRenderThread {
+                    applyEnrichedTracksBatch(sectionIndex, networkBatch.toList())
+                }
+                saveDiskMetadataCache()
+            }
+        }
+    }
+
+    private fun applyEnrichedTracksBatch(sectionIndex: Int, updates: List<Pair<Int, Track>>) {
+        if (updates.isEmpty()) return
+        updateScreen<ScreenState.Home> { current ->
+            if (current.selectedSectionIndex != sectionIndex) return@updateScreen current
+            val sec = current.feedSections.getOrNull(sectionIndex) ?: return@updateScreen current
+            val newItems = sec.items.toMutableList()
+            for ((idx, track) in updates) {
+                if (idx in newItems.indices && newItems[idx] is SearchResult.Song) {
+                    newItems[idx] = SearchResult.Song(track)
+                }
+            }
+            val newSec = sec.copy(items = newItems)
+            val newSections = current.feedSections.toMutableList()
+            newSections[sectionIndex] = newSec
+            current.copy(feedSections = newSections)
+        }
+    }
+
+    private fun loadDiskMetadataCache() {
+        try {
+            val file = java.io.File(configDir, "metadata_cache.json")
+            if (!file.exists()) return
+            val text = file.readText()
+            val parsed = Json.decodeFromString<Map<String, List<String>>>(text)
+            for ((key, pair) in parsed) {
+                val album = pair.getOrNull(0).orEmpty()
+                val dur = pair.getOrNull(1)?.toLongOrNull() ?: 0L
+                trackMetadataCache[key] = album to dur
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun saveDiskMetadataCache() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val dir = java.io.File(configDir)
+                if (!dir.exists()) dir.mkdirs()
+                val file = java.io.File(dir, "metadata_cache.json")
+                val map = trackMetadataCache.mapValues {
+                    listOf(
+                        it.value.first,
+                        it.value.second.toString()
+                    )
+                }
+                file.writeText(Json.encodeToString(map))
+            } catch (_: Exception) {
             }
         }
     }
