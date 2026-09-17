@@ -1,9 +1,13 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.HomeFeedFocus
 import com.github.adriianh.cli.tui.HomeTab
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
+import com.github.adriianh.cli.tui.MeloTheme.BG_DARK
+import com.github.adriianh.cli.tui.MeloTheme.BG_ELEVATED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ARROW
@@ -53,7 +57,7 @@ fun renderHomeScreen(
     val favTab = tabPill("3: Favorites", s.homeTab == HomeTab.FAVORITES)
 
     val userBadge = if (state.youtubeAccountName != null) {
-        text("👤 ${state.youtubeAccountName}  ").fg(ACCENT_BLUE).bold()
+        text("✓ ${state.youtubeAccountName}  ").fg(ACCENT_BLUE).bold()
     } else {
         text("○ Guest  ").fg(TEXT_DIM)
     }
@@ -75,9 +79,19 @@ fun renderHomeScreen(
         HomeTab.FAVORITES -> renderFavoritesTab(state, s, favoritesList)
     }
 
+    val footerText = when {
+        s.homeTab == HomeTab.FEED -> when (s.feedFocus) {
+            HomeFeedFocus.CHIPS -> "[Tab] Focus  [←→] Moods  [Enter] Apply filter  [↓] Sections  [R] Refresh"
+            HomeFeedFocus.SECTIONS -> "[Tab] Focus  [↑↓] Sections  [→/Enter] Items  [[/]] Jump  [1..3] Tabs  [R] Refresh"
+            HomeFeedFocus.ITEMS -> "[Tab] Focus  [↑↓] Move  [←/Esc] Sections  [[/]] Jump  [Enter] Play  [Q] Queue  [F] Fav  [O] Opt"
+        }
+
+        else -> "[1..3] Tabs  [Tab] Switch Tab  [↑↓] Move  [Enter] Play  [Q] Queue  [F] Favorite  [R] Refresh"
+    }
+
     val footer = row(
         spacer(),
-        text("[1..3] Tabs  [←→] Sections  [↑↓] Move  [Enter] Play/Open  [Q] Queue  [F] Favorite  [R] Refresh")
+        text(footerText)
             .fg(TEXT_DIM)
             .ellipsis(),
         spacer()
@@ -107,6 +121,40 @@ private fun tabPill(label: String, active: Boolean): Element =
     } else {
         text(" $label ").fg(TEXT_DIM)
     }
+
+private fun getSectionIcon(title: String): String {
+    if (!MeloTheme.supportsUnicode) return "•"
+    val lower = title.lowercase()
+    return when {
+        lower.contains("quick") || lower.contains("rápida") || lower.contains("picks") -> "▶"
+        lower.contains("again") || lower.contains("otra vez") || lower.contains("repetir") || lower.contains(
+            "volver"
+        ) -> "↻"
+
+        lower.contains("mixed") || lower.contains("mix") || lower.contains("mezcla") -> "★"
+        lower.contains("library") || lower.contains("biblioteca") || lower.contains("tu música") -> "≡"
+        lower.contains("similar") || lower.contains("parecido") || lower.contains("radio") -> "~"
+        lower.contains("artist") || lower.contains("artista") -> "●"
+        lower.contains("trend") || lower.contains("popular") || lower.contains("éxito") || lower.contains(
+            "chart"
+        ) -> "▲"
+
+        lower.contains("new") || lower.contains("nuevo") || lower.contains("lanzamiento") -> "✦"
+        lower.contains("relax") || lower.contains("chill") || lower.contains("sleep") || lower.contains(
+            "dormir"
+        ) -> "☾"
+
+        lower.contains("workout") || lower.contains("gym") || lower.contains("entrenar") || lower.contains(
+            "ejercicio"
+        ) -> "■"
+
+        lower.contains("focus") || lower.contains("concentra") || lower.contains("estudiar") -> "◎"
+        lower.contains("party") || lower.contains("fiesta") || lower.contains("energ") -> "◆"
+        lower.contains("feel good") || lower.contains("ánimo") -> "☼"
+        lower.contains("commute") || lower.contains("viaje") -> "»"
+        else -> "♪"
+    }
+}
 
 private fun renderFeedTab(
     state: MeloState,
@@ -149,50 +197,71 @@ private fun renderFeedTab(
 
     val sectionItems = s.feedSections.mapIndexed { index, section ->
         val isSelected = index == s.selectedSectionIndex
+        val isSectionFocused = s.feedFocus == HomeFeedFocus.SECTIONS
+        val icon = getSectionIcon(section.title)
         val count = section.items.size
         row(
-            text(if (isSelected) "$ICON_ARROW " else "  ").fg(PRIMARY_COLOR).length(2),
+            text(if (isSelected && isSectionFocused) "$ICON_ARROW " else if (isSelected) "● " else "  ")
+                .fg(PRIMARY_COLOR).length(2),
+            text("$icon ").length(2),
             text(section.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                 .apply { if (isSelected) bold() }.ellipsis().fill(),
-            text(" ($count)").fg(TEXT_DIM).length(count.toString().length + 3)
+            text("$count").fg(TEXT_DIM).length(count.toString().length + 1)
         )
     }
     feedSectionList.elements(*sectionItems.toTypedArray())
     feedSectionList.selected(s.selectedSectionIndex)
 
+    val leftPanelTitle =
+        if (s.isLoadingMoreSections) " Sections (${s.feedSections.size}...) " else " Sections (${s.feedSections.size}) "
+    val leftPanel = panel(
+        feedSectionList.fill()
+    ).title(leftPanelTitle)
+        .rounded()
+        .borderColor(if (s.feedFocus == HomeFeedFocus.SECTIONS) BORDER_FOCUSED else BORDER_DEFAULT)
+        .fill()
+
     val currentSection = s.feedSections.getOrNull(s.selectedSectionIndex)
     val sectionTitle = currentSection?.title ?: "Items"
-
+    val sectionIcon = getSectionIcon(sectionTitle)
     val rawItems = currentSection?.items.orEmpty()
+
     val itemElements = rawItems.mapIndexed { index, item ->
         val isSelected = index == s.selectedItemIndex
         when (item) {
             is SearchResult.Song -> {
                 val track = item.track
                 val isPlaying = track.id == state.player.nowPlaying?.id
-                val indicator = if (isPlaying) "$ICON_NOTE " else "  "
+                val isPlayable = state.isPlayable(track)
+                val indicator = if (isPlaying) "$ICON_NOTE " else "${index + 1} "
                 val isFav = state.collections.favorites.any { it.id == track.id }
                 row(
-                    text(indicator).fg(PRIMARY_COLOR).length(2),
+                    text(indicator).fg(if (isPlaying) PRIMARY_COLOR else TEXT_DIM).length(4),
                     text("[Song]").fg(PRIMARY_COLOR).length(7),
-                    text(track.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
+                    text(track.title).fg(if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM)
                         .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill(),
                     text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+                    text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
                     text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
-                    text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                    text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "—").fg(
                         TEXT_DIM
-                    ).length(6),
+                    ).length(6)
                 )
             }
 
             is SearchResult.Album -> {
+                val songsCount =
+                    if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else item.year
+                        ?: "Album"
                 row(
-                    text("  ").length(2),
+                    text("${index + 1} ").dim().length(4),
                     text("[Album]").fg(ACCENT_BLUE).length(8),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
                     text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text(item.year ?: "").fg(TEXT_DIM).length(6)
+                    text(songsCount).fg(TEXT_DIM).ellipsis().percent(25),
+                    text(" ").length(2),
+                    text(item.year ?: "—").fg(TEXT_DIM).length(6)
                 )
             }
 
@@ -203,167 +272,170 @@ private fun renderFeedTab(
                     else -> "Playlist"
                 }
                 row(
-                    text("  ").length(2),
+                    text("${index + 1} ").dim().length(4),
                     text("[List]").fg(SECONDARY_COLOR).length(7),
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill(),
-                    text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text(countText).fg(TEXT_DIM).length(12)
+                    text(item.author.ifBlank { "Curator" }).fg(TEXT_SECONDARY).ellipsis()
+                        .percent(25),
+                    text(countText).fg(TEXT_DIM).ellipsis().percent(25),
+                    text(" ").length(2),
+                    text("—").fg(TEXT_DIM).length(6)
                 )
             }
 
             is SearchResult.Artist -> {
+                val subsText = listOfNotNull(item.subscriberCountText, item.monthlyListenerCount)
+                    .joinToString(" • ").ifBlank { "Artist" }
                 row(
-                    text("  ").length(2),
+                    text("${index + 1} ").dim().length(4),
                     text("[Artist]").fg(SECONDARY_COLOR).length(9),
                     text(item.name).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
-                        .apply { if (isSelected) bold() }.ellipsis().fill()
+                        .apply { if (isSelected) bold() }.ellipsis().fill(),
+                    text(subsText).fg(TEXT_SECONDARY).ellipsis().percent(50),
+                    text(" ").length(2),
+                    text("—").fg(TEXT_DIM).length(6)
                 )
             }
         }
     }
     feedItemList.elements(*itemElements.toTypedArray())
-    feedItemList.selected(s.selectedItemIndex)
+    if (rawItems.isNotEmpty()) {
+        feedItemList.selected(s.selectedItemIndex)
+    }
 
-    val leftPane = column(
-        text("  SECTIONS").bold().fg(TEXT_DIM).length(1),
-        feedSectionList.fill()
-    )
-
-    val centerPane = column(
-        row(
-            text("  $sectionTitle").bold().fg(PRIMARY_COLOR),
-            spacer(),
-            text("${rawItems.size} items  ").dim()
-        ).length(1),
-        feedItemList.fill()
-    )
+    val tableHeader = row(
+        text("  #").dim().length(4),
+        text("Type").dim().length(7),
+        text("Title").dim().fill(),
+        text("Artist / Curator").dim().percent(25),
+        text("Album / Extra").dim().percent(25),
+        text(ICON_HEART).dim().length(2),
+        text("Time").dim().length(6)
+    ).margin(Margin.horizontal(1)).length(1)
 
     val selectedItem = rawItems.getOrNull(s.selectedItemIndex)
-    val rightPane = buildHomeItemPreview(selectedItem, state)
-
-    return dock()
-        .left(leftPane, Constraint.percentage(24))
-        .right(rightPane, Constraint.percentage(32))
-        .center(centerPane)
-        .fill()
-}
-
-private fun buildHomeItemPreview(
-    item: SearchResult?,
-    state: MeloState
-): Element {
-    if (item == null) {
-        return panel(
-            column(
-                spacer(),
-                text("Select an item to view preview").fg(TEXT_DIM).centered(),
-                spacer()
-            )
-        ).title(" Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
-    }
-
-    return when (item) {
+    val bottomBar = when (selectedItem) {
         is SearchResult.Song -> {
-            val track = item.track
-            val isPlaying = track.id == state.player.nowPlaying?.id
-            val isFav = state.collections.favorites.any { it.id == track.id }
-            val nowPlayingText = if (isPlaying) " $ICON_NOTE Now Playing" else ""
-            panel(
-                column(
-                    row(
-                        text("[Song]").bold().fg(PRIMARY_COLOR),
-                        if (isFav) text(" $ICON_HEART Favorited").fg(PRIMARY_COLOR) else text(""),
-                        if (isPlaying) text(nowPlayingText).fg(PRIMARY_COLOR) else text("")
-                    ).length(1),
-                    text(""),
-                    text(track.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
-                    text("by ${track.artist}").fg(TEXT_SECONDARY).ellipsis(),
-                    if (track.album.isNotBlank()) text("Album: ${track.album}").dim()
-                        .ellipsis() else text(""),
-                    if (track.durationMs > 0L) text("Duration: ${formatDuration(track.durationMs)}").dim() else text(
-                        ""
-                    ),
-                    spacer(),
-                    text("────────────────────────────────").fg(BORDER_DEFAULT),
-                    text("[Enter] Play track").fg(PRIMARY_COLOR),
-                    text("[Q] Add to queue").fg(TEXT_DIM),
-                    text("[F] Toggle favorite").fg(TEXT_DIM),
-                    text("[O] Track options").fg(TEXT_DIM),
-                ).margin(Margin.symmetric(1, 1))
-            ).title(" Song Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+            val t = selectedItem.track
+            val isPlaying = t.id == state.player.nowPlaying?.id
+            val isFav = state.collections.favorites.any { it.id == t.id }
+            row(
+                text(" $ICON_NOTE ").fg(PRIMARY_COLOR).length(3),
+                text(t.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                text(" by ${t.artist}").fg(TEXT_SECONDARY).ellipsis(),
+                if (t.album.isNotBlank()) text(" • ${t.album}").dim().ellipsis() else text(""),
+                if (isFav) text(" $ICON_HEART").fg(PRIMARY_COLOR) else text(""),
+                if (isPlaying) text(" [Now Playing]").fg(PRIMARY_COLOR) else text(""),
+                spacer(),
+                text("[Enter] Play  [Q] Queue  [F] Fav  [O] Options ").dim()
+            ).length(1)
         }
-
         is SearchResult.Album -> {
-            val songsCount =
-                if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else null
-            panel(
-                column(
-                    row(text("[Album]").bold().fg(ACCENT_BLUE)).length(1),
-                    text(""),
-                    text(item.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
-                    text("by ${item.author}").fg(TEXT_SECONDARY).ellipsis(),
-                    if (item.year != null) text("Year: ${item.year}").dim() else text(""),
-                    if (songsCount != null) text(songsCount).dim() else text(""),
-                    if (!item.description.isNullOrBlank()) {
-                        text("")
-                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
-                    } else text(""),
-                    spacer(),
-                    text("────────────────────────────────").fg(BORDER_DEFAULT),
-                    text("[Enter] View album tracks").fg(PRIMARY_COLOR),
-                    text("Explore tracklist & play").fg(TEXT_DIM),
-                ).margin(Margin.symmetric(1, 1))
-            ).title(" Album Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+            row(
+                text(" ◎ ").fg(ACCENT_BLUE).length(3),
+                text(selectedItem.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                text(" by ${selectedItem.author}").fg(TEXT_SECONDARY).ellipsis(),
+                if (selectedItem.year != null) text(" (${selectedItem.year})").dim() else text(""),
+                spacer(),
+                text("[Enter] Open Album tracks ").dim()
+            ).length(1)
         }
-
         is SearchResult.Playlist -> {
-            val countStr = when {
-                item.trackCount != null && item.trackCount!! > 0 -> "${item.trackCount} tracks"
-                !item.songs.isNullOrEmpty() -> "${item.songs!!.size} tracks"
-                else -> "Playlist"
-            }
-            panel(
-                column(
-                    row(text("[Playlist]").bold().fg(SECONDARY_COLOR)).length(1),
-                    text(""),
-                    text(item.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
-                    if (item.author.isNotBlank()) text("Curator: ${item.author}").fg(TEXT_SECONDARY)
-                        .ellipsis() else text(""),
-                    text(countStr).dim(),
-                    if (!item.description.isNullOrBlank()) {
-                        text("")
-                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
-                    } else text(""),
-                    spacer(),
-                    text("────────────────────────────────").fg(BORDER_DEFAULT),
-                    text("[Enter] View playlist tracks").fg(PRIMARY_COLOR),
-                    text("Explore tracklist & play").fg(TEXT_DIM),
-                ).margin(Margin.symmetric(1, 1))
-            ).title(" Playlist Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
+            row(
+                text(" ≡ ").fg(SECONDARY_COLOR).length(3),
+                text(selectedItem.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
+                if (selectedItem.author.isNotBlank()) text(" by ${selectedItem.author}").fg(
+                    TEXT_SECONDARY
+                ).ellipsis() else text(""),
+                spacer(),
+                text("[Enter] Open Playlist tracks ").dim()
+            ).length(1)
+        }
+        is SearchResult.Artist -> {
+            row(
+                text(" ● ").fg(SECONDARY_COLOR).length(3),
+                text(selectedItem.name).bold().fg(TEXT_PRIMARY).ellipsis(),
+                spacer(),
+                text("[Enter] View Artist profile ").dim()
+            ).length(1)
         }
 
-        is SearchResult.Artist -> {
-            panel(
-                column(
-                    row(text("[Artist]").bold().fg(SECONDARY_COLOR)).length(1),
-                    text(""),
-                    text(item.name).bold().fg(TEXT_PRIMARY).ellipsis(),
-                    if (!item.subscriberCountText.isNullOrBlank() || !item.monthlyListenerCount.isNullOrBlank()) {
-                        text("${item.subscriberCountText ?: ""} ${item.monthlyListenerCount ?: ""}").dim()
-                    } else text(""),
-                    if (!item.description.isNullOrBlank()) {
-                        text("")
-                        text(item.description!!.replace("\n", " ")).fg(TEXT_DIM).ellipsis()
-                    } else text(""),
-                    spacer(),
-                    text("────────────────────────────────").fg(BORDER_DEFAULT),
-                    text("[Enter] View artist profile").fg(PRIMARY_COLOR),
-                    text("Top songs, albums & bio").fg(TEXT_DIM),
-                ).margin(Margin.symmetric(1, 1))
-            ).title(" Artist Preview ").rounded().borderColor(BORDER_DEFAULT).fill()
-        }
+        null -> row(text("  No item selected").dim()).length(1)
     }
+
+    val rightPanelContent = if (rawItems.isEmpty()) {
+        column(
+            spacer(),
+            text("No items in this section").fg(TEXT_SECONDARY).centered(),
+            spacer()
+        )
+    } else {
+        column(
+            tableHeader,
+            text("").length(1),
+            feedItemList.fill(),
+            text("").length(1),
+            bottomBar
+        )
+    }
+
+    val rightPanel = panel(
+        rightPanelContent
+    ).title(" $sectionIcon $sectionTitle (${rawItems.size}) ")
+        .rounded()
+        .borderColor(if (s.feedFocus == HomeFeedFocus.ITEMS) BORDER_FOCUSED else BORDER_DEFAULT)
+        .fill()
+
+    val masterDetail = dock()
+        .left(leftPanel, Constraint.percentage(28))
+        .center(rightPanel)
+        .fill()
+
+    if (s.feedChips.isNotEmpty()) {
+        val isChipsFocused = s.feedFocus == HomeFeedFocus.CHIPS
+        val chipPills = mutableListOf<Element>()
+        chipPills.add(text("  Moods: ").dim())
+
+        val isAllSelected = s.selectedChipIndex == 0
+        val allPill = if (isAllSelected) {
+            if (isChipsFocused) text(" ● All ").bold().fg(BG_DARK).bg(PRIMARY_COLOR)
+            else text(" All ").bold().fg(PRIMARY_COLOR).bg(BG_ELEVATED)
+        } else {
+            if (isChipsFocused) text(" All ").fg(TEXT_SECONDARY)
+            else text(" All ").fg(TEXT_DIM)
+        }
+        chipPills.add(allPill)
+        chipPills.add(text(" ").length(1))
+
+        s.feedChips.forEachIndexed { idx, chip ->
+            val chipIdx = idx + 1
+            val isSelected = s.selectedChipIndex == chipIdx
+            val pill = if (isSelected) {
+                if (isChipsFocused) text(" ● ${chip.title} ").bold().fg(BG_DARK).bg(PRIMARY_COLOR)
+                else text(" ${chip.title} ").bold().fg(PRIMARY_COLOR).bg(BG_ELEVATED)
+            } else {
+                if (isChipsFocused) text(" ${chip.title} ").fg(TEXT_SECONDARY)
+                else text(" ${chip.title} ").fg(TEXT_DIM)
+            }
+            chipPills.add(pill)
+            chipPills.add(text(" ").length(1))
+        }
+
+        if (isChipsFocused) {
+            chipPills.add(spacer())
+            chipPills.add(text("[Enter] Filter  [Esc/↓] Sections  ").fg(PRIMARY_COLOR))
+        }
+
+        val chipsRow = row(*chipPills.toTypedArray()).length(1)
+        return column(
+            chipsRow,
+            text("").length(1),
+            masterDetail.fill()
+        )
+    }
+
+    return masterDetail
 }
 
 private fun buildTrackPreview(track: Track?, state: MeloState, title: String): Element {

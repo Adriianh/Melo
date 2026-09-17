@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.ListeningStats
 import com.github.adriianh.core.domain.model.OfflineTrack
@@ -13,6 +14,15 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackStat
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.ImageData
+
+/**
+ * Focus areas within the Home feed tab.
+ */
+enum class HomeFeedFocus {
+    CHIPS,
+    SECTIONS,
+    ITEMS,
+}
 
 /**
  * Repeat modes for queue playback.
@@ -165,14 +175,18 @@ sealed interface ScreenState {
     data class Home(
         val homeTab: HomeTab = HomeTab.FEED,
         val feedSections: List<HomeSection> = emptyList(),
+        val feedChips: List<HomeFeedChip> = emptyList(),
+        val feedContinuation: String? = null,
+        val isLoadingMoreSections: Boolean = false,
+        val selectedChipIndex: Int = 0,
         val selectedSectionIndex: Int = 0,
         val selectedItemIndex: Int = 0,
+        val feedFocus: HomeFeedFocus = HomeFeedFocus.ITEMS,
         val isLoadingFeed: Boolean = false,
         val feedError: String? = null,
         val homeRecentCursor: Int = 0,
         val homeFavoritesCursor: Int = 0,
-    ) : ScreenState {
-    }
+    ) : ScreenState
 
     data class Library(
         val libraryTab: LibraryTab = LibraryTab.FAVORITES,

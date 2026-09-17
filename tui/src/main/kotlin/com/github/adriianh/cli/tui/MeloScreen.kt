@@ -408,16 +408,54 @@ class MeloScreen(
     internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) =
         downloadTrackAction(track, downloadType)
 
-    internal fun loadHomeFeed() {
+    internal fun loadHomeFeed(chipParams: String? = null, chipIndex: Int = 0) {
         updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = true, feedError = null) }
         scope.launch {
             try {
-                val feed = getHome()
-                val sections = feed.sections
+                val feed = getHome(params = chipParams)
+                val allSections = feed.sections.toMutableList()
+                val chips = feed.chips
+                var nextContinuation = feed.continuation
+
+                // Fetch additional continuations to load multiple pages of sections right away (up to 12-15 sections)
+                var continuationCount = 0
+                while (!nextContinuation.isNullOrBlank() && allSections.size < 12 && continuationCount < 3) {
+                    try {
+                        val nextFeed = getHome(continuation = nextContinuation)
+                        if (nextFeed.sections.isEmpty()) break
+                        allSections.addAll(nextFeed.sections)
+                        nextContinuation = nextFeed.continuation
+                        continuationCount++
+                    } catch (_: Exception) {
+                        break
+                    }
+                }
+
+                // If feed is still sparse (< 5 sections) and no mood filter was chosen, supplement with Explore / Charts
+                if (chipParams == null && allSections.size < 5) {
+                    try {
+                        val explore = discoveryInteractors.getExplore()
+                        allSections.addAll(explore)
+                    } catch (_: Exception) {
+                    }
+                    try {
+                        val charts = discoveryInteractors.getCharts()
+                        allSections.addAll(charts)
+                    } catch (_: Exception) {
+                    }
+                }
+
+                val distinctSections = allSections.distinctBy { it.title }
+
                 appRunner()?.runOnRenderThread {
-                    updateScreen<ScreenState.Home> {
-                        it.copy(
-                            feedSections = sections,
+                    updateScreen<ScreenState.Home> { current ->
+                        val preservedChips = if (chips.isNotEmpty()) chips else current.feedChips
+                        current.copy(
+                            feedSections = distinctSections,
+                            feedChips = preservedChips,
+                            feedContinuation = nextContinuation,
+                            isLoadingMoreSections = false,
+                            selectedChipIndex = chipIndex,
                             isLoadingFeed = false,
                             feedError = null,
                             selectedSectionIndex = 0,
@@ -433,6 +471,34 @@ class MeloScreen(
                             feedError = e.message ?: "Failed to load feed"
                         )
                     }
+                }
+            }
+        }
+    }
+
+    internal fun loadMoreHomeSections() {
+        val s = state.screen as? ScreenState.Home ?: return
+        val continuation = s.feedContinuation ?: return
+        if (s.isLoadingMoreSections || s.isLoadingFeed) return
+
+        updateScreen<ScreenState.Home> { it.copy(isLoadingMoreSections = true) }
+        scope.launch {
+            try {
+                val nextFeed = getHome(continuation = continuation)
+                appRunner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Home> { current ->
+                        val newSections =
+                            (current.feedSections + nextFeed.sections).distinctBy { it.title }
+                        current.copy(
+                            feedSections = newSections,
+                            feedContinuation = nextFeed.continuation,
+                            isLoadingMoreSections = false
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                appRunner()?.runOnRenderThread {
+                    updateScreen<ScreenState.Home> { it.copy(isLoadingMoreSections = false) }
                 }
             }
         }
