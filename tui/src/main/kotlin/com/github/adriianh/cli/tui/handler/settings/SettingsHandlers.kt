@@ -174,6 +174,15 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                 importYouTubeAuth()
                 return EventResult.HANDLED
             }
+            if (item == SettingsItem.SYNC_LIKES ||
+                item == SettingsItem.SYNC_HISTORY ||
+                item == SettingsItem.AUTO_DOWNLOAD ||
+                item == SettingsItem.OFFLINE_MODE ||
+                item == SettingsItem.DISCORD_RPC
+            ) {
+                adjustSetting(item, 1)
+                return EventResult.HANDLED
+            }
             settingsViewState = when (item) {
                 SettingsItem.KEYBINDINGS ->
                     settingsViewState.copy(isKeybindingMode = true, keybindingCursor = 0)

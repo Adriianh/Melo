@@ -1,18 +1,16 @@
 package com.github.adriianh.data.repository
 
-import com.github.adriianh.core.util.MeloDispatchers
-
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.FavoritesRepository
+import com.github.adriianh.core.platform.currentTimeSeconds
+import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.local.Favorites
 import com.github.adriianh.data.local.MeloDatabase
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import com.github.adriianh.core.platform.currentTimeSeconds
 
 class FavoritesRepositoryImpl(database: MeloDatabase) : FavoritesRepository {
 
@@ -42,11 +40,17 @@ class FavoritesRepositoryImpl(database: MeloDatabase) : FavoritesRepository {
     override suspend fun removeFavorite(trackId: String) {
         withContext(MeloDispatchers.IO) {
             queries.deleteFavorite(trackId)
+            val altId =
+                if (trackId.startsWith("piped:")) trackId.removePrefix("piped:") else "piped:$trackId"
+            queries.deleteFavorite(altId)
         }
     }
 
     override suspend fun isFavorite(trackId: String): Boolean = withContext(MeloDispatchers.IO) {
-        queries.isFavorite(trackId).executeAsOne() > 0
+        val altId =
+            if (trackId.startsWith("piped:")) trackId.removePrefix("piped:") else "piped:$trackId"
+        queries.isFavorite(trackId).executeAsOne() > 0 || queries.isFavorite(altId)
+            .executeAsOne() > 0
     }
 
     private fun Favorites.toTrack() = Track(

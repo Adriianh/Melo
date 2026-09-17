@@ -73,6 +73,8 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         SettingsItem.CACHE_PATH -> current
         SettingsItem.LOCAL_FOLDERS -> current
         SettingsItem.YOUTUBE_ACCOUNT -> current
+        SettingsItem.SYNC_LIKES -> current.copy(syncLikesToYouTube = !current.syncLikesToYouTube)
+        SettingsItem.SYNC_HISTORY -> current.copy(syncHistoryToYouTube = !current.syncHistoryToYouTube)
         SettingsItem.DISCORD_RPC -> {
             val next = !current.discordRpcEnabled
             if (next) {

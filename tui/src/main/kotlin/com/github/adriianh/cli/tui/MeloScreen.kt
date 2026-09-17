@@ -28,6 +28,7 @@ import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
+import com.github.adriianh.cli.tui.handler.syncYouTubeFavorites
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
@@ -127,6 +128,9 @@ class MeloScreen(
     internal val deletePlaylist get() = libraryInteractors.deletePlaylist
     internal val addTrackToPlaylist get() = libraryInteractors.addTrackToPlaylist
     internal val removeTrackFromPlaylist get() = libraryInteractors.removeTrackFromPlaylist
+    internal val getLikedSongs get() = libraryInteractors.getLikedSongs
+    internal val getUserPlaylists get() = libraryInteractors.getUserPlaylists
+    internal val toggleLikeTrack get() = libraryInteractors.toggleLikeTrack
 
     internal val saveSession get() = sessionInteractors.saveSession
     internal val restoreSession get() = sessionInteractors.restoreSession
@@ -683,6 +687,7 @@ class MeloScreen(
                             authStatusMessage = "✓ $name"
                         )
                         loadHomeFeed()
+                        syncYouTubeFavorites()
                     },
                     onFailure = { err ->
                         settingsViewState = settingsViewState.copy(

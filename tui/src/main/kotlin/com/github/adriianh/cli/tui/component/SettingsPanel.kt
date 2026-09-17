@@ -36,6 +36,8 @@ enum class SettingsSection(val label: String) {
  */
 enum class SettingsItem(val label: String) {
     YOUTUBE_ACCOUNT("YouTube Music"),
+    SYNC_LIKES("Sync Likes"),
+    SYNC_HISTORY("Sync Playback History"),
     THEME("Theme Preset"),
     VOLUME("Default Volume"),
     LANGUAGE("Search Language"),
@@ -57,7 +59,9 @@ enum class SettingsFocus { SECTION, ITEMS }
 
 val sectionItems = mapOf(
     SettingsSection.ACCOUNT to listOf(
-        SettingsItem.YOUTUBE_ACCOUNT
+        SettingsItem.YOUTUBE_ACCOUNT,
+        SettingsItem.SYNC_LIKES,
+        SettingsItem.SYNC_HISTORY
     ),
     SettingsSection.PERSONALIZATION to listOf(
         SettingsItem.THEME,
@@ -197,6 +201,17 @@ class SettingsOverlay(
                             else -> "Not logged in [Enter to import]"
                         }
                     }
+                    SettingsItem.SYNC_LIKES -> {
+                        val isLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+                        if (!isLoggedIn) "Off (Login required)"
+                        else if (viewState.currentSettings.syncLikesToYouTube) "On" else "Off"
+                    }
+
+                    SettingsItem.SYNC_HISTORY -> {
+                        val isLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+                        if (!isLoggedIn) "Off (Login required)"
+                        else if (viewState.currentSettings.syncHistoryToYouTube) "On" else "Off"
+                    }
                     SettingsItem.THEME -> viewState.currentSettings.theme.displayName
                     SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
                     SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
@@ -249,14 +264,16 @@ class SettingsOverlay(
         val isAccountSection = currentSection == SettingsSection.ACCOUNT
         val isAccountLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
 
+        val selectedItem = items.getOrNull(viewState.cursor)
         val helpText = when {
             viewState.isListeningForKey -> "Press any key to bind... [Esc] cancel"
             viewState.isKeybindingMode -> "[↑↓] navigate  [Enter] change  [Esc] back"
             viewState.isEditing -> "[←/→] change  [Esc] apply"
             viewState.focus == SettingsFocus.SECTION -> "[↑↓] navigate  [→] enter section  [Esc] close"
             viewState.isEditingText -> "[Enter] confirm  [Esc] cancel  [Backspace] delete"
-            isAccountSection && isAccountLoggedIn -> "[Enter] re-import  [D] log out  [←] back  [Esc] close"
-            isAccountSection -> "[Enter] import from browser  [←] back  [Esc] close"
+            isAccountSection && selectedItem == SettingsItem.YOUTUBE_ACCOUNT && isAccountLoggedIn -> "[Enter] re-import  [D] log out  [←] back  [Esc] close"
+            isAccountSection && selectedItem == SettingsItem.YOUTUBE_ACCOUNT -> "[Enter] import from browser  [←] back  [Esc] close"
+            isAccountSection -> "[Enter/←/→] toggle  [←] back  [Esc] close"
             else -> "[↑↓] navigate  [Enter] edit  [←] back  [Esc] close"
         }
 

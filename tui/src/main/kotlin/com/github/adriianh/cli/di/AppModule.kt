@@ -27,6 +27,7 @@ import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.PlaylistRepository
+import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
@@ -37,12 +38,15 @@ import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetFavoritesUseCase
+import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.IsFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
@@ -126,6 +130,7 @@ import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
+import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.ScrobblingRepositoryImpl
 import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
@@ -256,6 +261,7 @@ val appModule = module {
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<SettingsRepository> { SettingsRepositoryImpl(configDir, get()) }
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
+    single<RemoteLibraryRepository> { RemoteLibraryRepositoryImpl() }
 
     factory { SearchTracksUseCase(get()) }
     factory { SearchAlbumsUseCase(get()) }
@@ -346,8 +352,14 @@ val appModule = module {
             get()
         )
     }
+    factory { GetLikedSongsUseCase(get()) }
+    factory { GetUserPlaylistsUseCase(get()) }
+    factory { ToggleLikeTrackUseCase(get()) }
     factory {
         LibraryInteractors(
+            get(),
+            get(),
+            get(),
             get(),
             get(),
             get(),

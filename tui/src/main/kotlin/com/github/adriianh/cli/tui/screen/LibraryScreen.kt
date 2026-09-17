@@ -57,7 +57,7 @@ fun renderLibraryScreen(
     }
 
     val hints = when (actualState.libraryTab) {
-        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [1..3] tabs"
+        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [Y] sync YT  [1..3] tabs"
         LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
             "[Enter] play  [Q] queue  [D] remove  [Esc] back"
         else

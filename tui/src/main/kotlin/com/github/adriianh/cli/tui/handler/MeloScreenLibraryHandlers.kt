@@ -187,6 +187,11 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             if (track != null) openPlaylistPicker(track)
             return EventResult.HANDLED
         }
+
+        event.isCharIgnoreCase('y') -> {
+            syncYouTubeFavorites()
+            return EventResult.HANDLED
+        }
     }
     return handleGlobalShortcuts(event)
 }
