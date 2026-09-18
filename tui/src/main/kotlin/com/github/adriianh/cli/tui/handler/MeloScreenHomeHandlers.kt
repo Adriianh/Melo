@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.HomeFeedFocus
 import com.github.adriianh.cli.tui.HomeTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playTrack
@@ -291,7 +292,8 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
         }
 
         HomeTab.FAVORITES -> {
-            val maxIndex = (state.collections.favorites.size - 1).coerceAtLeast(0)
+            val allFavorites = state.allLibraryFavorites()
+            val maxIndex = (allFavorites.size - 1).coerceAtLeast(0)
             when {
                 event.matches(Actions.MOVE_DOWN) -> {
                     updateScreen<ScreenState.Home> {
@@ -308,28 +310,28 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                 }
 
                 event.code() == KeyCode.ENTER -> {
-                    val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                    val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-                    val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                    val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-                    val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                    val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     toggleFavorite(track)
                     return EventResult.HANDLED
                 }
 
                 event.isCharIgnoreCase('m') || event.isCharIgnoreCase('o') -> {
-                    val track = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+                    val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
                 }

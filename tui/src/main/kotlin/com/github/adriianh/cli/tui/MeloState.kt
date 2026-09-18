@@ -299,11 +299,67 @@ data class CommandBarState(
  */
 data class CollectionsState(
     val favorites: List<Track> = emptyList(),
+    val remoteFavorites: List<Track> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val remotePlaylists: List<SearchResult.Playlist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
     val offlineTracks: List<OfflineTrack> = emptyList()
 )
+
+sealed interface LibraryFavoriteItem {
+    val track: Track
+    val isRemote: Boolean
+    val icon: String
+
+    data class Local(override val track: Track) : LibraryFavoriteItem {
+        override val isRemote: Boolean get() = false
+        override val icon: String get() = "⌂"
+    }
+
+    data class Remote(override val track: Track) : LibraryFavoriteItem {
+        override val isRemote: Boolean get() = true
+        override val icon: String get() = "☁"
+    }
+}
+
+fun MeloState.allLibraryFavorites(): List<LibraryFavoriteItem> {
+    val remoteSongIds = collections.remoteFavorites.flatMap {
+        listOf(
+            it.id,
+            it.id.removePrefix("piped:"),
+            "piped:${it.id.removePrefix("piped:")}",
+            it.sourceId.orEmpty()
+        )
+    }.filter { it.isNotBlank() }.toSet()
+
+    val localTracks = collections.favorites.filter { track ->
+        val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix("piped:")
+        track.id !in remoteSongIds && rawId !in remoteSongIds
+    }
+
+    val localItems = localTracks.map { LibraryFavoriteItem.Local(it) }
+    val remoteItems = collections.remoteFavorites.map { LibraryFavoriteItem.Remote(it) }
+
+    return localItems + remoteItems
+}
+
+fun MeloState.allFavoriteTracks(): List<Track> = allLibraryFavorites().map { it.track }
+
+fun MeloState.isFavoriteTrack(track: Track): Boolean = isFavoriteTrack(track.id, track.sourceId)
+
+fun MeloState.isFavoriteTrack(trackId: String, sourceId: String? = null): Boolean {
+    val rawId = trackId.removePrefix("piped:")
+    fun matches(id: String) = id == trackId || id == rawId || id.removePrefix("piped:") == rawId
+    val inFavorites = collections.favorites.any {
+        val sId = it.sourceId
+        matches(it.id) || (sId != null && (matches(sId) || sId == sourceId))
+    }
+    if (inFavorites) return true
+    return collections.remoteFavorites.any {
+        val sId = it.sourceId
+        matches(it.id) || (sId != null && (matches(sId) || sId == sourceId))
+    }
+}
 
 sealed interface LibraryPlaylistItem {
     val title: String

@@ -14,6 +14,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.allLibraryPlaylists
 import com.github.adriianh.cli.tui.component.SettingsViewState
 import com.github.adriianh.cli.tui.isPlayable
@@ -98,7 +99,8 @@ private fun buildFavoritesContent(
     state: MeloState,
     favoritesList: ListElement<*>
 ): StyledElement<*> {
-    if (state.collections.favorites.isEmpty()) {
+    val allFavorites = state.allLibraryFavorites()
+    if (allFavorites.isEmpty()) {
         return column(
             spacer(),
             text("  No favorites yet").fg(TEXT_SECONDARY).centered(),
@@ -106,17 +108,15 @@ private fun buildFavoritesContent(
             spacer(),
         )
     }
-    val items = state.collections.favorites.mapIndexed { index, track ->
+    val items = allFavorites.mapIndexed { index, item ->
+        val track = item.track
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
-        val isLocal =
-            track.id.startsWith("local:") || track.id.startsWith("file:") || track.id.startsWith("/")
-        val providerIcon = if (isLocal) "⌂" else "☁"
-        val providerColor = if (isLocal) PRIMARY_COLOR else ACCENT_BLUE
+        val providerColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
         row(
+            text("${item.icon} ").fg(providerColor).length(2),
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
-            text("$providerIcon ").fg(providerColor).length(2),
             text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
@@ -128,8 +128,8 @@ private fun buildFavoritesContent(
 
     val header = row(
         text("").length(2),
-        text("#").dim().length(3),
         text("").length(2),
+        text("#").dim().length(3),
         text("Title").dim().fill(),
         text("Artist").dim().percent(25),
         text("Album").dim().percent(25),

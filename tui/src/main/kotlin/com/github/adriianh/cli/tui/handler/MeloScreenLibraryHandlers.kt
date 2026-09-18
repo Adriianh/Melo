@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
@@ -149,11 +150,12 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
+    val allFavorites = state.allLibraryFavorites()
     when {
         event.matches(Actions.MOVE_DOWN) -> {
             favoritesList.selected(
                 minOf(
-                    state.collections.favorites.lastIndex.coerceAtLeast(0),
+                    allFavorites.lastIndex.coerceAtLeast(0),
                     favoritesList.selected() + 1
                 )
             )
@@ -166,25 +168,25 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val tracks = state.collections.favorites
+            val tracks = allFavorites.map { it.track }
             val idx = favoritesList.selected()
             if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-            state.collections.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
+            allFavorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it.track) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-            state.collections.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
+            allFavorites.getOrNull(favoritesList.selected())?.let { addToQueue(it.track) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            val track = state.collections.favorites.getOrNull(favoritesList.selected())
-            if (track != null) openPlaylistPicker(track)
+            val item = allFavorites.getOrNull(favoritesList.selected())
+            if (item != null) openPlaylistPicker(item.track)
             return EventResult.HANDLED
         }
 

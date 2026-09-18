@@ -15,6 +15,7 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.component.buildDetailPanel
 import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
+import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.Track
@@ -141,7 +142,7 @@ private fun renderResultsArea(
                 val titleText =
                     if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
                     else track.title
-                val isFav = state.collections.favorites.any { it.id == track.id }
+                val isFav = state.isFavoriteTrack(track)
                 val isTrackPlayable = state.isPlayable(track)
                 row(
                     text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
@@ -242,7 +243,7 @@ private fun renderResultsArea(
             val isSelected = index == entityTracksList.selected()
             val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
             else track.title
-            val isFav = state.collections.favorites.any { it.id == track.id }
+            val isFav = state.isFavoriteTrack(track)
             val isTrackPlayable = state.isPlayable(track)
             row(
                 text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),

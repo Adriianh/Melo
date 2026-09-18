@@ -22,6 +22,8 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allLibraryFavorites
+import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.cli.tui.util.TextMessagesUtil.buildGreeting
@@ -234,7 +236,7 @@ private fun renderFeedTab(
                 val isPlaying = track.id == state.player.nowPlaying?.id
                 val isPlayable = state.isPlayable(track)
                 val indicator = if (isPlaying) "$ICON_NOTE " else "${index + 1} "
-                val isFav = state.collections.favorites.any { it.id == track.id }
+                val isFav = state.isFavoriteTrack(track)
                 row(
                     text(indicator).fg(if (isPlaying) PRIMARY_COLOR else TEXT_DIM).length(4),
                     text("[Song]").fg(PRIMARY_COLOR).length(9),
@@ -322,7 +324,7 @@ private fun renderFeedTab(
         is SearchResult.Song -> {
             val t = selectedItem.track
             val isPlaying = t.id == state.player.nowPlaying?.id
-            val isFav = state.collections.favorites.any { it.id == t.id }
+            val isFav = state.isFavoriteTrack(t)
             row(
                 text(" $ICON_NOTE ").fg(PRIMARY_COLOR).length(3),
                 text(t.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle(),
@@ -454,7 +456,7 @@ private fun buildTrackPreview(track: Track?, state: MeloState, title: String): E
     }
 
     val isPlaying = track.id == state.player.nowPlaying?.id
-    val isFav = state.collections.favorites.any { it.id == track.id }
+    val isFav = state.isFavoriteTrack(track)
     val nowPlayingText = if (isPlaying) " $ICON_NOTE Now Playing" else ""
 
     return panel(
@@ -501,7 +503,7 @@ private fun renderRecentTab(
         val isPlaying = track.id == state.player.nowPlaying?.id
         val isPlayable = state.isPlayable(track)
         val isSelected = index == s.homeRecentCursor
-        val isFav = state.collections.favorites.any { it.id == track.id }
+        val isFav = state.isFavoriteTrack(track)
         row(
             text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
@@ -542,7 +544,8 @@ private fun renderFavoritesTab(
     s: ScreenState.Home,
     favoritesList: ListElement<*>
 ): StyledElement<*> {
-    if (state.collections.favorites.isEmpty()) {
+    val allFavorites = state.allLibraryFavorites()
+    if (allFavorites.isEmpty()) {
         return column(
             spacer(),
             text("$ICON_HEART  No favorites saved yet").fg(TEXT_SECONDARY).centered(),
@@ -551,11 +554,14 @@ private fun renderFavoritesTab(
         )
     }
 
-    val items = state.collections.favorites.mapIndexed { index, track ->
+    val items = allFavorites.mapIndexed { index, item ->
+        val track = item.track
         val isPlaying = track.id == state.player.nowPlaying?.id
         val isPlayable = state.isPlayable(track)
         val isSelected = index == s.homeFavoritesCursor
+        val providerColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
         row(
+            text("${item.icon} ").fg(providerColor).length(2),
             text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
             text(track.title).fg(if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM)
@@ -569,12 +575,14 @@ private fun renderFavoritesTab(
     favoritesList.elements(*items.toTypedArray())
     favoritesList.selected(s.homeFavoritesCursor)
 
-    val selectedTrack = state.collections.favorites.getOrNull(s.homeFavoritesCursor)
+    val selectedTrack = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
     val previewPane = buildTrackPreview(selectedTrack, state, "Favorite Track")
 
     val centerContent = column(
         row(
-            text("  #").dim().length(4),
+            text("").length(2),
+            text("").length(2),
+            text("#").dim().length(3),
             text("Title").dim().fill(),
             text("Artist").dim().percent(25),
             text(ICON_HEART).dim().length(2),

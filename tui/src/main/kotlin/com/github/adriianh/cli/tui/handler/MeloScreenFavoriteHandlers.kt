@@ -1,15 +1,41 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.toggleFavorite(track: Track) {
     scope.launch {
-        val wasFav = isFavoriteUseCase(track.id)
-        if (wasFav) removeFavorite(track.id) else addFavorite(track)
-        val isFav = !wasFav
-        appRunner()?.runOnRenderThread { state = state.copy(player = state.player.copy(isFavorite = isFav)) }
+        val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix("piped:")
+        val isRemoteFav = state.collections.remoteFavorites.any {
+            it.id == track.id || it.id == rawId || it.id.removePrefix("piped:") == rawId ||
+                    (it.sourceId != null && (it.sourceId == track.id || it.sourceId == rawId))
+        }
+        val isLocalFav = isFavoriteUseCase(track.id)
+        val currentlyFav = isLocalFav || isRemoteFav
+        val newFavState = !currentlyFav
+
+        if (isLocalFav) {
+            removeFavorite(track.id)
+        } else if (newFavState) {
+            addFavorite(track)
+        }
+
+        if (isRemoteFav) {
+            appRunner()?.runOnRenderThread {
+                val updatedRemote = state.collections.remoteFavorites.filterNot {
+                    it.id == track.id || it.id == rawId || it.id.removePrefix("piped:") == rawId ||
+                            it.sourceId == track.id || it.sourceId == rawId
+                }
+                state =
+                    state.copy(collections = state.collections.copy(remoteFavorites = updatedRemote))
+            }
+        }
+
+        appRunner()?.runOnRenderThread {
+            state = state.copy(player = state.player.copy(isFavorite = newFavState))
+        }
 
         val settings = settingsViewState.currentSettings
         val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
@@ -20,7 +46,7 @@ internal fun MeloScreen.toggleFavorite(track: Track) {
                 }
             if (rawVideoId != null) {
                 try {
-                    toggleLikeTrack?.invoke(rawVideoId, isFav)
+                    toggleLikeTrack?.invoke(rawVideoId, newFavState)
                 } catch (_: Exception) {
                 }
             }
@@ -31,6 +57,18 @@ internal fun MeloScreen.toggleFavorite(track: Track) {
 internal fun MeloScreen.removeFavoriteTrack(track: Track) {
     scope.launch {
         removeFavorite(track.id)
+        val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix("piped:")
+        appRunner()?.runOnRenderThread {
+            val updatedRemote = state.collections.remoteFavorites.filterNot {
+                it.id == track.id || it.id == rawId || it.id.removePrefix("piped:") == rawId ||
+                        it.sourceId == track.id || it.sourceId == rawId
+            }
+            val isNowPlaying = state.player.nowPlaying?.id == track.id
+            state = state.copy(
+                collections = state.collections.copy(remoteFavorites = updatedRemote),
+                player = if (isNowPlaying) state.player.copy(isFavorite = false) else state.player
+            )
+        }
         val settings = settingsViewState.currentSettings
         val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
         if (isLoggedIn && settings.syncLikesToYouTube) {
@@ -50,7 +88,7 @@ internal fun MeloScreen.removeFavoriteTrack(track: Track) {
 
 internal fun MeloScreen.checkIsFavorite(trackId: String) {
     scope.launch {
-        val isFav = isFavoriteUseCase(trackId)
+        val isFav = state.isFavoriteTrack(trackId)
         appRunner()?.runOnRenderThread { state = state.copy(player = state.player.copy(isFavorite = isFav)) }
     }
 }
@@ -58,29 +96,22 @@ internal fun MeloScreen.checkIsFavorite(trackId: String) {
 internal fun MeloScreen.syncYouTubeFavorites() {
     val settings = settingsViewState.currentSettings
     val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
-    if (!isLoggedIn) return
+    if (!isLoggedIn) {
+        appRunner()?.runOnRenderThread {
+            state = state.copy(
+                collections = state.collections.copy(remoteFavorites = emptyList())
+            )
+        }
+        return
+    }
     scope.launch {
         try {
             val result = getLikedSongs?.invoke() ?: return@launch
             val remoteSongs = result.getOrNull().orEmpty()
-            if (remoteSongs.isNotEmpty()) {
-                val currentFavIds = state.collections.favorites.flatMap {
-                    listOf(
-                        it.id,
-                        it.id.removePrefix("piped:"),
-                        "piped:${it.id.removePrefix("piped:")}",
-                        it.sourceId.orEmpty()
-                    )
-                }.filter { it.isNotBlank() }.toSet()
-
-                for (track in remoteSongs) {
-                    val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix(
-                        "piped:"
-                    )
-                    if (rawId !in currentFavIds && track.id !in currentFavIds) {
-                        addFavorite(track)
-                    }
-                }
+            appRunner()?.runOnRenderThread {
+                state = state.copy(
+                    collections = state.collections.copy(remoteFavorites = remoteSongs)
+                )
             }
         } catch (_: Exception) {
         }
