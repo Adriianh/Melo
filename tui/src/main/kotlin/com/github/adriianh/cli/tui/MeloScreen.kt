@@ -263,6 +263,14 @@ class MeloScreen(
                                 loadStats()
                             }
                         }
+
+                        "library-panel" -> {
+                            val isLoggedIn =
+                                !settingsViewState.currentSettings.sessionCookies.isNullOrBlank()
+                            if (isLoggedIn && state.collections.remotePlaylists.isEmpty()) {
+                                syncYouTubeLibrary()
+                            }
+                        }
                     }
                     lastObservedFocusId = focusedId
                 }
@@ -701,6 +709,9 @@ class MeloScreen(
             val status = youTubeAuthService.getStatus()
             appRunner()?.runOnRenderThread {
                 state = state.copy(youtubeAccountName = status.accountName)
+            }
+            if (status.accountName != null && state.collections.remotePlaylists.isEmpty()) {
+                syncYouTubeLibrary()
             }
         }
     }

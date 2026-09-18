@@ -91,6 +91,11 @@ internal fun MeloScreen.switchScreenWithoutFocus(item: SidebarSection) {
         if (cachedStatsScreen.statsListening == null && !cachedStatsScreen.statsLoading) {
             loadStats()
         }
+    } else if (item == SidebarSection.LIBRARY) {
+        val isLoggedIn = !settingsViewState.currentSettings.sessionCookies.isNullOrBlank()
+        if (isLoggedIn && state.collections.remotePlaylists.isEmpty()) {
+            syncYouTubeLibrary()
+        }
     }
 }
 
@@ -120,7 +125,13 @@ internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
             }
         }
         SidebarSection.SEARCH -> appRunner()?.focusManager()?.setFocus("search-bar")
-        SidebarSection.LIBRARY -> appRunner()?.focusManager()?.setFocus("library-panel")
+        SidebarSection.LIBRARY -> {
+            appRunner()?.focusManager()?.setFocus("library-panel")
+            val isLoggedIn = !settingsViewState.currentSettings.sessionCookies.isNullOrBlank()
+            if (isLoggedIn && state.collections.remotePlaylists.isEmpty()) {
+                syncYouTubeLibrary()
+            }
+        }
         SidebarSection.NOW_PLAYING -> appRunner()?.focusManager()?.setFocus("now-playing-panel")
         SidebarSection.STATS -> {
             appRunner()?.focusManager()?.setFocus("stats-panel")

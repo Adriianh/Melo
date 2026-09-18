@@ -57,12 +57,12 @@ internal fun MeloScreen.onStartLifecycle() {
     scope.launch { restoreLastSession() }
     scope.launch { loadHomeFeed() }
     scope.launch { loadStats() }
-    scope.launch { syncYouTubeLibrary() }
     scope.launch {
         var lastCookies: String? = null
         var isFirstEmit = true
         getSettings().collect { settings ->
             val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
+            val isInitialWithCookies = isFirstEmit && !settings.sessionCookies.isNullOrBlank()
             lastCookies = settings.sessionCookies
             isFirstEmit = false
             appRunner()?.runOnRenderThread {
@@ -71,8 +71,9 @@ internal fun MeloScreen.onStartLifecycle() {
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
                 state = state.copy(isOfflineMode = settings.offlineMode)
             }
-            if (cookiesChanged) {
+            if (cookiesChanged || isInitialWithCookies) {
                 checkYouTubeAuth()
+                syncYouTubeLibrary()
             }
         }
     }
@@ -82,7 +83,6 @@ internal fun MeloScreen.onStartLifecycle() {
             if (marqueeTick > 10) {
                 val track = state.detail.selectedTrack ?: return@runOnRenderThread
 
-                // Skip state copies if text is short enough to not need a marquee
                 if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
 
                 val newOffset = state.player.marqueeOffset + 1

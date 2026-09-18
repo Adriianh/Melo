@@ -102,17 +102,21 @@ private fun buildFavoritesContent(
         return column(
             spacer(),
             text("  No favorites yet").fg(TEXT_SECONDARY).centered(),
-            text("  Press F on any track to add it here, or Y to sync from YouTube").fg(TEXT_DIM)
-                .centered(),
+            text("  Press F on any track to add it here").fg(TEXT_DIM).centered(),
             spacer(),
         )
     }
     val items = state.collections.favorites.mapIndexed { index, track ->
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
+        val isLocal =
+            track.id.startsWith("local:") || track.id.startsWith("file:") || track.id.startsWith("/")
+        val providerIcon = if (isLocal) "⌂" else "☁"
+        val providerColor = if (isLocal) PRIMARY_COLOR else ACCENT_BLUE
         row(
             text(indicator).fg(PRIMARY_COLOR).length(2),
             text("${index + 1}").dim().length(3),
+            text("$providerIcon ").fg(providerColor).length(2),
             text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
             text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
@@ -125,6 +129,7 @@ private fun buildFavoritesContent(
     val header = row(
         text("").length(2),
         text("#").dim().length(3),
+        text("").length(2),
         text("Title").dim().fill(),
         text("Artist").dim().percent(25),
         text("Album").dim().percent(25),
@@ -147,26 +152,27 @@ private fun buildPlaylistsContent(
         return column(
             spacer(),
             text("  No playlists yet").fg(TEXT_SECONDARY).centered(),
-            text("  Press N to create a playlist or Y to sync from YouTube").fg(TEXT_DIM)
-                .centered(),
+            text("  Press N to create a playlist").fg(TEXT_DIM).centered(),
             spacer(),
         )
     }
     val items = allPlaylists.map { item ->
-        val badge = if (item.isRemote) "[YT]   " else "[Local]"
-        val badgeColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
+        val iconColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
+        val authorColor = if (item.isRemote) ACCENT_BLUE else TEXT_SECONDARY
         row(
-            text(badge).fg(badgeColor).length(8),
+            text("${item.icon} ").fg(iconColor).length(2),
             text(item.title).fg(TEXT_PRIMARY).ellipsis().fill(),
-            text(item.trackCountText).fg(TEXT_DIM).length(14),
+            text(item.author).fg(authorColor).ellipsis().percent(25),
+            text(item.trackCountText).fg(TEXT_DIM).length(12),
         )
     }
     playlistsList.elements(*items.toTypedArray())
 
     val header = row(
-        text("Source").dim().length(8),
+        text("").length(2),
         text("Name").dim().fill(),
-        text("Tracks").dim().length(14),
+        text("Author").dim().percent(25),
+        text("Tracks").dim().length(12),
     ).margin(Margin.horizontal(1))
 
     return column(

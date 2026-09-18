@@ -307,21 +307,27 @@ data class CollectionsState(
 
 sealed interface LibraryPlaylistItem {
     val title: String
+    val author: String
     val trackCountText: String
     val isRemote: Boolean
+    val icon: String
 
     data class Local(val playlist: Playlist) : LibraryPlaylistItem {
         override val title: String get() = playlist.name
+        override val author: String get() = "Tú"
         override val trackCountText: String get() = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
         override val isRemote: Boolean get() = false
+        override val icon: String get() = "≡"
     }
 
     data class Remote(val playlist: SearchResult.Playlist) : LibraryPlaylistItem {
         override val title: String get() = playlist.title
+        override val author: String get() = playlist.author.ifBlank { "YouTube Music" }
         override val trackCountText: String
             get() = playlist.trackCount?.let { "$it track${if (it != 1) "s" else ""}" }
                 ?: "Playlist"
         override val isRemote: Boolean get() = true
+        override val icon: String get() = "☁"
     }
 }
 
