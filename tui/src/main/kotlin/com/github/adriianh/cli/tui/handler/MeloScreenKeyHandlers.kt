@@ -65,11 +65,11 @@ internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.targetScreenFor(item: SidebarSection): ScreenState = when (item) {
-    SidebarSection.HOME -> ScreenState.Home()
+    SidebarSection.HOME -> cachedHomeScreen
     SidebarSection.SEARCH -> ScreenState.Search()
     SidebarSection.LIBRARY -> ScreenState.Library()
     SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
-    SidebarSection.STATS -> ScreenState.Stats()
+    SidebarSection.STATS -> cachedStatsScreen
     SidebarSection.OFFLINE -> ScreenState.Offline(downloads = state.collections.offlineTracks)
     SidebarSection.SETTINGS -> state.screen
 }
@@ -83,6 +83,15 @@ internal fun MeloScreen.switchScreenWithoutFocus(item: SidebarSection) {
         detail = state.detail.copy(artworkData = if (item != SidebarSection.SEARCH) null else state.detail.artworkData),
         needsGraphicsClear = false
     )
+    if (item == SidebarSection.HOME) {
+        if (cachedHomeScreen.feedSections.isEmpty() && !cachedHomeScreen.isLoadingFeed && cachedHomeScreen.feedError == null) {
+            loadHomeFeed()
+        }
+    } else if (item == SidebarSection.STATS) {
+        if (cachedStatsScreen.statsListening == null && !cachedStatsScreen.statsLoading) {
+            loadStats()
+        }
+    }
 }
 
 internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
@@ -102,11 +111,21 @@ internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
     )
 
     when (item) {
-        SidebarSection.HOME -> appRunner()?.focusManager()?.setFocus("home-panel")
+        SidebarSection.HOME -> {
+            appRunner()?.focusManager()?.setFocus("home-panel")
+            if (cachedHomeScreen.feedSections.isEmpty() && !cachedHomeScreen.isLoadingFeed && cachedHomeScreen.feedError == null) {
+                loadHomeFeed()
+            } else {
+                enrichActiveSectionTracks()
+            }
+        }
         SidebarSection.SEARCH -> appRunner()?.focusManager()?.setFocus("search-bar")
         SidebarSection.LIBRARY -> appRunner()?.focusManager()?.setFocus("library-panel")
         SidebarSection.NOW_PLAYING -> appRunner()?.focusManager()?.setFocus("now-playing-panel")
-        SidebarSection.STATS -> appRunner()?.focusManager()?.setFocus("stats-panel")
+        SidebarSection.STATS -> {
+            appRunner()?.focusManager()?.setFocus("stats-panel")
+            loadStats()
+        }
         SidebarSection.OFFLINE -> appRunner()?.focusManager()?.setFocus("offline-panel")
     }
 }

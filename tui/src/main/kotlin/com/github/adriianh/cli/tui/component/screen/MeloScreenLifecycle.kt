@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.component.screen
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import kotlinx.coroutines.cancel
@@ -55,6 +56,7 @@ internal fun MeloScreen.onStartLifecycle() {
     scope.launch { checkYouTubeAuth() }
     scope.launch { restoreLastSession() }
     scope.launch { loadHomeFeed() }
+    scope.launch { loadStats() }
     scope.launch { syncYouTubeLibrary() }
     scope.launch {
         var lastCookies: String? = null

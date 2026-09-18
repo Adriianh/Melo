@@ -24,6 +24,7 @@ import com.github.adriianh.cli.tui.component.screen.loadLocalTracksAction
 import com.github.adriianh.cli.tui.component.screen.onStartLifecycle
 import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
 import com.github.adriianh.cli.tui.component.screen.renderRoot
+import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
@@ -150,7 +151,10 @@ class MeloScreen(
     internal val markTrackAccessed get() = offlineInteractors.markTrackAccessed
     internal val autoCleanup get() = offlineInteractors.autoCleanup
 
-    internal var state = MeloState()
+    internal var cachedHomeScreen: ScreenState.Home = ScreenState.Home()
+    internal var cachedStatsScreen: ScreenState.Stats = ScreenState.Stats()
+
+    internal var state = MeloState(screen = cachedHomeScreen)
     internal val scope = CoroutineScope(dispatcher)
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
@@ -178,10 +182,20 @@ class MeloScreen(
     /**
      * Helper to update the current screen state in a type-safe way.
      */
+    @Suppress("UNCHECKED_CAST")
     internal inline fun <reified T : ScreenState> updateScreen(update: (T) -> T) {
         val current = state.screen
         if (current is T) {
-            state = state.copy(screen = update(current))
+            val updated = update(current)
+            if (updated is ScreenState.Home) cachedHomeScreen = updated
+            if (updated is ScreenState.Stats) cachedStatsScreen = updated
+            state = state.copy(screen = updated)
+        } else {
+            if (T::class == ScreenState.Home::class) {
+                cachedHomeScreen = update(cachedHomeScreen as T) as ScreenState.Home
+            } else if (T::class == ScreenState.Stats::class) {
+                cachedStatsScreen = update(cachedStatsScreen as T) as ScreenState.Stats
+            }
         }
     }
 
@@ -217,9 +231,11 @@ class MeloScreen(
     private fun observeSearchInput() {
         scope.launch {
             var lastObservedFocus = false
+            var lastObservedFocusId: String? = null
             while (isActive) {
                 val currentQuery = searchInputState.text()
-                val isFocused = appRunner()?.focusManager()?.focusedId() == "search-bar"
+                val focusedId = appRunner()?.focusManager()?.focusedId()
+                val isFocused = focusedId == "search-bar"
 
                 if (state.screen is ScreenState.Search) {
                     if (currentQuery != lastObservedSearchQuery) {
@@ -230,6 +246,25 @@ class MeloScreen(
                     } else if (!isFocused && lastObservedFocus) {
                         updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
                     }
+                }
+
+                if (focusedId != lastObservedFocusId) {
+                    when (focusedId) {
+                        "home-panel", "home-feed-items" -> {
+                            val home = (state.screen as? ScreenState.Home) ?: cachedHomeScreen
+                            if (home.feedSections.isEmpty() && !home.isLoadingFeed && home.feedError == null) {
+                                loadHomeFeed()
+                            }
+                        }
+
+                        "stats-panel" -> {
+                            val stats = (state.screen as? ScreenState.Stats) ?: cachedStatsScreen
+                            if (stats.statsListening == null && !stats.statsLoading) {
+                                loadStats()
+                            }
+                        }
+                    }
+                    lastObservedFocusId = focusedId
                 }
 
                 lastObservedFocus = isFocused
@@ -426,6 +461,8 @@ class MeloScreen(
         downloadTrackAction(track, downloadType)
 
     internal fun loadHomeFeed(chipParams: String? = null, chipIndex: Int = 0) {
+        val currentHome = (state.screen as? ScreenState.Home) ?: cachedHomeScreen
+        if (currentHome.isLoadingFeed && chipParams == null && chipIndex == currentHome.selectedChipIndex) return
         updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = true, feedError = null) }
         scope.launch {
             try {
@@ -434,7 +471,6 @@ class MeloScreen(
                 val chips = feed.chips
                 var nextContinuation = feed.continuation
 
-                // Fetch additional continuations to load multiple pages of sections right away (up to 12-15 sections)
                 var continuationCount = 0
                 while (!nextContinuation.isNullOrBlank() && allSections.size < 12 && continuationCount < 3) {
                     try {
@@ -448,7 +484,6 @@ class MeloScreen(
                     }
                 }
 
-                // If feed is still sparse (< 5 sections) and no mood filter was chosen, supplement with Explore / Charts
                 if (chipParams == null && allSections.size < 5) {
                     try {
                         val explore = discoveryInteractors.getExplore()

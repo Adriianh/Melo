@@ -541,6 +541,11 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
         when {
             event.code() == KeyCode.ESCAPE || (event.modifiers()
                 .alt() && event.code() == KeyCode.LEFT) -> {
+                if (actualDetail.returnScreen is ScreenState.Home) {
+                    cachedHomeScreen = actualDetail.returnScreen
+                } else if (actualDetail.returnScreen is ScreenState.Stats) {
+                    cachedStatsScreen = actualDetail.returnScreen
+                }
                 state = state.copy(
                     screen = actualDetail.returnScreen,
                     navigation = state.navigation.copy(activeSection = actualDetail.returnSection)
@@ -548,6 +553,7 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 val targetFocus = when (actualDetail.returnScreen) {
                     is ScreenState.Home -> "home-panel"
                     is ScreenState.Search -> "results-panel"
+                    is ScreenState.Library -> "library-panel"
                     is ScreenState.EntityDetail -> {
                         if (actualDetail.returnScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
                     }
@@ -737,6 +743,11 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
     when {
         event.code() == KeyCode.ESCAPE || (event.modifiers()
             .alt() && event.code() == KeyCode.LEFT) -> {
+            if (actualDetail.returnScreen is ScreenState.Home) {
+                cachedHomeScreen = actualDetail.returnScreen
+            } else if (actualDetail.returnScreen is ScreenState.Stats) {
+                cachedStatsScreen = actualDetail.returnScreen
+            }
             state = state.copy(
                 screen = actualDetail.returnScreen,
                 navigation = state.navigation.copy(activeSection = actualDetail.returnSection)
