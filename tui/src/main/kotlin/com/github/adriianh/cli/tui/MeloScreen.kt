@@ -509,7 +509,7 @@ class MeloScreen(
 
                 appRunner()?.runOnRenderThread {
                     updateScreen<ScreenState.Home> { current ->
-                        val preservedChips = if (chips.isNotEmpty()) chips else current.feedChips
+                        val preservedChips = chips.ifEmpty { current.feedChips }
                         current.copy(
                             feedSections = distinctSections,
                             feedChips = preservedChips,
@@ -735,7 +735,7 @@ class MeloScreen(
                         loadHomeFeed()
                         syncYouTubeLibrary()
                     },
-                    onFailure = { err ->
+                    onFailure = { _ ->
                         settingsViewState = settingsViewState.copy(
                             isImportingAuth = false,
                             authStatusMessage = "No browser session found"
