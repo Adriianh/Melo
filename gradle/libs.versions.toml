@@ -1,7 +1,7 @@
 [versions]
 kotlinMultiplatformPlugin = "9.3.2"
 composeGradlePlugin = "1.10.3"
-gradle = "9.4.0"
+gradle = "9.4.1"
 kotter = "1.4.0"
 kotlin = "2.4.10"
 junit = "4.13.2"
