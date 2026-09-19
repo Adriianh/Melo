@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.filteredAndSortedFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
@@ -186,6 +187,27 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            val track = filtered.getOrNull(localLibraryList.selected())
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state = state.copy(selection = state.selection.selectAll(filtered))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty -> {
+            state = state.copy(selection = state.selection.clear())
+            return EventResult.HANDLED
+        }
+
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
             filtered.getOrNull(localLibraryList.selected())?.let { toggleFavorite(it) }
             return EventResult.HANDLED
@@ -197,7 +219,11 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            filtered.getOrNull(localLibraryList.selected())?.let { openPlaylistPicker(it) }
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                filtered.getOrNull(localLibraryList.selected())?.let { openPlaylistPicker(it) }
+            }
             return EventResult.HANDLED
         }
 
@@ -205,6 +231,10 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             MeloAction.TRACK_OPTIONS,
             settingsViewState.currentSettings
         ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
             filtered.getOrNull(localLibraryList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
@@ -327,6 +357,27 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            val item = filtered.getOrNull(favoritesList.selected())
+            if (item != null) {
+                state = state.copy(selection = state.selection.toggle(item.track))
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state = state.copy(selection = state.selection.selectAll(filtered.map { it.track }))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty -> {
+            state = state.copy(selection = state.selection.clear())
+            return EventResult.HANDLED
+        }
+
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
             filtered.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it.track) }
             return EventResult.HANDLED
@@ -338,8 +389,12 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            val item = filtered.getOrNull(favoritesList.selected())
-            if (item != null) openPlaylistPicker(item.track)
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                val item = filtered.getOrNull(favoritesList.selected())
+                if (item != null) openPlaylistPicker(item.track)
+            }
             return EventResult.HANDLED
         }
 
@@ -347,6 +402,10 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             MeloAction.TRACK_OPTIONS,
             settingsViewState.currentSettings
         ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
             val item = filtered.getOrNull(favoritesList.selected())
             if (item != null) openTrackOptions(item.track)
             return EventResult.HANDLED

@@ -15,6 +15,7 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 
 internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
+    val isBatch = state.trackOptions.isBatch
     val optionsCount = 6
     when {
         event.code() == KeyCode.ESCAPE -> {
@@ -36,10 +37,46 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val track = state.trackOptions.track ?: return handleGlobalShortcuts(event)
             val actionIndex = state.trackOptions.selectedIndex
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
 
+            if (isBatch) {
+                val batch = state.trackOptions.batchTracks
+                when (actionIndex) {
+                    0 -> {
+                        if (batch.isNotEmpty()) {
+                            playList(batch, 0)
+                            state = state.copy(selection = state.selection.clear())
+                        }
+                    }
+
+                    1 -> {
+                        batch.forEach { addToQueue(it) }
+                        state = state.copy(selection = state.selection.clear())
+                    }
+
+                    2 -> {
+                        batch.forEach { toggleFavorite(it) }
+                        state = state.copy(selection = state.selection.clear())
+                    }
+
+                    3 -> {
+                        openPlaylistPicker(batch)
+                    }
+
+                    4 -> {
+                        batch.forEach { downloadTrack(it, DownloadType.MANUAL) }
+                        state = state.copy(selection = state.selection.clear())
+                    }
+
+                    5 -> {
+                        state = state.copy(selection = state.selection.clear())
+                    }
+                }
+                return EventResult.HANDLED
+            }
+
+            val track = state.trackOptions.track ?: return handleGlobalShortcuts(event)
             when (actionIndex) {
                 0 -> playTrack(track)
                 1 -> addToQueue(track)
@@ -67,6 +104,29 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.openTrackOptions(track: Track) {
-    state = state.copy(trackOptions = state.trackOptions.copy(track = track, selectedIndex = 0, isVisible = true))
+    if (state.selection.isNotEmpty) {
+        openBatchOptions(state.selection.tracks())
+        return
+    }
+    state = state.copy(
+        trackOptions = state.trackOptions.copy(
+            track = track,
+            batchTracks = emptyList(),
+            selectedIndex = 0,
+            isVisible = true
+        )
+    )
+    appRunner()?.focusManager()?.setFocus("track-options-panel")
+}
+
+internal fun MeloScreen.openBatchOptions(tracks: List<Track>) {
+    state = state.copy(
+        trackOptions = state.trackOptions.copy(
+            track = null,
+            batchTracks = tracks,
+            selectedIndex = 0,
+            isVisible = true
+        )
+    )
     appRunner()?.focusManager()?.setFocus("track-options-panel")
 }

@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
@@ -98,8 +99,29 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ESCAPE -> {
+            if (state.selection.isNotEmpty) {
+                state = state.copy(selection = state.selection.clear())
+                return EventResult.HANDLED
+            }
             if (actualState.searchQuery.isNotEmpty()) {
                 updateScreen<ScreenState.Offline> { it.copy(searchQuery = "") }
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state =
+                state.copy(selection = state.selection.selectAll(filteredDownloads.map { it.track }))
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
                 return EventResult.HANDLED
             }
         }
@@ -129,6 +151,10 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             MeloAction.TRACK_OPTIONS,
             settingsViewState.currentSettings
         ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
             val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED
@@ -138,6 +164,14 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             MeloAction.DELETE,
             settingsViewState.currentSettings
         ) -> {
+            if (state.selection.isNotEmpty) {
+                val toDelete = state.selection.tracks()
+                toDelete.forEach { track ->
+                    deleteDownloadedTrack(track.id)
+                }
+                state = state.copy(selection = state.selection.clear())
+                return EventResult.HANDLED
+            }
             val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) {
                 deleteDownloadedTrack(track.id)
@@ -156,8 +190,12 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            filteredDownloads.getOrNull(actualState.selectedIndex)
-                ?.let { openPlaylistPicker(it.track) }
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                filteredDownloads.getOrNull(actualState.selectedIndex)
+                    ?.let { openPlaylistPicker(it.track) }
+            }
             return EventResult.HANDLED
         }
     }

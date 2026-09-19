@@ -35,6 +35,9 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
 internal fun KeyEvent.isCtrlF(): Boolean =
     (modifiers().ctrl() && isCharIgnoreCase('f')) || isChar('\u0006')
 
+internal fun KeyEvent.isCtrlA(): Boolean =
+    (modifiers().ctrl() && isCharIgnoreCase('a')) || isChar('\u0001')
+
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     when {
         event.matches(Actions.MOVE_DOWN) -> {
@@ -179,6 +182,11 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
     if (state.commandBar.isVisible) return handleCommandBarKey(event)
+
+    if (event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty) {
+        state = state.copy(selection = state.selection.clear())
+        return EventResult.HANDLED
+    }
 
     val isTyping = isTyping()
     val isCharacter = event.code() == KeyCode.CHAR

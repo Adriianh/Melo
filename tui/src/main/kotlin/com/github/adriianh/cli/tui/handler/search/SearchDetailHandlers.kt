@@ -4,11 +4,13 @@ import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
+import com.github.adriianh.cli.tui.handler.isCtrlA
 import com.github.adriianh.cli.tui.handler.isCtrlF
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
@@ -987,10 +989,37 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        listSize > 0 && (
+                event.isCharIgnoreCase('v') || event.matchesAction(
+                    MeloAction.TOGGLE_SELECTION,
+                    settingsViewState.currentSettings
+                ) || (state.selection.isNotEmpty && event.isChar(' '))
+                ) -> {
+            val track = tracks.getOrNull(entityTracksList.selected())
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
+                return EventResult.HANDLED
+            }
+        }
+
+        listSize > 0 && event.isCtrlA() -> {
+            state = state.copy(selection = state.selection.selectAll(tracks))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty -> {
+            state = state.copy(selection = state.selection.clear())
+            return EventResult.HANDLED
+        }
+
         listSize > 0 && event.matchesAction(
             MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings
         ) -> {
-            tracks.getOrNull(entityTracksList.selected())?.let { openPlaylistPicker(it) }
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                tracks.getOrNull(entityTracksList.selected())?.let { openPlaylistPicker(it) }
+            }
             return EventResult.HANDLED
         }
 
@@ -998,6 +1027,10 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             MeloAction.TRACK_OPTIONS,
             settingsViewState.currentSettings
         )) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
             tracks.getOrNull(entityTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }

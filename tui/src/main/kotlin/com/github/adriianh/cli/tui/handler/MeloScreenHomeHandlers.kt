@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
@@ -232,10 +233,50 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                             }
                         }
 
+                        event.isCharIgnoreCase('v') || event.matchesAction(
+                            MeloAction.TOGGLE_SELECTION,
+                            settingsViewState.currentSettings
+                        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+                            val item = currentSection?.items?.getOrNull(s.selectedItemIndex)
+                            if (item is SearchResult.Song) {
+                                state = state.copy(selection = state.selection.toggle(item.track))
+                                return EventResult.HANDLED
+                            }
+                        }
+
+                        event.isCtrlA() -> {
+                            val allSongs =
+                                currentSection?.items?.filterIsInstance<SearchResult.Song>()
+                                    ?.map { it.track }.orEmpty()
+                            if (allSongs.isNotEmpty()) {
+                                state = state.copy(selection = state.selection.selectAll(allSongs))
+                                return EventResult.HANDLED
+                            }
+                        }
+
+                        event.matchesAction(
+                            MeloAction.ADD_PLAYLIST,
+                            settingsViewState.currentSettings
+                        ) -> {
+                            if (state.selection.isNotEmpty) {
+                                openPlaylistPicker(state.selection.tracks())
+                                return EventResult.HANDLED
+                            }
+                            val item = currentSection?.items?.getOrNull(s.selectedItemIndex)
+                            if (item is SearchResult.Song) {
+                                openPlaylistPicker(item.track)
+                                return EventResult.HANDLED
+                            }
+                        }
+
                         event.isCharIgnoreCase('m') || event.matchesAction(
                             MeloAction.TRACK_OPTIONS,
                             settingsViewState.currentSettings
                         ) -> {
+                            if (state.selection.isNotEmpty) {
+                                openBatchOptions(state.selection.tracks())
+                                return EventResult.HANDLED
+                            }
                             val item = currentSection?.items?.getOrNull(s.selectedItemIndex)
                             if (item is SearchResult.Song) {
                                 openTrackOptions(item.track)
@@ -285,10 +326,47 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
+                event.isCharIgnoreCase('v') || event.matchesAction(
+                    MeloAction.TOGGLE_SELECTION,
+                    settingsViewState.currentSettings
+                ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    if (track != null) {
+                        state = state.copy(selection = state.selection.toggle(track))
+                        return EventResult.HANDLED
+                    }
+                }
+
+                event.isCtrlA() -> {
+                    val tracks = state.collections.recentTracks.map { it.track }
+                    if (tracks.isNotEmpty()) {
+                        state = state.copy(selection = state.selection.selectAll(tracks))
+                        return EventResult.HANDLED
+                    }
+                }
+
+                event.matchesAction(
+                    MeloAction.ADD_PLAYLIST,
+                    settingsViewState.currentSettings
+                ) -> {
+                    if (state.selection.isNotEmpty) {
+                        openPlaylistPicker(state.selection.tracks())
+                    } else {
+                        val track =
+                            state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                        if (track != null) openPlaylistPicker(track)
+                    }
+                    return EventResult.HANDLED
+                }
+
                 event.isCharIgnoreCase('m') || event.matchesAction(
                     MeloAction.TRACK_OPTIONS,
                     settingsViewState.currentSettings
                 ) -> {
+                    if (state.selection.isNotEmpty) {
+                        openBatchOptions(state.selection.tracks())
+                        return EventResult.HANDLED
+                    }
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
@@ -335,10 +413,46 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
+                event.isCharIgnoreCase('v') || event.matchesAction(
+                    MeloAction.TOGGLE_SELECTION,
+                    settingsViewState.currentSettings
+                ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+                    val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
+                    if (track != null) {
+                        state = state.copy(selection = state.selection.toggle(track))
+                        return EventResult.HANDLED
+                    }
+                }
+
+                event.isCtrlA() -> {
+                    val tracks = allFavorites.map { it.track }
+                    if (tracks.isNotEmpty()) {
+                        state = state.copy(selection = state.selection.selectAll(tracks))
+                        return EventResult.HANDLED
+                    }
+                }
+
+                event.matchesAction(
+                    MeloAction.ADD_PLAYLIST,
+                    settingsViewState.currentSettings
+                ) -> {
+                    if (state.selection.isNotEmpty) {
+                        openPlaylistPicker(state.selection.tracks())
+                    } else {
+                        val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
+                        if (track != null) openPlaylistPicker(track)
+                    }
+                    return EventResult.HANDLED
+                }
+
                 event.isCharIgnoreCase('m') || event.matchesAction(
                     MeloAction.TRACK_OPTIONS,
                     settingsViewState.currentSettings
                 ) -> {
+                    if (state.selection.isNotEmpty) {
+                        openBatchOptions(state.selection.tracks())
+                        return EventResult.HANDLED
+                    }
                     val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED

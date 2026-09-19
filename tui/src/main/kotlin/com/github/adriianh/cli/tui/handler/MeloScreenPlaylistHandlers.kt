@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playFromQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
@@ -319,13 +320,38 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            val track = filtered.getOrNull(playlistTracksList.selected())
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state = state.copy(selection = state.selection.selectAll(filtered))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty -> {
+            state = state.copy(selection = state.selection.clear())
+            return EventResult.HANDLED
+        }
+
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
             filtered.getOrNull(playlistTracksList.selected())?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            filtered.getOrNull(playlistTracksList.selected())?.let { openPlaylistPicker(it) }
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                filtered.getOrNull(playlistTracksList.selected())?.let { openPlaylistPicker(it) }
+            }
             return EventResult.HANDLED
         }
 
@@ -333,12 +359,26 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             MeloAction.TRACK_OPTIONS,
             settingsViewState.currentSettings
         ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
             filtered.getOrNull(playlistTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
 
         event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val pl = screen.selectedPlaylist ?: return handleGlobalShortcuts(event)
+            if (state.selection.isNotEmpty) {
+                val toRemove = state.selection.tracks()
+                scope.launch {
+                    toRemove.forEach { track ->
+                        removeTrackFromPlaylist(pl.id, track.id)
+                    }
+                }
+                state = state.copy(selection = state.selection.clear())
+                return EventResult.HANDLED
+            }
             val track = filtered.getOrNull(playlistTracksList.selected())
                 ?: return handleGlobalShortcuts(event)
             scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
@@ -352,14 +392,29 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
     val interaction = state.playlistInteraction
     when {
         event.code() == KeyCode.ESCAPE -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = ""))
+            state = state.copy(
+                playlistInteraction = interaction.copy(
+                    playlistInputMode = PlaylistInputMode.NONE,
+                    playlistInput = "",
+                    playlistPickerTrack = null,
+                    playlistPickerTracks = emptyList()
+                )
+            )
             return EventResult.HANDLED
         }
         event.code() == KeyCode.ENTER -> {
             val name = interaction.playlistInput.trim()
             if (name.isNotBlank()) {
                 when (interaction.playlistInputMode) {
-                    PlaylistInputMode.CREATE -> scope.launch { createPlaylist(name) }
+                    PlaylistInputMode.CREATE -> scope.launch {
+                        val id = createPlaylist(name)
+                        val tracksToAdd = interaction.playlistPickerTracks.ifEmpty {
+                            listOfNotNull(interaction.playlistPickerTrack)
+                        }
+                        tracksToAdd.forEach { track ->
+                            addTrackToPlaylist(id, track)
+                        }
+                    }
                     PlaylistInputMode.RENAME -> {
                         val pl = state.collections.playlists.getOrNull(playlistsList.selected())
                         if (pl != null) scope.launch { renamePlaylist(pl.id, name) }
@@ -367,7 +422,15 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
                     PlaylistInputMode.PICKER, PlaylistInputMode.NONE -> {}
                 }
             }
-            state = state.copy(playlistInteraction = interaction.copy(playlistInputMode = PlaylistInputMode.NONE, playlistInput = ""))
+            state = state.copy(
+                selection = state.selection.clear(),
+                playlistInteraction = interaction.copy(
+                    playlistInputMode = PlaylistInputMode.NONE,
+                    playlistInput = "",
+                    playlistPickerTrack = null,
+                    playlistPickerTracks = emptyList()
+                )
+            )
             return EventResult.HANDLED
         }
         event.code() == KeyCode.BACKSPACE -> {
@@ -391,7 +454,13 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
     val playlists = state.collections.playlists
     when {
         event.code() == KeyCode.ESCAPE -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistInputMode = PlaylistInputMode.NONE, playlistPickerTrack = null))
+            state = state.copy(
+                playlistInteraction = interaction.copy(
+                    playlistInputMode = PlaylistInputMode.NONE,
+                    playlistPickerTrack = null,
+                    playlistPickerTracks = emptyList()
+                )
+            )
             return EventResult.HANDLED
         }
         event.matches(Actions.MOVE_DOWN) -> {
@@ -405,9 +474,24 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
         event.code() == KeyCode.ENTER -> {
             val pl = playlists.getOrNull(interaction.playlistPickerCursor)
                 ?: return handleGlobalShortcuts(event)
-            val track = interaction.playlistPickerTrack ?: return handleGlobalShortcuts(event)
-            scope.launch { addTrackToPlaylist(pl.id, track) }
-            state = state.copy(playlistInteraction = interaction.copy(playlistInputMode = PlaylistInputMode.NONE, playlistPickerTrack = null))
+            val tracksToAdd = interaction.playlistPickerTracks.ifEmpty {
+                listOfNotNull(interaction.playlistPickerTrack)
+            }
+            if (tracksToAdd.isNotEmpty()) {
+                scope.launch {
+                    tracksToAdd.forEach { track ->
+                        addTrackToPlaylist(pl.id, track)
+                    }
+                }
+            }
+            state = state.copy(
+                selection = state.selection.clear(),
+                playlistInteraction = interaction.copy(
+                    playlistInputMode = PlaylistInputMode.NONE,
+                    playlistPickerTrack = null,
+                    playlistPickerTracks = emptyList()
+                )
+            )
             return EventResult.HANDLED
         }
     }
@@ -463,12 +547,30 @@ internal fun MeloScreen.syncYouTubeLibrary() {
     syncYouTubePlaylists()
 }
 
-internal fun MeloScreen.openPlaylistPicker(track: Track) {
+internal fun MeloScreen.openPlaylistPicker(tracks: List<Track>) {
     val playlists = state.collections.playlists
-    
+
     state = if (playlists.isEmpty()) {
-        state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = "", playlistPickerTrack = track))
+        state.copy(
+            playlistInteraction = state.playlistInteraction.copy(
+                playlistInputMode = PlaylistInputMode.CREATE,
+                playlistInput = "",
+                playlistPickerTrack = tracks.firstOrNull(),
+                playlistPickerTracks = tracks
+            )
+        )
     } else {
-        state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.PICKER, playlistPickerTrack = track, playlistPickerCursor = 0))
+        state.copy(
+            playlistInteraction = state.playlistInteraction.copy(
+                playlistInputMode = PlaylistInputMode.PICKER,
+                playlistPickerTrack = tracks.firstOrNull(),
+                playlistPickerTracks = tracks,
+                playlistPickerCursor = 0
+            )
+        )
     }
+}
+
+internal fun MeloScreen.openPlaylistPicker(track: Track) {
+    openPlaylistPicker(listOf(track))
 }
