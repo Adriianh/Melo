@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -41,7 +42,15 @@ object DownloadActionHandler : KoinComponent {
     ) {
         terminal.println(cyan($$"Fetching direct stream for downloading ${track.title}..."))
 
-        val url = getStream(track)
+        var isAgeRestricted = false
+        val url = try {
+            getStream(track)
+        } catch (_: AgeRestrictedException) {
+            isAgeRestricted = true
+            null
+        } catch (_: Exception) {
+            null
+        }
         if (url != null) {
             val settings = getSettings.getSnapshot()
             val fallbackPath = File(System.getProperty("user.home"), "Downloads/Melo")
@@ -106,7 +115,11 @@ object DownloadActionHandler : KoinComponent {
                 }
             }
         } else {
-            terminal.println(gray($$"Failed to resolve stream for ${track.title}."))
+            if (isAgeRestricted) {
+                terminal.println(yellow($$"⚠️ Track is age-restricted and could not be resolved for download: ${track.title}"))
+            } else {
+                terminal.println(gray($$"Failed to resolve stream for ${track.title}."))
+            }
         }
     }
 

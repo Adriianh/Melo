@@ -12,6 +12,7 @@ import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyEvent
@@ -124,16 +125,26 @@ internal fun MeloScreen.playTrack(track: Track) {
             .filter { offlineRepository.getOfflineTrack(it.id)?.downloadStatus != DownloadStatus.COMPLETED }
             .forEach { nextTrack ->
                 launch(Dispatchers.IO) {
-                    getStream(nextTrack)
+                    try {
+                        getStream(nextTrack)
+                    } catch (_: Exception) {
+                    }
                 }
             }
 
         var url: String? = null
         var attempts = 0
         val maxAttempts = 3
+        var isAgeRestricted = false
         while (attempts < maxAttempts && url == null) {
-            url = getStream(resolvedTrack)
-            if (url == null) delay(700L.milliseconds)
+            try {
+                url = getStream(resolvedTrack)
+            } catch (_: AgeRestrictedException) {
+                isAgeRestricted = true
+                break
+            } catch (_: Exception) {
+            }
+            if (url == null && !isAgeRestricted) delay(700L.milliseconds)
             attempts++
         }
 
@@ -142,7 +153,11 @@ internal fun MeloScreen.playTrack(track: Track) {
                 state = state.copy(
                     player = state.player.copy(
                         isLoadingAudio = false,
-                        audioError = "Stream not available, skipping..."
+                        audioError = if (isAgeRestricted) {
+                            "Track is age-restricted (sign-in required), skipping..."
+                        } else {
+                            "Stream not available, skipping..."
+                        }
                     )
                 )
                 seekForward()

@@ -242,7 +242,8 @@ val appModule = module {
         InnerTubeAudioProvider(
             configDirPath = dataDir.absolutePath,
             fallback = piped,
-            settingsRepository = get()
+            settingsRepository = get(),
+            ageGateProvider = ytDlp
         )
     }
     single { MediaSessionManager(httpClient = get()) }

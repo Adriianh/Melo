@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
@@ -151,10 +152,17 @@ object PlayActionHandler : KoinComponent {
             onError = { _ -> nextAction?.invoke() }
         )
 
-        // Declare playCurrentTrackFromQueue as a local function to avoid circularity issues
         suspend fun playCurrentTrack() {
             val track = currentTrack ?: return
-            val url = getStream(track)
+            var isAgeRestricted = false
+            val url = try {
+                getStream(track)
+            } catch (_: AgeRestrictedException) {
+                isAgeRestricted = true
+                null
+            } catch (_: Exception) {
+                null
+            }
             if (url != null) {
                 terminal.println(green("▶ Playing: ") + track.title + gray(" by ") + track.artist)
                 activeProgressJob?.cancel()
@@ -162,8 +170,8 @@ object PlayActionHandler : KoinComponent {
                     text {
                         val posSec = completed / 1000L
                         val lenSec = (total ?: 0L) / 1000L
-                        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
-                        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
+                        val posStr = formatDuration(posSec)
+                        val lenStr = formatDuration(lenSec)
                         gray("$posStr / $lenStr")
                     }
                     progressBar()
@@ -186,7 +194,11 @@ object PlayActionHandler : KoinComponent {
                     discordRpc.updateActivity(track, true)
                 }
             } else {
-                terminal.println(yellow("⚠️ Failed to get stream for: ") + track.title)
+                if (isAgeRestricted) {
+                    terminal.println(yellow("⚠️ Track is age-restricted and could not be resolved: ") + track.title)
+                } else {
+                    terminal.println(yellow("⚠️ Failed to get stream for: ") + track.title)
+                }
                 nextAction?.invoke()
             }
         }
@@ -330,7 +342,6 @@ object PlayActionHandler : KoinComponent {
                 playCurrentTrack()
             }
         }
-        // Keep running until stopAction is invoked (e.g. by session manager directly or error)
         try {
             stopSignal.await()
         } finally {
@@ -340,5 +351,11 @@ object PlayActionHandler : KoinComponent {
             ipcServer.stop()
         }
         exitProcess(0)
+    }
+
+    private fun formatDuration(seconds: Long): String {
+        val mins = (seconds / 60).toString().padStart(2, '0')
+        val secs = (seconds % 60).toString().padStart(2, '0')
+        return "$mins:$secs"
     }
 }
