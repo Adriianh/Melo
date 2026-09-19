@@ -397,8 +397,6 @@ fun MeloState.allLibraryFavorites(): List<LibraryFavoriteItem> {
     return localItems + remoteItems
 }
 
-fun MeloState.allFavoriteTracks(): List<Track> = allLibraryFavorites().map { it.track }
-
 fun MeloState.isFavoriteTrack(track: Track): Boolean = isFavoriteTrack(track.id, track.sourceId)
 
 fun MeloState.isFavoriteTrack(trackId: String, sourceId: String? = null): Boolean {

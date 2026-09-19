@@ -33,7 +33,7 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
 }
 
 internal fun KeyEvent.isCtrlF(): Boolean =
-    modifiers().ctrl() && (isCharIgnoreCase('f') || (code() == KeyCode.CHAR && (character() == 'f' || character() == 'F' || character() == '\u0006')))
+    (modifiers().ctrl() && isCharIgnoreCase('f')) || isChar('\u0006')
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     when {

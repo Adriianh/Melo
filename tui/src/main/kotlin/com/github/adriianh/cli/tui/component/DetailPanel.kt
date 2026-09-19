@@ -144,7 +144,7 @@ fun buildEntityDetailPanel(
         is SearchResult.Playlist -> entity.description
     }
 
-    val description = wrapText(descriptionRaw, 60)
+    val description = wrapText(descriptionRaw)
 
     val artworkLines =
         if (state.detail.artworkData != null && !state.player.isQueueVisible) 18 else 5
@@ -270,7 +270,7 @@ private fun renderSimilarTab(
     return similarArea.fill()
 }
 
-private fun wrapText(text: String?, maxWidth: Int): String {
+private fun wrapText(text: String?): String {
     if (text.isNullOrEmpty()) return ""
     return text.split("\n").joinToString("\n") { paragraph ->
         val words = paragraph.split(Regex("\\s+"))
@@ -279,7 +279,7 @@ private fun wrapText(text: String?, maxWidth: Int): String {
         for (word in words) {
             if (word.isEmpty()) continue
             val plainWordLength = word.replace(Regex("\\[/?.*?]"), "").length
-            if (currentLineLength + plainWordLength > maxWidth && currentLineLength > 0) {
+            if (currentLineLength + plainWordLength > 60 && currentLineLength > 0) {
                 sb.append("\n")
                 currentLineLength = 0
             } else if (currentLineLength > 0) {
