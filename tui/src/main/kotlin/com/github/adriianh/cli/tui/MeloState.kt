@@ -276,12 +276,48 @@ data class DetailState(
 )
 
 /**
+ * State for multi-track batch selection (Visual mode).
+ */
+data class BatchSelectionState(
+    val isSelectionMode: Boolean = false,
+    val selectedTracks: Map<String, Track> = emptyMap(),
+) {
+    val count: Int get() = selectedTracks.size
+    val isNotEmpty: Boolean get() = selectedTracks.isNotEmpty()
+    val isEmpty: Boolean get() = selectedTracks.isEmpty()
+    fun isSelected(trackId: String): Boolean = selectedTracks.containsKey(trackId)
+    fun tracks(): List<Track> = selectedTracks.values.toList()
+
+    fun toggle(track: Track): BatchSelectionState {
+        val updated = selectedTracks.toMutableMap()
+        if (updated.containsKey(track.id)) {
+            updated.remove(track.id)
+        } else {
+            updated[track.id] = track
+        }
+        return copy(
+            isSelectionMode = updated.isNotEmpty(),
+            selectedTracks = updated
+        )
+    }
+
+    fun selectAll(tracks: List<Track>): BatchSelectionState {
+        val updated = selectedTracks.toMutableMap()
+        tracks.forEach { updated[it.id] = it }
+        return copy(isSelectionMode = updated.isNotEmpty(), selectedTracks = updated)
+    }
+
+    fun clear(): BatchSelectionState = copy(isSelectionMode = false, selectedTracks = emptyMap())
+}
+
+/**
  * Global state for playlist interaction overlays.
  */
 data class PlaylistInteractionState(
     val playlistInput: String = "",
     val playlistInputMode: PlaylistInputMode = PlaylistInputMode.NONE,
     val playlistPickerTrack: Track? = null,
+    val playlistPickerTracks: List<Track> = emptyList(),
     val playlistPickerCursor: Int = 0,
 )
 
@@ -290,9 +326,12 @@ data class PlaylistInteractionState(
  */
 data class TrackOptionsMenuState(
     val track: Track? = null,
+    val batchTracks: List<Track> = emptyList(),
     val selectedIndex: Int = 0,
     val isVisible: Boolean = false,
-)
+) {
+    val isBatch: Boolean get() = batchTracks.isNotEmpty()
+}
 
 /**
  * Global UI/System flags
@@ -488,6 +527,7 @@ data class MeloState(
     val collections: CollectionsState = CollectionsState(),
     val playlistInteraction: PlaylistInteractionState = PlaylistInteractionState(),
     val trackOptions: TrackOptionsMenuState = TrackOptionsMenuState(),
+    val selection: BatchSelectionState = BatchSelectionState(),
     val commandBar: CommandBarState = CommandBarState(),
     val isSettingsVisible: Boolean = false,
     val isOfflineMode: Boolean = false,
