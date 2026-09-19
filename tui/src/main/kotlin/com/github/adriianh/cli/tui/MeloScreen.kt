@@ -31,7 +31,6 @@ import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import com.github.adriianh.cli.tui.player.AudioPlayer
-import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
@@ -45,6 +44,7 @@ import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -202,7 +202,7 @@ class MeloScreen(
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
 
-    internal val mediaSession = MediaSessionManager(
+    internal val mediaSession = JvmMediaSessionManager(
         httpClient = httpClient,
         onPlayPause = ::handleMediaSessionPlayPause,
         onNext = ::handleMediaSessionNext,

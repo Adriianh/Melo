@@ -4,7 +4,6 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.config.shareDir
 import com.github.adriianh.cli.service.YouTubeAuthService
-import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
@@ -15,6 +14,7 @@ import com.github.adriianh.core.domain.interactor.SearchInteractors
 import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
+import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -246,7 +246,7 @@ val appModule = module {
             ageGateProvider = ytDlp
         )
     }
-    single { MediaSessionManager(httpClient = get()) }
+    single { JvmMediaSessionManager(httpClient = get()) }
     single { DiscordRpcManager() }
 
     single<MeloDatabase> { DatabaseFactory.create() }

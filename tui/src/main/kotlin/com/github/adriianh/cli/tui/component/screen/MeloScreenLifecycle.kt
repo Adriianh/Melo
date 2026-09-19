@@ -100,7 +100,7 @@ internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     playlistTracksJob?.cancel()
     audioPlayer.stop()
-    mediaSession.destroy()
+    mediaSession.release()
     discordRpcManager.disconnect()
     scope.cancel()
 }

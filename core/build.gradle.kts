@@ -21,6 +21,8 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.vlcj)
+                implementation(libs.jmtc)
+                implementation(libs.ktorClientCore)
             }
         }
         commonTest {

@@ -1,10 +1,10 @@
 package com.github.adriianh.cli.command.player.handler
 
 import com.github.adriianh.cli.tui.player.AudioPlayer
-import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -118,7 +118,7 @@ object PlayActionHandler : KoinComponent {
             discordRpc.connect()
         }
 
-        val sessionManager = MediaSessionManager(
+        val sessionManager = JvmMediaSessionManager(
             httpClient = httpClient,
             onPlayPause = { playPauseAction?.invoke() },
             onNext = { nextAction?.invoke() },
@@ -332,7 +332,7 @@ object PlayActionHandler : KoinComponent {
             activeProgressJob?.cancel()
             player.stop()
             sessionManager.notifyStopped()
-            sessionManager.destroy()
+            sessionManager.release()
             isPlaying = false
             stopSignal.complete(Unit)
             terminal.println(cyan("Playback stopped."))
@@ -347,7 +347,7 @@ object PlayActionHandler : KoinComponent {
         } finally {
             activeProgressJob?.cancel()
             player.stop()
-            sessionManager.destroy()
+            sessionManager.release()
             ipcServer.stop()
         }
         exitProcess(0)
