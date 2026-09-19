@@ -1,5 +1,7 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.cli.tui.component.TrackMenuAction
+import com.github.adriianh.cli.tui.component.resolveTrackMenuItems
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineFilterType
@@ -468,5 +470,140 @@ class MeloStateFilterSortTest {
         assertEquals(false, batch.isNotEmpty)
         assertEquals(false, batch.isSelectionMode)
         assertEquals(emptyList<Track>(), batch.tracks())
+    }
+
+    @Test
+    fun testResolveTrackMenuItemsContexts() {
+        val t1 = createTrack("t1", "Song 1", "Artist A")
+        val t2 = createTrack("t2", "Song 2", "Artist B")
+
+        // 1. General Search Context - Single Track
+        val searchState = MeloState(
+            screen = ScreenState.Search(tab = SearchTab.SONGS),
+            trackOptions = TrackOptionsMenuState(track = t1, isVisible = true)
+        )
+        val searchSingleItems = resolveTrackMenuItems(searchState)
+        val searchSingleActions = searchSingleItems.map { it.action }
+        assertEquals(
+            listOf(
+                TrackMenuAction.PLAY,
+                TrackMenuAction.ADD_TO_QUEUE,
+                TrackMenuAction.ADD_TO_FAVORITES,
+                TrackMenuAction.ADD_TO_PLAYLIST,
+                TrackMenuAction.DOWNLOAD_OFFLINE,
+                TrackMenuAction.VIEW_SIMILAR
+            ),
+            searchSingleActions
+        )
+
+        // 2. General Search Context - Batch
+        val searchBatchState = searchState.copy(
+            trackOptions = TrackOptionsMenuState(batchTracks = listOf(t1, t2), isVisible = true)
+        )
+        val searchBatchItems = resolveTrackMenuItems(searchBatchState)
+        assertEquals(
+            listOf(
+                TrackMenuAction.PLAY,
+                TrackMenuAction.ADD_TO_QUEUE,
+                TrackMenuAction.TOGGLE_FAVORITE,
+                TrackMenuAction.ADD_TO_PLAYLIST,
+                TrackMenuAction.DOWNLOAD_OFFLINE,
+                TrackMenuAction.CLEAR_SELECTION
+            ),
+            searchBatchItems.map { it.action }
+        )
+        assertEquals("Play Selection (2)", searchBatchItems[0].label)
+
+        // 3. Local Playlist Context - Single & Batch
+        val testPlaylist = Playlist(id = 1L, name = "My Playlist", trackCount = 2, createdAt = 0L)
+        val playlistState = MeloState(
+            screen = ScreenState.Library(
+                libraryTab = LibraryTab.PLAYLISTS,
+                isInPlaylistDetail = true,
+                selectedPlaylist = testPlaylist
+            ),
+            trackOptions = TrackOptionsMenuState(track = t1, isVisible = true)
+        )
+        val plSingleItems = resolveTrackMenuItems(playlistState)
+        assertEquals(true, plSingleItems.any { it.action == TrackMenuAction.REMOVE_FROM_PLAYLIST })
+        assertEquals(
+            "Remove from Playlist",
+            plSingleItems.find { it.action == TrackMenuAction.REMOVE_FROM_PLAYLIST }?.label
+        )
+        assertEquals(
+            "Add to Another Playlist",
+            plSingleItems.find { it.action == TrackMenuAction.ADD_TO_PLAYLIST }?.label
+        )
+
+        val plBatchState = playlistState.copy(
+            trackOptions = TrackOptionsMenuState(batchTracks = listOf(t1, t2), isVisible = true)
+        )
+        val plBatchItems = resolveTrackMenuItems(plBatchState)
+        assertEquals(true, plBatchItems.any { it.action == TrackMenuAction.REMOVE_FROM_PLAYLIST })
+        assertEquals(
+            "Remove All from Playlist (2)",
+            plBatchItems.find { it.action == TrackMenuAction.REMOVE_FROM_PLAYLIST }?.label
+        )
+
+        // 4. Favorites Context - Single & Batch
+        val favoritesState = MeloState(
+            screen = ScreenState.Library(libraryTab = LibraryTab.FAVORITES),
+            collections = CollectionsState(favorites = listOf(t1)),
+            trackOptions = TrackOptionsMenuState(track = t1, isVisible = true)
+        )
+        val favSingleItems = resolveTrackMenuItems(favoritesState)
+        assertEquals(
+            true,
+            favSingleItems.any { it.action == TrackMenuAction.REMOVE_FROM_FAVORITES })
+        assertEquals(
+            "Remove from Favorites",
+            favSingleItems.find { it.action == TrackMenuAction.REMOVE_FROM_FAVORITES }?.label
+        )
+
+        val favBatchState = favoritesState.copy(
+            trackOptions = TrackOptionsMenuState(batchTracks = listOf(t1, t2), isVisible = true)
+        )
+        val favBatchItems = resolveTrackMenuItems(favBatchState)
+        assertEquals(true, favBatchItems.any { it.action == TrackMenuAction.REMOVE_FROM_FAVORITES })
+        assertEquals(
+            "Remove All from Favorites (2)",
+            favBatchItems.find { it.action == TrackMenuAction.REMOVE_FROM_FAVORITES }?.label
+        )
+
+        // 5. Offline Context - Single & Batch
+        val offlineState = MeloState(
+            screen = ScreenState.Offline(),
+            trackOptions = TrackOptionsMenuState(track = t1, isVisible = true)
+        )
+        val offSingleItems = resolveTrackMenuItems(offlineState)
+        assertEquals(true, offSingleItems.any { it.action == TrackMenuAction.DELETE_DOWNLOAD })
+        assertEquals(
+            "Delete Download",
+            offSingleItems.find { it.action == TrackMenuAction.DELETE_DOWNLOAD }?.label
+        )
+
+        val offBatchState = offlineState.copy(
+            trackOptions = TrackOptionsMenuState(batchTracks = listOf(t1, t2), isVisible = true)
+        )
+        val offBatchItems = resolveTrackMenuItems(offBatchState)
+        assertEquals(true, offBatchItems.any { it.action == TrackMenuAction.DELETE_DOWNLOAD })
+        assertEquals(
+            "Delete All Downloads (2)",
+            offBatchItems.find { it.action == TrackMenuAction.DELETE_DOWNLOAD }?.label
+        )
+
+        // 6. Local Files Context - Single & Batch (DOWNLOAD_OFFLINE should be omitted)
+        val localFilesState = MeloState(
+            screen = ScreenState.Library(libraryTab = LibraryTab.LOCAL),
+            trackOptions = TrackOptionsMenuState(track = t1, isVisible = true)
+        )
+        val localSingleItems = resolveTrackMenuItems(localFilesState)
+        assertEquals(false, localSingleItems.any { it.action == TrackMenuAction.DOWNLOAD_OFFLINE })
+
+        val localBatchState = localFilesState.copy(
+            trackOptions = TrackOptionsMenuState(batchTracks = listOf(t1, t2), isVisible = true)
+        )
+        val localBatchItems = resolveTrackMenuItems(localBatchState)
+        assertEquals(false, localBatchItems.any { it.action == TrackMenuAction.DOWNLOAD_OFFLINE })
     }
 }
