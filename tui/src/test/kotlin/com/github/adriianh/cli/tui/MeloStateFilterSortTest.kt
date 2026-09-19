@@ -2,9 +2,15 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
+import com.github.adriianh.core.domain.model.PlaylistSortOrder
+import com.github.adriianh.core.domain.model.SortDirection
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackSortOrder
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
