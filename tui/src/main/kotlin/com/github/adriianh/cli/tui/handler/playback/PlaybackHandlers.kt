@@ -71,9 +71,9 @@ internal fun MeloScreen.playTrack(track: Track) {
                 getTrack(resolvedTrack.id)?.let { fetched ->
                     val updated = resolvedTrack.copy(
                         durationMs = if (fetched.durationMs > 0L) fetched.durationMs else resolvedTrack.durationMs,
-                        title = if (resolvedTrack.title.isNotBlank()) resolvedTrack.title else fetched.title,
+                        title = resolvedTrack.title.ifBlank { fetched.title },
                         artist = if (resolvedTrack.artist != "Unknown" && resolvedTrack.artist.isNotBlank()) resolvedTrack.artist else fetched.artist,
-                        album = if (resolvedTrack.album.isNotBlank()) resolvedTrack.album else fetched.album,
+                        album = resolvedTrack.album.ifBlank { fetched.album },
                         artworkUrl = resolvedTrack.artworkUrl ?: fetched.artworkUrl
                     )
                     resolvedTrack = updated
@@ -144,7 +144,7 @@ internal fun MeloScreen.playTrack(track: Track) {
                 break
             } catch (_: Exception) {
             }
-            if (url == null && !isAgeRestricted) delay(700L.milliseconds)
+            if (url == null) delay(700L.milliseconds)
             attempts++
         }
 
