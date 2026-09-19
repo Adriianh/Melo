@@ -2,21 +2,30 @@ package com.github.adriianh.cli.tui.handler.playback
 
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.component.TrackMenuAction
+import com.github.adriianh.cli.tui.component.resolveTrackMenuItems
 import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
+import com.github.adriianh.cli.tui.handler.removeFavoriteTrack
 import com.github.adriianh.cli.tui.handler.toggleFavorite
-import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
-    val isBatch = state.trackOptions.isBatch
-    val optionsCount = 6
+    val items = resolveTrackMenuItems(state)
+    val optionsCount = items.size
+    if (optionsCount == 0) {
+        state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
+        return EventResult.HANDLED
+    }
+
     when {
         event.code() == KeyCode.ESCAPE -> {
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
@@ -37,70 +46,120 @@ internal fun MeloScreen.handleTrackOptionsKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val actionIndex = state.trackOptions.selectedIndex
+            val safeIndex = state.trackOptions.selectedIndex.coerceIn(0, optionsCount - 1)
+            val selectedItem = items.getOrNull(safeIndex) ?: return EventResult.HANDLED
             state = state.copy(trackOptions = state.trackOptions.copy(isVisible = false))
-
-            if (isBatch) {
-                val batch = state.trackOptions.batchTracks
-                when (actionIndex) {
-                    0 -> {
-                        if (batch.isNotEmpty()) {
-                            playList(batch, 0)
-                            state = state.copy(selection = state.selection.clear())
-                        }
-                    }
-
-                    1 -> {
-                        batch.forEach { addToQueue(it) }
-                        state = state.copy(selection = state.selection.clear())
-                    }
-
-                    2 -> {
-                        batch.forEach { toggleFavorite(it) }
-                        state = state.copy(selection = state.selection.clear())
-                    }
-
-                    3 -> {
-                        openPlaylistPicker(batch)
-                    }
-
-                    4 -> {
-                        batch.forEach { downloadTrack(it, DownloadType.MANUAL) }
-                        state = state.copy(selection = state.selection.clear())
-                    }
-
-                    5 -> {
-                        state = state.copy(selection = state.selection.clear())
-                    }
-                }
-                return EventResult.HANDLED
-            }
-
-            val track = state.trackOptions.track ?: return handleGlobalShortcuts(event)
-            when (actionIndex) {
-                0 -> playTrack(track)
-                1 -> addToQueue(track)
-                2 -> toggleFavorite(track)
-                3 -> openPlaylistPicker(track)
-                4 -> {
-                    val offlineTrack = state.collections.offlineTracks.find { it.track.id == track.id }
-                    if (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED && offlineTrack.downloadType == DownloadType.MANUAL) {
-                        this@handleTrackOptionsKey.deleteDownloadedTrack(track.id)
-                    } else {
-                        downloadTrack(track, DownloadType.MANUAL)
-                    }
-                }
-
-                5 -> {
-                    state = state.copy(detail = state.detail.copy(selectedTrack = track, detailTab = DetailTab.SIMILAR))
-                    appRunner()?.focusManager()?.setFocus("similar-area")
-                    loadMoreSimilar()
-                }
-            }
+            executeTrackMenuAction(selectedItem.action)
             return EventResult.HANDLED
         }
     }
     return handleGlobalShortcuts(event)
+}
+
+internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
+    val isBatch = state.trackOptions.isBatch
+    val batch = state.trackOptions.batchTracks
+    val track = state.trackOptions.track
+
+    when (action) {
+        TrackMenuAction.PLAY -> {
+            if (isBatch) {
+                if (batch.isNotEmpty()) {
+                    playList(batch, 0)
+                    state = state.copy(selection = state.selection.clear())
+                }
+            } else if (track != null) {
+                playTrack(track)
+            }
+        }
+
+        TrackMenuAction.ADD_TO_QUEUE -> {
+            if (isBatch) {
+                batch.forEach { addToQueue(it) }
+                state = state.copy(selection = state.selection.clear())
+            } else if (track != null) {
+                addToQueue(track)
+            }
+        }
+
+        TrackMenuAction.ADD_TO_PLAYLIST -> {
+            if (isBatch) {
+                openPlaylistPicker(batch)
+            } else if (track != null) {
+                openPlaylistPicker(track)
+            }
+        }
+
+        TrackMenuAction.ADD_TO_FAVORITES, TrackMenuAction.TOGGLE_FAVORITE -> {
+            if (isBatch) {
+                batch.forEach { toggleFavorite(it) }
+                state = state.copy(selection = state.selection.clear())
+            } else if (track != null) {
+                toggleFavorite(track)
+            }
+        }
+
+        TrackMenuAction.REMOVE_FROM_FAVORITES -> {
+            if (isBatch) {
+                batch.forEach { removeFavoriteTrack(it) }
+                state = state.copy(selection = state.selection.clear())
+            } else if (track != null) {
+                removeFavoriteTrack(track)
+            }
+        }
+
+        TrackMenuAction.REMOVE_FROM_PLAYLIST -> {
+            val libraryScreen = state.screen as? ScreenState.Library
+            val pl = libraryScreen?.selectedPlaylist
+            if (pl != null) {
+                if (isBatch) {
+                    scope.launch {
+                        batch.forEach { removeTrackFromPlaylist(pl.id, it.id) }
+                    }
+                    state = state.copy(selection = state.selection.clear())
+                } else if (track != null) {
+                    scope.launch {
+                        removeTrackFromPlaylist(pl.id, track.id)
+                    }
+                }
+            }
+        }
+
+        TrackMenuAction.DOWNLOAD_OFFLINE -> {
+            if (isBatch) {
+                batch.forEach { downloadTrack(it, DownloadType.MANUAL) }
+                state = state.copy(selection = state.selection.clear())
+            } else if (track != null) {
+                downloadTrack(track, DownloadType.MANUAL)
+            }
+        }
+
+        TrackMenuAction.DELETE_DOWNLOAD -> {
+            if (isBatch) {
+                batch.forEach { deleteDownloadedTrack(it.id) }
+                state = state.copy(selection = state.selection.clear())
+            } else if (track != null) {
+                deleteDownloadedTrack(track.id)
+            }
+        }
+
+        TrackMenuAction.VIEW_SIMILAR -> {
+            if (track != null) {
+                state = state.copy(
+                    detail = state.detail.copy(
+                        selectedTrack = track,
+                        detailTab = DetailTab.SIMILAR
+                    )
+                )
+                appRunner()?.focusManager()?.setFocus("similar-area")
+                loadMoreSimilar()
+            }
+        }
+
+        TrackMenuAction.CLEAR_SELECTION -> {
+            state = state.copy(selection = state.selection.clear())
+        }
+    }
 }
 
 internal fun MeloScreen.openTrackOptions(track: Track) {
