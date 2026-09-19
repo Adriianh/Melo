@@ -50,7 +50,6 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         } else {
             val nextTab = when (s.homeTab) {
-                HomeTab.FEED -> HomeTab.RECENT
                 HomeTab.RECENT -> HomeTab.FAVORITES
                 HomeTab.FAVORITES -> HomeTab.FEED
             }

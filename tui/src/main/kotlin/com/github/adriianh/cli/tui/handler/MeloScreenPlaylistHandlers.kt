@@ -417,11 +417,6 @@ internal fun MeloScreen.openLocalPlaylistDetail(pl: Playlist, autoPlay: Boolean 
     }
 }
 
-internal fun MeloScreen.openPlaylistDetail(index: Int, autoPlay: Boolean = false) {
-    val pl = state.collections.playlists.getOrNull(index) ?: return
-    openLocalPlaylistDetail(pl, autoPlay)
-}
-
 internal fun MeloScreen.syncYouTubePlaylists() {
     val settings = settingsViewState.currentSettings
     val isLoggedIn = !settings.sessionCookies.isNullOrBlank()

@@ -89,10 +89,10 @@ enum class PlaylistSortOrder(val label: String) {
     fun next(): PlaylistSortOrder = entries[(ordinal + 1) % entries.size]
 }
 
-enum class LibrarySourceFilter(val label: String) {
-    ALL("All"),
-    LOCAL("Local"),
-    REMOTE("Cloud");
+enum class LibrarySourceFilter() {
+    ALL,
+    LOCAL,
+    REMOTE;
 
     fun next(): LibrarySourceFilter = entries[(ordinal + 1) % entries.size]
 }
