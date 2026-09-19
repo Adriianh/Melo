@@ -135,8 +135,6 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         is ScreenState.Search -> renderSearchScreen(
             state,
             resultList,
-            entityTracksList,
-            artistDashboardList,
             lyricsArea,
             similarArea,
             entityDescriptionArea,

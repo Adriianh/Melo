@@ -466,22 +466,52 @@ internal fun MeloScreen.loadLyrics() {
 }
 
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
+    val focusedId = appRunner()?.focusManager()?.focusedId()
+    if (focusedId != "detail-panel") {
+        return handleGlobalShortcuts(event)
+    }
+
     when {
-        event.isChar('1') -> {
+        event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB -> {
+            appRunner()?.focusManager()?.setFocus("results-panel")
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('i') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.INFO))
             return EventResult.HANDLED
         }
 
-        event.isChar('2') -> {
+        event.isCharIgnoreCase('l') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.LYRICS))
             if (state.detail.lyrics == null && !state.detail.isLoadingLyrics) loadLyrics()
-            appRunner()?.focusManager()?.setFocus("lyrics-area")
             return EventResult.HANDLED
         }
 
-        event.isChar('3') -> {
+        event.isCharIgnoreCase('s') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.SIMILAR))
-            appRunner()?.focusManager()?.setFocus("similar-area")
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_LEFT) -> {
+            val tabs = DetailTab.entries
+            val prevOrdinal = (state.detail.detailTab.ordinal - 1 + tabs.size) % tabs.size
+            val nextTab = tabs[prevOrdinal]
+            state = state.copy(detail = state.detail.copy(detailTab = nextTab))
+            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && !state.detail.isLoadingLyrics) {
+                loadLyrics()
+            }
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_RIGHT) -> {
+            val tabs = DetailTab.entries
+            val nextOrdinal = (state.detail.detailTab.ordinal + 1) % tabs.size
+            val nextTab = tabs[nextOrdinal]
+            state = state.copy(detail = state.detail.copy(detailTab = nextTab))
+            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && !state.detail.isLoadingLyrics) {
+                loadLyrics()
+            }
             return EventResult.HANDLED
         }
 
@@ -520,21 +550,27 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
-    val actualDetail =
-        state.screen as? ScreenState.EntityDetail ?: return handleGlobalShortcuts(event)
-
     val isDescFocused = appRunner()?.focusManager()?.focusedId() == "desc-area"
     if (isDescFocused) {
-        if (event.code() == KeyCode.ESCAPE || (event.modifiers()
+        if (event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB || (event.modifiers()
                 .alt() && event.code() == KeyCode.LEFT)
         ) {
-            val targetFocus =
-                if (actualDetail.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+            val targetFocus = when (val curScreen = state.screen) {
+                is ScreenState.Search -> "results-panel"
+                is ScreenState.EntityDetail -> {
+                    if (curScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+                }
+
+                else -> "results-panel"
+            }
             appRunner()?.focusManager()?.setFocus(targetFocus)
             return EventResult.HANDLED
         }
         return handleGlobalShortcuts(event)
     }
+
+    val actualDetail =
+        state.screen as? ScreenState.EntityDetail ?: return handleGlobalShortcuts(event)
 
     if (actualDetail.entity is SearchResult.Artist) {
         val items = actualDetail.artistDashboardItems

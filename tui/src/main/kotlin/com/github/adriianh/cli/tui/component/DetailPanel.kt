@@ -42,7 +42,7 @@ fun buildDetailPanel(
 ): Element {
     val track = state.detail.selectedTrack ?: return spacer()
 
-    val detailTabs = tabs("Info", "Lyrics", "Similar")
+    val detailTabs = tabs("i: Info", "l: Lyrics", "s: Similar")
         .selected(state.detail.detailTab.ordinal)
         .highlightColor(PRIMARY_COLOR)
         .divider(" │ ")
@@ -66,6 +66,7 @@ fun buildDetailPanel(
         detailTabs.length(1),
         layeredContent.fill()
     ).title(" Track Details ")
+        .bottomTitle(" [i/l/s] Tabs  [Esc] Back ")
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
@@ -167,7 +168,8 @@ fun buildEntityDetailPanel(
     }
 
     return panel(contentPart)
-        .title("Details")
+        .title(" Details ")
+        .bottomTitle(" [Esc] Back ")
         .id("desc-area")
         .focusable()
         .rounded()

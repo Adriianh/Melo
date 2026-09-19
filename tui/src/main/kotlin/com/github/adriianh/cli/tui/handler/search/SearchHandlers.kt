@@ -291,17 +291,11 @@ internal fun MeloScreen.performSearch() {
     }
 }
 
-internal fun MeloScreen.switchSearchTab(forward: Boolean) {
+internal fun MeloScreen.selectSearchTab(tab: SearchTab) {
     val actualState = state.screen as? ScreenState.Search ?: return
-    val entries = SearchTab.entries
-    val newOrdinal = if (forward) {
-        (actualState.tab.ordinal + 1) % entries.size
-    } else {
-        (actualState.tab.ordinal - 1 + entries.size) % entries.size
-    }
+    if (actualState.tab == tab) return
 
-    val nextTab = entries[newOrdinal]
-    val nextHasMore = when (nextTab) {
+    val nextHasMore = when (tab) {
         SearchTab.SONGS -> loadMoreTracks.hasMore(actualState.results.size)
         SearchTab.ALBUMS -> loadMoreAlbums.hasMore(actualState.albumResults.size)
         SearchTab.ARTISTS -> loadMoreArtists.hasMore(actualState.artistResults.size)
@@ -310,7 +304,7 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
 
     state = state.copy(
         screen = actualState.copy(
-            tab = nextTab,
+            tab = tab,
             selectedIndex = 0,
             hasMore = nextHasMore
         )
@@ -318,7 +312,7 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
     resultList.selected(0)
 
     val updatedState = state.screen as ScreenState.Search
-    if (nextTab == SearchTab.SONGS) {
+    if (tab == SearchTab.SONGS) {
         val firstTrack = updatedState.results.firstOrNull()
         state = state.copy(
             detail = state.detail.copy(
@@ -329,11 +323,10 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
         )
         if (firstTrack != null) debouncedLoadDetails(firstTrack)
     } else {
-        val firstEntity = when (updatedState.tab) {
+        val firstEntity = when (tab) {
             SearchTab.ALBUMS -> updatedState.albumResults.firstOrNull()
             SearchTab.ARTISTS -> updatedState.artistResults.firstOrNull()
             SearchTab.PLAYLISTS -> updatedState.playlistResults.firstOrNull()
-            else -> null
         }
         state = state.copy(
             detail = state.detail.copy(
@@ -344,6 +337,27 @@ internal fun MeloScreen.switchSearchTab(forward: Boolean) {
         )
         if (firstEntity != null) debouncedLoadEntityDetails(firstEntity)
     }
+
+    val isTabEmpty = when (tab) {
+        SearchTab.SONGS -> updatedState.results.isEmpty()
+        SearchTab.ALBUMS -> updatedState.albumResults.isEmpty()
+        SearchTab.ARTISTS -> updatedState.artistResults.isEmpty()
+        SearchTab.PLAYLISTS -> updatedState.playlistResults.isEmpty()
+    }
+    if (isTabEmpty && lastQuery.isNotBlank()) {
+        performSearch()
+    }
+}
+
+internal fun MeloScreen.switchSearchTab(forward: Boolean) {
+    val actualState = state.screen as? ScreenState.Search ?: return
+    val entries = SearchTab.entries
+    val newOrdinal = if (forward) {
+        (actualState.tab.ordinal + 1) % entries.size
+    } else {
+        (actualState.tab.ordinal - 1 + entries.size) % entries.size
+    }
+    selectSearchTab(entries[newOrdinal])
 }
 
 internal fun MeloScreen.loadMore() {
@@ -487,6 +501,11 @@ internal fun MeloScreen.handleSearchBarKey(event: KeyEvent): EventResult {
         }
     }
 
+    if (event.code() == KeyCode.TAB) {
+        focusResults()
+        return EventResult.HANDLED
+    }
+
     if (event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt()) {
         val str = event.string()
         if (str.isNotEmpty() && str[0] >= '\u007F') {
@@ -535,6 +554,49 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
         if (event.matches(Actions.MOVE_LEFT)) {
             switchSearchTab(false)
+            return EventResult.HANDLED
+        }
+    }
+
+    when {
+        event.isChar('1') -> {
+            selectSearchTab(SearchTab.SONGS)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('2') -> {
+            selectSearchTab(SearchTab.ALBUMS)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('3') -> {
+            selectSearchTab(SearchTab.ARTISTS)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('4') -> {
+            selectSearchTab(SearchTab.PLAYLISTS)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('/') -> {
+            appRunner()?.focusManager()?.setFocus("search-bar")
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            appRunner()?.focusManager()?.setFocus("search-bar")
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.TAB -> {
+            if (actualState.tab == SearchTab.SONGS && state.detail.selectedTrack != null) {
+                appRunner()?.focusManager()?.setFocus("detail-panel")
+            } else if (actualState.tab != SearchTab.SONGS && state.detail.selectedEntity != null) {
+                appRunner()?.focusManager()?.setFocus("desc-area")
+            } else {
+                appRunner()?.focusManager()?.setFocus("search-bar")
+            }
             return EventResult.HANDLED
         }
     }
@@ -687,14 +749,6 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         ) -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openPlaylistPicker(track)
-            return EventResult.HANDLED
-        }
-
-        actualState.tab == SearchTab.SONGS && event.matchesAction(
-            MeloAction.LYRICS,
-            settingsViewState.currentSettings
-        ) -> {
-            loadLyrics()
             return EventResult.HANDLED
         }
 

@@ -396,4 +396,19 @@ class MeloStateFilterSortTest {
         )
         assertEquals(listOf(261000L, 238000L, 228000L), durDesc.map { it.track.durationMs })
     }
+
+    @Test
+    fun testSearchAndDetailTabContracts() {
+        // SearchTab 1..4 contracts
+        assertEquals(
+            listOf(
+                SearchTab.SONGS,
+                SearchTab.ALBUMS,
+                SearchTab.ARTISTS,
+                SearchTab.PLAYLISTS
+            ), SearchTab.entries
+        )
+        // DetailTab contracts (i: Info, l: Lyrics, s: Similar)
+        assertEquals(listOf(DetailTab.INFO, DetailTab.LYRICS, DetailTab.SIMILAR), DetailTab.entries)
+    }
 }
