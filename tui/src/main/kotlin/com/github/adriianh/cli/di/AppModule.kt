@@ -147,6 +147,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
 
@@ -187,8 +188,9 @@ val appModule = module {
         }
     }
 
+    single(named("configDirPath")) { configDir }
+
     single { ArtworkRenderer(get()) }
-    single { ItunesApiClient(get()) }
     single {
         SpotifyAuthClient(
             httpClient = get(),
@@ -204,10 +206,6 @@ val appModule = module {
             sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
         )
     }
-    single { LyricsApiClient(get()) }
-    single { LyricsTranslator(get()) }
-    single { PipedApiClient(get()) }
-    single { DeezerApiClient(get()) }
 
     single<MusicProvider> {
         val itunes = ItunesMusicProvider(get())
@@ -219,11 +217,6 @@ val appModule = module {
         )
         if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
         MergedMusicProvider(providers)
-    }
-    single<MetadataProvider> {
-        val itunes = ItunesArtworkProvider(get())
-        val deezer = DeezerArtworkProvider(get())
-        CompositeArtworkProvider(itunes, deezer)
     }
     single<DiscoveryProvider> {
         CompositeDiscoveryProvider(
@@ -250,87 +243,14 @@ val appModule = module {
     single { DiscordRpcManager() }
 
     single<MeloDatabase> { DatabaseFactory.create() }
-    single<MusicRepository> { MusicRepositoryImpl(get(), get(), get(), get()) }
-    single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
-    single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
-    single<FavoritesRepository> { FavoritesRepositoryImpl(get()) }
     single<HistoryRepository> { HistoryRepositoryImpl(get()) }
-    single<SearchHistoryRepository> { SearchHistoryRepositoryImpl(get()) }
-    single<PlaylistRepository> { PlaylistRepositoryImpl(get()) }
-    single<SessionRepository> { SessionRepositoryImpl(get()) }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
-    single<SettingsRepository> { SettingsRepositoryImpl(configDir, get()) }
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
-    single<RemoteLibraryRepository> { RemoteLibraryRepositoryImpl() }
 
-    factory { SearchTracksUseCase(get()) }
-    factory { SearchAlbumsUseCase(get()) }
-    factory { SearchArtistsUseCase(get()) }
-    factory { SearchPlaylistsUseCase(get()) }
-    factory { LoadMoreTracksUseCase(get()) }
-    factory { LoadMoreAlbumsUseCase(get()) }
-    factory { LoadMoreArtistsUseCase(get()) }
-    factory { LoadMorePlaylistsUseCase(get()) }
-    factory { GetTrackUseCase(get()) }
-    factory { GetLyricsUseCase(get()) }
-    factory { GetSyncedLyricsUseCase(get()) }
-    factory { GetSimilarTracksUseCase(get()) }
-    factory { GetEntityDetailsUseCase(get()) }
-    factory { GetArtistTagsUseCase(get()) }
-    factory { GetFavoritesUseCase(get()) }
-    factory { AddFavoriteUseCase(get()) }
-    factory { RemoveFavoriteUseCase(get()) }
-    factory { IsFavoriteUseCase(get()) }
-    factory { GetRecentTracksUseCase(get()) }
-    factory { RecordPlayUseCase(get()) }
-    factory { GetStreamUseCase(get(), get()) }
-    factory { GetOfflineTracksUseCase(get()) }
-    factory { SyncOfflineTracksUseCase(get()) }
-    factory { DownloadTrackUseCase(get()) }
-    factory { DeleteDownloadedTrackUseCase(get()) }
-    factory { MarkTrackAccessedUseCase(get()) }
-    factory { AutoCleanupUseCase(get()) }
-    factory { ScanLocalTracksUseCase(get()) }
-    factory { EnrichLocalTracksUseCase(get(), get()) }
-    factory { UpdateTrackMetadataUseCase(get()) }
-    factory { GetPlaylistsUseCase(get()) }
-    factory { GetPlaylistTracksUseCase(get()) }
-    factory { CreatePlaylistUseCase(get()) }
-    factory { RenamePlaylistUseCase(get()) }
-    factory { DeletePlaylistUseCase(get()) }
-    factory { AddTrackToPlaylistUseCase(get()) }
-    factory { RemoveTrackFromPlaylistUseCase(get()) }
-    factory { SaveSessionUseCase(get()) }
-    factory { RestoreSessionUseCase(get()) }
-    factory { ClearSessionUseCase(get()) }
-    factory { UpdateNowPlayingUseCase(get()) }
-    factory { ScrobbleUseCase(get()) }
-    factory { AuthenticateLastFmUseCase(get()) }
-    factory { StartWebAuthUseCase(get()) }
-    factory { CompleteWebAuthUseCase(get()) }
-    factory { GetTopTracksUseCase(get()) }
-    factory { GetTopArtistsUseCase(get()) }
-    factory { GetListeningStatsUseCase(get()) }
-    factory { GetSettingsUseCase(get()) }
-    factory { UpdateSettingsUseCase(get()) }
-
-    factory { GetHomeUseCase(get()) }
-    factory { GetExploreUseCase(get()) }
-    factory { GetChartsUseCase(get()) }
-    factory { GetTrendingUseCase(get()) }
-    factory { GetRadioUseCase(get()) }
-
-    single<LoginRepository> { InnerTubeLoginRepository() }
-    factory { SetSessionCookiesUseCase(get()) }
-    factory { VerifySessionUseCase(get()) }
     single { YouTubeAuthService(get(), get(), get(), get()) }
 
     factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
-    factory { GetSearchHistoryUseCase(get()) }
-    factory { GetSearchSuggestionsUseCase(get()) }
-    factory { SaveSearchQueryUseCase(get()) }
-    factory { DeleteSearchQueryUseCase(get()) }
     factory {
         SearchInteractors(
             get(),
@@ -353,9 +273,6 @@ val appModule = module {
             get()
         )
     }
-    factory { GetLikedSongsUseCase(get()) }
-    factory { GetUserPlaylistsUseCase(get()) }
-    factory { ToggleLikeTrackUseCase(get()) }
     factory {
         LibraryInteractors(
             get(),

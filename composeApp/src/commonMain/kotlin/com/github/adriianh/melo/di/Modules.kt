@@ -160,53 +160,12 @@ val commonModule = module {
 val dataModule = module {
     single<MusicProvider> { InnerTubeMusicProvider() }
     single<DiscoveryProvider> { InnerTubeDiscoveryProvider() }
-    single<LoginRepository> { InnerTubeLoginRepository() }
 
-    singleOf(::ItunesApiClient)
-    singleOf(::PipedApiClient)
     singleOf(::PipedAudioProvider)
-    singleOf(::LyricsApiClient)
-    singleOf(::LyricsTranslator)
-    single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
-
-    single<MetadataProvider> {
-        CompositeArtworkProvider(
-            DeezerArtworkProvider(get()),
-            ItunesArtworkProvider(get())
-        )
-    }
-
-    single<MusicRepository> {
-        MusicRepositoryImpl(
-            musicProvider = get(),
-            audioProvider = getOrNull(),
-            discoveryProvider = getOrNull(),
-            metadataProvider = getOrNull()
-        )
-    }
-
-    singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
     single<HistoryRepository> {
         HistoryRepositoryImpl(
             database = get(),
             settingsRepository = get()
-        )
-    }
-    singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
-    singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
-    singleOf(::StreamCacheRepositoryImpl) { bind<StreamCacheRepository>() }
-    singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
-    singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
-    single<SettingsRepository> {
-        SettingsRepositoryImpl(
-            configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
-        )
-    }
-    single<HomeFeedCache> {
-        HomeFeedCacheImpl(
-            configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
         )
     }
 
@@ -248,75 +207,6 @@ val dataModule = module {
         )
     }
     singleOf(::PlatformUpdateInstaller)
-}
-
-val useCaseModule = module {
-    singleOf(::GetStreamUseCase)
-    singleOf(::RecordPlayUseCase)
-    singleOf(::GetRecentTracksUseCase)
-    singleOf(::GetLyricsUseCase)
-    singleOf(::GetSyncedLyricsUseCase)
-    singleOf(::GetTrackLyricsUseCase)
-    singleOf(::TranslateLyricsUseCase)
-    singleOf(::SearchTracksUseCase)
-    singleOf(::SearchAlbumsUseCase)
-    singleOf(::SearchArtistsUseCase)
-    singleOf(::SearchPlaylistsUseCase)
-    singleOf(::SearchVideosUseCase)
-    singleOf(::SearchSummaryUseCase)
-    singleOf(::GetHomeUseCase)
-    singleOf(::GetExploreUseCase)
-    singleOf(::GetChartsUseCase)
-    singleOf(::GetMoodAndGenresUseCase)
-    singleOf(::GetTrendingUseCase)
-    singleOf(::GetRadioUseCase)
-    singleOf(::GetArtistRadioUseCase)
-    singleOf(::GetRelatedTracksUseCase)
-    singleOf(::GetSettingsUseCase)
-    singleOf(::UpdateSettingsUseCase)
-    singleOf(::SetSessionCookiesUseCase)
-    singleOf(::VerifySessionUseCase)
-    singleOf(::GetAccountProfileUseCase)
-    singleOf(::GetUserPlaylistsUseCase)
-    singleOf(::GetPlaylistsUseCase)
-    singleOf(::GetPlaylistTracksUseCase)
-    singleOf(::CreatePlaylistUseCase)
-    singleOf(::RenamePlaylistUseCase)
-    singleOf(::DeletePlaylistUseCase)
-    singleOf(::AddTrackToPlaylistUseCase)
-    singleOf(::AddTracksToPlaylistUseCase)
-    singleOf(::RemoveTrackFromPlaylistUseCase)
-    singleOf(::ReorderPlaylistTracksUseCase)
-    singleOf(::GetPlaylistIdsForTrackUseCase)
-    singleOf(::GetLikedSongsUseCase)
-    singleOf(::GetUserArtistsUseCase)
-    singleOf(::GetUserAlbumsUseCase)
-    singleOf(::GetRemoteHistoryUseCase)
-    singleOf(::ObserveLibraryUpdatesUseCase)
-    singleOf(::ToggleLikeTrackUseCase)
-    singleOf(::ToggleLikeAlbumUseCase)
-    singleOf(::ToggleLikePlaylistUseCase)
-    singleOf(::SubscribeChannelUseCase)
-    singleOf(::GetEntityDetailsUseCase)
-    singleOf(::GetSearchHistoryUseCase)
-    singleOf(::SaveSearchQueryUseCase)
-    singleOf(::DeleteSearchQueryUseCase)
-    singleOf(::GetSearchSuggestionsUseCase)
-    singleOf(::BrowseCategoryUseCase)
-    singleOf(::GetOfflineTracksUseCase)
-    singleOf(::DownloadTrackUseCase)
-    singleOf(::DeleteDownloadedTrackUseCase)
-    singleOf(::ScanLocalTracksUseCase)
-    singleOf(::EnrichLocalTracksUseCase)
-    singleOf(::SyncOfflineTracksUseCase)
-    singleOf(::AutoCleanupUseCase)
-    singleOf(::MarkTrackAccessedUseCase)
-    singleOf(::UpdateTrackMetadataUseCase)
-    singleOf(::CheckForUpdateUseCase)
-    singleOf(::DownloadUpdateUseCase)
-    singleOf(::SaveSessionUseCase)
-    singleOf(::RestoreSessionUseCase)
-    singleOf(::ClearSessionUseCase)
 }
 
 /**

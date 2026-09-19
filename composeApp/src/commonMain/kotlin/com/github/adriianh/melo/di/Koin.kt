@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.data.di.sharedModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -13,7 +14,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) =
         modules(
             commonModule,
             dataModule,
-            useCaseModule,
+            sharedModule,
             viewModelModule,
             platformModule
         )
