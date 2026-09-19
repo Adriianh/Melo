@@ -451,10 +451,18 @@ private fun renderTracksDetail(
             text("[Enter] Finish  [Esc] Clear").fg(TEXT_DIM).ellipsis(),
             spacer()
         ).length(1)
+    } else if (state.selection.isNotEmpty) {
+        row(
+            spacer(),
+            text("[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [Esc] Clear")
+                .fg(TEXT_DIM)
+                .ellipsis(),
+            spacer()
+        ).length(1)
     } else {
         row(
             spacer(),
-            text("[Enter] Play  [Space] All  [m] Opt$bioHint  [Esc] Back")
+            text("[Enter] Play  [v] Select  [m] Opt$bioHint  [Esc] Back")
                 .fg(TEXT_DIM)
                 .ellipsis(),
             spacer()
@@ -518,17 +526,38 @@ private fun renderTracksDetail(
         else track.title
         val isFav = state.isFavoriteTrack(track)
         val isTrackPlayable = state.isPlayable(track)
-        row(
-            text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2),
-            text("${index + 1}").dim().length(3),
+        val isBatchSelected = state.selection.isSelected(track.id)
+        val rowElements = mutableListOf<Element>()
+        rowElements.add(text(nowPlayingIndicator).fg(PRIMARY_COLOR).length(2))
+        if (state.selection.isNotEmpty) {
+            rowElements.add(
+                text(if (isBatchSelected) "[x] " else "[ ] ")
+                    .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                    .length(4)
+            )
+        }
+        rowElements.add(text("${index + 1}").dim().length(3))
+        rowElements.add(
             text(titleText).fg(if (isTrackPlayable) TEXT_PRIMARY else TEXT_DIM)
-                .apply { if (!isSelected) ellipsisMiddle() }.fill(),
-            text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
-            text(duration).fg(TEXT_DIM).length(6),
+                .apply { if (!isSelected) ellipsisMiddle() }.fill()
         )
+        rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+        rowElements.add(text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2))
+        rowElements.add(text(duration).fg(TEXT_DIM).length(6))
+        row(*rowElements.toTypedArray())
     }
     entityTracksList.elements(*items.toTypedArray())
+
+    val headerElements = mutableListOf<Element>()
+    headerElements.add(text("").length(2))
+    if (state.selection.isNotEmpty) {
+        headerElements.add(text("Sel ").dim().length(4))
+    }
+    headerElements.add(text("#").dim().length(3))
+    headerElements.add(text("Title").dim().fill())
+    headerElements.add(text("Artist").dim().percent(25))
+    headerElements.add(text(ICON_HEART).dim().length(2))
+    headerElements.add(text("Time").dim().length(6))
 
     val entityPanel = panel(
         column(
@@ -542,14 +571,7 @@ private fun renderTracksDetail(
             text("").length(1),
             toolbar,
             text("").length(1),
-            row(
-                text("").length(2),
-                text("#").dim().length(3),
-                text("Title").dim().fill(),
-                text("Artist").dim().percent(25),
-                text(ICON_HEART).dim().length(2),
-                text("Time").dim().length(6),
-            ).margin(Margin.horizontal(1)),
+            row(*headerElements.toTypedArray()).margin(Margin.horizontal(1)),
             text("").length(1),
             entityTracksList.fill(),
             text("").length(1),

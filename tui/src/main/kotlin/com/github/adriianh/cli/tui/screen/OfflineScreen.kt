@@ -84,28 +84,43 @@ fun renderOfflineScreen(
             val track = offlineTrack.track
             val isPlaying = track.id == state.player.nowPlaying?.id
             val typeLabel = if (offlineTrack.downloadType == DownloadType.MANUAL) " [M]" else " [C]"
-            row(
-                text("$typeLabel ").fg(TEXT_DIM).length(4),
-                text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
-                text("${index + 1}").dim().length(3),
-                text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+            val isBatchSelected = state.selection.isSelected(track.id)
+            val rowElements = mutableListOf<Element>()
+            rowElements.add(text("$typeLabel ").fg(TEXT_DIM).length(4))
+            rowElements.add(
+                text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2)
+            )
+            if (state.selection.isNotEmpty) {
+                rowElements.add(
+                    text(if (isBatchSelected) "[x] " else "[ ] ")
+                        .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                        .length(4)
+                )
+            }
+            rowElements.add(text("${index + 1}").dim().length(3))
+            rowElements.add(text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill())
+            rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+            rowElements.add(
                 text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
                     TEXT_DIM
                 ).length(6)
             )
+            row(*rowElements.toTypedArray())
         }
         offlineList.elements(*items.toTypedArray())
         offlineList.selected(screen.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)))
 
-        val header = row(
-            text("").length(4),
-            text("").length(2),
-            text("#").dim().length(3),
-            text("Title").dim().fill(),
-            text("Artist").dim().percent(25),
-            text("Time").dim().length(6)
-        ).margin(Margin.horizontal(1))
+        val headerElements = mutableListOf<Element>()
+        headerElements.add(text("").length(4))
+        headerElements.add(text("").length(2))
+        if (state.selection.isNotEmpty) {
+            headerElements.add(text("Sel ").dim().length(4))
+        }
+        headerElements.add(text("#").dim().length(3))
+        headerElements.add(text("Title").dim().fill())
+        headerElements.add(text("Artist").dim().percent(25))
+        headerElements.add(text("Time").dim().length(6))
+        val header = row(*headerElements.toTypedArray()).margin(Margin.horizontal(1))
 
         column(
             toolbar,
@@ -118,8 +133,10 @@ fun renderOfflineScreen(
 
     val helpText = if (screen.isTyping) {
         "[Enter] finish search  [Esc] clear/cancel  [Backspace] delete"
+    } else if (state.selection.isNotEmpty) {
+        "[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [d] Delete  [Esc] Clear"
     } else {
-        "[Enter] play  [Space] pause  [m] options  [d] delete  [Tab/s] filter  [o] sort  [O] direction  [Ctrl+F] search"
+        "[Enter] play  [Space] pause  [v] select  [m] options  [d] delete  [Tab/s] filter  [o] sort  [Ctrl+F] search"
     }
     val countTitle = if (filteredDownloads.size != screen.downloads.size)
         "(${filteredDownloads.size}/${screen.downloads.size})"

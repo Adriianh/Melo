@@ -65,15 +65,17 @@ fun renderLibraryScreen(
 
     val hints = if (actualState.isTyping) {
         "[Enter] Finish  [Esc] Clear"
+    } else if (state.selection.isNotEmpty && (actualState.libraryTab == LibraryTab.FAVORITES || actualState.libraryTab == LibraryTab.LOCAL || actualState.isInPlaylistDetail)) {
+        "[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [Esc] Clear"
     } else {
         when (actualState.libraryTab) {
-            LibraryTab.FAVORITES -> "[Enter] Play  [m] Options  [f] Remove  [1..3] Tabs"
+            LibraryTab.FAVORITES -> "[Enter] Play  [m] Options  [v] Select  [f] Remove  [1..3] Tabs"
             LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
-                "[Enter] Play  [m] Options  [d] Remove  [Esc] Back"
+                "[Enter] Play  [m] Options  [v] Select  [d] Remove  [Esc] Back"
             else
                 "[Enter] Open  [n] New  [r] Rename  [d] Delete  [1..3] Tabs"
 
-            LibraryTab.LOCAL -> "[Enter] Play  [m] Options  [Tab] Folder  [r] Rescan  [1..3] Tabs"
+            LibraryTab.LOCAL -> "[Enter] Play  [m] Options  [v] Select  [Tab] Folder  [r] Rescan  [1..3] Tabs"
         }
     }
 
@@ -176,28 +178,44 @@ private fun buildFavoritesContent(
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
         val providerColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
-        row(
-            text("${item.icon} ").fg(providerColor).length(2),
-            text(indicator).fg(PRIMARY_COLOR).length(2),
-            text("${index + 1}").dim().length(3),
-            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
-            text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
-            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
-                .length(6),
+        val isBatchSelected = state.selection.isSelected(track.id)
+        val rowElements = mutableListOf<Element>()
+        rowElements.add(text("${item.icon} ").fg(providerColor).length(2))
+        rowElements.add(text(indicator).fg(PRIMARY_COLOR).length(2))
+        if (state.selection.isNotEmpty) {
+            rowElements.add(
+                text(if (isBatchSelected) "[x] " else "[ ] ")
+                    .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                    .length(4)
+            )
+        }
+        rowElements.add(text("${index + 1}").dim().length(3))
+        rowElements.add(
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill()
         )
+        rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+        rowElements.add(text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25))
+        rowElements.add(
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                TEXT_DIM
+            ).length(6)
+        )
+        row(*rowElements.toTypedArray())
     }
     favoritesList.elements(*items.toTypedArray())
 
-    val header = row(
-        text("").length(2),
-        text("").length(2),
-        text("#").dim().length(3),
-        text("Title").dim().fill(),
-        text("Artist").dim().percent(25),
-        text("Album").dim().percent(25),
-        text("Time").dim().length(6),
-    ).margin(Margin.horizontal(1))
+    val headerElements = mutableListOf<Element>()
+    headerElements.add(text("").length(2))
+    headerElements.add(text("").length(2))
+    if (state.selection.isNotEmpty) {
+        headerElements.add(text("Sel ").dim().length(4))
+    }
+    headerElements.add(text("#").dim().length(3))
+    headerElements.add(text("Title").dim().fill())
+    headerElements.add(text("Artist").dim().percent(25))
+    headerElements.add(text("Album").dim().percent(25))
+    headerElements.add(text("Time").dim().length(6))
+    val header = row(*headerElements.toTypedArray()).margin(Margin.horizontal(1))
 
     return column(
         toolbar,
@@ -378,24 +396,40 @@ private fun buildPlaylistDetailContent(
     val items = filtered.mapIndexed { index, track ->
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
-        row(
-            text(indicator).fg(PRIMARY_COLOR).length(2),
-            text("${index + 1}").dim().length(3),
-            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
-            text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(TEXT_DIM)
-                .length(6),
+        val isBatchSelected = state.selection.isSelected(track.id)
+        val rowElements = mutableListOf<Element>()
+        rowElements.add(text(indicator).fg(PRIMARY_COLOR).length(2))
+        if (state.selection.isNotEmpty) {
+            rowElements.add(
+                text(if (isBatchSelected) "[x] " else "[ ] ")
+                    .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                    .length(4)
+            )
+        }
+        rowElements.add(text("${index + 1}").dim().length(3))
+        rowElements.add(
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill()
         )
+        rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+        rowElements.add(
+            text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                TEXT_DIM
+            ).length(6)
+        )
+        row(*rowElements.toTypedArray())
     }
     tracksList.elements(*items.toTypedArray())
 
-    val header = row(
-        text("").length(2),
-        text("#").dim().length(3),
-        text("Title").dim().fill(),
-        text("Artist").dim().percent(25),
-        text("Time").dim().length(6),
-    ).margin(Margin.horizontal(1))
+    val headerElements = mutableListOf<Element>()
+    headerElements.add(text("").length(2))
+    if (state.selection.isNotEmpty) {
+        headerElements.add(text("Sel ").dim().length(4))
+    }
+    headerElements.add(text("#").dim().length(3))
+    headerElements.add(text("Title").dim().fill())
+    headerElements.add(text("Artist").dim().percent(25))
+    headerElements.add(text("Time").dim().length(6))
+    val header = row(*headerElements.toTypedArray()).margin(Margin.horizontal(1))
 
     return column(
         titleRow,
@@ -512,25 +546,38 @@ private fun buildLocalContent(
         val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
-        row(
-            text(indicator).fg(PRIMARY_COLOR).length(2),
-            text("${index + 1}").dim().length(3),
-            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
-            text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-            text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
-            text(duration).fg(TEXT_DIM).length(6),
+        val isBatchSelected = state.selection.isSelected(track.id)
+        val rowElements = mutableListOf<Element>()
+        rowElements.add(text(indicator).fg(PRIMARY_COLOR).length(2))
+        if (state.selection.isNotEmpty) {
+            rowElements.add(
+                text(if (isBatchSelected) "[x] " else "[ ] ")
+                    .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                    .length(4)
+            )
+        }
+        rowElements.add(text("${index + 1}").dim().length(3))
+        rowElements.add(
+            text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill()
         )
+        rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+        rowElements.add(text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25))
+        rowElements.add(text(duration).fg(TEXT_DIM).length(6))
+        row(*rowElements.toTypedArray())
     }
     localLibraryList.elements(*items.toTypedArray())
 
-    val header = row(
-        text("").length(2),
-        text("#").dim().length(3),
-        text("Title").dim().fill(),
-        text("Artist").dim().percent(25),
-        text("Album").dim().percent(25),
-        text("Time").dim().length(6),
-    ).margin(Margin.horizontal(1))
+    val headerElements = mutableListOf<Element>()
+    headerElements.add(text("").length(2))
+    if (state.selection.isNotEmpty) {
+        headerElements.add(text("Sel ").dim().length(4))
+    }
+    headerElements.add(text("#").dim().length(3))
+    headerElements.add(text("Title").dim().fill())
+    headerElements.add(text("Artist").dim().percent(25))
+    headerElements.add(text("Album").dim().percent(25))
+    headerElements.add(text("Time").dim().length(6))
+    val header = row(*headerElements.toTypedArray()).margin(Margin.horizontal(1))
 
     return column(
         filterTabs ?: text(""),

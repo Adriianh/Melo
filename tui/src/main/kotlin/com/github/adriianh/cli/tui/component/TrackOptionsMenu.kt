@@ -12,7 +12,11 @@ import com.github.adriianh.core.domain.model.DownloadType
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -28,6 +32,17 @@ class TrackOptionsOverlay(
 ) : Element {
 
     private fun getOptions(state: MeloState): List<String> {
+        if (state.trackOptions.isBatch) {
+            val count = state.trackOptions.batchTracks.size
+            return listOf(
+                "Play Selection ($count)",
+                "Add All to Queue",
+                "Toggle Favorite",
+                "Add All to Playlist",
+                "Download All for Offline",
+                "Clear Selection"
+            )
+        }
         val track = state.trackOptions.track
         val offlineTrack = state.collections.offlineTracks.find { it.track.id == track?.id }
         val downloadLabel = when (offlineTrack?.downloadStatus) {
@@ -47,10 +62,12 @@ class TrackOptionsOverlay(
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
-        val track = state.trackOptions.track ?: return
+        val isBatch = state.trackOptions.isBatch
+        val track = state.trackOptions.track
+        if (!isBatch && track == null) return
         val options = getOptions(state)
 
-        val overlayW = (area.width() * 0.4).toInt().coerceAtLeast(40)
+        val overlayW = (area.width() * 0.45).toInt().coerceAtLeast(42)
         val overlayH = options.size + 6
         val overlayX = area.x() + (area.width() - overlayW) / 2
         val overlayY = area.y() + (area.height() - overlayH) / 2
@@ -59,7 +76,12 @@ class TrackOptionsOverlay(
         frame.buffer().clear(overlayArea)
 
         val hint = "[↑↓] navigate   [Enter] select   [Esc] close"
-        val subtitle = "${track.title} — ${track.artist}"
+        val subtitle = if (isBatch) {
+            "${state.trackOptions.batchTracks.size} tracks selected"
+        } else {
+            "${track?.title} — ${track?.artist}"
+        }
+        val panelTitle = if (isBatch) "Batch Options" else "Track Options"
 
         val items = options.mapIndexed { index, option ->
             val isSelected = index == state.trackOptions.selectedIndex
@@ -78,7 +100,7 @@ class TrackOptionsOverlay(
         )
 
         panel(content)
-            .title("Track Options")
+            .title(panelTitle)
             .rounded()
             .borderColor(BORDER_DEFAULT)
             .focusedBorderColor(BORDER_FOCUSED)
