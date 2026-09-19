@@ -64,16 +64,16 @@ fun renderLibraryScreen(
     }
 
     val hints = if (actualState.isTyping) {
-        "[Enter] finish  [Esc] clear  [Backspace] del"
+        "[Enter] Finish  [Esc] Clear"
     } else {
         when (actualState.libraryTab) {
-            LibraryTab.FAVORITES -> "[Enter] play  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [M] opt  [F] remove  [Q] queue  [1..3] tabs"
+            LibraryTab.FAVORITES -> "[Enter] Play  [m] Options  [f] Remove  [1..3] Tabs"
             LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
-                "[Enter] play  [Ctrl+F] search  [O] sort  [Shift+O] dir  [Q] queue  [M] opt  [D] remove  [Esc] back"
+                "[Enter] Play  [m] Options  [d] Remove  [Esc] Back"
             else
-                "[Enter] open  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
+                "[Enter] Open  [n] New  [r] Rename  [d] Delete  [1..3] Tabs"
 
-            LibraryTab.LOCAL -> "[Enter] play  [Ctrl+F] search  [Tab] folder  [O] sort  [Shift+O] dir  [R] rescan  [F] fav  [Q] queue  [1..3] tabs"
+            LibraryTab.LOCAL -> "[Enter] Play  [m] Options  [Tab] Folder  [r] Rescan  [1..3] Tabs"
         }
     }
 

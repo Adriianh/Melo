@@ -326,9 +326,11 @@ private fun renderArtistDetail(
     artistDashboardList.elements(*listItems.toTypedArray())
     artistDashboardList.onKeyEvent(onEntityDetailKeyEvent)
 
+    val hasBio = !artist.description.isNullOrBlank()
+    val bioHint = if (hasBio) "  [Tab] Bio" else ""
     val footer = row(
         spacer(),
-        text("[Enter] Select/Play  [↑↓←→] Navigate  [Space] Play  [Q] Queue  [F] Favorite  [D] Bio  [Esc] Back")
+        text("[Enter] Select  [Space] Play  [m] Opt$bioHint  [Esc] Back")
             .fg(TEXT_DIM)
             .ellipsis(),
         spacer()
@@ -439,16 +441,20 @@ private fun renderTracksDetail(
 
     val subtitleText = detail.subtitle?.let { " • $it" } ?: ""
 
+    val hasBio =
+        !detail.description.isNullOrBlank() || (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true || (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true
+    val bioHint = if (hasBio) "  [Tab] Details" else ""
+
     val footer = if (detail.isTyping) {
         row(
             spacer(),
-            text("[Enter] finish  [Esc] clear  [Backspace] del").fg(TEXT_DIM).ellipsis(),
+            text("[Enter] Finish  [Esc] Clear").fg(TEXT_DIM).ellipsis(),
             spacer()
         ).length(1)
     } else {
         row(
             spacer(),
-            text("[Enter] Play  [Ctrl+F] Search  [O] Sort  [Shift+O] Dir  [Space] Play All  [Q] Queue  [F] Favorite  [Esc] Back  [D] Bio")
+            text("[Enter] Play  [Space] All  [m] Opt$bioHint  [Esc] Back")
                 .fg(TEXT_DIM)
                 .ellipsis(),
             spacer()

@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
@@ -688,12 +689,26 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 }
             }
 
-            event.isCharIgnoreCase('d') && listSize > 0 -> {
+            (event.code() == KeyCode.TAB || event.isCharIgnoreCase('d')) && listSize > 0 -> {
                 val desc = actualDetail.entity.description
                 if (!desc.isNullOrEmpty()) {
                     appRunner()?.focusManager()?.setFocus("desc-area")
                     return EventResult.HANDLED
                 }
+            }
+
+            listSize > 0 && event.isCharIgnoreCase('m') -> {
+                val arrayItem = items.getOrNull(artistDashboardList.selected())
+                var item = if (arrayItem is Pair<*, *>) {
+                    if (actualDetail.artistDashboardX == 1) arrayItem.second else arrayItem.first
+                } else arrayItem
+                if (item is SearchResult.ArtistSection) {
+                    val currentY = actualDetail.artistDashboardPositions[item.title] ?: 0
+                    item = item.items.getOrNull(currentY) ?: return EventResult.HANDLED
+                }
+                (item as? Track
+                    ?: (item as? SearchResult.Song)?.track)?.let { openTrackOptions(it) }
+                return EventResult.HANDLED
             }
 
             event.code() == KeyCode.ENTER && listSize > 0 -> {
@@ -973,6 +988,11 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings
         ) -> {
             tracks.getOrNull(entityTracksList.selected())?.let { openPlaylistPicker(it) }
+            return EventResult.HANDLED
+        }
+
+        listSize > 0 && event.isCharIgnoreCase('m') -> {
+            tracks.getOrNull(entityTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
     }
