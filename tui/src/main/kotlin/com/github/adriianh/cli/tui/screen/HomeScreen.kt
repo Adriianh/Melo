@@ -85,7 +85,7 @@ fun renderHomeScreen(
         s.homeTab == HomeTab.FEED -> when (s.feedFocus) {
             HomeFeedFocus.CHIPS -> "[Tab] Focus  [←→] Moods  [Enter] Apply filter  [↓] Sections  [R] Refresh"
             HomeFeedFocus.SECTIONS -> "[Tab] Focus  [↑↓] Sections  [→/Enter] Items  [[/]] Jump  [1..3] Tabs  [R] Refresh"
-            HomeFeedFocus.ITEMS -> "[Tab] Focus  [↑↓] Move  [←/Esc] Sections  [[/]] Jump  [Enter] Play  [Q] Queue  [F] Fav  [O] Opt"
+            HomeFeedFocus.ITEMS -> "[Tab] Focus  [↑↓] Move  [←/Esc] Sections  [[/]] Jump  [Enter] Play  [Q] Queue  [F] Fav  [M] Options"
         }
 
         else -> "[1..3] Tabs  [Tab] Switch Tab  [↑↓] Move  [Enter] Play  [Q] Queue  [F] Favorite  [R] Refresh"

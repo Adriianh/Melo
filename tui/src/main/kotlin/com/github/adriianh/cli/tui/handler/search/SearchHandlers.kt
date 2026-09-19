@@ -698,9 +698,7 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && (event.isCharIgnoreCase('m') || event.isCharIgnoreCase(
-            'o'
-        )) -> {
+        actualState.tab == SearchTab.SONGS && event.isCharIgnoreCase('m') -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED

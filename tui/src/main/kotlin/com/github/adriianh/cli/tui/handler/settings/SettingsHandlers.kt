@@ -44,8 +44,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                                 isPickingDirectory = false,
                                 currentSettings = newSettings
                             )
-                            state = state.copy()
-                            scope.launch { updateSettings(newSettings) }
+                            scope.launch {
+                                updateSettings(newSettings)
+                                loadLocalTracks()
+                            }
                         } else {
                             settingsViewState = settingsViewState.copy(isPickingDirectory = false)
                             state = state.copy()
@@ -157,7 +159,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
             if (item == SettingsItem.LOCAL_FOLDERS && event.isCharIgnoreCase('d')) {
                 val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = emptyList())
                 settingsViewState = settingsViewState.copy(currentSettings = newSettings)
-                scope.launch { updateSettings(newSettings) }
+                scope.launch {
+                    updateSettings(newSettings)
+                    loadLocalTracks()
+                }
                 return EventResult.HANDLED
             }
             return EventResult.UNHANDLED

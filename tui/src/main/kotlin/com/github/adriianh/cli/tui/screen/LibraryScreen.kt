@@ -67,13 +67,13 @@ fun renderLibraryScreen(
         "[Enter] finish  [Esc] clear  [Backspace] del"
     } else {
         when (actualState.libraryTab) {
-            LibraryTab.FAVORITES -> "[Enter] play  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [F] remove  [Q] queue  [1..3] tabs"
+            LibraryTab.FAVORITES -> "[Enter] play  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [M] opt  [F] remove  [Q] queue  [1..3] tabs"
             LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
-                "[Enter] play  [Ctrl+F] search  [O] sort  [Shift+O] dir  [Q] queue  [D] remove  [Esc] back"
+                "[Enter] play  [Ctrl+F] search  [O] sort  [Shift+O] dir  [Q] queue  [M] opt  [D] remove  [Esc] back"
             else
                 "[Enter] open  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
 
-            LibraryTab.LOCAL -> "[Tab/f/l] directory  [Ctrl+F] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
+            LibraryTab.LOCAL -> "[Enter] play  [Ctrl+F] search  [Tab] folder  [O] sort  [Shift+O] dir  [R] rescan  [F] fav  [Q] queue  [1..3] tabs"
         }
     }
 
@@ -426,22 +426,53 @@ private fun buildLocalContent(
         row(*tabs.toTypedArray())
     } else null
 
-    val filtered = actualState.localTracks.filter { track ->
-        val matchesTab = if (actualState.localFilterIndex == 0) true else {
+    val tabFiltered = actualState.localTracks.filter { track ->
+        if (actualState.localFilterIndex == 0) true else {
             val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
-            selectedPath != null && track.id.startsWith("local:$selectedPath")
+            if (selectedPath != null) {
+                val clean = selectedPath.trimEnd('/')
+                track.id.startsWith("local:$clean/") || track.id == "local:$clean"
+            } else false
         }
-
-        val matchesSearch = if (actualState.searchQuery.isEmpty()) true else {
-            val q = actualState.searchQuery.lowercase()
-            track.title.lowercase().contains(q) || track.artist.lowercase().contains(q)
-        }
-        matchesTab && matchesSearch
     }
+
+    val filtered = filterAndSortTracks(
+        tracks = tabFiltered,
+        sortOrder = actualState.localSortOrder,
+        sortDirection = actualState.localSortDirection,
+        query = actualState.localSearchQuery
+    )
+
+    val isTyping = actualState.isTyping && actualState.libraryTab == LibraryTab.LOCAL
+    val searchBadge = if (isTyping) {
+        text(" [Search: ${actualState.localSearchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (actualState.localSearchQuery.isNotBlank()) {
+        text(" [Search: \"${actualState.localSearchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+    }
+
+    val sortBadge = text(" [Sort: ${actualState.localSortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge =
+        text(" [${actualState.localSortDirection.symbol} ${actualState.localSortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY
+        )
+
+    val toolbar = row(
+        searchBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filtered.size} tracks").dim()
+    ).margin(Margin.horizontal(1))
 
     if (actualState.isLoading) {
         return column(
             filterTabs ?: text(""),
+            if (filterTabs != null) text("").length(1) else text(""),
+            toolbar,
             text("").length(1),
             spacer(),
             text("Scanning local files...").dim().centered(),
@@ -453,10 +484,26 @@ private fun buildLocalContent(
         val hasPaths = allPaths.isNotEmpty()
         return column(
             filterTabs ?: text(""),
+            if (filterTabs != null) text("").length(1) else text(""),
+            toolbar,
             text("").length(1),
             spacer(),
             text(if (hasPaths) "  No audio files found in configured folders" else "  No local folders configured").fg(TEXT_SECONDARY).centered(),
             text("  Configure folders in Settings -> Storage").fg(TEXT_DIM).centered(),
+            spacer(),
+        )
+    }
+
+    if (filtered.isEmpty()) {
+        localLibraryList.elements()
+        return column(
+            filterTabs ?: text(""),
+            if (filterTabs != null) text("").length(1) else text(""),
+            toolbar,
+            text("").length(1),
+            spacer(),
+            text("  No local tracks matching filter").fg(TEXT_SECONDARY).centered(),
+            text("  Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
             spacer(),
         )
     }
@@ -470,23 +517,26 @@ private fun buildLocalContent(
             text("${index + 1}").dim().length(3),
             text(track.title).fg(if (isPlayable) TEXT_PRIMARY else TEXT_DIM).ellipsisMiddle().fill(),
             text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+            text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25),
             text(duration).fg(TEXT_DIM).length(6),
         )
     }
     localLibraryList.elements(*items.toTypedArray())
 
-    val queryText = if (actualState.searchQuery.isNotEmpty()) " (Search: ${actualState.searchQuery})" else ""
     val header = row(
         text("").length(2),
         text("#").dim().length(3),
-        text("Title$queryText").dim().fill(),
+        text("Title").dim().fill(),
         text("Artist").dim().percent(25),
+        text("Album").dim().percent(25),
         text("Time").dim().length(6),
     ).margin(Margin.horizontal(1))
 
     return column(
         filterTabs ?: text(""),
         if (filterTabs != null) text("").length(1) else text(""),
+        toolbar,
+        text("").length(1),
         header,
         text("").length(1),
         localLibraryList.fill(),

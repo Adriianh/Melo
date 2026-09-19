@@ -1,5 +1,8 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -271,5 +274,126 @@ class MeloStateFilterSortTest {
         val sortedByDurationDesc =
             filterAndSortTracks(tracks, TrackSortOrder.DURATION, SortDirection.DESCENDING, "")
         assertEquals(listOf(431000L, 259000L, 158000L), sortedByDurationDesc.map { it.durationMs })
+    }
+
+    @Test
+    fun testFilterAndSortOfflineTracks() {
+        val t1 = createTrack("off:1", "Karma Police", "Radiohead", "OK Computer", 261000L)
+        val t2 = createTrack("off:2", "Creep", "Radiohead", "Pablo Honey", 238000L)
+        val t3 = createTrack("off:3", "No Surprises", "Radiohead", "OK Computer", 228000L)
+        val tPending = createTrack("off:4", "Paranoid Android", "Radiohead", "OK Computer", 383000L)
+
+        val o1 = OfflineTrack(
+            track = t1,
+            downloadStatus = DownloadStatus.COMPLETED,
+            downloadType = DownloadType.MANUAL,
+            localFilePath = "/path/1.opus"
+        )
+        val o2 = OfflineTrack(
+            track = t2,
+            downloadStatus = DownloadStatus.COMPLETED,
+            downloadType = DownloadType.PREFETCH,
+            localFilePath = "/path/2.opus"
+        )
+        val o3 = OfflineTrack(
+            track = t3,
+            downloadStatus = DownloadStatus.COMPLETED,
+            downloadType = DownloadType.MANUAL,
+            localFilePath = "/path/3.opus"
+        )
+        val oPending = OfflineTrack(
+            track = tPending,
+            downloadStatus = DownloadStatus.PENDING,
+            downloadType = DownloadType.MANUAL,
+            localFilePath = null
+        )
+
+        val allDownloads = listOf(o1, o2, o3, oPending)
+
+        // 1. ALL ignores PENDING
+        val allCompleted = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.DEFAULT,
+            sortDirection = SortDirection.ASCENDING,
+            query = ""
+        )
+        assertEquals(3, allCompleted.size)
+        assertEquals(listOf("off:1", "off:2", "off:3"), allCompleted.map { it.track.id })
+
+        // 2. Filter MANUAL
+        val manualOnly = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.MANUAL,
+            sortOrder = TrackSortOrder.DEFAULT,
+            sortDirection = SortDirection.ASCENDING,
+            query = ""
+        )
+        assertEquals(2, manualOnly.size)
+        assertEquals(listOf("off:1", "off:3"), manualOnly.map { it.track.id })
+
+        // 3. Filter CACHE
+        val cacheOnly = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.CACHE,
+            sortOrder = TrackSortOrder.DEFAULT,
+            sortDirection = SortDirection.ASCENDING,
+            query = ""
+        )
+        assertEquals(1, cacheOnly.size)
+        assertEquals("off:2", cacheOnly[0].track.id)
+
+        // 4. Query
+        val queried = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.DEFAULT,
+            sortDirection = SortDirection.ASCENDING,
+            query = "creep"
+        )
+        assertEquals(1, queried.size)
+        assertEquals("off:2", queried[0].track.id)
+
+        // 5. Sort TITLE Asc / Desc
+        val titleAsc = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.TITLE,
+            sortDirection = SortDirection.ASCENDING,
+            query = ""
+        )
+        assertEquals(
+            listOf("Creep", "Karma Police", "No Surprises"),
+            titleAsc.map { it.track.title })
+
+        val titleDesc = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.TITLE,
+            sortDirection = SortDirection.DESCENDING,
+            query = ""
+        )
+        assertEquals(
+            listOf("No Surprises", "Karma Police", "Creep"),
+            titleDesc.map { it.track.title })
+
+        // 6. Sort DURATION Asc / Desc
+        val durAsc = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.DURATION,
+            sortDirection = SortDirection.ASCENDING,
+            query = ""
+        )
+        assertEquals(listOf(228000L, 238000L, 261000L), durAsc.map { it.track.durationMs })
+
+        val durDesc = filterAndSortOfflineTracks(
+            downloads = allDownloads,
+            filterType = OfflineFilterType.ALL,
+            sortOrder = TrackSortOrder.DURATION,
+            sortDirection = SortDirection.DESCENDING,
+            query = ""
+        )
+        assertEquals(listOf(261000L, 238000L, 228000L), durDesc.map { it.track.durationMs })
     }
 }

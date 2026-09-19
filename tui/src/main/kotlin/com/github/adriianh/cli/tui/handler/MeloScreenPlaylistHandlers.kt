@@ -9,9 +9,11 @@ import com.github.adriianh.cli.tui.TrackSortOrder
 import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playFromQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
+import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
@@ -309,8 +311,26 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('q') -> {
+        event.matchesAction(
+            MeloAction.ADD_TO_QUEUE,
+            settingsViewState.currentSettings
+        ) || event.isCharIgnoreCase('q') -> {
             filtered.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+            filtered.getOrNull(playlistTracksList.selected())?.let { toggleFavorite(it) }
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+            filtered.getOrNull(playlistTracksList.selected())?.let { openPlaylistPicker(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('m') -> {
+            filtered.getOrNull(playlistTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
 

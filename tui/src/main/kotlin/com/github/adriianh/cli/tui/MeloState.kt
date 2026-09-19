@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui
 import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
@@ -230,6 +231,9 @@ sealed interface ScreenState {
         val searchQuery: String = "",
         val isTyping: Boolean = false,
         val localFilterIndex: Int = 0,
+        val localSortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+        val localSortDirection: SortDirection = SortDirection.ASCENDING,
+        val localSearchQuery: String = searchQuery,
         val selectedIndex: Int = 0,
         val isLoading: Boolean = false,
         val favoritesSourceFilter: LibrarySourceFilter = LibrarySourceFilter.ALL,
@@ -262,6 +266,8 @@ sealed interface ScreenState {
         val downloads: List<OfflineTrack> = emptyList(),
         val selectedIndex: Int = 0,
         val filterType: OfflineFilterType = OfflineFilterType.ALL,
+        val sortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+        val sortDirection: SortDirection = SortDirection.ASCENDING,
         val searchQuery: String = "",
         val isTyping: Boolean = false,
         val isLoading: Boolean = false
@@ -532,6 +538,38 @@ fun filterAndSortTracks(
         TrackSortOrder.TITLE -> result.sortedBy { it.title.lowercase() }
         TrackSortOrder.ARTIST -> result.sortedBy { it.artist.lowercase() }
         TrackSortOrder.DURATION -> result.sortedBy { it.durationMs }
+    }
+    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
+}
+
+fun filterAndSortOfflineTracks(
+    downloads: List<OfflineTrack>,
+    filterType: OfflineFilterType,
+    sortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+    sortDirection: SortDirection = SortDirection.ASCENDING,
+    query: String = ""
+): List<OfflineTrack> {
+    var result = downloads.filter { offlineTrack ->
+        val matchesType = when (filterType) {
+            OfflineFilterType.ALL -> true
+            OfflineFilterType.MANUAL -> offlineTrack.downloadType == DownloadType.MANUAL
+            OfflineFilterType.CACHE -> offlineTrack.downloadType == DownloadType.PREFETCH
+        }
+        matchesType && offlineTrack.downloadStatus != DownloadStatus.PENDING
+    }
+    if (query.isNotBlank()) {
+        val q = query.lowercase().trim()
+        result = result.filter { item ->
+            item.track.title.lowercase().contains(q) ||
+                    item.track.artist.lowercase().contains(q) ||
+                    item.track.album.lowercase().contains(q)
+        }
+    }
+    val sorted = when (sortOrder) {
+        TrackSortOrder.DEFAULT -> result
+        TrackSortOrder.TITLE -> result.sortedBy { it.track.title.lowercase() }
+        TrackSortOrder.ARTIST -> result.sortedBy { it.track.artist.lowercase() }
+        TrackSortOrder.DURATION -> result.sortedBy { it.track.durationMs }
     }
     return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
 }
