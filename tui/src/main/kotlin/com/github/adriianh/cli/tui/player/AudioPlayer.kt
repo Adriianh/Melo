@@ -1,6 +1,13 @@
 package com.github.adriianh.cli.tui.player
 
+import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackState
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -15,13 +22,16 @@ import java.util.concurrent.atomic.AtomicLong
  * Pause: SIGSTOP / SIGCONT — instantaneous, no buffer delay.
  * Volume: pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
  *          fallback: stored and applied on next play() via -af volume= filter.
+ *
+ * Implements [MeloPlayer] so the same playback contract used by the Compose
+ * app (and driven by `data.PlaybackManagerImpl`) can drive this ffplay engine.
  */
 class AudioPlayer(
     private val scope: CoroutineScope,
     private val onProgress: (elapsedMs: Long) -> Unit = {},
     private val onFinish: () -> Unit = {},
     private val onError: (Throwable) -> Unit = {},
-) {
+) : MeloPlayer {
     companion object {
         private val CLIENT_HEADER_RE = Regex("""^Client #(\d+)""")
         private val SINK_INPUT_RE = Regex("""^Sink Input #(\d+)""")
@@ -40,6 +50,9 @@ class AudioPlayer(
     @Volatile private var volumePct: Int = 75
     @Volatile private var currentUrl: String? = null
 
+    private val _state = MutableStateFlow(PlaybackState())
+    override val state: StateFlow<PlaybackState> = _state.asStateFlow()
+
     val isPlaying: Boolean get() = playJob?.isActive == true && !isPaused.get()
 
     private val isWindows = System.getProperty("os.name").lowercase().contains("win")
@@ -52,9 +65,52 @@ class AudioPlayer(
     // ── Public API ─────────────────────────────────────────────────────────────
 
     fun play(url: String) {
+        startPlayback(url = url, seekMs = 0L)
+    }
+
+    /**
+     * Stages a stream and starts playback immediately, mirroring [JvmMeloPlayer.load]
+     * semantics: load() already starts playing, [play] is only needed to resume or
+     * restart after the process has exited.
+     */
+    override fun load(url: String, track: Track, initialPositionMs: Long) {
+        _state.update {
+            it.copy(
+                currentTrack = track,
+                progressMs = initialPositionMs,
+                durationMs = track.durationMs,
+                isBuffering = true,
+                isFinished = false,
+                error = null,
+            )
+        }
+        startPlayback(url = url, seekMs = initialPositionMs)
+    }
+
+    override fun play() {
+        if (isPaused.get()) {
+            resume()
+            return
+        }
+        val url = currentUrl
+        if (url != null && playJob?.isActive != true) {
+            startPlayback(url = url, seekMs = _state.value.progressMs)
+        }
+    }
+
+    private fun startPlayback(url: String, seekMs: Long) {
         val session = sessionId.incrementAndGet()
         val previousJob = playJob
         val previousProcess = playerProcess
+
+        _state.update {
+            it.copy(
+                isPlaying = true,
+                isBuffering = false,
+                isFinished = false,
+                error = null,
+            )
+        }
 
         playJob = scope.launch {
             // Ensure the previous playback completely stops before starting a new one
@@ -62,23 +118,24 @@ class AudioPlayer(
             previousJob?.cancel()
             previousProcess?.waitFor()
             previousJob?.join()
-            
+
             if (sessionId.get() != session) return@launch // another play() was called while we waited
 
             currentUrl = url
             isPaused.set(false)
             startTimeMs = System.currentTimeMillis()
             pausedAtMs = 0L
-            launchPlayback(url, volumePct, seekMs = 0L, session = session)
+            launchPlayback(url, volumePct, seekMs = seekMs, session = session)
         }
     }
 
-    fun pause() {
+    override fun pause() {
         if (isPaused.get() || !isPlaying) return
         isPaused.set(true)
         pausedAtMs += System.currentTimeMillis() - startTimeMs
         if (isWindows) suspendProcessWindows(playerPid ?: return)
         else           sendUnixSignal("SIGSTOP")
+        _state.update { it.copy(isPlaying = false, isBuffering = false) }
     }
 
     fun resume() {
@@ -87,6 +144,7 @@ class AudioPlayer(
         isPaused.set(false)
         if (isWindows) resumeProcessWindows(playerPid ?: return)
         else           sendUnixSignal("SIGCONT")
+        _state.update { it.copy(isPlaying = true) }
     }
 
     /**
@@ -102,6 +160,16 @@ class AudioPlayer(
         if (hasPactl) {
             applyVolumeViaPactl(playerPid ?: return, volumePct)
         }
+    }
+
+    /** Contract override: volume is 0f..1f in the shared playback stack. */
+    override fun setVolume(volume: Float) {
+        setVolume((volume * 100).toInt())
+    }
+
+    override fun seekTo(positionMs: Long) {
+        _state.update { it.copy(progressMs = positionMs) }
+        seek(positionMs)
     }
 
     /**
@@ -148,7 +216,7 @@ class AudioPlayer(
             }
         }
     }
-    fun stop() {
+    override fun stop() {
         val session = sessionId.incrementAndGet() // invalidate any running job
         val previousJob = playJob
         val previousProcess = playerProcess
@@ -156,6 +224,15 @@ class AudioPlayer(
         isPaused.set(false)
         currentUrl = null
         pausedAtMs = 0L
+
+        _state.update {
+            it.copy(
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null,
+            )
+        }
 
         playJob = scope.launch {
             previousProcess?.destroy()
@@ -166,6 +243,25 @@ class AudioPlayer(
             if (sessionId.get() != session) return@launch
             playerProcess = null
             playerPid = null
+        }
+    }
+
+    override fun release() {
+        stop()
+        playJob?.cancel()
+    }
+
+    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+        _state.update {
+            it.copy(
+                currentTrack = track,
+                progressMs = initialPositionMs,
+                durationMs = track.durationMs,
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null,
+            )
         }
     }
 
@@ -182,7 +278,9 @@ class AudioPlayer(
                 while (isActive && sessionId.get() == session) {
                     if (!isPaused.get()) {
                         val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
-                        onProgress(elapsed + seekMs)
+                        val positionMs = elapsed + seekMs
+                        _state.update { it.copy(progressMs = positionMs) }
+                        onProgress(positionMs)
                     }
                     delay(1000)
                 }
@@ -193,12 +291,21 @@ class AudioPlayer(
             }
 
             progressJob.cancel()
+            _state.update { it.copy(isPlaying = false, isFinished = true) }
             if (sessionId.get() == session) onFinish()
         } catch (e: CancellationException) {
             playerProcess?.destroy()
             throw e
         } catch (e: Exception) {
             playerProcess?.destroy()
+            _state.update {
+                it.copy(
+                    isPlaying = false,
+                    isBuffering = false,
+                    isFinished = false,
+                    error = e.message,
+                )
+            }
             if (sessionId.get() == session) onError(e)
         }
     }
