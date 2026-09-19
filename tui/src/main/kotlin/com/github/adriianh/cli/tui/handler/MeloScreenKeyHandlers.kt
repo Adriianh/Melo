@@ -32,6 +32,9 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
             (charVal != null && isChar(charVal))
 }
 
+internal fun KeyEvent.isCtrlF(): Boolean =
+    modifiers().ctrl() && (isCharIgnoreCase('f') || (code() == KeyCode.CHAR && (character() == 'f' || character() == 'F' || character() == '\u0006')))
+
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     when {
         event.matches(Actions.MOVE_DOWN) -> {
@@ -163,6 +166,9 @@ internal fun MeloScreen.isTyping(): Boolean {
 
     val libraryState = state.screen as? ScreenState.Library
     if (libraryState?.isTyping == true) return true
+
+    val entityDetailState = state.screen as? ScreenState.EntityDetail
+    if (entityDetailState?.isTyping == true) return true
 
     val offlineState = state.screen as? ScreenState.Offline
 

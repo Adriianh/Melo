@@ -3,7 +3,9 @@ package com.github.adriianh.cli.tui.handler.search
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
+import com.github.adriianh.cli.tui.handler.isCtrlF
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
@@ -737,12 +739,102 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
         return handleGlobalShortcuts(event)
     }
 
-    val tracks = actualDetail.tracks
+    val tracks = filterAndSortTracks(
+        tracks = actualDetail.tracks,
+        sortOrder = actualDetail.sortOrder,
+        sortDirection = actualDetail.sortDirection,
+        query = actualDetail.searchQuery
+    )
     val listSize = tracks.size
 
+    if (actualDetail.isTyping) {
+        when {
+            event.code() == KeyCode.ENTER -> {
+                state = state.copy(screen = actualDetail.copy(isTyping = false))
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ESCAPE -> {
+                state = state.copy(screen = actualDetail.copy(isTyping = false, searchQuery = ""))
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.BACKSPACE -> {
+                state = state.copy(
+                    screen = actualDetail.copy(
+                        searchQuery = actualDetail.searchQuery.dropLast(1)
+                    )
+                )
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.CHAR -> {
+                val text = event.string()
+                state =
+                    state.copy(screen = actualDetail.copy(searchQuery = actualDetail.searchQuery + text))
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.HANDLED
+    }
+
     when {
-        event.code() == KeyCode.ESCAPE || (event.modifiers()
-            .alt() && event.code() == KeyCode.LEFT) -> {
+        event.isCtrlF() -> {
+            state = state.copy(screen = actualDetail.copy(isTyping = true))
+            return EventResult.HANDLED
+        }
+
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            state = state.copy(
+                screen = actualDetail.copy(
+                    sortDirection = actualDetail.sortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            )
+            entityTracksList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            state = state.copy(
+                screen = actualDetail.copy(
+                    sortOrder = actualDetail.sortOrder.next(),
+                    selectedIndex = 0
+                )
+            )
+            entityTracksList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            if (actualDetail.searchQuery.isNotEmpty()) {
+                state = state.copy(screen = actualDetail.copy(searchQuery = ""))
+                return EventResult.HANDLED
+            }
+            if (actualDetail.returnScreen is ScreenState.Home) {
+                cachedHomeScreen = actualDetail.returnScreen
+            } else if (actualDetail.returnScreen is ScreenState.Stats) {
+                cachedStatsScreen = actualDetail.returnScreen
+            }
+            state = state.copy(
+                screen = actualDetail.returnScreen,
+                navigation = state.navigation.copy(activeSection = actualDetail.returnSection)
+            )
+            val targetFocus = when (actualDetail.returnScreen) {
+                is ScreenState.Home -> "home-panel"
+                is ScreenState.Search -> "results-panel"
+                is ScreenState.Library -> "library-panel"
+                is ScreenState.EntityDetail -> {
+                    if (actualDetail.returnScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+                }
+
+                else -> "home-panel"
+            }
+            appRunner()?.focusManager()?.setFocus(targetFocus)
+            return EventResult.HANDLED
+        }
+
+        event.modifiers().alt() && event.code() == KeyCode.LEFT -> {
             if (actualDetail.returnScreen is ScreenState.Home) {
                 cachedHomeScreen = actualDetail.returnScreen
             } else if (actualDetail.returnScreen is ScreenState.Stats) {

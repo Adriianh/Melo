@@ -4,7 +4,7 @@ import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.allLibraryFavorites
+import com.github.adriianh.cli.tui.filteredAndSortedFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
@@ -111,7 +111,7 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isChar('/') -> {
+        event.isCtrlF() -> {
             updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
             return EventResult.HANDLED
         }
@@ -150,12 +150,102 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
-    val allFavorites = state.allLibraryFavorites()
+    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
+
+    val filtered = state.filteredAndSortedFavorites(
+        sourceFilter = actualState.favoritesSourceFilter,
+        sortOrder = actualState.favoritesSortOrder,
+        sortDirection = actualState.favoritesSortDirection,
+        query = actualState.favoritesSearchQuery
+    )
+
+    if (actualState.isTyping) {
+        when {
+            event.code() == KeyCode.ENTER -> {
+                updateScreen<ScreenState.Library> { it.copy(isTyping = false) }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ESCAPE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        isTyping = false,
+                        favoritesSearchQuery = ""
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.BACKSPACE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        favoritesSearchQuery = it.favoritesSearchQuery.dropLast(
+                            1
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.CHAR -> {
+                val text = event.string()
+                updateScreen<ScreenState.Library> { it.copy(favoritesSearchQuery = it.favoritesSearchQuery + text) }
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.HANDLED
+    }
+
     when {
+        event.isCtrlF() -> {
+            updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('s') -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    favoritesSourceFilter = it.favoritesSourceFilter.next(),
+                    selectedIndex = 0
+                )
+            }
+            favoritesList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    favoritesSortDirection = it.favoritesSortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            }
+            favoritesList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    favoritesSortOrder = it.favoritesSortOrder.next(),
+                    selectedIndex = 0
+                )
+            }
+            favoritesList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            if (actualState.favoritesSearchQuery.isNotEmpty()) {
+                updateScreen<ScreenState.Library> { it.copy(favoritesSearchQuery = "") }
+                return EventResult.HANDLED
+            }
+        }
+
         event.matches(Actions.MOVE_DOWN) -> {
             favoritesList.selected(
                 minOf(
-                    allFavorites.lastIndex.coerceAtLeast(0),
+                    filtered.lastIndex.coerceAtLeast(0),
                     favoritesList.selected() + 1
                 )
             )
@@ -168,24 +258,24 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val tracks = allFavorites.map { it.track }
+            val tracks = filtered.map { it.track }
             val idx = favoritesList.selected()
             if (idx in tracks.indices) playList(tracks, idx)
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-            allFavorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it.track) }
+            filtered.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it.track) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-            allFavorites.getOrNull(favoritesList.selected())?.let { addToQueue(it.track) }
+            filtered.getOrNull(favoritesList.selected())?.let { addToQueue(it.track) }
             return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            val item = allFavorites.getOrNull(favoritesList.selected())
+            val item = filtered.getOrNull(favoritesList.selected())
             if (item != null) openPlaylistPicker(item.track)
             return EventResult.HANDLED
         }

@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.screen
 
+import com.github.adriianh.cli.tui.LibrarySourceFilter
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
@@ -17,6 +18,9 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.allLibraryPlaylists
 import com.github.adriianh.cli.tui.component.SettingsViewState
+import com.github.adriianh.cli.tui.filterAndSortTracks
+import com.github.adriianh.cli.tui.filteredAndSortedFavorites
+import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Margin
@@ -50,23 +54,27 @@ fun renderLibraryScreen(
         .margin(Margin.horizontal(1))
 
     val content: StyledElement<*> = when (actualState.libraryTab) {
-        LibraryTab.FAVORITES -> buildFavoritesContent(state, favoritesList)
+        LibraryTab.FAVORITES -> buildFavoritesContent(state, actualState, favoritesList)
         LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
             buildPlaylistDetailContent(state, actualState, playlistTracksList)
         else
-            buildPlaylistsContent(state, playlistsList)
+            buildPlaylistsContent(state, actualState, playlistsList)
 
         LibraryTab.LOCAL -> buildLocalContent(state, settingsViewState, actualState, localLibraryList)
     }
 
-    val hints = when (actualState.libraryTab) {
-        LibraryTab.FAVORITES -> "[F] remove  [Q] queue  [A] add to playlist  [Y] sync YT  [1..3] tabs"
-        LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
-            "[Enter] play  [Q] queue  [D] remove  [Esc] back"
-        else
-            "[Enter] open  [N] new  [R] rename  [D] delete  [P] play all  [Y] sync YT  [1..3] tabs"
-        LibraryTab.LOCAL -> if (actualState.isTyping) "[Enter] finish  [Esc] clear  [Bksp] del"
-            else "[Tab/f/l] directory  [/] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
+    val hints = if (actualState.isTyping) {
+        "[Enter] finish  [Esc] clear  [Backspace] del"
+    } else {
+        when (actualState.libraryTab) {
+            LibraryTab.FAVORITES -> "[Enter] play  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [F] remove  [Q] queue  [1..3] tabs"
+            LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail)
+                "[Enter] play  [Ctrl+F] search  [O] sort  [Shift+O] dir  [Q] queue  [D] remove  [Esc] back"
+            else
+                "[Enter] open  [Ctrl+F] search  [S] source  [O] sort  [Shift+O] dir  [N] new  [R] rename  [D] delete  [P] play all  [1..3] tabs"
+
+            LibraryTab.LOCAL -> "[Tab/f/l] directory  [Ctrl+F] search  [Esc] clear  [Enter] play  [Q] queue  [1..3] tabs"
+        }
     }
 
     val footer = row(
@@ -97,6 +105,7 @@ private fun tabLabel(label: String, active: Boolean): Element =
 
 private fun buildFavoritesContent(
     state: MeloState,
+    actualState: ScreenState.Library,
     favoritesList: ListElement<*>
 ): StyledElement<*> {
     val allFavorites = state.allLibraryFavorites()
@@ -108,7 +117,61 @@ private fun buildFavoritesContent(
             spacer(),
         )
     }
-    val items = allFavorites.mapIndexed { index, item ->
+
+    val filtered = state.filteredAndSortedFavorites(
+        sourceFilter = actualState.favoritesSourceFilter,
+        sortOrder = actualState.favoritesSortOrder,
+        sortDirection = actualState.favoritesSortDirection,
+        query = actualState.favoritesSearchQuery
+    )
+
+    val isTyping =
+        actualState.isTyping && actualState.libraryTab == LibraryTab.FAVORITES && !actualState.isInPlaylistDetail
+    val searchBadge = if (isTyping) {
+        text(" [Search: ${actualState.favoritesSearchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (actualState.favoritesSearchQuery.isNotBlank()) {
+        text(" [Search: \"${actualState.favoritesSearchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+    }
+
+    val sourceBadge = when (actualState.favoritesSourceFilter) {
+        LibrarySourceFilter.ALL -> text(" [All (s)] ").fg(TEXT_PRIMARY).bold()
+        LibrarySourceFilter.LOCAL -> text(" [⌂ Local (s)] ").fg(PRIMARY_COLOR).bold()
+        LibrarySourceFilter.REMOTE -> text(" [☁ Cloud (s)] ").fg(ACCENT_BLUE).bold()
+    }
+
+    val sortBadge = text(" [Sort: ${actualState.favoritesSortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge =
+        text(" [${actualState.favoritesSortDirection.symbol} ${actualState.favoritesSortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY
+        )
+
+    val toolbar = row(
+        searchBadge,
+        text("  "),
+        sourceBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filtered.size} tracks").dim()
+    ).margin(Margin.horizontal(1))
+
+    if (filtered.isEmpty()) {
+        favoritesList.elements()
+        return column(
+            toolbar,
+            text("").length(1),
+            spacer(),
+            text("  No favorites matching filter").fg(TEXT_SECONDARY).centered(),
+            text("  Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
+            spacer(),
+        )
+    }
+
+    val items = filtered.mapIndexed { index, item ->
         val track = item.track
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
@@ -137,6 +200,8 @@ private fun buildFavoritesContent(
     ).margin(Margin.horizontal(1))
 
     return column(
+        toolbar,
+        text("").length(1),
         header,
         text("").length(1),
         favoritesList.fill(),
@@ -145,6 +210,7 @@ private fun buildFavoritesContent(
 
 private fun buildPlaylistsContent(
     state: MeloState,
+    actualState: ScreenState.Library,
     playlistsList: ListElement<*>
 ): StyledElement<*> {
     val allPlaylists = state.allLibraryPlaylists()
@@ -156,7 +222,61 @@ private fun buildPlaylistsContent(
             spacer(),
         )
     }
-    val items = allPlaylists.map { item ->
+
+    val filtered = state.filteredAndSortedPlaylists(
+        sourceFilter = actualState.playlistsSourceFilter,
+        sortOrder = actualState.playlistsSortOrder,
+        sortDirection = actualState.playlistsSortDirection,
+        query = actualState.playlistsSearchQuery
+    )
+
+    val isTyping =
+        actualState.isTyping && actualState.libraryTab == LibraryTab.PLAYLISTS && !actualState.isInPlaylistDetail
+    val searchBadge = if (isTyping) {
+        text(" [Search: ${actualState.playlistsSearchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (actualState.playlistsSearchQuery.isNotBlank()) {
+        text(" [Search: \"${actualState.playlistsSearchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+    }
+
+    val sourceBadge = when (actualState.playlistsSourceFilter) {
+        LibrarySourceFilter.ALL -> text(" [All (s)] ").fg(TEXT_PRIMARY).bold()
+        LibrarySourceFilter.LOCAL -> text(" [≡ Local (s)] ").fg(PRIMARY_COLOR).bold()
+        LibrarySourceFilter.REMOTE -> text(" [☁ Cloud (s)] ").fg(ACCENT_BLUE).bold()
+    }
+
+    val sortBadge = text(" [Sort: ${actualState.playlistsSortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge =
+        text(" [${actualState.playlistsSortDirection.symbol} ${actualState.playlistsSortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY
+        )
+
+    val toolbar = row(
+        searchBadge,
+        text("  "),
+        sourceBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filtered.size} playlists").dim()
+    ).margin(Margin.horizontal(1))
+
+    if (filtered.isEmpty()) {
+        playlistsList.elements()
+        return column(
+            toolbar,
+            text("").length(1),
+            spacer(),
+            text("  No playlists matching filter").fg(TEXT_SECONDARY).centered(),
+            text("  Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
+            spacer(),
+        )
+    }
+
+    val items = filtered.map { item ->
         val iconColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
         val authorColor = if (item.isRemote) ACCENT_BLUE else TEXT_SECONDARY
         row(
@@ -176,6 +296,8 @@ private fun buildPlaylistsContent(
     ).margin(Margin.horizontal(1))
 
     return column(
+        toolbar,
+        text("").length(1),
         header,
         text("").length(1),
         playlistsList.fill(),
@@ -206,7 +328,54 @@ private fun buildPlaylistDetailContent(
         )
     }
 
-    val items = tracks.mapIndexed { index, track ->
+    val filtered = filterAndSortTracks(
+        tracks = tracks,
+        sortOrder = actualState.playlistDetailSortOrder,
+        sortDirection = actualState.playlistDetailSortDirection,
+        query = actualState.playlistDetailSearchQuery
+    )
+
+    val isTyping = actualState.isTyping && actualState.isInPlaylistDetail
+    val searchBadge = if (isTyping) {
+        text(" [Search: ${actualState.playlistDetailSearchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (actualState.playlistDetailSearchQuery.isNotBlank()) {
+        text(" [Search: \"${actualState.playlistDetailSearchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+    }
+
+    val sortBadge =
+        text(" [Sort: ${actualState.playlistDetailSortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge =
+        text(" [${actualState.playlistDetailSortDirection.symbol} ${actualState.playlistDetailSortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY
+        )
+
+    val toolbar = row(
+        searchBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filtered.size} tracks").dim()
+    ).margin(Margin.horizontal(1))
+
+    if (filtered.isEmpty()) {
+        tracksList.elements()
+        return column(
+            titleRow,
+            text("").length(1),
+            toolbar,
+            text("").length(1),
+            spacer(),
+            text("  No tracks matching filter").fg(TEXT_SECONDARY).centered(),
+            text("  Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
+            spacer(),
+        )
+    }
+
+    val items = filtered.mapIndexed { index, track ->
         val indicator = if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
         val isPlayable = state.isPlayable(track)
         row(
@@ -230,6 +399,8 @@ private fun buildPlaylistDetailContent(
 
     return column(
         titleRow,
+        text("").length(1),
+        toolbar,
         text("").length(1),
         header,
         text("").length(1),

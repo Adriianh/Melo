@@ -64,13 +64,46 @@ enum class LibraryTab {
     LOCAL,
 }
 
+enum class SortDirection(val label: String, val symbol: String) {
+    ASCENDING("Asc", "↑"),
+    DESCENDING("Desc", "↓");
+
+    fun toggle(): SortDirection = if (this == ASCENDING) DESCENDING else ASCENDING
+}
+
+enum class TrackSortOrder(val label: String) {
+    DEFAULT("Default"),
+    TITLE("Title"),
+    ARTIST("Artist"),
+    DURATION("Duration");
+
+    fun next(): TrackSortOrder = entries[(ordinal + 1) % entries.size]
+}
+
+enum class PlaylistSortOrder(val label: String) {
+    DEFAULT("Default"),
+    NAME("Name"),
+    TRACKS("Tracks"),
+    AUTHOR("Author");
+
+    fun next(): PlaylistSortOrder = entries[(ordinal + 1) % entries.size]
+}
+
+enum class LibrarySourceFilter(val label: String) {
+    ALL("All"),
+    LOCAL("Local"),
+    REMOTE("Cloud");
+
+    fun next(): LibrarySourceFilter = entries[(ordinal + 1) % entries.size]
+}
+
 /**
  * Active tab within the Home screen.
  */
-enum class HomeTab() {
-    FEED(),
-    RECENT(),
-    FAVORITES(),
+enum class HomeTab {
+    FEED,
+    RECENT,
+    FAVORITES,
 }
 
 /**
@@ -198,7 +231,18 @@ sealed interface ScreenState {
         val isTyping: Boolean = false,
         val localFilterIndex: Int = 0,
         val selectedIndex: Int = 0,
-        val isLoading: Boolean = false
+        val isLoading: Boolean = false,
+        val favoritesSourceFilter: LibrarySourceFilter = LibrarySourceFilter.ALL,
+        val favoritesSortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+        val favoritesSortDirection: SortDirection = SortDirection.ASCENDING,
+        val favoritesSearchQuery: String = "",
+        val playlistsSourceFilter: LibrarySourceFilter = LibrarySourceFilter.ALL,
+        val playlistsSortOrder: PlaylistSortOrder = PlaylistSortOrder.DEFAULT,
+        val playlistsSortDirection: SortDirection = SortDirection.ASCENDING,
+        val playlistsSearchQuery: String = "",
+        val playlistDetailSortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+        val playlistDetailSortDirection: SortDirection = SortDirection.ASCENDING,
+        val playlistDetailSearchQuery: String = "",
     ) : ScreenState
 
     data class Stats(
@@ -238,6 +282,10 @@ sealed interface ScreenState {
         val errorMessage: String? = null,
         val returnScreen: ScreenState,
         val returnSection: SidebarSection,
+        val searchQuery: String = "",
+        val isTyping: Boolean = false,
+        val sortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
+        val sortDirection: SortDirection = SortDirection.ASCENDING,
     ) : ScreenState
 }
 
@@ -370,7 +418,7 @@ sealed interface LibraryPlaylistItem {
 
     data class Local(val playlist: Playlist) : LibraryPlaylistItem {
         override val title: String get() = playlist.name
-        override val author: String get() = "Tú"
+        override val author: String get() = "You"
         override val trackCountText: String get() = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"
         override val isRemote: Boolean get() = false
         override val icon: String get() = "≡"
@@ -391,6 +439,101 @@ fun MeloState.allLibraryPlaylists(): List<LibraryPlaylistItem> {
     val local = collections.playlists.map { LibraryPlaylistItem.Local(it) }
     val remote = collections.remotePlaylists.map { LibraryPlaylistItem.Remote(it) }
     return local + remote
+}
+
+fun MeloState.filteredAndSortedFavorites(
+    sourceFilter: LibrarySourceFilter,
+    sortOrder: TrackSortOrder,
+    sortDirection: SortDirection = SortDirection.ASCENDING,
+    query: String
+): List<LibraryFavoriteItem> {
+    var items = allLibraryFavorites()
+
+    items = when (sourceFilter) {
+        LibrarySourceFilter.ALL -> items
+        LibrarySourceFilter.LOCAL -> items.filter { !it.isRemote }
+        LibrarySourceFilter.REMOTE -> items.filter { it.isRemote }
+    }
+
+    if (query.isNotBlank()) {
+        val q = query.lowercase().trim()
+        items = items.filter { item ->
+            item.track.title.lowercase().contains(q) ||
+                    item.track.artist.lowercase().contains(q) ||
+                    item.track.album.lowercase().contains(q)
+        }
+    }
+
+    val sorted = when (sortOrder) {
+        TrackSortOrder.DEFAULT -> items
+        TrackSortOrder.TITLE -> items.sortedBy { it.track.title.lowercase() }
+        TrackSortOrder.ARTIST -> items.sortedBy { it.track.artist.lowercase() }
+        TrackSortOrder.DURATION -> items.sortedBy { it.track.durationMs }
+    }
+
+    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
+}
+
+fun MeloState.filteredAndSortedPlaylists(
+    sourceFilter: LibrarySourceFilter,
+    sortOrder: PlaylistSortOrder,
+    sortDirection: SortDirection = SortDirection.ASCENDING,
+    query: String
+): List<LibraryPlaylistItem> {
+    var items = allLibraryPlaylists()
+
+    items = when (sourceFilter) {
+        LibrarySourceFilter.ALL -> items
+        LibrarySourceFilter.LOCAL -> items.filter { !it.isRemote }
+        LibrarySourceFilter.REMOTE -> items.filter { it.isRemote }
+    }
+
+    if (query.isNotBlank()) {
+        val q = query.lowercase().trim()
+        items = items.filter { item ->
+            item.title.lowercase().contains(q) ||
+                    item.author.lowercase().contains(q)
+        }
+    }
+
+    val sorted = when (sortOrder) {
+        PlaylistSortOrder.DEFAULT -> items
+        PlaylistSortOrder.NAME -> items.sortedBy { it.title.lowercase() }
+        PlaylistSortOrder.TRACKS -> items.sortedBy { item ->
+            when (item) {
+                is LibraryPlaylistItem.Local -> item.playlist.trackCount
+                is LibraryPlaylistItem.Remote -> item.playlist.trackCount ?: 0
+            }
+        }
+
+        PlaylistSortOrder.AUTHOR -> items.sortedBy { it.author.lowercase() }
+    }
+
+    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
+}
+
+fun filterAndSortTracks(
+    tracks: List<Track>,
+    sortOrder: TrackSortOrder,
+    sortDirection: SortDirection = SortDirection.ASCENDING,
+    query: String
+): List<Track> {
+    var result = tracks
+    if (query.isNotBlank()) {
+        val q = query.lowercase().trim()
+        result = result.filter { track ->
+            track.title.lowercase().contains(q) ||
+                    track.artist.lowercase().contains(q) ||
+                    track.album.lowercase().contains(q)
+        }
+    }
+    val sorted = when (sortOrder) {
+        TrackSortOrder.DEFAULT -> result
+        TrackSortOrder.TITLE -> result.sortedBy { it.title.lowercase() }
+        TrackSortOrder.ARTIST -> result.sortedBy { it.artist.lowercase() }
+        TrackSortOrder.DURATION -> result.sortedBy { it.durationMs }
+    }
+    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
 }
 
 /**

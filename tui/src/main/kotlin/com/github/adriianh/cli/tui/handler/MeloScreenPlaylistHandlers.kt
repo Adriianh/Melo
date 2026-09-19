@@ -4,7 +4,10 @@ import com.github.adriianh.cli.tui.LibraryPlaylistItem
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.allLibraryPlaylists
+import com.github.adriianh.cli.tui.SortDirection
+import com.github.adriianh.cli.tui.TrackSortOrder
+import com.github.adriianh.cli.tui.filterAndSortTracks
+import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.playFromQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
@@ -18,30 +21,123 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
-    val allPlaylists = state.allLibraryPlaylists()
+    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
+
+    val filtered = state.filteredAndSortedPlaylists(
+        sourceFilter = actualState.playlistsSourceFilter,
+        sortOrder = actualState.playlistsSortOrder,
+        sortDirection = actualState.playlistsSortDirection,
+        query = actualState.playlistsSearchQuery
+    )
+
+    if (actualState.isTyping) {
+        when {
+            event.code() == KeyCode.ENTER -> {
+                updateScreen<ScreenState.Library> { it.copy(isTyping = false) }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ESCAPE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        isTyping = false,
+                        playlistsSearchQuery = ""
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.BACKSPACE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        playlistsSearchQuery = it.playlistsSearchQuery.dropLast(
+                            1
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.CHAR -> {
+                val text = event.string()
+                updateScreen<ScreenState.Library> { it.copy(playlistsSearchQuery = it.playlistsSearchQuery + text) }
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.HANDLED
+    }
+
     when {
+        event.isCtrlF() -> {
+            updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('s') -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    playlistsSourceFilter = it.playlistsSourceFilter.next(),
+                    selectedIndex = 0
+                )
+            }
+            playlistsList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    playlistsSortDirection = it.playlistsSortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            }
+            playlistsList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    playlistsSortOrder = it.playlistsSortOrder.next(),
+                    selectedIndex = 0
+                )
+            }
+            playlistsList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            if (actualState.playlistsSearchQuery.isNotEmpty()) {
+                updateScreen<ScreenState.Library> { it.copy(playlistsSearchQuery = "") }
+                return EventResult.HANDLED
+            }
+        }
+
         event.matches(Actions.MOVE_DOWN) -> {
             playlistsList.selected(
                 minOf(
-                    allPlaylists.lastIndex.coerceAtLeast(0),
+                    filtered.lastIndex.coerceAtLeast(0),
                     playlistsList.selected() + 1
                 )
             )
             return EventResult.HANDLED
         }
+
         event.matches(Actions.MOVE_UP) -> {
             playlistsList.selected(maxOf(0, playlistsList.selected() - 1))
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.ENTER -> {
             val item =
-                allPlaylists.getOrNull(playlistsList.selected()) ?: return EventResult.HANDLED
+                filtered.getOrNull(playlistsList.selected()) ?: return EventResult.HANDLED
             when (item) {
                 is LibraryPlaylistItem.Local -> openLocalPlaylistDetail(item.playlist)
                 is LibraryPlaylistItem.Remote -> openEntityDetails(item.playlist)
             }
             return EventResult.HANDLED
         }
+
         event.isCharIgnoreCase('n') -> {
             state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = ""))
             return EventResult.HANDLED
@@ -49,7 +145,7 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
 
         event.isCharIgnoreCase('r') -> {
             val item =
-                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                filtered.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
                     event
                 )
             if (item is LibraryPlaylistItem.Local) {
@@ -65,7 +161,7 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
 
         event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val item =
-                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                filtered.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
                     event
                 )
             if (item is LibraryPlaylistItem.Local) {
@@ -76,7 +172,7 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
 
         event.isCharIgnoreCase('p') -> {
             val item =
-                allPlaylists.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
+                filtered.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(
                     event
                 )
             when (item) {
@@ -100,34 +196,127 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
 
 internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
     val screen = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
+
+    val filtered = filterAndSortTracks(
+        tracks = screen.playlistTracks,
+        sortOrder = screen.playlistDetailSortOrder,
+        sortDirection = screen.playlistDetailSortDirection,
+        query = screen.playlistDetailSearchQuery
+    )
+
+    if (screen.isTyping) {
+        when {
+            event.code() == KeyCode.ENTER -> {
+                updateScreen<ScreenState.Library> { it.copy(isTyping = false) }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ESCAPE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        isTyping = false,
+                        playlistDetailSearchQuery = ""
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.BACKSPACE -> {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        playlistDetailSearchQuery = it.playlistDetailSearchQuery.dropLast(
+                            1
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.CHAR -> {
+                val text = event.string()
+                updateScreen<ScreenState.Library> { it.copy(playlistDetailSearchQuery = it.playlistDetailSearchQuery + text) }
+                return EventResult.HANDLED
+            }
+        }
+        return EventResult.HANDLED
+    }
+
     when {
+        event.isCtrlF() -> {
+            updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
+            return EventResult.HANDLED
+        }
+
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    playlistDetailSortDirection = it.playlistDetailSortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            }
+            playlistTracksList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    playlistDetailSortOrder = it.playlistDetailSortOrder.next(),
+                    selectedIndex = 0
+                )
+            }
+            playlistTracksList.selected(0)
+            return EventResult.HANDLED
+        }
+
         event.code() == KeyCode.ESCAPE -> {
-            updateScreen<ScreenState.Library> { it.copy(isInPlaylistDetail = false, selectedPlaylist = null, playlistTracks = emptyList()) }
+            if (screen.playlistDetailSearchQuery.isNotEmpty()) {
+                updateScreen<ScreenState.Library> { it.copy(playlistDetailSearchQuery = "") }
+                return EventResult.HANDLED
+            }
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    isInPlaylistDetail = false,
+                    selectedPlaylist = null,
+                    playlistTracks = emptyList(),
+                    playlistDetailSearchQuery = "",
+                    playlistDetailSortOrder = TrackSortOrder.DEFAULT,
+                    playlistDetailSortDirection = SortDirection.ASCENDING
+                )
+            }
             playlistTracksJob?.cancel()
             return EventResult.HANDLED
         }
+
         event.matches(Actions.MOVE_DOWN) -> {
-            playlistTracksList.selected(minOf(screen.playlistTracks.lastIndex.coerceAtLeast(0), playlistTracksList.selected() + 1))
+            playlistTracksList.selected(
+                minOf(
+                    filtered.lastIndex.coerceAtLeast(0),
+                    playlistTracksList.selected() + 1
+                )
+            )
             return EventResult.HANDLED
         }
+
         event.matches(Actions.MOVE_UP) -> {
             playlistTracksList.selected(maxOf(0, playlistTracksList.selected() - 1))
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.ENTER -> {
-            val tracks = screen.playlistTracks
             val idx = playlistTracksList.selected()
-            if (idx in tracks.indices) playList(tracks, idx)
+            if (idx in filtered.indices) playList(filtered, idx)
             return EventResult.HANDLED
         }
+
         event.isCharIgnoreCase('q') -> {
-            screen.playlistTracks.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
+            filtered.getOrNull(playlistTracksList.selected())?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
         event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val pl = screen.selectedPlaylist ?: return handleGlobalShortcuts(event)
-            val track = screen.playlistTracks.getOrNull(playlistTracksList.selected())
+            val track = filtered.getOrNull(playlistTracksList.selected())
                 ?: return handleGlobalShortcuts(event)
             scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
             return EventResult.HANDLED
@@ -203,7 +392,17 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
 }
 
 internal fun MeloScreen.openLocalPlaylistDetail(pl: Playlist, autoPlay: Boolean = false) {
-    updateScreen<ScreenState.Library> { it.copy(selectedPlaylist = pl, isInPlaylistDetail = true, playlistTracks = emptyList()) }
+    updateScreen<ScreenState.Library> {
+        it.copy(
+            selectedPlaylist = pl,
+            isInPlaylistDetail = true,
+            playlistTracks = emptyList(),
+            playlistDetailSearchQuery = "",
+            playlistDetailSortOrder = TrackSortOrder.DEFAULT,
+            playlistDetailSortDirection = SortDirection.ASCENDING,
+            isTyping = false
+        )
+    }
     playlistTracksJob?.cancel()
     playlistTracksJob = scope.launch {
         getPlaylistTracks(pl.id).collect { tracks ->

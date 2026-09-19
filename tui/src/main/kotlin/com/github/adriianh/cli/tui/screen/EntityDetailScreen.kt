@@ -17,6 +17,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
+import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -406,8 +407,103 @@ private fun renderTracksDetail(
         return dock().center(errorPanel).right(rightPanel, Constraint.percentage(35)).fill()
     }
 
-    val tracks = detail.tracks
-    val items = tracks.mapIndexed { index, track ->
+    val filteredTracks = filterAndSortTracks(
+        tracks = detail.tracks,
+        sortOrder = detail.sortOrder,
+        sortDirection = detail.sortDirection,
+        query = detail.searchQuery
+    )
+
+    val searchBadge = if (detail.isTyping) {
+        text(" [Search: ${detail.searchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (detail.searchQuery.isNotBlank()) {
+        text(" [Search: \"${detail.searchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+    }
+
+    val sortBadge = text(" [Sort: ${detail.sortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge = text(" [${detail.sortDirection.symbol} ${detail.sortDirection.label} (O)] ").fg(
+        TEXT_SECONDARY
+    )
+
+    val toolbar = row(
+        searchBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filteredTracks.size} / ${detail.tracks.size} tracks").dim()
+    ).margin(Margin.horizontal(1))
+
+    val subtitleText = detail.subtitle?.let { " • $it" } ?: ""
+
+    val footer = if (detail.isTyping) {
+        row(
+            spacer(),
+            text("[Enter] finish  [Esc] clear  [Backspace] del").fg(TEXT_DIM).ellipsis(),
+            spacer()
+        ).length(1)
+    } else {
+        row(
+            spacer(),
+            text("[Enter] Play  [Ctrl+F] Search  [O] Sort  [Shift+O] Dir  [Space] Play All  [Q] Queue  [F] Favorite  [Esc] Back  [D] Bio")
+                .fg(TEXT_DIM)
+                .ellipsis(),
+            spacer()
+        ).length(1)
+    }
+
+    if (filteredTracks.isEmpty()) {
+        entityTracksList.elements()
+        val emptyMessage = if (detail.tracks.isEmpty()) {
+            column(
+                spacer(),
+                text("  No tracks available").fg(TEXT_SECONDARY).centered(),
+                spacer(),
+            )
+        } else {
+            column(
+                spacer(),
+                text("  No tracks matching filter").fg(TEXT_SECONDARY).centered(),
+                text("  Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
+                spacer(),
+            )
+        }
+
+        val emptyEntityPanel = panel(
+            column(
+                row(
+                    text("  $typeBadge ").fg(typeColor).bold(),
+                    text(detail.title).bold().fg(TEXT_PRIMARY).ellipsis(),
+                    text(subtitleText).fg(TEXT_SECONDARY).ellipsis(),
+                    spacer(),
+                    text("${detail.tracks.size} tracks total  ").dim()
+                ).length(1),
+                text("").length(1),
+                toolbar,
+                text("").length(1),
+                emptyMessage.fill(),
+                text("").length(1),
+                footer
+            )
+        ).title(detail.title)
+            .rounded()
+            .borderColor(BORDER_DEFAULT)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .focusable()
+            .id("entity-tracks-list")
+            .onKeyEvent(onEntityDetailKeyEvent)
+            .fill()
+
+        return dock()
+            .center(emptyEntityPanel)
+            .right(rightPanel, Constraint.percentage(35))
+            .fill()
+    }
+
+    val items = filteredTracks.mapIndexed { index, track ->
         val duration = if (track.durationMs > 0L) formatDuration(track.durationMs) else ""
         val nowPlayingIndicator =
             if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
@@ -428,16 +524,6 @@ private fun renderTracksDetail(
     }
     entityTracksList.elements(*items.toTypedArray())
 
-    val subtitleText = detail.subtitle?.let { " • $it" } ?: ""
-
-    val footer = row(
-        spacer(),
-        text("[Enter] Play Track  [Space] Play All  [Q] Queue  [F] Favorite  [Esc] Back  [D] Bio")
-            .fg(TEXT_DIM)
-            .ellipsis(),
-        spacer()
-    ).length(1)
-
     val entityPanel = panel(
         column(
             row(
@@ -445,9 +531,11 @@ private fun renderTracksDetail(
                 text(detail.title).bold().fg(TEXT_PRIMARY).ellipsis(),
                 text(subtitleText).fg(TEXT_SECONDARY).ellipsis(),
                 spacer(),
-                text("${tracks.size} tracks total  ").dim()
+                text("${filteredTracks.size} / ${detail.tracks.size} tracks  ").dim()
             ).length(1),
-            text(""),
+            text("").length(1),
+            toolbar,
+            text("").length(1),
             row(
                 text("").length(2),
                 text("#").dim().length(3),
