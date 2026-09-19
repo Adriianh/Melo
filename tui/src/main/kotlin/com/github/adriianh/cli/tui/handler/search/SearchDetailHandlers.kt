@@ -3,7 +3,6 @@ package com.github.adriianh.cli.tui.handler.search
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
 import com.github.adriianh.cli.tui.handler.isCtrlF
 import com.github.adriianh.cli.tui.handler.loadMoreSimilar
@@ -18,6 +17,7 @@ import com.github.adriianh.cli.tui.handler.toggleFavorite
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
@@ -697,7 +697,10 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                 }
             }
 
-            listSize > 0 && event.isCharIgnoreCase('m') -> {
+            listSize > 0 && (event.isCharIgnoreCase('m') || event.matchesAction(
+                MeloAction.TRACK_OPTIONS,
+                settingsViewState.currentSettings
+            )) -> {
                 val arrayItem = items.getOrNull(artistDashboardList.selected())
                 var item = if (arrayItem is Pair<*, *>) {
                     if (actualDetail.artistDashboardX == 1) arrayItem.second else arrayItem.first
@@ -991,7 +994,10 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        listSize > 0 && event.isCharIgnoreCase('m') -> {
+        listSize > 0 && (event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        )) -> {
             tracks.getOrNull(entityTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }

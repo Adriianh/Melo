@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.RepeatMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.SidebarSection
@@ -10,6 +9,7 @@ import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
 import com.github.adriianh.cli.tui.handler.playback.clearQueue
 import com.github.adriianh.cli.tui.handler.playback.toggleQueue
 import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
@@ -113,8 +113,8 @@ object CommandBarHandlers {
         object : Command(listOf("repeat"), "<off|one|all>", requiresArgument = true) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
-                    "off" -> {
-                        state = state.copy(player = state.player.copy(repeatMode = RepeatMode.OFF))
+                    "off", "none" -> {
+                        state = state.copy(player = state.player.copy(repeatMode = RepeatMode.NONE))
                         CommandResult()
                     }
 

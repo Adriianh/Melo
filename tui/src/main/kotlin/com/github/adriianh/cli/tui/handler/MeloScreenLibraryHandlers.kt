@@ -4,12 +4,12 @@ import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.filteredAndSortedFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -201,7 +201,10 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') -> {
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
             filtered.getOrNull(localLibraryList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
@@ -340,7 +343,10 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') -> {
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
             val item = filtered.getOrNull(favoritesList.selected())
             if (item != null) openTrackOptions(item.track)
             return EventResult.HANDLED

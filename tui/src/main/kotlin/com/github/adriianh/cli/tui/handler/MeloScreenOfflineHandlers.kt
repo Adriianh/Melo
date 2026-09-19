@@ -1,13 +1,13 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.OfflineFilterType
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.filterAndSortOfflineTracks
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.OfflineFilterType
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -125,7 +125,10 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') -> {
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
             val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) openTrackOptions(track)
             return EventResult.HANDLED

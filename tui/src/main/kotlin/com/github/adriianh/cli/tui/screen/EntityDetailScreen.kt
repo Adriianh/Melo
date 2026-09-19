@@ -17,11 +17,11 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
-import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin

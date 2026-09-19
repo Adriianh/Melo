@@ -23,7 +23,7 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.RepeatMode
+import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.layout.Flex
 import dev.tamboui.style.Style
 import dev.tamboui.text.Line
@@ -131,11 +131,11 @@ fun buildPlayerBar(
     val playPauseIcon = if (state.player.isPlaying) ICON_PAUSE else ICON_PLAY
     val shuffleColor = if (state.player.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
     val repeatIcon = when (state.player.repeatMode) {
-        RepeatMode.OFF -> ICON_REPEAT
+        RepeatMode.NONE -> ICON_REPEAT
         RepeatMode.ALL -> ICON_REPEAT
         RepeatMode.ONE -> ICON_REPEAT1
     }
-    val repeatColor = if (state.player.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
+    val repeatColor = if (state.player.repeatMode != RepeatMode.NONE) PRIMARY_COLOR else TEXT_DIM
 
     val centerBottom = row(
         text(ICON_SHUFFLE).fg(shuffleColor).length(2)

@@ -18,11 +18,11 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.allLibraryFavorites
 import com.github.adriianh.cli.tui.allLibraryPlaylists
 import com.github.adriianh.cli.tui.component.SettingsViewState
-import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.filteredAndSortedFavorites
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel

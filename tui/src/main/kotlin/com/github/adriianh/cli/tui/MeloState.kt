@@ -3,17 +3,21 @@ package com.github.adriianh.cli.tui
 import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
-import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.ListeningStats
+import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
+import com.github.adriianh.core.domain.model.PlaylistSortOrder
+import com.github.adriianh.core.domain.model.SortDirection
 import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.TrackStat
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.image.ImageData
 
 /**
@@ -23,15 +27,6 @@ enum class HomeFeedFocus {
     CHIPS,
     SECTIONS,
     ITEMS,
-}
-
-/**
- * Repeat modes for queue playback.
- */
-enum class RepeatMode {
-    OFF,
-    ONE,
-    ALL,
 }
 
 /**
@@ -65,32 +60,7 @@ enum class LibraryTab {
     LOCAL,
 }
 
-enum class SortDirection(val label: String, val symbol: String) {
-    ASCENDING("Asc", "↑"),
-    DESCENDING("Desc", "↓");
-
-    fun toggle(): SortDirection = if (this == ASCENDING) DESCENDING else ASCENDING
-}
-
-enum class TrackSortOrder(val label: String) {
-    DEFAULT("Default"),
-    TITLE("Title"),
-    ARTIST("Artist"),
-    DURATION("Duration");
-
-    fun next(): TrackSortOrder = entries[(ordinal + 1) % entries.size]
-}
-
-enum class PlaylistSortOrder(val label: String) {
-    DEFAULT("Default"),
-    NAME("Name"),
-    TRACKS("Tracks"),
-    AUTHOR("Author");
-
-    fun next(): PlaylistSortOrder = entries[(ordinal + 1) % entries.size]
-}
-
-enum class LibrarySourceFilter() {
+enum class LibrarySourceFilter {
     ALL,
     LOCAL,
     REMOTE;
@@ -118,15 +88,6 @@ enum class PlaylistInputMode {
 }
 
 /**
- * Filter types for the offline screen.
- */
-enum class OfflineFilterType(val label: String) {
-    ALL("All"),
-    MANUAL("Manual"),
-    CACHE("Cache"),
-}
-
-/**
  * Unit used to display listening time in the statistics screen.
  */
 enum class StatsTimeUnit(val label: String) {
@@ -146,7 +107,7 @@ data class PlayerState(
     val queue: List<Track> = emptyList(),
     val queueIndex: Int = -1,
     val queueCursor: Int = 0,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val repeatMode: RepeatMode = RepeatMode.NONE,
     val shuffleEnabled: Boolean = false,
     val isQueueVisible: Boolean = false,
     val volume: Int = 75,
@@ -513,62 +474,6 @@ fun MeloState.filteredAndSortedPlaylists(
         PlaylistSortOrder.AUTHOR -> items.sortedBy { it.author.lowercase() }
     }
 
-    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
-}
-
-fun filterAndSortTracks(
-    tracks: List<Track>,
-    sortOrder: TrackSortOrder,
-    sortDirection: SortDirection = SortDirection.ASCENDING,
-    query: String
-): List<Track> {
-    var result = tracks
-    if (query.isNotBlank()) {
-        val q = query.lowercase().trim()
-        result = result.filter { track ->
-            track.title.lowercase().contains(q) ||
-                    track.artist.lowercase().contains(q) ||
-                    track.album.lowercase().contains(q)
-        }
-    }
-    val sorted = when (sortOrder) {
-        TrackSortOrder.DEFAULT -> result
-        TrackSortOrder.TITLE -> result.sortedBy { it.title.lowercase() }
-        TrackSortOrder.ARTIST -> result.sortedBy { it.artist.lowercase() }
-        TrackSortOrder.DURATION -> result.sortedBy { it.durationMs }
-    }
-    return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
-}
-
-fun filterAndSortOfflineTracks(
-    downloads: List<OfflineTrack>,
-    filterType: OfflineFilterType,
-    sortOrder: TrackSortOrder = TrackSortOrder.DEFAULT,
-    sortDirection: SortDirection = SortDirection.ASCENDING,
-    query: String = ""
-): List<OfflineTrack> {
-    var result = downloads.filter { offlineTrack ->
-        val matchesType = when (filterType) {
-            OfflineFilterType.ALL -> true
-            OfflineFilterType.MANUAL -> offlineTrack.downloadType == DownloadType.MANUAL
-            OfflineFilterType.CACHE -> offlineTrack.downloadType == DownloadType.PREFETCH
-        }
-        matchesType && offlineTrack.downloadStatus != DownloadStatus.PENDING
-    }
-    if (query.isNotBlank()) {
-        val q = query.lowercase().trim()
-        result = result.filter { item ->
-            item.track.title.lowercase().contains(q) ||
-                    item.track.artist.lowercase().contains(q) ||
-                    item.track.album.lowercase().contains(q)
-        }
-    }
-    val sorted = when (sortOrder) {
-        TrackSortOrder.DEFAULT -> result
-        TrackSortOrder.TITLE -> result.sortedBy { it.track.title.lowercase() }
-        TrackSortOrder.ARTIST -> result.sortedBy { it.track.artist.lowercase() }
-        TrackSortOrder.DURATION -> result.sortedBy { it.track.durationMs }
-    }
     return if (sortDirection == SortDirection.DESCENDING) sorted.reversed() else sorted
 }
 

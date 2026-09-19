@@ -26,7 +26,9 @@ enum class MeloAction(val displayName: String) {
     LYRICS("Load Lyrics"),
     ADD_PLAYLIST("Add to Playlist"),
     DELETE("Delete/Remove Item"),
-    CLEAR_QUEUE("Clear Queue")
+    CLEAR_QUEUE("Clear Queue"),
+    TRACK_OPTIONS("Track Options Menu"),
+    TOGGLE_SELECTION("Toggle Selection Mode")
 }
 
 @Serializable
@@ -112,7 +114,9 @@ data class Settings(
         MeloAction.LYRICS to MeloKey(char = 'l'),
         MeloAction.ADD_PLAYLIST to MeloKey(char = 'a'),
         MeloAction.DELETE to MeloKey(code = "DELETE"),
-        MeloAction.CLEAR_QUEUE to MeloKey(char = 'c')
+        MeloAction.CLEAR_QUEUE to MeloKey(char = 'c'),
+        MeloAction.TRACK_OPTIONS to MeloKey(char = 'm'),
+        MeloAction.TOGGLE_SELECTION to MeloKey(char = 'v')
     ),
     val downloadFormat: DownloadFormat = DownloadFormat.OPUS,
     val downloadQuality: DownloadQuality = DownloadQuality.HIGH,

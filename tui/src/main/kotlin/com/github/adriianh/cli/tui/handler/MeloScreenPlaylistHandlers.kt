@@ -4,9 +4,6 @@ import com.github.adriianh.cli.tui.LibraryPlaylistItem
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.SortDirection
-import com.github.adriianh.cli.tui.TrackSortOrder
-import com.github.adriianh.cli.tui.filterAndSortTracks
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
@@ -15,7 +12,10 @@ import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Playlist
+import com.github.adriianh.core.domain.model.SortDirection
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackSortOrder
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -329,7 +329,10 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') -> {
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
             filtered.getOrNull(playlistTracksList.selected())?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }

@@ -9,11 +9,11 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.OfflineFilterType
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.filterAndSortOfflineTracks
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.OfflineFilterType
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel

@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.handler.playback
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.RepeatMode
 import com.github.adriianh.cli.tui.handler.checkIsFavorite
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.onTrackStarted
@@ -12,6 +11,7 @@ import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyEvent

@@ -232,7 +232,10 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                             }
                         }
 
-                        event.isCharIgnoreCase('m') -> {
+                        event.isCharIgnoreCase('m') || event.matchesAction(
+                            MeloAction.TRACK_OPTIONS,
+                            settingsViewState.currentSettings
+                        ) -> {
                             val item = currentSection?.items?.getOrNull(s.selectedItemIndex)
                             if (item is SearchResult.Song) {
                                 openTrackOptions(item.track)
@@ -282,7 +285,10 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
-                event.isCharIgnoreCase('m') -> {
+                event.isCharIgnoreCase('m') || event.matchesAction(
+                    MeloAction.TRACK_OPTIONS,
+                    settingsViewState.currentSettings
+                ) -> {
                     val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
@@ -329,7 +335,10 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     return EventResult.HANDLED
                 }
 
-                event.isCharIgnoreCase('m') -> {
+                event.isCharIgnoreCase('m') || event.matchesAction(
+                    MeloAction.TRACK_OPTIONS,
+                    settingsViewState.currentSettings
+                ) -> {
                     val track = allFavorites.getOrNull(s.homeFavoritesCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
