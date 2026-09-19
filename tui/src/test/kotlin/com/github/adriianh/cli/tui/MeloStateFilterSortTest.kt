@@ -417,4 +417,56 @@ class MeloStateFilterSortTest {
         // DetailTab contracts (i: Info, l: Lyrics, s: Similar)
         assertEquals(listOf(DetailTab.INFO, DetailTab.LYRICS, DetailTab.SIMILAR), DetailTab.entries)
     }
+
+    @Test
+    fun testBatchSelectionState() {
+        val t1 = createTrack("t1", "Song 1", "Artist A")
+        val t2 = createTrack("t2", "Song 2", "Artist B")
+        val t3 = createTrack("t3", "Song 3", "Artist C")
+
+        var batch = BatchSelectionState()
+        assertEquals(0, batch.count)
+        assertEquals(false, batch.isNotEmpty)
+        assertEquals(true, batch.isEmpty)
+        assertEquals(false, batch.isSelectionMode)
+        assertEquals(false, batch.isSelected(t1.id))
+
+        // Toggle t1: adds t1 and enables selection mode
+        batch = batch.toggle(t1)
+        assertEquals(1, batch.count)
+        assertEquals(true, batch.isNotEmpty)
+        assertEquals(false, batch.isEmpty)
+        assertEquals(true, batch.isSelectionMode)
+        assertEquals(true, batch.isSelected(t1.id))
+        assertEquals(false, batch.isSelected(t2.id))
+        assertEquals(listOf(t1), batch.tracks())
+
+        // Toggle t2: adds t2
+        batch = batch.toggle(t2)
+        assertEquals(2, batch.count)
+        assertEquals(true, batch.isSelected(t1.id))
+        assertEquals(true, batch.isSelected(t2.id))
+
+        // Toggle t1 again: removes t1
+        batch = batch.toggle(t1)
+        assertEquals(1, batch.count)
+        assertEquals(false, batch.isSelected(t1.id))
+        assertEquals(true, batch.isSelected(t2.id))
+
+        // Select all
+        batch = batch.selectAll(listOf(t1, t2, t3))
+        assertEquals(3, batch.count)
+        assertEquals(true, batch.isSelectionMode)
+        assertEquals(true, batch.isSelected(t1.id))
+        assertEquals(true, batch.isSelected(t2.id))
+        assertEquals(true, batch.isSelected(t3.id))
+
+        // Clear
+        batch = batch.clear()
+        assertEquals(0, batch.count)
+        assertEquals(true, batch.isEmpty)
+        assertEquals(false, batch.isNotEmpty)
+        assertEquals(false, batch.isSelectionMode)
+        assertEquals(emptyList<Track>(), batch.tracks())
+    }
 }
