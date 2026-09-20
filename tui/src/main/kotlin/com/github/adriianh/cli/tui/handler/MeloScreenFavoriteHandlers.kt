@@ -103,7 +103,8 @@ internal fun MeloScreen.syncYouTubeFavorites() {
                 collections = state.collections.copy(
                     remoteFavorites = emptyList(),
                     remoteAlbums = emptyList(),
-                    remoteArtists = emptyList()
+                    remoteArtists = emptyList(),
+                    remoteRecentTracks = emptyList(),
                 )
             )
         }
@@ -126,6 +127,30 @@ internal fun MeloScreen.syncYouTubeFavorites() {
                         remoteAlbums = remoteAlbums,
                         remoteArtists = remoteArtists
                     )
+                )
+            }
+        } catch (_: Exception) {
+        }
+    }
+}
+
+internal fun MeloScreen.syncYouTubeHistory() {
+    val settings = settingsViewState.currentSettings
+    val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+    if (!isLoggedIn || !settings.syncHistoryToYouTube) {
+        appRunner()?.runOnRenderThread {
+            state = state.copy(
+                collections = state.collections.copy(remoteRecentTracks = emptyList())
+            )
+        }
+        return
+    }
+    scope.launch {
+        try {
+            val remoteHistory = getRemoteHistory?.invoke()?.getOrNull().orEmpty()
+            appRunner()?.runOnRenderThread {
+                state = state.copy(
+                    collections = state.collections.copy(remoteRecentTracks = remoteHistory)
                 )
             }
         } catch (_: Exception) {

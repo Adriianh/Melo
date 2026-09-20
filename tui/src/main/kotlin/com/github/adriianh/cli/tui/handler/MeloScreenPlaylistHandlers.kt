@@ -8,7 +8,6 @@ import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
-import com.github.adriianh.cli.tui.handler.playback.playFromQueue
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
 import com.github.adriianh.core.domain.model.MeloAction
@@ -575,6 +574,7 @@ internal fun MeloScreen.syncYouTubePlaylists() {
 internal fun MeloScreen.syncYouTubeLibrary() {
     syncYouTubeFavorites()
     syncYouTubePlaylists()
+    syncYouTubeHistory()
 }
 
 internal fun MeloScreen.openPlaylistPicker(tracks: List<Track>) {

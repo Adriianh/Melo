@@ -18,6 +18,7 @@ import com.github.adriianh.core.domain.model.StatsPeriod
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.TrackStat
+import com.github.adriianh.core.domain.model.mergeHistoryEntries
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.toFavoriteEntity
 import com.github.adriianh.core.domain.player.RepeatMode
@@ -376,6 +377,7 @@ data class CollectionsState(
     val remoteAlbums: List<SearchResult.Album> = emptyList(),
     val remoteArtists: List<SearchResult.Artist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
+    val remoteRecentTracks: List<HistoryEntry> = emptyList(),
     val offlineTracks: List<OfflineTrack> = emptyList(),
     val favoriteEntities: List<FavoriteEntity> = emptyList(),
 )
@@ -652,3 +654,9 @@ fun MeloState.isPlayable(track: Track): Boolean {
 
     return false
 }
+
+/**
+ * Returns merged local and remote playback history, with deduplication.
+ */
+fun MeloState.allRecentTracks(): List<HistoryEntry> =
+    mergeHistoryEntries(collections.recentTracks, collections.remoteRecentTracks)

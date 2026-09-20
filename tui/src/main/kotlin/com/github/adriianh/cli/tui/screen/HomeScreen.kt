@@ -23,6 +23,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.allLibraryFavorites
+import com.github.adriianh.cli.tui.allRecentTracks
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -343,8 +344,7 @@ private fun renderFeedTab(
     headerElements.add(text("Time").dim().length(6))
     val tableHeader = row(*headerElements.toTypedArray()).length(1)
 
-    val selectedItem = rawItems.getOrNull(s.selectedItemIndex)
-    val bottomBar = when (selectedItem) {
+    val bottomBar = when (val selectedItem = rawItems.getOrNull(s.selectedItemIndex)) {
         is SearchResult.Song -> {
             val t = selectedItem.track
             val isPlaying = t.id == state.player.nowPlaying?.id
@@ -511,9 +511,10 @@ private fun buildTrackPreview(track: Track?, state: MeloState, title: String): E
 private fun renderRecentTab(
     state: MeloState,
     s: ScreenState.Home,
-    recentList: ListElement<*>
+    recentList: ListElement<*>,
 ): StyledElement<*> {
-    if (state.collections.recentTracks.isEmpty()) {
+    val recentTracks = state.allRecentTracks()
+    if (recentTracks.isEmpty()) {
         return column(
             spacer(),
             text("$ICON_CLOCK  No recently played tracks yet").fg(TEXT_SECONDARY).centered(),
@@ -522,14 +523,19 @@ private fun renderRecentTab(
         )
     }
 
-    val items = state.collections.recentTracks.mapIndexed { index, entry ->
+    val items = recentTracks.mapIndexed { index, entry ->
         val track = entry.track
         val isPlaying = track.id == state.player.nowPlaying?.id
         val isPlayable = state.isPlayable(track)
         val isSelected = index == s.homeRecentCursor
         val isFav = state.isFavoriteTrack(track)
         val isBatchSelected = state.selection.isSelected(track.id)
+        val isRemote = state.collections.remoteRecentTracks.any { it.track.id == track.id } &&
+                state.collections.recentTracks.none { it.track.id == track.id }
+        val sourceIcon = if (isRemote) "☁" else "⌂"
+        val sourceColor = if (isRemote) ACCENT_BLUE else PRIMARY_COLOR
         val rowElements = mutableListOf<Element>()
+        rowElements.add(text("$sourceIcon ").fg(sourceColor).length(2))
         rowElements.add(text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2))
         if (state.selection.isNotEmpty) {
             rowElements.add(
@@ -554,10 +560,11 @@ private fun renderRecentTab(
     recentList.elements(*items.toTypedArray())
     recentList.selected(s.homeRecentCursor)
 
-    val selectedTrack = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+    val selectedTrack = recentTracks.getOrNull(s.homeRecentCursor)?.track
     val previewPane = buildTrackPreview(selectedTrack, state, "Recent Track")
 
     val headerElements = mutableListOf<Element>()
+    headerElements.add(text("").length(2))
     headerElements.add(text("").length(2))
     if (state.selection.isNotEmpty) {
         headerElements.add(text("Sel ").dim().length(4))

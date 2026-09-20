@@ -25,6 +25,7 @@ import com.github.adriianh.core.domain.repository.StatsRepository
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.GetFavoriteEntitiesUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
@@ -163,7 +164,12 @@ val appModule = module {
     single { DiscordRpcManager() }
 
     single<MeloDatabase> { DatabaseFactory.create() }
-    single<HistoryRepository> { HistoryRepositoryImpl(get()) }
+    single<HistoryRepository> {
+        HistoryRepositoryImpl(
+            database = get(),
+            settingsRepository = get()
+        )
+    }
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
@@ -219,6 +225,7 @@ val appModule = module {
             removeFavoriteEntity = getOrNull<RemoveFavoriteEntityUseCase>(),
             isFavoriteEntity = getOrNull<IsFavoriteEntityUseCase>(),
             toggleFavoriteEntity = getOrNull<ToggleFavoriteEntityUseCase>(),
+            getRemoteHistory = getOrNull<GetRemoteHistoryUseCase>(),
         )
     }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }

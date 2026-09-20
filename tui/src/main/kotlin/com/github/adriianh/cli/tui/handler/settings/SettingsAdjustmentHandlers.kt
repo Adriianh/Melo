@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.component.SettingsItem
 import com.github.adriianh.cli.tui.handler.playback.setVolumePercent
+import com.github.adriianh.cli.tui.handler.syncYouTubeHistory
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -94,4 +95,7 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
     state = state.copy(isOfflineMode = newSettings.offlineMode)
     scope.launch { updateSettings(newSettings) }
+    if (item == SettingsItem.SYNC_HISTORY) {
+        syncYouTubeHistory()
+    }
 }

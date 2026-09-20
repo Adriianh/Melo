@@ -32,7 +32,7 @@ internal fun MeloScreen.onStartLifecycle() {
         }
     }
     scope.launch {
-        getRecentTracks(20).collect { entries ->
+        getRecentTracks(100).collect { entries ->
             appRunner()?.runOnRenderThread {
                 state = state.copy(collections = state.collections.copy(recentTracks = entries))
             }

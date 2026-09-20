@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.HomeTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.allLibraryFavorites
+import com.github.adriianh.cli.tui.allRecentTracks
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
@@ -36,7 +37,11 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
         return EventResult.HANDLED
     }
     if (event.isCharIgnoreCase('r')) {
-        loadHomeFeed()
+        when (s.homeTab) {
+            HomeTab.FEED -> loadHomeFeed()
+            HomeTab.RECENT -> syncYouTubeHistory()
+            HomeTab.FAVORITES -> syncYouTubeFavorites()
+        }
         return EventResult.HANDLED
     }
 
@@ -289,7 +294,8 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
         }
 
         HomeTab.RECENT -> {
-            val maxIndex = (state.collections.recentTracks.size - 1).coerceAtLeast(0)
+            val recent = state.allRecentTracks()
+            val maxIndex = (recent.size - 1).coerceAtLeast(0)
             when {
                 event.matches(Actions.MOVE_DOWN) -> {
                     updateScreen<ScreenState.Home> {
@@ -306,21 +312,21 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                 }
 
                 event.code() == KeyCode.ENTER -> {
-                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    val track = recent.getOrNull(s.homeRecentCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     playTrack(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    val track = recent.getOrNull(s.homeRecentCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     addToQueue(track)
                     return EventResult.HANDLED
                 }
 
                 event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    val track = recent.getOrNull(s.homeRecentCursor)?.track
                         ?: return handleGlobalShortcuts(event)
                     toggleFavorite(track)
                     return EventResult.HANDLED
@@ -330,7 +336,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                     MeloAction.TOGGLE_SELECTION,
                     settingsViewState.currentSettings
                 ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
-                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    val track = recent.getOrNull(s.homeRecentCursor)?.track
                     if (track != null) {
                         state = state.copy(selection = state.selection.toggle(track))
                         return EventResult.HANDLED
@@ -338,7 +344,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                 }
 
                 event.isCtrlA() -> {
-                    val tracks = state.collections.recentTracks.map { it.track }
+                    val tracks = recent.map { it.track }
                     if (tracks.isNotEmpty()) {
                         state = state.copy(selection = state.selection.selectAll(tracks))
                         return EventResult.HANDLED
@@ -353,7 +359,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                         openPlaylistPicker(state.selection.tracks())
                     } else {
                         val track =
-                            state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                            recent.getOrNull(s.homeRecentCursor)?.track
                         if (track != null) openPlaylistPicker(track)
                     }
                     return EventResult.HANDLED
@@ -367,7 +373,7 @@ internal fun MeloScreen.handleHomeKey(event: KeyEvent): EventResult {
                         openBatchOptions(state.selection.tracks())
                         return EventResult.HANDLED
                     }
-                    val track = state.collections.recentTracks.getOrNull(s.homeRecentCursor)?.track
+                    val track = recent.getOrNull(s.homeRecentCursor)?.track
                     if (track != null) openTrackOptions(track)
                     return EventResult.HANDLED
                 }
