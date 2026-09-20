@@ -3,6 +3,8 @@ package com.github.adriianh.cli.tui
 import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.FavoriteEntity
+import com.github.adriianh.core.domain.model.FavoriteEntityType
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
@@ -17,6 +19,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.TrackStat
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.toFavoriteEntity
 import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.image.ImageData
 
@@ -38,12 +41,12 @@ enum class SidebarSection {
     LIBRARY,
     NOW_PLAYING,
     STATS,
-    SETTINGS,
     OFFLINE,
+    SETTINGS,
 }
 
 /**
- * Tabs for the detail panel.
+ * Detail tabs inside the detail side-panel.
  */
 enum class DetailTab {
     INFO,
@@ -58,6 +61,16 @@ enum class LibraryTab {
     FAVORITES,
     PLAYLISTS,
     LOCAL,
+}
+
+enum class FavoritesSubTab(val label: String) {
+    SONGS("Songs"),
+    ALBUMS("Albums"),
+    ARTISTS("Artists"),
+    PLAYLISTS("Playlists");
+
+    fun next(): FavoritesSubTab = entries[(ordinal + 1) % entries.size]
+    fun previous(): FavoritesSubTab = entries[(ordinal - 1 + entries.size) % entries.size]
 }
 
 enum class LibrarySourceFilter {
@@ -183,6 +196,8 @@ sealed interface ScreenState {
 
     data class Library(
         val libraryTab: LibraryTab = LibraryTab.FAVORITES,
+        val favoritesSubTab: FavoritesSubTab = FavoritesSubTab.SONGS,
+        val favoriteEntitiesCursor: Int = 0,
         val selectedPlaylist: Playlist? = null,
         val playlistTracks: List<Track> = emptyList(),
         val isInPlaylistDetail: Boolean = false,
@@ -358,8 +373,11 @@ data class CollectionsState(
     val remoteFavorites: List<Track> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val remotePlaylists: List<SearchResult.Playlist> = emptyList(),
+    val remoteAlbums: List<SearchResult.Album> = emptyList(),
+    val remoteArtists: List<SearchResult.Artist> = emptyList(),
     val recentTracks: List<HistoryEntry> = emptyList(),
-    val offlineTracks: List<OfflineTrack> = emptyList()
+    val offlineTracks: List<OfflineTrack> = emptyList(),
+    val favoriteEntities: List<FavoriteEntity> = emptyList(),
 )
 
 sealed interface LibraryFavoriteItem {
@@ -373,6 +391,22 @@ sealed interface LibraryFavoriteItem {
     }
 
     data class Remote(override val track: Track) : LibraryFavoriteItem {
+        override val isRemote: Boolean get() = true
+        override val icon: String get() = "☁"
+    }
+}
+
+sealed interface LibraryFavoriteEntityItem {
+    val entity: FavoriteEntity
+    val isRemote: Boolean
+    val icon: String
+
+    data class Local(override val entity: FavoriteEntity) : LibraryFavoriteEntityItem {
+        override val isRemote: Boolean get() = false
+        override val icon: String get() = "⌂"
+    }
+
+    data class Remote(override val entity: FavoriteEntity) : LibraryFavoriteEntityItem {
         override val isRemote: Boolean get() = true
         override val icon: String get() = "☁"
     }
@@ -414,6 +448,77 @@ fun MeloState.isFavoriteTrack(trackId: String, sourceId: String? = null): Boolea
         matches(it.id) || (sId != null && (matches(sId) || sId == sourceId))
     }
 }
+
+fun MeloState.isFavoriteEntity(entityId: String): Boolean {
+    val rawId = entityId.removePrefix("piped:")
+    fun matches(id: String) = id == entityId || id == rawId || id.removePrefix("piped:") == rawId
+    if (collections.favoriteEntities.any { matches(it.id) }) return true
+    if (collections.remoteAlbums.any { matches(it.id) }) return true
+    if (collections.remoteArtists.any { matches(it.id) }) return true
+    if (collections.remotePlaylists.any { matches(it.id) }) return true
+    return false
+}
+
+fun MeloState.favoriteAlbums(): List<FavoriteEntity> =
+    collections.favoriteEntities.filter { it.type == FavoriteEntityType.ALBUM }
+
+fun MeloState.favoriteArtists(): List<FavoriteEntity> =
+    collections.favoriteEntities.filter { it.type == FavoriteEntityType.ARTIST }
+
+fun MeloState.favoritePlaylists(): List<FavoriteEntity> =
+    collections.favoriteEntities.filter { it.type == FavoriteEntityType.PLAYLIST }
+
+fun MeloState.allFavoriteAlbums(): List<LibraryFavoriteEntityItem> {
+    val remoteIds =
+        collections.remoteAlbums.flatMap { listOf(it.id, it.id.removePrefix("piped:")) }.toSet()
+    val localItems = collections.favoriteEntities
+        .filter { it.type == FavoriteEntityType.ALBUM && it.id !in remoteIds && it.id.removePrefix("piped:") !in remoteIds }
+        .map { LibraryFavoriteEntityItem.Local(it) }
+    val remoteItems =
+        collections.remoteAlbums.map { LibraryFavoriteEntityItem.Remote(it.toFavoriteEntity()) }
+    return localItems + remoteItems
+}
+
+fun MeloState.allFavoriteArtists(): List<LibraryFavoriteEntityItem> {
+    val remoteIds =
+        collections.remoteArtists.flatMap { listOf(it.id, it.id.removePrefix("piped:")) }.toSet()
+    val localItems = collections.favoriteEntities
+        .filter {
+            it.type == FavoriteEntityType.ARTIST && it.id !in remoteIds && it.id.removePrefix(
+                "piped:"
+            ) !in remoteIds
+        }
+        .map { LibraryFavoriteEntityItem.Local(it) }
+    val remoteItems =
+        collections.remoteArtists.map { LibraryFavoriteEntityItem.Remote(it.toFavoriteEntity()) }
+    return localItems + remoteItems
+}
+
+fun MeloState.allFavoritePlaylists(): List<LibraryFavoriteEntityItem> {
+    val remoteIds =
+        collections.remotePlaylists.flatMap { listOf(it.id, it.id.removePrefix("piped:")) }.toSet()
+    val localItems = collections.favoriteEntities
+        .filter {
+            it.type == FavoriteEntityType.PLAYLIST && it.id !in remoteIds && it.id.removePrefix(
+                "piped:"
+            ) !in remoteIds
+        }
+        .map { LibraryFavoriteEntityItem.Local(it) }
+    val remoteItems =
+        collections.remotePlaylists.map { LibraryFavoriteEntityItem.Remote(it.toFavoriteEntity()) }
+    return localItems + remoteItems
+}
+
+fun MeloState.allFavoriteEntities(subTab: FavoritesSubTab): List<LibraryFavoriteEntityItem> =
+    when (subTab) {
+        FavoritesSubTab.SONGS -> emptyList()
+        FavoritesSubTab.ALBUMS -> allFavoriteAlbums()
+        FavoritesSubTab.ARTISTS -> allFavoriteArtists()
+        FavoritesSubTab.PLAYLISTS -> allFavoritePlaylists()
+    }
+
+fun MeloState.currentFavoriteEntities(subTab: FavoritesSubTab): List<FavoriteEntity> =
+    allFavoriteEntities(subTab).map { it.entity }
 
 sealed interface LibraryPlaylistItem {
     val title: String

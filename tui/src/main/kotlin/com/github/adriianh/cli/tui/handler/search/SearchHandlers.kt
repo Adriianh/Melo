@@ -783,6 +783,24 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        actualState.tab != SearchTab.SONGS && (
+                event.isChar('F') || event.matchesAction(
+                    MeloAction.FAVORITE,
+                    settingsViewState.currentSettings
+                )
+                ) -> {
+            val entity = when (actualState.tab) {
+                SearchTab.ALBUMS -> actualState.albumResults.getOrNull(actualState.selectedIndex)
+                SearchTab.ARTISTS -> actualState.artistResults.getOrNull(actualState.selectedIndex)
+                SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(actualState.selectedIndex)
+                SearchTab.SONGS -> null
+            }
+            if (entity != null) {
+                toggleEntityFavorite(entity)
+                return EventResult.HANDLED
+            }
+        }
+
         actualState.tab == SearchTab.SONGS && event.matchesAction(
             MeloAction.ADD_TO_QUEUE,
             settingsViewState.currentSettings

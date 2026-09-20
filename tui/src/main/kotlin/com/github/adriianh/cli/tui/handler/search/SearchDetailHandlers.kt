@@ -16,12 +16,15 @@ import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
 import com.github.adriianh.cli.tui.handler.toggleFavorite
+import com.github.adriianh.cli.tui.isFavoriteEntity
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.FavoriteEntityType
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.toFavoriteEntity
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -813,6 +816,60 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
     return handleGlobalShortcuts(event)
 }
 
+internal fun MeloScreen.toggleEntityFavorite(entity: SearchResult) {
+    val favEntity = when (entity) {
+        is SearchResult.Album -> entity.toFavoriteEntity()
+        is SearchResult.Artist -> entity.toFavoriteEntity()
+        is SearchResult.Playlist -> entity.toFavoriteEntity()
+        is SearchResult.Song -> {
+            toggleFavorite(entity.track)
+            return
+        }
+    }
+    scope.launch {
+        val currentlyFav = state.isFavoriteEntity(favEntity.id)
+        val newFavState = !currentlyFav
+
+        toggleFavoriteEntity?.invoke(favEntity)
+
+        if (!newFavState) {
+            appRunner()?.runOnRenderThread {
+                val rawId = favEntity.id.removePrefix("piped:")
+                val updatedRemoteAlbums = state.collections.remoteAlbums.filterNot {
+                    it.id == favEntity.id || it.id.removePrefix("piped:") == rawId
+                }
+                val updatedRemoteArtists = state.collections.remoteArtists.filterNot {
+                    it.id == favEntity.id || it.id.removePrefix("piped:") == rawId
+                }
+                val updatedRemotePlaylists = state.collections.remotePlaylists.filterNot {
+                    it.id == favEntity.id || it.id.removePrefix("piped:") == rawId
+                }
+                state = state.copy(
+                    collections = state.collections.copy(
+                        remoteAlbums = updatedRemoteAlbums,
+                        remoteArtists = updatedRemoteArtists,
+                        remotePlaylists = updatedRemotePlaylists
+                    )
+                )
+            }
+        }
+
+        val settings = settingsViewState.currentSettings
+        val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+        if (isLoggedIn && settings.syncLikesToYouTube) {
+            val rawId = favEntity.id.removePrefix("piped:")
+            try {
+                when (favEntity.type) {
+                    FavoriteEntityType.ALBUM -> toggleLikeAlbum?.invoke(rawId, newFavState)
+                    FavoriteEntityType.ARTIST -> subscribeChannel?.invoke(rawId, newFavState)
+                    FavoriteEntityType.PLAYLIST -> toggleLikePlaylist?.invoke(rawId, newFavState)
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+}
+
 internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
     val isDescFocused = appRunner()?.focusManager()?.focusedId() == "desc-area"
     if (isDescFocused) {
@@ -835,6 +892,11 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
 
     val actualDetail =
         state.screen as? ScreenState.EntityDetail ?: return handleGlobalShortcuts(event)
+
+    if (event.isChar('F') || (event.modifiers().shift() && event.isCharIgnoreCase('f'))) {
+        toggleEntityFavorite(actualDetail.entity)
+        return EventResult.HANDLED
+    }
 
     if (actualDetail.entity is SearchResult.Artist) {
         val items = actualDetail.artistDashboardItems
@@ -1051,6 +1113,17 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
                     ?: (item as? SearchResult.Song)?.track)?.let { openPlaylistPicker(it) }
                 return EventResult.HANDLED
             }
+
+            event.isCharIgnoreCase('r') -> {
+                val seedTrack = actualDetail.entity.topSongs?.firstOrNull()
+                    ?: items.filterIsInstance<Track>().firstOrNull()
+                    ?: items.filterIsInstance<SearchResult.Song>().firstOrNull()?.track
+                if (seedTrack != null) {
+                    downloadTrack(seedTrack, DownloadType.PREFETCH)
+                    playTrack(seedTrack)
+                    return EventResult.HANDLED
+                }
+            }
         }
 
         return handleGlobalShortcuts(event)
@@ -1211,6 +1284,20 @@ internal fun MeloScreen.handleEntityDetailKey(event: KeyEvent): EventResult {
             val firstTrack = tracks.firstOrNull() ?: return handleGlobalShortcuts(event)
             downloadTrack(firstTrack, DownloadType.PREFETCH)
             playList(tracks, 0)
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('s') && listSize > 0 -> {
+            val shuffled = tracks.shuffled()
+            shuffled.firstOrNull()?.let { downloadTrack(it, DownloadType.PREFETCH) }
+            playList(shuffled, 0)
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('r') && listSize > 0 -> {
+            val track = tracks.getOrNull(entityTracksList.selected()) ?: tracks.first()
+            downloadTrack(track, DownloadType.PREFETCH)
+            playTrack(track)
             return EventResult.HANDLED
         }
 

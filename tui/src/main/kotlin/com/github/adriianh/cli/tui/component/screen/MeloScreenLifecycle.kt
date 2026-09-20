@@ -24,6 +24,14 @@ internal fun MeloScreen.onStartLifecycle() {
         }
     }
     scope.launch {
+        getFavoriteEntities?.invoke()?.collect { entities ->
+            appRunner()?.runOnRenderThread {
+                state =
+                    state.copy(collections = state.collections.copy(favoriteEntities = entities))
+            }
+        }
+    }
+    scope.launch {
         getRecentTracks(20).collect { entries ->
             appRunner()?.runOnRenderThread {
                 state = state.copy(collections = state.collections.copy(recentTracks = entries))

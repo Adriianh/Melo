@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.core.domain.model.Track
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.toggleFavorite(track: Track) {
@@ -99,18 +100,32 @@ internal fun MeloScreen.syncYouTubeFavorites() {
     if (!isLoggedIn) {
         appRunner()?.runOnRenderThread {
             state = state.copy(
-                collections = state.collections.copy(remoteFavorites = emptyList())
+                collections = state.collections.copy(
+                    remoteFavorites = emptyList(),
+                    remoteAlbums = emptyList(),
+                    remoteArtists = emptyList()
+                )
             )
         }
         return
     }
     scope.launch {
         try {
-            val result = getLikedSongs?.invoke() ?: return@launch
-            val remoteSongs = result.getOrNull().orEmpty()
+            val songsDeferred = async { getLikedSongs?.invoke()?.getOrNull().orEmpty() }
+            val albumsDeferred = async { getUserAlbums?.invoke()?.getOrNull().orEmpty() }
+            val artistsDeferred = async { getUserArtists?.invoke()?.getOrNull().orEmpty() }
+
+            val remoteSongs = songsDeferred.await()
+            val remoteAlbums = albumsDeferred.await()
+            val remoteArtists = artistsDeferred.await()
+
             appRunner()?.runOnRenderThread {
                 state = state.copy(
-                    collections = state.collections.copy(remoteFavorites = remoteSongs)
+                    collections = state.collections.copy(
+                        remoteFavorites = remoteSongs,
+                        remoteAlbums = remoteAlbums,
+                        remoteArtists = remoteArtists
+                    )
                 )
             }
         } catch (_: Exception) {

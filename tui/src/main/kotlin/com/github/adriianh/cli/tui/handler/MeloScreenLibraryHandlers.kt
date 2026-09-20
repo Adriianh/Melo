@@ -1,20 +1,26 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.FavoritesSubTab
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.allFavoriteEntities
 import com.github.adriianh.cli.tui.filteredAndSortedFavorites
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
+import com.github.adriianh.cli.tui.handler.search.openEntityDetails
+import com.github.adriianh.core.domain.model.FavoriteEntityType
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.filterAndSortTracks
+import com.github.adriianh.core.domain.model.toSearchResult
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.launch
 
 /**
  * Handles key events for the Library screen, including Favorites, Playlists, and Local sections.
@@ -287,6 +293,110 @@ internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
             }
         }
         return EventResult.HANDLED
+    }
+
+    if (event.code() == KeyCode.LEFT || event.isChar('h') || (event.modifiers()
+            .shift() && event.code() == KeyCode.TAB)
+    ) {
+        updateScreen<ScreenState.Library> {
+            it.copy(
+                favoritesSubTab = it.favoritesSubTab.previous(),
+                selectedIndex = 0
+            )
+        }
+        favoritesList.selected(0)
+        return EventResult.HANDLED
+    }
+    if (event.code() == KeyCode.RIGHT || event.isChar('l') || event.code() == KeyCode.TAB) {
+        updateScreen<ScreenState.Library> {
+            it.copy(
+                favoritesSubTab = it.favoritesSubTab.next(),
+                selectedIndex = 0
+            )
+        }
+        favoritesList.selected(0)
+        return EventResult.HANDLED
+    }
+
+    if (actualState.favoritesSubTab != FavoritesSubTab.SONGS) {
+        val items = state.allFavoriteEntities(actualState.favoritesSubTab)
+        val listSize = items.size
+        when {
+            event.matches(Actions.MOVE_DOWN) && listSize > 0 -> {
+                favoritesList.selected(minOf(listSize - 1, favoritesList.selected() + 1))
+                return EventResult.HANDLED
+            }
+
+            event.matches(Actions.MOVE_UP) && listSize > 0 -> {
+                favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
+                return EventResult.HANDLED
+            }
+
+            event.code() == KeyCode.ENTER && listSize > 0 -> {
+                items.getOrNull(favoritesList.selected())?.let {
+                    openEntityDetails(it.entity.toSearchResult())
+                }
+                return EventResult.HANDLED
+            }
+
+            (event.isCharIgnoreCase('f') || event.code() == KeyCode.DELETE) && listSize > 0 -> {
+                items.getOrNull(favoritesList.selected())?.let { item ->
+                    val entity = item.entity
+                    scope.launch {
+                        removeFavoriteEntity?.invoke(entity.id)
+                        if (item.isRemote) {
+                            appRunner()?.runOnRenderThread {
+                                val rawId = entity.id.removePrefix("piped:")
+                                val updatedRemoteAlbums = state.collections.remoteAlbums.filterNot {
+                                    it.id == entity.id || it.id.removePrefix("piped:") == rawId
+                                }
+                                val updatedRemoteArtists =
+                                    state.collections.remoteArtists.filterNot {
+                                        it.id == entity.id || it.id.removePrefix("piped:") == rawId
+                                    }
+                                val updatedRemotePlaylists =
+                                    state.collections.remotePlaylists.filterNot {
+                                        it.id == entity.id || it.id.removePrefix("piped:") == rawId
+                                    }
+                                state = state.copy(
+                                    collections = state.collections.copy(
+                                        remoteAlbums = updatedRemoteAlbums,
+                                        remoteArtists = updatedRemoteArtists,
+                                        remotePlaylists = updatedRemotePlaylists
+                                    )
+                                )
+                            }
+                        }
+                        val settings = settingsViewState.currentSettings
+                        val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+                        if (isLoggedIn && settings.syncLikesToYouTube) {
+                            val rawId = entity.id.removePrefix("piped:")
+                            try {
+                                when (entity.type) {
+                                    FavoriteEntityType.ALBUM -> toggleLikeAlbum?.invoke(
+                                        rawId,
+                                        false
+                                    )
+
+                                    FavoriteEntityType.ARTIST -> subscribeChannel?.invoke(
+                                        rawId,
+                                        false
+                                    )
+
+                                    FavoriteEntityType.PLAYLIST -> toggleLikePlaylist?.invoke(
+                                        rawId,
+                                        false
+                                    )
+                                }
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+                }
+                return EventResult.HANDLED
+            }
+        }
+        return handleGlobalShortcuts(event)
     }
 
     when {

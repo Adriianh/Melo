@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.screen
 
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
@@ -13,6 +14,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
+import com.github.adriianh.cli.tui.isFavoriteEntity
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
@@ -173,8 +175,10 @@ private fun renderResultsArea(
             currentCategoryCount = actualState.albumResults.size
             val items = actualState.albumResults.mapIndexed { index, album ->
                 val isSelected = index == actualState.selectedIndex
+                val isFav = state.isFavoriteEntity(album.id)
+                val favIcon = if (isFav) "$ICON_HEART " else "  "
                 row(
-                    text("  ").length(2),
+                    text(favIcon).fg(ACCENT_RED).length(2),
                     text("${index + 1}").dim().length(3),
                     text(album.title).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }
                         .fill(),
@@ -184,7 +188,7 @@ private fun renderResultsArea(
             }
             resultList.elements(*items.toTypedArray())
             headerItems = row(
-                text("").length(2),
+                text(ICON_HEART).dim().length(2),
                 text("#").dim().length(3),
                 text("Album").dim().fill(),
                 text("Artist").dim().percent(25),
@@ -197,15 +201,19 @@ private fun renderResultsArea(
             currentCategoryCount = actualState.artistResults.size
             val items = actualState.artistResults.mapIndexed { index, artist ->
                 val isSelected = index == actualState.selectedIndex
+                val isFav = state.isFavoriteEntity(artist.id)
+                val favIcon = if (isFav) "$ICON_HEART " else "  "
                 row(
-                    text("  ").length(2),
+                    text(favIcon).fg(ACCENT_RED).length(2),
                     text("${index + 1}").dim().length(3),
                     text(artist.name).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }
                         .fill())
             }
             resultList.elements(*items.toTypedArray())
             headerItems = row(
-                text("").length(2), text("#").dim().length(3), text("Artist").dim().fill()
+                text(ICON_HEART).dim().length(2),
+                text("#").dim().length(3),
+                text("Artist").dim().fill()
             ).margin(Margin.horizontal(1))
         }
 
@@ -214,8 +222,10 @@ private fun renderResultsArea(
             currentCategoryCount = actualState.playlistResults.size
             val items = actualState.playlistResults.mapIndexed { index, pl ->
                 val isSelected = index == actualState.selectedIndex
+                val isFav = state.isFavoriteEntity(pl.id)
+                val favIcon = if (isFav) "$ICON_HEART " else "  "
                 row(
-                    text("  ").length(2),
+                    text(favIcon).fg(ACCENT_RED).length(2),
                     text("${index + 1}").dim().length(3),
                     text(pl.title).fg(TEXT_PRIMARY).apply { if (!isSelected) ellipsisMiddle() }
                         .fill(),
@@ -225,7 +235,7 @@ private fun renderResultsArea(
             }
             resultList.elements(*items.toTypedArray())
             headerItems = row(
-                text("").length(2),
+                text(ICON_HEART).dim().length(2),
                 text("#").dim().length(3),
                 text("Playlist").dim().fill(),
                 text("Author").dim().percent(25),
@@ -250,9 +260,9 @@ private fun renderResultsArea(
                 "[Enter] Play  [m] Options$detailHint  [v] Select  [1..4] Tabs  [/] Search"
             }
         }
-        SearchTab.ALBUMS -> "[Enter] Open$detailHint  [1..4] Tabs  [/] Search"
-        SearchTab.ARTISTS -> "[Enter] View Artist$detailHint  [1..4] Tabs  [/] Search"
-        SearchTab.PLAYLISTS -> "[Enter] Open$detailHint  [1..4] Tabs  [/] Search"
+        SearchTab.ALBUMS -> "[Enter] Open  [f] Like$detailHint  [1..4] Tabs  [/] Search"
+        SearchTab.ARTISTS -> "[Enter] View Artist  [f] Follow$detailHint  [1..4] Tabs  [/] Search"
+        SearchTab.PLAYLISTS -> "[Enter] Open  [f] Like$detailHint  [1..4] Tabs  [/] Search"
     }
 
     val listContent = if (currentCategoryCount == 0) {
