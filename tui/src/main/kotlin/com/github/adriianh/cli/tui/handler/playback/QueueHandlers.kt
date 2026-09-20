@@ -44,10 +44,6 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
             if (!isFocused) return handleGlobalShortcuts(event)
             val newCursor = minOf(state.player.queue.lastIndex, state.player.queueCursor + 1)
             state = state.copy(player = state.player.copy(queueCursor = newCursor))
-
-            if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && newCursor >= state.player.queue.size - 5) {
-                loadMoreRadioTracks()
-            }
             return EventResult.HANDLED
         }
 

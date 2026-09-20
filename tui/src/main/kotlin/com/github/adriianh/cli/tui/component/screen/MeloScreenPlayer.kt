@@ -104,7 +104,6 @@ private fun MeloScreen.observeQueueState() {
                         nowPlaying = qs.currentTrack,
                         repeatMode = qs.repeatMode,
                         shuffleEnabled = qs.shuffleEnabled,
-                        userQueueCount = qs.userQueueCount,
                         queueCursor = minOf(
                             prev.queueCursor,
                             (qs.tracks.size - 1).coerceAtLeast(0)

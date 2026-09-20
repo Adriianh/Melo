@@ -112,8 +112,6 @@ data class PlayerState(
     val isQueueVisible: Boolean = false,
     val volume: Int = 75,
     val isRadioMode: Boolean = false,
-    val isLoadingMoreRadio: Boolean = false,
-    val userQueueCount: Int = 0,
     val syncedLyrics: List<LrcLine> = emptyList(),
     val isLoadingSyncedLyrics: Boolean = false,
     val nowPlayingPositionMs: Long = 0L,
