@@ -13,12 +13,14 @@ import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.repository.StreamCacheRepository
+import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
+import com.github.adriianh.core.domain.usecase.library.GetFavoriteEntitiesUseCase
 import com.github.adriianh.core.domain.usecase.library.GetFavoritesUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistIdsForTrackUseCase
@@ -28,13 +30,16 @@ import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.IsFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.IsFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
@@ -255,6 +260,11 @@ val sharedModule: Module = module {
     singleOf(::AddFavoriteUseCase)
     singleOf(::RemoveFavoriteUseCase)
     singleOf(::IsFavoriteUseCase)
+    singleOf(::GetFavoriteEntitiesUseCase)
+    singleOf(::AddFavoriteEntityUseCase)
+    singleOf(::RemoveFavoriteEntityUseCase)
+    singleOf(::IsFavoriteEntityUseCase)
+    singleOf(::ToggleFavoriteEntityUseCase)
     singleOf(::GetOfflineTracksUseCase)
     singleOf(::DownloadTrackUseCase)
     singleOf(::DeleteDownloadedTrackUseCase)

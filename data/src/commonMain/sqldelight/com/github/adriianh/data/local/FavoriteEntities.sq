@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS favorite_entities (
+    id          TEXT    NOT NULL PRIMARY KEY,
+    type        TEXT    NOT NULL,
+    title       TEXT    NOT NULL,
+    subtitle    TEXT,
+    artwork_url TEXT,
+    track_count INTEGER,
+    added_at    INTEGER NOT NULL
+);
+
+insertFavoriteEntity:
+INSERT OR REPLACE INTO favorite_entities (id, type, title, subtitle, artwork_url, track_count, added_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteFavoriteEntity:
+DELETE FROM favorite_entities WHERE id = ?;
+
+selectAllFavoriteEntities:
+SELECT * FROM favorite_entities ORDER BY added_at DESC;
+
+selectFavoriteEntitiesByType:
+SELECT * FROM favorite_entities WHERE type = ? ORDER BY added_at DESC;
+
+isFavoriteEntity:
+SELECT COUNT(*) FROM favorite_entities WHERE id = ?;
