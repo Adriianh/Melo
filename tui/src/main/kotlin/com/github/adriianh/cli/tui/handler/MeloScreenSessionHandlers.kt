@@ -1,61 +1,39 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.handler.playback.playFromQueue
-import com.github.adriianh.cli.tui.handler.playback.seekTo
-import com.github.adriianh.core.domain.repository.SavedSession
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * The shared PlaybackManager restores the saved queue/session during its init.
+ * Here we only wait for that restore to land and kick off playback at the
+ * saved position (the PM applies the restored position seek automatically).
+ */
 internal suspend fun MeloScreen.restoreLastSession() {
-    val session = restoreSession() ?: return
+    var waited = 0
+    while (waited < 10_000 && playbackManager.queueState.value.tracks.isEmpty()) {
+        delay(250.milliseconds)
+        waited += 250
+    }
+    if (playbackManager.queueState.value.tracks.isEmpty()) return
 
-    appRunner()?.runOnRenderThread {
-        state = state.copy(
-            player = state.player.copy(
-                queue = session.queue,
-                queueIndex = session.queueIndex,
-            ),
-            isRestoringSession = true,
-        )
-        playFromQueue(session.queueIndex)
+    appRunner()?.runOnRenderThread { state = state.copy(isRestoringSession = true) }
+
+    val playback = playbackManager.playbackState.value
+    if (playbackManager.queueState.value.currentTrack != null &&
+        !playback.isPlaying && !playback.isBuffering
+    ) {
+        playbackManager.togglePlayPause()
     }
 
-    // Give the render thread a moment to process before polling
-    delay(300)
-
-    var waited = 0
+    waited = 0
     while (waited < 10_000) {
-        delay(250)
+        delay(250.milliseconds)
         waited += 250
-        val s = state
-        when {
-            !s.player.isLoadingAudio && s.player.isPlaying -> {
-                if (session.positionMs > 3_000L) {
-                    val duration = s.player.nowPlaying?.durationMs?.takeIf { it > 0 } ?: break
-                    appRunner()?.runOnRenderThread {
-                        seekTo(session.positionMs.toDouble() / duration)
-                    }
-                }
-                break
-            }
-            s.player.audioError != null -> break
-        }
+        val current = playbackManager.playbackState.value
+        if (current.isPlaying || current.isBuffering) break
+        if (current.error != null) break
     }
 
     appRunner()?.runOnRenderThread { state = state.copy(isRestoringSession = false) }
-}
-
-internal suspend fun MeloScreen.persistSession() {
-    val currentState = state
-    if (currentState.player.nowPlaying == null || currentState.player.queue.isEmpty() || currentState.player.queueIndex < 0) {
-        clearSession()
-        return
-    }
-    saveSession(
-        SavedSession(
-            queue = currentState.player.queue,
-            queueIndex = currentState.player.queueIndex,
-            positionMs = (currentState.player.progress * currentState.player.nowPlaying.durationMs).toLong(),
-        )
-    )
 }

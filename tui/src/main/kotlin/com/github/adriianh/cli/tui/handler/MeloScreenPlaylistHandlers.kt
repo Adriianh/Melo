@@ -142,7 +142,12 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
         }
 
         event.isCharIgnoreCase('n') -> {
-            state = state.copy(playlistInteraction = state.playlistInteraction.copy(playlistInputMode = PlaylistInputMode.CREATE, playlistInput = ""))
+            state = state.copy(
+                playlistInteraction = state.playlistInteraction.copy(
+                    playlistInputMode = PlaylistInputMode.CREATE,
+                    playlistInput = ""
+                )
+            )
             return EventResult.HANDLED
         }
 
@@ -402,6 +407,7 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
             )
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.ENTER -> {
             val name = interaction.playlistInput.trim()
             if (name.isNotBlank()) {
@@ -415,10 +421,12 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
                             addTrackToPlaylist(id, track)
                         }
                     }
+
                     PlaylistInputMode.RENAME -> {
                         val pl = state.collections.playlists.getOrNull(playlistsList.selected())
                         if (pl != null) scope.launch { renamePlaylist(pl.id, name) }
                     }
+
                     PlaylistInputMode.PICKER, PlaylistInputMode.NONE -> {}
                 }
             }
@@ -433,10 +441,16 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
             )
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.BACKSPACE -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistInput = interaction.playlistInput.dropLast(1)))
+            state = state.copy(
+                playlistInteraction = interaction.copy(
+                    playlistInput = interaction.playlistInput.dropLast(1)
+                )
+            )
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.CHAR && !event.modifiers().ctrl() && !event.modifiers().alt() -> {
             val str = event.string()
             if (str.isNotBlank() || str == " ") {
@@ -463,14 +477,31 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
             )
             return EventResult.HANDLED
         }
+
         event.matches(Actions.MOVE_DOWN) -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistPickerCursor = minOf(playlists.lastIndex, interaction.playlistPickerCursor + 1)))
+            state = state.copy(
+                playlistInteraction = interaction.copy(
+                    playlistPickerCursor = minOf(
+                        playlists.lastIndex,
+                        interaction.playlistPickerCursor + 1
+                    )
+                )
+            )
             return EventResult.HANDLED
         }
+
         event.matches(Actions.MOVE_UP) -> {
-            state = state.copy(playlistInteraction = interaction.copy(playlistPickerCursor = maxOf(0, interaction.playlistPickerCursor - 1)))
+            state = state.copy(
+                playlistInteraction = interaction.copy(
+                    playlistPickerCursor = maxOf(
+                        0,
+                        interaction.playlistPickerCursor - 1
+                    )
+                )
+            )
             return EventResult.HANDLED
         }
+
         event.code() == KeyCode.ENTER -> {
             val pl = playlists.getOrNull(interaction.playlistPickerCursor)
                 ?: return handleGlobalShortcuts(event)
@@ -516,8 +547,7 @@ internal fun MeloScreen.openLocalPlaylistDetail(pl: Playlist, autoPlay: Boolean 
             appRunner()?.runOnRenderThread {
                 updateScreen<ScreenState.Library> { it.copy(playlistTracks = tracks) }
                 if (autoPlay && tracks.isNotEmpty()) {
-                    state = state.copy(player = state.player.copy(queue = tracks, queueIndex = -1, isRadioMode = false))
-                    playFromQueue(0)
+                    playList(tracks, 0)
                 }
             }
         }

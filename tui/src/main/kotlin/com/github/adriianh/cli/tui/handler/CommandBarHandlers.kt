@@ -7,6 +7,10 @@ import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
 import com.github.adriianh.cli.tui.handler.playback.clearQueue
+import com.github.adriianh.cli.tui.handler.playback.setRepeatMode
+import com.github.adriianh.cli.tui.handler.playback.setShuffleEnabled
+import com.github.adriianh.cli.tui.handler.playback.setVolumePercent
+import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
 import com.github.adriianh.cli.tui.handler.playback.toggleQueue
 import com.github.adriianh.cli.tui.handler.search.performSearch
 import com.github.adriianh.core.domain.player.RepeatMode
@@ -50,8 +54,7 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 val vol = arg?.toIntOrNull()
                 return if (vol != null && vol in 0..100) {
-                    audioPlayer.setVolume(vol)
-                    state = state.copy(player = state.player.copy(volume = vol))
+                    setVolumePercent(vol)
                     CommandResult()
                 } else {
                     CommandResult(errorMessage = "Usage: vol <0-100>", keepBarOpen = true)
@@ -94,12 +97,12 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
                     "on" -> {
-                        state = state.copy(player = state.player.copy(shuffleEnabled = true))
+                        setShuffleEnabled(true)
                         CommandResult()
                     }
 
                     "off" -> {
-                        state = state.copy(player = state.player.copy(shuffleEnabled = false))
+                        setShuffleEnabled(false)
                         CommandResult()
                     }
 
@@ -114,17 +117,17 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
                     "off", "none" -> {
-                        state = state.copy(player = state.player.copy(repeatMode = RepeatMode.NONE))
+                        setRepeatMode(RepeatMode.NONE)
                         CommandResult()
                     }
 
                     "one" -> {
-                        state = state.copy(player = state.player.copy(repeatMode = RepeatMode.ONE))
+                        setRepeatMode(RepeatMode.ONE)
                         CommandResult()
                     }
 
                     "all" -> {
-                        state = state.copy(player = state.player.copy(repeatMode = RepeatMode.ALL))
+                        setRepeatMode(RepeatMode.ALL)
                         CommandResult()
                     }
 
@@ -137,15 +140,13 @@ object CommandBarHandlers {
         },
         object : Command(listOf("pause")) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
-                state = state.copy(player = state.player.copy(isPlaying = false))
-                audioPlayer.pause()
+                if (playbackManager.playbackState.value.isPlaying) togglePlayPause()
                 return CommandResult()
             }
         },
         object : Command(listOf("play", "resume")) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
-                state = state.copy(player = state.player.copy(isPlaying = true))
-                audioPlayer.resume()
+                if (!playbackManager.playbackState.value.isPlaying) togglePlayPause()
                 return CommandResult()
             }
         },

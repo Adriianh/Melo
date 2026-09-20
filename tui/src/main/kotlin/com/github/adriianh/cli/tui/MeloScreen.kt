@@ -13,9 +13,6 @@ import com.github.adriianh.cli.tui.component.SettingsViewState
 import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
 import com.github.adriianh.cli.tui.component.screen.deleteDownloadedTrackAction
 import com.github.adriianh.cli.tui.component.screen.downloadTrackAction
-import com.github.adriianh.cli.tui.component.screen.handleAudioError
-import com.github.adriianh.cli.tui.component.screen.handleAudioFinish
-import com.github.adriianh.cli.tui.component.screen.handleAudioProgress
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPlayPause
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
@@ -45,9 +42,11 @@ import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
+import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.Toolkit.list
 import dev.tamboui.toolkit.Toolkit.markupTextArea
@@ -210,13 +209,25 @@ class MeloScreen(
         onStop = ::handleMediaSessionStop,
     )
 
-    internal var resolveStreamJob: Job? = null
+    internal val audioPlayer: AudioPlayer = AudioPlayer(scope = scope)
 
-    internal val audioPlayer: AudioPlayer = AudioPlayer(
+    /**
+     * Shared playback orchestrator (data layer). Single source of truth for the
+     * queue, playback state and volume; the TUI mirrors its flows into PlayerState.
+     * Owned by this screen and released in [onStopLifecycle].
+     */
+    internal val playbackManager: PlaybackManager = PlaybackManagerImpl(
+        meloPlayer = audioPlayer,
+        getStreamUseCase = getStream,
         scope = scope,
-        onProgress = ::handleAudioProgress,
-        onFinish = ::handleAudioFinish,
-        onError = ::handleAudioError,
+        getRadioUseCase = discoveryInteractors.getRadio,
+        getSettingsUseCase = getSettings,
+        offlineRepository = offlineRepository,
+        updateSettingsUseCase = updateSettings,
+        saveSessionUseCase = saveSession,
+        restoreSessionUseCase = restoreSession,
+        clearSessionUseCase = clearSession,
+        ioDispatcher = dispatcher,
     )
 
     internal val searchInputState = TextInputState()

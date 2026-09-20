@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler.settings
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.component.SettingsItem
+import com.github.adriianh.cli.tui.handler.playback.setVolumePercent
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -22,7 +23,7 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
 
         SettingsItem.VOLUME -> {
             val newVol = (current.volume + (direction * 5)).coerceIn(0, 100)
-            audioPlayer.setVolume(newVol)
+            setVolumePercent(newVol)
             current.copy(volume = newVol)
         }
 

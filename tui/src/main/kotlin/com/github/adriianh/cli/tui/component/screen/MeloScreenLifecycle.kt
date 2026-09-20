@@ -12,6 +12,7 @@ import java.time.Duration
 
 internal fun MeloScreen.onStartLifecycle() {
     mediaSession.init()
+    observePlaybackManager()
     if (settingsViewState.currentSettings.discordRpcEnabled) {
         discordRpcManager.connect()
     }
@@ -99,7 +100,7 @@ internal fun MeloScreen.onStartLifecycle() {
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     playlistTracksJob?.cancel()
-    audioPlayer.stop()
+    playbackManager.release()
     mediaSession.release()
     discordRpcManager.disconnect()
     scope.cancel()
