@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.usecase.library.GetFavoritesUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
@@ -50,4 +51,5 @@ data class LibraryInteractors(
     val removeFavoriteEntity: RemoveFavoriteEntityUseCase? = null,
     val isFavoriteEntity: IsFavoriteEntityUseCase? = null,
     val toggleFavoriteEntity: ToggleFavoriteEntityUseCase? = null,
+    val getRemoteHistory: GetRemoteHistoryUseCase? = null,
 )

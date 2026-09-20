@@ -9,6 +9,7 @@ import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.mergeHistoryEntries
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
@@ -149,22 +150,7 @@ class LibraryViewModel(
     private var remoteHistory: List<HistoryEntry> = emptyList()
 
     private fun updateMergedHistory() {
-        val merged = if (localHistory.isEmpty()) {
-            remoteHistory
-        } else if (remoteHistory.isEmpty()) {
-            localHistory
-        } else {
-            val localIds = localHistory.map { it.track.id }.toSet()
-            val localSourceIds =
-                localHistory.mapNotNull { it.track.sourceId }.filter { it.isNotBlank() }.toSet()
-            val filteredRemote = remoteHistory.filterNot { remote ->
-                val remoteSourceId = remote.track.sourceId
-                remote.track.id in localIds ||
-                        (!remoteSourceId.isNullOrBlank() && remoteSourceId in localSourceIds) ||
-                        (remote.track.id.removePrefix("piped:") in localSourceIds)
-            }
-            localHistory + filteredRemote
-        }
+        val merged = mergeHistoryEntries(localHistory, remoteHistory)
         _uiState.update { it.copy(history = merged) }
     }
 
@@ -182,7 +168,7 @@ class LibraryViewModel(
         }
         viewModelScope.launch(ioDispatcher) {
             getOfflineTracksUseCase().collectLatest { tracks ->
-                _uiState.update {
+                _uiState.update { it ->
                     it.copy(
                         downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
                     )
@@ -236,7 +222,12 @@ class LibraryViewModel(
                         is LibraryUpdateEvent.TrackLiked -> {
                             if (!event.isLiked) {
                                 _uiState.update { current ->
-                                    current.copy(likedSongs = current.likedSongs.filterNot { it.id == event.videoId || it.sourceId == event.videoId })
+                                    current.copy(
+                                        likedSongs = current.likedSongs
+                                            .filterNot {
+                                                it.id == event.videoId || it.sourceId == event.videoId
+                                            }
+                                    )
                                 }
                             }
                             refreshLikedSongs()
