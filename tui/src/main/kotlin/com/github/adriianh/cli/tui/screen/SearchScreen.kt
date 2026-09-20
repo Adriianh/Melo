@@ -42,6 +42,7 @@ fun renderSearchScreen(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
+    terminalHeight: Int = 30,
 ): Element {
     val actualState = state.screen as? ScreenState.Search
         ?: return panel(text("Search screen not active").centered()).rounded()
@@ -98,6 +99,7 @@ fun renderSearchScreen(
             onResultsKeyEvent,
             onEntityDetailKeyEvent,
             onDetailKeyEvent,
+            terminalHeight,
         )
     }
 }
@@ -128,6 +130,7 @@ private fun renderResultsArea(
     onResultsKeyEvent: (KeyEvent) -> EventResult,
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
     onDetailKeyEvent: (KeyEvent) -> EventResult,
+    terminalHeight: Int = 30,
 ): Element {
     val headerItems: Element
     val isPlayable: Boolean
@@ -298,7 +301,7 @@ private fun renderResultsArea(
 
     return if (isPlayable && state.detail.selectedTrack != null) {
         dock().center(resultsPanel).right(
-            buildDetailPanel(state, lyricsArea, similarArea, marqueeText, onDetailKeyEvent),
+            buildDetailPanel(state, lyricsArea, similarArea, onDetailKeyEvent, terminalHeight),
             Constraint.percentage(35)
         )
     } else if (!isPlayable && state.detail.selectedEntity != null) {

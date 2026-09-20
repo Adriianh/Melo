@@ -13,6 +13,7 @@ import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Flex
+import dev.tamboui.style.Overflow
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.dock
 import dev.tamboui.toolkit.Toolkit.panel
@@ -126,7 +127,7 @@ private fun buildLyricsPanel(state: MeloState): Element {
     val lineElements = visibleLines.mapIndexed { i, lrcLine ->
         val isCurrent = i == visibleCurrentIndex
         val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
-        val t = text(displayText)
+        val t = text(displayText).overflow(Overflow.WRAP_WORD)
         when {
             isCurrent -> t.bold().fg(PRIMARY_COLOR).centered()
             i < visibleCurrentIndex -> t.fg(TEXT_DIM).centered()

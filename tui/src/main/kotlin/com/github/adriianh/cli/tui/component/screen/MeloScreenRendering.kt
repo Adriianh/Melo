@@ -132,17 +132,25 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             onKeyEvent = ::handleHomeKey,
         )
 
-        is ScreenState.Search -> renderSearchScreen(
-            state,
-            resultList,
-            lyricsArea,
-            similarArea,
-            entityDescriptionArea,
-            ::marqueeText,
-            ::handleResultsKey,
-            ::handleEntityDetailKey,
-            ::handleDetailKey,
-        )
+        is ScreenState.Search -> {
+            val terminalHeight = try {
+                appRunner()?.tuiRunner()?.terminal()?.size()?.height() ?: 30
+            } catch (_: Exception) {
+                30
+            }
+            renderSearchScreen(
+                state,
+                resultList,
+                lyricsArea,
+                similarArea,
+                entityDescriptionArea,
+                ::marqueeText,
+                ::handleResultsKey,
+                ::handleEntityDetailKey,
+                ::handleDetailKey,
+                terminalHeight,
+            )
+        }
 
         is ScreenState.Library -> renderLibraryScreen(
             state,

@@ -38,8 +38,8 @@ fun buildDetailPanel(
     state: MeloState,
     lyricsArea: MarkupTextAreaElement,
     similarArea: ListElement<*>,
-    marqueeText: (String, Int, Int) -> String,
     onKeyEvent: (KeyEvent) -> EventResult,
+    terminalHeight: Int = 30,
 ): Element {
     val track = state.detail.selectedTrack ?: return spacer()
 
@@ -49,8 +49,8 @@ fun buildDetailPanel(
         .divider(" │ ")
 
     val tabContent: StyledElement<*> = when (state.detail.detailTab) {
-        DetailTab.INFO -> renderTrackMetadata(track, state, marqueeText)
-        DetailTab.LYRICS -> renderLyricsTab(state, lyricsArea)
+        DetailTab.INFO -> renderTrackMetadata(track)
+        DetailTab.LYRICS -> renderLyricsTab(state, lyricsArea, terminalHeight)
         DetailTab.SIMILAR -> renderSimilarTab(state, similarArea)
     }
 
@@ -105,8 +105,8 @@ fun buildEntityDetailPanel(
         is SearchResult.Album -> {
             headerElements.add(text(" Album ").fg(PRIMARY_COLOR))
             headerElements.add(text(""))
-            headerElements.add(text(entity.title).fg(TEXT_PRIMARY))
-            headerElements.add(text(entity.author).fg(TEXT_SECONDARY))
+            headerElements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            headerElements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
             if (entity.year != null) headerElements.add(text(entity.year.toString()).dim())
             if (!entity.songs.isNullOrEmpty()) headerElements.add(text("${entity.songs!!.size} tracks").dim())
             if (!entity.otherVersions.isNullOrEmpty()) {
@@ -199,11 +199,11 @@ fun buildEntityDetailPanel(
 
 private fun renderTrackMetadata(
     track: Track,
-    state: MeloState,
-    marqueeText: (String, Int, Int) -> String,
 ): StyledElement<*> = column(
-    text(marqueeText(track.title, state.player.marqueeOffset, 30)).bold().fg(TEXT_PRIMARY),
-    text(marqueeText(track.artist, state.player.marqueeOffset, 30)).fg(TEXT_SECONDARY),
+    text(track.title).bold().fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD),
+    text(track.artist).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD),
+    if (track.album.isNotBlank()) text(track.album).dim()
+        .overflow(Overflow.WRAP_WORD) else text(""),
     text("")
 ).flex(Flex.START)
 
@@ -228,6 +228,7 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
 private fun renderLyricsTab(
     state: MeloState,
     lyricsArea: MarkupTextAreaElement,
+    terminalHeight: Int = 30,
 ): StyledElement<*> {
     val track = state.detail.selectedTrack
     val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
@@ -249,26 +250,27 @@ private fun renderLyricsTab(
     }
 
     if (syncedLines.isNotEmpty()) {
-        val windowSize = 14
-        val half = windowSize / 2
+        val activeIndex = if (isNowPlaying) {
+            LrcParser.currentLineIndex(syncedLines, state.player.nowPlayingPositionMs)
+        } else -1
 
-        val (visibleLines, relativeActiveIndex) = if (isNowPlaying) {
-            val activeIndex =
-                LrcParser.currentLineIndex(syncedLines, state.player.nowPlayingPositionMs)
-            val centerIndex = if (state.detail.isAutoScrollLyrics) {
-                activeIndex
+        val centerIndex = if (isNowPlaying) {
+            if (state.detail.isAutoScrollLyrics) {
+                if (activeIndex >= 0) activeIndex else 0
             } else {
-                (activeIndex + state.detail.lyricsScrollOffset).coerceIn(0, syncedLines.lastIndex)
+                state.detail.lyricsScrollOffset.coerceIn(0, syncedLines.lastIndex)
             }
-            val start = (centerIndex - half).coerceAtLeast(0)
-            val end = (start + windowSize).coerceAtMost(syncedLines.size)
-            Pair(syncedLines.subList(start, end), activeIndex - start)
         } else {
-            val centerIndex = state.detail.lyricsScrollOffset.coerceIn(0, syncedLines.lastIndex)
-            val start = (centerIndex - half).coerceAtLeast(0)
-            val end = (start + windowSize).coerceAtMost(syncedLines.size)
-            Pair(syncedLines.subList(start, end), -1)
+            state.detail.lyricsScrollOffset.coerceIn(0, syncedLines.lastIndex)
         }
+
+        val windowSize = (terminalHeight - 12).coerceIn(14, 50)
+        val half = windowSize / 2
+        val start = (centerIndex - half).coerceAtLeast(0)
+        val end = (start + windowSize).coerceAtMost(syncedLines.size)
+        val visibleLines = syncedLines.subList(start, end)
+        val visibleActiveIndex = if (activeIndex >= 0) activeIndex - start else -1
+        val visibleCenterIndex = centerIndex - start
 
         val headerBadge = if (isNowPlaying) {
             if (state.detail.isAutoScrollLyrics) {
@@ -281,24 +283,25 @@ private fun renderLyricsTab(
         }
 
         val lineElements = visibleLines.mapIndexed { i, lrcLine ->
-            val isCurrent = (i == relativeActiveIndex)
+            val isCurrentPlaying = (i == visibleActiveIndex)
+            val isManualFocused = (!state.detail.isAutoScrollLyrics && i == visibleCenterIndex)
             val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
-            val linePrefix = if (isCurrent) "▶ " else "  "
-            val t = text("$linePrefix$displayText")
+            val t = text(displayText).overflow(Overflow.WRAP_WORD)
             when {
-                isCurrent -> t.bold().fg(PRIMARY_COLOR).centered()
-                relativeActiveIndex >= 0 && i < relativeActiveIndex -> t.fg(TEXT_DIM).centered()
+                isCurrentPlaying -> t.bold().fg(PRIMARY_COLOR).centered()
+                isManualFocused -> t.bold().fg(PRIMARY_COLOR).centered()
+                visibleActiveIndex >= 0 && i < visibleActiveIndex -> t.fg(TEXT_DIM).centered()
                 else -> t.fg(TEXT_SECONDARY).centered()
             }
         }
 
         return column(
-            text("").length(1),
-            headerBadge,
-            text("").length(1),
+            headerBadge.length(1),
+            spacer(),
             *lineElements.toTypedArray(),
-            spacer()
-        )
+            spacer(),
+            text("").length(1),
+        ).fill()
     }
 
     return when {

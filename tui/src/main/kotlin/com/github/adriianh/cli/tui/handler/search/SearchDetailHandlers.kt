@@ -631,10 +631,17 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             }
             if (lines.isNotEmpty()) {
                 if (isNowPlaying) {
+                    val base = if (state.detail.isAutoScrollLyrics) {
+                        LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                            .coerceAtLeast(0)
+                    } else {
+                        state.detail.lyricsScrollOffset
+                    }
+                    val maxOffset = lines.lastIndex
                     state = state.copy(
                         detail = state.detail.copy(
                             isAutoScrollLyrics = false,
-                            lyricsScrollOffset = state.detail.lyricsScrollOffset + 1
+                            lyricsScrollOffset = minOf(maxOffset, base + 1)
                         )
                     )
                 } else {
@@ -649,6 +656,8 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
                     )
                 }
                 return EventResult.HANDLED
+            } else if (state.detail.lyrics != null) {
+                return lyricsArea.handleKeyEvent(event, false)
             }
         }
 
@@ -662,10 +671,16 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             }
             if (lines.isNotEmpty()) {
                 if (isNowPlaying) {
+                    val base = if (state.detail.isAutoScrollLyrics) {
+                        LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                            .coerceAtLeast(0)
+                    } else {
+                        state.detail.lyricsScrollOffset
+                    }
                     state = state.copy(
                         detail = state.detail.copy(
                             isAutoScrollLyrics = false,
-                            lyricsScrollOffset = state.detail.lyricsScrollOffset - 1
+                            lyricsScrollOffset = maxOf(0, base - 1)
                         )
                     )
                 } else {
@@ -676,6 +691,8 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
                     )
                 }
                 return EventResult.HANDLED
+            } else if (state.detail.lyrics != null) {
+                return lyricsArea.handleKeyEvent(event, false)
             }
         }
 
