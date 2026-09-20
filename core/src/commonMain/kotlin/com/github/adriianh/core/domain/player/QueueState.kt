@@ -13,6 +13,13 @@ data class QueueState(
     val currentIndex: Int = -1,
     val shuffleEnabled: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.NONE,
+
+    /**
+     * Number of manually queued ("play next") tracks sitting right after the
+     * current track. Radio expansions are inserted behind this block so the
+     * user's manual picks play before the radio continuation.
+     */
+    val userQueueCount: Int = 0,
 ) {
     val currentTrack: Track? get() = tracks.getOrNull(currentIndex)
 

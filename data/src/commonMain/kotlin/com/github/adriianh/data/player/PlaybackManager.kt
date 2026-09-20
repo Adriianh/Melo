@@ -230,7 +230,9 @@ class PlaybackManagerImpl(
     override fun setQueue(tracks: List<Track>, startIndex: Int) {
         scope.launch(dispatcher) { cacheMutex.withLock { prefetchCache.clear() } }
         val validIndex = if (tracks.isEmpty()) -1 else startIndex.coerceIn(0, tracks.lastIndex)
-        _queueState.update { it.copy(tracks = tracks, currentIndex = validIndex) }
+        _queueState.update {
+            it.copy(tracks = tracks, currentIndex = validIndex, userQueueCount = 0)
+        }
         if (validIndex >= 0) {
             playCurrentQueueTrack()
         } else {
@@ -240,9 +242,19 @@ class PlaybackManagerImpl(
     }
 
     override fun addToQueue(track: Track) {
-        _queueState.update { it.copy(tracks = it.tracks + track) }
-        if (_queueState.value.currentIndex == -1) {
-            _queueState.update { it.copy(currentIndex = 0) }
+        val shouldAutoStart =
+            _queueState.value.currentIndex < 0 || _queueState.value.tracks.isEmpty()
+        _queueState.update { current ->
+            if (shouldAutoStart) {
+                current.copy(tracks = listOf(track), currentIndex = 0, userQueueCount = 0)
+            } else {
+                val insertIndex =
+                    (current.currentIndex + current.userQueueCount + 1).coerceAtMost(current.tracks.size)
+                val newTracks = current.tracks.toMutableList().apply { add(insertIndex, track) }
+                current.copy(tracks = newTracks, userQueueCount = current.userQueueCount + 1)
+            }
+        }
+        if (shouldAutoStart) {
             playCurrentQueueTrack()
         } else {
             persistCurrentSession(immediate = false)
@@ -272,7 +284,14 @@ class PlaybackManagerImpl(
                 index == it.currentIndex -> it.currentIndex.coerceAtMost(newTracks.lastIndex)
                 else -> it.currentIndex
             }
-            it.copy(tracks = newTracks, currentIndex = newIndex)
+            val manualStart = it.currentIndex + 1
+            val manualEnd = it.currentIndex + it.userQueueCount
+            val newCount = if (index in manualStart..manualEnd && it.userQueueCount > 0) {
+                it.userQueueCount - 1
+            } else {
+                it.userQueueCount
+            }
+            it.copy(tracks = newTracks, currentIndex = newIndex, userQueueCount = newCount)
         }
         if (wasCurrent) {
             if (_queueState.value.tracks.isEmpty()) {
@@ -289,6 +308,18 @@ class PlaybackManagerImpl(
     override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
         val q = _queueState.value
         if (fromIndex < 0 || fromIndex >= q.tracks.size || toIndex < 0 || toIndex >= q.tracks.size || fromIndex == toIndex) return
+
+        val manualStart = q.currentIndex + 1
+        val manualEnd = q.currentIndex + q.userQueueCount
+        val fromInBlock = fromIndex in manualStart..manualEnd
+        val toInBlock = toIndex in manualStart..manualEnd
+        val newCount = when {
+            fromInBlock && toInBlock -> q.userQueueCount
+            fromInBlock -> (q.userQueueCount - 1).coerceAtLeast(0)
+            toInBlock -> q.userQueueCount + 1
+            else -> q.userQueueCount
+        }
+
         _queueState.update { current ->
             val newTracks = current.tracks.toMutableList()
             val item = newTracks.removeAt(fromIndex)
@@ -300,7 +331,11 @@ class PlaybackManagerImpl(
                 in toIndex..<fromIndex -> current.currentIndex + 1
                 else -> current.currentIndex
             }
-            current.copy(tracks = newTracks, currentIndex = newCurrentIndex)
+            current.copy(
+                tracks = newTracks,
+                currentIndex = newCurrentIndex,
+                userQueueCount = newCount
+            )
         }
         persistCurrentSession(immediate = false)
     }
@@ -316,7 +351,15 @@ class PlaybackManagerImpl(
             RepeatMode.ALL -> (q.currentIndex + 1) % q.tracks.size
             RepeatMode.NONE -> q.currentIndex + 1
         }
-        _queueState.update { it.copy(currentIndex = nextIndex) }
+        _queueState.update { current ->
+            val diff = nextIndex - current.currentIndex
+            val newCount = when {
+                diff == 1 && current.userQueueCount > 0 -> current.userQueueCount - 1
+                diff != 0 -> 0
+                else -> current.userQueueCount
+            }
+            current.copy(currentIndex = nextIndex, userQueueCount = newCount)
+        }
         playCurrentQueueTrack()
     }
 
@@ -343,7 +386,12 @@ class PlaybackManagerImpl(
                     shuffled.remove(current)
                     shuffled.add(0, current)
                 }
-                q.copy(tracks = shuffled, currentIndex = 0, shuffleEnabled = true)
+                q.copy(
+                    tracks = shuffled,
+                    currentIndex = 0,
+                    shuffleEnabled = true,
+                    userQueueCount = 0
+                )
             }
         }
         persistCurrentSession(immediate = false)
@@ -565,7 +613,13 @@ class PlaybackManagerImpl(
                 }
 
                 if (radioTracks.isNotEmpty()) {
-                    _queueState.update { it.copy(tracks = it.tracks + radioTracks) }
+                    _queueState.update { current ->
+                        val manualEnd =
+                            current.currentIndex + current.userQueueCount + 1
+                        val newTracks = current.tracks.toMutableList()
+                        newTracks.addAll(manualEnd.coerceAtMost(current.tracks.size), radioTracks)
+                        current.copy(tracks = newTracks)
+                    }
                     if (forcePlayNext) {
                         val nextIdx = _queueState.value.currentIndex + 1
                         if (nextIdx in _queueState.value.tracks.indices) {
