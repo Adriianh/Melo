@@ -24,21 +24,14 @@ import dev.tamboui.toolkit.Toolkit.spacer
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
-import dev.tamboui.toolkit.elements.MarkupTextAreaElement
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 fun renderSearchScreen(
     state: MeloState,
     resultList: ListElement<*>,
-    lyricsArea: MarkupTextAreaElement,
-    similarArea: ListElement<*>,
-    entityDescriptionArea: MarkupTextAreaElement,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
-    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
-    onDetailKeyEvent: (KeyEvent) -> EventResult,
-    terminalHeight: Int = 30,
 ): Element {
     val actualState = state.screen as? ScreenState.Search
         ?: return panel(text("Search screen not active").centered()).rounded()
@@ -95,14 +88,8 @@ fun renderSearchScreen(
             state,
             actualState,
             resultList,
-            lyricsArea,
-            similarArea,
-            entityDescriptionArea,
             marqueeText,
             onResultsKeyEvent,
-            onEntityDetailKeyEvent,
-            onDetailKeyEvent,
-            terminalHeight,
         )
     }
 }
@@ -126,14 +113,8 @@ private fun renderResultsArea(
     state: MeloState,
     actualState: ScreenState.Search,
     resultList: ListElement<*>,
-    lyricsArea: MarkupTextAreaElement,
-    similarArea: ListElement<*>,
-    entityDescriptionArea: MarkupTextAreaElement,
     marqueeText: (String, Int, Int) -> String,
     onResultsKeyEvent: (KeyEvent) -> EventResult,
-    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
-    onDetailKeyEvent: (KeyEvent) -> EventResult,
-    terminalHeight: Int = 30,
 ): Element {
     val headerItems: Element
     val isPlayable: Boolean

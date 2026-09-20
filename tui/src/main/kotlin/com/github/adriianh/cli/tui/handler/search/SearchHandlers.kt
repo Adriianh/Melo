@@ -284,7 +284,7 @@ internal fun MeloScreen.performSearch() {
                 val allEmpty =
                     tracks.isEmpty() && albums.isEmpty() && artists.isEmpty() && playlists.isEmpty()
                 val errorMessage = if (allEmpty && searchException != null) {
-                    "Search failed: ${searchException?.message ?: "Network error"}"
+                    "Search failed: ${searchException.message ?: "Network error"}"
                 } else null
 
                 val initialHasMore = when (currentTab) {

@@ -91,14 +91,6 @@ class CircuitBreaker(
             }
         }
     }
-
-    suspend fun reset() {
-        mutex.withLock {
-            failureCount = 0
-            lastFailureTimestampMs = 0L
-            state = State.CLOSED
-        }
-    }
 }
 
 class CircuitBreakerOpenException(circuitName: String) :

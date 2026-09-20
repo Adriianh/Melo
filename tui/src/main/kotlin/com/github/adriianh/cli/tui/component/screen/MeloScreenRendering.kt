@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.component.screen
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.buildCommandBar
 import com.github.adriianh.cli.tui.component.buildDetailPanel
@@ -30,7 +31,6 @@ import com.github.adriianh.cli.tui.handler.search.handleResultsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
 import com.github.adriianh.cli.tui.handler.search.performSearch
 import com.github.adriianh.cli.tui.handler.toggleDetailPanel
-import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.screen.renderEntityDetailScreen
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
@@ -178,22 +178,11 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
         )
 
         is ScreenState.Search -> {
-            val terminalHeight = try {
-                appRunner()?.tuiRunner()?.terminal()?.size()?.height() ?: 30
-            } catch (_: Exception) {
-                30
-            }
             renderSearchScreen(
                 state,
                 resultList,
-                lyricsArea,
-                similarArea,
-                entityDescriptionArea,
                 ::marqueeText,
                 ::handleResultsKey,
-                ::handleEntityDetailKey,
-                ::handleDetailKey,
-                terminalHeight,
             )
         }
 
