@@ -26,19 +26,25 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 internal fun MeloScreen.handleSearchQueryChange(query: String) {
+    try {
+        suggestionsJob?.cancel()
+    } catch (_: Exception) {
+    }
+    suggestionsJob = null
 
     if (query.isBlank()) {
         updateScreen<ScreenState.Search> {
             it.copy(query = query, isShowingSuggestions = true, selectedSuggestionIndex = null)
         }
-        scope.launch {
+        suggestionsJob = scope.launch {
             try {
                 val rawSuggestions =
                     searchInteractors.getSearchHistory(query, limit = 10).firstOrNull()
@@ -64,7 +70,7 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
         it.copy(query = query, isShowingSuggestions = true, selectedSuggestionIndex = null)
     }
 
-    scope.launch {
+    suggestionsJob = scope.launch {
         try {
             val localHistory = searchInteractors.getSearchHistory(query, limit = 5)
                 .firstOrNull() ?: emptyList()
@@ -136,6 +142,18 @@ internal fun MeloScreen.performSearch() {
     if (query.isBlank()) return
     lastQuery = query
     scope.launch { searchInteractors.saveSearchQuery(query) }
+
+    try {
+        suggestionsJob?.cancel()
+    } catch (_: Exception) {
+    }
+    suggestionsJob = null
+
+    try {
+        searchJob?.cancel()
+    } catch (_: Exception) {
+    }
+    searchJob = null
 
     try {
         loadMoreJob?.cancel()
@@ -219,20 +237,55 @@ internal fun MeloScreen.performSearch() {
     )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
 
-    scope.launch {
+    searchJob = scope.launch {
         try {
-            coroutineScope {
-                val tracksDeferred = async { searchTracks(query) }
-                val albumsDeferred = async { searchAlbums(query) }
-                val artistsDeferred = async { searchArtists(query) }
-                val playlistsDeferred = async { searchPlaylists(query) }
+            supervisorScope {
+                var searchException: Throwable? = null
+                val tracksDeferred = async {
+                    runCatching { searchTracks(query) }
+                        .onFailure {
+                            if (searchException == null && it !is CancellationException) searchException =
+                                it
+                        }
+                        .getOrDefault(emptyList())
+                }
+                val albumsDeferred = async {
+                    runCatching { searchAlbums(query) }
+                        .onFailure {
+                            if (searchException == null && it !is CancellationException) searchException =
+                                it
+                        }
+                        .getOrDefault(emptyList())
+                }
+                val artistsDeferred = async {
+                    runCatching { searchArtists(query) }
+                        .onFailure {
+                            if (searchException == null && it !is CancellationException) searchException =
+                                it
+                        }
+                        .getOrDefault(emptyList())
+                }
+                val playlistsDeferred = async {
+                    runCatching { searchPlaylists(query) }
+                        .onFailure {
+                            if (searchException == null && it !is CancellationException) searchException =
+                                it
+                        }
+                        .getOrDefault(emptyList())
+                }
 
                 val tracks = tracksDeferred.await()
                 val albums = albumsDeferred.await()
                 val artists = artistsDeferred.await()
                 val playlists = playlistsDeferred.await()
 
-                if (!isActive) return@coroutineScope
+                if (!isActive) return@supervisorScope
+
+                val allEmpty =
+                    tracks.isEmpty() && albums.isEmpty() && artists.isEmpty() && playlists.isEmpty()
+                val errorMessage = if (allEmpty && searchException != null) {
+                    "Search failed: ${searchException?.message ?: "Network error"}"
+                } else null
 
                 val initialHasMore = when (currentTab) {
                     SearchTab.SONGS -> loadMoreTracks.hasMore(tracks.size)
@@ -250,7 +303,8 @@ internal fun MeloScreen.performSearch() {
                             playlistResults = playlists,
                             isLoading = false,
                             selectedIndex = 0,
-                            hasMore = initialHasMore
+                            hasMore = initialHasMore,
+                            errorMessage = errorMessage
                         )
                     }
                     if (currentTab == SearchTab.SONGS) {
@@ -280,6 +334,8 @@ internal fun MeloScreen.performSearch() {
                     firstEntity?.let { debouncedLoadEntityDetails(it) }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
                 updateScreen<ScreenState.Search> {
@@ -338,16 +394,6 @@ internal fun MeloScreen.selectSearchTab(tab: SearchTab) {
             )
         )
         if (firstEntity != null) debouncedLoadEntityDetails(firstEntity)
-    }
-
-    val isTabEmpty = when (tab) {
-        SearchTab.SONGS -> updatedState.results.isEmpty()
-        SearchTab.ALBUMS -> updatedState.albumResults.isEmpty()
-        SearchTab.ARTISTS -> updatedState.artistResults.isEmpty()
-        SearchTab.PLAYLISTS -> updatedState.playlistResults.isEmpty()
-    }
-    if (isTabEmpty && lastQuery.isNotBlank()) {
-        performSearch()
     }
 }
 

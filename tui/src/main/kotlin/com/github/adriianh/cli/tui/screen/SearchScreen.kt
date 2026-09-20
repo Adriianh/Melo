@@ -16,7 +16,6 @@ import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel
@@ -64,12 +63,19 @@ fun renderSearchScreen(
                     if (isOffline && query.isNotBlank()) {
                         text("  No offline tracks found matching \"$query\"").fg(TEXT_SECONDARY)
                             .centered()
+                    } else if (query.isNotBlank()) {
+                        text("  No results found for \"$query\"").fg(TEXT_SECONDARY).centered()
                     } else {
                         row(
                             spacer(), renderSearchTabs(actualState.tab), spacer()
                         )
                     },
-                    text("  Search for music to get started").fg(TEXT_SECONDARY).centered(),
+                    if (query.isBlank()) {
+                        text("  Search for music to get started").fg(TEXT_SECONDARY).centered()
+                    } else {
+                        text("  Try searching for a different song, artist, or album").fg(TEXT_DIM)
+                            .centered()
+                    },
                     text("  Press [Tab] or [/] to focus search bar, [1..4] to change tab").fg(
                         TEXT_DIM
                     ).centered(),

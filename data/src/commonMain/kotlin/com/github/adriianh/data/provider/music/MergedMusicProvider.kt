@@ -7,6 +7,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.util.CircuitBreaker
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -29,8 +30,8 @@ class MergedMusicProvider(
     private val circuitBreakers = providers.associateWith { provider ->
         CircuitBreaker(
             name = provider::class.simpleName ?: "MusicProvider",
-            failureThreshold = 3,
-            cooldownDuration = 60.seconds,
+            failureThreshold = 5,
+            cooldownDuration = 15.seconds,
         )
     }
 
@@ -39,10 +40,16 @@ class MergedMusicProvider(
         block: suspend (MusicProvider) -> T
     ): T? {
         val breaker = circuitBreakers[provider]
-        return if (breaker != null) {
-            breaker.executeOrNull { block(provider) }
-        } else {
-            runCatching { block(provider) }.getOrNull()
+        return try {
+            if (breaker != null) {
+                breaker.executeOrNull { block(provider) }
+            } else {
+                block(provider)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
         }
     }
 

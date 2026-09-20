@@ -155,6 +155,8 @@ class MeloScreen(
 
     internal var state = MeloState(screen = cachedHomeScreen)
     internal val scope = CoroutineScope(dispatcher)
+    internal var searchJob: Job? = null
+    internal var suggestionsJob: Job? = null
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null

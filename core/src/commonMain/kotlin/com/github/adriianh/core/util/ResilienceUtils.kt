@@ -1,5 +1,6 @@
 package com.github.adriianh.core.util
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,8 +18,9 @@ import kotlin.time.Duration.Companion.seconds
  */
 class CircuitBreaker(
     val name: String,
-    private val failureThreshold: Int = 3,
-    private val cooldownDuration: Duration = 60.seconds,
+    private val failureThreshold: Int = 5,
+    private val cooldownDuration: Duration = 15.seconds,
+    private val failureWindow: Duration = 30.seconds,
 ) {
     enum class State {
         CLOSED,
@@ -48,6 +50,8 @@ class CircuitBreaker(
             val result = block()
             onSuccess()
             Result.success(result)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             onFailure()
             Result.failure(e)
@@ -67,7 +71,11 @@ class CircuitBreaker(
 
     private suspend fun onFailure() {
         mutex.withLock {
-            lastFailureTimestampMs = Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
+            if (now - lastFailureTimestampMs > failureWindow.inWholeMilliseconds) {
+                failureCount = 0
+            }
+            lastFailureTimestampMs = now
             failureCount++
             if (failureCount >= failureThreshold) {
                 state = State.OPEN
@@ -113,6 +121,8 @@ suspend fun <T> retryWithBackoff(
     for (attempt in 0..maxRetries) {
         try {
             return block()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             lastException = e
             if (attempt == maxRetries || !predicate(e)) {
