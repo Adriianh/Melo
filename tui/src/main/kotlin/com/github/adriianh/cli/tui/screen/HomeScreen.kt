@@ -248,17 +248,14 @@ private fun renderFeedTab(
                     )
                 }
                 rowElements.add(
-                    text(indicator).fg(if (isPlaying) PRIMARY_COLOR else TEXT_DIM).length(4)
+                    text(indicator).fg(if (isPlaying) PRIMARY_COLOR else TEXT_DIM).length(3)
                 )
-                rowElements.add(text("[Song]").fg(PRIMARY_COLOR).length(9))
+                rowElements.add(text("♪ ").fg(PRIMARY_COLOR).length(2))
                 rowElements.add(
                     text(track.title).fg(if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM)
                         .apply { if (isPlaying || isSelected) bold() }.ellipsisMiddle().fill()
                 )
                 rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
-                rowElements.add(
-                    text(track.album.ifBlank { "—" }).fg(TEXT_DIM).ellipsis().percent(25)
-                )
                 rowElements.add(text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2))
                 rowElements.add(
                     text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "—").fg(
@@ -269,39 +266,35 @@ private fun renderFeedTab(
             }
 
             is SearchResult.Album -> {
-                val albumExtra = listOfNotNull(
-                    item.year,
-                    if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tracks" else null
-                ).joinToString(" • ").ifBlank { "Album" }
                 val rowElements = mutableListOf<Element>()
                 if (state.selection.isNotEmpty) {
                     rowElements.add(text("    ").length(4))
                 }
-                rowElements.add(text("${index + 1} ").dim().length(4))
-                rowElements.add(text("[Album]").fg(ACCENT_BLUE).length(9))
+                rowElements.add(text("${index + 1} ").dim().length(3))
+                rowElements.add(text("◎ ").fg(ACCENT_BLUE).length(2))
                 rowElements.add(
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill()
                 )
                 rowElements.add(text(item.author).fg(TEXT_SECONDARY).ellipsis().percent(25))
-                rowElements.add(text(albumExtra).fg(TEXT_DIM).ellipsis().percent(25))
                 rowElements.add(text(" ").length(2))
-                rowElements.add(text("—").fg(TEXT_DIM).length(6))
+                val countStr = if (!item.songs.isNullOrEmpty()) "${item.songs!!.size} tr" else "—"
+                rowElements.add(text(countStr).fg(TEXT_DIM).length(6))
                 row(*rowElements.toTypedArray())
             }
 
             is SearchResult.Playlist -> {
                 val countText = when {
-                    item.trackCount != null && item.trackCount!! > 0 -> "${item.trackCount} tracks"
-                    !item.songs.isNullOrEmpty() -> "${item.songs!!.size} tracks"
-                    else -> "Playlist"
+                    item.trackCount != null && item.trackCount!! > 0 -> "${item.trackCount} tr"
+                    !item.songs.isNullOrEmpty() -> "${item.songs!!.size} tr"
+                    else -> "—"
                 }
                 val rowElements = mutableListOf<Element>()
                 if (state.selection.isNotEmpty) {
                     rowElements.add(text("    ").length(4))
                 }
-                rowElements.add(text("${index + 1} ").dim().length(4))
-                rowElements.add(text("[List]").fg(SECONDARY_COLOR).length(9))
+                rowElements.add(text("${index + 1} ").dim().length(3))
+                rowElements.add(text("≡ ").fg(SECONDARY_COLOR).length(2))
                 rowElements.add(
                     text(item.title).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsisMiddle().fill()
@@ -310,27 +303,23 @@ private fun renderFeedTab(
                     text(item.author.ifBlank { "Curator" }).fg(TEXT_SECONDARY).ellipsis()
                         .percent(25)
                 )
-                rowElements.add(text(countText).fg(TEXT_DIM).ellipsis().percent(25))
                 rowElements.add(text(" ").length(2))
-                rowElements.add(text("—").fg(TEXT_DIM).length(6))
+                rowElements.add(text(countText).fg(TEXT_DIM).length(6))
                 row(*rowElements.toTypedArray())
             }
 
             is SearchResult.Artist -> {
-                val subsText = listOfNotNull(item.subscriberCountText, item.monthlyListenerCount)
-                    .joinToString(" • ").ifBlank { "Artist" }
                 val rowElements = mutableListOf<Element>()
                 if (state.selection.isNotEmpty) {
                     rowElements.add(text("    ").length(4))
                 }
-                rowElements.add(text("${index + 1} ").dim().length(4))
-                rowElements.add(text("[Artist]").fg(SECONDARY_COLOR).length(9))
+                rowElements.add(text("${index + 1} ").dim().length(3))
+                rowElements.add(text("● ").fg(SECONDARY_COLOR).length(2))
                 rowElements.add(
                     text(item.name).fg(if (isSelected) PRIMARY_COLOR else TEXT_PRIMARY)
                         .apply { if (isSelected) bold() }.ellipsis().fill()
                 )
-                rowElements.add(text("Artist Profile").fg(TEXT_SECONDARY).ellipsis().percent(25))
-                rowElements.add(text(subsText).fg(TEXT_DIM).ellipsis().percent(25))
+                rowElements.add(text("Artist").fg(TEXT_SECONDARY).ellipsis().percent(25))
                 rowElements.add(text(" ").length(2))
                 rowElements.add(text("—").fg(TEXT_DIM).length(6))
                 row(*rowElements.toTypedArray())
@@ -346,11 +335,10 @@ private fun renderFeedTab(
     if (state.selection.isNotEmpty) {
         headerElements.add(text("Sel ").dim().length(4))
     }
-    headerElements.add(text("  #").dim().length(4))
-    headerElements.add(text("Type").dim().length(9))
+    headerElements.add(text("#").dim().length(3))
+    headerElements.add(text(" ").length(2))
     headerElements.add(text("Title").dim().fill())
     headerElements.add(text("Artist / Curator").dim().percent(25))
-    headerElements.add(text("Album / Extra").dim().percent(25))
     headerElements.add(text(ICON_HEART).dim().length(2))
     headerElements.add(text("Time").dim().length(6))
     val tableHeader = row(*headerElements.toTypedArray()).length(1)
@@ -430,7 +418,7 @@ private fun renderFeedTab(
         .fill()
 
     val masterDetail = dock()
-        .left(leftPanel, Constraint.percentage(28))
+        .left(leftPanel, Constraint.length(22))
         .center(rightPanel)
         .fill()
 
