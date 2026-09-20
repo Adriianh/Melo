@@ -54,8 +54,9 @@ fun buildDetailPanel(
     similarArea: ListElement<*>,
     onKeyEvent: (KeyEvent) -> EventResult,
     terminalHeight: Int = 30,
+    trackOverride: Track? = null,
 ): Element {
-    val track = state.detail.selectedTrack ?: return spacer()
+    val track = trackOverride ?: state.detail.selectedTrack ?: state.player.nowPlaying ?: return spacer()
 
     val isNowPlaying = state.player.nowPlaying?.id == track.id
     val detailTabs = tabs("i: Info", "l: Lyrics", "s: Similar")
@@ -73,7 +74,7 @@ fun buildDetailPanel(
         tabContent.fill()
     } else {
         column(
-            renderArtwork(state, terminalHeight),
+            renderArtwork(state, terminalHeight, isNowPlaying),
             tabContent.fill()
         )
     }
@@ -314,13 +315,15 @@ private fun renderTrackMetadata(
 private fun renderArtwork(
     state: MeloState,
     terminalHeight: Int = 30,
+    isNowPlaying: Boolean = false,
 ): StyledElement<*> {
     val artworkHeight = if (terminalHeight <= 28) 12 else 15
+    val artworkData = state.detail.artworkData ?: if (isNowPlaying) state.player.nowPlayingArtwork else null
 
-    return if (state.detail.artworkData != null && !state.player.isQueueVisible) {
+    return if (artworkData != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
-                .data(state.detail.artworkData)
+                .data(artworkData)
                 .scaling(ImageScaling.FIT)
                 .block(
                     Block.builder()
@@ -347,7 +350,7 @@ private fun renderLyricsTab(
     lyricsArea: MarkupTextAreaElement,
     terminalHeight: Int = 30,
 ): StyledElement<*> {
-    val track = state.detail.selectedTrack
+    val track = state.detail.selectedTrack ?: state.player.nowPlaying
     val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
     val isLoading = state.detail.isLoadingLyrics ||
             (isNowPlaying && state.player.isLoadingSyncedLyrics && state.player.syncedLyrics.isEmpty())
@@ -450,7 +453,7 @@ private fun renderSimilarTab(
         )
     }
 
-    val sourceTrack = state.detail.selectedTrack
+    val sourceTrack = state.detail.selectedTrack ?: state.player.nowPlaying
     val headerSubtitle = if (sourceTrack != null) {
         "Based on \"${sourceTrack.title}\""
     } else {

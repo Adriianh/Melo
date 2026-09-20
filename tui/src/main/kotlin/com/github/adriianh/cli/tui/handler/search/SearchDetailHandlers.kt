@@ -453,7 +453,7 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
 }
 
 internal fun MeloScreen.loadLyrics() {
-    val track = state.detail.selectedTrack ?: return
+    val track = state.detail.selectedTrack ?: state.player.nowPlaying ?: return
     if (state.isOfflineMode) {
         state = state.copy(
             detail = state.detail.copy(
@@ -481,7 +481,8 @@ internal fun MeloScreen.loadLyrics() {
 
         if (existingSynced != null) {
             appRunner()?.runOnRenderThread {
-                if (state.detail.selectedTrack?.id == track.id) {
+                val currentTrackId = state.detail.selectedTrack?.id ?: state.player.nowPlaying?.id
+                if (currentTrackId == track.id) {
                     state = state.copy(
                         detail = state.detail.copy(
                             syncedLyrics = existingSynced,
@@ -506,7 +507,8 @@ internal fun MeloScreen.loadLyrics() {
 
         if (parsed.isNotEmpty()) {
             appRunner()?.runOnRenderThread {
-                if (state.detail.selectedTrack?.id == track.id) {
+                val currentTrackId = state.detail.selectedTrack?.id ?: state.player.nowPlaying?.id
+                if (currentTrackId == track.id) {
                     state = state.copy(
                         detail = state.detail.copy(
                             syncedLyrics = parsed,
@@ -525,7 +527,8 @@ internal fun MeloScreen.loadLyrics() {
                 null
             }
             appRunner()?.runOnRenderThread {
-                if (state.detail.selectedTrack?.id == track.id) {
+                val currentTrackId = state.detail.selectedTrack?.id ?: state.player.nowPlaying?.id
+                if (currentTrackId == track.id) {
                     state = state.copy(
                         detail = state.detail.copy(
                             lyrics = plainLyrics ?: "Lyrics not found",
@@ -541,6 +544,21 @@ internal fun MeloScreen.loadLyrics() {
     }
 }
 
+internal fun MeloScreen.returnFocusFromDetail() {
+    val target = when (val curScreen = state.screen) {
+        is ScreenState.Search -> "results-panel"
+        is ScreenState.Home -> "home-panel"
+        is ScreenState.Library -> "library-panel"
+        is ScreenState.Offline -> "offline-panel"
+        is ScreenState.Stats -> "stats-panel"
+        is ScreenState.EntityDetail -> {
+            if (curScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+        }
+        else -> "sidebar-nav"
+    }
+    appRunner()?.focusManager()?.setFocus(target)
+}
+
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
     val focusedId = appRunner()?.focusManager()?.focusedId()
     if (focusedId != "detail-panel") {
@@ -549,7 +567,7 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
 
     when {
         event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB -> {
-            appRunner()?.focusManager()?.setFocus("results-panel")
+            returnFocusFromDetail()
             return EventResult.HANDLED
         }
 
@@ -566,7 +584,8 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
                     isAutoScrollLyrics = true
                 )
             )
-            if (state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            if (track != null && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
                 loadLyrics()
             }
             return EventResult.HANDLED
@@ -574,6 +593,10 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
 
         event.isCharIgnoreCase('s') -> {
             state = state.copy(detail = state.detail.copy(detailTab = DetailTab.SIMILAR))
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            if (track != null && state.detail.similarTracks.isEmpty() && !state.detail.isLoadingSimilar) {
+                loadTrackDetails(track.id, track)
+            }
             return EventResult.HANDLED
         }
 
@@ -588,8 +611,13 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
                     isAutoScrollLyrics = true
                 )
             )
-            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
-                loadLyrics()
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            if (track != null) {
+                if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
+                    loadLyrics()
+                } else if (nextTab == DetailTab.SIMILAR && state.detail.similarTracks.isEmpty() && !state.detail.isLoadingSimilar) {
+                    loadTrackDetails(track.id, track)
+                }
             }
             return EventResult.HANDLED
         }
@@ -605,8 +633,13 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
                     isAutoScrollLyrics = true
                 )
             )
-            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
-                loadLyrics()
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            if (track != null) {
+                if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
+                    loadLyrics()
+                } else if (nextTab == DetailTab.SIMILAR && state.detail.similarTracks.isEmpty() && !state.detail.isLoadingSimilar) {
+                    loadTrackDetails(track.id, track)
+                }
             }
             return EventResult.HANDLED
         }
@@ -732,22 +765,26 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
         }
 
         (event.code() == KeyCode.ENTER || event.matches(Actions.SELECT)) && state.detail.detailTab == DetailTab.INFO -> {
-            state.detail.selectedTrack?.let { playTrack(it) }
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            track?.let { playTrack(it) }
             return EventResult.HANDLED
         }
 
         event.isCharIgnoreCase('q') && state.detail.detailTab == DetailTab.INFO -> {
-            state.detail.selectedTrack?.let { addToQueue(it) }
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            track?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
         event.isCharIgnoreCase('f') && state.detail.detailTab == DetailTab.INFO -> {
-            state.detail.selectedTrack?.let { toggleFavorite(it) }
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            track?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
         event.isCharIgnoreCase('o') && state.detail.detailTab == DetailTab.INFO -> {
-            state.detail.selectedTrack?.let { openTrackOptions(it) }
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            track?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
 

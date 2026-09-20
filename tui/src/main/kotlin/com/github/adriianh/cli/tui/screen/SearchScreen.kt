@@ -13,15 +13,12 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
-import com.github.adriianh.cli.tui.component.buildDetailPanel
-import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
-import dev.tamboui.toolkit.Toolkit.dock
 import dev.tamboui.toolkit.Toolkit.panel
 import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
@@ -299,22 +296,5 @@ private fun renderResultsArea(
         .id("results-panel")
         .onKeyEvent(onResultsKeyEvent)
 
-    return if (isPlayable && state.detail.selectedTrack != null) {
-        dock().center(resultsPanel).right(
-            buildDetailPanel(state, lyricsArea, similarArea, onDetailKeyEvent, terminalHeight),
-            Constraint.percentage(35)
-        )
-    } else if (!isPlayable && state.detail.selectedEntity != null) {
-        dock()
-            .center(resultsPanel)
-            .right(
-                buildEntityDetailPanel(
-                    state, entityDescriptionArea,
-                    onEntityDetailKeyEvent
-                ),
-                Constraint.percentage(35)
-            )
-    } else {
-        resultsPanel
-    }
+    return resultsPanel
 }

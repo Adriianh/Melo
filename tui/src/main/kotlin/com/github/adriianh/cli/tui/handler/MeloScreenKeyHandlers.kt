@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.returnFocusFromDetail
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
@@ -28,6 +29,9 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
     val binding = settings.keybindings[action] ?: return false
     val codeStr = binding.code
     val charVal = binding.char
+    val ctrlVal = binding.ctrl
+    val ctrlPressed = modifiers().ctrl() || (charVal != null && charVal.lowercaseChar() == 'd' && isChar('\u0004'))
+    if (ctrlVal != ctrlPressed) return false
     return (codeStr != null && code() == KeyCode.valueOf(codeStr)) ||
             (charVal != null && isChar(charVal))
 }
@@ -37,6 +41,9 @@ internal fun KeyEvent.isCtrlF(): Boolean =
 
 internal fun KeyEvent.isCtrlA(): Boolean =
     (modifiers().ctrl() && isCharIgnoreCase('a')) || isChar('\u0001')
+
+internal fun KeyEvent.isCtrlD(): Boolean =
+    (modifiers().ctrl() && isCharIgnoreCase('d')) || isChar('\u0004')
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     when {
@@ -86,7 +93,9 @@ internal fun MeloScreen.switchScreenWithoutFocus(item: SidebarSection) {
     state = state.copy(
         screen = targetScreen,
         navigation = state.navigation.copy(activeSection = item, pendingSection = null),
-        detail = state.detail.copy(artworkData = if (item != SidebarSection.SEARCH) null else state.detail.artworkData),
+        detail = if (item != SidebarSection.SEARCH) {
+            state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null)
+        } else state.detail,
         needsGraphicsClear = false
     )
     if (item == SidebarSection.HOME) {
@@ -117,7 +126,9 @@ internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
     state = state.copy(
         screen = targetScreen,
         navigation = state.navigation.copy(activeSection = item, pendingSection = null),
-        detail = state.detail.copy(artworkData = if (item != SidebarSection.SEARCH) null else state.detail.artworkData),
+        detail = if (item != SidebarSection.SEARCH) {
+            state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null)
+        } else state.detail,
         needsGraphicsClear = false
     )
 
@@ -178,10 +189,24 @@ internal fun MeloScreen.isTyping(): Boolean {
     return offlineState?.isTyping == true
 }
 
+internal fun MeloScreen.toggleDetailPanel() {
+    val newVisibility = !state.detail.isVisible
+    state = state.copy(detail = state.detail.copy(isVisible = newVisibility))
+    val focusedId = appRunner()?.focusManager()?.focusedId()
+    if (focusedId == "detail-panel" || focusedId == "desc-area") {
+        returnFocusFromDetail()
+    }
+}
+
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
     if (state.commandBar.isVisible) return handleCommandBarKey(event)
+
+    if (event.isCtrlD() || event.matchesAction(MeloAction.TOGGLE_DETAIL, settingsViewState.currentSettings)) {
+        toggleDetailPanel()
+        return EventResult.HANDLED
+    }
 
     if (event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty) {
         state = state.copy(selection = state.selection.clear())

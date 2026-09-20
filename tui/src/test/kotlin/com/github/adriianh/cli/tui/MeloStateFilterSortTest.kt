@@ -14,8 +14,11 @@ import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
 import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.Settings
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class MeloStateFilterSortTest {
 
@@ -651,5 +654,20 @@ class MeloStateFilterSortTest {
         detail = detail.copy(isAutoScrollLyrics = true, lyricsScrollOffset = 0)
         assertEquals(true, detail.isAutoScrollLyrics)
         assertEquals(0, detail.lyricsScrollOffset)
+    }
+
+    @Test
+    fun testGlobalDetailPanelStateAndKeybinding() {
+        val detail = DetailState()
+        assertEquals(true, detail.isVisible)
+
+        val toggled = detail.copy(isVisible = !detail.isVisible)
+        assertEquals(false, toggled.isVisible)
+
+        val settings = Settings()
+        val toggleBinding = settings.keybindings[MeloAction.TOGGLE_DETAIL]
+        assertNotNull(toggleBinding)
+        assertEquals('d', toggleBinding.char)
+        assertEquals(true, toggleBinding.ctrl)
     }
 }

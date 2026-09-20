@@ -167,8 +167,13 @@ class SettingsOverlay(
                 val binding = viewState.currentSettings.keybindings[action]
                 val keyStr = when {
                     isListening -> "???"
-                    binding?.char != null -> if (binding.char == ' ') "Space" else binding.char.toString()
-                    binding?.code != null -> binding.code
+                    binding?.char != null -> {
+                        val base = if (binding.char == ' ') "Space" else binding.char.toString()
+                        if (binding.ctrl) "Ctrl+$base" else base
+                    }
+                    binding?.code != null -> {
+                        if (binding.ctrl) "Ctrl+${binding.code}" else binding.code
+                    }
                     else -> "None"
                 }
                 val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY

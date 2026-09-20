@@ -184,7 +184,7 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
             appRunner()?.runOnRenderThread {
                 if (state.player.nowPlaying?.id == track.id) {
                     val parsed = if (lrc != null) LrcParser.parse(lrc) else emptyList()
-                    val isDetailTrack = state.detail.selectedTrack?.id == track.id
+                    val isDetailTrack = state.detail.selectedTrack == null || state.detail.selectedTrack?.id == track.id
                     state = state.copy(
                         player = state.player.copy(
                             syncedLyrics = parsed,
@@ -193,6 +193,7 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
                         detail = if (isDetailTrack) {
                             state.detail.copy(
                                 syncedLyrics = parsed,
+                                lyrics = parsed.joinToString("\n") { it.text },
                                 isAutoScrollLyrics = true,
                                 lyricsScrollOffset = 0,
                             )

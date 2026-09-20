@@ -5,6 +5,8 @@ import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.buildCommandBar
+import com.github.adriianh.cli.tui.component.buildDetailPanel
+import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
 import com.github.adriianh.cli.tui.component.buildPlayerBar
 import com.github.adriianh.cli.tui.component.buildSearchBar
 import com.github.adriianh.cli.tui.component.buildSidebar
@@ -27,6 +29,8 @@ import com.github.adriianh.cli.tui.handler.search.handleEntityDetailKey
 import com.github.adriianh.cli.tui.handler.search.handleResultsKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchBarKey
 import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.cli.tui.handler.toggleDetailPanel
+import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.screen.renderEntityDetailScreen
 import com.github.adriianh.cli.tui.screen.renderHomeScreen
 import com.github.adriianh.cli.tui.screen.renderLibraryScreen
@@ -45,7 +49,7 @@ internal fun MeloScreen.renderRoot(): Element {
     val playerBar = buildPlayerBar(
         state, ::formatDuration, ::handlePlayerBarKey,
         ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
-        ::toggleShuffle, ::cycleRepeat, ::toggleQueue,
+        ::toggleShuffle, ::cycleRepeat, ::toggleQueue, ::toggleDetailPanel,
     )
 
     val bottomContent = if (state.commandBar.isVisible) {
@@ -63,6 +67,39 @@ internal fun MeloScreen.renderRoot(): Element {
     val isSearch =
         state.navigation.activeSection == SidebarSection.SEARCH && state.screen is ScreenState.Search
 
+    val terminalSize = try {
+        appRunner()?.tuiRunner()?.terminal()?.size()
+    } catch (_: Exception) {
+        null
+    }
+    val terminalWidth = terminalSize?.width() ?: 120
+    val terminalHeight = terminalSize?.height() ?: 30
+
+    val minDetailWidth = if (state.screen is ScreenState.Home) 135 else 100
+    val canShowDetail = state.detail.isVisible &&
+            terminalWidth >= minDetailWidth &&
+            state.screen !is ScreenState.NowPlaying &&
+            state.screen !is ScreenState.EntityDetail
+
+    val detailElement: Element? = if (canShowDetail) {
+        if (state.screen is ScreenState.Search) {
+            val actualSearch = state.screen as ScreenState.Search
+            val isPlayable = actualSearch.tab == SearchTab.SONGS
+            if (isPlayable && state.detail.selectedTrack != null) {
+                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+            } else if (!isPlayable && state.detail.selectedEntity != null) {
+                buildEntityDetailPanel(state, entityDescriptionArea, ::handleEntityDetailKey)
+            } else if (state.player.nowPlaying != null) {
+                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+            } else null
+        } else {
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            if (track != null) {
+                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+            } else null
+        }
+    } else null
+
     val layoutDock = dock()
     if (isSearch) {
         layoutDock.top(
@@ -76,7 +113,7 @@ internal fun MeloScreen.renderRoot(): Element {
         )
     }
 
-    val mainLayout = layoutDock
+    val dockWithBottom = layoutDock
         .bottom(
             bottomContent,
             Constraint.length(if (state.commandBar.isVisible) 5 else 4),
@@ -90,7 +127,15 @@ internal fun MeloScreen.renderRoot(): Element {
             ),
             Constraint.length(22)
         )
-        .center(renderMainContentInternal())
+
+    val dockWithRight = if (detailElement != null) {
+        val detailConstraint = if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
+        dockWithBottom.right(detailElement, detailConstraint)
+    } else {
+        dockWithBottom
+    }
+
+    val mainLayout = dockWithRight.center(renderMainContentInternal())
 
     val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
     val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue

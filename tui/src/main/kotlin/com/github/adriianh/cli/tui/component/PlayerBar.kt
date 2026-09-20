@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BG_ELEVATED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
+import com.github.adriianh.cli.tui.MeloTheme.ICON_INFO
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NEXT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
@@ -49,6 +50,7 @@ fun buildPlayerBar(
     onToggleShuffle: () -> Unit = {},
     onCycleRepeat: () -> Unit = {},
     onToggleQueue: () -> Unit = {},
+    onToggleDetail: () -> Unit = {},
 ): Element {
     val nowPlaying = state.player.nowPlaying
 
@@ -194,12 +196,19 @@ fun buildPlayerBar(
         text(" ${state.player.volume}%").fg(TEXT_DIM).length(5),
     ).percent(25)
 
+    val detailColor = if (state.detail.isVisible) PRIMARY_COLOR else TEXT_DIM
     val queueColor = if (state.player.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
     val queueCount = if (state.player.queue.isNotEmpty()) " (${state.player.queue.size})" else ""
 
     val rightBottom = row(
         spacer(),
         if (state.player.isRadioMode) text("📻 Radio ").fg(PRIMARY_COLOR) else text(""),
+        text("$ICON_INFO Info").fg(detailColor)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onToggleDetail(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text("  "),
         text("$ICON_QUEUE Queue$queueCount").fg(queueColor)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onToggleQueue(); EventResult.HANDLED }

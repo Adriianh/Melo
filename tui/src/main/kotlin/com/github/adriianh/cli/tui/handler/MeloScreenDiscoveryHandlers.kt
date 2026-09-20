@@ -82,7 +82,7 @@ internal suspend fun MeloScreen.resolveSimilarTracks(seed: Track, limit: Int = 1
     }
 
 internal fun MeloScreen.loadMoreSimilar() {
-    val seed = state.detail.selectedTrack ?: return
+    val seed = state.detail.selectedTrack ?: state.player.nowPlaying ?: return
     if (state.detail.isLoadingMoreSimilar || !state.detail.hasMoreSimilar) return
 
     val currentOffset = state.detail.similarTracks.size

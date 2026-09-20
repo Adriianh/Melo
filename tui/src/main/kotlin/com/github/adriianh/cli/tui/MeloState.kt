@@ -258,6 +258,7 @@ sealed interface ScreenState {
  * Persisted state for the detail side-panel.
  */
 data class DetailState(
+    val isVisible: Boolean = true,
     val selectedTrack: Track? = null,
     val selectedEntity: SearchResult? = null,
     val detailTab: DetailTab = DetailTab.INFO,
