@@ -135,7 +135,7 @@ internal fun MeloScreen.renderRoot(): Element {
         dockWithBottom
     }
 
-    val mainLayout = dockWithRight.center(renderMainContentInternal())
+    val mainLayout = dockWithRight.center(renderMainContentInternal(terminalWidth))
 
     val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
     val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
@@ -166,7 +166,7 @@ internal fun MeloScreen.renderRoot(): Element {
     }
 }
 
-internal fun MeloScreen.renderMainContentInternal(): Element {
+internal fun MeloScreen.renderMainContentInternal(terminalWidth: Int = 120): Element {
     return when (state.screen) {
         is ScreenState.Home -> renderHomeScreen(
             state,
@@ -194,6 +194,7 @@ internal fun MeloScreen.renderMainContentInternal(): Element {
             playlistTracksList,
             localLibraryList,
             ::handleLibraryKey,
+            terminalWidth,
         )
 
         is ScreenState.NowPlaying -> renderNowPlayingScreen(

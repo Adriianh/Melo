@@ -116,7 +116,7 @@ object DownloadActionHandler : KoinComponent {
             }
         } else {
             if (isAgeRestricted) {
-                terminal.println(yellow($$"⚠️ Track is age-restricted and could not be resolved for download: ${track.title}"))
+                terminal.println(yellow($$"[!] Track is age-restricted and could not be resolved for download: ${track.title}"))
             } else {
                 terminal.println(gray($$"Failed to resolve stream for ${track.title}."))
             }

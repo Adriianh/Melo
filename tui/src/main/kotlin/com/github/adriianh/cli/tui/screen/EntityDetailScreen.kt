@@ -10,6 +10,9 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
+import com.github.adriianh.cli.tui.MeloTheme.ICON_RADIO
+import com.github.adriianh.cli.tui.MeloTheme.ICON_SHUFFLE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
@@ -17,12 +20,14 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.component.buildEntityDetailPanel
+import com.github.adriianh.cli.tui.isFavoriteEntity
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.search.entityId
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Margin
 import dev.tamboui.toolkit.Toolkit.column
@@ -110,19 +115,48 @@ private fun renderArtistDetail(
     }
 
     val artist = detail.entity as SearchResult.Artist
+    val isArtistSaved = state.isFavoriteEntity(artist.id)
+    val artistFavBadge = if (isArtistSaved) {
+        text(" [♥ Following] ").fg(ACCENT_RED).bold()
+    } else {
+        text(" [♡ Follow (F)] ").fg(TEXT_DIM)
+    }
+
+    val statsParts = listOfNotNull(
+        artist.monthlyListenerCount?.takeIf { it.isNotBlank() }?.let { "$it listeners" },
+        artist.subscriberCountText?.takeIf { it.isNotBlank() }?.let { "$it subscribers" }
+    )
+    val statsText =
+        if (statsParts.isNotEmpty()) statsParts.joinToString(" • ") else "Artist Profile"
+
+    val headerElements = mutableListOf<Element>()
+    headerElements.add(
+        row(
+            text(" [ARTIST] ").fg(PRIMARY_COLOR).bold(),
+            text(" "),
+            text(artist.name).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+            text(" "),
+            artistFavBadge
+        )
+    )
+    headerElements.add(text("").length(1))
+    headerElements.add(
+        row(
+            text(statsText).dim(),
+            spacer(),
+            text("[$ICON_RADIO Radio (r)] ").fg(TEXT_SECONDARY),
+            text("[♥ Follow (F)]").fg(PRIMARY_COLOR),
+        )
+    )
+    if (!artist.description.isNullOrBlank()) {
+        headerElements.add(text("").length(1))
+        headerElements.add(
+            text(artist.description!!.replace("\n", " ")).fg(TEXT_SECONDARY).ellipsis()
+        )
+    }
 
     val headerPanel = panel(
-        column(
-            *listOfNotNull(
-                text(artist.name).bold().fg(PRIMARY_COLOR),
-                if (artist.subscriberCountText.isNullOrBlank() && artist.monthlyListenerCount.isNullOrBlank()) null else text(
-                    "${artist.subscriberCountText ?: ""} • ${artist.monthlyListenerCount ?: ""}"
-                ).fg(TEXT_DIM),
-                if (artist.description.isNullOrBlank()) null else text(
-                    artist.description!!.replace("\n", " ")
-                ).fg(TEXT_SECONDARY).ellipsis()
-            ).toTypedArray()
-        ).margin(Margin.symmetric(1, 1))
+        column(*headerElements.toTypedArray()).margin(Margin.symmetric(1, 1))
     ).borderType(BorderType.ROUNDED)
 
     val listItems = mutableListOf<StyledElement<*>>()
@@ -330,7 +364,7 @@ private fun renderArtistDetail(
     val bioHint = if (hasBio) "  [Tab] Bio" else ""
     val footer = row(
         spacer(),
-        text("[Enter] Select  [Space] Play  [m] Opt$bioHint  [Esc] Back")
+        text("[Enter] Select  [Space] Play  [r] Radio  [F] Follow  [m] Opt$bioHint  [Esc] Back")
             .fg(TEXT_DIM)
             .ellipsis(),
         spacer()
@@ -363,8 +397,44 @@ private fun renderTracksDetail(
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val isAlbum = detail.entity is SearchResult.Album
-    val typeBadge = if (isAlbum) "[Album]" else "[Playlist]"
+    val typeBadge = if (isAlbum) "[ALBUM]" else "[PLAYLIST]"
     val typeColor = if (isAlbum) ACCENT_BLUE else SECONDARY_COLOR
+
+    val isSaved = state.isFavoriteEntity(detail.entity.entityId)
+    val favoriteBadge = if (isSaved) {
+        text(" [♥ Liked] ").fg(ACCENT_RED).bold()
+    } else {
+        text(" [♡ Like (F)] ").fg(TEXT_DIM)
+    }
+
+    val totalDurationMs = detail.tracks.sumOf { it.durationMs }
+    val totalDurationText =
+        if (totalDurationMs > 0L) " • ${formatDuration(totalDurationMs)}" else ""
+    val trackCountText = "${detail.tracks.size} track${if (detail.tracks.size != 1) "s" else ""}"
+
+    val heroHeader = panel(
+        column(
+            row(
+                text(" $typeBadge ").fg(typeColor).bold(),
+                text(" "),
+                text(detail.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+                text(" "),
+                favoriteBadge
+            ),
+            text("").length(1),
+            row(
+                text(detail.subtitle ?: (detail.entity as? SearchResult.Album)?.author ?: "").fg(
+                    TEXT_SECONDARY
+                ).ellipsis(),
+                text(if (detail.subtitle.isNullOrBlank()) "" else " • ").dim(),
+                text("$trackCountText$totalDurationText").dim(),
+                spacer(),
+                text("[$ICON_PLAY Play (Space)] ").fg(PRIMARY_COLOR),
+                text("[$ICON_SHUFFLE Shuffle (s)] ").fg(ACCENT_BLUE),
+                text("[$ICON_RADIO Radio (r)] ").fg(TEXT_SECONDARY),
+            )
+        ).margin(Margin.symmetric(1, 1))
+    ).borderType(BorderType.ROUNDED)
 
     val rightPanel = buildEntityDetailPanel(state, entityDescriptionArea, onEntityDetailKeyEvent)
 
@@ -439,8 +509,6 @@ private fun renderTracksDetail(
         text("${filteredTracks.size} / ${detail.tracks.size} tracks").dim()
     ).margin(Margin.horizontal(1))
 
-    val subtitleText = detail.subtitle?.let { " • $it" } ?: ""
-
     val hasBio =
         !detail.description.isNullOrBlank() || (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true || (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true
     val bioHint = if (hasBio) "  [Tab] Details" else ""
@@ -462,7 +530,7 @@ private fun renderTracksDetail(
     } else {
         row(
             spacer(),
-            text("[Enter] Play  [v] Select  [m] Opt$bioHint  [Esc] Back")
+            text("[Enter] Play  [s] Shuffle  [r] Radio  [f] Like Track  [F] Like Entity  [m] Opt$bioHint  [Esc] Back")
                 .fg(TEXT_DIM)
                 .ellipsis(),
             spacer()
@@ -488,13 +556,7 @@ private fun renderTracksDetail(
 
         val emptyEntityPanel = panel(
             column(
-                row(
-                    text("  $typeBadge ").fg(typeColor).bold(),
-                    text(detail.title).bold().fg(TEXT_PRIMARY).ellipsis(),
-                    text(subtitleText).fg(TEXT_SECONDARY).ellipsis(),
-                    spacer(),
-                    text("${detail.tracks.size} tracks total  ").dim()
-                ).length(1),
+                heroHeader,
                 text("").length(1),
                 toolbar,
                 text("").length(1),
@@ -561,13 +623,7 @@ private fun renderTracksDetail(
 
     val entityPanel = panel(
         column(
-            row(
-                text("  $typeBadge ").fg(typeColor).bold(),
-                text(detail.title).bold().fg(TEXT_PRIMARY).ellipsis(),
-                text(subtitleText).fg(TEXT_SECONDARY).ellipsis(),
-                spacer(),
-                text("${filteredTracks.size} / ${detail.tracks.size} tracks  ").dim()
-            ).length(1),
+            heroHeader,
             text("").length(1),
             toolbar,
             text("").length(1),

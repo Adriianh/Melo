@@ -14,6 +14,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_PAUSE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PREV
 import com.github.adriianh.cli.tui.MeloTheme.ICON_QUEUE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_RADIO
 import com.github.adriianh.cli.tui.MeloTheme.ICON_REPEAT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_REPEAT1
 import com.github.adriianh.cli.tui.MeloTheme.ICON_SHUFFLE
@@ -202,7 +203,7 @@ fun buildPlayerBar(
 
     val rightBottom = row(
         spacer(),
-        if (state.player.isRadioMode) text("📻 Radio ").fg(PRIMARY_COLOR) else text(""),
+        if (state.player.isRadioMode) text("$ICON_RADIO Radio ").fg(PRIMARY_COLOR) else text(""),
         text("$ICON_INFO Info").fg(detailColor)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onToggleDetail(); EventResult.HANDLED }

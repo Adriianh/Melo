@@ -2,6 +2,8 @@ package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
+import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
@@ -15,6 +17,7 @@ import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.isFavoriteEntity
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
@@ -22,6 +25,7 @@ import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.model.search.entityId
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
@@ -115,52 +119,89 @@ fun buildEntityDetailPanel(
 ): Element {
     val entity = state.detail.selectedEntity ?: return spacer()
 
+    val isSaved = state.isFavoriteEntity(entity.entityId)
     val headerElements = mutableListOf<Element>()
     when (entity) {
         is SearchResult.Album -> {
-            headerElements.add(text(" Album ").fg(PRIMARY_COLOR))
+            val favBadge = if (isSaved) text(" [♥ Saved] ").fg(ACCENT_RED)
+                .bold() else text(" [♡ Save (F)] ").fg(TEXT_DIM)
+            headerElements.add(row(text(" [ALBUM] ").fg(PRIMARY_COLOR).bold(), text(" "), favBadge))
             headerElements.add(text(""))
-            headerElements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            headerElements.add(
+                text(entity.title).bold().fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD)
+            )
             headerElements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
-            if (entity.year != null) headerElements.add(text(entity.year.toString()).dim())
-            if (!entity.songs.isNullOrEmpty()) headerElements.add(text("${entity.songs!!.size} tracks").dim())
+            val albumStats = mutableListOf<String>()
+            if (entity.year != null) albumStats.add(entity.year.toString())
+            val trackCount = entity.songs?.size ?: 0
+            if (trackCount > 0) albumStats.add("$trackCount track${if (trackCount != 1) "s" else ""}")
+            val totalDuration = entity.songs?.sumOf { it.durationMs } ?: 0L
+            if (totalDuration > 0L) albumStats.add(formatDuration(totalDuration))
+            if (albumStats.isNotEmpty()) {
+                headerElements.add(text(albumStats.joinToString(" • ")).dim())
+            }
             if (!entity.otherVersions.isNullOrEmpty()) {
-                val versionElements = mutableListOf<Element>()
-                versionElements.add(text(""))
-                versionElements.add(text("Other versions:").fg(TEXT_SECONDARY))
+                headerElements.add(text(""))
+                headerElements.add(text("Other versions:").fg(TEXT_SECONDARY))
                 entity.otherVersions!!.forEach {
-                    versionElements.add(text("• ${it.title}").dim().overflow(Overflow.WRAP_WORD))
+                    headerElements.add(text("• ${it.title}").dim().overflow(Overflow.WRAP_WORD))
                 }
-                headerElements.add(column(*versionElements.toTypedArray()))
             }
         }
 
         is SearchResult.Artist -> {
-            headerElements.add(text(" Artist ").fg(PRIMARY_COLOR))
+            val favBadge = if (isSaved) text(" [♥ Following] ").fg(ACCENT_RED)
+                .bold() else text(" [♡ Follow (F)] ").fg(TEXT_DIM)
+            headerElements.add(
+                row(
+                    text(" [ARTIST] ").fg(PRIMARY_COLOR).bold(),
+                    text(" "),
+                    favBadge
+                )
+            )
             headerElements.add(text(""))
-            headerElements.add(text(entity.name).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
-            if (entity.subscriberCountText != null) headerElements.add(text(entity.subscriberCountText!!).dim())
-            if (entity.monthlyListenerCount != null) headerElements.add(text(entity.monthlyListenerCount!!).dim())
-            if (state.detail.entityGenres.isNotEmpty()) {
+            headerElements.add(
+                text(entity.name).bold().fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD)
+            )
+            val stats = mutableListOf<String>()
+            if (!entity.monthlyListenerCount.isNullOrBlank()) stats.add("${entity.monthlyListenerCount} listeners")
+            if (!entity.subscriberCountText.isNullOrBlank()) stats.add("${entity.subscriberCountText} subscribers")
+            if (stats.isNotEmpty()) {
                 headerElements.add(
-                    column(
-                        text(""),
-                        text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
-                            .overflow(Overflow.WRAP_WORD)
-                    )
+                    text(stats.joinToString(" • ")).dim().overflow(Overflow.WRAP_WORD)
+                )
+            }
+            if (state.detail.entityGenres.isNotEmpty()) {
+                headerElements.add(text(""))
+                headerElements.add(
+                    text(state.detail.entityGenres.joinToString(", ")).fg(TEXT_SECONDARY)
+                        .overflow(Overflow.WRAP_WORD)
                 )
             }
         }
 
         is SearchResult.Playlist -> {
-            headerElements.add(text(" Playlist ").fg(PRIMARY_COLOR))
+            val favBadge = if (isSaved) text(" [♥ Saved] ").fg(ACCENT_RED)
+                .bold() else text(" [♡ Save (F)] ").fg(TEXT_DIM)
+            headerElements.add(
+                row(
+                    text(" [PLAYLIST] ").fg(ACCENT_BLUE).bold(),
+                    text(" "),
+                    favBadge
+                )
+            )
             headerElements.add(text(""))
-            headerElements.add(text(entity.title).fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD))
+            headerElements.add(
+                text(entity.title).bold().fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD)
+            )
             headerElements.add(text(entity.author).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD))
-            if (!entity.songs.isNullOrEmpty()) {
-                headerElements.add(text("${entity.songs!!.size} tracks").dim())
-            } else if (entity.trackCount != null) {
-                headerElements.add(text("${entity.trackCount} tracks").dim())
+            val count = entity.songs?.size ?: entity.trackCount ?: 0
+            val playlistStats = mutableListOf<String>()
+            if (count > 0) playlistStats.add("$count track${if (count != 1) "s" else ""}")
+            val totalDuration = entity.songs?.sumOf { it.durationMs } ?: 0L
+            if (totalDuration > 0L) playlistStats.add(formatDuration(totalDuration))
+            if (playlistStats.isNotEmpty()) {
+                headerElements.add(text(playlistStats.joinToString(" • ")).dim())
             }
         }
 

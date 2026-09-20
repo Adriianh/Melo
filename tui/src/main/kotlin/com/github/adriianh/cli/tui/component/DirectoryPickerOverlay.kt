@@ -47,7 +47,7 @@ class DirectoryPickerOverlay(
 
         val bottomElement = when {
             picker.errorMessage != null -> {
-                text("  ⚠ ${picker.errorMessage}  [any key to dismiss]")
+                text("  ${MeloTheme.ICON_ERROR} ${picker.errorMessage}  [any key to dismiss]")
                     .fg(Color.RED).bold().fill()
             }
 

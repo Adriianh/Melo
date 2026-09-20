@@ -195,9 +195,9 @@ object PlayActionHandler : KoinComponent {
                 }
             } else {
                 if (isAgeRestricted) {
-                    terminal.println(yellow("⚠️ Track is age-restricted and could not be resolved: ") + track.title)
+                    terminal.println(yellow("[!] Track is age-restricted and could not be resolved: ") + track.title)
                 } else {
-                    terminal.println(yellow("⚠️ Failed to get stream for: ") + track.title)
+                    terminal.println(yellow("[!] Failed to get stream for: ") + track.title)
                 }
                 nextAction?.invoke()
             }
@@ -211,7 +211,7 @@ object PlayActionHandler : KoinComponent {
             onQueueAdd = { track ->
                 val wasEmpty = radioQueue.isEmpty()
                 radioQueue.add(track)
-                terminal.println(green("\n🎵 Added to queue: ") + track.title + gray(" by ") + track.artist)
+                terminal.println(green("\n+ Added to queue: ") + track.title + gray(" by ") + track.artist)
                 if (wasEmpty) {
                     playerScope.launch {
                         currentTrack = track

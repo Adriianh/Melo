@@ -48,9 +48,9 @@ object MeloTheme {
     val ICON_NEXT: String get() = if (supportsUnicode) "⏭" else ">|"
     val ICON_LOADING: String get() = if (supportsUnicode) "⠋" else "..."
     val ICON_ERROR: String get() = if (supportsUnicode) "✗" else "x"
-    val ICON_VOL_MUTE: String get() = if (supportsUnicode) "󰕿" else "[m]"
-    val ICON_VOL_LOW: String get() = if (supportsUnicode) "🔉" else "[<]"
-    val ICON_VOL_HIGH: String get() = if (supportsUnicode) "🔊" else "[>]"
+    val ICON_VOL_MUTE: String get() = if (supportsUnicode) "×" else "[x]"
+    val ICON_VOL_LOW: String get() = if (supportsUnicode) "◁" else "<"
+    val ICON_VOL_HIGH: String get() = if (supportsUnicode) "◀" else ">"
     val ICON_NOTE: String get() = if (supportsUnicode) "♫" else "~"
     val ICON_HEART: String get() = if (supportsUnicode) "♥" else "<3"
     val ICON_CHECK: String get() = if (supportsUnicode) "✓" else "ok"
@@ -72,8 +72,8 @@ object MeloTheme {
     val ICON_SETTINGS: String get() = if (supportsUnicode) "⚙" else "[S]"
     val ICON_OFFLINE: String get() = if (supportsUnicode) "↓" else "[D]"
     val ICON_DOWNLOADING: String get() = if (supportsUnicode) "↓" else "~"
-    val ICON_FOLDER: String get() = if (supportsUnicode) "📁" else ""
-    val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "📂" else ""
+    val ICON_FOLDER: String get() = if (supportsUnicode) "▸" else "/"
+    val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "▾" else "/"
 
     val EQUALIZER_FRAMES = listOf(" ▂▃ ", "▃▅▆▃", "▅▇█▅", "▆▅▃ ", "▃ ▂▃")
     fun getEqualizerFrame(tick: Long): String =
