@@ -17,91 +17,26 @@ import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
-import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
-import com.github.adriianh.core.domain.repository.DiscoveryRepository
-import com.github.adriianh.core.domain.repository.FavoritesRepository
 import com.github.adriianh.core.domain.repository.HistoryRepository
-import com.github.adriianh.core.domain.repository.LoginRepository
-import com.github.adriianh.core.domain.repository.LyricsRepository
-import com.github.adriianh.core.domain.repository.MusicRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
-import com.github.adriianh.core.domain.repository.PlaylistRepository
-import com.github.adriianh.core.domain.repository.RemoteLibraryRepository
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
-import com.github.adriianh.core.domain.repository.SearchHistoryRepository
-import com.github.adriianh.core.domain.repository.SessionRepository
-import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.repository.StatsRepository
-import com.github.adriianh.core.domain.usecase.library.AddFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
-import com.github.adriianh.core.domain.usecase.library.CreatePlaylistUseCase
-import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
-import com.github.adriianh.core.domain.usecase.library.GetFavoritesUseCase
+import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
+import com.github.adriianh.core.domain.usecase.library.GetFavoriteEntitiesUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
-import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
-import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
+import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
-import com.github.adriianh.core.domain.usecase.library.IsFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
-import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
-import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.IsFavoriteEntityUseCase
+import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteEntityUseCase
+import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
-import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
-import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
-import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
-import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
-import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
-import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
-import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
-import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
-import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
-import com.github.adriianh.core.domain.usecase.offline.SyncOfflineTracksUseCase
-import com.github.adriianh.core.domain.usecase.offline.UpdateTrackMetadataUseCase
-import com.github.adriianh.core.domain.usecase.playback.AuthenticateLastFmUseCase
-import com.github.adriianh.core.domain.usecase.playback.CompleteWebAuthUseCase
-import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
-import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
-import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
-import com.github.adriianh.core.domain.usecase.playback.ScrobbleUseCase
-import com.github.adriianh.core.domain.usecase.playback.StartWebAuthUseCase
-import com.github.adriianh.core.domain.usecase.playback.UpdateNowPlayingUseCase
-import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
-import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetChartsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetExploreUseCase
-import com.github.adriianh.core.domain.usecase.search.GetHomeUseCase
-import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
-import com.github.adriianh.core.domain.usecase.search.GetSearchHistoryUseCase
-import com.github.adriianh.core.domain.usecase.search.GetSearchSuggestionsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetSimilarTracksUseCase
-import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
-import com.github.adriianh.core.domain.usecase.search.GetTrackUseCase
-import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
-import com.github.adriianh.core.domain.usecase.search.LoadMoreAlbumsUseCase
-import com.github.adriianh.core.domain.usecase.search.LoadMoreArtistsUseCase
-import com.github.adriianh.core.domain.usecase.search.LoadMorePlaylistsUseCase
-import com.github.adriianh.core.domain.usecase.search.LoadMoreTracksUseCase
-import com.github.adriianh.core.domain.usecase.search.SaveSearchQueryUseCase
-import com.github.adriianh.core.domain.usecase.search.SearchAlbumsUseCase
-import com.github.adriianh.core.domain.usecase.search.SearchArtistsUseCase
-import com.github.adriianh.core.domain.usecase.search.SearchPlaylistsUseCase
-import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
-import com.github.adriianh.core.domain.usecase.session.ClearSessionUseCase
-import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
-import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
-import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
-import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
-import com.github.adriianh.core.domain.usecase.stats.GetListeningStatsUseCase
-import com.github.adriianh.core.domain.usecase.stats.GetTopArtistsUseCase
-import com.github.adriianh.core.domain.usecase.stats.GetTopTracksUseCase
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
-import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
-import com.github.adriianh.data.provider.artwork.DeezerArtworkProvider
-import com.github.adriianh.data.provider.artwork.ItunesArtworkProvider
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
@@ -114,27 +49,12 @@ import com.github.adriianh.data.provider.music.ItunesMusicProvider
 import com.github.adriianh.data.provider.music.MergedMusicProvider
 import com.github.adriianh.data.provider.music.PipedMusicProvider
 import com.github.adriianh.data.provider.music.SpotifyMusicProvider
-import com.github.adriianh.data.remote.deezer.DeezerApiClient
-import com.github.adriianh.data.remote.itunes.ItunesApiClient
 import com.github.adriianh.data.remote.lastfm.LastFmApiClient
-import com.github.adriianh.data.remote.lyrics.LyricsApiClient
-import com.github.adriianh.data.remote.lyrics.LyricsTranslator
-import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyApiClient
 import com.github.adriianh.data.remote.spotify.SpotifyAuthClient
-import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
-import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
-import com.github.adriianh.data.repository.InnerTubeLoginRepository
-import com.github.adriianh.data.repository.LyricsRepositoryImpl
-import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
-import com.github.adriianh.data.repository.PlaylistRepositoryImpl
-import com.github.adriianh.data.repository.RemoteLibraryRepositoryImpl
 import com.github.adriianh.data.repository.ScrobblingRepositoryImpl
-import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
-import com.github.adriianh.data.repository.SessionRepositoryImpl
-import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.data.repository.StatsRepositoryImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -275,20 +195,30 @@ val appModule = module {
     }
     factory {
         LibraryInteractors(
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get()
+            getFavorites = get(),
+            addFavorite = get(),
+            removeFavorite = get(),
+            isFavorite = get(),
+            getPlaylists = get(),
+            getPlaylistTracks = get(),
+            createPlaylist = get(),
+            renamePlaylist = get(),
+            deletePlaylist = get(),
+            addTrackToPlaylist = get(),
+            removeTrackFromPlaylist = get(),
+            getLikedSongs = getOrNull<GetLikedSongsUseCase>(),
+            getUserPlaylists = getOrNull<GetUserPlaylistsUseCase>(),
+            toggleLikeTrack = getOrNull<ToggleLikeTrackUseCase>(),
+            getUserAlbums = getOrNull<GetUserAlbumsUseCase>(),
+            getUserArtists = getOrNull<GetUserArtistsUseCase>(),
+            toggleLikeAlbum = getOrNull<ToggleLikeAlbumUseCase>(),
+            toggleLikePlaylist = getOrNull<ToggleLikePlaylistUseCase>(),
+            subscribeChannel = getOrNull<SubscribeChannelUseCase>(),
+            getFavoriteEntities = getOrNull<GetFavoriteEntitiesUseCase>(),
+            addFavoriteEntity = getOrNull<AddFavoriteEntityUseCase>(),
+            removeFavoriteEntity = getOrNull<RemoveFavoriteEntityUseCase>(),
+            isFavoriteEntity = getOrNull<IsFavoriteEntityUseCase>(),
+            toggleFavoriteEntity = getOrNull<ToggleFavoriteEntityUseCase>(),
         )
     }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
