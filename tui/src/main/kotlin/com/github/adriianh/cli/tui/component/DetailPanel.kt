@@ -4,12 +4,22 @@ import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
+import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_OFFLINE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PAUSE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
+import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.Image
@@ -17,8 +27,12 @@ import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Flex
 import dev.tamboui.layout.Margin
 import dev.tamboui.style.Overflow
+import dev.tamboui.text.Line
+import dev.tamboui.text.Span
+import dev.tamboui.text.Text
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.richText
 import dev.tamboui.toolkit.Toolkit.row
 import dev.tamboui.toolkit.Toolkit.spacer
 import dev.tamboui.toolkit.Toolkit.tabs
@@ -43,13 +57,14 @@ fun buildDetailPanel(
 ): Element {
     val track = state.detail.selectedTrack ?: return spacer()
 
+    val isNowPlaying = state.player.nowPlaying?.id == track.id
     val detailTabs = tabs("i: Info", "l: Lyrics", "s: Similar")
         .selected(state.detail.detailTab.ordinal)
         .highlightColor(PRIMARY_COLOR)
         .divider(" │ ")
 
     val tabContent: StyledElement<*> = when (state.detail.detailTab) {
-        DetailTab.INFO -> renderTrackMetadata(track)
+        DetailTab.INFO -> renderTrackMetadata(track, state, isNowPlaying)
         DetailTab.LYRICS -> renderLyricsTab(state, lyricsArea, terminalHeight)
         DetailTab.SIMILAR -> renderSimilarTab(state, similarArea)
     }
@@ -58,14 +73,14 @@ fun buildDetailPanel(
         tabContent.fill()
     } else {
         column(
-            renderArtwork(state),
+            renderArtwork(state, terminalHeight),
             tabContent.fill()
         )
     }
 
     val bottomHelp = when (state.detail.detailTab) {
+        DetailTab.INFO -> " [Enter] Play  [q] Queue  [f] Fav  [o] Options  [Esc] Back "
         DetailTab.LYRICS -> {
-            val isNowPlaying = state.player.nowPlaying?.id == track.id
             val hasSync =
                 (if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()
             if (hasSync) {
@@ -76,8 +91,7 @@ fun buildDetailPanel(
             }
         }
 
-        DetailTab.SIMILAR -> " [↑/↓] Select  [Enter] Play  [Esc] Back "
-        else -> " [i/l/s] Tabs  [Esc] Back "
+        DetailTab.SIMILAR -> " [↑/↓] Select  [Enter] Play  [q] Queue  [f] Fav  [o] Options  [Esc] Back "
     }
 
     return panel(
@@ -199,16 +213,111 @@ fun buildEntityDetailPanel(
 
 private fun renderTrackMetadata(
     track: Track,
-): StyledElement<*> = column(
-    text(track.title).bold().fg(TEXT_PRIMARY).overflow(Overflow.WRAP_WORD),
-    text(track.artist).fg(TEXT_SECONDARY).overflow(Overflow.WRAP_WORD),
-    if (track.album.isNotBlank()) text(track.album).dim()
-        .overflow(Overflow.WRAP_WORD) else text(""),
-    text("")
-).flex(Flex.START)
+    state: MeloState,
+    isNowPlaying: Boolean = state.player.nowPlaying?.id == track.id,
+): StyledElement<*> {
+    val albumText = track.album.ifBlank { "Single" }
+    val durationText = if (track.durationMs > 0) formatDuration(track.durationMs) else "--:--"
+    val isFav = state.isFavoriteTrack(track)
+    val isOff = state.collections.offlineTracks.any {
+        it.track.id == track.id && it.downloadStatus == DownloadStatus.COMPLETED
+    }
+    val queuePos = state.player.queue.indexOfFirst { it.id == track.id }
+    val queueText = when {
+        isNowPlaying -> "Now playing"
+        queuePos >= 0 -> "#${queuePos + 1} in queue"
+        else -> "Not in queue"
+    }
 
-private fun renderArtwork(state: MeloState): StyledElement<*> =
-    if (state.detail.artworkData != null && !state.player.isQueueVisible) {
+    val elements = mutableListOf<Element>()
+    val titleArtistSpans = mutableListOf<Span>(
+        Span.raw(track.title).bold().fg(TEXT_PRIMARY)
+    )
+    if (track.artist.isNotBlank()) {
+        titleArtistSpans.add(Span.raw(" ● ").dim())
+        titleArtistSpans.add(Span.raw(track.artist).fg(PRIMARY_COLOR))
+    }
+    val titleArtistLine = Line.from(titleArtistSpans)
+    val titleLen =
+        track.title.length + (if (track.artist.isNotBlank()) track.artist.length + 3 else 0)
+    val titleLines = if (titleLen > 40) 2 else 1
+    elements.add(richText(Text.from(titleArtistLine)).wrapWord().length(titleLines))
+
+    if (isNowPlaying) {
+        val isPlaying = state.player.isPlaying
+        val playIcon = if (isPlaying) ICON_PLAY else ICON_PAUSE
+        val posStr = formatDuration(state.player.nowPlayingPositionMs)
+        val durStr = if (track.durationMs > 0) formatDuration(track.durationMs) else "--:--"
+        val pct =
+            if (track.durationMs > 0) (state.player.nowPlayingPositionMs.toDouble() / track.durationMs).coerceIn(
+                0.0,
+                1.0
+            ) else 0.0
+        val barWidth = 18
+        val filled = (pct * barWidth).toInt().coerceIn(0, barWidth)
+        val bar = "━".repeat(filled) + (if (filled < barWidth) "╸" else "") + "─".repeat(
+            (barWidth - filled - 1).coerceAtLeast(0)
+        )
+
+        elements.add(text("").length(1))
+        elements.add(
+            row(
+                text("$playIcon NOW PLAYING").bold().fg(PRIMARY_COLOR),
+                text("  $posStr / $durStr").dim(),
+            ).length(1)
+        )
+        elements.add(text(bar).fg(PRIMARY_COLOR).length(1))
+    } else {
+        elements.add(text("").length(1))
+        elements.add(
+            row(
+                text("Queue     ").dim().length(10),
+                text(queueText).fg(if (queuePos >= 0) PRIMARY_COLOR else TEXT_DIM).fill(),
+            ).length(1)
+        )
+    }
+
+    elements.add(text("").length(1))
+    elements.add(
+        row(
+            text("Album     ").dim().length(10),
+            text(albumText).fg(TEXT_PRIMARY).ellipsis().fill(),
+        ).length(1)
+    )
+    elements.add(
+        row(
+            text("Length    ").dim().length(10),
+            text(durationText).fg(TEXT_PRIMARY).fill(),
+        ).length(1)
+    )
+    if (track.genres.isNotEmpty()) {
+        elements.add(
+            row(
+                text("Genres    ").dim().length(10),
+                text(track.genres.joinToString(", ")).fg(TEXT_SECONDARY).ellipsis().fill(),
+            ).length(1)
+        )
+    }
+    elements.add(
+        row(
+            text("Status    ").dim().length(10),
+            text(if (isFav) "$ICON_HEART Liked" else "♡ Not liked").fg(if (isFav) PRIMARY_COLOR else TEXT_DIM),
+            text("  •  ").dim(),
+            text(if (isOff) "$ICON_OFFLINE Downloaded" else "Streaming").fg(if (isOff) SECONDARY_COLOR else TEXT_DIM),
+        ).length(1)
+    )
+    elements.add(spacer())
+
+    return column(*elements.toTypedArray()).margin(Margin.horizontal(1)).fill()
+}
+
+private fun renderArtwork(
+    state: MeloState,
+    terminalHeight: Int = 30,
+): StyledElement<*> {
+    val artworkHeight = if (terminalHeight <= 28) 12 else 15
+
+    return if (state.detail.artworkData != null && !state.player.isQueueVisible) {
         widget(
             Image.builder()
                 .data(state.detail.artworkData)
@@ -220,10 +329,18 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
                         .build()
                 )
                 .build()
-        ).length(18)
+        ).length(artworkHeight)
     } else {
-        panel(text(" [ No Artwork ] ").dim().centered()).rounded().length(5)
+        panel(
+            column(
+                spacer(),
+                text(ICON_NOTE).fg(PRIMARY_COLOR).centered(),
+                text("No Artwork Available").dim().centered(),
+                spacer(),
+            )
+        ).rounded().borderColor(BORDER_DEFAULT).length(artworkHeight)
     }
+}
 
 private fun renderLyricsTab(
     state: MeloState,
@@ -321,42 +438,82 @@ private fun renderSimilarTab(
     if (state.detail.isLoadingSimilar) {
         return column(
             spacer(),
-            text("  Loading similar tracks...").dim().centered(),
+            text("  $ICON_LOADING Loading recommendations...").dim().centered(),
             spacer()
         )
     }
     if (state.detail.similarTracks.isEmpty()) {
         return column(
             spacer(),
-            text("  No similar tracks found").fg(TEXT_SECONDARY).centered(),
+            text("  No recommendations found").fg(TEXT_SECONDARY).centered(),
             spacer()
         )
     }
+
+    val sourceTrack = state.detail.selectedTrack
+    val headerSubtitle = if (sourceTrack != null) {
+        "Based on \"${sourceTrack.title}\""
+    } else {
+        "Similar tracks"
+    }
+
     val items = state.detail.similarTracks.mapIndexed { index, similar ->
         val isSelected = index == state.detail.similarCursor
+        val isPlaying = state.player.nowPlaying?.id == similar.id
+        val isFav = state.isFavoriteTrack(similar)
         val isPlayable = state.isPlayable(similar)
-        val titleColor =
-            if (isSelected) PRIMARY_COLOR else if (isPlayable) TEXT_PRIMARY else TEXT_DIM
+        val titleColor = when {
+            isSelected -> PRIMARY_COLOR
+            isPlaying -> PRIMARY_COLOR
+            isPlayable -> TEXT_PRIMARY
+            else -> TEXT_DIM
+        }
+        val prefix = when {
+            isPlaying -> "$ICON_NOTE "
+            isSelected -> "$ICON_PLAY "
+            else -> "  "
+        }
+        val duration = if (similar.durationMs > 0L) formatDuration(similar.durationMs) else ""
+
         row(
-            text(similar.title).fg(titleColor).apply { if (isSelected) bold() }.ellipsisMiddle()
+            text(prefix).fg(PRIMARY_COLOR).length(2),
+            text("${index + 1}").dim().length(3),
+            text(similar.title).fg(titleColor).apply { if (isSelected) bold(); ellipsisMiddle() }
                 .fill(),
-            text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(30),
+            text(similar.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
+            text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2),
+            text(duration).fg(TEXT_DIM).length(6),
         )
     }.toMutableList()
 
     if (state.detail.isLoadingMoreSimilar) {
         items.add(
             row(
-                text("  "),
-                text("Loading more...").fg(TEXT_DIM).centered().fill(),
-                text("")
+                text("  ").length(2),
+                text("Loading more recommendations...").fg(TEXT_DIM).centered().fill(),
+                text("").length(6),
             )
         )
     }
 
     similarArea.elements(*items.toTypedArray())
     similarArea.selected(state.detail.similarCursor)
-    return similarArea.fill()
+
+    return column(
+        text("").length(1),
+        text("♫ RECOMMENDATIONS").bold().fg(PRIMARY_COLOR).centered(),
+        text(headerSubtitle).dim().apply { ellipsis() }.centered(),
+        text("").length(1),
+        row(
+            text("  ").length(2),
+            text("#").dim().length(3),
+            text("Title").dim().fill(),
+            text("Artist").dim().percent(25),
+            text(ICON_HEART).dim().length(2),
+            text("Time").dim().length(6),
+        ),
+        similarArea.fill(),
+    ).fill()
 }
 
 private fun wrapText(text: String?): String {

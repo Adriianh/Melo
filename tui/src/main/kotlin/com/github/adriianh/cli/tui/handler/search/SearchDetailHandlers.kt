@@ -731,8 +731,45 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.ENTER && state.detail.detailTab == DetailTab.SIMILAR -> {
+        (event.code() == KeyCode.ENTER || event.matches(Actions.SELECT)) && state.detail.detailTab == DetailTab.INFO -> {
+            state.detail.selectedTrack?.let { playTrack(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('q') && state.detail.detailTab == DetailTab.INFO -> {
+            state.detail.selectedTrack?.let { addToQueue(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('f') && state.detail.detailTab == DetailTab.INFO -> {
+            state.detail.selectedTrack?.let { toggleFavorite(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('o') && state.detail.detailTab == DetailTab.INFO -> {
+            state.detail.selectedTrack?.let { openTrackOptions(it) }
+            return EventResult.HANDLED
+        }
+
+        (event.code() == KeyCode.ENTER || event.matches(Actions.SELECT)) && state.detail.detailTab == DetailTab.SIMILAR -> {
             state.detail.similarTracks.getOrNull(state.detail.similarCursor)?.let { playTrack(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('q') && state.detail.detailTab == DetailTab.SIMILAR -> {
+            state.detail.similarTracks.getOrNull(state.detail.similarCursor)?.let { addToQueue(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('f') && state.detail.detailTab == DetailTab.SIMILAR -> {
+            state.detail.similarTracks.getOrNull(state.detail.similarCursor)
+                ?.let { toggleFavorite(it) }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('o') && state.detail.detailTab == DetailTab.SIMILAR -> {
+            state.detail.similarTracks.getOrNull(state.detail.similarCursor)
+                ?.let { openTrackOptions(it) }
             return EventResult.HANDLED
         }
     }
