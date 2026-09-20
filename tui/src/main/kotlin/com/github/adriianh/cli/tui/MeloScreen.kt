@@ -115,9 +115,7 @@ class MeloScreen(
     internal val removeFavorite get() = libraryInteractors.removeFavorite
     internal val isFavoriteUseCase get() = libraryInteractors.isFavorite
     internal val getFavoriteEntities get() = libraryInteractors.getFavoriteEntities
-    internal val addFavoriteEntity get() = libraryInteractors.addFavoriteEntity
     internal val removeFavoriteEntity get() = libraryInteractors.removeFavoriteEntity
-    internal val isFavoriteEntityUseCase get() = libraryInteractors.isFavoriteEntity
     internal val toggleFavoriteEntity get() = libraryInteractors.toggleFavoriteEntity
 
     internal val getRecentTracks get() = playbackInteractors.getRecentTracks

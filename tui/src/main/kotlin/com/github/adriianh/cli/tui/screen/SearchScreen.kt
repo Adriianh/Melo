@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.screen
 
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
@@ -46,8 +45,8 @@ fun renderSearchScreen(
         ).title(" Results ").rounded().borderColor(BORDER_DEFAULT)
 
         actualState.errorMessage != null -> panel(
-            text(actualState.errorMessage).fg(MeloTheme.ACCENT_RED)
-        ).title(" Error ").rounded().borderColor(MeloTheme.ACCENT_RED)
+            text(actualState.errorMessage).fg(ACCENT_RED)
+        ).title(" Error ").rounded().borderColor(ACCENT_RED)
 
         actualState.results.isEmpty() && actualState.albumResults.isEmpty() && actualState.artistResults.isEmpty() && actualState.playlistResults.isEmpty() -> {
             val isOffline = state.isOfflineMode

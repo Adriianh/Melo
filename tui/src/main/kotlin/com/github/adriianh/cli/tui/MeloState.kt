@@ -459,15 +459,6 @@ fun MeloState.isFavoriteEntity(entityId: String): Boolean {
     return false
 }
 
-fun MeloState.favoriteAlbums(): List<FavoriteEntity> =
-    collections.favoriteEntities.filter { it.type == FavoriteEntityType.ALBUM }
-
-fun MeloState.favoriteArtists(): List<FavoriteEntity> =
-    collections.favoriteEntities.filter { it.type == FavoriteEntityType.ARTIST }
-
-fun MeloState.favoritePlaylists(): List<FavoriteEntity> =
-    collections.favoriteEntities.filter { it.type == FavoriteEntityType.PLAYLIST }
-
 fun MeloState.allFavoriteAlbums(): List<LibraryFavoriteEntityItem> {
     val remoteIds =
         collections.remoteAlbums.flatMap { listOf(it.id, it.id.removePrefix("piped:")) }.toSet()
@@ -516,9 +507,6 @@ fun MeloState.allFavoriteEntities(subTab: FavoritesSubTab): List<LibraryFavorite
         FavoritesSubTab.ARTISTS -> allFavoriteArtists()
         FavoritesSubTab.PLAYLISTS -> allFavoritePlaylists()
     }
-
-fun MeloState.currentFavoriteEntities(subTab: FavoritesSubTab): List<FavoriteEntity> =
-    allFavoriteEntities(subTab).map { it.entity }
 
 sealed interface LibraryPlaylistItem {
     val title: String
