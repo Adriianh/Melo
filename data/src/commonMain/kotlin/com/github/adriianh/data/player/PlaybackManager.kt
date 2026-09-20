@@ -492,6 +492,23 @@ class PlaybackManagerImpl(
                 }
             }
 
+            if (track.sourceId == null) {
+                launch(dispatcher) {
+                    try {
+                        val sid = getStreamUseCase.resolveSourceId(track)
+                        if (sid != null) {
+                            _queueState.update { current ->
+                                val updatedTracks = current.tracks.map {
+                                    if (it.id == track.id) it.copy(sourceId = sid) else it
+                                }
+                                current.copy(tracks = updatedTracks)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    }
+                }
+            }
+
             schedulePrefetch()
         }
     }
@@ -609,9 +626,35 @@ class PlaybackManagerImpl(
                     return@launch
                 }
 
-                val videoId = currentTrack.sourceId ?: currentTrack.id.removePrefix("piped:")
+                val resolvedSourceId = try {
+                    getStreamUseCase.resolveSourceId(currentTrack)
+                } catch (_: Throwable) {
+                    null
+                }
+
+                if (resolvedSourceId != null && currentTrack.sourceId == null) {
+                    _queueState.update { current ->
+                        val updatedTracks = current.tracks.map {
+                            if (it.id == currentTrack.id) it.copy(sourceId = resolvedSourceId) else it
+                        }
+                        current.copy(tracks = updatedTracks)
+                    }
+                }
+
+                val videoId = resolvedSourceId
+                    ?: currentTrack.sourceId
+                    ?: (if (currentTrack.id.startsWith("piped:")) currentTrack.id.removePrefix("piped:") else null)
+                    ?: currentTrack.id
+
                 val radioTracks = getRadioUseCase(videoId).filter { rec ->
-                    _queueState.value.tracks.none { it.id == rec.id }
+                    _queueState.value.tracks.none {
+                        it.id == rec.id ||
+                                (!it.sourceId.isNullOrBlank() && it.sourceId == rec.sourceId) ||
+                                (it.title.equals(rec.title, ignoreCase = true) && it.artist.equals(
+                                    rec.artist,
+                                    ignoreCase = true
+                                ))
+                    }
                 }
 
                 if (radioTracks.isNotEmpty()) {

@@ -4,7 +4,6 @@ import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.ResolvedMetadata
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -140,6 +139,53 @@ class MusicRepositoryTest {
         coEvery { musicProvider.getRadio("video1") } returns tracks
 
         assertEquals(tracks, createRepository().getRadio("video1"))
+    }
+
+    @Test
+    fun `getRadio resolves sourceId via getTrack when id contains colon`() = runTest {
+        val itunesTrack = fakeTrack("itunes:12345", title = "Karma Police", artist = "Radiohead")
+        val radioResults = listOf(fakeTrack("rec1", "No Surprises", "Radiohead"))
+
+        coEvery { musicProvider.getTrack("itunes:12345") } returns itunesTrack
+        coEvery {
+            audioProvider.getSourceId(
+                artist = "Radiohead",
+                title = "Karma Police",
+                durationMs = any()
+            )
+        } returns "yt_karma_123"
+        coEvery { musicProvider.getRadio("yt_karma_123") } returns radioResults
+
+        val result = createRepository().getRadio("itunes:12345")
+        assertEquals(radioResults, result)
+    }
+
+    @Test
+    fun `getRadio falls back to related tracks when radio endpoint is empty`() = runTest {
+        val relatedResults = listOf(fakeTrack("rel1", "Creep", "Radiohead"))
+        coEvery { musicProvider.getRadio("video_empty") } returns emptyList()
+        coEvery { musicProvider.getRelated("video_empty") } returns relatedResults
+
+        val result = createRepository().getRadio("video_empty")
+        assertEquals(relatedResults, result)
+    }
+
+    @Test
+    fun `getRadio with Track object resolves sourceId and returns radio tracks`() = runTest {
+        val track = fakeTrack("itunes:999", title = "Bohemian Rhapsody", artist = "Queen")
+        val radioTracks = listOf(fakeTrack("rec_queen", "Don't Stop Me Now", "Queen"))
+
+        coEvery {
+            audioProvider.getSourceId(
+                artist = "Queen",
+                title = "Bohemian Rhapsody",
+                durationMs = any()
+            )
+        } returns "yt_bohemian"
+        coEvery { musicProvider.getRadio("yt_bohemian") } returns radioTracks
+
+        val result = createRepository().getRadio(track)
+        assertEquals(radioTracks, result)
     }
 
     @Test

@@ -20,6 +20,24 @@ class GetStreamUseCase(
      *
      * @return the stream URL, or null if resolution failed.
      */
+    suspend fun resolveSourceId(track: Track): String? = withContext(MeloDispatchers.IO) {
+        if (!track.sourceId.isNullOrBlank() && !track.sourceId.contains(":")) {
+            return@withContext track.sourceId
+        }
+        if (track.id.startsWith("piped:")) {
+            val id = track.id.removePrefix("piped:")
+            if (!id.contains(":") && id.isNotBlank()) return@withContext id
+        }
+        if (!track.id.contains(":") && track.id.length == 11) {
+            return@withContext track.id
+        }
+        audioProvider.getSourceId(
+            artist = track.artist,
+            title = track.title,
+            durationMs = track.durationMs,
+        )
+    }
+
     suspend operator fun invoke(track: Track): String? = withContext(MeloDispatchers.IO) {
         if (track.id.startsWith("local:")) {
             val path = track.id.removePrefix("local:")
@@ -43,13 +61,7 @@ class GetStreamUseCase(
             }
         }
 
-        val sourceId = track.sourceId
-            ?: (if (track.id.startsWith("piped:")) track.id.removePrefix("piped:") else null)
-            ?: audioProvider.getSourceId(
-                artist = track.artist,
-                title = track.title,
-                durationMs = track.durationMs,
-            ) ?: return@withContext null
+        val sourceId = resolveSourceId(track) ?: return@withContext null
 
         audioProvider.getStreamUrl(sourceId)
     }
