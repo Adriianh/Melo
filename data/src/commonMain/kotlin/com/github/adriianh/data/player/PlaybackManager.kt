@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
@@ -21,12 +22,17 @@ import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.data.player.PlaybackManagerImpl.Companion.MAX_STREAM_RESOLVE_ATTEMPTS
+import com.github.adriianh.data.player.PlaybackManagerImpl.Companion.STREAM_RETRY_DELAY_MS
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
@@ -68,6 +74,9 @@ class PlaybackManagerImpl(
     private val _volume = MutableStateFlow(0.75f)
     override val volume: StateFlow<Float> = _volume.asStateFlow()
     private var lastUnmutedVolume: Float = 0.75f
+
+    private val _events = MutableSharedFlow<PlaybackEvent>(extraBufferCapacity = 16)
+    override val events: SharedFlow<PlaybackEvent> = _events.asSharedFlow()
 
     private val prefetchCache = mutableMapOf<String, String>()
     private val cacheMutex = Mutex()
@@ -398,29 +407,25 @@ class PlaybackManagerImpl(
             val url = try {
                 cachedUrl
                     ?: streamCacheRepository?.getCachedUrl(track.id, STREAM_URL_TTL_MS)
-                    ?: getStreamUseCase(track)?.also { resolved ->
-                        if (!resolved.startsWith("file:")) {
-                            streamCacheRepository?.cacheUrl(track.id, resolved)
-                        }
-                    }
-                    ?: run {
-                        val nextOfflineIndex =
-                            findNextOfflineTrackIndex(_queueState.value.currentIndex)
-                        if (nextOfflineIndex != null) {
-                            _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
-                            playCurrentQueueTrack()
-                        } else if (_queueState.value.hasNext) {
-                            playNext()
-                        } else {
-                            handleAutoplay(forcePlayNext = true)
-                        }
-                        return@launch
-                    }
+                    ?: resolveStreamWithRetry(track)
             } catch (_: AgeRestrictedException) {
-                meloPlayer.stop()
+                emitPlaybackError("Track is age-restricted (sign-in required), skipping...")
+                skipCurrentQueueTrack()
                 return@launch
             }
+
+            if (url == null) {
+                emitPlaybackError("Stream not available, skipping...")
+                skipCurrentQueueTrack()
+                return@launch
+            }
+
+            if (!url.startsWith("file:")) {
+                streamCacheRepository?.cacheUrl(track.id, url)
+            }
+
             meloPlayer.load(url, track, targetSeek)
+            emitPlaybackEvent(PlaybackEvent.TrackStarted(track, positionMs = targetSeek))
             persistCurrentSession(immediate = true)
 
             launch(dispatcher) {
@@ -444,7 +449,7 @@ class PlaybackManagerImpl(
     private fun schedulePrefetch() {
         prefetchJob?.cancel()
         val q = _queueState.value
-        if (q.currentIndex >= 0 && q.currentIndex == q.tracks.lastIndex && getRadioUseCase != null) {
+        if (shouldPrefetchRadio(q)) {
             handleAutoplay(forcePlayNext = false)
         }
 
@@ -478,6 +483,64 @@ class PlaybackManagerImpl(
             }
         }
         return null
+    }
+
+    /**
+     * Resolves the stream URL with up to [MAX_STREAM_RESOLVE_ATTEMPTS] attempts,
+     * waiting [STREAM_RETRY_DELAY_MS] between failures. Returns null when the
+     * stream could not be resolved after all retries.
+     */
+    private suspend fun resolveStreamWithRetry(track: Track): String? {
+        var attempts = 0
+        while (attempts < MAX_STREAM_RESOLVE_ATTEMPTS) {
+            try {
+                val resolved = getStreamUseCase(track)
+                if (resolved != null) return resolved
+            } catch (e: AgeRestrictedException) {
+                throw e
+            } catch (_: Exception) {
+                // Transient failure — retry below.
+            }
+            attempts++
+            if (attempts < MAX_STREAM_RESOLVE_ATTEMPTS) {
+                delay(STREAM_RETRY_DELAY_MS.milliseconds)
+            }
+        }
+        return null
+    }
+
+    /**
+     * Advances playback past the current track when it cannot be played:
+     * prefers the next offline track (offline mode), then the next queued
+     * track, and finally falls back to radio autoplay / stop.
+     */
+    private suspend fun skipCurrentQueueTrack() {
+        val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
+        if (nextOfflineIndex != null) {
+            _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+            playCurrentQueueTrack()
+        } else if (_queueState.value.hasNext) {
+            playNext()
+        } else {
+            handleAutoplay(forcePlayNext = true)
+        }
+    }
+
+    private fun emitPlaybackEvent(event: PlaybackEvent) {
+        _events.tryEmit(event)
+    }
+
+    private fun emitPlaybackError(message: String) {
+        emitPlaybackEvent(PlaybackEvent.Error(message))
+    }
+
+    /**
+     * True when the queue is close enough to its end to fetch radio continuations
+     * ahead of time, so playback transitions seamlessly without an interruption.
+     */
+    private fun shouldPrefetchRadio(q: QueueState): Boolean {
+        if (getRadioUseCase == null || q.currentIndex < 0 || q.tracks.isEmpty()) return false
+        return q.currentIndex >= q.tracks.size - RADIO_AUTOPLAY_MARGIN
     }
 
     private fun handleAutoplay(forcePlayNext: Boolean) {
@@ -564,5 +627,17 @@ class PlaybackManagerImpl(
 
     private companion object {
         private const val STREAM_URL_TTL_MS = 3 * 60 * 60 * 1000L
+
+        /** Maximum attempts to resolve a stream before skipping the track. */
+        private const val MAX_STREAM_RESOLVE_ATTEMPTS = 3
+
+        /** Delay between stream resolution retries. */
+        private const val STREAM_RETRY_DELAY_MS = 700L
+
+        /**
+         * How close to the end of the queue (tracks remaining) the radio
+         * autoplay fetch is triggered, so the radio continues seamlessly.
+         */
+        private const val RADIO_AUTOPLAY_MARGIN = 5
     }
 }

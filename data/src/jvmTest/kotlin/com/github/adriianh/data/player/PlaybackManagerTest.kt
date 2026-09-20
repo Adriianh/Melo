@@ -2,17 +2,22 @@ package com.github.adriianh.data.player
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.StreamCacheRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -575,5 +580,124 @@ class PlaybackManagerTest {
         scope.advanceUntilIdle()
 
         coVerify { repo.invalidate("1") }
+    }
+
+    private fun collectEvents(
+        scope: TestScope,
+        manager: PlaybackManagerImpl
+    ): Pair<MutableList<PlaybackEvent>, Job> {
+        val events = mutableListOf<PlaybackEvent>()
+        val job = scope.launch { manager.events.collect { events.add(it) } }
+        return events to job
+    }
+
+    @Test
+    fun `emits TrackStarted event when a track starts loading`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        val started = events.filterIsInstance<PlaybackEvent.TrackStarted>()
+        assertEquals(1, started.size)
+        assertEquals("1", started.first().track.id)
+        assertFalse(events.any { it is PlaybackEvent.Error })
+        collector.cancel()
+    }
+
+    @Test
+    fun `retries stream resolution 3 times then skips to next track`() = runTest {
+        coEvery { getStreamUseCase(match { it.id == "1" }) } returns null
+        coEvery { getStreamUseCase(match { it.id == "2" }) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 3) { getStreamUseCase(match { it.id == "1" }) }
+        assertEquals(1, manager.queueState.value.currentIndex)
+        assertEquals("2", manager.queueState.value.currentTrack?.id)
+        assertTrue(
+            events.any {
+                it is PlaybackEvent.Error && it.message.contains("Stream not available")
+            }
+        )
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted && it.track.id == "2" })
+        collector.cancel()
+    }
+
+    @Test
+    fun `skips current track when it is the only one and resolution fails`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns null
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1")))
+        scope.advanceUntilIdle()
+
+        coVerify(atLeast = 3) { getStreamUseCase(match { it.id == "1" }) }
+        assertTrue(events.any { it is PlaybackEvent.Error })
+        verify { meloPlayer.stop() }
+        collector.cancel()
+    }
+
+    @Test
+    fun `age-restricted track skips to next without retrying and emits error`() = runTest {
+        coEvery { getStreamUseCase(match { it.id == "1" }) } throws AgeRestrictedException("1")
+        coEvery { getStreamUseCase(match { it.id == "2" }) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 1) { getStreamUseCase(match { it.id == "1" }) }
+        assertEquals(1, manager.queueState.value.currentIndex)
+        assertEquals("2", manager.queueState.value.currentTrack?.id)
+        assertTrue(
+            events.any {
+                it is PlaybackEvent.Error && it.message.contains("age-restricted")
+            }
+        )
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted && it.track.id == "2" })
+        collector.cancel()
+    }
+
+    @Test
+    fun `prefetches radio continuation when approaching end of queue`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val getRadio = mockk<GetRadioUseCase>()
+        coEvery { getRadio.invoke(any()) } returns listOf(fakeTrack("radio-1"))
+
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            getRadioUseCase = getRadio,
+        )
+        val (events, collector) = collectEvents(scope, manager)
+
+        val tracks = (1..6).map { fakeTrack("$it") }
+        manager.setQueue(tracks)
+        scope.advanceUntilIdle()
+
+        // 6-track queue: index 0 is not yet within the autoplay margin.
+        coVerify(exactly = 0) { getRadio.invoke(any()) }
+
+        manager.playNext()
+        scope.advanceUntilIdle()
+
+        coVerify { getRadio.invoke(any()) }
+        assertTrue(manager.queueState.value.tracks.any { it.id == "radio-1" })
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted })
+        collector.cancel()
     }
 }

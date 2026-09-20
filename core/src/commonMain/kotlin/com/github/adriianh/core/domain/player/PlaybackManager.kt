@@ -1,12 +1,16 @@
 package com.github.adriianh.core.domain.player
 
 import com.github.adriianh.core.domain.model.Track
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface PlaybackManager {
     val playbackState: StateFlow<PlaybackState>
     val queueState: StateFlow<QueueState>
     val volume: StateFlow<Float>
+
+    /** One-shot events: play failures with skip, tracks that started, etc. */
+    val events: SharedFlow<PlaybackEvent>
 
     fun playTrack(track: Track)
     fun playTrackInQueue(track: Track)
