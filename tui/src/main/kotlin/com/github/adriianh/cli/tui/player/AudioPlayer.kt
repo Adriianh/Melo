@@ -3,13 +3,23 @@ package com.github.adriianh.cli.tui.player
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackState
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Audio player backed by ffplay (bundled with ffmpeg).
@@ -37,6 +47,7 @@ class AudioPlayer(
         private val SINK_INPUT_RE = Regex("""^Sink Input #(\d+)""")
         private val SINK_CLIENT_RE = Regex("""^\s+Client:\s+(\d+)$""")
     }
+
     private var playJob: Job? = null
     private var playerProcess: Process? = null
     private var playerPid: Long? = null
@@ -45,10 +56,20 @@ class AudioPlayer(
 
     private val sessionId = AtomicLong(0L)
 
-    @Volatile private var startTimeMs: Long = 0L
-    @Volatile private var pausedAtMs: Long = 0L
-    @Volatile private var volumePct: Int = 75
-    @Volatile private var currentUrl: String? = null
+    @Volatile
+    private var startTimeMs: Long = 0L
+
+    @Volatile
+    private var pausedAtMs: Long = 0L
+
+    @Volatile
+    private var pausedSinceMs: Long = 0L
+
+    @Volatile
+    private var volumePct: Int = 75
+
+    @Volatile
+    private var currentUrl: String? = null
 
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
@@ -59,17 +80,17 @@ class AudioPlayer(
     private val hasPactl: Boolean by lazy {
         try {
             ProcessBuilder("pactl", "--version").redirectErrorStream(true).start().waitFor() == 0
-        } catch (_: Exception) { false }
+        } catch (_: Exception) {
+            false
+        }
     }
-
-    // ── Public API ─────────────────────────────────────────────────────────────
 
     fun play(url: String) {
         startPlayback(url = url, seekMs = 0L)
     }
 
     /**
-     * Stages a stream and starts playback immediately, mirroring [JvmMeloPlayer.load]
+     * Stages a stream and starts playback immediately, mirroring [com.github.adriianh.core.domain.player.JvmMeloPlayer.load]
      * semantics: load() already starts playing, [play] is only needed to resume or
      * restart after the process has exited.
      */
@@ -98,10 +119,42 @@ class AudioPlayer(
         }
     }
 
+    private suspend fun destroyProcessSafely(process: Process?, pid: Long?) {
+        if (process == null) return
+        withContext(Dispatchers.IO) {
+            try {
+                if (process.isAlive) {
+                    if (pid != null && !isWindows) {
+                        try {
+                            ProcessBuilder("kill", "-SIGCONT", pid.toString())
+                                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                                .start()
+                                .waitFor(150, TimeUnit.MILLISECONDS)
+                        } catch (_: Exception) {
+                        }
+                    }
+                    process.destroy()
+                    val exited = process.waitFor(200, TimeUnit.MILLISECONDS)
+                    if (!exited && process.isAlive) {
+                        process.destroyForcibly()
+                        process.waitFor(500, TimeUnit.MILLISECONDS)
+                    }
+                }
+            } catch (_: Exception) {
+                try {
+                    process.destroyForcibly()
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
     private fun startPlayback(url: String, seekMs: Long) {
         val session = sessionId.incrementAndGet()
         val previousJob = playJob
         val previousProcess = playerProcess
+        val previousPid = playerPid
 
         _state.update {
             it.copy(
@@ -113,16 +166,15 @@ class AudioPlayer(
         }
 
         playJob = scope.launch {
-            // Ensure the previous playback completely stops before starting a new one
-            previousProcess?.destroy()
             previousJob?.cancel()
-            previousProcess?.waitFor()
-            previousJob?.join()
+            destroyProcessSafely(previousProcess, previousPid)
+            withTimeoutOrNull(1000.milliseconds) { previousJob?.join() }
 
-            if (sessionId.get() != session) return@launch // another play() was called while we waited
+            if (sessionId.get() != session) return@launch
 
             currentUrl = url
             isPaused.set(false)
+            pausedSinceMs = 0L
             startTimeMs = System.currentTimeMillis()
             pausedAtMs = 0L
             launchPlayback(url, volumePct, seekMs = seekMs, session = session)
@@ -132,18 +184,37 @@ class AudioPlayer(
     override fun pause() {
         if (isPaused.get() || !isPlaying) return
         isPaused.set(true)
+        pausedSinceMs = System.currentTimeMillis()
         pausedAtMs += System.currentTimeMillis() - startTimeMs
         if (isWindows) suspendProcessWindows(playerPid ?: return)
-        else           sendUnixSignal("SIGSTOP")
+        else sendUnixSignal("SIGSTOP")
         _state.update { it.copy(isPlaying = false, isBuffering = false) }
     }
 
     fun resume() {
         if (!isPaused.get()) return
+        val url = currentUrl
+        val pauseDuration = System.currentTimeMillis() - pausedSinceMs
+        val isAlive = playerProcess?.isAlive == true
+
+        // If paused for more than 15s or ffplay died in the background,
+        // remote HTTP/HTTPS streams (YouTube, CDNs) have already closed their TCP connection.
+        // Restarting fresh at the saved position is vastly more reliable than SIGCONT on a dead socket.
+        if (url != null && (!isAlive || (pauseDuration > 15_000L && (url.startsWith("http://") || url.startsWith(
+                "https://"
+            ))))
+        ) {
+            isPaused.set(false)
+            pausedSinceMs = 0L
+            startPlayback(url = url, seekMs = _state.value.progressMs)
+            return
+        }
+
         startTimeMs = System.currentTimeMillis()
         isPaused.set(false)
+        pausedSinceMs = 0L
         if (isWindows) resumeProcessWindows(playerPid ?: return)
-        else           sendUnixSignal("SIGCONT")
+        else sendUnixSignal("SIGCONT")
         _state.update { it.copy(isPlaying = true) }
     }
 
@@ -184,12 +255,12 @@ class AudioPlayer(
         val session = sessionId.incrementAndGet()
         val previousJob = playJob
         val previousProcess = playerProcess
+        val previousPid = playerPid
 
         playJob = scope.launch {
-            previousProcess?.destroy()
             previousJob?.cancel()
-            previousProcess?.waitFor()
-            previousJob?.join()
+            destroyProcessSafely(previousProcess, previousPid)
+            withTimeoutOrNull(1000.milliseconds) { previousJob?.join() }
 
             if (sessionId.get() != session) return@launch
 
@@ -200,14 +271,16 @@ class AudioPlayer(
             pausedAtMs = if (wasPaused) clampedMs else 0L
             startTimeMs = System.currentTimeMillis()
 
-            if (wasPaused) isPaused.set(true)
+            if (wasPaused) {
+                isPaused.set(true)
+                pausedSinceMs = System.currentTimeMillis()
+            }
 
             launchPlayback(url, volumePct, seekMs = clampedMs, session = session)
 
             if (wasPaused) {
-                // We launch another coroutine to suspend the process shortly after it starts
                 scope.launch {
-                    delay(300)
+                    delay(300.milliseconds)
                     if (isPaused.get() && sessionId.get() == session) {
                         if (isWindows) suspendProcessWindows(playerPid ?: return@launch)
                         else sendUnixSignal("SIGSTOP")
@@ -216,12 +289,15 @@ class AudioPlayer(
             }
         }
     }
+
     override fun stop() {
-        val session = sessionId.incrementAndGet() // invalidate any running job
+        val session = sessionId.incrementAndGet()
         val previousJob = playJob
         val previousProcess = playerProcess
-        
+        val previousPid = playerPid
+
         isPaused.set(false)
+        pausedSinceMs = 0L
         currentUrl = null
         pausedAtMs = 0L
 
@@ -235,10 +311,9 @@ class AudioPlayer(
         }
 
         playJob = scope.launch {
-            previousProcess?.destroy()
             previousJob?.cancel()
-            previousProcess?.waitFor()
-            previousJob?.join()
+            destroyProcessSafely(previousProcess, previousPid)
+            withTimeoutOrNull(1000.milliseconds) { previousJob?.join() }
 
             if (sessionId.get() != session) return@launch
             playerProcess = null
@@ -265,8 +340,6 @@ class AudioPlayer(
         }
     }
 
-    // ── Internal ───────────────────────────────────────────────────────────────
-
     private suspend fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
         try {
             val process = buildFfplayProcess(url, volPct, seekMs)
@@ -282,22 +355,43 @@ class AudioPlayer(
                         _state.update { it.copy(progressMs = positionMs) }
                         onProgress(positionMs)
                     }
-                    delay(1000)
+                    delay(1000.milliseconds)
                 }
             }
 
-            withContext(Dispatchers.IO) {
+            val exitCode = withContext(Dispatchers.IO) {
                 process.waitFor()
             }
 
             progressJob.cancel()
-            _state.update { it.copy(isPlaying = false, isFinished = true) }
-            if (sessionId.get() == session) onFinish()
+            if (sessionId.get() == session) {
+                if (exitCode == 0) {
+                    _state.update { it.copy(isPlaying = false, isFinished = true) }
+                    onFinish()
+                } else if (!isPaused.get()) {
+                    val duration = _state.value.durationMs
+                    val progress = _state.value.progressMs
+                    if (duration > 0 && progress >= duration - 2000L) {
+                        _state.update { it.copy(isPlaying = false, isFinished = true) }
+                        onFinish()
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isPlaying = false,
+                                isBuffering = false,
+                                isFinished = false,
+                                error = "Playback stopped unexpectedly (exit code $exitCode)",
+                            )
+                        }
+                        onError(RuntimeException("Playback stopped unexpectedly (exit code $exitCode)"))
+                    }
+                }
+            }
         } catch (e: CancellationException) {
-            playerProcess?.destroy()
+            destroyProcessSafely(playerProcess, playerPid)
             throw e
         } catch (e: Exception) {
-            playerProcess?.destroy()
+            destroyProcessSafely(playerProcess, playerPid)
             _state.update {
                 it.copy(
                     isPlaying = false,
@@ -341,7 +435,8 @@ class AudioPlayer(
 
                 ProcessBuilder("pactl", "set-sink-input-volume", sinkIndex, "$pct%")
                     .redirectErrorStream(true).start().waitFor()
-            } catch (_: Exception) { /* best-effort */ }
+            } catch (_: Exception) { /* best-effort */
+            }
         }
     }
 
@@ -360,7 +455,8 @@ class AudioPlayer(
             val clientMatch = CLIENT_HEADER_RE.find(line.trim())
             if (clientMatch != null) currentClient = clientMatch.groupValues[1]
             if ((line.contains("application.process.id =") ||
-                 line.contains("pipewire.sec.pid =")) && line.contains(pidStr)) {
+                        line.contains("pipewire.sec.pid =")) && line.contains(pidStr)
+            ) {
                 currentClient?.let { results.add(it) }
             }
         }
@@ -414,13 +510,16 @@ class AudioPlayer(
                 "-reconnect", "1",
                 "-reconnect_streamed", "1",
                 "-reconnect_delay_max", "5",
+                "-rw_timeout", "15000000",
             )
         }
 
         cmd += listOf("-i", url)
 
         return ProcessBuilder(cmd)
-            .redirectErrorStream(true)
+            .redirectInput(ProcessBuilder.Redirect.DISCARD)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
     }
 
@@ -428,10 +527,12 @@ class AudioPlayer(
         val pid = playerPid ?: return
         try {
             ProcessBuilder("kill", "-$signal", pid.toString())
-                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start()
-                .waitFor()
-        } catch (_: Exception) { }
+                .waitFor(200, TimeUnit.MILLISECONDS)
+        } catch (_: Exception) {
+        }
     }
 
     private fun suspendProcessWindows(pid: Long) {
@@ -441,7 +542,8 @@ class AudioPlayer(
                 $$"$proc = Get-Process -Id $$pid -ErrorAction SilentlyContinue; " +
                         $$"if ($proc) { $proc.Suspend() }"
             ).redirectErrorStream(true).start().waitFor()
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
     }
 
     private fun resumeProcessWindows(pid: Long) {
@@ -451,7 +553,8 @@ class AudioPlayer(
                 $$"$proc = [System.Diagnostics.Process]::GetProcessById($$pid); " +
                         $$"if ($proc) { $proc.Resume() }"
             ).redirectErrorStream(true).start().waitFor()
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
     }
 
     private fun ffplayBinary(): String {

@@ -165,6 +165,8 @@ class PlaybackManagerImpl(
         } else if (playbackState.value.isFinished) {
             meloPlayer.seekTo(0)
             meloPlayer.play()
+        } else if (playbackState.value.error != null && _queueState.value.currentTrack != null) {
+            playCurrentQueueTrack(initialSeekMs = playbackState.value.progressMs)
         } else if (isTrackLoaded) {
             meloPlayer.play()
         } else if (_queueState.value.currentTrack != null) {

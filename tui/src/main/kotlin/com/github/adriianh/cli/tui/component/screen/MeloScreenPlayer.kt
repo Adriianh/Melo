@@ -54,8 +54,10 @@ private fun MeloScreen.observePlaybackState() {
                     if (durationMs > 0L) (ps.progressMs.toDouble() / durationMs).coerceIn(0.0, 1.0)
                     else 0.0
                 val isLoading = when {
-                    ps.isBuffering -> true
+                    ps.error != null -> false
+                    ps.isFinished -> false
                     ps.isPlaying -> false
+                    ps.isBuffering -> true
                     prev.isPlaying && !ps.isPlaying -> false
                     else -> prev.isLoadingAudio
                 }
