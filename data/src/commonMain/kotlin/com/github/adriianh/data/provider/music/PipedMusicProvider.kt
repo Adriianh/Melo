@@ -95,4 +95,16 @@ class PipedMusicProvider(
         if (videoId.isBlank()) return null
         return apiClient.getTrackDetails(videoId)
     }
+
+    override suspend fun getRadio(videoId: String): List<Track> {
+        val cleanId = videoId.removePrefix("piped:")
+        if (cleanId.isBlank() || cleanId.contains(":")) return emptyList()
+        return apiClient.getRelatedTracks(cleanId)
+    }
+
+    override suspend fun getRelated(videoId: String): List<Track> {
+        val cleanId = videoId.removePrefix("piped:")
+        if (cleanId.isBlank() || cleanId.contains(":")) return emptyList()
+        return apiClient.getRelatedTracks(cleanId)
+    }
 }

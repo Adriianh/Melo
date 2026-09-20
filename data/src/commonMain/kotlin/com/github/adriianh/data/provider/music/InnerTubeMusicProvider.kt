@@ -632,20 +632,22 @@ class InnerTubeMusicProvider(
 
     override suspend fun getRadio(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRadio(videoId)
+            ?: emptyList()
         val endpoint = WatchEndpoint(
             videoId = cleanId,
             playlistId = "RDAMVM$cleanId"
         )
-        val result = YouTube.next(endpoint).getOrNull()
+        val result = YouTube.next(endpoint).getOrNull()?.takeIf { it.items.isNotEmpty() }
             ?: YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
+                ?.takeIf { it.items.isNotEmpty() }
             ?: return fallback?.getRadio(videoId) ?: emptyList()
         return result.items.map { mapSongItem(it) }
     }
 
     override suspend fun getArtistRadio(artistId: String): List<Track> {
         val cleanId = artistId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return emptyList()
 
         val endpoint = WatchEndpoint(
             playlistId = if (cleanId.startsWith("RDAMEA")) cleanId else "RDAMEA$cleanId"
@@ -667,7 +669,8 @@ class InnerTubeMusicProvider(
 
     override suspend fun getRelated(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRelated(videoId)
+            ?: emptyList()
 
         val nextResult = YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
         val relatedEndpoint = nextResult?.relatedEndpoint
@@ -678,7 +681,10 @@ class InnerTubeMusicProvider(
             }
         }
 
-        return fallback?.getRelated(videoId) ?: getRadio(cleanId)
+        val fallbackResult = fallback?.getRelated(videoId)
+        if (!fallbackResult.isNullOrEmpty()) return fallbackResult
+
+        return getRadio(cleanId)
     }
 
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
