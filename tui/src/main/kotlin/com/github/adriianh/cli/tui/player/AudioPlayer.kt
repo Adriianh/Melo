@@ -16,6 +16,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -510,14 +511,14 @@ class AudioPlayer(
                 "-reconnect", "1",
                 "-reconnect_streamed", "1",
                 "-reconnect_delay_max", "5",
-                "-rw_timeout", "15000000",
             )
         }
 
         cmd += listOf("-i", url)
 
+        val devNull = File(if (isWindows) "NUL" else "/dev/null")
         return ProcessBuilder(cmd)
-            .redirectInput(ProcessBuilder.Redirect.DISCARD)
+            .redirectInput(ProcessBuilder.Redirect.from(devNull))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
