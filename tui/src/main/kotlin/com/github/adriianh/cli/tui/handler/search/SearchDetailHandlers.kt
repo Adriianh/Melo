@@ -16,6 +16,7 @@ import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
 import com.github.adriianh.cli.tui.handler.toggleFavorite
+import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
@@ -302,6 +303,9 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
     state = state.copy(
         detail = state.detail.copy(
             lyrics = null,
+            syncedLyrics = emptyList(),
+            lyricsScrollOffset = 0,
+            isAutoScrollLyrics = true,
             isLoadingLyrics = false,
             similarTracks = emptyList(),
             isLoadingSimilar = true,
@@ -357,6 +361,9 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
                             selectedTrack = updatedTrack, artworkData = null
                         )
                     )
+                    if (state.detail.detailTab == DetailTab.LYRICS) {
+                        loadLyrics()
+                    }
                 }
             }
 
@@ -450,20 +457,86 @@ internal fun MeloScreen.loadLyrics() {
     if (state.isOfflineMode) {
         state = state.copy(
             detail = state.detail.copy(
-                lyrics = "Lyrics are unavailable in Offline Mode", isLoadingLyrics = false
+                lyrics = "Lyrics are unavailable in Offline Mode",
+                syncedLyrics = emptyList(),
+                isLoadingLyrics = false
             )
         )
         return
     }
-    state = state.copy(detail = state.detail.copy(isLoadingLyrics = true, lyrics = null))
+    state = state.copy(
+        detail = state.detail.copy(
+            isLoadingLyrics = true,
+            lyrics = null,
+            syncedLyrics = emptyList(),
+            lyricsScrollOffset = 0,
+            isAutoScrollLyrics = true
+        )
+    )
     scope.launch {
-        val lyrics = getLyrics(track.artist, track.title)
-        appRunner()?.runOnRenderThread {
-            state = state.copy(
-                detail = state.detail.copy(
-                    lyrics = lyrics ?: "Lyrics not found", isLoadingLyrics = false
-                )
-            )
+        val existingSynced =
+            if (state.player.nowPlaying?.id == track.id && state.player.syncedLyrics.isNotEmpty()) {
+                state.player.syncedLyrics
+            } else null
+
+        if (existingSynced != null) {
+            appRunner()?.runOnRenderThread {
+                if (state.detail.selectedTrack?.id == track.id) {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            syncedLyrics = existingSynced,
+                            lyrics = existingSynced.joinToString("\n") { it.text },
+                            isLoadingLyrics = false,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true
+                        )
+                    )
+                }
+            }
+            return@launch
+        }
+
+        val lrc = try {
+            getSyncedLyrics(track.artist, track.title)
+        } catch (_: Exception) {
+            null
+        }
+
+        val parsed = if (!lrc.isNullOrBlank()) LrcParser.parse(lrc) else emptyList()
+
+        if (parsed.isNotEmpty()) {
+            appRunner()?.runOnRenderThread {
+                if (state.detail.selectedTrack?.id == track.id) {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            syncedLyrics = parsed,
+                            lyrics = parsed.joinToString("\n") { it.text },
+                            isLoadingLyrics = false,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true
+                        )
+                    )
+                }
+            }
+        } else {
+            val plainLyrics = try {
+                getLyrics(track.artist, track.title)
+            } catch (_: Exception) {
+                null
+            }
+            appRunner()?.runOnRenderThread {
+                if (state.detail.selectedTrack?.id == track.id) {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            lyrics = plainLyrics ?: "Lyrics not found",
+                            syncedLyrics = emptyList(),
+                            isLoadingLyrics = false,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true
+                        )
+                    )
+                }
+            }
         }
     }
 }
@@ -486,8 +559,16 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
         }
 
         event.isCharIgnoreCase('l') -> {
-            state = state.copy(detail = state.detail.copy(detailTab = DetailTab.LYRICS))
-            if (state.detail.lyrics == null && !state.detail.isLoadingLyrics) loadLyrics()
+            state = state.copy(
+                detail = state.detail.copy(
+                    detailTab = DetailTab.LYRICS,
+                    lyricsScrollOffset = 0,
+                    isAutoScrollLyrics = true
+                )
+            )
+            if (state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
+                loadLyrics()
+            }
             return EventResult.HANDLED
         }
 
@@ -500,8 +581,14 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             val tabs = DetailTab.entries
             val prevOrdinal = (state.detail.detailTab.ordinal - 1 + tabs.size) % tabs.size
             val nextTab = tabs[prevOrdinal]
-            state = state.copy(detail = state.detail.copy(detailTab = nextTab))
-            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && !state.detail.isLoadingLyrics) {
+            state = state.copy(
+                detail = state.detail.copy(
+                    detailTab = nextTab,
+                    lyricsScrollOffset = 0,
+                    isAutoScrollLyrics = true
+                )
+            )
+            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
                 loadLyrics()
             }
             return EventResult.HANDLED
@@ -511,15 +598,98 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             val tabs = DetailTab.entries
             val nextOrdinal = (state.detail.detailTab.ordinal + 1) % tabs.size
             val nextTab = tabs[nextOrdinal]
-            state = state.copy(detail = state.detail.copy(detailTab = nextTab))
-            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && !state.detail.isLoadingLyrics) {
+            state = state.copy(
+                detail = state.detail.copy(
+                    detailTab = nextTab,
+                    lyricsScrollOffset = 0,
+                    isAutoScrollLyrics = true
+                )
+            )
+            if (nextTab == DetailTab.LYRICS && state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty() && !state.detail.isLoadingLyrics) {
                 loadLyrics()
             }
             return EventResult.HANDLED
         }
 
+        event.isCharIgnoreCase('a') && state.detail.detailTab == DetailTab.LYRICS -> {
+            state = state.copy(
+                detail = state.detail.copy(
+                    isAutoScrollLyrics = true,
+                    lyricsScrollOffset = 0
+                )
+            )
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_DOWN) && state.detail.detailTab == DetailTab.LYRICS -> {
+            val track = state.detail.selectedTrack
+            val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
+            val lines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
+                state.player.syncedLyrics
+            } else {
+                state.detail.syncedLyrics
+            }
+            if (lines.isNotEmpty()) {
+                if (isNowPlaying) {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            isAutoScrollLyrics = false,
+                            lyricsScrollOffset = state.detail.lyricsScrollOffset + 1
+                        )
+                    )
+                } else {
+                    val maxOffset = (lines.size - 1).coerceAtLeast(0)
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            lyricsScrollOffset = minOf(
+                                maxOffset,
+                                state.detail.lyricsScrollOffset + 1
+                            )
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+        }
+
+        event.matches(Actions.MOVE_UP) && state.detail.detailTab == DetailTab.LYRICS -> {
+            val track = state.detail.selectedTrack
+            val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
+            val lines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
+                state.player.syncedLyrics
+            } else {
+                state.detail.syncedLyrics
+            }
+            if (lines.isNotEmpty()) {
+                if (isNowPlaying) {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            isAutoScrollLyrics = false,
+                            lyricsScrollOffset = state.detail.lyricsScrollOffset - 1
+                        )
+                    )
+                } else {
+                    state = state.copy(
+                        detail = state.detail.copy(
+                            lyricsScrollOffset = maxOf(0, state.detail.lyricsScrollOffset - 1)
+                        )
+                    )
+                }
+                return EventResult.HANDLED
+            }
+        }
+
         event.matches(Actions.SELECT) && state.detail.detailTab == DetailTab.LYRICS -> {
-            if (state.detail.lyrics == null) loadLyrics()
+            if (state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty()) {
+                loadLyrics()
+            } else if (!state.detail.isAutoScrollLyrics) {
+                state = state.copy(
+                    detail = state.detail.copy(
+                        isAutoScrollLyrics = true,
+                        lyricsScrollOffset = 0
+                    )
+                )
+            }
             return EventResult.HANDLED
         }
 

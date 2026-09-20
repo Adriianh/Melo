@@ -606,4 +606,50 @@ class MeloStateFilterSortTest {
         val localBatchItems = resolveTrackMenuItems(localBatchState)
         assertEquals(false, localBatchItems.any { it.action == TrackMenuAction.DOWNLOAD_OFFLINE })
     }
+
+    @Test
+    fun testDetailSyncedLyricsStateAndScrolling() {
+        val sampleLrc = """
+            [00:01.00] Line 1
+            [00:05.00] Line 2
+            [00:10.00] Line 3
+            [00:15.00] Line 4
+            [00:20.00] Line 5
+        """.trimIndent()
+
+        val parsed = com.github.adriianh.cli.tui.util.LrcParser.parse(sampleLrc)
+        assertEquals(5, parsed.size)
+        assertEquals("Line 1", parsed[0].text)
+        assertEquals(1000L, parsed[0].timeMs)
+
+        // Initial state verification
+        var detail = DetailState(
+            selectedTrack = createTrack("t1", "Title", "Artist"),
+            syncedLyrics = parsed,
+            isAutoScrollLyrics = true,
+            lyricsScrollOffset = 0
+        )
+        assertEquals(true, detail.isAutoScrollLyrics)
+        assertEquals(0, detail.lyricsScrollOffset)
+
+        // 1. Auto-scroll: at 6 seconds (6000ms), active line should be Line 2 (index 1)
+        val activeIndexAt6s =
+            com.github.adriianh.cli.tui.util.LrcParser.currentLineIndex(detail.syncedLyrics, 6000L)
+        assertEquals(1, activeIndexAt6s)
+
+        // 2. Auto-scroll: at 16 seconds (16000ms), active line should be Line 4 (index 3)
+        val activeIndexAt16s =
+            com.github.adriianh.cli.tui.util.LrcParser.currentLineIndex(detail.syncedLyrics, 16000L)
+        assertEquals(3, activeIndexAt16s)
+
+        // 3. Manual scrolling shifts offset and pauses auto-scroll
+        detail = detail.copy(isAutoScrollLyrics = false, lyricsScrollOffset = 2)
+        assertEquals(false, detail.isAutoScrollLyrics)
+        assertEquals(2, detail.lyricsScrollOffset)
+
+        // 4. Re-syncing resets auto-scroll and offset
+        detail = detail.copy(isAutoScrollLyrics = true, lyricsScrollOffset = 0)
+        assertEquals(true, detail.isAutoScrollLyrics)
+        assertEquals(0, detail.lyricsScrollOffset)
+    }
 }

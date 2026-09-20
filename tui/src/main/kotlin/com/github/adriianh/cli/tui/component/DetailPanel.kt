@@ -9,6 +9,7 @@ import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
 import com.github.adriianh.cli.tui.isPlayable
+import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import dev.tamboui.image.Image
@@ -62,11 +63,28 @@ fun buildDetailPanel(
         )
     }
 
+    val bottomHelp = when (state.detail.detailTab) {
+        DetailTab.LYRICS -> {
+            val isNowPlaying = state.player.nowPlaying?.id == track.id
+            val hasSync =
+                (if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()
+            if (hasSync) {
+                if (isNowPlaying) " [↑/↓] Scroll  [a] Sync  [Esc] Back "
+                else " [↑/↓] Scroll  [Esc] Back "
+            } else {
+                " [i/l/s] Tabs  [Esc] Back "
+            }
+        }
+
+        DetailTab.SIMILAR -> " [↑/↓] Select  [Enter] Play  [Esc] Back "
+        else -> " [i/l/s] Tabs  [Esc] Back "
+    }
+
     return panel(
         detailTabs.length(1),
         layeredContent.fill()
     ).title(" Track Details ")
-        .bottomTitle(" [i/l/s] Tabs  [Esc] Back ")
+        .bottomTitle(bottomHelp)
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
@@ -210,19 +228,87 @@ private fun renderArtwork(state: MeloState): StyledElement<*> =
 private fun renderLyricsTab(
     state: MeloState,
     lyricsArea: MarkupTextAreaElement,
-): StyledElement<*> = when {
-    state.detail.isLoadingLyrics -> column(
-        spacer(),
-        text("  Loading lyrics...").dim().centered(),
-        spacer()
-    )
+): StyledElement<*> {
+    val track = state.detail.selectedTrack
+    val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
+    val isLoading = state.detail.isLoadingLyrics ||
+            (isNowPlaying && state.player.isLoadingSyncedLyrics && state.player.syncedLyrics.isEmpty())
 
-    state.detail.lyrics != null -> lyricsArea.markup(state.detail.lyrics).fill()
-    else -> column(
-        spacer(),
-        text("  Press Enter to load lyrics").fg(TEXT_SECONDARY).centered(),
-        spacer()
-    )
+    if (isLoading) {
+        return column(
+            spacer(),
+            text("  Loading lyrics...").dim().centered(),
+            spacer()
+        )
+    }
+
+    val syncedLines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
+        state.player.syncedLyrics
+    } else {
+        state.detail.syncedLyrics
+    }
+
+    if (syncedLines.isNotEmpty()) {
+        val windowSize = 14
+        val half = windowSize / 2
+
+        val (visibleLines, relativeActiveIndex) = if (isNowPlaying) {
+            val activeIndex =
+                LrcParser.currentLineIndex(syncedLines, state.player.nowPlayingPositionMs)
+            val centerIndex = if (state.detail.isAutoScrollLyrics) {
+                activeIndex
+            } else {
+                (activeIndex + state.detail.lyricsScrollOffset).coerceIn(0, syncedLines.lastIndex)
+            }
+            val start = (centerIndex - half).coerceAtLeast(0)
+            val end = (start + windowSize).coerceAtMost(syncedLines.size)
+            Pair(syncedLines.subList(start, end), activeIndex - start)
+        } else {
+            val centerIndex = state.detail.lyricsScrollOffset.coerceIn(0, syncedLines.lastIndex)
+            val start = (centerIndex - half).coerceAtLeast(0)
+            val end = (start + windowSize).coerceAtMost(syncedLines.size)
+            Pair(syncedLines.subList(start, end), -1)
+        }
+
+        val headerBadge = if (isNowPlaying) {
+            if (state.detail.isAutoScrollLyrics) {
+                text("● SYNCED").bold().fg(PRIMARY_COLOR).centered()
+            } else {
+                text("↕ MANUAL SCROLL (press 'a' to sync)").dim().centered()
+            }
+        } else {
+            text("♫ Lyrics (${syncedLines.size} lines)").dim().centered()
+        }
+
+        val lineElements = visibleLines.mapIndexed { i, lrcLine ->
+            val isCurrent = (i == relativeActiveIndex)
+            val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
+            val linePrefix = if (isCurrent) "▶ " else "  "
+            val t = text("$linePrefix$displayText")
+            when {
+                isCurrent -> t.bold().fg(PRIMARY_COLOR).centered()
+                relativeActiveIndex >= 0 && i < relativeActiveIndex -> t.fg(TEXT_DIM).centered()
+                else -> t.fg(TEXT_SECONDARY).centered()
+            }
+        }
+
+        return column(
+            text("").length(1),
+            headerBadge,
+            text("").length(1),
+            *lineElements.toTypedArray(),
+            spacer()
+        )
+    }
+
+    return when {
+        state.detail.lyrics != null -> lyricsArea.markup(state.detail.lyrics).fill()
+        else -> column(
+            spacer(),
+            text("  Press Enter or 'l' to load lyrics").fg(TEXT_SECONDARY).centered(),
+            spacer()
+        )
+    }
 }
 
 private fun renderSimilarTab(

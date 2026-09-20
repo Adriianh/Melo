@@ -183,11 +183,20 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
             val lrc = getSyncedLyrics(track.artist, track.title)
             appRunner()?.runOnRenderThread {
                 if (state.player.nowPlaying?.id == track.id) {
+                    val parsed = if (lrc != null) LrcParser.parse(lrc) else emptyList()
+                    val isDetailTrack = state.detail.selectedTrack?.id == track.id
                     state = state.copy(
                         player = state.player.copy(
-                            syncedLyrics = if (lrc != null) LrcParser.parse(lrc) else emptyList(),
+                            syncedLyrics = parsed,
                             isLoadingSyncedLyrics = false,
-                        )
+                        ),
+                        detail = if (isDetailTrack) {
+                            state.detail.copy(
+                                syncedLyrics = parsed,
+                                isAutoScrollLyrics = true,
+                                lyricsScrollOffset = 0,
+                            )
+                        } else state.detail
                     )
                 }
             }
@@ -199,6 +208,7 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
     }
 
     appRunner()?.runOnRenderThread {
+        val isDetailTrack = state.detail.selectedTrack?.id == track.id
         state = state.copy(
             player = state.player.copy(
                 audioError = null,
@@ -209,7 +219,14 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
                 marqueeOffset = 0,
                 nowPlayingPositionMs = 0L,
                 progress = 0.0,
-            )
+            ),
+            detail = if (isDetailTrack) {
+                state.detail.copy(
+                    syncedLyrics = emptyList(),
+                    lyricsScrollOffset = 0,
+                    isAutoScrollLyrics = true,
+                )
+            } else state.detail
         )
     }
 }
