@@ -29,7 +29,7 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 /**
- * Floating overlay for the playback queue — renders at a fixed centered
+ * Floating overlay for the playback queue — renders at a fixed-centered
  * Rect on top of whatever is below it, exactly like PlaylistInputOverlay does.
  */
 class QueueOverlay(
@@ -82,7 +82,6 @@ class QueueOverlay(
             queueList.fill()
         }
 
-        val remaining = state.player.queue.size - (state.player.queueIndex + 1).coerceAtLeast(0)
         val radioLabel = if (state.player.isRadioMode) " • $ICON_RADIO Radio" else ""
         val title = if (state.player.queue.isEmpty())
             " $ICON_QUEUE Queue "

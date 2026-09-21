@@ -472,7 +472,7 @@ class MeloStateFilterSortTest {
         assertEquals(true, batch.isEmpty)
         assertEquals(false, batch.isNotEmpty)
         assertEquals(false, batch.isSelectionMode)
-        assertEquals(emptyList<Track>(), batch.tracks())
+        assertEquals(emptyList(), batch.tracks())
     }
 
     @Test
@@ -635,12 +635,12 @@ class MeloStateFilterSortTest {
         assertEquals(true, detail.isAutoScrollLyrics)
         assertEquals(0, detail.lyricsScrollOffset)
 
-        // 1. Auto-scroll: at 6 seconds (6000ms), active line should be Line 2 (index 1)
+        // 1. Auto-scroll: at 6 seconds (6000ms), the active line should be Line 2 (index 1)
         val activeIndexAt6s =
             com.github.adriianh.cli.tui.util.LrcParser.currentLineIndex(detail.syncedLyrics, 6000L)
         assertEquals(1, activeIndexAt6s)
 
-        // 2. Auto-scroll: at 16 seconds (16000ms), active line should be Line 4 (index 3)
+        // 2. Auto-scroll: at 16 seconds (16000ms), the active line should be Line 4 (index 3)
         val activeIndexAt16s =
             com.github.adriianh.cli.tui.util.LrcParser.currentLineIndex(detail.syncedLyrics, 16000L)
         assertEquals(3, activeIndexAt16s)
@@ -697,10 +697,10 @@ class MeloStateFilterSortTest {
         assertEquals("t3", player.queue[player.queueCursor].id)
 
         // 3. Bounds check: at index 0, moving up is invalid
-        val canMoveUpFromZero = player.queueCursor > 0 && 0 > 0
+        val canMoveUpFromZero = false
         assertEquals(false, canMoveUpFromZero)
 
-        // 4. Bounds check: at last index, moving down is invalid
+        // 4. Bounds check: at the last index, moving down is invalid
         val canMoveDownFromLast = player.queue.lastIndex < player.queue.lastIndex
         assertEquals(false, canMoveDownFromLast)
     }
