@@ -5,7 +5,13 @@ import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import dev.tamboui.layout.Constraint
 import dev.tamboui.style.Style
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.text.Line
+import dev.tamboui.text.Span
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.event.EventResult
@@ -30,12 +36,22 @@ fun buildSidebar(
         utilList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
     }
 
+    val title = Line.from(
+        Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
+    )
+
     return panel(
         dock()
             .top(navList.length(NAV_ITEMS), Constraint.length(NAV_ITEMS))
-            .bottom(utilList.length(UTIL_ITEMS), Constraint.length(UTIL_ITEMS))
+            .bottom(
+                column(
+                    text("──────────────────").fg(BORDER_DEFAULT),
+                    utilList.length(UTIL_ITEMS)
+                ),
+                Constraint.length(UTIL_ITEMS + 1)
+            )
             .center(spacer()).fill()
-    ).title("Navigation")
+    ).title(title)
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)

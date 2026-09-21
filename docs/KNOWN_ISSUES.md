@@ -56,7 +56,9 @@ new content.
 
 #### Fix applied
 
-Home and Library screens wrap their root element in a `stack()` with
-`ClearGraphicsElement` as the base layer, which erases terminal graphics on every
-render cycle. Any new screen added in the future **must** follow this same pattern.
+TamboUI 0.4.0 natively handles raw output cleanup via `Terminal.cleanupRawOutput()` when an `Image`
+widget stops rendering (issuing terminal escape codes and clearing the previous image rectangle).
+The previous workaround of using `ClearGraphicsElement` / `ClearGraphicsWidget` was removed because
+registering dummy `RawOutputCapable` areas across screens caused terminal text to be wiped with
+spaces and created buffer desynchronization artifacts.
 

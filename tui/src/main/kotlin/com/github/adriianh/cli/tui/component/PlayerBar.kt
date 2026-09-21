@@ -1,13 +1,15 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloState
+import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
+import com.github.adriianh.cli.tui.MeloTheme.BG_ELEVATED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
+import com.github.adriianh.cli.tui.MeloTheme.ICON_INFO
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NEXT
+import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PAUSE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PLAY
 import com.github.adriianh.cli.tui.MeloTheme.ICON_PREV
@@ -23,12 +25,16 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.RepeatMode
+import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.layout.Flex
 import dev.tamboui.style.Style
 import dev.tamboui.text.Line
 import dev.tamboui.text.Span
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.lineGauge
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
@@ -45,106 +51,94 @@ fun buildPlayerBar(
     onToggleShuffle: () -> Unit = {},
     onCycleRepeat: () -> Unit = {},
     onToggleQueue: () -> Unit = {},
+    onToggleDetail: () -> Unit = {},
 ): Element {
     val nowPlaying = state.player.nowPlaying
 
-    val statusIcon = when {
+    val offlineBadge = if (state.isOfflineMode) {
+        Span.styled(" [OFFLINE] ", Style.EMPTY.fg(ACCENT_RED).bold())
+    } else {
+        Span.styled("", Style.EMPTY)
+    }
+    val panelTitle = Line.from(
+        Span.styled(" Melo ", Style.EMPTY.fg(PRIMARY_COLOR).bold()),
+        offlineBadge
+    )
+
+    val playingIndicator = when {
         state.isRestoringSession -> ICON_LOADING
         state.player.isLoadingAudio -> ICON_LOADING
         state.player.audioError != null -> ICON_ERROR
-        state.player.isPlaying -> ICON_PLAY
-        else -> ICON_PAUSE
+        state.player.isPlaying -> MeloTheme.getEqualizerFrame(state.player.marqueeOffset.toLong())
+        else -> "$ICON_PAUSE "
     }
     val statusColor = if (state.player.audioError != null) ACCENT_RED else PRIMARY_COLOR
 
-    val panelTitle = if (state.isRestoringSession) {
-        Line.from(Span.styled("Resuming session…", Style.EMPTY.fg(TEXT_DIM)))
-    } else {
-        val offlinePrefix = if (state.isOfflineMode) Span.styled("${MeloTheme.ICON_OFFLINE} OFFLINE ", Style.EMPTY.fg(ACCENT_RED).bold()) else Span.styled("", Style.EMPTY)
-        if (nowPlaying != null) {
-            val titleStyle = if (state.player.isPlaying) Style.EMPTY.fg(PRIMARY_COLOR).bold()
-                else Style.EMPTY.fg(TEXT_PRIMARY).bold()
-            Line.from(offlinePrefix, Span.styled(nowPlaying.title, titleStyle))
-        } else {
-            Line.from(offlinePrefix, Span.styled("No track", Style.EMPTY.fg(TEXT_DIM)))
-        }
-    }
-
     val leftTop = if (nowPlaying != null) {
         row(
-            text(statusIcon).fg(statusColor).length(2),
-            text(nowPlaying.artist).fg(TEXT_SECONDARY).ellipsis().fill(),
-        ).percent(20)
+            text(playingIndicator).fg(statusColor).length(4),
+            text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
+        ).percent(35)
     } else {
         row(
-            text(statusIcon).fg(TEXT_DIM).length(2),
+            text("$ICON_NOTE ").fg(TEXT_DIM).length(2),
             text("Nothing playing").fg(TEXT_DIM).fill(),
-        ).percent(20)
+        ).percent(35)
+    }
+
+    val leftBottom = if (nowPlaying != null) {
+        val albumPart = if (nowPlaying.album.isNotBlank()) " • ${nowPlaying.album}" else ""
+        row(
+            text("    ").length(4),
+            text("${nowPlaying.artist}$albumPart").fg(TEXT_SECONDARY).ellipsis().fill(),
+        ).percent(35)
+    } else {
+        row(
+            text("  Press / to search music").fg(TEXT_DIM).fill(),
+        ).percent(35)
     }
 
     val centerTop = if (nowPlaying != null) {
-        val currentMs = (state.player.progress * nowPlaying.durationMs).toLong()
+        val currentMs = state.player.nowPlayingPositionMs
         val elapsed = formatDuration(currentMs)
-        val total = formatDuration(nowPlaying.durationMs)
+        val total =
+            if (nowPlaying.durationMs > 0L) formatDuration(nowPlaying.durationMs) else "--:--"
+        val gaugePercent = if (nowPlaying.durationMs > 0L) {
+            (state.player.progress * 100).toInt().coerceIn(0, 100)
+        } else {
+            0
+        }
+        val timeLen = maxOf(5, elapsed.length, total.length)
         row(
-            text(elapsed).fg(TEXT_DIM).length(6),
-            lineGauge((state.player.progress * 100).toInt())
+            text(elapsed).fg(TEXT_DIM).length(timeLen),
+            text(" ").length(1),
+            lineGauge(gaugePercent)
                 .filledColor(PRIMARY_COLOR)
-                .unfilledColor(TEXT_DIM)
+                .unfilledColor(BG_ELEVATED)
                 .fill(),
             text(" ").length(1),
-            text(total).fg(TEXT_DIM).length(6),
-        ).fill()
+            text(total).fg(TEXT_DIM).length(timeLen),
+        ).percent(40)
     } else {
         row(
-            text("0:00").fg(TEXT_DIM).length(6),
-            lineGauge(0).filledColor(TEXT_DIM).unfilledColor(TEXT_DIM).fill(),
+            text("0:00").fg(TEXT_DIM).length(5),
             text(" ").length(1),
-            text("0:00").fg(TEXT_DIM).length(6),
-        ).fill()
+            lineGauge(0).filledColor(TEXT_DIM).unfilledColor(BG_ELEVATED).fill(),
+            text(" ").length(1),
+            text("0:00").fg(TEXT_DIM).length(5),
+        ).percent(40)
     }
 
-    val volumeIcon = when {
-        state.player.volume == 0 -> ICON_VOL_MUTE
-        state.player.volume < 50 -> ICON_VOL_LOW
-        else -> ICON_VOL_HIGH
-    }
-    val rightTop = row(
-        text(volumeIcon).length(2),
-        text(" ").length(1),
-        lineGauge(state.player.volume)
-            .filledColor(TEXT_PRIMARY)
-            .unfilledColor(TEXT_DIM)
-            .fill()
-            .onMouseEvent { event ->
-                when (event.kind()) {
-                    MouseEventKind.SCROLL_UP   -> { onVolumeChange(5);  EventResult.HANDLED }
-                    MouseEventKind.SCROLL_DOWN -> { onVolumeChange(-5); EventResult.HANDLED }
-                    else -> EventResult.UNHANDLED
-                }
-            },
-        text(" ${state.player.volume}%").fg(TEXT_DIM).length(5),
-    ).percent(20)
-
-    val topRow = row(leftTop, centerTop, rightTop).length(1)
-
-    val controlColor = if (nowPlaying != null && !state.player.isLoadingAudio) PRIMARY_COLOR else TEXT_DIM
+    val controlColor =
+        if (nowPlaying != null && !state.player.isLoadingAudio) TEXT_PRIMARY else TEXT_DIM
     val playPauseIcon = if (state.player.isPlaying) ICON_PAUSE else ICON_PLAY
-
-    val albumText = nowPlaying?.album?.takeIf { it.isNotBlank() } ?: ""
-    val leftBottom = row(
-        text(albumText).fg(TEXT_DIM).ellipsis().fill(),
-    ).percent(20)
-
     val shuffleColor = if (state.player.shuffleEnabled) PRIMARY_COLOR else TEXT_DIM
     val repeatIcon = when (state.player.repeatMode) {
-        RepeatMode.OFF -> ICON_REPEAT
+        RepeatMode.NONE -> ICON_REPEAT
         RepeatMode.ALL -> ICON_REPEAT
         RepeatMode.ONE -> ICON_REPEAT1
     }
-    val repeatColor = if (state.player.repeatMode != RepeatMode.OFF) PRIMARY_COLOR else TEXT_DIM
-    val queueColor = if (state.player.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
-    val queueCount = if (state.player.queue.isNotEmpty()) " ${state.player.queue.size}" else ""
+    val repeatColor = if (state.player.repeatMode != RepeatMode.NONE) PRIMARY_COLOR else TEXT_DIM
 
     val centerBottom = row(
         text(ICON_SHUFFLE).fg(shuffleColor).length(2)
@@ -157,7 +151,7 @@ fun buildPlayerBar(
                 if (event.kind() == MouseEventKind.PRESS) { onSeekBackward(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-        text(playPauseIcon).fg(controlColor).length(2)
+        text(playPauseIcon).fg(PRIMARY_COLOR).bold().length(2)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onPlayPause(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
@@ -172,18 +166,58 @@ fun buildPlayerBar(
                 if (event.kind() == MouseEventKind.PRESS) { onCycleRepeat(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-    ).flex(Flex.CENTER).spacing(2).fill()
+    ).flex(Flex.CENTER).spacing(2).percent(40)
+
+    val volumeIcon = when {
+        state.player.volume == 0 -> ICON_VOL_MUTE
+        state.player.volume < 50 -> ICON_VOL_LOW
+        else -> ICON_VOL_HIGH
+    }
+    val rightTop = row(
+        spacer(),
+        text(volumeIcon).length(2),
+        text(" ").length(1),
+        lineGauge(state.player.volume)
+            .filledColor(TEXT_PRIMARY)
+            .unfilledColor(BG_ELEVATED)
+            .length(8)
+            .onMouseEvent { event ->
+                when (event.kind()) {
+                    MouseEventKind.SCROLL_UP -> {
+                        onVolumeChange(5); EventResult.HANDLED
+                    }
+
+                    MouseEventKind.SCROLL_DOWN -> {
+                        onVolumeChange(-5); EventResult.HANDLED
+                    }
+
+                    else -> EventResult.UNHANDLED
+                }
+            },
+        text(" ${state.player.volume}%").fg(TEXT_DIM).length(5),
+    ).percent(25)
+
+    val detailColor = if (state.detail.isVisible) PRIMARY_COLOR else TEXT_DIM
+    val queueColor = if (state.player.isQueueVisible) PRIMARY_COLOR else TEXT_DIM
+    val queueCount = if (state.player.queue.isNotEmpty()) " (${state.player.queue.size})" else ""
 
     val rightBottom = row(
-        text(if (state.player.isRadioMode) ICON_RADIO else " ").fg(if (state.player.isRadioMode) PRIMARY_COLOR else TEXT_DIM).length(2),
-        text(" ").length(1),
-        text("$ICON_QUEUE$queueCount").fg(queueColor).length(4)
+        spacer(),
+        if (state.player.isRadioMode) text("$ICON_RADIO Radio ").fg(PRIMARY_COLOR) else text(""),
+        text("$ICON_INFO Info").fg(detailColor)
+            .onMouseEvent { event ->
+                if (event.kind() == MouseEventKind.PRESS) { onToggleDetail(); EventResult.HANDLED }
+                else EventResult.UNHANDLED
+            },
+        text("  "),
+        text("$ICON_QUEUE Queue$queueCount").fg(queueColor)
             .onMouseEvent { event ->
                 if (event.kind() == MouseEventKind.PRESS) { onToggleQueue(); EventResult.HANDLED }
                 else EventResult.UNHANDLED
             },
-    ).percent(20)
+    ).percent(25)
 
+    val topRow = row(leftTop, centerTop, rightTop).length(1)
     val bottomRow = row(leftBottom, centerBottom, rightBottom).length(1)
 
     val borderColor = if (state.player.isPlaying) PRIMARY_COLOR else BORDER_DEFAULT

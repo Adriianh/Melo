@@ -1,8 +1,8 @@
-package com.github.adriianh.melo.ui.login
+package com.github.adriianh.data.auth
 
-import com.github.adriianh.melo.ui.login.BrowserAuthManager.LAUNCH_TIMEOUT
-import com.github.adriianh.melo.ui.login.CookieHeader.hasValidSession
-import com.github.adriianh.melo.ui.login.CookieHeader.toHeaderStringOrNull
+import com.github.adriianh.data.auth.BrowserAuthManager.LAUNCH_TIMEOUT
+import com.github.adriianh.data.auth.CookieHeader.hasValidSession
+import com.github.adriianh.data.auth.CookieHeader.toHeaderStringOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -371,6 +371,7 @@ object BrowserAuthManager {
                 ?.map { File(it, "cookies.sqlite") }
                 ?.firstOrNull { it.exists() }
         }
+
         BrowserEngine.CHROMIUM -> {
             val candidates = mutableListOf(
                 File(profileDir, "Default/Network/Cookies"),
@@ -378,10 +379,11 @@ object BrowserAuthManager {
                 File(profileDir, "Network/Cookies"),
                 File(profileDir, "Cookies"),
             )
-            profileDir.listFiles { f -> f.isDirectory && f.name.startsWith("Profile") }?.forEach { p ->
-                candidates.add(File(p, "Network/Cookies"))
-                candidates.add(File(p, "Cookies"))
-            }
+            profileDir.listFiles { f -> f.isDirectory && f.name.startsWith("Profile") }
+                ?.forEach { p ->
+                    candidates.add(File(p, "Network/Cookies"))
+                    candidates.add(File(p, "Cookies"))
+                }
             candidates.firstOrNull { it.exists() && it.length() > 0L }
         }
     }
@@ -521,7 +523,11 @@ object BrowserAuthManager {
             val localStateFile = findLocalState(cookieDb)
             when (browser.engine) {
                 BrowserEngine.GECKO -> readFirefoxCookies(tempDb)
-                BrowserEngine.CHROMIUM -> readChromiumCookies(tempDb, browser.macKeychainService, localStateFile)
+                BrowserEngine.CHROMIUM -> readChromiumCookies(
+                    tempDb,
+                    browser.macKeychainService,
+                    localStateFile
+                )
             }
         }
 
@@ -547,7 +553,8 @@ object BrowserAuthManager {
     private fun <T> withTempCopy(dbFile: File, block: (File) -> T): T? {
         if (!dbFile.exists() || dbFile.length() == 0L) return null
 
-        val tempCopy = runCatching { File.createTempFile("melo_cookie_read_", ".sqlite") }.getOrNull()
+        val tempCopy =
+            runCatching { File.createTempFile("melo_cookie_read_", ".sqlite") }.getOrNull()
         val walFile = File(dbFile.path + "-wal")
         val shmFile = File(dbFile.path + "-shm")
         val tempWal = tempCopy?.let { File(it.path + "-wal") }
@@ -645,7 +652,11 @@ object BrowserAuthManager {
                             plainValue
                         } else {
                             rs.getBytes("encrypted_value")?.let {
-                                CookieCrypto.decryptChromiumCookie(it, macKeychainService, localStateFile)
+                                CookieCrypto.decryptChromiumCookie(
+                                    it,
+                                    macKeychainService,
+                                    localStateFile
+                                )
                             }
                         }
                         if (!value.isNullOrBlank()) {

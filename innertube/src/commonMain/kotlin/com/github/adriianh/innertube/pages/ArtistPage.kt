@@ -14,6 +14,7 @@ import com.github.adriianh.innertube.models.Run
 import com.github.adriianh.innertube.models.SectionListRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.filterExplicit
 import com.github.adriianh.innertube.models.getItems
 import com.github.adriianh.innertube.models.oddElements
@@ -107,7 +108,7 @@ data class ArtistPage(
                     ?.text ?: return null,
                 artists = artists ?: return null,
                 album = album,
-                duration = null,
+                duration = renderer.extractDuration(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: return null,
                 explicit = renderer.badges?.find {
@@ -140,7 +141,7 @@ data class ArtistPage(
                             } ?: emptyList()
                         },
                         album = null,
-                        duration = null,
+                        duration = renderer.extractDuration(),
                         musicVideoType = renderer.musicVideoType,
                         thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl()
                             ?: return null,

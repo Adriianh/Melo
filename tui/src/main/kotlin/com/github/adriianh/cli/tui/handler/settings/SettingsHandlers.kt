@@ -1,7 +1,19 @@
 package com.github.adriianh.cli.tui.handler.settings
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.component.*
+import com.github.adriianh.cli.tui.component.DirectoryPickerState
+import com.github.adriianh.cli.tui.component.SettingsFocus
+import com.github.adriianh.cli.tui.component.SettingsItem
+import com.github.adriianh.cli.tui.component.SettingsSection
+import com.github.adriianh.cli.tui.component.cancelDelete
+import com.github.adriianh.cli.tui.component.cancelMkdir
+import com.github.adriianh.cli.tui.component.clearError
+import com.github.adriianh.cli.tui.component.refresh
+import com.github.adriianh.cli.tui.component.sectionItems
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
+import com.github.adriianh.cli.tui.importYouTubeAuth
+import com.github.adriianh.cli.tui.logoutYouTubeAuth
+import com.github.adriianh.cli.tui.handler.search.openLanguagePicker
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
@@ -10,6 +22,7 @@ import java.nio.file.Path
 
 fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
     if (!state.isSettingsVisible) return EventResult.UNHANDLED
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
 
     if (event.code() == KeyCode.ESCAPE) {
         when {
@@ -36,8 +49,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                                 isPickingDirectory = false,
                                 currentSettings = newSettings
                             )
-                            state = state.copy()
-                            scope.launch { updateSettings(newSettings) }
+                            scope.launch {
+                                updateSettings(newSettings)
+                                loadLocalTracks()
+                            }
                         } else {
                             settingsViewState = settingsViewState.copy(isPickingDirectory = false)
                             state = state.copy()
@@ -142,10 +157,17 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.CHAR -> {
             val item = items.getOrNull(settingsViewState.cursor)
-            if (item == SettingsItem.LOCAL_FOLDERS && (event.character() == 'd' || event.character() == 'D')) {
+            if (item == SettingsItem.YOUTUBE_ACCOUNT && event.isCharIgnoreCase('d')) {
+                logoutYouTubeAuth()
+                return EventResult.HANDLED
+            }
+            if (item == SettingsItem.LOCAL_FOLDERS && event.isCharIgnoreCase('d')) {
                 val newSettings = settingsViewState.currentSettings.copy(localLibraryPaths = emptyList())
                 settingsViewState = settingsViewState.copy(currentSettings = newSettings)
-                scope.launch { updateSettings(newSettings) }
+                scope.launch {
+                    updateSettings(newSettings)
+                    loadLocalTracks()
+                }
                 return EventResult.HANDLED
             }
             return EventResult.UNHANDLED
@@ -158,6 +180,23 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.ENTER -> {
             val item = items.getOrNull(settingsViewState.cursor) ?: return EventResult.HANDLED
+            if (item == SettingsItem.LANGUAGE) {
+                openLanguagePicker()
+                return EventResult.HANDLED
+            }
+            if (item == SettingsItem.YOUTUBE_ACCOUNT) {
+                importYouTubeAuth()
+                return EventResult.HANDLED
+            }
+            if (item == SettingsItem.SYNC_LIKES ||
+                item == SettingsItem.SYNC_HISTORY ||
+                item == SettingsItem.AUTO_DOWNLOAD ||
+                item == SettingsItem.OFFLINE_MODE ||
+                item == SettingsItem.DISCORD_RPC
+            ) {
+                adjustSetting(item, 1)
+                return EventResult.HANDLED
+            }
             settingsViewState = when (item) {
                 SettingsItem.KEYBINDINGS ->
                     settingsViewState.copy(isKeybindingMode = true, keybindingCursor = 0)

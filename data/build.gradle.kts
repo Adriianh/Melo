@@ -25,6 +25,7 @@ kotlin {
                 implementation(libs.sqldelightSqliteDriver)
                 implementation(libs.sqliteJdbc)
                 implementation(libs.jaudiotagger)
+                implementation(libs.jnaPlatform)
             }
         }
         val androidMain by getting {

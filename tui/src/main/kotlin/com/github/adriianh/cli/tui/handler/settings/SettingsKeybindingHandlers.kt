@@ -10,9 +10,10 @@ import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handleListeningForKey(event: KeyEvent): EventResult {
     val action = MeloAction.entries[settingsViewState.keybindingCursor]
+    val isCtrl = event.modifiers().ctrl()
     val newKey = when {
-        event.code() == KeyCode.CHAR -> MeloKey(char = event.character())
-        else -> MeloKey(code = event.code().name)
+        event.code() == KeyCode.CHAR -> MeloKey(char = event.string().firstOrNull(), ctrl = isCtrl)
+        else -> MeloKey(code = event.code().name, ctrl = isCtrl)
     }
     val conflictAction = settingsViewState.currentSettings.keybindings.entries
         .find { it.value == newKey && it.key != action }?.key

@@ -18,3 +18,16 @@ data class TrackLyrics(
     val isTranslating: Boolean = false,
     val error: String? = null
 )
+
+@Serializable
+enum class LyricsTranslationMode {
+    ORIGINAL,
+    BILINGUAL,
+    TRANSLATION_ONLY;
+
+    fun next(): LyricsTranslationMode = when (this) {
+        ORIGINAL -> BILINGUAL
+        BILINGUAL -> TRANSLATION_ONLY
+        TRANSLATION_ONLY -> ORIGINAL
+    }
+}

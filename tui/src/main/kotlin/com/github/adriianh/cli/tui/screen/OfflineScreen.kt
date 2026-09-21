@@ -1,18 +1,25 @@
 package com.github.adriianh.cli.tui.screen
 
-import com.github.adriianh.cli.tui.*
+import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.MeloTheme.ICON_OFFLINE
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_OFFLINE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
-import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
-import dev.tamboui.toolkit.Toolkit.*
+import com.github.adriianh.core.domain.model.OfflineFilterType
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
+import dev.tamboui.layout.Margin
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.toolkit.event.EventResult
@@ -28,61 +35,108 @@ fun renderOfflineScreen(
 
     val filterTabs = buildOfflineFilterTabs(screen.filterType)
 
-    val filteredDownloads = screen.downloads.filter { offlineTrack ->
-        val matchesType = when (screen.filterType) {
-            OfflineFilterType.ALL -> true
-            OfflineFilterType.MANUAL -> offlineTrack.downloadType == DownloadType.MANUAL
-            OfflineFilterType.CACHE -> offlineTrack.downloadType == DownloadType.PREFETCH
-        }
-        val matchesQuery = if (screen.searchQuery.isEmpty()) true else {
-            val q = screen.searchQuery.lowercase()
-            offlineTrack.track.title.lowercase().contains(q) ||
-                    offlineTrack.track.artist.lowercase().contains(q)
-        }
-        matchesType && matchesQuery && offlineTrack.downloadStatus != DownloadStatus.PENDING
+    val filteredDownloads = filterAndSortOfflineTracks(
+        downloads = screen.downloads,
+        filterType = screen.filterType,
+        sortOrder = screen.sortOrder,
+        sortDirection = screen.sortDirection,
+        query = screen.searchQuery
+    )
+
+    val searchBadge = if (screen.isTyping) {
+        text(" [Search: ${screen.searchQuery}●] ").fg(PRIMARY_COLOR).bold()
+    } else if (screen.searchQuery.isNotBlank()) {
+        text(" [Search: \"${screen.searchQuery}\"] ").fg(PRIMARY_COLOR)
+    } else {
+        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
     }
 
+    val sortBadge = text(" [Sort: ${screen.sortOrder.label} (o)] ").fg(TEXT_SECONDARY)
+    val dirBadge =
+        text(" [${screen.sortDirection.symbol} ${screen.sortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY
+        )
+
+    val toolbar = row(
+        filterTabs,
+        text("  "),
+        searchBadge,
+        text("  "),
+        sortBadge,
+        text("  "),
+        dirBadge,
+        spacer(),
+        text("${filteredDownloads.size} tracks").dim()
+    ).margin(Margin.horizontal(1))
+
     val content = if (filteredDownloads.isEmpty()) {
+        offlineList.elements()
         column(
-            row(filterTabs),
-            if (screen.searchQuery.isNotEmpty())
-                text("  Filter: ${screen.searchQuery}").fg(PRIMARY_COLOR).bold()
-            else text(""),
+            toolbar,
+            text("").length(1),
             spacer(),
             text("No tracks match the filter").fg(TEXT_SECONDARY).centered(),
+            text("Press Esc to reset search/filters").fg(TEXT_DIM).centered(),
             spacer()
         )
     } else {
-        val items = filteredDownloads
-            .map { offlineTrack ->
-                val track = offlineTrack.track
-                val isPlaying = track.id == state.player.nowPlaying?.id
-                val typeLabel = if (offlineTrack.downloadType == DownloadType.MANUAL) " [M]" else " [C]"
-                row(
-                    text("$typeLabel ").fg(TEXT_DIM).length(4),
-                    text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2),
-                    text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-                    text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25),
-                    text(formatDuration(track.durationMs)).fg(TEXT_DIM).length(6)
+        val items = filteredDownloads.mapIndexed { index, offlineTrack ->
+            val track = offlineTrack.track
+            val isPlaying = track.id == state.player.nowPlaying?.id
+            val typeLabel = if (offlineTrack.downloadType == DownloadType.MANUAL) " [M]" else " [C]"
+            val isBatchSelected = state.selection.isSelected(track.id)
+            val rowElements = mutableListOf<Element>()
+            rowElements.add(text("$typeLabel ").fg(TEXT_DIM).length(4))
+            rowElements.add(
+                text(if (isPlaying) "$ICON_NOTE " else "  ").fg(PRIMARY_COLOR).length(2)
+            )
+            if (state.selection.isNotEmpty) {
+                rowElements.add(
+                    text(if (isBatchSelected) "[x] " else "[ ] ")
+                        .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
+                        .length(4)
                 )
             }
+            rowElements.add(text("${index + 1}").dim().length(3))
+            rowElements.add(text(track.title).fg(TEXT_PRIMARY).ellipsisMiddle().fill())
+            rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
+            rowElements.add(
+                text(if (track.durationMs > 0L) formatDuration(track.durationMs) else "").fg(
+                    TEXT_DIM
+                ).length(6)
+            )
+            row(*rowElements.toTypedArray())
+        }
         offlineList.elements(*items.toTypedArray())
         offlineList.selected(screen.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)))
 
+        val headerElements = mutableListOf<Element>()
+        headerElements.add(text("").length(4))
+        headerElements.add(text("").length(2))
+        if (state.selection.isNotEmpty) {
+            headerElements.add(text("Sel ").dim().length(4))
+        }
+        headerElements.add(text("#").dim().length(3))
+        headerElements.add(text("Title").dim().fill())
+        headerElements.add(text("Artist").dim().percent(25))
+        headerElements.add(text("Time").dim().length(6))
+        val header = row(*headerElements.toTypedArray()).margin(Margin.horizontal(1))
+
         column(
-            row(filterTabs),
-            if (screen.searchQuery.isNotEmpty())
-                text("  Filter: ${screen.searchQuery} ").fg(PRIMARY_COLOR).bold()
-            else text(""),
-            text(""),
+            toolbar,
+            text("").length(1),
+            header,
+            text("").length(1),
             offlineList.fill()
         )
     }
 
     val helpText = if (screen.isTyping) {
         "[Enter] finish search  [Esc] clear/cancel  [Backspace] delete"
+    } else if (state.selection.isNotEmpty) {
+        "[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [d] Delete  [Esc] Clear"
     } else {
-        "[Tab/f] filter type  [/] search  [Esc] clear search  [Enter] play  [m/o] options  [d] delete"
+        "[Enter] play  [Space] pause  [v] select  [m] options  [d] delete  [Tab/s] filter  [o] sort  [Ctrl+F] search"
     }
     val countTitle = if (filteredDownloads.size != screen.downloads.size)
         "(${filteredDownloads.size}/${screen.downloads.size})"

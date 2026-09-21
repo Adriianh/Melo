@@ -7,12 +7,15 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.image.Image
 import dev.tamboui.image.ImageScaling
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Flex
+import dev.tamboui.style.Overflow
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.dock
 import dev.tamboui.toolkit.Toolkit.panel
@@ -29,13 +32,14 @@ import dev.tamboui.widgets.block.Borders
 fun renderNowPlayingScreen(
     state: MeloState,
     marqueeText: (String, Int, Int) -> String,
-    onKeyEvent: (KeyEvent) -> EventResult
+    onKeyEvent: (KeyEvent) -> EventResult,
+    terminalHeight: Int = 30
 ): Element {
     val track = state.player.nowPlaying ?: return renderNoTrackPlaying()
 
     val artworkPanel = buildArtworkPanel(state)
     val infoPanel    = buildInfoPanel(state, track, marqueeText)
-    val lyricsPanel  = buildLyricsPanel(state)
+    val lyricsPanel = buildLyricsPanel(state, terminalHeight)
 
     val leftColumn = dock()
         .top(artworkPanel, Constraint.length(18))
@@ -95,7 +99,7 @@ private fun buildInfoPanel(
     ).flex(Flex.CENTER)
 ).rounded().borderColor(BORDER_DEFAULT)
 
-private fun buildLyricsPanel(state: MeloState): Element {
+private fun buildLyricsPanel(state: MeloState, terminalHeight: Int): Element {
     val title = "Lyrics"
 
     if (state.player.isLoadingSyncedLyrics) {
@@ -114,30 +118,108 @@ private fun buildLyricsPanel(state: MeloState): Element {
         ).title(title).rounded().borderColor(BORDER_DEFAULT)
     }
 
+    val nowPlayingState = (state.screen as? ScreenState.NowPlaying) ?: ScreenState.NowPlaying()
+    val mode = state.player.lyricsTranslationMode
+    val isBilingual = mode == LyricsTranslationMode.BILINGUAL
+    val isAutoScroll = nowPlayingState.isAutoScrollLyrics
+
     val currentIndex = LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
+    val centerIndex = if (isAutoScroll) {
+        if (currentIndex >= 0) currentIndex else 0
+    } else {
+        nowPlayingState.lyricsScrollOffset.coerceIn(0, lines.lastIndex)
+    }
 
-    val windowSize = 20
+    val rawWindow = (terminalHeight - 10).coerceIn(8, 50)
+    val windowSize = if (isBilingual) (rawWindow / 2).coerceAtLeast(4) else rawWindow
     val half = windowSize / 2
-    val start = (currentIndex - half).coerceAtLeast(0)
-    val end   = (start + windowSize).coerceAtMost(lines.size)
+    val start = (centerIndex - half).coerceAtLeast(0)
+    val end = (start + windowSize).coerceAtMost(lines.size)
     val visibleLines = lines.subList(start, end)
-    val visibleCurrentIndex = currentIndex - start
+    val visibleCurrentIndex = if (currentIndex >= 0) currentIndex - start else -1
+    val visibleCenterIndex = centerIndex - start
 
-    val lineElements = visibleLines.mapIndexed { i, lrcLine ->
-        val isCurrent = i == visibleCurrentIndex
-        val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
-        val t = text(displayText)
-        when {
-            isCurrent -> t.bold().fg(PRIMARY_COLOR).centered()
-            i < visibleCurrentIndex -> t.fg(TEXT_DIM).centered()
-            else -> t.fg(TEXT_SECONDARY).centered()
+    val currentLangCode = state.languagePicker.currentLanguage.uppercase()
+    val headerBadge = when {
+        state.player.isTranslatingLyrics -> text("● Translating lyrics ($currentLangCode)...").dim()
+            .centered()
+        !isAutoScroll -> text("↕ MANUAL SCROLL [Enter to seek, 'a' to sync]").dim().centered()
+        mode == LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual • $currentLangCode]").bold()
+            .fg(PRIMARY_COLOR).centered()
+
+        mode == LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated • $currentLangCode]").bold()
+            .fg(PRIMARY_COLOR).centered()
+
+        else -> text("● SYNCED").bold().fg(PRIMARY_COLOR).centered()
+    }
+
+    val lineElements = mutableListOf<Element>()
+    visibleLines.forEachIndexed { i, lrcLine ->
+        val isCurrentPlaying = (i == visibleCurrentIndex)
+        val isManualFocused = (!isAutoScroll && i == visibleCenterIndex)
+        val isHighlighted = isCurrentPlaying || isManualFocused
+
+        when (mode) {
+            LyricsTranslationMode.ORIGINAL -> {
+                val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                val styled = when {
+                    isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                    visibleCurrentIndex >= 0 && i < visibleCurrentIndex -> t.fg(TEXT_DIM).centered()
+                    else -> t.fg(TEXT_SECONDARY).centered()
+                }
+                lineElements.add(styled)
+            }
+
+            LyricsTranslationMode.TRANSLATION_ONLY -> {
+                val displayText = lrcLine.translation?.takeIf { it.isNotBlank() }
+                    ?: lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                val styled = when {
+                    isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                    visibleCurrentIndex >= 0 && i < visibleCurrentIndex -> t.fg(TEXT_DIM).centered()
+                    else -> t.fg(TEXT_SECONDARY).centered()
+                }
+                lineElements.add(styled)
+            }
+
+            LyricsTranslationMode.BILINGUAL -> {
+                val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                val styledOrig = when {
+                    isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                    visibleCurrentIndex >= 0 && i < visibleCurrentIndex -> t.fg(TEXT_DIM).centered()
+                    else -> t.fg(TEXT_SECONDARY).centered()
+                }
+                lineElements.add(styledOrig)
+
+                val trans = lrcLine.translation
+                if (!trans.isNullOrBlank()) {
+                    val sub = text("↳ $trans").overflow(Overflow.WRAP_WORD)
+                    val styledSub = when {
+                        isHighlighted -> sub.fg(TEXT_PRIMARY).dim().centered()
+                        else -> sub.fg(TEXT_DIM).centered()
+                    }
+                    lineElements.add(styledSub)
+                }
+            }
         }
+    }
+
+    val bottomHelp = if (isAutoScroll) {
+        " [↑/↓] Scroll  [t] Mode  [T] Lang ($currentLangCode) "
+    } else {
+        " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode  [T] Lang ($currentLangCode) "
     }
 
     return panel(
         column(
+            headerBadge.length(1),
             spacer(),
             *lineElements.toTypedArray(),
             spacer())
-    ).title(title).rounded().borderColor(BORDER_DEFAULT)
+    ).title(title)
+        .bottomTitle(bottomHelp)
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
 }

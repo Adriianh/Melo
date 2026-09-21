@@ -3,9 +3,13 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
+import com.github.adriianh.cli.tui.enrichActiveSectionTracks
+import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
+import com.github.adriianh.cli.tui.handler.search.returnFocusFromDetail
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
@@ -28,32 +32,89 @@ internal fun KeyEvent.matchesAction(action: MeloAction, settings: Settings): Boo
     val binding = settings.keybindings[action] ?: return false
     val codeStr = binding.code
     val charVal = binding.char
+    val ctrlVal = binding.ctrl
+    val ctrlPressed = modifiers().ctrl() || (charVal != null && charVal.lowercaseChar() == 'd' && isChar('\u0004'))
+    if (ctrlVal != ctrlPressed) return false
     return (codeStr != null && code() == KeyCode.valueOf(codeStr)) ||
-            (charVal != null && character() == charVal)
+            (charVal != null && isChar(charVal))
 }
+
+internal fun KeyEvent.isCtrlF(): Boolean =
+    (modifiers().ctrl() && isCharIgnoreCase('f')) || isChar('\u0006')
+
+internal fun KeyEvent.isCtrlA(): Boolean =
+    (modifiers().ctrl() && isCharIgnoreCase('a')) || isChar('\u0001')
+
+internal fun KeyEvent.isCtrlD(): Boolean =
+    (modifiers().ctrl() && isCharIgnoreCase('d')) || isChar('\u0004')
 
 internal fun MeloScreen.handleSidebarKey(event: KeyEvent): EventResult {
     when {
         event.matches(Actions.MOVE_DOWN) -> {
             val currentIndex = NAV_SECTIONS.indexOf(state.navigation.activeSection)
             val nextIndex = (currentIndex + 1) % NAV_SECTIONS.size
-            applySidebarSelection(NAV_SECTIONS[nextIndex])
+            val section = NAV_SECTIONS[nextIndex]
+            applySidebarSelection(section)
+            if (section != SidebarSection.SETTINGS) {
+                switchScreenWithoutFocus(section)
+            }
             return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_UP) -> {
             val currentIndex = NAV_SECTIONS.indexOf(state.navigation.activeSection)
             val prevIndex = if (currentIndex <= 0) NAV_SECTIONS.size - 1 else currentIndex - 1
-            applySidebarSelection(NAV_SECTIONS[prevIndex])
+            val section = NAV_SECTIONS[prevIndex]
+            applySidebarSelection(section)
+            if (section != SidebarSection.SETTINGS) {
+                switchScreenWithoutFocus(section)
+            }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.ENTER -> {
+        event.code() == KeyCode.ENTER || event.matches(Actions.MOVE_RIGHT) -> {
             activateSidebarSelection(state.navigation.activeSection)
             return EventResult.HANDLED
         }
     }
     return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.targetScreenFor(item: SidebarSection): ScreenState = when (item) {
+    SidebarSection.HOME -> cachedHomeScreen
+    SidebarSection.SEARCH -> ScreenState.Search()
+    SidebarSection.LIBRARY -> ScreenState.Library()
+    SidebarSection.NOW_PLAYING -> ScreenState.NowPlaying()
+    SidebarSection.STATS -> cachedStatsScreen
+    SidebarSection.OFFLINE -> ScreenState.Offline(downloads = state.collections.offlineTracks)
+    SidebarSection.SETTINGS -> state.screen
+}
+
+internal fun MeloScreen.switchScreenWithoutFocus(item: SidebarSection) {
+    if (item == SidebarSection.SETTINGS) return
+    val targetScreen = targetScreenFor(item)
+    state = state.copy(
+        screen = targetScreen,
+        navigation = state.navigation.copy(activeSection = item, pendingSection = null),
+        detail = if (item != SidebarSection.SEARCH) {
+            state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null)
+        } else state.detail,
+        needsGraphicsClear = false
+    )
+    if (item == SidebarSection.HOME) {
+        if (cachedHomeScreen.feedSections.isEmpty() && !cachedHomeScreen.isLoadingFeed && cachedHomeScreen.feedError == null) {
+            loadHomeFeed()
+        }
+    } else if (item == SidebarSection.STATS) {
+        if (cachedStatsScreen.statsListening == null && !cachedStatsScreen.statsLoading) {
+            loadStats()
+        }
+    } else if (item == SidebarSection.LIBRARY) {
+        val isLoggedIn = !settingsViewState.currentSettings.sessionCookies.isNullOrBlank()
+        if (isLoggedIn && state.collections.remotePlaylists.isEmpty()) {
+            syncYouTubeLibrary()
+        }
+    }
 }
 
 internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
@@ -63,25 +124,46 @@ internal fun MeloScreen.activateSidebarSelection(item: SidebarSection) {
         return
     }
 
+    applySidebarSelection(item)
+    val targetScreen = targetScreenFor(item)
     state = state.copy(
-        needsGraphicsClear = true,
-        navigation = state.navigation.copy(pendingSection = item)
+        screen = targetScreen,
+        navigation = state.navigation.copy(activeSection = item, pendingSection = null),
+        detail = if (item != SidebarSection.SEARCH) {
+            state.detail.copy(selectedTrack = null, selectedEntity = null, artworkData = null)
+        } else state.detail,
+        needsGraphicsClear = false
     )
 
     when (item) {
-        SidebarSection.HOME -> appRunner()?.focusManager()?.setFocus("home-panel")
+        SidebarSection.HOME -> {
+            appRunner()?.focusManager()?.setFocus("home-panel")
+            if (cachedHomeScreen.feedSections.isEmpty() && !cachedHomeScreen.isLoadingFeed && cachedHomeScreen.feedError == null) {
+                loadHomeFeed()
+            } else {
+                enrichActiveSectionTracks()
+            }
+        }
         SidebarSection.SEARCH -> appRunner()?.focusManager()?.setFocus("search-bar")
-        SidebarSection.LIBRARY -> appRunner()?.focusManager()?.setFocus("library-panel")
-        SidebarSection.STATS -> appRunner()?.focusManager()?.setFocus("stats-panel")
+        SidebarSection.LIBRARY -> {
+            appRunner()?.focusManager()?.setFocus("library-panel")
+            val isLoggedIn = !settingsViewState.currentSettings.sessionCookies.isNullOrBlank()
+            if (isLoggedIn && state.collections.remotePlaylists.isEmpty()) {
+                syncYouTubeLibrary()
+            }
+        }
+        SidebarSection.NOW_PLAYING -> appRunner()?.focusManager()?.setFocus("now-playing-panel")
+        SidebarSection.STATS -> {
+            appRunner()?.focusManager()?.setFocus("stats-panel")
+            loadStats()
+        }
         SidebarSection.OFFLINE -> appRunner()?.focusManager()?.setFocus("offline-panel")
-        else -> {}
     }
 }
 
 internal fun MeloScreen.applySidebarSelection(item: SidebarSection) {
     state = state.copy(navigation = state.navigation.copy(activeSection = item))
 
-    // Synchronize visual list selections
     val index = NAV_SECTIONS.indexOf(item)
     if (index < 4) {
         sidebarNavList.selected(index)
@@ -97,22 +179,43 @@ internal fun MeloScreen.applySidebarSelection(item: SidebarSection) {
 internal fun MeloScreen.isTyping(): Boolean {
     if (state.commandBar.isVisible) return true
 
-    // Search bar is focused
     if (appRunner()?.focusManager()?.focusedId() == "search-bar") return true
 
-    // Library/Offline "typing mode" (isTyping flag in screen state)
     val libraryState = state.screen as? ScreenState.Library
     if (libraryState?.isTyping == true) return true
+
+    val entityDetailState = state.screen as? ScreenState.EntityDetail
+    if (entityDetailState?.isTyping == true) return true
 
     val offlineState = state.screen as? ScreenState.Offline
 
     return offlineState?.isTyping == true
 }
 
+internal fun MeloScreen.toggleDetailPanel() {
+    val newVisibility = !state.detail.isVisible
+    state = state.copy(detail = state.detail.copy(isVisible = newVisibility))
+    val focusedId = appRunner()?.focusManager()?.focusedId()
+    if (focusedId == "detail-panel" || focusedId == "desc-area") {
+        returnFocusFromDetail()
+    }
+}
+
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
     if (state.commandBar.isVisible) return handleCommandBarKey(event)
+
+    if (event.isCtrlD() || event.matchesAction(MeloAction.TOGGLE_DETAIL, settingsViewState.currentSettings)) {
+        toggleDetailPanel()
+        return EventResult.HANDLED
+    }
+
+    if (event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty) {
+        state = state.copy(selection = state.selection.clear())
+        return EventResult.HANDLED
+    }
 
     val isTyping = isTyping()
     val isCharacter = event.code() == KeyCode.CHAR
@@ -126,7 +229,7 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
 
     when (event.code()) {
         KeyCode.CHAR -> {
-            if (event.character() == ':') {
+            if (event.isChar(':')) {
                 val currentFocus = appRunner()?.focusManager()?.focusedId()
                 state = state.copy(
                     commandBar = state.commandBar.copy(
@@ -142,13 +245,11 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
                 appRunner()?.focusManager()?.setFocus("command-bar")
                 return EventResult.HANDLED
             }
-            if (event.character() == '/') {
-                applySidebarSelection(SidebarSection.SEARCH)
+            if (event.isChar('/')) {
                 activateSidebarSelection(SidebarSection.SEARCH)
                 return EventResult.HANDLED
             }
-            if (event.character() == 'L') {
-                applySidebarSelection(SidebarSection.LIBRARY)
+            if (event.isChar('L')) {
                 activateSidebarSelection(SidebarSection.LIBRARY)
                 return EventResult.HANDLED
             }

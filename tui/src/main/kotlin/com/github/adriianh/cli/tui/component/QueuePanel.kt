@@ -11,13 +11,16 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.DownloadStatus
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -26,7 +29,7 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyEvent
 
 /**
- * Floating overlay for the playback queue — renders at a fixed centered
+ * Floating overlay for the playback queue — renders at a fixed-centered
  * Rect on top of whatever is below it, exactly like PlaylistInputOverlay does.
  */
 class QueueOverlay(
@@ -34,8 +37,6 @@ class QueueOverlay(
     private val queueList: ListElement<*>,
     private val onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
 ) : Element {
-
-    private val clearGraphics = ClearGraphicsWidget()
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
@@ -46,7 +47,6 @@ class QueueOverlay(
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val content = if (state.player.queue.isEmpty()) {
@@ -82,14 +82,25 @@ class QueueOverlay(
             queueList.fill()
         }
 
-        val remaining = state.player.queue.size - (state.player.queueIndex + 1).coerceAtLeast(0)
-        val radioLabel = if (state.player.isRadioMode) "  $ICON_RADIO Radio" else ""
+        val radioLabel = if (state.player.isRadioMode) " • $ICON_RADIO Radio" else ""
         val title = if (state.player.queue.isEmpty())
-            "$ICON_QUEUE Queue  [Q] add  [Del] remove  [C] clear"
+            " $ICON_QUEUE Queue "
         else
-            "$ICON_QUEUE Queue$radioLabel  ${state.player.queue.size} tracks  ($remaining remaining)  [Q] add  [Del] remove  [C] clear"
+            " $ICON_QUEUE Queue (${state.player.queue.size} tracks$radioLabel) "
 
-        panel(content)
+        val footer = row(
+            spacer(),
+            text("[Enter] play  [Shift+↑/↓] move  [Del] remove  [C] clear  [Esc] close").fg(TEXT_DIM),
+            spacer()
+        )
+
+        val body = column(
+            content.fill(),
+            text("").length(1),
+            footer,
+        )
+
+        panel(body)
             .title(title)
             .rounded()
             .borderColor(BORDER_DEFAULT)

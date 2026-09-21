@@ -10,6 +10,7 @@ import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.splitBySeparator
 
 data class RelatedPage(
@@ -40,10 +41,10 @@ data class RelatedPage(
                     ?.let {
                         Album(
                             name = it.text,
-                            id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return null
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return@let null
                         )
                     },
-                duration = null,
+                duration = renderer.extractDuration(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                     ?: return null,
                 musicVideoType = renderer.musicVideoType,

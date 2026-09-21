@@ -2,17 +2,22 @@ package com.github.adriianh.data.player
 
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.StreamCacheRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
+import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -69,18 +74,20 @@ class PlaybackManagerTest {
     }
 
     @Test
-    fun `addToQueue appends track to queue`() = runTest {
+    fun `addToQueue inserts tracks as play-next after current`() = runTest {
         coEvery { getStreamUseCase(any()) } returns "http://stream.url"
         val scope = managerScope()
         val manager = createManager(scope)
 
-        manager.addToQueue(fakeTrack("1"))
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3")))
         scope.advanceUntilIdle()
-        manager.addToQueue(fakeTrack("2"))
+        manager.addToQueue(fakeTrack("4"))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("5"))
         scope.advanceUntilIdle()
 
-        assertEquals(2, manager.queueState.value.tracks.size)
-        assertEquals("2", manager.queueState.value.tracks[1].id)
+        assertEquals(listOf("1", "4", "5", "2", "3"), manager.queueState.value.tracks.map { it.id })
+        assertEquals(2, manager.queueState.value.userQueueCount)
     }
 
     @Test
@@ -415,7 +422,7 @@ class PlaybackManagerTest {
         scope.advanceUntilIdle()
 
         assertEquals(3, manager.queueState.value.tracks.size)
-        assertEquals("99", manager.queueState.value.tracks[2].id)
+        assertEquals("99", manager.queueState.value.tracks[1].id)
     }
 
     @Test
@@ -575,5 +582,262 @@ class PlaybackManagerTest {
         scope.advanceUntilIdle()
 
         coVerify { repo.invalidate("1") }
+    }
+
+    private fun collectEvents(
+        scope: TestScope,
+        manager: PlaybackManagerImpl
+    ): Pair<MutableList<PlaybackEvent>, Job> {
+        val events = mutableListOf<PlaybackEvent>()
+        val job = scope.launch { manager.events.collect { events.add(it) } }
+        return events to job
+    }
+
+    @Test
+    fun `emits TrackStarted event when a track starts loading`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.playTrack(fakeTrack("1"))
+        scope.advanceUntilIdle()
+
+        val started = events.filterIsInstance<PlaybackEvent.TrackStarted>()
+        assertEquals(1, started.size)
+        assertEquals("1", started.first().track.id)
+        assertFalse(events.any { it is PlaybackEvent.Error })
+        collector.cancel()
+    }
+
+    @Test
+    fun `retries stream resolution 3 times then skips to next track`() = runTest {
+        coEvery { getStreamUseCase(match { it.id == "1" }) } returns null
+        coEvery { getStreamUseCase(match { it.id == "2" }) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 3) { getStreamUseCase(match { it.id == "1" }) }
+        assertEquals(1, manager.queueState.value.currentIndex)
+        assertEquals("2", manager.queueState.value.currentTrack?.id)
+        assertTrue(
+            events.any {
+                it is PlaybackEvent.Error && it.message.contains("Stream not available")
+            }
+        )
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted && it.track.id == "2" })
+        collector.cancel()
+    }
+
+    @Test
+    fun `skips current track when it is the only one and resolution fails`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns null
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1")))
+        scope.advanceUntilIdle()
+
+        coVerify(atLeast = 3) { getStreamUseCase(match { it.id == "1" }) }
+        assertTrue(events.any { it is PlaybackEvent.Error })
+        verify { meloPlayer.stop() }
+        collector.cancel()
+    }
+
+    @Test
+    fun `age-restricted track skips to next without retrying and emits error`() = runTest {
+        coEvery { getStreamUseCase(match { it.id == "1" }) } throws AgeRestrictedException("1")
+        coEvery { getStreamUseCase(match { it.id == "2" }) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+        val (events, collector) = collectEvents(scope, manager)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+
+        coVerify(exactly = 1) { getStreamUseCase(match { it.id == "1" }) }
+        assertEquals(1, manager.queueState.value.currentIndex)
+        assertEquals("2", manager.queueState.value.currentTrack?.id)
+        assertTrue(
+            events.any {
+                it is PlaybackEvent.Error && it.message.contains("age-restricted")
+            }
+        )
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted && it.track.id == "2" })
+        collector.cancel()
+    }
+
+    @Test
+    fun `prefetches radio continuation when approaching end of queue`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val getRadio = mockk<GetRadioUseCase>()
+        coEvery { getRadio.invoke(any()) } returns listOf(fakeTrack("radio-1"))
+
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            getRadioUseCase = getRadio,
+        )
+        val (events, collector) = collectEvents(scope, manager)
+
+        val tracks = (1..6).map { fakeTrack("$it") }
+        manager.setQueue(tracks)
+        scope.advanceUntilIdle()
+
+        // 6-track queue: index 0 is not yet within the autoplay margin.
+        coVerify(exactly = 0) { getRadio.invoke(any()) }
+
+        manager.playNext()
+        scope.advanceUntilIdle()
+
+        coVerify { getRadio.invoke(any()) }
+        assertTrue(manager.queueState.value.tracks.any { it.id == "radio-1" })
+        assertTrue(events.any { it is PlaybackEvent.TrackStarted })
+        collector.cancel()
+    }
+
+    @Test
+    fun `playNext decrements userQueueCount when advancing through manual tracks`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A")) // [1, A, 2, 3]
+        scope.advanceUntilIdle()
+        assertEquals(1, manager.queueState.value.userQueueCount)
+
+        manager.playNext() // → index 1 (A), advancing by 1 consumes one manual track
+        scope.advanceUntilIdle()
+
+        assertEquals("A", manager.queueState.value.currentTrack?.id)
+        assertEquals(0, manager.queueState.value.userQueueCount)
+    }
+
+    @Test
+    fun `radio tracks are inserted behind manual queued tracks`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val getRadio = mockk<GetRadioUseCase>()
+        coEvery { getRadio.invoke(any()) } returns listOf(fakeTrack("radio-1"))
+
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            getRadioUseCase = getRadio,
+        )
+
+        // Single track schedules the radio autoplay asynchronously...
+        manager.setQueue(listOf(fakeTrack("1")))
+        // ... so a manual play-next track lands before the radio completes.
+        manager.addToQueue(fakeTrack("A"))
+        scope.advanceUntilIdle()
+
+        assertEquals(
+            listOf("1", "A", "radio-1"),
+            manager.queueState.value.tracks.map { it.id }
+        )
+        assertEquals(1, manager.queueState.value.userQueueCount)
+    }
+
+    @Test
+    fun `removeFromQueue decrements userQueueCount when removing a manual track`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A")) // [1, A, 2, 3]
+        manager.addToQueue(fakeTrack("B")) // [1, A, B, 2, 3]
+        scope.advanceUntilIdle()
+        assertEquals(2, manager.queueState.value.userQueueCount)
+
+        manager.removeFromQueue(2) // removes B (manual block = indices 1..2)
+        assertEquals(listOf("1", "A", "2", "3"), manager.queueState.value.tracks.map { it.id })
+        assertEquals(1, manager.queueState.value.userQueueCount)
+
+        manager.removeFromQueue(1) // removes A
+        assertEquals(listOf("1", "2", "3"), manager.queueState.value.tracks.map { it.id })
+        assertEquals(0, manager.queueState.value.userQueueCount)
+
+        manager.removeFromQueue(2) // removing a non-manual track leaves count untouched
+        assertEquals(0, manager.queueState.value.userQueueCount)
+    }
+
+    @Test
+    fun `moveQueueItem adjusts userQueueCount for manual block moves`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3"), fakeTrack("4")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A")) // [1, A, 2, 3, 4], block = index 1
+        scope.advanceUntilIdle()
+
+        // Manual track moved out of the block → count decrements
+        manager.moveQueueItem(1, 3) // → [1, 2, 3, A, 4]
+        assertEquals(0, manager.queueState.value.userQueueCount)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3"), fakeTrack("4")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A")) // [1, A, 2, 3, 4]
+        scope.advanceUntilIdle()
+
+        // Track moved into the block → count increments
+        manager.moveQueueItem(3, 1) // → [1, 3, A, 2, 4]
+        assertEquals(2, manager.queueState.value.userQueueCount)
+
+        // Move within the block → count unchanged
+        manager.moveQueueItem(2, 1) // → [1, A, 3, 2, 4]
+        assertEquals(2, manager.queueState.value.userQueueCount)
+    }
+
+    @Test
+    fun `toggleShuffle resets userQueueCount when enabled`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2"), fakeTrack("3")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A"))
+        scope.advanceUntilIdle()
+        assertEquals(1, manager.queueState.value.userQueueCount)
+
+        manager.toggleShuffle()
+
+        assertEquals(0, manager.queueState.value.userQueueCount)
+        assertTrue(manager.queueState.value.shuffleEnabled)
+        assertEquals("1", manager.queueState.value.currentTrack?.id)
+    }
+
+    @Test
+    fun `setQueue resets userQueueCount`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+        manager.addToQueue(fakeTrack("A"))
+        scope.advanceUntilIdle()
+        assertEquals(1, manager.queueState.value.userQueueCount)
+
+        manager.setQueue(listOf(fakeTrack("x"), fakeTrack("y")))
+        scope.advanceUntilIdle()
+
+        assertEquals(0, manager.queueState.value.userQueueCount)
+        assertEquals("x", manager.queueState.value.currentTrack?.id)
     }
 }

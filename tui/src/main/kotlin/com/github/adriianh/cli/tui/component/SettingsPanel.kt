@@ -4,13 +4,15 @@ import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -22,6 +24,7 @@ import dev.tamboui.tui.event.KeyEvent
  * Sections available in the settings panel.
  */
 enum class SettingsSection(val label: String) {
+    ACCOUNT("Account"),
     PERSONALIZATION("Personalization"),
     STORAGE("Storage"),
     DOWNLOADS("Downloads"),
@@ -32,6 +35,9 @@ enum class SettingsSection(val label: String) {
  * Items available in the settings panel.
  */
 enum class SettingsItem(val label: String) {
+    YOUTUBE_ACCOUNT("YouTube Music"),
+    SYNC_LIKES("Sync Likes"),
+    SYNC_HISTORY("Sync Playback History"),
     THEME("Theme Preset"),
     VOLUME("Default Volume"),
     LANGUAGE("Search Language"),
@@ -52,6 +58,11 @@ enum class SettingsItem(val label: String) {
 enum class SettingsFocus { SECTION, ITEMS }
 
 val sectionItems = mapOf(
+    SettingsSection.ACCOUNT to listOf(
+        SettingsItem.YOUTUBE_ACCOUNT,
+        SettingsItem.SYNC_LIKES,
+        SettingsItem.SYNC_HISTORY
+    ),
     SettingsSection.PERSONALIZATION to listOf(
         SettingsItem.THEME,
         SettingsItem.VOLUME,
@@ -93,7 +104,9 @@ data class SettingsViewState(
     val textInput: String = "",
     val editingTextItem: SettingsItem? = null,
     val isPickingDirectory: Boolean = false,
-    val directoryPicker: DirectoryPickerState = DirectoryPickerState()
+    val directoryPicker: DirectoryPickerState = DirectoryPickerState(),
+    val isImportingAuth: Boolean = false,
+    val authStatusMessage: String? = null,
 )
 
 class SettingsOverlay(
@@ -103,8 +116,6 @@ class SettingsOverlay(
     private val settingsList: ListElement<*>,
     private val onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
 ) : Element {
-
-    private val clearGraphics = ClearGraphicsWidget()
 
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val state = stateProvider()
@@ -118,7 +129,6 @@ class SettingsOverlay(
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val currentSection = SettingsSection.entries[viewState.sectionCursor]
@@ -157,8 +167,13 @@ class SettingsOverlay(
                 val binding = viewState.currentSettings.keybindings[action]
                 val keyStr = when {
                     isListening -> "???"
-                    binding?.char != null -> if (binding.char == ' ') "Space" else binding.char.toString()
-                    binding?.code != null -> binding.code
+                    binding?.char != null -> {
+                        val base = if (binding.char == ' ') "Space" else binding.char.toString()
+                        if (binding.ctrl) "Ctrl+$base" else base
+                    }
+                    binding?.code != null -> {
+                        if (binding.ctrl) "Ctrl+${binding.code}" else binding.code
+                    }
                     else -> "None"
                 }
                 val labelColor = if (isSelected) MeloTheme.PRIMARY_COLOR else MeloTheme.TEXT_PRIMARY
@@ -179,6 +194,29 @@ class SettingsOverlay(
                 val isFocused = viewState.focus == SettingsFocus.ITEMS
 
                 val valueStr = when (item) {
+                    SettingsItem.YOUTUBE_ACCOUNT -> {
+                        val cookies = viewState.currentSettings.sessionCookies
+                        val accountName = state.youtubeAccountName
+                        when {
+                            viewState.isImportingAuth -> "Importing from browser..."
+                            viewState.authStatusMessage != null -> viewState.authStatusMessage
+                            !cookies.isNullOrBlank() -> accountName?.let { "✓ $it" }
+                                ?: "✓ Logged in"
+
+                            else -> "Not logged in [Enter to import]"
+                        }
+                    }
+                    SettingsItem.SYNC_LIKES -> {
+                        val isLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+                        if (!isLoggedIn) "Off (Login required)"
+                        else if (viewState.currentSettings.syncLikesToYouTube) "On" else "Off"
+                    }
+
+                    SettingsItem.SYNC_HISTORY -> {
+                        val isLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+                        if (!isLoggedIn) "Off (Login required)"
+                        else if (viewState.currentSettings.syncHistoryToYouTube) "On" else "Off"
+                    }
                     SettingsItem.THEME -> viewState.currentSettings.theme.displayName
                     SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
                     SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
@@ -228,12 +266,19 @@ class SettingsOverlay(
             .focusable()
             .id("settings-list")
 
+        val isAccountSection = currentSection == SettingsSection.ACCOUNT
+        val isAccountLoggedIn = !viewState.currentSettings.sessionCookies.isNullOrBlank()
+
+        val selectedItem = items.getOrNull(viewState.cursor)
         val helpText = when {
             viewState.isListeningForKey -> "Press any key to bind... [Esc] cancel"
             viewState.isKeybindingMode -> "[↑↓] navigate  [Enter] change  [Esc] back"
             viewState.isEditing -> "[←/→] change  [Esc] apply"
             viewState.focus == SettingsFocus.SECTION -> "[↑↓] navigate  [→] enter section  [Esc] close"
             viewState.isEditingText -> "[Enter] confirm  [Esc] cancel  [Backspace] delete"
+            isAccountSection && selectedItem == SettingsItem.YOUTUBE_ACCOUNT && isAccountLoggedIn -> "[Enter] re-import  [D] log out  [←] back  [Esc] close"
+            isAccountSection && selectedItem == SettingsItem.YOUTUBE_ACCOUNT -> "[Enter] import from browser  [←] back  [Esc] close"
+            isAccountSection -> "[Enter/←/→] toggle  [←] back  [Esc] close"
             else -> "[↑↓] navigate  [Enter] edit  [←] back  [Esc] close"
         }
 

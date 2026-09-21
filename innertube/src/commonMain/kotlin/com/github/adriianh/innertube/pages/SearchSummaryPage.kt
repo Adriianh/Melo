@@ -10,6 +10,7 @@ import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
 import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.filterExplicit
 import com.github.adriianh.innertube.models.isInvalidArtistName
 import com.github.adriianh.innertube.models.isTimeDuration
@@ -61,7 +62,8 @@ data class SearchSummaryPage(
                                 id = it.navigationEndpoint?.browseEndpoint?.browseId!!
                             )
                         },
-                        duration = subtitle.lastOrNull()?.firstOrNull()?.text?.parseTime(),
+                        duration = subtitle.flatten().extractDuration()
+                            ?: subtitle.lastOrNull()?.firstOrNull()?.text?.parseTime(),
                         thumbnail = renderer.thumbnail.musicThumbnailRenderer?.getThumbnailUrl()
                             ?: return null,
                         musicVideoType = null,
@@ -148,10 +150,11 @@ data class SearchSummaryPage(
                 ?: emptyList()
             val allGroups = (secondaryLine + thirdLine)
 
-            val parsedDuration = allGroups.flatten()
-                .map { it.text.trim() }
-                .find { it.isTimeDuration() }
-                ?.parseTime()
+            val parsedDuration = renderer.extractDuration()
+                ?: allGroups.flatten()
+                    .map { it.text.trim() }
+                    .find { it.isTimeDuration() }
+                    ?.parseTime()
                 ?: secondaryLine.lastOrNull()?.firstOrNull()?.text?.parseTime()
 
             val nonDurationGroups = allGroups.filter { group ->

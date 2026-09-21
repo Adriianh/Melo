@@ -168,7 +168,13 @@ class MusicRepositoryImpl(
         val sourceId = if (track.sourceId != null) {
             async { track.sourceId }
         } else {
-            async { audioProvider?.getSourceId(track.title, track.artist, track.durationMs) }
+            async {
+                audioProvider?.getSourceId(
+                    artist = track.artist,
+                    title = track.title,
+                    durationMs = track.durationMs
+                )
+            }
         }
         val metadata = if (track.artworkUrl != null && track.album.isNotBlank()) {
             async { null }
@@ -194,7 +200,72 @@ class MusicRepositoryImpl(
     override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> =
         musicProvider.getMoodAndGenres()
 
-    override suspend fun getRadio(videoId: String): List<Track> = musicProvider.getRadio(videoId)
+    override suspend fun getRadio(videoId: String): List<Track> {
+        val cleanId = videoId.removePrefix("piped:")
+        if (cleanId.isNotBlank() && !cleanId.contains(":")) {
+            val result = musicProvider.getRadio(cleanId)
+            if (result.isNotEmpty()) return result
+            val related = musicProvider.getRelated(cleanId)
+            if (related.isNotEmpty()) return related
+        }
+
+        val resolvedTrack = getTrack(videoId)
+        if (resolvedTrack != null) {
+            return getRadio(resolvedTrack)
+        }
+        return emptyList()
+    }
+
+    override suspend fun getRadio(track: Track): List<Track> {
+        val sid = track.sourceId
+        val resolvedId = if (!sid.isNullOrBlank() && !sid.contains(":") && sid.length == 11) {
+            sid
+        } else if (track.id.startsWith("piped:") && !track.id.removePrefix("piped:")
+                .contains(":") && track.id.removePrefix("piped:").length == 11
+        ) {
+            track.id.removePrefix("piped:")
+        } else if (!track.id.contains(":") && track.id.length == 11) {
+            track.id
+        } else {
+            audioProvider?.getSourceId(
+                artist = track.artist,
+                title = track.title,
+                durationMs = track.durationMs
+            )
+        }
+
+        if (!resolvedId.isNullOrBlank()) {
+            val result = musicProvider.getRadio(resolvedId)
+            if (result.isNotEmpty()) return result
+            val related = musicProvider.getRelated(resolvedId)
+            if (related.isNotEmpty()) return related
+        }
+
+        try {
+            val similar = discoveryProvider?.getSimilarTracks(
+                artist = track.artist,
+                title = track.title,
+                limit = 20
+            )
+            if (!similar.isNullOrEmpty()) {
+                val searchResults = mutableListOf<Track>()
+                for (sim in similar.take(10)) {
+                    val found = musicProvider.search("${sim.artist} - ${sim.title}").firstOrNull()
+                    if (found != null && searchResults.none { it.id == found.id } && found.id != track.id) {
+                        searchResults.add(found)
+                    }
+                }
+                if (searchResults.isNotEmpty()) return searchResults
+            }
+        } catch (_: Exception) {
+        }
+
+        return try {
+            musicProvider.search(track.artist).filter { it.id != track.id }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
     override suspend fun getArtistRadio(artistId: String): List<Track> =
         musicProvider.getArtistRadio(artistId)
 

@@ -3,9 +3,14 @@ package com.github.adriianh.melo.ui.library
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.github.adriianh.core.domain.model.HistoryEntry
+import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
+import com.github.adriianh.core.domain.model.SortDirection
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackSortOrder
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
 
 data class LibraryFilters(
@@ -94,17 +99,13 @@ private fun filterTracks(
     query: String,
     sortOrder: LibrarySortOrder,
 ): List<Track> {
-    val list = if (query.isEmpty()) items else items.filter {
-        it.title.lowercase().contains(query) ||
-                it.artist.lowercase().contains(query) ||
-                it.album.lowercase().contains(query)
+    val (order, dir) = when (sortOrder) {
+        LibrarySortOrder.RECENTLY_ADDED -> TrackSortOrder.DEFAULT to SortDirection.ASCENDING
+        LibrarySortOrder.TITLE_A_Z -> TrackSortOrder.TITLE to SortDirection.ASCENDING
+        LibrarySortOrder.ARTIST_A_Z -> TrackSortOrder.ARTIST to SortDirection.ASCENDING
+        LibrarySortOrder.DURATION -> TrackSortOrder.DURATION to SortDirection.DESCENDING
     }
-    return when (sortOrder) {
-        LibrarySortOrder.RECENTLY_ADDED -> list
-        LibrarySortOrder.TITLE_A_Z -> list.sortedBy { it.title.lowercase() }
-        LibrarySortOrder.ARTIST_A_Z -> list.sortedBy { it.artist.lowercase() }
-        LibrarySortOrder.DURATION -> list.sortedByDescending { it.durationMs }
-    }
+    return filterAndSortTracks(items, order, dir, query)
 }
 
 private fun filterDownloadedTracks(
@@ -112,17 +113,13 @@ private fun filterDownloadedTracks(
     query: String,
     sortOrder: LibrarySortOrder,
 ): List<OfflineTrack> {
-    val list = if (query.isEmpty()) items else items.filter {
-        it.track.title.lowercase().contains(query) ||
-                it.track.artist.lowercase().contains(query) ||
-                it.track.album.lowercase().contains(query)
+    val (order, dir) = when (sortOrder) {
+        LibrarySortOrder.RECENTLY_ADDED -> TrackSortOrder.DEFAULT to SortDirection.ASCENDING
+        LibrarySortOrder.TITLE_A_Z -> TrackSortOrder.TITLE to SortDirection.ASCENDING
+        LibrarySortOrder.ARTIST_A_Z -> TrackSortOrder.ARTIST to SortDirection.ASCENDING
+        LibrarySortOrder.DURATION -> TrackSortOrder.DURATION to SortDirection.DESCENDING
     }
-    return when (sortOrder) {
-        LibrarySortOrder.RECENTLY_ADDED -> list
-        LibrarySortOrder.TITLE_A_Z -> list.sortedBy { it.track.title.lowercase() }
-        LibrarySortOrder.ARTIST_A_Z -> list.sortedBy { it.track.artist.lowercase() }
-        LibrarySortOrder.DURATION -> list.sortedByDescending { it.track.durationMs }
-    }
+    return filterAndSortOfflineTracks(items, OfflineFilterType.ALL, order, dir, query)
 }
 
 private fun filterPlaylists(

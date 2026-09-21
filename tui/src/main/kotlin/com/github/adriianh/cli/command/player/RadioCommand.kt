@@ -68,9 +68,11 @@ class RadioCommand : CliktCommand(
                     return@runBlocking
                 }
 
-                terminal.println(gray("Starting radio for '${seedTrack.title}'..."))
-                val radioTracks =
-                    getRadio(seedTrack.sourceId ?: seedTrack.id.removePrefix("piped:"))
+                val videoId = seedTrack.sourceId
+                    ?: (if (seedTrack.id.startsWith("piped:")) seedTrack.id.removePrefix("piped:") else null)
+                    ?: getStream.resolveSourceId(seedTrack)
+                    ?: seedTrack.id
+                val radioTracks = getRadio(videoId)
 
                 if (radioTracks.isEmpty()) {
                     terminal.println("Could not generate radio for '${seedTrack.title}'.")

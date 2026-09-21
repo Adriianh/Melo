@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.player.JvmMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
@@ -13,7 +14,6 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
-import com.github.adriianh.melo.player.JvmMediaSessionManager
 import com.github.adriianh.core.util.MeloDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

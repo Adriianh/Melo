@@ -1,7 +1,5 @@
 package com.github.adriianh.cli.tui.component
 
-import com.github.adriianh.cli.tui.*
-
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LIBRARY
@@ -13,7 +11,11 @@ import com.github.adriianh.cli.tui.PlaylistInputMode
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.spacer
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -82,6 +84,7 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
         val state = stateProvider()
         val playlists = state.collections.playlists
         val track = state.playlistInteraction.playlistPickerTrack
+        val tracks = state.playlistInteraction.playlistPickerTracks
 
         val overlayW = (area.width() * 0.5).toInt().coerceAtLeast(50)
         val overlayH = (playlists.size + 6).coerceIn(8, 20)
@@ -92,7 +95,16 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
         frame.buffer().clear(overlayArea)
 
         val hint = "[↑↓] navigate   [Enter] add   [Esc] cancel"
-        val subtitle = track?.let { "${it.title} — ${it.artist}" } ?: ""
+        val subtitle = if (tracks.isNotEmpty()) {
+            "Adding ${tracks.size} tracks to playlist"
+        } else {
+            track?.let { "${it.title} — ${it.artist}" } ?: ""
+        }
+        val panelTitle = if (tracks.isNotEmpty()) {
+            "$ICON_LIBRARY Add ${tracks.size} Tracks to Playlist"
+        } else {
+            "$ICON_LIBRARY Add to Playlist"
+        }
 
         val items = playlists.mapIndexed { index, playlist ->
             val isSelected = index == state.playlistInteraction.playlistPickerCursor
@@ -113,7 +125,7 @@ class PlaylistPickerOverlay(private val stateProvider: () -> MeloState) : Elemen
         )
 
         panel(content)
-            .title("$ICON_LIBRARY Add to Playlist")
+            .title(panelTitle)
             .rounded()
             .borderColor(BORDER_FOCUSED)
             .focusedBorderColor(BORDER_FOCUSED)

@@ -3,12 +3,15 @@ package com.github.adriianh.cli.tui.component
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
-import com.github.adriianh.cli.tui.graphics.ClearGraphicsWidget
 import dev.tamboui.layout.Constraint
 import dev.tamboui.layout.Rect
 import dev.tamboui.style.Color
 import dev.tamboui.terminal.Frame
-import dev.tamboui.toolkit.Toolkit.*
+import dev.tamboui.toolkit.Toolkit.column
+import dev.tamboui.toolkit.Toolkit.dock
+import dev.tamboui.toolkit.Toolkit.panel
+import dev.tamboui.toolkit.Toolkit.row
+import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
 import dev.tamboui.toolkit.element.Size
@@ -24,8 +27,6 @@ class DirectoryPickerOverlay(
     private val onKeyEvent: (KeyEvent) -> EventResult = { EventResult.UNHANDLED },
 ) : Element {
 
-    private val clearGraphics = ClearGraphicsWidget()
-
     override fun render(frame: Frame, area: Rect, context: RenderContext) {
         val viewState = settingsViewStateProvider()
         if (!viewState.isPickingDirectory) return
@@ -38,7 +39,6 @@ class DirectoryPickerOverlay(
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
 
-        frame.renderWidget(clearGraphics, overlayArea)
         frame.buffer().clear(overlayArea)
 
         val pathText = text("  ${MeloTheme.ICON_FOLDER_OPENED} ${picker.currentDirectory}")
@@ -47,7 +47,7 @@ class DirectoryPickerOverlay(
 
         val bottomElement = when {
             picker.errorMessage != null -> {
-                text("  ⚠ ${picker.errorMessage}  [any key to dismiss]")
+                text("  ${MeloTheme.ICON_ERROR} ${picker.errorMessage}  [any key to dismiss]")
                     .fg(Color.RED).bold().fill()
             }
 

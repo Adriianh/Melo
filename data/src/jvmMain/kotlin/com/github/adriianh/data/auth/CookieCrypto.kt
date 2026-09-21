@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.login
+package com.github.adriianh.data.auth
 
 import com.sun.jna.platform.win32.Crypt32Util
 import java.io.File
@@ -124,7 +124,8 @@ internal object CookieCrypto {
 
     private fun getWindowsAesKey(localStateFile: File?): ByteArray? {
         if (localStateFile != null && localStateFile.exists()) {
-            val path = runCatching { localStateFile.canonicalPath }.getOrDefault(localStateFile.absolutePath)
+            val path =
+                runCatching { localStateFile.canonicalPath }.getOrDefault(localStateFile.absolutePath)
             val cached = windowsKeyCache[path]
             if (cached != null) return cached
 
@@ -188,7 +189,15 @@ internal object CookieCrypto {
             val blobBase64 = Base64.getEncoder().encodeToString(blob)
             val script =
                 $$"Add-Type -AssemblyName System.Security; [Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('$$blobBase64'), $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser))"
-            val decodedBase64 = runCommand("powershell", "-ExecutionPolicy", "Bypass", "-NoProfile", "-NonInteractive", "-Command", script)
+            val decodedBase64 = runCommand(
+                "powershell",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                script
+            )
             decodedBase64?.let { Base64.getDecoder().decode(it) }
         }.getOrNull()
     }

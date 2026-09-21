@@ -13,82 +13,24 @@ import dev.tamboui.tui.event.KeyEvent
 
 internal fun MeloScreen.addToQueue(track: Track) {
     if (!state.isPlayable(track)) return
-
-    val currentQueue = state.player.queue.toMutableList()
-    val newManualCount = state.player.userQueueCount + 1
-
-    val insertIndex = if (state.player.queueIndex < 0) 0 else minOf(
-        state.player.queueIndex + newManualCount,
-        currentQueue.size
-    )
-    currentQueue.add(insertIndex, track)
-
-    val newIndex =
-        if (state.player.queueIndex < 0 && state.player.nowPlaying == null) 0 else state.player.queueIndex
-    val newRadioMode = state.player.isRadioMode && state.player.nowPlaying != null
-    state = state.copy(
-        player = state.player.copy(
-            queue = currentQueue,
-            queueIndex = newIndex,
-            isRadioMode = newRadioMode,
-            userQueueCount = newManualCount
-        )
-    )
-    if (state.player.nowPlaying == null && !state.player.isLoadingAudio) playFromQueue(0)
+    playbackManager.addToQueue(track)
 }
 
 internal fun MeloScreen.removeFromQueue(index: Int) {
-    if (index < 0 || index >= state.player.queue.size) return
-    val removingPlaying = index == state.player.queueIndex
-    val newQueue = state.player.queue.toMutableList().also { it.removeAt(index) }
-    val newIndex = when {
-        newQueue.isEmpty() -> -1
-        index < state.player.queueIndex -> state.player.queueIndex - 1
-        index == state.player.queueIndex -> minOf(index, newQueue.lastIndex)
-        else -> state.player.queueIndex
-    }
+    if (index < 0 || index >= playbackManager.queueState.value.tracks.size) return
+    playbackManager.removeFromQueue(index)
+}
 
-    val manualStart = state.player.queueIndex + 1
-    val manualEnd = state.player.queueIndex + state.player.userQueueCount
-    val newUserQueueCount =
-        if (index in manualStart..manualEnd && state.player.userQueueCount > 0) {
-            state.player.userQueueCount - 1
-        } else {
-            state.player.userQueueCount
-        }
-
-    state = state.copy(
-        player = state.player.copy(
-            queue = newQueue,
-            queueIndex = newIndex,
-            queueCursor = minOf(state.player.queueCursor, (newQueue.size - 1).coerceAtLeast(0)),
-            userQueueCount = newUserQueueCount
-        )
-    )
-    if (removingPlaying) {
-        audioPlayer.stop()
-        if (newQueue.isEmpty()) state = state.copy(
-            player = state.player.copy(
-                nowPlaying = null,
-                isPlaying = false,
-                isRadioMode = false,
-                progress = 0.0,
-                userQueueCount = 0
-            )
-        )
-        else playFromQueue(if (newIndex >= 0 && newIndex < newQueue.size) newIndex else 0)
-    }
+internal fun MeloScreen.moveQueueItem(fromIndex: Int, toIndex: Int) {
+    val q = state.player.queue
+    if (fromIndex !in q.indices || toIndex !in q.indices || fromIndex == toIndex) return
+    playbackManager.moveQueueItem(fromIndex, toIndex)
+    state = state.copy(player = state.player.copy(queueCursor = toIndex))
 }
 
 internal fun MeloScreen.clearQueue() {
-    audioPlayer.stop()
-    state = state.copy(
-        player = state.player.copy(
-            queue = emptyList(), queueIndex = -1, queueCursor = 0,
-            nowPlaying = null, isPlaying = false, isRadioMode = false,
-            progress = 0.0, userQueueCount = 0
-        ),
-    )
+    state = state.copy(player = state.player.copy(isRadioMode = false))
+    playbackManager.setQueue(emptyList())
 }
 
 internal fun MeloScreen.toggleQueue() {
@@ -105,14 +47,34 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
+        (event.modifiers().shift() && event.code() == KeyCode.UP) ||
+                (event.modifiers().alt() && event.code() == KeyCode.UP) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.UP) ||
+                event.isChar('K') -> {
+            if (!isFocused) return handleGlobalShortcuts(event)
+            val current = state.player.queueCursor
+            if (current > 0) {
+                moveQueueItem(current, current - 1)
+            }
+            return EventResult.HANDLED
+        }
+
+        (event.modifiers().shift() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().alt() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.DOWN) ||
+                event.isChar('J') -> {
+            if (!isFocused) return handleGlobalShortcuts(event)
+            val current = state.player.queueCursor
+            if (current < state.player.queue.lastIndex) {
+                moveQueueItem(current, current + 1)
+            }
+            return EventResult.HANDLED
+        }
+
         event.matches(Actions.MOVE_DOWN) -> {
             if (!isFocused) return handleGlobalShortcuts(event)
             val newCursor = minOf(state.player.queue.lastIndex, state.player.queueCursor + 1)
             state = state.copy(player = state.player.copy(queueCursor = newCursor))
-
-            if (state.player.isRadioMode && !state.player.isLoadingMoreRadio && newCursor >= state.player.queue.size - 5) {
-                loadMoreRadioTracks()
-            }
             return EventResult.HANDLED
         }
 
@@ -138,7 +100,7 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
         event.matchesAction(
             MeloAction.DELETE,
             settingsViewState.currentSettings
-        ) || (event.code() == KeyCode.CHAR && event.character() == 'd') -> {
+        ) || event.isCharIgnoreCase('d') -> {
             if (!isFocused) return handleGlobalShortcuts(event)
             removeFromQueue(state.player.queueCursor)
             return EventResult.HANDLED

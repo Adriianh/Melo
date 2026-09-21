@@ -5,6 +5,7 @@ import com.github.adriianh.innertube.models.Artist
 import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.MusicShelfRenderer
 import com.github.adriianh.innertube.models.SongItem
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.getItems
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.utils.parseTime
@@ -64,8 +65,9 @@ data class HistoryPage(
                             )
                         }
                     },
-                duration = renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer
-                    ?.text?.runs?.firstOrNull()?.text?.parseTime(),
+                duration = renderer.extractDuration()
+                    ?: renderer.fixedColumns?.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer
+                        ?.text?.runs?.firstOrNull()?.text?.parseTime(),
                 thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl().orEmpty(),
                 explicit = renderer.badges?.find {
                     it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"

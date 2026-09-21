@@ -1,35 +1,17 @@
 package com.github.adriianh.cli.tui
 
-import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
-import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
-import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
-import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
-import com.github.adriianh.cli.tui.component.QueueOverlay
-import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
-import com.github.adriianh.cli.tui.component.SettingsOverlay
+import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.component.SettingsViewState
-import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
 import com.github.adriianh.cli.tui.component.screen.deleteDownloadedTrackAction
 import com.github.adriianh.cli.tui.component.screen.downloadTrackAction
-import com.github.adriianh.cli.tui.component.screen.handleAudioError
-import com.github.adriianh.cli.tui.component.screen.handleAudioFinish
-import com.github.adriianh.cli.tui.component.screen.handleAudioProgress
-import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
-import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPlayPause
-import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
-import com.github.adriianh.cli.tui.component.screen.handleMediaSessionStop
 import com.github.adriianh.cli.tui.component.screen.loadLocalTracksAction
 import com.github.adriianh.cli.tui.component.screen.onStartLifecycle
 import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
 import com.github.adriianh.cli.tui.component.screen.renderRoot
-import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
-import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
-import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
-import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.player.AudioPlayer
-import com.github.adriianh.cli.tui.player.MediaSessionManager
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.interactor.PlaybackInteractors
@@ -43,21 +25,14 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
-import dev.tamboui.toolkit.Toolkit.list
-import dev.tamboui.toolkit.Toolkit.markupTextArea
 import dev.tamboui.toolkit.app.ToolkitApp
-import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
-import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 
 class MeloScreen(
@@ -66,6 +41,7 @@ class MeloScreen(
     internal val pipedApiClient: PipedApiClient,
     // Interactors
     internal val searchInteractors: SearchInteractors,
+    internal val discoveryInteractors: DiscoveryInteractors,
     internal val libraryInteractors: LibraryInteractors,
     internal val playbackInteractors: PlaybackInteractors,
     internal val offlineInteractors: OfflineInteractors,
@@ -78,10 +54,12 @@ class MeloScreen(
     internal val metadataProvider: MetadataProvider,
     internal val audioProvider: AudioProvider,
     internal val discordRpcManager: DiscordRpcManager,
+    internal val youTubeAuthService: YouTubeAuthService,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 
     // Bridging properties to keep existing code working during refactor
+    internal val getHome get() = discoveryInteractors.getHome
     internal val searchTracks get() = searchInteractors.searchTracks
     internal val searchAlbums get() = searchInteractors.searchAlbums
     internal val searchArtists get() = searchInteractors.searchArtists
@@ -93,6 +71,7 @@ class MeloScreen(
     internal val getTrack get() = searchInteractors.getTrack
     internal val getLyrics get() = searchInteractors.getLyrics
     internal val getSyncedLyrics get() = searchInteractors.getSyncedLyrics
+    internal val translateLyrics get() = searchInteractors.translateLyrics
     internal val getSimilarTracks get() = searchInteractors.getSimilarTracks
     internal val getEntityDetails get() = searchInteractors.getEntityDetails
     internal val getArtistTags get() = searchInteractors.getArtistTags
@@ -101,6 +80,9 @@ class MeloScreen(
     internal val addFavorite get() = libraryInteractors.addFavorite
     internal val removeFavorite get() = libraryInteractors.removeFavorite
     internal val isFavoriteUseCase get() = libraryInteractors.isFavorite
+    internal val getFavoriteEntities get() = libraryInteractors.getFavoriteEntities
+    internal val removeFavoriteEntity get() = libraryInteractors.removeFavoriteEntity
+    internal val toggleFavoriteEntity get() = libraryInteractors.toggleFavoriteEntity
 
     internal val getRecentTracks get() = playbackInteractors.getRecentTracks
     internal val recordPlay get() = playbackInteractors.recordPlay
@@ -115,6 +97,16 @@ class MeloScreen(
     internal val deletePlaylist get() = libraryInteractors.deletePlaylist
     internal val addTrackToPlaylist get() = libraryInteractors.addTrackToPlaylist
     internal val removeTrackFromPlaylist get() = libraryInteractors.removeTrackFromPlaylist
+    internal val getLikedSongs get() = libraryInteractors.getLikedSongs
+    internal val getUserPlaylists get() = libraryInteractors.getUserPlaylists
+    internal val toggleLikeTrack get() = libraryInteractors.toggleLikeTrack
+    internal val getUserAlbums get() = libraryInteractors.getUserAlbums
+    internal val getUserArtists get() = libraryInteractors.getUserArtists
+    internal val toggleLikeAlbum get() = libraryInteractors.toggleLikeAlbum
+    internal val toggleLikePlaylist get() = libraryInteractors.toggleLikePlaylist
+    internal val subscribeChannel get() = libraryInteractors.subscribeChannel
+    internal val getRemoteHistory get() = libraryInteractors.getRemoteHistory
+    internal val reorderPlaylistTracks get() = libraryInteractors.reorderPlaylistTracks
 
     internal val saveSession get() = sessionInteractors.saveSession
     internal val restoreSession get() = sessionInteractors.restoreSession
@@ -134,14 +126,19 @@ class MeloScreen(
     internal val markTrackAccessed get() = offlineInteractors.markTrackAccessed
     internal val autoCleanup get() = offlineInteractors.autoCleanup
 
-    internal var state = MeloState()
+    internal var cachedHomeScreen: ScreenState.Home = ScreenState.Home()
+    internal var cachedStatsScreen: ScreenState.Stats = ScreenState.Stats()
+
+    internal var state = MeloState(screen = cachedHomeScreen)
     internal val scope = CoroutineScope(dispatcher)
+    internal var searchJob: Job? = null
+    internal var suggestionsJob: Job? = null
     internal var detailsJob: Job? = null
     internal var loadMoreJob: Job? = null
     internal var playlistTracksJob: Job? = null
     internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
-    internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    internal var marqueeJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var playRecorded = false
@@ -149,38 +146,42 @@ class MeloScreen(
     internal var updateNowPlayingJob: Job? = null
     internal var scrobbleJob: Job? = null
     internal val downloadSemaphore = Semaphore(2)
+    internal var enrichSectionJob: Job? = null
+    internal val trackMetadataCache =
+        java.util.concurrent.ConcurrentHashMap<String, Pair<String, Long>>()
+
+    init {
+        loadDiskMetadataCache()
+    }
 
     internal var settingsViewState = SettingsViewState()
 
     /**
      * Helper to update the current screen state in a type-safe way.
      */
+    @Suppress("UNCHECKED_CAST")
     internal inline fun <reified T : ScreenState> updateScreen(update: (T) -> T) {
         val current = state.screen
         if (current is T) {
-            state = state.copy(screen = update(current))
+            val updated = update(current)
+            if (updated is ScreenState.Home) cachedHomeScreen = updated
+            if (updated is ScreenState.Stats) cachedStatsScreen = updated
+            state = state.copy(screen = updated)
+        } else {
+            if (T::class == ScreenState.Home::class) {
+                cachedHomeScreen = update(cachedHomeScreen as T) as ScreenState.Home
+            } else if (T::class == ScreenState.Stats::class) {
+                cachedStatsScreen = update(cachedStatsScreen as T) as ScreenState.Stats
+            }
         }
     }
 
     /** Exposes the protected runner() for internal extension functions. */
     internal fun appRunner() = runner()
 
-    internal val mediaSession = MediaSessionManager(
-        httpClient = httpClient,
-        onPlayPause = ::handleMediaSessionPlayPause,
-        onNext = ::handleMediaSessionNext,
-        onPrevious = ::handleMediaSessionPrevious,
-        onStop = ::handleMediaSessionStop,
-    )
-
-    internal var resolveStreamJob: Job? = null
-
-    internal val audioPlayer: AudioPlayer = AudioPlayer(
-        scope = scope,
-        onProgress = ::handleAudioProgress,
-        onFinish = ::handleAudioFinish,
-        onError = ::handleAudioError,
-    )
+    internal val mediaSession = buildMediaSession()
+    internal val audioPlayer: AudioPlayer = buildAudioPlayer()
+    internal val playbackManager = buildPlaybackManager(dispatcher)
 
     internal val searchInputState = TextInputState()
 
@@ -191,185 +192,38 @@ class MeloScreen(
         observeSearchInput()
     }
 
-    private fun observeSearchInput() {
-        scope.launch {
-            var lastObservedFocus = false
-            while (isActive) {
-                val currentQuery = searchInputState.text()
-                val isFocused = appRunner()?.focusManager()?.focusedId() == "search-bar"
+    internal val homeRecentList: ListElement<*> = buildHomeRecentList()
+    internal val homeFavoritesList: ListElement<*> = buildHomeFavoritesList()
+    internal val resultList: ListElement<*> = buildResultList()
+    internal val favoritesList: ListElement<*> = buildFavoritesList()
+    internal val playlistsList: ListElement<*> = buildPlaylistsList()
+    internal val playlistTracksList: ListElement<*> = buildPlaylistTracksList()
+    internal val entityTracksList: ListElement<*> = buildEntityTracksList()
+    internal val artistDashboardList: ListElement<*> = buildArtistDashboardList()
+    internal val localLibraryList: ListElement<*> = buildLocalLibraryList()
+    internal val homeFeedSectionList: ListElement<*> = buildHomeFeedSectionList()
+    internal val homeFeedItemList: ListElement<*> = buildHomeFeedItemList()
+    internal val sidebarNavList: ListElement<*> = buildSidebarNavList()
+    internal val sidebarUtilList: ListElement<*> = buildSidebarUtilList()
+    internal val lyricsArea = buildLyricsArea()
+    internal val entityDescriptionArea = buildEntityDescriptionArea()
+    internal val similarArea: ListElement<*> = buildSimilarArea()
+    internal val queueList: ListElement<*> = buildQueueList()
+    internal val offlineList: ListElement<*> = buildOfflineList()
+    internal val settingsSectionList: ListElement<*> = buildSettingsSectionList()
+    internal val settingsList: ListElement<*> = buildSettingsList()
 
-                if (currentQuery != lastObservedSearchQuery) {
-                    lastObservedSearchQuery = currentQuery
-                    handleSearchQueryChange(currentQuery)
-                } else if (isFocused && !lastObservedFocus && state.screen is ScreenState.Search) {
-                    handleSearchQueryChange(currentQuery)
-                } else if (!isFocused && lastObservedFocus && state.screen is ScreenState.Search) {
-                    updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
-                }
+    internal val playlistInputOverlay = buildPlaylistInputOverlay()
+    internal val searchSuggestionsOverlay = buildSearchSuggestionsOverlay()
+    internal val playlistPickerOverlay = buildPlaylistPickerOverlay()
+    internal val queueOverlay = buildQueueOverlay()
+    internal val settingsOverlay = buildSettingsOverlay()
+    internal val directoryPickerOverlay = buildDirectoryPickerOverlay()
+    internal val trackOptionsOverlay = buildTrackOptionsOverlay()
+    internal val commandBarSuggestionsOverlay = buildCommandBarSuggestionsOverlay()
+    internal val languagePickerOverlay = buildLanguagePickerOverlay()
 
-                lastObservedFocus = isFocused
-                delay(100)
-            }
-        }
-    }
-
-    internal val homeRecentList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .focusable()
-        .id("home-recent-list")
-
-    internal val homeFavoritesList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .focusable()
-        .id("home-favorites-list")
-
-    internal val resultList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-
-    internal val favoritesList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("library-list")
-
-    internal val playlistsList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("playlists-list")
-
-    internal val playlistTracksList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("playlist-tracks-list")
-
-    internal val entityTracksList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .focusable()
-        .id("entity-tracks-list")
-
-    internal val artistDashboardList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("artist-dashboard-list")
-
-    internal val localLibraryList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("local-library-list")
-
-    internal val sidebarNavList: ListElement<*> = list()
-        .items(
-            "${MeloTheme.ICON_HOME} Home",
-            "${MeloTheme.ICON_SEARCH} Search",
-            "${MeloTheme.ICON_LIBRARY} Your Library",
-            "${MeloTheme.ICON_NOW_PLAYING} Now Playing",
-        )
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .selected(SidebarSection.HOME.ordinal)
-
-    internal val sidebarUtilList: ListElement<*> = list()
-        .items(
-            "${MeloTheme.ICON_STATS} Statistics",
-            "${MeloTheme.ICON_OFFLINE} Downloads",
-            "${MeloTheme.ICON_SETTINGS}  Settings",
-        )
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .selected(-1)
-
-    internal val lyricsArea = markupTextArea()
-        .scrollbar()
-        .wrapWord()
-        .focusable()
-        .id("lyrics-area")
-
-    internal val entityDescriptionArea = markupTextArea()
-        .scrollbar()
-        .wrapWord()
-        .focusable()
-        .id("desc-area")
-
-    internal val similarArea: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_BULLET} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("similar-area")
-
-    internal val queueList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("queue-list")
-
-    internal val offlineList: ListElement<*> = list()
-        .highlightSymbol("${MeloTheme.ICON_ARROW} ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .scrollbar()
-        .focusable()
-        .id("offline-list")
-
-    internal val settingsSectionList: ListElement<*> = list()
-        .highlightSymbol("> ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .focusable()
-        .id("settings-section-list")
-
-    internal val settingsList: ListElement<*> = list()
-        .highlightSymbol("> ")
-        .highlightColor(MeloTheme.PRIMARY_COLOR)
-        .autoScroll()
-        .focusable()
-        .id("settings-list")
-
-    internal val playlistInputOverlay = PlaylistInputOverlay { state }
-    internal val searchSuggestionsOverlay = SearchSuggestionsOverlay { state }
-    internal val playlistPickerOverlay = PlaylistPickerOverlay { state }
-    internal val queueOverlay = QueueOverlay({ state }, queueList, ::handleQueueKey)
-    internal val settingsOverlay = SettingsOverlay(
-        { state },
-        { settingsViewState },
-        settingsSectionList,
-        settingsList,
-        ::handleSettingsKey
-    )
-    internal val directoryPickerOverlay = DirectoryPickerOverlay(
-        { settingsViewState },
-        ::handleSettingsKey
-    )
-    internal val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
-    internal val commandBarSuggestionsOverlay = CommandBarSuggestionsOverlay { state }
-
-    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
+    override fun configure(): dev.tamboui.tui.TuiConfig = dev.tamboui.tui.TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() = onStartLifecycle()
 

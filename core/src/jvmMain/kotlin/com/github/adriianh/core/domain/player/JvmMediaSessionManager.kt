@@ -1,8 +1,6 @@
-package com.github.adriianh.melo.player
+package com.github.adriianh.core.domain.player
 
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.player.MediaSessionManager
-import com.github.adriianh.core.domain.player.PlaybackManager
 import io.github.selemba1000.JMTC
 import io.github.selemba1000.JMTCButtonCallback
 import io.github.selemba1000.JMTCCallbacks
@@ -26,17 +24,27 @@ import java.nio.file.Files
 import java.util.UUID
 
 /**
- * Integrates Melo with the Desktop OS media session layer via JMTC:
- *   - Linux → MPRIS2 over D-Bus
+ * Shared JVM (Desktop) OS media-session integration via JMTC:
+ *   - Linux  → MPRIS2 over D-Bus
  *   - Windows → SystemMediaTransportControls (SMTC)
- *   - macOS → not yet supported by JMTC (gracefully no-ops)
+ *   - macOS  → not yet supported by JMTC (gracefully no-ops)
  *
- * Bridges the OS media keys / notification widgets directly to [PlaybackManager].
+ * Used by both Melo UIs on Desktop:
+ *  - **Reactive mode** (Compose app): constructed with a [PlaybackManager];
+ *    now-playing metadata, timeline and button availability are derived from
+ *    its `playbackState`/`queueState` flows, and OS media keys drive it.
+ *  - **Imperative mode** (TUI): constructed with control callbacks; the app
+ *    pushes track/position/state changes via [updateTrack], [updatePosition],
+ *    [notifyPaused], [notifyResumed] and [notifyStopped].
  */
 class JvmMediaSessionManager(
-    private val playbackManager: PlaybackManager,
     private val httpClient: HttpClient,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    onPlayPause: () -> Unit = {},
+    onNext: () -> Unit = {},
+    onPrevious: () -> Unit = {},
+    onStop: () -> Unit = {},
+    private val playbackManager: PlaybackManager? = null,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
 ) : MediaSessionManager {
 
     private var jmtc: JMTC? = null
@@ -46,10 +54,25 @@ class JvmMediaSessionManager(
 
     private var observerJob: Job? = null
     private var artworkJob: Job? = null
+
+    @Volatile
     private var currentTrackId: String? = null
+
+    @Volatile
     private var currentDurationMs: Long = 0L
+
+    @Volatile
     private var currentArtFile: File? = null
     private val isLinux = System.getProperty("os.name")?.lowercase()?.contains("linux") == true
+
+    private val onTogglePlayPause: () -> Unit =
+        if (playbackManager != null) ({ playbackManager.togglePlayPause() }) else onPlayPause
+    private val onPlayNext: () -> Unit =
+        if (playbackManager != null) ({ playbackManager.playNext() }) else onNext
+    private val onPlayPrevious: () -> Unit =
+        if (playbackManager != null) ({ playbackManager.playPrevious() }) else onPrevious
+    private val onStopPlayback: () -> Unit =
+        if (playbackManager != null) ({ playbackManager.release() }) else onStop
 
     private fun toMediaSessionTime(timeMs: Long): Long = if (isLinux) timeMs * 1_000L else timeMs
 
@@ -63,11 +86,20 @@ class JvmMediaSessionManager(
                 jmtc = instance
 
                 val callbacks = JMTCCallbacks()
-                callbacks.onPlay = JMTCButtonCallback { playbackManager.togglePlayPause() }
-                callbacks.onPause = JMTCButtonCallback { playbackManager.togglePlayPause() }
-                callbacks.onStop = JMTCButtonCallback { playbackManager.release() }
-                callbacks.onNext = JMTCButtonCallback { playbackManager.playNext() }
-                callbacks.onPrevious = JMTCButtonCallback { playbackManager.playPrevious() }
+                callbacks.onPlay = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.PLAYING
+                    onTogglePlayPause()
+                }
+                callbacks.onPause = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.PAUSED
+                    onTogglePlayPause()
+                }
+                callbacks.onStop = JMTCButtonCallback {
+                    jmtc?.playingState = JMTCPlayingState.STOPPED
+                    onStopPlayback()
+                }
+                callbacks.onNext = JMTCButtonCallback { onPlayNext() }
+                callbacks.onPrevious = JMTCButtonCallback { onPlayPrevious() }
 
                 instance.setCallbacks(callbacks)
                 instance.mediaType = JMTCMediaType.Music
@@ -82,7 +114,9 @@ class JvmMediaSessionManager(
                 instance.playingState = JMTCPlayingState.STOPPED
                 instance.updateDisplay()
 
-                startObservers()
+                if (playbackManager != null && observerJob == null) {
+                    startObservers()
+                }
                 initialized = true
             } catch (_: Throwable) {
             }
@@ -90,10 +124,10 @@ class JvmMediaSessionManager(
     }
 
     private fun startObservers() {
-        observerJob?.cancel()
+        val pm = playbackManager ?: return
         observerJob = scope.launch {
             launch {
-                playbackManager.queueState.collect { queue ->
+                pm.queueState.collect { queue ->
                     val instance = jmtc ?: return@collect
                     try {
                         val hasNext = queue.currentIndex < queue.tracks.lastIndex
@@ -112,7 +146,7 @@ class JvmMediaSessionManager(
 
             launch {
                 var lastPlaying: Boolean? = null
-                playbackManager.playbackState.collect { state ->
+                pm.playbackState.collect { state ->
                     val instance = jmtc ?: return@collect
                     try {
                         val track = state.currentTrack
@@ -138,18 +172,10 @@ class JvmMediaSessionManager(
                         if (trackChanged) {
                             currentTrackId = track.id
                             currentDurationMs = effectiveDurationMs
-                            updateTrack(instance, track, effectiveDurationMs)
+                            updateTrack(track, effectiveDurationMs)
                         } else if (effectiveDurationMs > 0 && effectiveDurationMs != currentDurationMs) {
                             currentDurationMs = effectiveDurationMs
-                            instance.setTimelineProperties(
-                                JMTCTimelineProperties(
-                                    /* start     */ 0L,
-                                    /* end       */ toMediaSessionTime(effectiveDurationMs),
-                                    /* seekStart */ 0L,
-                                    /* seekEnd   */ toMediaSessionTime(effectiveDurationMs)
-                                )
-                            )
-                            instance.updateDisplay()
+                            updateTimeline(effectiveDurationMs)
                         }
 
                         if (state.isPlaying != lastPlaying) {
@@ -172,7 +198,12 @@ class JvmMediaSessionManager(
         }
     }
 
-    private fun updateTrack(instance: JMTC, track: Track, durationMs: Long) {
+    /** Called when a new track starts playing (or its rich metadata resolves). */
+    fun updateTrack(track: Track, durationMs: Long) {
+        val instance = jmtc ?: return
+        val effectiveDurationMs = if (durationMs > 0) durationMs else track.durationMs
+        currentTrackId = track.id
+        currentDurationMs = effectiveDurationMs
         try {
             cleanupCurrentArt()
             instance.mediaProperties = JMTCMusicProperties(
@@ -185,14 +216,7 @@ class JvmMediaSessionManager(
                 /* track       */ 0,
                 /* art         */ null
             )
-            instance.setTimelineProperties(
-                JMTCTimelineProperties(
-                    /* start     */ 0L,
-                    /* end       */ toMediaSessionTime(durationMs),
-                    /* seekStart */ 0L,
-                    /* seekEnd   */ toMediaSessionTime(durationMs)
-                )
-            )
+            updateTimeline(effectiveDurationMs)
             instance.playingState = JMTCPlayingState.PLAYING
             instance.updateDisplay()
 
@@ -230,6 +254,76 @@ class JvmMediaSessionManager(
         }
     }
 
+    /** Called when the total duration is resolved later. */
+    fun updateTimeline(durationMs: Long) {
+        val instance = jmtc ?: return
+        try {
+            instance.setTimelineProperties(
+                JMTCTimelineProperties(
+                    /* start     */ 0L,
+                    /* end       */ toMediaSessionTime(durationMs),
+                    /* seekStart */ 0L,
+                    /* seekEnd   */ toMediaSessionTime(durationMs)
+                )
+            )
+            instance.updateDisplay()
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** Called when playback position changes. [positionMs] in milliseconds. */
+    fun updatePosition(positionMs: Long) {
+        try {
+            jmtc?.setPosition(toMediaSessionTime(positionMs))
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** Called when playback is paused. */
+    fun notifyPaused() {
+        try {
+            jmtc?.playingState = JMTCPlayingState.PAUSED
+            jmtc?.updateDisplay()
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** Called when playback is resumed. */
+    fun notifyResumed() {
+        try {
+            jmtc?.playingState = JMTCPlayingState.PLAYING
+            jmtc?.updateDisplay()
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** Called when playback stops entirely. */
+    fun notifyStopped() {
+        try {
+            jmtc?.playingState = JMTCPlayingState.STOPPED
+            jmtc?.updateDisplay()
+        } catch (_: Throwable) {
+        }
+    }
+
+    /** Legacy alias kept for the TUI/CLI call sites that use [release]. */
+    fun destroy() = release()
+
+    override fun release() {
+        observerJob?.cancel()
+        observerJob = null
+        artworkJob?.cancel()
+        cleanupCurrentArt()
+        try {
+            jmtc?.enabled = false
+        } catch (_: Throwable) {
+        }
+        jmtc = null
+        initialized = false
+        currentTrackId = null
+        currentDurationMs = 0L
+    }
+
     private suspend fun downloadArtwork(url: String): File? = try {
         val formattedUrl = if (url.startsWith("//")) "https:$url" else url
         val bytes = httpClient.get(formattedUrl).readRawBytes()
@@ -255,19 +349,5 @@ class JvmMediaSessionManager(
         } catch (_: Throwable) {
         }
         currentArtFile = null
-    }
-
-    override fun release() {
-        observerJob?.cancel()
-        artworkJob?.cancel()
-        cleanupCurrentArt()
-        try {
-            jmtc?.enabled = false
-        } catch (_: Throwable) {
-        }
-        jmtc = null
-        initialized = false
-        currentTrackId = null
-        currentDurationMs = 0L
     }
 }

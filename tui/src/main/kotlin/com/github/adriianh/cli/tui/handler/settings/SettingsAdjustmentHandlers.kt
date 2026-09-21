@@ -3,6 +3,8 @@ package com.github.adriianh.cli.tui.handler.settings
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.component.SettingsItem
+import com.github.adriianh.cli.tui.handler.playback.setVolumePercent
+import com.github.adriianh.cli.tui.handler.syncYouTubeHistory
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -22,12 +24,21 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
 
         SettingsItem.VOLUME -> {
             val newVol = (current.volume + (direction * 5)).coerceIn(0, 100)
-            audioPlayer.setVolume(newVol)
+            setVolumePercent(newVol)
             current.copy(volume = newVol)
         }
 
         SettingsItem.LANGUAGE -> {
-            val newLang = if (current.searchLanguage == "en") "es" else "en"
+            val languages = state.languagePicker.languages
+            val currentIndex = languages.indexOfFirst {
+                it.first.equals(
+                    current.searchLanguage,
+                    ignoreCase = true
+                )
+            }
+                .takeIf { it >= 0 } ?: 0
+            val nextIndex = (currentIndex + direction + languages.size) % languages.size
+            val newLang = languages[nextIndex].first
             current.copy(searchLanguage = newLang)
         }
 
@@ -72,12 +83,15 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         SettingsItem.DOWNLOAD_PATH -> current
         SettingsItem.CACHE_PATH -> current
         SettingsItem.LOCAL_FOLDERS -> current
+        SettingsItem.YOUTUBE_ACCOUNT -> current
+        SettingsItem.SYNC_LIKES -> current.copy(syncLikesToYouTube = !current.syncLikesToYouTube)
+        SettingsItem.SYNC_HISTORY -> current.copy(syncHistoryToYouTube = !current.syncHistoryToYouTube)
         SettingsItem.DISCORD_RPC -> {
             val next = !current.discordRpcEnabled
             if (next) {
                 discordRpcManager.connect()
                 state.player.nowPlaying?.let {
-                    val elapsedMs = (state.player.progress * it.durationMs).toLong()
+                    val elapsedMs = state.player.nowPlayingPositionMs
                     discordRpcManager.updateActivity(it, state.player.isPlaying, elapsedMs)
                 }
             } else {
@@ -90,4 +104,7 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
     settingsViewState = settingsViewState.copy(currentSettings = newSettings)
     state = state.copy(isOfflineMode = newSettings.offlineMode)
     scope.launch { updateSettings(newSettings) }
+    if (item == SettingsItem.SYNC_HISTORY) {
+        syncYouTubeHistory()
+    }
 }

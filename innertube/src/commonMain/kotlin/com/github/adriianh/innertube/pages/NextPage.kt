@@ -7,6 +7,7 @@ import com.github.adriianh.innertube.models.PlaylistPanelVideoRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.WatchEndpoint
 import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
 
@@ -43,7 +44,8 @@ object NextPage {
                     id = it.navigationEndpoint?.browseEndpoint?.browseId!!
                 )
             },
-            duration = renderer.lengthText?.runs?.firstOrNull()?.text?.parseTime(),
+            duration = renderer.lengthText?.runs?.extractDuration()
+                ?: renderer.lengthText?.runs?.firstOrNull()?.text?.parseTime(),
             thumbnail = renderer.thumbnail.getHighResUrl() ?: return null,
             musicVideoType = renderer.musicVideoType,
             explicit = renderer.badges?.find {

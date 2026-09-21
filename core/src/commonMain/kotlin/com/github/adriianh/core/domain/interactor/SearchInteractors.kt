@@ -1,5 +1,6 @@
 package com.github.adriianh.core.domain.interactor
 
+import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.DeleteSearchQueryUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistTagsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
@@ -38,4 +39,5 @@ data class SearchInteractors(
     val getSimilarTracks: GetSimilarTracksUseCase,
     val getEntityDetails: GetEntityDetailsUseCase,
     val getArtistTags: GetArtistTagsUseCase,
+    val translateLyrics: TranslateLyricsUseCase? = null,
 )

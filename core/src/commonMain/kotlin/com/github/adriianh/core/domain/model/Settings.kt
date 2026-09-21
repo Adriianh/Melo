@@ -26,7 +26,10 @@ enum class MeloAction(val displayName: String) {
     LYRICS("Load Lyrics"),
     ADD_PLAYLIST("Add to Playlist"),
     DELETE("Delete/Remove Item"),
-    CLEAR_QUEUE("Clear Queue")
+    CLEAR_QUEUE("Clear Queue"),
+    TRACK_OPTIONS("Track Options Menu"),
+    TOGGLE_SELECTION("Toggle Selection Mode"),
+    TOGGLE_DETAIL("Toggle Detail Panel")
 }
 
 @Serializable
@@ -53,7 +56,8 @@ enum class DownloadQuality(val displayName: String) {
 @Serializable
 data class MeloKey(
     val char: Char? = null,
-    val code: String? = null
+    val code: String? = null,
+    val ctrl: Boolean = false
 )
 
 @Serializable
@@ -112,7 +116,10 @@ data class Settings(
         MeloAction.LYRICS to MeloKey(char = 'l'),
         MeloAction.ADD_PLAYLIST to MeloKey(char = 'a'),
         MeloAction.DELETE to MeloKey(code = "DELETE"),
-        MeloAction.CLEAR_QUEUE to MeloKey(char = 'c')
+        MeloAction.CLEAR_QUEUE to MeloKey(char = 'c'),
+        MeloAction.TRACK_OPTIONS to MeloKey(char = 'm'),
+        MeloAction.TOGGLE_SELECTION to MeloKey(char = 'v'),
+        MeloAction.TOGGLE_DETAIL to MeloKey(char = 'd', ctrl = true)
     ),
     val downloadFormat: DownloadFormat = DownloadFormat.OPUS,
     val downloadQuality: DownloadQuality = DownloadQuality.HIGH,
@@ -126,6 +133,7 @@ data class Settings(
     val dataSaver: Boolean = false,
     val audioQuality: AudioQuality = AudioQuality.AUTO,
     val syncHistoryToYouTube: Boolean = true,
+    val syncLikesToYouTube: Boolean = true,
     val autoCheckUpdates: Boolean = true,
     val lastAccentColor: Long? = null,
 )

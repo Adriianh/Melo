@@ -43,61 +43,60 @@ object MeloTheme {
     }
 
     val ICON_PLAY: String get() = if (supportsUnicode) "▶" else ">"
-    val ICON_PAUSE: String get() = if (supportsUnicode) "⏸" else "||"
+    val ICON_PAUSE: String get() = if (supportsUnicode) "❚❚" else "||"
     val ICON_PREV: String get() = if (supportsUnicode) "⏮" else "|<"
     val ICON_NEXT: String get() = if (supportsUnicode) "⏭" else ">|"
-    val ICON_LOADING: String get() = if (supportsUnicode) "⏳" else "..."
+    val ICON_LOADING: String get() = if (supportsUnicode) "⠋" else "..."
     val ICON_ERROR: String get() = if (supportsUnicode) "✗" else "x"
-    val ICON_VOL_MUTE: String get() = if (supportsUnicode) "🔇" else "[m]"
-    val ICON_VOL_LOW: String get() = if (supportsUnicode) "🔉" else "[<]"
-    val ICON_VOL_HIGH: String get() = if (supportsUnicode) "🔊" else "[>]"
+    val ICON_VOL_MUTE: String get() = if (supportsUnicode) "×" else "[x]"
+    val ICON_VOL_LOW: String get() = if (supportsUnicode) "◁" else "<"
+    val ICON_VOL_HIGH: String get() = if (supportsUnicode) "◀" else ">"
     val ICON_NOTE: String get() = if (supportsUnicode) "♫" else "~"
     val ICON_HEART: String get() = if (supportsUnicode) "♥" else "<3"
     val ICON_CHECK: String get() = if (supportsUnicode) "✓" else "ok"
     val ICON_BULLET: String get() = if (supportsUnicode) "•" else "*"
-    val ICON_ARROW: String get() = if (supportsUnicode) "▸" else ">"
-    val ICON_HOME: String get() = if (supportsUnicode) "🏠" else "[H]"
-    val ICON_SEARCH: String get() = if (supportsUnicode) "🔍" else "[S]"
-    val ICON_LIBRARY: String get() = if (supportsUnicode) "📚" else "[L]"
-    val ICON_CLOCK: String get() = if (supportsUnicode) "🕘" else "[R]"
-    val ICON_HISTORY: String get() = if (supportsUnicode) "🕒" else "[H]"
+    val ICON_ARROW: String get() = if (supportsUnicode) "›" else ">"
+    val ICON_HOME: String get() = if (supportsUnicode) "⌂" else "[H]"
+    val ICON_SEARCH: String get() = if (supportsUnicode) "⚲" else "[S]"
+    val ICON_LIBRARY: String get() = if (supportsUnicode) "≡" else "[L]"
+    val ICON_CLOCK: String get() = if (supportsUnicode) "◷" else "[R]"
+    val ICON_HISTORY: String get() = if (supportsUnicode) "◷" else "[H]"
     val ICON_SHUFFLE: String get() = if (supportsUnicode) "⇄" else "[Z]"
     val ICON_REPEAT: String get() = if (supportsUnicode) "↻" else "[R]"
     val ICON_REPEAT1: String get() = if (supportsUnicode) "↺1" else "[R1]"
     val ICON_QUEUE: String get() = if (supportsUnicode) "≡" else "[Q]"
-    val ICON_RADIO: String get() = if (supportsUnicode) "📻" else "[~]"
-    val ICON_STATS: String get() = if (supportsUnicode) "📊" else "[#]"
-    val ICON_NOW_PLAYING: String get() = if (supportsUnicode) "🎵" else "[N]"
-    val ICON_SETTINGS: String get() = if (supportsUnicode) "⚙️" else "[S]"
-    val ICON_OFFLINE: String get() = if (supportsUnicode) "📥" else "[D]"
-    val ICON_DOWNLOADING: String get() = if (supportsUnicode) "⏬" else "~"
-    val ICON_FOLDER: String get() = if (supportsUnicode) "📁" else ""
-    val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "📂" else ""
+    val ICON_INFO: String get() = if (supportsUnicode) "◫" else "[i]"
+    val ICON_RADIO: String get() = if (supportsUnicode) "~" else "[~]"
+    val ICON_STATS: String get() = if (supportsUnicode) "▦" else "[#]"
+    val ICON_NOW_PLAYING: String get() = if (supportsUnicode) "▶" else "[N]"
+    val ICON_SETTINGS: String get() = if (supportsUnicode) "⚙" else "[S]"
+    val ICON_OFFLINE: String get() = if (supportsUnicode) "↓" else "[D]"
+    val ICON_DOWNLOADING: String get() = if (supportsUnicode) "↓" else "~"
+    val ICON_FOLDER: String get() = if (supportsUnicode) "▸" else "/"
+    val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "▾" else "/"
 
-    // Brand
+    val EQUALIZER_FRAMES = listOf(" ▂▃ ", "▃▅▆▃", "▅▇█▅", "▆▅▃ ", "▃ ▂▃")
+    fun getEqualizerFrame(tick: Long): String =
+        EQUALIZER_FRAMES[(tick % EQUALIZER_FRAMES.size).toInt()]
+
     var PRIMARY_COLOR: Color = Color.hex("#FF2D55")
     var SECONDARY_COLOR: Color = Color.hex("#1AA34A")
 
-    // Backgrounds
     var BG_DARK: Color = Color.hex("#0D0D0E")
-    var BG_CARD: Color = Color.hex("#181818")
-    var BG_ELEVATED: Color = Color.hex("#282828")
-    var BG_HIGHLIGHT: Color = Color.hex("#2A2A2A")
+    var BG_CARD: Color = Color.hex("#18181B")
+    var BG_ELEVATED: Color = Color.hex("#242426")
+    var BG_HIGHLIGHT: Color = Color.hex("#2E2E32")
 
-    // Text
     var TEXT_PRIMARY: Color = Color.WHITE
-    var TEXT_SECONDARY: Color = Color.hex("#B3B3B3")
-    var TEXT_DIM: Color = Color.hex("#535353")
+    var TEXT_SECONDARY: Color = Color.hex("#A1A1AA")
+    var TEXT_DIM: Color = Color.hex("#71717A")
 
-    // Accents
     var ACCENT_RED: Color = Color.hex("#FF2D55")
-    var ACCENT_BLUE: Color = Color.hex("#2E77D0")
+    var ACCENT_BLUE: Color = Color.hex("#3B82F6")
 
-    // Borders
-    var BORDER_DEFAULT: Color = Color.hex("#333333")
+    var BORDER_DEFAULT: Color = Color.hex("#2A2A2E")
     var BORDER_FOCUSED: Color = PRIMARY_COLOR
 
-    // Styles (dynamic getters since colors can change)
     val TITLE_STYLE: Style get() = Style.EMPTY.bold().fg(TEXT_PRIMARY)
     val SUBTITLE_STYLE: Style get() = Style.EMPTY.fg(TEXT_SECONDARY)
     val DIM_STYLE: Style get() = Style.EMPTY.fg(TEXT_DIM)
@@ -110,15 +109,15 @@ object MeloTheme {
                 PRIMARY_COLOR = Color.hex("#FF2D55")
                 SECONDARY_COLOR = Color.hex("#1AA34A")
                 BG_DARK = Color.hex("#0D0D0E")
-                BG_CARD = Color.hex("#181818")
-                BG_ELEVATED = Color.hex("#282828")
-                BG_HIGHLIGHT = Color.hex("#2A2A2A")
+                BG_CARD = Color.hex("#18181B")
+                BG_ELEVATED = Color.hex("#242426")
+                BG_HIGHLIGHT = Color.hex("#2E2E32")
                 TEXT_PRIMARY = Color.WHITE
-                TEXT_SECONDARY = Color.hex("#B3B3B3")
-                TEXT_DIM = Color.hex("#535353")
-                ACCENT_RED = Color.hex("#E22134")
-                ACCENT_BLUE = Color.hex("#2E77D0")
-                BORDER_DEFAULT = Color.hex("#333333")
+                TEXT_SECONDARY = Color.hex("#A1A1AA")
+                TEXT_DIM = Color.hex("#71717A")
+                ACCENT_RED = Color.hex("#FF2D55")
+                ACCENT_BLUE = Color.hex("#3B82F6")
+                BORDER_DEFAULT = Color.hex("#2A2A2E")
                 BORDER_FOCUSED = PRIMARY_COLOR
             }
 

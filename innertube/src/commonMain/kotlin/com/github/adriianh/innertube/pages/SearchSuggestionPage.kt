@@ -7,6 +7,7 @@ import com.github.adriianh.innertube.models.ArtistItem
 import com.github.adriianh.innertube.models.MusicResponsiveListItemRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.models.splitBySeparator
 
@@ -29,10 +30,10 @@ object SearchSuggestionPage {
                     album = renderer.flexColumns.getOrNull(2)?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.let {
                         Album(
                             name = it.text,
-                            id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return null
+                            id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return@let null
                         )
                     },
-                    duration = null,
+                    duration = renderer.extractDuration(),
                     thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
                     musicVideoType = renderer.musicVideoType,
                     explicit = renderer.badges?.find {

@@ -26,9 +26,12 @@ import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.command.player.TagCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.data.di.sharedModule
+import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.interactor.PlaybackInteractors
@@ -89,9 +92,10 @@ class MeloCommand : CliktCommand(
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
 
-        startKoin { modules(appModule) }
+        startKoin { modules(appModule, sharedModule) }
 
         val searchInteractors: SearchInteractors by inject()
+        val discoveryInteractors: DiscoveryInteractors by inject()
         val libraryInteractors: LibraryInteractors by inject()
         val playbackInteractors: PlaybackInteractors by inject()
         val offlineInteractors: OfflineInteractors by inject()
@@ -106,12 +110,14 @@ class MeloCommand : CliktCommand(
         val dispatcher: CoroutineDispatcher by inject()
         val audioProvider: AudioProvider by inject()
         val discordRpcManager: DiscordRpcManager by inject()
+        val youTubeAuthService: YouTubeAuthService by inject()
 
         try {
             MeloScreen(
                 httpClient = httpClient,
                 pipedApiClient = pipedApiClient,
                 searchInteractors = searchInteractors,
+                discoveryInteractors = discoveryInteractors,
                 libraryInteractors = libraryInteractors,
                 playbackInteractors = playbackInteractors,
                 offlineInteractors = offlineInteractors,
@@ -123,6 +129,7 @@ class MeloCommand : CliktCommand(
                 metadataProvider = metadataProvider,
                 audioProvider = audioProvider,
                 discordRpcManager = discordRpcManager,
+                youTubeAuthService = youTubeAuthService,
                 dispatcher = dispatcher
             ).run()
         } finally {

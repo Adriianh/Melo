@@ -210,6 +210,33 @@ class InnerTubeMusicProvider(
         val videoId = id.removePrefix("piped:")
         if (videoId.isBlank()) return null
 
+        try {
+            val nextResult = YouTube.next(WatchEndpoint(videoId = videoId)).getOrNull()
+            val songItem = nextResult?.items?.firstOrNull()
+            if (songItem != null) {
+                val validArtists = songItem.artists.map { it.name.trim() }
+                    .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
+                val artistName = if (validArtists.isNotEmpty()) {
+                    validArtists.joinToString(", ")
+                } else {
+                    "Unknown"
+                }
+                val durationMs = songItem.duration?.times(1000L) ?: 0L
+                val albumName = songItem.album?.name.orEmpty()
+                return Track(
+                    id = "piped:$videoId",
+                    title = songItem.title,
+                    artist = artistName,
+                    durationMs = durationMs,
+                    album = albumName,
+                    genres = emptyList(),
+                    artworkUrl = songItem.thumbnail,
+                    sourceId = videoId
+                )
+            }
+        } catch (_: Exception) {
+        }
+
         return try {
             val response = YouTube.player(videoId, null, YouTubeClient.WEB_REMIX).getOrNull()
 
@@ -605,20 +632,22 @@ class InnerTubeMusicProvider(
 
     override suspend fun getRadio(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRadio(videoId)
+            ?: emptyList()
         val endpoint = WatchEndpoint(
             videoId = cleanId,
             playlistId = "RDAMVM$cleanId"
         )
-        val result = YouTube.next(endpoint).getOrNull()
+        val result = YouTube.next(endpoint).getOrNull()?.takeIf { it.items.isNotEmpty() }
             ?: YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
+                ?.takeIf { it.items.isNotEmpty() }
             ?: return fallback?.getRadio(videoId) ?: emptyList()
         return result.items.map { mapSongItem(it) }
     }
 
     override suspend fun getArtistRadio(artistId: String): List<Track> {
         val cleanId = artistId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return emptyList()
 
         val endpoint = WatchEndpoint(
             playlistId = if (cleanId.startsWith("RDAMEA")) cleanId else "RDAMEA$cleanId"
@@ -640,7 +669,8 @@ class InnerTubeMusicProvider(
 
     override suspend fun getRelated(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank()) return emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRelated(videoId)
+            ?: emptyList()
 
         val nextResult = YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
         val relatedEndpoint = nextResult?.relatedEndpoint
@@ -651,7 +681,10 @@ class InnerTubeMusicProvider(
             }
         }
 
-        return fallback?.getRelated(videoId) ?: getRadio(cleanId)
+        val fallbackResult = fallback?.getRelated(videoId)
+        if (!fallbackResult.isNullOrEmpty()) return fallbackResult
+
+        return getRadio(cleanId)
     }
 
     override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {

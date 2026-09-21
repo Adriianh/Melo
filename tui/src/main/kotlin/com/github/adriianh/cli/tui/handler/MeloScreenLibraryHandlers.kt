@@ -5,8 +5,12 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
+import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.filterAndSortTracks
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -28,15 +32,15 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
     val isFocused = appRunner()?.focusManager()?.focusedId() == "library-panel"
     if (!isFocused) return handleGlobalShortcuts(event)
 
-    if (event.code() == KeyCode.CHAR && event.character() == '1') {
+    if (event.isChar('1')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.FAVORITES) }
         return EventResult.HANDLED
     }
-    if (event.code() == KeyCode.CHAR && event.character() == '2') {
+    if (event.isChar('2')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false) }
         return EventResult.HANDLED
     }
-    if (event.code() == KeyCode.CHAR && event.character() == '3') {
+    if (event.isChar('3')) {
         updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.LOCAL) }
         loadLocalTracks()
         return EventResult.HANDLED
@@ -52,72 +56,183 @@ internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
     }
 }
 
-internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
-    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
-    val allPaths = settingsViewState.currentSettings.localLibraryPaths
-
-    val filtered = actualState.localTracks.filter { track ->
-        val matchesTab = if (actualState.localFilterIndex == 0) true else {
-            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
-            selectedPath != null && track.id.startsWith("local:$selectedPath")
-        }
-
-        val matchesSearch = if (actualState.searchQuery.isEmpty()) true else {
-            val q = actualState.searchQuery.lowercase()
-            track.title.lowercase().contains(q) || track.artist.lowercase().contains(q)
-        }
-        matchesTab && matchesSearch
-    }
-
-    if (actualState.isTyping) {
-        when {
-            event.code() == KeyCode.ENTER -> {
-                updateScreen<ScreenState.Library> { it.copy(isTyping = false) }
-                return EventResult.HANDLED
-            }
-
-            event.code() == KeyCode.ESCAPE -> {
-                updateScreen<ScreenState.Library> { it.copy(isTyping = false, searchQuery = "") }
-                return EventResult.HANDLED
-            }
-
-            event.code() == KeyCode.BACKSPACE -> {
-                updateScreen<ScreenState.Library> { it.copy(searchQuery = it.searchQuery.dropLast(1)) }
-                return EventResult.HANDLED
-            }
-
-            event.code() == KeyCode.CHAR -> {
-                val character = event.character()
-                updateScreen<ScreenState.Library> { it.copy(searchQuery = it.searchQuery + character) }
-                return EventResult.HANDLED
-            }
-        }
-        return EventResult.HANDLED
-    }
-
+/** Acciones comunes de lista de tracks: selección múltiple, favoritos, cola, playlist y opciones. */
+internal fun MeloScreen.handleTrackListSelectionActions(
+    event: KeyEvent,
+    tracks: List<Track>,
+    selectedIndex: Int,
+    onFavorite: (Track) -> Unit
+): EventResult {
+    val track = tracks.getOrNull(selectedIndex)
     when {
-        event.code() == KeyCode.TAB || (event.code() == KeyCode.CHAR && event.character() == 'l') -> {
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state = state.copy(selection = state.selection.selectAll(tracks))
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE && state.selection.isNotEmpty -> {
+            state = state.copy(selection = state.selection.clear())
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+            if (track != null) onFavorite(track)
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
+            if (track != null) addToQueue(track)
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else if (track != null) {
+                openPlaylistPicker(track)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
+            if (track != null) openTrackOptions(track)
+            return EventResult.HANDLED
+        }
+    }
+    return EventResult.UNHANDLED
+}
+
+private fun MeloScreen.localFilteredAndSortedTracks(actualState: ScreenState.Library): List<Track> {
+    val allPaths = settingsViewState.currentSettings.localLibraryPaths
+    val tabFiltered = actualState.localTracks.filter { track ->
+        if (actualState.localFilterIndex == 0) true else {
+            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
+            if (selectedPath != null) {
+                val clean = selectedPath.trimEnd('/')
+                track.id.startsWith("local:$clean/") || track.id == "local:$clean"
+            } else false
+        }
+    }
+
+    return filterAndSortTracks(
+        tracks = tabFiltered,
+        sortOrder = actualState.localSortOrder,
+        sortDirection = actualState.localSortDirection,
+        query = actualState.localSearchQuery
+    )
+}
+
+private fun MeloScreen.handleLocalTypingKey(event: KeyEvent): EventResult {
+    when {
+        event.code() == KeyCode.ENTER -> {
+            updateScreen<ScreenState.Library> { it.copy(isTyping = false) }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    isTyping = false,
+                    localSearchQuery = "",
+                    searchQuery = ""
+                )
+            }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.BACKSPACE -> {
+            updateScreen<ScreenState.Library> {
+                val newQ = it.localSearchQuery.dropLast(1)
+                it.copy(localSearchQuery = newQ, searchQuery = newQ)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.CHAR -> {
+            val text = event.string()
+            updateScreen<ScreenState.Library> {
+                val newQ = it.localSearchQuery + text
+                it.copy(localSearchQuery = newQ, searchQuery = newQ)
+            }
+            return EventResult.HANDLED
+        }
+    }
+    return EventResult.HANDLED
+}
+
+private fun MeloScreen.handleLocalNavigationKey(
+    actualState: ScreenState.Library,
+    filtered: List<Track>,
+    event: KeyEvent
+): EventResult {
+    when {
+        event.code() == KeyCode.TAB -> {
+            val allPaths = settingsViewState.currentSettings.localLibraryPaths
             val next = (actualState.localFilterIndex + 1) % (allPaths.size + 1)
             updateScreen<ScreenState.Library> { it.copy(localFilterIndex = next, selectedIndex = 0) }
             localLibraryList.selected(0)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && event.character() == 'f' -> {
-            val prev = if (actualState.localFilterIndex == 0) allPaths.size else actualState.localFilterIndex - 1
-            updateScreen<ScreenState.Library> { it.copy(localFilterIndex = prev, selectedIndex = 0) }
-            localLibraryList.selected(0)
-            return EventResult.HANDLED
-        }
-
-        event.code() == KeyCode.CHAR && event.character() == '/' -> {
+        event.isCtrlF() -> {
             updateScreen<ScreenState.Library> { it.copy(isTyping = true) }
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.ESCAPE -> {
-            updateScreen<ScreenState.Library> { it.copy(searchQuery = "") }
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    localSortDirection = it.localSortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            }
+            localLibraryList.selected(0)
             return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            updateScreen<ScreenState.Library> {
+                it.copy(
+                    localSortOrder = it.localSortOrder.next(),
+                    selectedIndex = 0
+                )
+            }
+            localLibraryList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('r') -> {
+            loadLocalTracks()
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            if (actualState.localSearchQuery.isNotEmpty()) {
+                updateScreen<ScreenState.Library> {
+                    it.copy(
+                        localSearchQuery = "",
+                        searchQuery = ""
+                    )
+                }
+                return EventResult.HANDLED
+            }
         }
 
         event.matches(Actions.MOVE_DOWN) -> {
@@ -139,54 +254,24 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
             if (idx in filtered.indices) playList(filtered, idx)
             return EventResult.HANDLED
         }
-
-        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-            filtered.getOrNull(localLibraryList.selected())?.let { addToQueue(it) }
-            return EventResult.HANDLED
-        }
     }
-    return handleGlobalShortcuts(event)
+    return EventResult.UNHANDLED
 }
 
-internal fun MeloScreen.handleFavoritesKey(event: KeyEvent): EventResult {
-    when {
-        event.matches(Actions.MOVE_DOWN) -> {
-            favoritesList.selected(
-                minOf(
-                    state.collections.favorites.lastIndex.coerceAtLeast(0),
-                    favoritesList.selected() + 1
-                )
-            )
-            return EventResult.HANDLED
-        }
+internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
+    val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
+    val filtered = localFilteredAndSortedTracks(actualState)
 
-        event.matches(Actions.MOVE_UP) -> {
-            favoritesList.selected(maxOf(0, favoritesList.selected() - 1))
-            return EventResult.HANDLED
-        }
+    if (actualState.isTyping) return handleLocalTypingKey(event)
 
-        event.code() == KeyCode.ENTER -> {
-            val tracks = state.collections.favorites
-            val idx = favoritesList.selected()
-            if (idx in tracks.indices) playList(tracks, idx)
-            return EventResult.HANDLED
-        }
+    val navResult = handleLocalNavigationKey(actualState, filtered, event)
+    if (navResult == EventResult.HANDLED) return navResult
 
-        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
-            state.collections.favorites.getOrNull(favoritesList.selected())?.let { removeFavoriteTrack(it) }
-            return EventResult.HANDLED
-        }
-
-        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
-            state.collections.favorites.getOrNull(favoritesList.selected())?.let { addToQueue(it) }
-            return EventResult.HANDLED
-        }
-
-        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
-            val track = state.collections.favorites.getOrNull(favoritesList.selected())
-            if (track != null) openPlaylistPicker(track)
-            return EventResult.HANDLED
-        }
-    }
-    return handleGlobalShortcuts(event)
+    val actionResult = handleTrackListSelectionActions(
+        event = event,
+        tracks = filtered,
+        selectedIndex = localLibraryList.selected(),
+        onFavorite = { toggleFavorite(it) }
+    )
+    return if (actionResult == EventResult.HANDLED) actionResult else handleGlobalShortcuts(event)
 }

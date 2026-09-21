@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
@@ -21,12 +22,17 @@ import com.github.adriianh.core.domain.usecase.session.SaveSessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.data.player.PlaybackManagerImpl.Companion.MAX_STREAM_RESOLVE_ATTEMPTS
+import com.github.adriianh.data.player.PlaybackManagerImpl.Companion.STREAM_RETRY_DELAY_MS
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
@@ -68,6 +74,9 @@ class PlaybackManagerImpl(
     private val _volume = MutableStateFlow(0.75f)
     override val volume: StateFlow<Float> = _volume.asStateFlow()
     private var lastUnmutedVolume: Float = 0.75f
+
+    private val _events = MutableSharedFlow<PlaybackEvent>(extraBufferCapacity = 16)
+    override val events: SharedFlow<PlaybackEvent> = _events.asSharedFlow()
 
     private val prefetchCache = mutableMapOf<String, String>()
     private val cacheMutex = Mutex()
@@ -156,6 +165,8 @@ class PlaybackManagerImpl(
         } else if (playbackState.value.isFinished) {
             meloPlayer.seekTo(0)
             meloPlayer.play()
+        } else if (playbackState.value.error != null && _queueState.value.currentTrack != null) {
+            playCurrentQueueTrack(initialSeekMs = playbackState.value.progressMs)
         } else if (isTrackLoaded) {
             meloPlayer.play()
         } else if (_queueState.value.currentTrack != null) {
@@ -221,7 +232,9 @@ class PlaybackManagerImpl(
     override fun setQueue(tracks: List<Track>, startIndex: Int) {
         scope.launch(dispatcher) { cacheMutex.withLock { prefetchCache.clear() } }
         val validIndex = if (tracks.isEmpty()) -1 else startIndex.coerceIn(0, tracks.lastIndex)
-        _queueState.update { it.copy(tracks = tracks, currentIndex = validIndex) }
+        _queueState.update {
+            it.copy(tracks = tracks, currentIndex = validIndex, userQueueCount = 0)
+        }
         if (validIndex >= 0) {
             playCurrentQueueTrack()
         } else {
@@ -231,9 +244,19 @@ class PlaybackManagerImpl(
     }
 
     override fun addToQueue(track: Track) {
-        _queueState.update { it.copy(tracks = it.tracks + track) }
-        if (_queueState.value.currentIndex == -1) {
-            _queueState.update { it.copy(currentIndex = 0) }
+        val shouldAutoStart =
+            _queueState.value.currentIndex < 0 || _queueState.value.tracks.isEmpty()
+        _queueState.update { current ->
+            if (shouldAutoStart) {
+                current.copy(tracks = listOf(track), currentIndex = 0, userQueueCount = 0)
+            } else {
+                val insertIndex =
+                    (current.currentIndex + current.userQueueCount + 1).coerceAtMost(current.tracks.size)
+                val newTracks = current.tracks.toMutableList().apply { add(insertIndex, track) }
+                current.copy(tracks = newTracks, userQueueCount = current.userQueueCount + 1)
+            }
+        }
+        if (shouldAutoStart) {
             playCurrentQueueTrack()
         } else {
             persistCurrentSession(immediate = false)
@@ -263,7 +286,14 @@ class PlaybackManagerImpl(
                 index == it.currentIndex -> it.currentIndex.coerceAtMost(newTracks.lastIndex)
                 else -> it.currentIndex
             }
-            it.copy(tracks = newTracks, currentIndex = newIndex)
+            val manualStart = it.currentIndex + 1
+            val manualEnd = it.currentIndex + it.userQueueCount
+            val newCount = if (index in manualStart..manualEnd && it.userQueueCount > 0) {
+                it.userQueueCount - 1
+            } else {
+                it.userQueueCount
+            }
+            it.copy(tracks = newTracks, currentIndex = newIndex, userQueueCount = newCount)
         }
         if (wasCurrent) {
             if (_queueState.value.tracks.isEmpty()) {
@@ -280,6 +310,18 @@ class PlaybackManagerImpl(
     override fun moveQueueItem(fromIndex: Int, toIndex: Int) {
         val q = _queueState.value
         if (fromIndex < 0 || fromIndex >= q.tracks.size || toIndex < 0 || toIndex >= q.tracks.size || fromIndex == toIndex) return
+
+        val manualStart = q.currentIndex + 1
+        val manualEnd = q.currentIndex + q.userQueueCount
+        val fromInBlock = fromIndex in manualStart..manualEnd
+        val toInBlock = toIndex in manualStart..manualEnd
+        val newCount = when {
+            fromInBlock && toInBlock -> q.userQueueCount
+            fromInBlock -> (q.userQueueCount - 1).coerceAtLeast(0)
+            toInBlock -> q.userQueueCount + 1
+            else -> q.userQueueCount
+        }
+
         _queueState.update { current ->
             val newTracks = current.tracks.toMutableList()
             val item = newTracks.removeAt(fromIndex)
@@ -291,7 +333,11 @@ class PlaybackManagerImpl(
                 in toIndex..<fromIndex -> current.currentIndex + 1
                 else -> current.currentIndex
             }
-            current.copy(tracks = newTracks, currentIndex = newCurrentIndex)
+            current.copy(
+                tracks = newTracks,
+                currentIndex = newCurrentIndex,
+                userQueueCount = newCount
+            )
         }
         persistCurrentSession(immediate = false)
     }
@@ -307,7 +353,15 @@ class PlaybackManagerImpl(
             RepeatMode.ALL -> (q.currentIndex + 1) % q.tracks.size
             RepeatMode.NONE -> q.currentIndex + 1
         }
-        _queueState.update { it.copy(currentIndex = nextIndex) }
+        _queueState.update { current ->
+            val diff = nextIndex - current.currentIndex
+            val newCount = when {
+                diff == 1 && current.userQueueCount > 0 -> current.userQueueCount - 1
+                diff != 0 -> 0
+                else -> current.userQueueCount
+            }
+            current.copy(currentIndex = nextIndex, userQueueCount = newCount)
+        }
         playCurrentQueueTrack()
     }
 
@@ -334,7 +388,12 @@ class PlaybackManagerImpl(
                     shuffled.remove(current)
                     shuffled.add(0, current)
                 }
-                q.copy(tracks = shuffled, currentIndex = 0, shuffleEnabled = true)
+                q.copy(
+                    tracks = shuffled,
+                    currentIndex = 0,
+                    shuffleEnabled = true,
+                    userQueueCount = 0
+                )
             }
         }
         persistCurrentSession(immediate = false)
@@ -398,29 +457,25 @@ class PlaybackManagerImpl(
             val url = try {
                 cachedUrl
                     ?: streamCacheRepository?.getCachedUrl(track.id, STREAM_URL_TTL_MS)
-                    ?: getStreamUseCase(track)?.also { resolved ->
-                        if (!resolved.startsWith("file:")) {
-                            streamCacheRepository?.cacheUrl(track.id, resolved)
-                        }
-                    }
-                    ?: run {
-                        val nextOfflineIndex =
-                            findNextOfflineTrackIndex(_queueState.value.currentIndex)
-                        if (nextOfflineIndex != null) {
-                            _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
-                            playCurrentQueueTrack()
-                        } else if (_queueState.value.hasNext) {
-                            playNext()
-                        } else {
-                            handleAutoplay(forcePlayNext = true)
-                        }
-                        return@launch
-                    }
+                    ?: resolveStreamWithRetry(track)
             } catch (_: AgeRestrictedException) {
-                meloPlayer.stop()
+                emitPlaybackError("Track is age-restricted (sign-in required), skipping...")
+                skipCurrentQueueTrack()
                 return@launch
             }
+
+            if (url == null) {
+                emitPlaybackError("Stream not available, skipping...")
+                skipCurrentQueueTrack()
+                return@launch
+            }
+
+            if (!url.startsWith("file:")) {
+                streamCacheRepository?.cacheUrl(track.id, url)
+            }
+
             meloPlayer.load(url, track, targetSeek)
+            emitPlaybackEvent(PlaybackEvent.TrackStarted(track, positionMs = targetSeek))
             persistCurrentSession(immediate = true)
 
             launch(dispatcher) {
@@ -437,6 +492,23 @@ class PlaybackManagerImpl(
                 }
             }
 
+            if (track.sourceId == null) {
+                launch(dispatcher) {
+                    try {
+                        val sid = getStreamUseCase.resolveSourceId(track)
+                        if (sid != null) {
+                            _queueState.update { current ->
+                                val updatedTracks = current.tracks.map {
+                                    if (it.id == track.id) it.copy(sourceId = sid) else it
+                                }
+                                current.copy(tracks = updatedTracks)
+                            }
+                        }
+                    } catch (_: Throwable) {
+                    }
+                }
+            }
+
             schedulePrefetch()
         }
     }
@@ -444,7 +516,7 @@ class PlaybackManagerImpl(
     private fun schedulePrefetch() {
         prefetchJob?.cancel()
         val q = _queueState.value
-        if (q.currentIndex >= 0 && q.currentIndex == q.tracks.lastIndex && getRadioUseCase != null) {
+        if (shouldPrefetchRadio(q)) {
             handleAutoplay(forcePlayNext = false)
         }
 
@@ -480,6 +552,64 @@ class PlaybackManagerImpl(
         return null
     }
 
+    /**
+     * Resolves the stream URL with up to [MAX_STREAM_RESOLVE_ATTEMPTS] attempts,
+     * waiting [STREAM_RETRY_DELAY_MS] between failures. Returns null when the
+     * stream could not be resolved after all retries.
+     */
+    private suspend fun resolveStreamWithRetry(track: Track): String? {
+        var attempts = 0
+        while (attempts < MAX_STREAM_RESOLVE_ATTEMPTS) {
+            try {
+                val resolved = getStreamUseCase(track)
+                if (resolved != null) return resolved
+            } catch (e: AgeRestrictedException) {
+                throw e
+            } catch (_: Exception) {
+                // Transient failure — retry below.
+            }
+            attempts++
+            if (attempts < MAX_STREAM_RESOLVE_ATTEMPTS) {
+                delay(STREAM_RETRY_DELAY_MS.milliseconds)
+            }
+        }
+        return null
+    }
+
+    /**
+     * Advances playback past the current track when it cannot be played:
+     * prefers the next offline track (offline mode), then the next queued
+     * track, and finally falls back to radio autoplay / stop.
+     */
+    private suspend fun skipCurrentQueueTrack() {
+        val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
+        if (nextOfflineIndex != null) {
+            _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+            playCurrentQueueTrack()
+        } else if (_queueState.value.hasNext) {
+            playNext()
+        } else {
+            handleAutoplay(forcePlayNext = true)
+        }
+    }
+
+    private fun emitPlaybackEvent(event: PlaybackEvent) {
+        _events.tryEmit(event)
+    }
+
+    private fun emitPlaybackError(message: String) {
+        emitPlaybackEvent(PlaybackEvent.Error(message))
+    }
+
+    /**
+     * True when the queue is close enough to its end to fetch radio continuations
+     * ahead of time, so playback transitions seamlessly without an interruption.
+     */
+    private fun shouldPrefetchRadio(q: QueueState): Boolean {
+        if (getRadioUseCase == null || q.currentIndex < 0 || q.tracks.isEmpty()) return false
+        return q.currentIndex >= q.tracks.size - RADIO_AUTOPLAY_MARGIN
+    }
+
     private fun handleAutoplay(forcePlayNext: Boolean) {
         val currentTrack = _queueState.value.currentTrack ?: return
         if (isAutoplayFetching || getRadioUseCase == null) {
@@ -496,13 +626,45 @@ class PlaybackManagerImpl(
                     return@launch
                 }
 
-                val videoId = currentTrack.sourceId ?: currentTrack.id.removePrefix("piped:")
+                val resolvedSourceId = try {
+                    getStreamUseCase.resolveSourceId(currentTrack)
+                } catch (_: Throwable) {
+                    null
+                }
+
+                if (resolvedSourceId != null && currentTrack.sourceId == null) {
+                    _queueState.update { current ->
+                        val updatedTracks = current.tracks.map {
+                            if (it.id == currentTrack.id) it.copy(sourceId = resolvedSourceId) else it
+                        }
+                        current.copy(tracks = updatedTracks)
+                    }
+                }
+
+                val videoId = resolvedSourceId
+                    ?: currentTrack.sourceId
+                    ?: (if (currentTrack.id.startsWith("piped:")) currentTrack.id.removePrefix("piped:") else null)
+                    ?: currentTrack.id
+
                 val radioTracks = getRadioUseCase(videoId).filter { rec ->
-                    _queueState.value.tracks.none { it.id == rec.id }
+                    _queueState.value.tracks.none {
+                        it.id == rec.id ||
+                                (!it.sourceId.isNullOrBlank() && it.sourceId == rec.sourceId) ||
+                                (it.title.equals(rec.title, ignoreCase = true) && it.artist.equals(
+                                    rec.artist,
+                                    ignoreCase = true
+                                ))
+                    }
                 }
 
                 if (radioTracks.isNotEmpty()) {
-                    _queueState.update { it.copy(tracks = it.tracks + radioTracks) }
+                    _queueState.update { current ->
+                        val manualEnd =
+                            current.currentIndex + current.userQueueCount + 1
+                        val newTracks = current.tracks.toMutableList()
+                        newTracks.addAll(manualEnd.coerceAtMost(current.tracks.size), radioTracks)
+                        current.copy(tracks = newTracks)
+                    }
                     if (forcePlayNext) {
                         val nextIdx = _queueState.value.currentIndex + 1
                         if (nextIdx in _queueState.value.tracks.indices) {
@@ -564,5 +726,17 @@ class PlaybackManagerImpl(
 
     private companion object {
         private const val STREAM_URL_TTL_MS = 3 * 60 * 60 * 1000L
+
+        /** Maximum attempts to resolve a stream before skipping the track. */
+        private const val MAX_STREAM_RESOLVE_ATTEMPTS = 3
+
+        /** Delay between stream resolution retries. */
+        private const val STREAM_RETRY_DELAY_MS = 700L
+
+        /**
+         * How close to the end of the queue (tracks remaining) the radio
+         * autoplay fetch is triggered, so the radio continues seamlessly.
+         */
+        private const val RADIO_AUTOPLAY_MARGIN = 5
     }
 }

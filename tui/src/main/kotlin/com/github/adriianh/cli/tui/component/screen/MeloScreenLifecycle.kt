@@ -3,13 +3,18 @@ package com.github.adriianh.cli.tui.component.screen
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.checkYouTubeAuth
+import com.github.adriianh.cli.tui.loadHomeFeed
+import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
+import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.Duration
 
 internal fun MeloScreen.onStartLifecycle() {
     mediaSession.init()
+    observePlaybackManager()
     if (settingsViewState.currentSettings.discordRpcEnabled) {
         discordRpcManager.connect()
     }
@@ -21,7 +26,15 @@ internal fun MeloScreen.onStartLifecycle() {
         }
     }
     scope.launch {
-        getRecentTracks(20).collect { entries ->
+        getFavoriteEntities?.invoke()?.collect { entities ->
+            appRunner()?.runOnRenderThread {
+                state =
+                    state.copy(collections = state.collections.copy(favoriteEntities = entities))
+            }
+        }
+    }
+    scope.launch {
+        getRecentTracks(100).collect { entries ->
             appRunner()?.runOnRenderThread {
                 state = state.copy(collections = state.collections.copy(recentTracks = entries))
             }
@@ -51,14 +64,31 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }
+    scope.launch { checkYouTubeAuth() }
     scope.launch { restoreLastSession() }
+    scope.launch { loadHomeFeed() }
+    scope.launch { loadStats() }
     scope.launch {
+        var lastCookies: String? = null
+        var isFirstEmit = true
         getSettings().collect { settings ->
+            val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
+            val isInitialWithCookies = isFirstEmit && !settings.sessionCookies.isNullOrBlank()
+            lastCookies = settings.sessionCookies
+            isFirstEmit = false
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
-                audioPlayer.setVolume(settings.volume)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
-                state = state.copy(isOfflineMode = settings.offlineMode)
+                state = state.copy(
+                    isOfflineMode = settings.offlineMode,
+                    languagePicker = state.languagePicker.copy(
+                        currentLanguage = settings.searchLanguage.ifBlank { "es" }
+                    )
+                )
+            }
+            if (cookiesChanged || isInitialWithCookies) {
+                checkYouTubeAuth()
+                syncYouTubeLibrary()
             }
         }
     }
@@ -68,7 +98,6 @@ internal fun MeloScreen.onStartLifecycle() {
             if (marqueeTick > 10) {
                 val track = state.detail.selectedTrack ?: return@runOnRenderThread
 
-                // Skip state copies if text is short enough to not need a marquee
                 if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
 
                 val newOffset = state.player.marqueeOffset + 1
@@ -85,8 +114,8 @@ internal fun MeloScreen.onStartLifecycle() {
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     playlistTracksJob?.cancel()
-    audioPlayer.stop()
-    mediaSession.destroy()
+    playbackManager.release()
+    mediaSession.release()
     discordRpcManager.disconnect()
     scope.cancel()
 }

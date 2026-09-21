@@ -33,6 +33,22 @@ actual object DatabaseFactory {
             writeUserVersion(url, schemaVersion)
         }
 
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS favorite_entities (
+                id          TEXT    NOT NULL PRIMARY KEY,
+                type        TEXT    NOT NULL,
+                title       TEXT    NOT NULL,
+                subtitle    TEXT,
+                artwork_url TEXT,
+                track_count INTEGER,
+                added_at    INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0
+        )
+
         return MeloDatabase(driver)
     }
 

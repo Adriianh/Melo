@@ -121,12 +121,6 @@ fun DirectoryPickerState.toggleMark(): DirectoryPickerState {
     }
 }
 
-/**
- * Clears all currently marked paths.
- */
-fun DirectoryPickerState.clearMarks(): DirectoryPickerState =
-    copy(markedPaths = emptySet())
-
 
 /**
  * Navigates to the parent directory, placing the cursor on the directory we came from.
@@ -180,10 +174,10 @@ fun DirectoryPickerState.confirmMkdir(): DirectoryPickerState {
 }
 
 /**
- * Appends a character to the new directory name.
+ * Appends text to the new directory name.
  */
-fun DirectoryPickerState.appendToNewDir(char: Char): DirectoryPickerState =
-    copy(newDirName = newDirName + char)
+fun DirectoryPickerState.appendToNewDir(text: String): DirectoryPickerState =
+    copy(newDirName = newDirName + text)
 
 /**
  * Removes the last character from the new directory name.

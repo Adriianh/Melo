@@ -1,10 +1,14 @@
 package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
-import com.github.adriianh.cli.tui.OfflineFilterType
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.handler.playback.addToQueue
+import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
+import com.github.adriianh.core.domain.model.MeloAction
+import com.github.adriianh.core.domain.model.OfflineFilterType
+import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -15,6 +19,14 @@ import dev.tamboui.tui.event.KeyEvent
  */
 internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
     val actualState = state.screen as? ScreenState.Offline ?: return handleGlobalShortcuts(event)
+
+    val filteredDownloads = filterAndSortOfflineTracks(
+        downloads = actualState.downloads,
+        filterType = actualState.filterType,
+        sortOrder = actualState.sortOrder,
+        sortDirection = actualState.sortDirection,
+        query = actualState.searchQuery
+    )
 
     if (actualState.isTyping) {
         when {
@@ -34,8 +46,8 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             }
 
             event.code() == KeyCode.CHAR -> {
-                val character = event.character()
-                updateScreen<ScreenState.Offline> { it.copy(searchQuery = it.searchQuery + character) }
+                val text = event.string()
+                updateScreen<ScreenState.Offline> { it.copy(searchQuery = it.searchQuery + text) }
                 return EventResult.HANDLED
             }
         }
@@ -43,30 +55,80 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
     }
 
     when {
-        event.code() == KeyCode.CHAR && event.character() == '/' -> {
+        event.isCtrlF() -> {
             updateScreen<ScreenState.Offline> { it.copy(isTyping = true) }
             return EventResult.HANDLED
         }
 
-        (event.code() == KeyCode.CHAR && (event.character() == 'f' || event.character() == 'F')) ||
-                (event.code() == KeyCode.TAB) -> {
+        event.code() == KeyCode.TAB || event.isCharIgnoreCase('s') -> {
             val nextFilter = when (actualState.filterType) {
                 OfflineFilterType.ALL -> OfflineFilterType.MANUAL
                 OfflineFilterType.MANUAL -> OfflineFilterType.CACHE
                 OfflineFilterType.CACHE -> OfflineFilterType.ALL
             }
-            updateScreen<ScreenState.Offline> { it.copy(filterType = nextFilter) }
+            updateScreen<ScreenState.Offline> {
+                it.copy(
+                    filterType = nextFilter,
+                    selectedIndex = 0
+                )
+            }
+            offlineList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('O') || (event.modifiers().shift() && event.isCharIgnoreCase('o')) -> {
+            updateScreen<ScreenState.Offline> {
+                it.copy(
+                    sortDirection = it.sortDirection.toggle(),
+                    selectedIndex = 0
+                )
+            }
+            offlineList.selected(0)
+            return EventResult.HANDLED
+        }
+
+        event.isChar('o') && !event.modifiers().shift() -> {
+            updateScreen<ScreenState.Offline> {
+                it.copy(
+                    sortOrder = it.sortOrder.next(),
+                    selectedIndex = 0
+                )
+            }
+            offlineList.selected(0)
             return EventResult.HANDLED
         }
 
         event.code() == KeyCode.ESCAPE -> {
-            updateScreen<ScreenState.Offline> { it.copy(searchQuery = "") }
+            if (state.selection.isNotEmpty) {
+                state = state.copy(selection = state.selection.clear())
+                return EventResult.HANDLED
+            }
+            if (actualState.searchQuery.isNotEmpty()) {
+                updateScreen<ScreenState.Offline> { it.copy(searchQuery = "") }
+                return EventResult.HANDLED
+            }
+        }
+
+        event.isCtrlA() -> {
+            state =
+                state.copy(selection = state.selection.selectAll(filteredDownloads.map { it.track }))
             return EventResult.HANDLED
         }
 
+        event.isCharIgnoreCase('v') || event.matchesAction(
+            MeloAction.TOGGLE_SELECTION,
+            settingsViewState.currentSettings
+        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+            val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
+            if (track != null) {
+                state = state.copy(selection = state.selection.toggle(track))
+                return EventResult.HANDLED
+            }
+        }
+
         event.matches(Actions.MOVE_DOWN) -> {
-            val collection = actualState.downloads
-            val newIndex = minOf(collection.lastIndex.coerceAtLeast(0), actualState.selectedIndex + 1)
+            val newIndex =
+                minOf(filteredDownloads.lastIndex.coerceAtLeast(0), actualState.selectedIndex + 1)
             offlineList.selected(newIndex)
             updateScreen<ScreenState.Offline> { it.copy(selectedIndex = newIndex) }
             return EventResult.HANDLED
@@ -80,16 +142,60 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.ENTER -> {
-            val collection = actualState.downloads
             val idx = actualState.selectedIndex
-            if (idx in collection.indices) playList(collection.map { it.track }, idx)
+            if (idx in filteredDownloads.indices) playList(filteredDownloads.map { it.track }, idx)
             return EventResult.HANDLED
         }
 
-        event.code() == KeyCode.CHAR && (event.character() == 'm' || event.character() == 'o') -> {
-            val collection = actualState.downloads
-            val track = collection.getOrNull(actualState.selectedIndex)?.track
+        event.isCharIgnoreCase('m') || event.matchesAction(
+            MeloAction.TRACK_OPTIONS,
+            settingsViewState.currentSettings
+        ) -> {
+            if (state.selection.isNotEmpty) {
+                openBatchOptions(state.selection.tracks())
+                return EventResult.HANDLED
+            }
+            val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) openTrackOptions(track)
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('d') || event.matchesAction(
+            MeloAction.DELETE,
+            settingsViewState.currentSettings
+        ) -> {
+            if (state.selection.isNotEmpty) {
+                val toDelete = state.selection.tracks()
+                toDelete.forEach { track ->
+                    deleteDownloadedTrack(track.id)
+                }
+                state = state.copy(selection = state.selection.clear())
+                return EventResult.HANDLED
+            }
+            val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
+            if (track != null) {
+                deleteDownloadedTrack(track.id)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.ADD_TO_QUEUE, settingsViewState.currentSettings) -> {
+            filteredDownloads.getOrNull(actualState.selectedIndex)?.let { addToQueue(it.track) }
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.FAVORITE, settingsViewState.currentSettings) -> {
+            filteredDownloads.getOrNull(actualState.selectedIndex)?.let { toggleFavorite(it.track) }
+            return EventResult.HANDLED
+        }
+
+        event.matchesAction(MeloAction.ADD_PLAYLIST, settingsViewState.currentSettings) -> {
+            if (state.selection.isNotEmpty) {
+                openPlaylistPicker(state.selection.tracks())
+            } else {
+                filteredDownloads.getOrNull(actualState.selectedIndex)
+                    ?.let { openPlaylistPicker(it.track) }
+            }
             return EventResult.HANDLED
         }
     }

@@ -15,8 +15,12 @@ import com.github.adriianh.innertube.models.PlaylistItem
 import com.github.adriianh.innertube.models.SectionListRenderer
 import com.github.adriianh.innertube.models.SongItem
 import com.github.adriianh.innertube.models.YTItem
+import com.github.adriianh.innertube.models.extractArtists
+import com.github.adriianh.innertube.models.extractDuration
 import com.github.adriianh.innertube.models.getItems
-import com.github.adriianh.innertube.models.oddElements
+import com.github.adriianh.innertube.models.isInvalidArtistName
+import com.github.adriianh.innertube.models.isKnownTypeLabel
+import com.github.adriianh.innertube.models.isTimeDuration
 import com.github.adriianh.innertube.models.splitBySeparator
 import com.github.adriianh.innertube.utils.parseTime
 
@@ -78,29 +82,74 @@ data class HomePage(
             private fun fromMusicTwoRowItemRenderer(renderer: MusicTwoRowItemRenderer): YTItem? {
                 return when {
                     renderer.isSong -> {
-                        val subtitleRuns = renderer.subtitle?.runs?.oddElements() ?: return null
-                        val album = renderer.subtitle.runs.getOrNull(0) ?: return null
-                        SongItem(
-                            id = renderer.navigationEndpoint.watchEndpoint?.videoId ?: return null,
-                            title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                            artists = subtitleRuns.filter { run ->
-                                run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("UC") == true || (run.navigationEndpoint?.browseEndpoint != null && !run.navigationEndpoint.browseEndpoint.browseId.startsWith(
-                                    "MPREb_"
-                                ))
+                        val allRuns = renderer.subtitle?.runs.orEmpty()
+                        val duration = renderer.extractDuration()
+                            ?: allRuns.extractDuration()
+                            ?: allRuns.map { it.text.trim() }.find { it.isTimeDuration() }
+                                ?.parseTime()
+
+                        val groups = allRuns.splitBySeparator()
+                        val nonDurationGroups = groups.filter { group ->
+                            val text = group.joinToString("") { it.text }.trim()
+                            !text.isInvalidArtistName()
+                        }
+
+                        val explicitAlbumRun = allRuns.find { run ->
+                            run.navigationEndpoint?.browseEndpoint?.isAlbumEndpoint == true ||
+                                    run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPRE") == true
+                        }
+
+                        val album = explicitAlbumRun?.let {
+                            Album(
+                                name = it.text,
+                                id = it.navigationEndpoint?.browseEndpoint?.browseId ?: ""
+                            )
+                        } ?: run {
+                            val candidateGroup = nonDurationGroups.getOrNull(1)
+                            val candidateRun = candidateGroup?.firstOrNull()
+                            val isArtist =
+                                candidateRun?.navigationEndpoint?.browseEndpoint?.isArtistEndpoint == true ||
+                                        candidateRun?.navigationEndpoint?.browseEndpoint?.browseId?.startsWith(
+                                            "UC"
+                                        ) == true
+                            if (candidateRun != null && !isArtist) {
+                                val albumName = candidateGroup.joinToString("") { it.text }.trim()
+                                if (albumName.isNotEmpty()) {
+                                    Album(
+                                        name = albumName,
+                                        id = candidateRun.navigationEndpoint?.browseEndpoint?.browseId
+                                            ?: ""
+                                    )
+                                } else null
+                            } else null
+                        }
+
+                        val artists =
+                            nonDurationGroups.firstOrNull()?.extractArtists().orEmpty().ifEmpty {
+                            allRuns.filter { run ->
+                                val id = run.navigationEndpoint?.browseEndpoint?.browseId
+                                id?.startsWith("UC") == true
                             }.map { run ->
                                 Artist(
                                     name = run.text,
                                     id = run.navigationEndpoint?.browseEndpoint?.browseId
                                 )
-                            },
-                            album = album.let {
-                                Album(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                                        ?: return null
+                            }
+                        }.ifEmpty {
+                                nonDurationGroups.firstOrNull()?.map { run ->
+                                    Artist(
+                                        name = run.text,
+                                        id = run.navigationEndpoint?.browseEndpoint?.browseId
                                 )
-                            },
-                            duration = null,
+                            } ?: emptyList()
+                        }
+
+                        SongItem(
+                            id = renderer.navigationEndpoint.watchEndpoint?.videoId ?: return null,
+                            title = renderer.title.runs?.firstOrNull()?.text ?: return null,
+                            artists = artists,
+                            album = album,
+                            duration = duration,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             musicVideoType = renderer.musicVideoType,
@@ -111,20 +160,27 @@ data class HomePage(
                     }
 
                     renderer.isAlbum -> {
+                        val subtitleRuns = renderer.subtitle?.runs.orEmpty()
+                        val groups = subtitleRuns.splitBySeparator()
+                        val nonTypeGroups = groups.filter { group ->
+                            val text = group.joinToString("") { it.text }.trim().lowercase()
+                            !text.isKnownTypeLabel()
+                        }
+                        val artists = nonTypeGroups.firstOrNull()?.extractArtists()
+                        val year =
+                            subtitleRuns.find { it.text.trim().matches(Regex("""^\d{4}$""")) }
+                                ?.text?.trim()?.toIntOrNull()
+
                         AlbumItem(
                             browseId = renderer.navigationEndpoint.browseEndpoint?.browseId
                                 ?: return null,
                             playlistId = renderer.thumbnailOverlay?.musicItemThumbnailOverlayRenderer?.content
                                 ?.musicPlayButtonRenderer?.playNavigationEndpoint
-                                ?.watchPlaylistEndpoint?.playlistId ?: return null,
+                                ?.watchPlaylistEndpoint?.playlistId
+                                ?: renderer.navigationEndpoint.browseEndpoint.browseId,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                            artists = renderer.subtitle?.runs?.oddElements()?.drop(1)?.map {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId
-                                )
-                            },
-                            year = null,
+                            artists = artists,
+                            year = year,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             explicit = renderer.subtitleBadges?.find {
@@ -134,6 +190,14 @@ data class HomePage(
                     }
 
                     renderer.isPlaylist -> {
+                        val subtitleRuns = renderer.subtitle?.runs.orEmpty()
+                        val songCount = subtitleRuns.find { run ->
+                            val t = run.text.trim().lowercase()
+                            t.contains("track") || t.contains("song") || t.contains("cancion") || t.contains(
+                                "canción"
+                            ) || t.contains("tema")
+                        }?.text?.trim() ?: subtitleRuns.lastOrNull()?.text
+
                         PlaylistItem(
                             id = renderer.navigationEndpoint.browseEndpoint?.browseId?.removePrefix(
                                 "VL"
@@ -143,7 +207,7 @@ data class HomePage(
                                 name = renderer.subtitle?.runs?.firstOrNull()?.text ?: return null,
                                 id = null
                             ),
-                            songCountText = null,
+                            songCountText = songCount,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             playEndpoint = renderer.thumbnailOverlay
@@ -231,8 +295,64 @@ data class HomePage(
                 val secondaryLine = renderer.flexColumns.getOrNull(1)
                     ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.splitBySeparator()
                     ?: return null
+                val thirdLine = renderer.flexColumns.getOrNull(2)
+                    ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.splitBySeparator()
+                    ?: emptyList()
+                val allGroups = secondaryLine + thirdLine
+
+                val parsedDuration = renderer.extractDuration()
+                    ?: allGroups.flatten()
+                        .map { it.text.trim() }
+                        .find { it.isTimeDuration() }
+                        ?.parseTime()
+                    ?: secondaryLine.lastOrNull()?.firstOrNull()?.text?.parseTime()
+
+                val nonDurationGroups = allGroups.filter { group ->
+                    val text = group.joinToString("") { it.text }.trim()
+                    !text.isInvalidArtistName()
+                }
+
                 return when {
                     renderer.isSong -> {
+                        val artists =
+                            nonDurationGroups.firstOrNull()?.extractArtists()?.ifEmpty { null }
+                                ?: nonDurationGroups.firstOrNull()?.map {
+                                    Artist(
+                                        name = it.text,
+                                        id = it.navigationEndpoint?.browseEndpoint?.browseId
+                                    )
+                                } ?: return null
+
+                        val explicitAlbumRun = allGroups.flatten().find { run ->
+                            run.navigationEndpoint?.browseEndpoint?.isAlbumEndpoint == true ||
+                                    run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPRE") == true
+                        }
+
+                        val album = explicitAlbumRun?.let {
+                            Album(
+                                name = it.text,
+                                id = it.navigationEndpoint?.browseEndpoint?.browseId ?: ""
+                            )
+                        } ?: run {
+                            val candidateGroup = nonDurationGroups.getOrNull(1)
+                            val candidateRun = candidateGroup?.firstOrNull()
+                            val isArtist =
+                                candidateRun?.navigationEndpoint?.browseEndpoint?.isArtistEndpoint == true ||
+                                        candidateRun?.navigationEndpoint?.browseEndpoint?.browseId?.startsWith(
+                                            "UC"
+                                        ) == true
+                            if (candidateRun != null && !isArtist) {
+                                val albumName = candidateGroup.joinToString("") { it.text }.trim()
+                                if (albumName.isNotEmpty()) {
+                                    Album(
+                                        name = albumName,
+                                        id = candidateRun.navigationEndpoint?.browseEndpoint?.browseId
+                                            ?: ""
+                                    )
+                                } else null
+                            } else null
+                        }
+
                         SongItem(
                             id = renderer.playlistItemData?.videoId
                                 ?: renderer.navigationEndpoint?.watchEndpoint?.videoId
@@ -241,20 +361,9 @@ data class HomePage(
                             title = renderer.flexColumns.firstOrNull()
                                 ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text
                                 ?: return null,
-                            artists = secondaryLine.firstOrNull()?.oddElements()?.map {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId,
-                                )
-                            } ?: return null,
-                            album = secondaryLine.getOrNull(1)?.firstOrNull()
-                                ?.takeIf { it.navigationEndpoint?.browseEndpoint != null }?.let {
-                                    Album(
-                                        name = it.text,
-                                        id = it.navigationEndpoint?.browseEndpoint?.browseId!!,
-                                    )
-                                },
-                            duration = secondaryLine.lastOrNull()?.firstOrNull()?.text?.parseTime(),
+                            artists = artists,
+                            album = album,
+                            duration = parsedDuration,
                             thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             musicVideoType = renderer.musicVideoType,
@@ -288,22 +397,23 @@ data class HomePage(
                     }
 
                     renderer.isAlbum -> {
+                        val year = allGroups.flatten()
+                            .find { it.text.trim().matches(Regex("""^\d{4}$""")) }
+                            ?.text?.trim()?.toIntOrNull()
+                        val artists = nonDurationGroups.firstOrNull()?.extractArtists()
+
                         AlbumItem(
                             browseId = renderer.navigationEndpoint?.browseEndpoint?.browseId
                                 ?: return null,
                             playlistId = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content
                                 ?.musicPlayButtonRenderer?.playNavigationEndpoint?.anyWatchEndpoint?.playlistId
-                                ?: return null,
+                                ?: renderer.navigationEndpoint.browseEndpoint.browseId
+                                ?: "",
                             title = renderer.flexColumns.firstOrNull()
                                 ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text
                                 ?: return null,
-                            artists = secondaryLine.getOrNull(1)?.oddElements()?.map {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId,
-                                )
-                            } ?: return null,
-                            year = secondaryLine.getOrNull(2)?.firstOrNull()?.text?.toIntOrNull(),
+                            artists = artists,
+                            year = year,
                             thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             explicit = renderer.badges?.any {
@@ -313,23 +423,29 @@ data class HomePage(
                     }
 
                     renderer.isPlaylist -> {
+                        val author = nonDurationGroups.firstOrNull()?.firstOrNull()?.let {
+                            Artist(
+                                name = it.text,
+                                id = it.navigationEndpoint?.browseEndpoint?.browseId,
+                            )
+                        }
+                        val songCount = allGroups.flatten().find { run ->
+                            val t = run.text.trim().lowercase()
+                            t.contains("track") || t.contains("song") || t.contains("cancion") || t.contains(
+                                "canción"
+                            ) || t.contains("tema")
+                        }?.text ?: renderer.flexColumns.getOrNull(1)
+                            ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.lastOrNull()?.text
+
                         PlaylistItem(
                             id = renderer.navigationEndpoint?.browseEndpoint?.browseId?.removePrefix(
                                 "VL"
-                            )
-                                ?: return null,
+                            ) ?: return null,
                             title = renderer.flexColumns.firstOrNull()
                                 ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text
                                 ?: return null,
-                            author = secondaryLine.firstOrNull()?.firstOrNull()?.let {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId,
-                                )
-                            } ?: return null,
-                            songCountText = renderer.flexColumns.getOrNull(1)
-                                ?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.lastOrNull()?.text
-                                ?: return null,
+                            author = author,
+                            songCountText = songCount,
                             thumbnail = renderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()
                                 ?: return null,
                             playEndpoint = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content

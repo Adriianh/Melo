@@ -36,6 +36,8 @@ interface MusicRepository {
     suspend fun getTrending(): List<Track>
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup>
     suspend fun getRadio(videoId: String): List<Track>
+    suspend fun getRadio(track: Track): List<Track> =
+        getRadio(track.sourceId ?: track.id.removePrefix("piped:"))
     suspend fun getArtistRadio(artistId: String): List<Track>
     suspend fun getRelated(videoId: String): List<Track> = emptyList()
     suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult?
