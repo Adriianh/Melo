@@ -3,6 +3,9 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.HomeFeedFocus
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
+import com.github.adriianh.cli.tui.enrichActiveSectionTracks
+import com.github.adriianh.cli.tui.loadHomeFeed
+import com.github.adriianh.cli.tui.loadMoreHomeSections
 import com.github.adriianh.cli.tui.handler.playback.addToQueue
 import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions

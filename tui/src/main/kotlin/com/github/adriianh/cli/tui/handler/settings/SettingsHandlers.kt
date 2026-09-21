@@ -11,6 +11,8 @@ import com.github.adriianh.cli.tui.component.clearError
 import com.github.adriianh.cli.tui.component.refresh
 import com.github.adriianh.cli.tui.component.sectionItems
 import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
+import com.github.adriianh.cli.tui.importYouTubeAuth
+import com.github.adriianh.cli.tui.logoutYouTubeAuth
 import com.github.adriianh.cli.tui.handler.search.openLanguagePicker
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
