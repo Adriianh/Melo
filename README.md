@@ -86,7 +86,25 @@ Melo's graphical client is built from the ground up using **Compose Multiplatfor
 
 ## 💻 Terminal TUI & CLI
 
-For minimalists and keyboard-driven workflows, Melo retains its full terminal experience:
+### ⚡ Quick Install (One-Line)
+
+**Linux & macOS**:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash
+```
+
+**Windows (PowerShell)**:
+```powershell
+irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.ps1 | iex
+```
+
+> [!TIP]
+> **Update**: Re-run the install command at any time to upgrade to the latest release.  
+> **Uninstall**:
+> - Linux & macOS: `curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/uninstall.sh | bash`
+> - Windows: `irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/uninstall.ps1 | iex`
+
+### 🚀 Basic Usage
 
 ```bash
 # Launch the interactive terminal UI
