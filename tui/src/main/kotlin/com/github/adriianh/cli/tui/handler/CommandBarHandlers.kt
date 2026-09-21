@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.SearchTab
 import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionNext
 import com.github.adriianh.cli.tui.component.screen.handleMediaSessionPrevious
+import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
 import com.github.adriianh.cli.tui.handler.playback.clearQueue
 import com.github.adriianh.cli.tui.handler.playback.setRepeatMode
 import com.github.adriianh.cli.tui.handler.playback.setShuffleEnabled
@@ -40,6 +41,8 @@ object CommandBarHandlers {
     private val COMMANDS = listOf(
         object : Command(listOf("q", "quit")) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
+                onStopLifecycle()
+                appRunner()?.quit()
                 exitProcess(0)
             }
         },

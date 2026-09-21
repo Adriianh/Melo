@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.command.player.handler
 
 import com.github.adriianh.cli.tui.player.AudioPlayer
+import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
@@ -330,7 +331,7 @@ object PlayActionHandler : KoinComponent {
         }
         stopAction = {
             activeProgressJob?.cancel()
-            player.stop()
+            player.release()
             sessionManager.notifyStopped()
             sessionManager.release()
             isPlaying = false
@@ -346,9 +347,10 @@ object PlayActionHandler : KoinComponent {
             stopSignal.await()
         } finally {
             activeProgressJob?.cancel()
-            player.stop()
-            sessionManager.release()
-            ipcServer.stop()
+            try { player.release() } catch (_: Throwable) {}
+            try { sessionManager.release() } catch (_: Throwable) {}
+            try { ipcServer.stop() } catch (_: Throwable) {}
+            try { FfplayProcessManager.killAll() } catch (_: Throwable) {}
         }
         exitProcess(0)
     }

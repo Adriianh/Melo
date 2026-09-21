@@ -1,8 +1,10 @@
 package com.github.adriianh.cli.tui.player
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -12,34 +14,78 @@ import java.util.concurrent.TimeUnit
 internal object FfplayProcessManager {
     val isWindows: Boolean = System.getProperty("os.name").lowercase().contains("win")
 
-    suspend fun destroySafely(process: Process?, pid: Long?) {
-        if (process == null) return
-        withContext(Dispatchers.IO) {
+    private val activeProcesses = ConcurrentHashMap.newKeySet<Process>()
+
+    init {
+        try {
+            Runtime.getRuntime().addShutdownHook(Thread({
+                killAll()
+            }, "melo-ffplay-cleanup"))
+        } catch (_: Throwable) {
+        }
+    }
+
+    /**
+     * Immediately and synchronously terminates all currently running or registered ffplay processes.
+     */
+    fun killAll() {
+        val processes = activeProcesses.toList()
+        activeProcesses.clear()
+        for (proc in processes) {
             try {
-                if (process.isAlive) {
-                    if (pid != null && !isWindows) {
-                        try {
-                            ProcessBuilder("kill", "-SIGCONT", pid.toString())
-                                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                                .start()
-                                .waitFor(150, TimeUnit.MILLISECONDS)
-                        } catch (_: Exception) {
-                        }
-                    }
-                    process.destroy()
-                    val exited = process.waitFor(200, TimeUnit.MILLISECONDS)
-                    if (!exited && process.isAlive) {
-                        process.destroyForcibly()
-                        process.waitFor(500, TimeUnit.MILLISECONDS)
-                    }
-                }
-            } catch (_: Exception) {
+                destroyImmediately(proc, proc.pid())
+            } catch (_: Throwable) {
+            }
+        }
+        try {
+            ProcessHandle.current().children().forEach { child ->
                 try {
-                    process.destroyForcibly()
-                } catch (_: Exception) {
+                    child.destroyForcibly()
+                } catch (_: Throwable) {
                 }
             }
+        } catch (_: Throwable) {
+        }
+    }
+
+    /**
+     * Synchronously destroys a process, ensuring any suspended state is resumed
+     * before sending SIGTERM / SIGKILL.
+     */
+    fun destroyImmediately(process: Process?, pid: Long?) {
+        if (process == null) return
+        activeProcesses.remove(process)
+        try {
+            if (process.isAlive) {
+                if (pid != null && !isWindows) {
+                    try {
+                        ProcessBuilder("kill", "-SIGCONT", pid.toString())
+                            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                            .redirectError(ProcessBuilder.Redirect.DISCARD)
+                            .start()
+                            .waitFor(100, TimeUnit.MILLISECONDS)
+                    } catch (_: Exception) {
+                    }
+                }
+                process.destroy()
+                val exited = process.waitFor(150, TimeUnit.MILLISECONDS)
+                if (!exited && process.isAlive) {
+                    process.destroyForcibly()
+                    process.waitFor(300, TimeUnit.MILLISECONDS)
+                }
+            }
+        } catch (_: Exception) {
+            try {
+                process.destroyForcibly()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    suspend fun destroySafely(process: Process?, pid: Long?) {
+        if (process == null) return
+        withContext(Dispatchers.IO + NonCancellable) {
+            destroyImmediately(process, pid)
         }
     }
 
@@ -70,11 +116,13 @@ internal object FfplayProcessManager {
         cmd += listOf("-i", url)
 
         val devNull = File(if (isWindows) "NUL" else "/dev/null")
-        return ProcessBuilder(cmd)
+        val process = ProcessBuilder(cmd)
             .redirectInput(ProcessBuilder.Redirect.from(devNull))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
+        activeProcesses.add(process)
+        return process
     }
 
     fun suspendProcess(pid: Long) {

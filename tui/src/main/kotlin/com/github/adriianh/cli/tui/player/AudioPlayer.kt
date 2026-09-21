@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -245,11 +246,12 @@ class AudioPlayer(
     }
 
     override fun stop() {
-        val session = sessionId.incrementAndGet()
         val previousJob = playJob
         val previousProcess = playerProcess
         val previousPid = playerPid
 
+        playerProcess = null
+        playerPid = null
         isPaused.set(false)
         pausedSinceMs = 0L
         currentUrl = null
@@ -265,19 +267,21 @@ class AudioPlayer(
         }
 
         playJob = scope.launch {
-            previousJob?.cancel()
-            FfplayProcessManager.destroySafely(previousProcess, previousPid)
-            withTimeoutOrNull(1000.milliseconds) { previousJob?.join() }
-
-            if (sessionId.get() != session) return@launch
-            playerProcess = null
-            playerPid = null
+            withContext(NonCancellable) {
+                previousJob?.cancel()
+                FfplayProcessManager.destroySafely(previousProcess, previousPid)
+                withTimeoutOrNull(1000.milliseconds) { previousJob?.join() }
+            }
         }
     }
 
     override fun release() {
-        stop()
+        val process = playerProcess
+        val pid = playerPid
+        playerProcess = null
+        playerPid = null
         playJob?.cancel()
+        FfplayProcessManager.destroyImmediately(process, pid)
     }
 
     override fun setIdleTrack(track: Track, initialPositionMs: Long) {

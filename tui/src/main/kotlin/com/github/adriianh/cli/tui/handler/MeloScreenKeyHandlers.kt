@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
 import com.github.adriianh.cli.tui.handler.search.returnFocusFromDetail
+import com.github.adriianh.cli.tui.component.screen.onStopLifecycle
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Settings
@@ -251,6 +252,11 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
             }
             if (event.isChar('L')) {
                 activateSidebarSelection(SidebarSection.LIBRARY)
+                return EventResult.HANDLED
+            }
+            if (event.isChar('q') || event.isChar('Q')) {
+                onStopLifecycle()
+                appRunner()?.quit()
                 return EventResult.HANDLED
             }
         }
