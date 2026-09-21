@@ -8,6 +8,11 @@ import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     try {
+        System.setProperty("java.awt.headless", "true")
+    } catch (_: Throwable) {
+    }
+
+    try {
         ColorSpace.getInstance(ColorSpace.CS_sRGB)
     } catch (_: Throwable) {
     }

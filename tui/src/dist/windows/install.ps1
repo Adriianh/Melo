@@ -17,8 +17,11 @@ if (Test-Path "$ScriptDir\*.dll") {
 }
 
 Set-Content "$BinDir\melo-tui.bat" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-tui.cmd" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
 Set-Content "$BinDir\melo-tui.ps1" "& `"$InstallDir\melo.exe`" @args`r`n"
 Set-Content "$BinDir\melo-cli.bat" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-cli.cmd" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-cli.ps1" "& `"$InstallDir\melo.exe`" @args`r`n"
 
 $meloBat = @"
 @echo off
@@ -42,19 +45,34 @@ if "%~1"=="-g" (
         exit /b 1
     )
 )
-if "%~1"=="--tui" (
-    shift
-    "$InstallDir\melo.exe" %*
-    exit /b 0
-)
-if "%~1"=="-t" (
-    shift
-    "$InstallDir\melo.exe" %*
-    exit /b 0
-)
+if "%~1"=="--tui" shift
+if "%~1"=="-t" shift
 "$InstallDir\melo.exe" %*
 "@
 Set-Content "$BinDir\melo.bat" $meloBat
+Set-Content "$BinDir\melo.cmd" $meloBat
+
+$meloPs1 = @"
+param()
+if (`$args.Count -gt 0 -and (`$args[0] -eq "--gui" -or `$args[0] -eq "-g")) {
+    `$guiArgs = `$args | Select-Object -Skip 1
+    `$guiPath = "`$env:LOCALAPPDATA\Programs\Melo\Melo.exe"
+    if (Test-Path `$guiPath) {
+        Start-Process `$guiPath -ArgumentList `$guiArgs
+        exit 0
+    } else {
+        Write-Error "Error: Melo GUI is not installed."
+        exit 1
+    }
+}
+if (`$args.Count -gt 0 -and (`$args[0] -eq "--tui" -or `$args[0] -eq "-t")) {
+    `$tuiArgs = `$args | Select-Object -Skip 1
+    & "$InstallDir\melo.exe" @tuiArgs
+    exit `$LASTEXITCODE
+}
+& "$InstallDir\melo.exe" @args
+"@
+Set-Content "$BinDir\melo.ps1" $meloPs1
 
 $envFile = "$ConfigDir\.env"
 if (-not (Test-Path $envFile)) {

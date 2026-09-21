@@ -131,8 +131,10 @@ graalvmNative {
                 "-H:+ReportExceptionStackTraces",
                 // ── Required for JNA / DBus (MediaSessionManager / SMTC) ────────────
                 "--enable-native-access=ALL-UNNAMED",
+                "-Djava.awt.headless=true",
                 "-H:DynamicProxyConfigurationFiles=${projectDir}/src/main/resources/proxy-config.json",
                 "-H:ReflectionConfigurationFiles=${projectDir}/src/main/resources/reflection-config.json",
+                "-H:JNIConfigurationFiles=${projectDir}/src/main/resources/jni-config.json",
                 "-H:ResourceConfigurationFiles=${projectDir}/src/main/resources/resource-config.json",
             )
         }
