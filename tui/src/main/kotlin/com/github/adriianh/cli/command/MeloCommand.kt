@@ -26,7 +26,6 @@ import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.command.player.TagCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.di.appModule
-import com.github.adriianh.data.di.sharedModule
 import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
@@ -92,7 +91,7 @@ class MeloCommand : CliktCommand(
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
 
-        startKoin { modules(appModule, sharedModule) }
+        startKoin { modules(appModule) }
 
         val searchInteractors: SearchInteractors by inject()
         val discoveryInteractors: DiscoveryInteractors by inject()

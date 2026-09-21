@@ -70,6 +70,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
+import com.github.adriianh.data.di.sharedModule
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
@@ -79,6 +80,7 @@ private fun hasSpotifyKeys() =
             resolveEnv("SPOTIFY_CLIENT_SECRET") != null
 
 val appModule = module {
+    includes(sharedModule)
     single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
 
     single {
