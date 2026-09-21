@@ -29,7 +29,16 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         }
 
         SettingsItem.LANGUAGE -> {
-            val newLang = if (current.searchLanguage == "en") "es" else "en"
+            val languages = state.languagePicker.languages
+            val currentIndex = languages.indexOfFirst {
+                it.first.equals(
+                    current.searchLanguage,
+                    ignoreCase = true
+                )
+            }
+                .takeIf { it >= 0 } ?: 0
+            val nextIndex = (currentIndex + direction + languages.size) % languages.size
+            val newLang = languages[nextIndex].first
             current.copy(searchLanguage = newLang)
         }
 

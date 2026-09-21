@@ -4,6 +4,8 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.matchesAction
 import com.github.adriianh.cli.tui.handler.search.cycleLyricsTranslation
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
+import com.github.adriianh.cli.tui.handler.search.openLanguagePicker
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.MeloAction
@@ -160,6 +162,7 @@ internal fun MeloScreen.seekToMs(targetMs: Long) {
 }
 
 internal fun MeloScreen.handleNowPlayingKey(event: KeyEvent): EventResult {
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     val lines = state.player.syncedLyrics
     val nowPlayingState = (state.screen as? ScreenState.NowPlaying) ?: ScreenState.NowPlaying()
 
@@ -228,7 +231,12 @@ internal fun MeloScreen.handleNowPlayingKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('t') -> {
+        event.isChar('T') || (event.modifiers().ctrl() && event.isCharIgnoreCase('t')) -> {
+            openLanguagePicker()
+            return EventResult.HANDLED
+        }
+
+        event.isChar('t') -> {
             cycleLyricsTranslation(isNowPlayingScreen = true)
             return EventResult.HANDLED
         }

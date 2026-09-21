@@ -359,6 +359,24 @@ data class TrackOptionsMenuState(
 }
 
 /**
+ * Global state for the lyrics language selector modal.
+ */
+data class LanguagePickerState(
+    val isVisible: Boolean = false,
+    val selectedIndex: Int = 0,
+    val currentLanguage: String = "es",
+    val languages: List<Pair<String, String>> = listOf(
+        "es" to "Español",
+        "en" to "English",
+        "pt" to "Português",
+        "fr" to "Français",
+        "de" to "Deutsch",
+        "it" to "Italiano",
+        "ja" to "日本語"
+    )
+)
+
+/**
  * Global UI/System flags
  */
 data class CommandBarState(
@@ -633,6 +651,7 @@ data class MeloState(
     val trackOptions: TrackOptionsMenuState = TrackOptionsMenuState(),
     val selection: BatchSelectionState = BatchSelectionState(),
     val commandBar: CommandBarState = CommandBarState(),
+    val languagePicker: LanguagePickerState = LanguagePickerState(),
     val isSettingsVisible: Boolean = false,
     val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,

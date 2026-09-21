@@ -77,7 +77,12 @@ internal fun MeloScreen.onStartLifecycle() {
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
-                state = state.copy(isOfflineMode = settings.offlineMode)
+                state = state.copy(
+                    isOfflineMode = settings.offlineMode,
+                    languagePicker = state.languagePicker.copy(
+                        currentLanguage = settings.searchLanguage.ifBlank { "es" }
+                    )
+                )
             }
             if (cookiesChanged || isInitialWithCookies) {
                 checkYouTubeAuth()

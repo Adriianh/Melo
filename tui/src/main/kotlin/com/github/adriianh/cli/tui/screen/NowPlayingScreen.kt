@@ -139,13 +139,15 @@ private fun buildLyricsPanel(state: MeloState, terminalHeight: Int): Element {
     val visibleCurrentIndex = if (currentIndex >= 0) currentIndex - start else -1
     val visibleCenterIndex = centerIndex - start
 
+    val currentLangCode = state.languagePicker.currentLanguage.uppercase()
     val headerBadge = when {
-        state.player.isTranslatingLyrics -> text("● Translating lyrics...").dim().centered()
+        state.player.isTranslatingLyrics -> text("● Translating lyrics ($currentLangCode)...").dim()
+            .centered()
         !isAutoScroll -> text("↕ MANUAL SCROLL [Enter to seek, 'a' to sync]").dim().centered()
-        mode == LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual]").bold()
+        mode == LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual • $currentLangCode]").bold()
             .fg(PRIMARY_COLOR).centered()
 
-        mode == LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated]").bold()
+        mode == LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated • $currentLangCode]").bold()
             .fg(PRIMARY_COLOR).centered()
 
         else -> text("● SYNCED").bold().fg(PRIMARY_COLOR).centered()
@@ -205,9 +207,9 @@ private fun buildLyricsPanel(state: MeloState, terminalHeight: Int): Element {
     }
 
     val bottomHelp = if (isAutoScroll) {
-        " [↑/↓] Scroll  [t] Mode "
+        " [↑/↓] Scroll  [t] Mode  [T] Lang ($currentLangCode) "
     } else {
-        " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode "
+        " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode  [T] Lang ($currentLangCode) "
     }
 
     return panel(

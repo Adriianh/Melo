@@ -158,13 +158,18 @@ internal fun MeloScreen.renderRoot(): Element {
             stack(withSearchSuggestions, commandBarSuggestionsOverlay)
         else withSearchSuggestions
 
-    return when (state.playlistInteraction.playlistInputMode) {
+    val withPlaylist = when (state.playlistInteraction.playlistInputMode) {
         PlaylistInputMode.CREATE,
         PlaylistInputMode.RENAME -> stack(withCommandBarSuggestions, playlistInputOverlay)
 
         PlaylistInputMode.PICKER -> stack(withCommandBarSuggestions, playlistPickerOverlay)
         PlaylistInputMode.NONE -> withCommandBarSuggestions
     }
+
+    return if (state.languagePicker.isVisible) stack(
+        withPlaylist,
+        languagePickerOverlay
+    ) else withPlaylist
 }
 
 internal fun MeloScreen.renderMainContentInternal(

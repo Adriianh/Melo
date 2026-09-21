@@ -4,6 +4,7 @@ import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
+import com.github.adriianh.cli.tui.component.LanguagePickerOverlay
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.component.QueueOverlay
@@ -24,6 +25,7 @@ import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
 import com.github.adriianh.cli.tui.handler.search.handleSearchQueryChange
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
@@ -476,6 +478,10 @@ class MeloScreen(
     )
     internal val trackOptionsOverlay = TrackOptionsOverlay({ state }, ::handleTrackOptionsKey)
     internal val commandBarSuggestionsOverlay = CommandBarSuggestionsOverlay { state }
+    internal val languagePickerOverlay = LanguagePickerOverlay(
+        { state },
+        ::handleLanguagePickerKey
+    )
 
     override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 

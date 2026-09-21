@@ -663,6 +663,94 @@ internal fun MeloScreen.translateLyricsForTrack(track: Track) {
     }
 }
 
+internal fun MeloScreen.openLanguagePicker() {
+    val currentLang = settingsViewState.currentSettings.searchLanguage.ifBlank { "es" }
+    val langs = state.languagePicker.languages
+    val currentIdx = langs.indexOfFirst { it.first.equals(currentLang, ignoreCase = true) }
+    state = state.copy(
+        languagePicker = state.languagePicker.copy(
+            isVisible = true,
+            currentLanguage = currentLang,
+            selectedIndex = if (currentIdx >= 0) currentIdx else 0
+        )
+    )
+}
+
+internal fun MeloScreen.selectLanguage(code: String) {
+    state = state.copy(
+        languagePicker = state.languagePicker.copy(
+            isVisible = false,
+            currentLanguage = code
+        )
+    )
+    val currentLang = settingsViewState.currentSettings.searchLanguage.ifBlank { "es" }
+    if (currentLang.equals(code, ignoreCase = true)) return
+
+    val updatedSettings = settingsViewState.currentSettings.copy(searchLanguage = code)
+    settingsViewState = settingsViewState.copy(currentSettings = updatedSettings)
+    scope.launch(Dispatchers.IO) {
+        updateSettings(updatedSettings)
+    }
+
+    val playerTrack = state.player.nowPlaying
+    val isPlayerTranslating = state.player.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL
+    val resetPlayerSynced = state.player.syncedLyrics.map { it.copy(translation = null) }
+
+    val detailTrack = state.detail.selectedTrack ?: state.player.nowPlaying
+    val isDetailTranslating = state.detail.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL
+    val resetDetailSynced = state.detail.syncedLyrics.map { it.copy(translation = null) }
+
+    state = state.copy(
+        player = state.player.copy(
+            syncedLyrics = resetPlayerSynced,
+            isTranslatingLyrics = false
+        ),
+        detail = state.detail.copy(
+            syncedLyrics = resetDetailSynced,
+            plainLyricsTranslation = null,
+            isTranslatingLyrics = false
+        )
+    )
+
+    if (isPlayerTranslating && playerTrack != null) {
+        translateLyricsForTrack(playerTrack)
+    } else if (isDetailTranslating && detailTrack != null) {
+        translateLyricsForTrack(detailTrack)
+    }
+}
+
+internal fun MeloScreen.handleLanguagePickerKey(event: KeyEvent): EventResult {
+    if (!state.languagePicker.isVisible) return EventResult.UNHANDLED
+    val languages = state.languagePicker.languages
+    when {
+        event.matches(Actions.MOVE_UP) || event.isChar('k') -> {
+            val newIdx = (state.languagePicker.selectedIndex - 1).coerceAtLeast(0)
+            state = state.copy(languagePicker = state.languagePicker.copy(selectedIndex = newIdx))
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.MOVE_DOWN) || event.isChar('j') -> {
+            val newIdx = (state.languagePicker.selectedIndex + 1).coerceAtMost(languages.lastIndex)
+            state = state.copy(languagePicker = state.languagePicker.copy(selectedIndex = newIdx))
+            return EventResult.HANDLED
+        }
+
+        event.matches(Actions.SELECT) -> {
+            val selected = languages.getOrNull(state.languagePicker.selectedIndex)
+            if (selected != null) {
+                selectLanguage(selected.first)
+            }
+            return EventResult.HANDLED
+        }
+
+        event.code() == KeyCode.ESCAPE -> {
+            state = state.copy(languagePicker = state.languagePicker.copy(isVisible = false))
+            return EventResult.HANDLED
+        }
+    }
+    return EventResult.HANDLED
+}
+
 internal fun MeloScreen.returnFocusFromDetail() {
     val target = when (val curScreen = state.screen) {
         is ScreenState.Search -> "results-panel"
@@ -679,6 +767,7 @@ internal fun MeloScreen.returnFocusFromDetail() {
 }
 
 internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     val focusedId = appRunner()?.focusManager()?.focusedId()
     if (focusedId != "detail-panel") {
         return handleGlobalShortcuts(event)
@@ -848,7 +937,13 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             }
         }
 
-        event.isCharIgnoreCase('t') && state.detail.detailTab == DetailTab.LYRICS -> {
+        (event.isChar('T') || (event.modifiers()
+            .ctrl() && event.isCharIgnoreCase('t'))) && state.detail.detailTab == DetailTab.LYRICS -> {
+            openLanguagePicker()
+            return EventResult.HANDLED
+        }
+
+        event.isChar('t') && state.detail.detailTab == DetailTab.LYRICS -> {
             cycleLyricsTranslation(isNowPlayingScreen = false)
             return EventResult.HANDLED
         }

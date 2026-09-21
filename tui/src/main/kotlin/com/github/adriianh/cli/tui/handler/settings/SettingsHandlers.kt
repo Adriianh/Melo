@@ -10,6 +10,8 @@ import com.github.adriianh.cli.tui.component.cancelMkdir
 import com.github.adriianh.cli.tui.component.clearError
 import com.github.adriianh.cli.tui.component.refresh
 import com.github.adriianh.cli.tui.component.sectionItems
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
+import com.github.adriianh.cli.tui.handler.search.openLanguagePicker
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
@@ -18,6 +20,7 @@ import java.nio.file.Path
 
 fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
     if (!state.isSettingsVisible) return EventResult.UNHANDLED
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
 
     if (event.code() == KeyCode.ESCAPE) {
         when {
@@ -175,6 +178,10 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
 
         KeyCode.ENTER -> {
             val item = items.getOrNull(settingsViewState.cursor) ?: return EventResult.HANDLED
+            if (item == SettingsItem.LANGUAGE) {
+                openLanguagePicker()
+                return EventResult.HANDLED
+            }
             if (item == SettingsItem.YOUTUBE_ACCOUNT) {
                 importYouTubeAuth()
                 return EventResult.HANDLED

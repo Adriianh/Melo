@@ -89,15 +89,16 @@ fun buildDetailPanel(
         DetailTab.LYRICS -> {
             val hasSync =
                 (if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()
+            val langSuffix = "  [T] Lang (${state.languagePicker.currentLanguage.uppercase()}) "
             if (hasSync) {
                 if (isNowPlaying) {
-                    if (state.detail.isAutoScrollLyrics) " [↑/↓] Scroll  [t] Mode  [Esc] Back "
-                    else " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode  [Esc] Back "
+                    if (state.detail.isAutoScrollLyrics) " [↑/↓] Scroll  [t] Mode$langSuffix [Esc] Back "
+                    else " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode$langSuffix [Esc] Back "
                 } else {
-                    " [↑/↓] Move  [Enter] Play  [t] Mode  [Esc] Back "
+                    " [↑/↓] Move  [Enter] Play  [t] Mode$langSuffix [Esc] Back "
                 }
             } else {
-                " [i/l/s] Tabs  [t] Mode  [Esc] Back "
+                " [i/l/s] Tabs  [t] Mode$langSuffix [Esc] Back "
             }
         }
 
@@ -445,15 +446,16 @@ private fun renderLyricsTab(
         val visibleActiveIndex = if (activeIndex >= 0) activeIndex - start else -1
         val visibleCenterIndex = centerIndex - start
 
+        val currentLangCode = state.languagePicker.currentLanguage.uppercase()
         val headerBadge = when {
-            isTranslating -> text("● Translating lyrics...").dim().centered()
+            isTranslating -> text("● Translating lyrics ($currentLangCode)...").dim().centered()
             isNowPlaying -> {
                 if (state.detail.isAutoScrollLyrics) {
                     when (mode) {
-                        LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual]").bold()
+                        LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual • $currentLangCode]").bold()
                             .fg(PRIMARY_COLOR).centered()
 
-                        LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated]").bold()
+                        LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated • $currentLangCode]").bold()
                             .fg(PRIMARY_COLOR).centered()
 
                         LyricsTranslationMode.ORIGINAL -> text("● SYNCED").bold().fg(PRIMARY_COLOR)
@@ -466,8 +468,8 @@ private fun renderLyricsTab(
 
             else -> {
                 val modeSuffix = when (mode) {
-                    LyricsTranslationMode.BILINGUAL -> " [Bilingual]"
-                    LyricsTranslationMode.TRANSLATION_ONLY -> " [Translated]"
+                    LyricsTranslationMode.BILINGUAL -> " [Bilingual • $currentLangCode]"
+                    LyricsTranslationMode.TRANSLATION_ONLY -> " [Translated • $currentLangCode]"
                     LyricsTranslationMode.ORIGINAL -> ""
                 }
                 text("♫ Lyrics (${syncedLines.size} lines)$modeSuffix").dim().centered()
@@ -563,8 +565,9 @@ private fun renderLyricsTab(
                 }
             }
             if (isTranslating) {
+                val currentLangCode = state.languagePicker.currentLanguage.uppercase()
                 column(
-                    text("● Translating lyrics...").dim().centered().length(1),
+                    text("● Translating lyrics ($currentLangCode)...").dim().centered().length(1),
                     lyricsArea.markup(textToDisplay).fill()
                 ).fill()
             } else {

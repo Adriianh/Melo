@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.handler.CommandBarHandlers.handleCommandBarKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
+import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
 import com.github.adriianh.cli.tui.handler.search.returnFocusFromDetail
 import com.github.adriianh.cli.tui.handler.settings.handleSettingsKey
 import com.github.adriianh.core.domain.model.MeloAction
@@ -199,6 +200,7 @@ internal fun MeloScreen.toggleDetailPanel() {
 }
 
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
+    if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
     if (state.commandBar.isVisible) return handleCommandBarKey(event)

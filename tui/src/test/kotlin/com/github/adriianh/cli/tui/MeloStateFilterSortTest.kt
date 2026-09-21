@@ -778,4 +778,59 @@ class MeloStateFilterSortTest {
         detail = detail.copy(lyricsTranslationMode = detail.lyricsTranslationMode.next())
         assertEquals(LyricsTranslationMode.ORIGINAL, detail.lyricsTranslationMode)
     }
+
+    @Test
+    fun testLanguagePickerStateAndNavigation() {
+        var picker = LanguagePickerState()
+        assertEquals(false, picker.isVisible)
+        assertEquals(0, picker.selectedIndex)
+        assertEquals("es", picker.currentLanguage)
+        assertEquals(7, picker.languages.size)
+
+        // Find index for French ("fr")
+        val frIndex = picker.languages.indexOfFirst { it.first == "fr" }
+        assertEquals(3, frIndex)
+
+        // Open picker with "fr" as current language
+        picker = picker.copy(
+            isVisible = true,
+            currentLanguage = "fr",
+            selectedIndex = frIndex
+        )
+        assertEquals(true, picker.isVisible)
+        assertEquals(3, picker.selectedIndex)
+        assertEquals("fr", picker.currentLanguage)
+
+        // Move down
+        val nextIdx = (picker.selectedIndex + 1).coerceAtMost(picker.languages.lastIndex)
+        picker = picker.copy(selectedIndex = nextIdx)
+        assertEquals(4, picker.selectedIndex)
+        assertEquals("de", picker.languages[picker.selectedIndex].first)
+
+        // Move up twice
+        val prevIdx1 = (picker.selectedIndex - 1).coerceAtLeast(0)
+        picker = picker.copy(selectedIndex = prevIdx1)
+        val prevIdx2 = (picker.selectedIndex - 1).coerceAtLeast(0)
+        picker = picker.copy(selectedIndex = prevIdx2)
+        assertEquals(2, picker.selectedIndex)
+        assertEquals("pt", picker.languages[picker.selectedIndex].first)
+
+        // Select language "pt"
+        picker = picker.copy(
+            isVisible = false,
+            currentLanguage = picker.languages[picker.selectedIndex].first
+        )
+        assertEquals(false, picker.isVisible)
+        assertEquals("pt", picker.currentLanguage)
+
+        // Bounds clamping at lower bound (0)
+        picker = picker.copy(selectedIndex = 0)
+        val clampedUp = (picker.selectedIndex - 1).coerceAtLeast(0)
+        assertEquals(0, clampedUp)
+
+        // Bounds clamping at upper bound (lastIndex)
+        picker = picker.copy(selectedIndex = picker.languages.lastIndex)
+        val clampedDown = (picker.selectedIndex + 1).coerceAtMost(picker.languages.lastIndex)
+        assertEquals(picker.languages.lastIndex, clampedDown)
+    }
 }
