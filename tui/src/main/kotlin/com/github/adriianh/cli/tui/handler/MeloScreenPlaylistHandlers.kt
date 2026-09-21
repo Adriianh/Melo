@@ -201,6 +201,27 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
     return handleGlobalShortcuts(event)
 }
 
+internal fun MeloScreen.reorderPlaylistTrack(fromIndex: Int, toIndex: Int) {
+    val screen = state.screen as? ScreenState.Library ?: return
+    val pl = screen.selectedPlaylist ?: return
+
+    if (screen.playlistDetailSortOrder != TrackSortOrder.DEFAULT || screen.playlistDetailSearchQuery.isNotBlank()) {
+        return
+    }
+
+    val currentTracks = screen.playlistTracks.toMutableList()
+    if (fromIndex !in currentTracks.indices || toIndex !in currentTracks.indices || fromIndex == toIndex) return
+
+    val moved = currentTracks.removeAt(fromIndex)
+    currentTracks.add(toIndex, moved)
+    updateScreen<ScreenState.Library> { it.copy(playlistTracks = currentTracks) }
+    playlistTracksList.selected(toIndex)
+
+    scope.launch {
+        reorderPlaylistTracks?.invoke(pl.id, currentTracks.map { it.id })
+    }
+}
+
 internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
     val screen = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
 
@@ -292,6 +313,28 @@ internal fun MeloScreen.handlePlaylistDetailKey(event: KeyEvent): EventResult {
                 )
             }
             playlistTracksJob?.cancel()
+            return EventResult.HANDLED
+        }
+
+        (event.modifiers().shift() && event.code() == KeyCode.UP) ||
+                (event.modifiers().alt() && event.code() == KeyCode.UP) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.UP) ||
+                event.isChar('K') -> {
+            val selected = playlistTracksList.selected()
+            if (selected > 0) {
+                reorderPlaylistTrack(selected, selected - 1)
+            }
+            return EventResult.HANDLED
+        }
+
+        (event.modifiers().shift() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().alt() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.DOWN) ||
+                event.isChar('J') -> {
+            val selected = playlistTracksList.selected()
+            if (selected < filtered.lastIndex) {
+                reorderPlaylistTrack(selected, selected + 1)
+            }
             return EventResult.HANDLED
         }
 

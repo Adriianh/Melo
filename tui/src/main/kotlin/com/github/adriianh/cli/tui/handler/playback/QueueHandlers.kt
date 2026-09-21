@@ -21,6 +21,13 @@ internal fun MeloScreen.removeFromQueue(index: Int) {
     playbackManager.removeFromQueue(index)
 }
 
+internal fun MeloScreen.moveQueueItem(fromIndex: Int, toIndex: Int) {
+    val q = state.player.queue
+    if (fromIndex !in q.indices || toIndex !in q.indices || fromIndex == toIndex) return
+    playbackManager.moveQueueItem(fromIndex, toIndex)
+    state = state.copy(player = state.player.copy(queueCursor = toIndex))
+}
+
 internal fun MeloScreen.clearQueue() {
     state = state.copy(player = state.player.copy(isRadioMode = false))
     playbackManager.setQueue(emptyList())
@@ -37,6 +44,30 @@ internal fun MeloScreen.handleQueueKey(event: KeyEvent): EventResult {
     when {
         event.code() == KeyCode.ESCAPE -> {
             state = state.copy(player = state.player.copy(isQueueVisible = false))
+            return EventResult.HANDLED
+        }
+
+        (event.modifiers().shift() && event.code() == KeyCode.UP) ||
+                (event.modifiers().alt() && event.code() == KeyCode.UP) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.UP) ||
+                event.isChar('K') -> {
+            if (!isFocused) return handleGlobalShortcuts(event)
+            val current = state.player.queueCursor
+            if (current > 0) {
+                moveQueueItem(current, current - 1)
+            }
+            return EventResult.HANDLED
+        }
+
+        (event.modifiers().shift() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().alt() && event.code() == KeyCode.DOWN) ||
+                (event.modifiers().ctrl() && event.code() == KeyCode.DOWN) ||
+                event.isChar('J') -> {
+            if (!isFocused) return handleGlobalShortcuts(event)
+            val current = state.player.queueCursor
+            if (current < state.player.queue.lastIndex) {
+                moveQueueItem(current, current + 1)
+            }
             return EventResult.HANDLED
         }
 

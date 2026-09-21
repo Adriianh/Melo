@@ -91,7 +91,7 @@ class QueueOverlay(
 
         val footer = row(
             spacer(),
-            text("[Enter] play  [Q] add  [Del] remove  [C] clear  [Esc] close").fg(TEXT_DIM),
+            text("[Enter] play  [Shift+↑/↓] move  [Del] remove  [C] clear  [Esc] close").fg(TEXT_DIM),
             spacer()
         )
 

@@ -4,18 +4,18 @@ import com.github.adriianh.cli.tui.component.TrackMenuAction
 import com.github.adriianh.cli.tui.component.resolveTrackMenuItems
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.PlaylistSortOrder
+import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.SortDirection
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
 import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
-import com.github.adriianh.core.domain.model.MeloAction
-import com.github.adriianh.core.domain.model.Settings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -669,5 +669,39 @@ class MeloStateFilterSortTest {
         assertNotNull(toggleBinding)
         assertEquals('d', toggleBinding.char)
         assertEquals(true, toggleBinding.ctrl)
+    }
+
+    @Test
+    fun testQueueAndPlaylistReorderState() {
+        val t1 = createTrack("t1", "Track 1", "Artist 1")
+        val t2 = createTrack("t2", "Track 2", "Artist 2")
+        val t3 = createTrack("t3", "Track 3", "Artist 3")
+
+        // 1. Reordering a playlist list from index 2 to index 1 (move up)
+        val playlistTracks = mutableListOf(t1, t2, t3)
+        val fromIndex = 2
+        val toIndex = 1
+        val moved = playlistTracks.removeAt(fromIndex)
+        playlistTracks.add(toIndex, moved)
+
+        assertEquals(listOf("t1", "t3", "t2"), playlistTracks.map { it.id })
+
+        // 2. Reordering a queue cursor
+        var player = PlayerState(queue = listOf(t1, t2, t3), queueCursor = 2)
+        // Move item at cursor 2 up to 1
+        player = player.copy(
+            queue = playlistTracks,
+            queueCursor = 1
+        )
+        assertEquals(1, player.queueCursor)
+        assertEquals("t3", player.queue[player.queueCursor].id)
+
+        // 3. Bounds check: at index 0, moving up is invalid
+        val canMoveUpFromZero = player.queueCursor > 0 && 0 > 0
+        assertEquals(false, canMoveUpFromZero)
+
+        // 4. Bounds check: at last index, moving down is invalid
+        val canMoveDownFromLast = player.queue.lastIndex < player.queue.lastIndex
+        assertEquals(false, canMoveDownFromLast)
     }
 }

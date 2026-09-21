@@ -94,8 +94,8 @@ fun renderLibraryScreen(
             }
 
             LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail) {
-                if (isCompact) "[Enter] Play  [m] Opts  [d] Del  [Esc] Back"
-                else "[Enter] Play  [m] Options  [v] Select  [d] Remove  [Esc] Back"
+                if (isCompact) "[Enter] Play  [Shift+↑/↓] Move  [d] Del  [Esc] Back"
+                else "[Enter] Play  [m] Options  [v] Select  [Shift+↑/↓] Move  [d] Remove  [Esc] Back"
             } else {
                 if (isCompact) "[Enter] Open  [n] New  [d] Del"
                 else "[Enter] Open  [n] New  [r] Rename  [d] Delete  [1..3] Tabs"

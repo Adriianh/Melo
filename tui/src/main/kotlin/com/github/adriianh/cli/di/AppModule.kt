@@ -31,6 +31,7 @@ import com.github.adriianh.core.domain.usecase.library.GetUserArtistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.IsFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteEntityUseCase
+import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
@@ -226,6 +227,7 @@ val appModule = module {
             isFavoriteEntity = getOrNull<IsFavoriteEntityUseCase>(),
             toggleFavoriteEntity = getOrNull<ToggleFavoriteEntityUseCase>(),
             getRemoteHistory = getOrNull<GetRemoteHistoryUseCase>(),
+            reorderPlaylistTracks = getOrNull<ReorderPlaylistTracksUseCase>(),
         )
     }
     factory { PlaybackInteractors(get(), get(), get(), get(), get()) }

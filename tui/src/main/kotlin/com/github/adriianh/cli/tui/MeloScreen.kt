@@ -140,6 +140,7 @@ class MeloScreen(
     internal val toggleLikePlaylist get() = libraryInteractors.toggleLikePlaylist
     internal val subscribeChannel get() = libraryInteractors.subscribeChannel
     internal val getRemoteHistory get() = libraryInteractors.getRemoteHistory
+    internal val reorderPlaylistTracks get() = libraryInteractors.reorderPlaylistTracks
 
     internal val saveSession get() = sessionInteractors.saveSession
     internal val restoreSession get() = sessionInteractors.restoreSession
