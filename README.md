@@ -35,7 +35,7 @@
 
 ## 📦 Downloads
 
-Pre-built binaries and packages for **v2.0.0** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
+Pre-built binaries and packages for **v2.1.0** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
 
 | Platform | Format / Package | Description |
 |---|---|---|
@@ -181,6 +181,7 @@ cd Melo
 - [x] **v2.0.0 — Compose Multiplatform Client** (Android, Linux, Windows, macOS)
 - [x] **v2.0.0 — Synchronized LRC Lyrics & Live Translation**
 - [x] **v2.0.0 — Offline Downloads & Local Media Scanner**
+- [x] **v2.1.0 — TUI Redesign, Unified Core & Modular Architecture**
 - [ ] Last.fm & ListenBrainz scrobbling integration
 - [ ] Discord Rich Presence (RPC)
 - [ ] Parametric DSP Equalizer
