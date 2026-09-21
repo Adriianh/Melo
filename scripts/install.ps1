@@ -85,24 +85,31 @@ try {
         New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
     }
 
+    # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
+    # without triggering PSSecurityException / ExecutionPolicy restrictions.
+    Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
+
     $wrapperCmd = @"
 @echo off
-"$InstallDir\melo.exe" %*
-"@
-    $wrapperPs1 = @"
-& "$InstallDir\melo.exe" @args
+"%~dp0..\melo.exe" %*
 "@
     Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperCmd
     Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo.ps1") -Value $wrapperPs1
 
     Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
     Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo-tui.ps1") -Value $wrapperPs1
 
     Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
     Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo-cli.ps1") -Value $wrapperPs1
+
+    $gitBashWrapper = @"
+#!/usr/bin/env sh
+MELO_HOME="`$(cd "`$(dirname "`$0")/.." && pwd)"
+exec "`$MELO_HOME/melo.exe" "`$@"
+"@
+    Set-Content -Path (Join-Path $BinDir "melo") -Value $gitBashWrapper
+    Set-Content -Path (Join-Path $BinDir "melo-tui") -Value $gitBashWrapper
+    Set-Content -Path (Join-Path $BinDir "melo-cli") -Value $gitBashWrapper
 
     # User PATH check
     $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)

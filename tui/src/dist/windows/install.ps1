@@ -16,14 +16,16 @@ if (Test-Path "$ScriptDir\*.dll") {
     Copy-Item -Path "$ScriptDir\*.dll" -Destination "$InstallDir\" -Force
 }
 
-Set-Content "$BinDir\melo-tui.bat" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
-Set-Content "$BinDir\melo-tui.cmd" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
-Set-Content "$BinDir\melo-tui.ps1" "& `"$InstallDir\melo.exe`" @args`r`n"
-Set-Content "$BinDir\melo-cli.bat" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
-Set-Content "$BinDir\melo-cli.cmd" "@echo off`r`n`"$InstallDir\melo.exe`" %*`r`n"
-Set-Content "$BinDir\melo-cli.ps1" "& `"$InstallDir\melo.exe`" @args`r`n"
+# Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
+# without triggering PSSecurityException / ExecutionPolicy restrictions.
+Remove-Item "$BinDir\*.ps1" -Force -ErrorAction SilentlyContinue
 
-$meloBat = @"
+Set-Content "$BinDir\melo-tui.bat" "@echo off`r`n`"%~dp0..\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-tui.cmd" "@echo off`r`n`"%~dp0..\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-cli.bat" "@echo off`r`n`"%~dp0..\melo.exe`" %*`r`n"
+Set-Content "$BinDir\melo-cli.cmd" "@echo off`r`n`"%~dp0..\melo.exe`" %*`r`n"
+
+$meloCmd = @"
 @echo off
 if "%~1"=="--gui" (
     shift
@@ -47,32 +49,20 @@ if "%~1"=="-g" (
 )
 if "%~1"=="--tui" shift
 if "%~1"=="-t" shift
-"$InstallDir\melo.exe" %*
+"%~dp0..\melo.exe" %*
 "@
-Set-Content "$BinDir\melo.bat" $meloBat
-Set-Content "$BinDir\melo.cmd" $meloBat
+Set-Content "$BinDir\melo.bat" $meloCmd
+Set-Content "$BinDir\melo.cmd" $meloCmd
 
-$meloPs1 = @"
-param()
-if (`$args.Count -gt 0 -and (`$args[0] -eq "--gui" -or `$args[0] -eq "-g")) {
-    `$guiArgs = `$args | Select-Object -Skip 1
-    `$guiPath = "`$env:LOCALAPPDATA\Programs\Melo\Melo.exe"
-    if (Test-Path `$guiPath) {
-        Start-Process `$guiPath -ArgumentList `$guiArgs
-        exit 0
-    } else {
-        Write-Error "Error: Melo GUI is not installed."
-        exit 1
-    }
-}
-if (`$args.Count -gt 0 -and (`$args[0] -eq "--tui" -or `$args[0] -eq "-t")) {
-    `$tuiArgs = `$args | Select-Object -Skip 1
-    & "$InstallDir\melo.exe" @tuiArgs
-    exit `$LASTEXITCODE
-}
-& "$InstallDir\melo.exe" @args
+# Posix sh wrappers for Git Bash / MSYS2 users on Windows
+$gitBashWrapper = @"
+#!/usr/bin/env sh
+MELO_HOME="`$(cd "`$(dirname "`$0")/.." && pwd)"
+exec "`$MELO_HOME/melo.exe" "`$@"
 "@
-Set-Content "$BinDir\melo.ps1" $meloPs1
+Set-Content "$BinDir\melo" $gitBashWrapper
+Set-Content "$BinDir\melo-tui" $gitBashWrapper
+Set-Content "$BinDir\melo-cli" $gitBashWrapper
 
 $envFile = "$ConfigDir\.env"
 if (-not (Test-Path $envFile)) {
