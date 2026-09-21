@@ -25,6 +25,9 @@ class ArtworkRenderer(private val httpClient: HttpClient) {
             withContext(Dispatchers.Default) {
                 try {
                     ImageData.fromBytes(bytes)?.also {
+                        val testW = if (it.width() > 1) 1 else 2
+                        val testH = if (it.height() > 1) 1 else 2
+                        it.resize(testW, testH)
                         mutex.withLock {
                             cache[artworkUrl] = it
                         }
