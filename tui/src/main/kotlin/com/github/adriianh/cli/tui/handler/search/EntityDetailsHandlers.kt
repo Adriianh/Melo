@@ -251,7 +251,7 @@ internal fun MeloScreen.loadEntityDetails(entity: SearchResult) {
                             "w120-h120", "w512-h512"
                         )
                     ) // Request higher res if possible
-                } catch (_: Exception) {
+                } catch (_: Throwable) {
                     null
                 }
             }
@@ -379,7 +379,7 @@ internal fun MeloScreen.loadTrackDetails(trackId: String, knownTrack: Track? = n
                 val artworkData = artworkUrl?.let {
                     try {
                         artworkRenderer.load(it)
-                    } catch (_: Exception) {
+                    } catch (_: Throwable) {
                         null
                     }
                 }

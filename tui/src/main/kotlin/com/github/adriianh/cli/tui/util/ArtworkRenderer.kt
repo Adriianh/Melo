@@ -23,13 +23,17 @@ class ArtworkRenderer(private val httpClient: HttpClient) {
         try {
             val bytes = httpClient.get(artworkUrl).body<ByteArray>()
             withContext(Dispatchers.Default) {
-                ImageData.fromBytes(bytes)?.also {
-                    mutex.withLock {
-                        cache[artworkUrl] = it
+                try {
+                    ImageData.fromBytes(bytes)?.also {
+                        mutex.withLock {
+                            cache[artworkUrl] = it
+                        }
                     }
+                } catch (_: Throwable) {
+                    null
                 }
             }
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             null
         }
     }

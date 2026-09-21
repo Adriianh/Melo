@@ -72,7 +72,13 @@ internal fun MeloScreen.loadNowPlayingMetadata(track: Track) {
         }
 
         launch {
-            val artwork = artworkUrl?.let { artworkRenderer.load(it) }
+            val artwork = artworkUrl?.let {
+                try {
+                    artworkRenderer.load(it)
+                } catch (_: Throwable) {
+                    null
+                }
+            }
 
             if (isActive) appRunner()?.runOnRenderThread {
                 if (state.player.nowPlaying?.id == track.id) {

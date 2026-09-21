@@ -85,14 +85,24 @@ try {
         New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
     }
 
-    $wrapperContent = @"
+    $wrapperCmd = @"
 @echo off
 "$InstallDir\melo.exe" %*
 "@
-    Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperContent
-    Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperContent
-    Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperContent
-    Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperContent
+    $wrapperPs1 = @"
+& "$InstallDir\melo.exe" @args
+"@
+    Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo.ps1") -Value $wrapperPs1
+
+    Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-tui.ps1") -Value $wrapperPs1
+
+    Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-cli.ps1") -Value $wrapperPs1
 
     # User PATH check
     $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
