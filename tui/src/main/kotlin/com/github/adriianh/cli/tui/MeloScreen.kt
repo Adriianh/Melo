@@ -106,6 +106,7 @@ class MeloScreen(
     internal val getTrack get() = searchInteractors.getTrack
     internal val getLyrics get() = searchInteractors.getLyrics
     internal val getSyncedLyrics get() = searchInteractors.getSyncedLyrics
+    internal val translateLyrics get() = searchInteractors.translateLyrics
     internal val getSimilarTracks get() = searchInteractors.getSimilarTracks
     internal val getEntityDetails get() = searchInteractors.getEntityDetails
     internal val getArtistTags get() = searchInteractors.getArtistTags

@@ -1,8 +1,11 @@
 package com.github.adriianh.cli.tui.handler.playback
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.matchesAction
+import com.github.adriianh.cli.tui.handler.search.cycleLyricsTranslation
 import com.github.adriianh.cli.tui.isPlayable
+import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
@@ -144,4 +147,92 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
         }
     }
     return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.seekToMs(targetMs: Long) {
+    val duration = state.player.nowPlaying?.durationMs ?: return
+    if (state.player.isLoadingAudio) return
+    val clamped = targetMs.coerceIn(0L, duration)
+    playbackManager.seekTo(clamped)
+    if (settingsViewState.currentSettings.discordRpcEnabled) {
+        discordRpcManager.updateActivity(state.player.nowPlaying, state.player.isPlaying, clamped)
+    }
+}
+
+internal fun MeloScreen.handleNowPlayingKey(event: KeyEvent): EventResult {
+    val lines = state.player.syncedLyrics
+    val nowPlayingState = (state.screen as? ScreenState.NowPlaying) ?: ScreenState.NowPlaying()
+
+    when {
+        event.matches(Actions.MOVE_UP) || event.isChar('k') -> {
+            if (lines.isNotEmpty()) {
+                val base = if (nowPlayingState.isAutoScrollLyrics) {
+                    LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                        .coerceAtLeast(0)
+                } else {
+                    nowPlayingState.lyricsScrollOffset
+                }
+                val newOffset = (base - 1).coerceAtLeast(0)
+                state = state.copy(
+                    screen = nowPlayingState.copy(
+                        isAutoScrollLyrics = false,
+                        lyricsScrollOffset = newOffset
+                    )
+                )
+                return EventResult.HANDLED
+            }
+        }
+
+        event.matches(Actions.MOVE_DOWN) || event.isChar('j') -> {
+            if (lines.isNotEmpty()) {
+                val base = if (nowPlayingState.isAutoScrollLyrics) {
+                    LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                        .coerceAtLeast(0)
+                } else {
+                    nowPlayingState.lyricsScrollOffset
+                }
+                val newOffset = (base + 1).coerceAtMost(lines.lastIndex)
+                state = state.copy(
+                    screen = nowPlayingState.copy(
+                        isAutoScrollLyrics = false,
+                        lyricsScrollOffset = newOffset
+                    )
+                )
+                return EventResult.HANDLED
+            }
+        }
+
+        event.matches(Actions.SELECT) -> {
+            if (lines.isNotEmpty() && !nowPlayingState.isAutoScrollLyrics) {
+                val line = lines.getOrNull(nowPlayingState.lyricsScrollOffset)
+                if (line != null) {
+                    seekToMs(line.timeMs)
+                    state = state.copy(
+                        screen = nowPlayingState.copy(
+                            isAutoScrollLyrics = true,
+                            lyricsScrollOffset = 0
+                        )
+                    )
+                    return EventResult.HANDLED
+                }
+            }
+        }
+
+        event.isCharIgnoreCase('a') -> {
+            state = state.copy(
+                screen = nowPlayingState.copy(
+                    isAutoScrollLyrics = true,
+                    lyricsScrollOffset = 0
+                )
+            )
+            return EventResult.HANDLED
+        }
+
+        event.isCharIgnoreCase('t') -> {
+            cycleLyricsTranslation(isNowPlayingScreen = true)
+            return EventResult.HANDLED
+        }
+    }
+
+    return handlePlayerBarKey(event)
 }

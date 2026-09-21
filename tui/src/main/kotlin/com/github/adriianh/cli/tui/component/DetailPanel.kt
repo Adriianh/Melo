@@ -23,6 +23,7 @@ import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.cli.tui.util.TextFormatUtil.formatDuration
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.entityId
@@ -89,10 +90,14 @@ fun buildDetailPanel(
             val hasSync =
                 (if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()
             if (hasSync) {
-                if (isNowPlaying) " [↑/↓] Scroll  [a] Sync  [Esc] Back "
-                else " [↑/↓] Scroll  [Esc] Back "
+                if (isNowPlaying) {
+                    if (state.detail.isAutoScrollLyrics) " [↑/↓] Scroll  [t] Mode  [Esc] Back "
+                    else " [↑/↓] Move  [Enter] Seek  [a] Sync  [t] Mode  [Esc] Back "
+                } else {
+                    " [↑/↓] Move  [Enter] Play  [t] Mode  [Esc] Back "
+                }
             } else {
-                " [i/l/s] Tabs  [Esc] Back "
+                " [i/l/s] Tabs  [t] Mode  [Esc] Back "
             }
         }
 
@@ -404,6 +409,12 @@ private fun renderLyricsTab(
         )
     }
 
+    val mode =
+        if (isNowPlaying) state.player.lyricsTranslationMode else state.detail.lyricsTranslationMode
+    val isTranslating =
+        if (isNowPlaying) state.player.isTranslatingLyrics else state.detail.isTranslatingLyrics
+    val isBilingual = mode == LyricsTranslationMode.BILINGUAL
+
     val syncedLines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
         state.player.syncedLyrics
     } else {
@@ -425,7 +436,8 @@ private fun renderLyricsTab(
             state.detail.lyricsScrollOffset.coerceIn(0, syncedLines.lastIndex)
         }
 
-        val windowSize = (terminalHeight - 12).coerceIn(14, 50)
+        val rawWindow = (terminalHeight - 12).coerceIn(14, 50)
+        val windowSize = if (isBilingual) (rawWindow / 2).coerceAtLeast(6) else rawWindow
         val half = windowSize / 2
         val start = (centerIndex - half).coerceAtLeast(0)
         val end = (start + windowSize).coerceAtMost(syncedLines.size)
@@ -433,26 +445,91 @@ private fun renderLyricsTab(
         val visibleActiveIndex = if (activeIndex >= 0) activeIndex - start else -1
         val visibleCenterIndex = centerIndex - start
 
-        val headerBadge = if (isNowPlaying) {
-            if (state.detail.isAutoScrollLyrics) {
-                text("● SYNCED").bold().fg(PRIMARY_COLOR).centered()
-            } else {
-                text("↕ MANUAL SCROLL (press 'a' to sync)").dim().centered()
+        val headerBadge = when {
+            isTranslating -> text("● Translating lyrics...").dim().centered()
+            isNowPlaying -> {
+                if (state.detail.isAutoScrollLyrics) {
+                    when (mode) {
+                        LyricsTranslationMode.BILINGUAL -> text("● SYNCED [Bilingual]").bold()
+                            .fg(PRIMARY_COLOR).centered()
+
+                        LyricsTranslationMode.TRANSLATION_ONLY -> text("● SYNCED [Translated]").bold()
+                            .fg(PRIMARY_COLOR).centered()
+
+                        LyricsTranslationMode.ORIGINAL -> text("● SYNCED").bold().fg(PRIMARY_COLOR)
+                            .centered()
+                    }
+                } else {
+                    text("↕ MANUAL SCROLL [Enter to seek, 'a' to sync]").dim().centered()
+                }
             }
-        } else {
-            text("♫ Lyrics (${syncedLines.size} lines)").dim().centered()
+
+            else -> {
+                val modeSuffix = when (mode) {
+                    LyricsTranslationMode.BILINGUAL -> " [Bilingual]"
+                    LyricsTranslationMode.TRANSLATION_ONLY -> " [Translated]"
+                    LyricsTranslationMode.ORIGINAL -> ""
+                }
+                text("♫ Lyrics (${syncedLines.size} lines)$modeSuffix").dim().centered()
+            }
         }
 
-        val lineElements = visibleLines.mapIndexed { i, lrcLine ->
+        val lineElements = mutableListOf<Element>()
+        visibleLines.forEachIndexed { i, lrcLine ->
             val isCurrentPlaying = (i == visibleActiveIndex)
             val isManualFocused = (!state.detail.isAutoScrollLyrics && i == visibleCenterIndex)
-            val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
-            val t = text(displayText).overflow(Overflow.WRAP_WORD)
-            when {
-                isCurrentPlaying -> t.bold().fg(PRIMARY_COLOR).centered()
-                isManualFocused -> t.bold().fg(PRIMARY_COLOR).centered()
-                visibleActiveIndex >= 0 && i < visibleActiveIndex -> t.fg(TEXT_DIM).centered()
-                else -> t.fg(TEXT_SECONDARY).centered()
+            val isHighlighted = isCurrentPlaying || isManualFocused
+
+            when (mode) {
+                LyricsTranslationMode.ORIGINAL -> {
+                    val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                    val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                    val styled = when {
+                        isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                        visibleActiveIndex >= 0 && i < visibleActiveIndex -> t.fg(TEXT_DIM)
+                            .centered()
+
+                        else -> t.fg(TEXT_SECONDARY).centered()
+                    }
+                    lineElements.add(styled)
+                }
+
+                LyricsTranslationMode.TRANSLATION_ONLY -> {
+                    val displayText = lrcLine.translation?.takeIf { it.isNotBlank() }
+                        ?: lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                    val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                    val styled = when {
+                        isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                        visibleActiveIndex >= 0 && i < visibleActiveIndex -> t.fg(TEXT_DIM)
+                            .centered()
+
+                        else -> t.fg(TEXT_SECONDARY).centered()
+                    }
+                    lineElements.add(styled)
+                }
+
+                LyricsTranslationMode.BILINGUAL -> {
+                    val displayText = lrcLine.text.ifBlank { "♪ ♫ ♪" }
+                    val t = text(displayText).overflow(Overflow.WRAP_WORD)
+                    val styledOrig = when {
+                        isHighlighted -> t.bold().fg(PRIMARY_COLOR).centered()
+                        visibleActiveIndex >= 0 && i < visibleActiveIndex -> t.fg(TEXT_DIM)
+                            .centered()
+
+                        else -> t.fg(TEXT_SECONDARY).centered()
+                    }
+                    lineElements.add(styledOrig)
+
+                    val trans = lrcLine.translation
+                    if (!trans.isNullOrBlank()) {
+                        val sub = text("↳ $trans").overflow(Overflow.WRAP_WORD)
+                        val styledSub = when {
+                            isHighlighted -> sub.fg(TEXT_PRIMARY).dim().centered()
+                            else -> sub.fg(TEXT_DIM).centered()
+                        }
+                        lineElements.add(styledSub)
+                    }
+                }
             }
         }
 
@@ -466,7 +543,34 @@ private fun renderLyricsTab(
     }
 
     return when {
-        state.detail.lyrics != null -> lyricsArea.markup(state.detail.lyrics).fill()
+        state.detail.lyrics != null -> {
+            val textToDisplay = when (mode) {
+                LyricsTranslationMode.ORIGINAL -> state.detail.lyrics
+                LyricsTranslationMode.TRANSLATION_ONLY -> state.detail.plainLyricsTranslation
+                    ?: state.detail.lyrics
+
+                LyricsTranslationMode.BILINGUAL -> {
+                    if (state.detail.plainLyricsTranslation != null) {
+                        val origLines = state.detail.lyrics.lines()
+                        val transLines = state.detail.plainLyricsTranslation.lines()
+                        origLines.mapIndexed { idx, orig ->
+                            val trans = transLines.getOrNull(idx)
+                            if (!trans.isNullOrBlank()) "$orig\n  ↳ $trans" else orig
+                        }.joinToString("\n")
+                    } else {
+                        state.detail.lyrics
+                    }
+                }
+            }
+            if (isTranslating) {
+                column(
+                    text("● Translating lyrics...").dim().centered().length(1),
+                    lyricsArea.markup(textToDisplay).fill()
+                ).fill()
+            } else {
+                lyricsArea.markup(textToDisplay).fill()
+            }
+        }
         else -> column(
             spacer(),
             text("  Press Enter or 'l' to load lyrics").fg(TEXT_SECONDARY).centered(),

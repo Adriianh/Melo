@@ -14,14 +14,17 @@ import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
 import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
 import com.github.adriianh.cli.tui.handler.playback.playList
 import com.github.adriianh.cli.tui.handler.playback.playTrack
+import com.github.adriianh.cli.tui.handler.playback.seekToMs
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
 import com.github.adriianh.cli.tui.handler.toggleFavorite
 import com.github.adriianh.cli.tui.isFavoriteEntity
 import com.github.adriianh.cli.tui.util.LrcParser
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.FavoriteEntityType
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.toFavoriteEntity
@@ -29,6 +32,7 @@ import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -472,6 +476,8 @@ internal fun MeloScreen.loadLyrics() {
             isLoadingLyrics = true,
             lyrics = null,
             syncedLyrics = emptyList(),
+            plainLyricsTranslation = null,
+            isTranslatingLyrics = false,
             lyricsScrollOffset = 0,
             isAutoScrollLyrics = true
         )
@@ -495,6 +501,9 @@ internal fun MeloScreen.loadLyrics() {
                             isAutoScrollLyrics = true
                         )
                     )
+                    if (state.detail.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL && existingSynced.none { it.translation != null }) {
+                        translateLyricsForTrack(track)
+                    }
                 }
             }
             return@launch
@@ -521,6 +530,9 @@ internal fun MeloScreen.loadLyrics() {
                             isAutoScrollLyrics = true
                         )
                     )
+                    if (state.detail.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL) {
+                        translateLyricsForTrack(track)
+                    }
                 }
             }
         } else {
@@ -541,7 +553,111 @@ internal fun MeloScreen.loadLyrics() {
                             isAutoScrollLyrics = true
                         )
                     )
+                    if (state.detail.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL && plainLyrics != null) {
+                        translateLyricsForTrack(track)
+                    }
                 }
+            }
+        }
+    }
+}
+
+internal fun MeloScreen.cycleLyricsTranslation(isNowPlayingScreen: Boolean) {
+    val track = if (isNowPlayingScreen) state.player.nowPlaying else (state.detail.selectedTrack
+        ?: state.player.nowPlaying)
+    val currentMode =
+        if (isNowPlayingScreen) state.player.lyricsTranslationMode else state.detail.lyricsTranslationMode
+    val nextMode = currentMode.next()
+
+    val isNowPlayingTrack = track != null && state.player.nowPlaying?.id == track.id
+
+    state = state.copy(
+        player = if (isNowPlayingTrack || isNowPlayingScreen) state.player.copy(
+            lyricsTranslationMode = nextMode
+        ) else state.player,
+        detail = if (!isNowPlayingScreen || isNowPlayingTrack) state.detail.copy(
+            lyricsTranslationMode = nextMode
+        ) else state.detail
+    )
+
+    if (nextMode != LyricsTranslationMode.ORIGINAL && track != null) {
+        val syncedLines = if (isNowPlayingTrack && state.player.syncedLyrics.isNotEmpty()) {
+            state.player.syncedLyrics
+        } else {
+            state.detail.syncedLyrics
+        }
+        val hasMissingSyncedTrans =
+            syncedLines.isNotEmpty() && syncedLines.none { it.translation != null }
+        val hasMissingPlainTrans =
+            syncedLines.isEmpty() && !state.detail.lyrics.isNullOrBlank() && state.detail.plainLyricsTranslation == null
+
+        if (hasMissingSyncedTrans || hasMissingPlainTrans) {
+            translateLyricsForTrack(track)
+        }
+    }
+}
+
+internal fun MeloScreen.translateLyricsForTrack(track: Track) {
+    val translateUseCase = translateLyrics ?: return
+    val targetLang = settingsViewState.currentSettings.searchLanguage.ifBlank { "es" }
+
+    val isNowPlaying = state.player.nowPlaying?.id == track.id
+    val isDetail = (state.detail.selectedTrack?.id ?: state.player.nowPlaying?.id) == track.id
+
+    val isAlreadyTranslating =
+        (isNowPlaying && state.player.isTranslatingLyrics) || (isDetail && state.detail.isTranslatingLyrics)
+    if (isAlreadyTranslating) return
+
+    val syncedLines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
+        state.player.syncedLyrics
+    } else {
+        state.detail.syncedLyrics
+    }
+    val plain = state.detail.lyrics
+
+    if (syncedLines.isEmpty() && plain.isNullOrBlank()) return
+
+    state = state.copy(
+        player = if (isNowPlaying) state.player.copy(isTranslatingLyrics = true) else state.player,
+        detail = if (isDetail) state.detail.copy(isTranslatingLyrics = true) else state.detail
+    )
+
+    scope.launch(Dispatchers.IO) {
+        val trackLyrics = TrackLyrics(
+            plainLyrics = plain,
+            syncedLyrics = syncedLines,
+            hasSync = syncedLines.isNotEmpty()
+        )
+        val result = runCatching {
+            translateUseCase(track.id, trackLyrics, targetLang)
+        }.getOrNull()
+
+        appRunner()?.runOnRenderThread {
+            val stillNowPlaying = state.player.nowPlaying?.id == track.id
+            val stillDetail =
+                (state.detail.selectedTrack?.id ?: state.player.nowPlaying?.id) == track.id
+
+            if (result != null) {
+                state = state.copy(
+                    player = if (stillNowPlaying) {
+                        state.player.copy(
+                            syncedLyrics = if (result.hasSync) result.syncedLyrics else state.player.syncedLyrics,
+                            isTranslatingLyrics = false
+                        )
+                    } else state.player,
+                    detail = if (stillDetail) {
+                        state.detail.copy(
+                            syncedLyrics = if (result.hasSync) result.syncedLyrics else state.detail.syncedLyrics,
+                            plainLyricsTranslation = result.plainLyrics,
+                            isTranslatingLyrics = false
+                        )
+                    } else state.detail
+                )
+            } else {
+                state = state.copy(
+                    player = if (stillNowPlaying) state.player.copy(isTranslatingLyrics = false) else state.player,
+                    detail = if (stillDetail) state.detail.copy(isTranslatingLyrics = false) else state.detail
+                )
             }
         }
     }
@@ -732,10 +848,31 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
             }
         }
 
+        event.isCharIgnoreCase('t') && state.detail.detailTab == DetailTab.LYRICS -> {
+            cycleLyricsTranslation(isNowPlayingScreen = false)
+            return EventResult.HANDLED
+        }
+
         event.matches(Actions.SELECT) && state.detail.detailTab == DetailTab.LYRICS -> {
-            if (state.detail.lyrics == null && state.detail.syncedLyrics.isEmpty()) {
+            val track = state.detail.selectedTrack ?: state.player.nowPlaying
+            val isNowPlaying = track != null && state.player.nowPlaying?.id == track.id
+            val lines = if (isNowPlaying && state.player.syncedLyrics.isNotEmpty()) {
+                state.player.syncedLyrics
+            } else {
+                state.detail.syncedLyrics
+            }
+            if (state.detail.lyrics == null && lines.isEmpty()) {
                 loadLyrics()
-            } else if (!state.detail.isAutoScrollLyrics) {
+            } else if (!state.detail.isAutoScrollLyrics && lines.isNotEmpty()) {
+                val targetLine = lines.getOrNull(state.detail.lyricsScrollOffset)
+                if (isNowPlaying && targetLine != null) {
+                    seekToMs(targetLine.timeMs)
+                } else if (!isNowPlaying && track != null) {
+                    playTrack(track)
+                    if (targetLine != null) {
+                        seekToMs(targetLine.timeMs)
+                    }
+                }
                 state = state.copy(
                     detail = state.detail.copy(
                         isAutoScrollLyrics = true,

@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.component.screen
 
 import com.github.adriianh.cli.tui.MeloScreen
+import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.handler.checkIsFavorite
 import com.github.adriianh.cli.tui.handler.onTrackProgress
 import com.github.adriianh.cli.tui.handler.onTrackStarted
@@ -9,7 +10,9 @@ import com.github.adriianh.cli.tui.handler.playback.seekBackward
 import com.github.adriianh.cli.tui.handler.playback.seekForward
 import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
 import com.github.adriianh.cli.tui.handler.search.loadNowPlayingMetadata
+import com.github.adriianh.cli.tui.handler.search.translateLyricsForTrack
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.PlaybackEvent
 import kotlinx.coroutines.Dispatchers
@@ -196,11 +199,15 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
                             state.detail.copy(
                                 syncedLyrics = parsed,
                                 lyrics = parsed.joinToString("\n") { it.text },
+                                plainLyricsTranslation = null,
                                 isAutoScrollLyrics = true,
                                 lyricsScrollOffset = 0,
                             )
                         } else state.detail
                     )
+                    if (parsed.isNotEmpty() && state.player.lyricsTranslationMode != LyricsTranslationMode.ORIGINAL) {
+                        translateLyricsForTrack(track)
+                    }
                 }
             }
         } catch (_: Exception) {
@@ -218,16 +225,25 @@ private fun MeloScreen.handlePlaybackTrackStarted(track: Track) {
                 isLoadingAudio = true,
                 syncedLyrics = emptyList(),
                 isLoadingSyncedLyrics = true,
+                isTranslatingLyrics = false,
                 nowPlayingArtwork = null,
                 marqueeOffset = 0,
                 nowPlayingPositionMs = 0L,
                 progress = 0.0,
             ),
+            screen = if (state.screen is ScreenState.NowPlaying) {
+                (state.screen as ScreenState.NowPlaying).copy(
+                    isAutoScrollLyrics = true,
+                    lyricsScrollOffset = 0
+                )
+            } else state.screen,
             detail = if (isDetailTrack) {
                 state.detail.copy(
                     syncedLyrics = emptyList(),
+                    plainLyricsTranslation = null,
                     lyricsScrollOffset = 0,
                     isAutoScrollLyrics = true,
+                    isTranslatingLyrics = false,
                 )
             } else state.detail
         )

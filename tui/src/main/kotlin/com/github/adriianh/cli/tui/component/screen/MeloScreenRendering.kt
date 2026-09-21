@@ -19,6 +19,7 @@ import com.github.adriianh.cli.tui.handler.handleSidebarKey
 import com.github.adriianh.cli.tui.handler.handleStatsKey
 import com.github.adriianh.cli.tui.handler.playback.adjustVolume
 import com.github.adriianh.cli.tui.handler.playback.cycleRepeat
+import com.github.adriianh.cli.tui.handler.playback.handleNowPlayingKey
 import com.github.adriianh.cli.tui.handler.playback.handlePlayerBarKey
 import com.github.adriianh.cli.tui.handler.playback.seekBackward
 import com.github.adriianh.cli.tui.handler.playback.seekForward
@@ -135,7 +136,7 @@ internal fun MeloScreen.renderRoot(): Element {
         dockWithBottom
     }
 
-    val mainLayout = dockWithRight.center(renderMainContentInternal(terminalWidth))
+    val mainLayout = dockWithRight.center(renderMainContentInternal(terminalWidth, terminalHeight))
 
     val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
     val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
@@ -166,7 +167,10 @@ internal fun MeloScreen.renderRoot(): Element {
     }
 }
 
-internal fun MeloScreen.renderMainContentInternal(terminalWidth: Int = 120): Element {
+internal fun MeloScreen.renderMainContentInternal(
+    terminalWidth: Int = 120,
+    terminalHeight: Int = 30
+): Element {
     return when (state.screen) {
         is ScreenState.Home -> renderHomeScreen(
             state,
@@ -200,7 +204,8 @@ internal fun MeloScreen.renderMainContentInternal(terminalWidth: Int = 120): Ele
         is ScreenState.NowPlaying -> renderNowPlayingScreen(
             state,
             ::marqueeText,
-            ::handlePlayerBarKey
+            ::handleNowPlayingKey,
+            terminalHeight,
         )
 
         is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)

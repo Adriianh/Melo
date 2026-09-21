@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.component.TrackMenuAction
 import com.github.adriianh.cli.tui.component.resolveTrackMenuItems
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
@@ -11,6 +12,7 @@ import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.PlaylistSortOrder
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.SortDirection
+import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.TrackSortOrder
 import com.github.adriianh.core.domain.model.filterAndSortOfflineTracks
@@ -703,5 +705,77 @@ class MeloStateFilterSortTest {
         // 4. Bounds check: at the last index, moving down is invalid
         val canMoveDownFromLast = player.queue.lastIndex < player.queue.lastIndex
         assertEquals(false, canMoveDownFromLast)
+    }
+
+    @Test
+    fun testLyricsTranslationModeCycle() {
+        assertEquals(LyricsTranslationMode.BILINGUAL, LyricsTranslationMode.ORIGINAL.next())
+        assertEquals(LyricsTranslationMode.TRANSLATION_ONLY, LyricsTranslationMode.BILINGUAL.next())
+        assertEquals(LyricsTranslationMode.ORIGINAL, LyricsTranslationMode.TRANSLATION_ONLY.next())
+    }
+
+    @Test
+    fun testNowPlayingLyricsNavigationAndSeeking() {
+        val lines = listOf(
+            SyncedLine(1000L, "First line", "Primera línea"),
+            SyncedLine(5000L, "Second line", "Segunda línea"),
+            SyncedLine(10000L, "Third line", "Tercera línea")
+        )
+
+        // 1. Initial NowPlaying state
+        var nowPlaying = ScreenState.NowPlaying(lyricsScrollOffset = 0, isAutoScrollLyrics = true)
+        assertEquals(true, nowPlaying.isAutoScrollLyrics)
+        assertEquals(0, nowPlaying.lyricsScrollOffset)
+
+        // 2. Manual navigation down sets autoScroll to false
+        nowPlaying = nowPlaying.copy(isAutoScrollLyrics = false, lyricsScrollOffset = 1)
+        assertEquals(false, nowPlaying.isAutoScrollLyrics)
+        assertEquals(1, nowPlaying.lyricsScrollOffset)
+
+        // 3. Line to seek to when user presses Enter
+        val selectedLine = lines.getOrNull(nowPlaying.lyricsScrollOffset)
+        assertNotNull(selectedLine)
+        assertEquals(5000L, selectedLine.timeMs)
+        assertEquals("Second line", selectedLine.text)
+        assertEquals("Segunda línea", selectedLine.translation)
+
+        // 4. Re-sync resets autoScroll to true
+        nowPlaying = nowPlaying.copy(isAutoScrollLyrics = true, lyricsScrollOffset = 0)
+        assertEquals(true, nowPlaying.isAutoScrollLyrics)
+        assertEquals(0, nowPlaying.lyricsScrollOffset)
+    }
+
+    @Test
+    fun testDetailLyricsTranslationAndBilingualDisplay() {
+        val sampleLines = listOf(
+            SyncedLine(1000L, "Hello", "Hola"),
+            SyncedLine(3000L, "World", "Mundo")
+        )
+
+        var detail = DetailState(
+            lyrics = "Hello\nWorld",
+            syncedLyrics = sampleLines,
+            plainLyricsTranslation = "Hola\nMundo",
+            lyricsTranslationMode = LyricsTranslationMode.ORIGINAL
+        )
+
+        // Initial ORIGINAL mode
+        assertEquals(LyricsTranslationMode.ORIGINAL, detail.lyricsTranslationMode)
+
+        // Cycle to BILINGUAL
+        detail = detail.copy(lyricsTranslationMode = detail.lyricsTranslationMode.next())
+        assertEquals(LyricsTranslationMode.BILINGUAL, detail.lyricsTranslationMode)
+
+        // Verify synced line translation availability
+        assertEquals("Hola", detail.syncedLyrics[0].translation)
+        assertEquals("Mundo", detail.syncedLyrics[1].translation)
+
+        // Cycle to TRANSLATION_ONLY
+        detail = detail.copy(lyricsTranslationMode = detail.lyricsTranslationMode.next())
+        assertEquals(LyricsTranslationMode.TRANSLATION_ONLY, detail.lyricsTranslationMode)
+
+        // Cycle back to ORIGINAL
+        detail = detail.copy(lyricsTranslationMode = detail.lyricsTranslationMode.next())
+        assertEquals(LyricsTranslationMode.ORIGINAL, detail.lyricsTranslationMode)
     }
 }

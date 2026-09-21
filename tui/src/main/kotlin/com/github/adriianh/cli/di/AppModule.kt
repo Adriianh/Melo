@@ -37,6 +37,7 @@ import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCa
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
@@ -197,7 +198,8 @@ val appModule = module {
             get(),
             get(),
             get(),
-            get()
+            get(),
+            translateLyrics = getOrNull<TranslateLyricsUseCase>()
         )
     }
     factory {

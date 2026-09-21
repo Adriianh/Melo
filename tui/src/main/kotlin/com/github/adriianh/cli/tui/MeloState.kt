@@ -9,6 +9,7 @@ import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.ListeningStats
+import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.OfflineFilterType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Playlist
@@ -128,6 +129,8 @@ data class PlayerState(
     val isRadioMode: Boolean = false,
     val syncedLyrics: List<LrcLine> = emptyList(),
     val isLoadingSyncedLyrics: Boolean = false,
+    val isTranslatingLyrics: Boolean = false,
+    val lyricsTranslationMode: LyricsTranslationMode = LyricsTranslationMode.ORIGINAL,
     val nowPlayingPositionMs: Long = 0L,
     val nowPlayingArtwork: ImageData? = null,
     val marqueeOffset: Int = 0,
@@ -234,7 +237,8 @@ sealed interface ScreenState {
     ) : ScreenState
 
     data class NowPlaying(
-        val unused: Boolean = true
+        val lyricsScrollOffset: Int = 0,
+        val isAutoScrollLyrics: Boolean = true,
     ) : ScreenState
 
     data class Offline(
@@ -283,6 +287,9 @@ data class DetailState(
     val lyricsScrollOffset: Int = 0,
     val isAutoScrollLyrics: Boolean = true,
     val isLoadingLyrics: Boolean = false,
+    val isTranslatingLyrics: Boolean = false,
+    val lyricsTranslationMode: LyricsTranslationMode = LyricsTranslationMode.ORIGINAL,
+    val plainLyricsTranslation: String? = null,
     val similarTracks: List<Track> = emptyList(),
     val isLoadingSimilar: Boolean = false,
     val isLoadingMoreSimilar: Boolean = false,
