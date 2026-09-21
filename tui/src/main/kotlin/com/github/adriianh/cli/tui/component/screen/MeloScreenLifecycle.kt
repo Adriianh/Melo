@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
+import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -114,8 +115,10 @@ internal fun MeloScreen.onStartLifecycle() {
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     playlistTracksJob?.cancel()
-    playbackManager.release()
-    mediaSession.release()
-    discordRpcManager.disconnect()
+    try { playbackManager.release() } catch (_: Throwable) {}
+    try { audioPlayer.release() } catch (_: Throwable) {}
+    try { mediaSession.release() } catch (_: Throwable) {}
+    try { discordRpcManager.disconnect() } catch (_: Throwable) {}
+    try { FfplayProcessManager.killAll() } catch (_: Throwable) {}
     scope.cancel()
 }
