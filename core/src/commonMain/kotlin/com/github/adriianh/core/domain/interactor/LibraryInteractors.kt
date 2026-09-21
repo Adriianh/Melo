@@ -20,6 +20,7 @@ import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteEntityUseCa
 import com.github.adriianh.core.domain.usecase.library.RemoveFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.RemoveTrackFromPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.RenamePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.library.ReorderPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.SubscribeChannelUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
@@ -52,4 +53,5 @@ data class LibraryInteractors(
     val isFavoriteEntity: IsFavoriteEntityUseCase? = null,
     val toggleFavoriteEntity: ToggleFavoriteEntityUseCase? = null,
     val getRemoteHistory: GetRemoteHistoryUseCase? = null,
+    val reorderPlaylistTracks: ReorderPlaylistTracksUseCase? = null,
 )
