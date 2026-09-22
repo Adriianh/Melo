@@ -6,8 +6,12 @@ package com.github.adriianh.cli.tui.util
  * a terminal; rendering lives in the SDK-independent component/ToastOverlay.
  */
 
-/** Acknowledged kind: drives the icon + color used by the overlay. */
-enum class ToastKind { INFO, SUCCESS, ERROR }
+/**
+ * Acknowledged kind: drives the icon + color used by the overlay.
+ * [HEART] exists so favorite confirmations render the ♥ icon in the accent color
+ * instead of a generic info glyph.
+ */
+enum class ToastKind { INFO, SUCCESS, ERROR, HEART }
 
 /** How far along a toast's lifecycle it is at a given instant. */
 enum class ToastPhase { ENTERING, ACTIVE, LEAVING }

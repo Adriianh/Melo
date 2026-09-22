@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BG_ELEVATED
 import com.github.adriianh.cli.tui.MeloTheme.ICON_CHECK
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
+import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_INFO
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
@@ -107,12 +108,14 @@ private fun iconOf(kind: ToastKind): String = when (kind) {
     ToastKind.INFO -> ICON_INFO
     ToastKind.SUCCESS -> ICON_CHECK
     ToastKind.ERROR -> ICON_ERROR
+    ToastKind.HEART -> ICON_HEART
 }
 
 private fun kindColor(kind: ToastKind): Color = when (kind) {
     ToastKind.INFO -> PRIMARY_COLOR
     ToastKind.SUCCESS -> SECONDARY_COLOR
     ToastKind.ERROR -> ACCENT_RED
+    ToastKind.HEART -> PRIMARY_COLOR
 }
 
 /** Brightness tier used by the entrance/exit fades (3 discrete steps at tick cadence). */

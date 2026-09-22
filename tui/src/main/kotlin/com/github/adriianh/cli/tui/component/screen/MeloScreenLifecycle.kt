@@ -10,7 +10,9 @@ import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pruneExpiredToasts
+import com.github.adriianh.core.domain.model.DownloadStatus
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -64,6 +66,18 @@ internal fun MeloScreen.onStartLifecycle() {
                 state = state.copy(
                     collections = state.collections.copy(offlineTracks = downloads)
                 )
+
+                val currentIds = downloads.map { it.track.id }.toSet()
+                val freshlyCompleted = downloads.filter { offline ->
+                    val previous = lastDownloadStatusById[offline.track.id]
+                    offline.downloadStatus == DownloadStatus.COMPLETED &&
+                        previous != null && previous != DownloadStatus.COMPLETED
+                }
+                lastDownloadStatusById.keys.retainAll(currentIds)
+                downloads.forEach { lastDownloadStatusById[it.track.id] = it.downloadStatus }
+                freshlyCompleted.forEach { offline ->
+                    showToast("Download complete: ${offline.track.title}", ToastKind.SUCCESS)
+                }
             }
         }
     }

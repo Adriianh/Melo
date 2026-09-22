@@ -12,6 +12,7 @@ import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
 import com.github.adriianh.cli.tui.handler.search.loadNowPlayingMetadata
 import com.github.adriianh.cli.tui.handler.search.translateLyricsForTrack
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.model.LyricsTranslationMode
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.PlaybackEvent
@@ -147,6 +148,7 @@ private fun MeloScreen.observePlaybackEvents() {
             when (event) {
                 is PlaybackEvent.Error -> {
                     appRunner()?.runOnRenderThread {
+                        showToast(event.message.ifBlank { "Playback error" }, ToastKind.ERROR)
                         state = state.copy(
                             player = state.player.copy(
                                 audioError = event.message,

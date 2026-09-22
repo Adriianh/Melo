@@ -21,6 +21,7 @@ import com.github.adriianh.core.domain.interactor.SearchInteractors
 import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -142,6 +143,8 @@ class MeloScreen(
     internal var lastQuery = ""
     internal var marqueeJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
     internal var toastJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
+    /** Last known download status per track id, used to detect completion transitions. */
+    internal val lastDownloadStatusById = mutableMapOf<String, DownloadStatus>()
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var playRecorded = false

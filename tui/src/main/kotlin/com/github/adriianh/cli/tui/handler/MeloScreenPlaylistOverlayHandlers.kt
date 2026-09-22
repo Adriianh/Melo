@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.PlaylistInputMode
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
@@ -39,11 +40,27 @@ internal fun MeloScreen.handlePlaylistInput(event: KeyEvent): EventResult {
                         tracksToAdd.forEach { track ->
                             addTrackToPlaylist(id, track)
                         }
+                        appRunner()?.runOnRenderThread {
+                            val summary = buildString {
+                                append("Playlist created: '")
+                                append(name)
+                                append("'")
+                                if (tracksToAdd.isNotEmpty()) {
+                                    append(" (${tracksToAdd.size} added)")
+                                }
+                            }
+                            showToast(summary, ToastKind.SUCCESS)
+                        }
                     }
 
                     PlaylistInputMode.RENAME -> {
                         val pl = state.collections.playlists.getOrNull(playlistsList.selected())
-                        if (pl != null) scope.launch { renamePlaylist(pl.id, name) }
+                        if (pl != null) scope.launch {
+                            renamePlaylist(pl.id, name)
+                            appRunner()?.runOnRenderThread {
+                                showToast("Playlist renamed: '$name'", ToastKind.SUCCESS)
+                            }
+                        }
                     }
 
                     PlaylistInputMode.PICKER, PlaylistInputMode.NONE -> {}
@@ -131,6 +148,14 @@ internal fun MeloScreen.handlePlaylistPicker(event: KeyEvent): EventResult {
                 scope.launch {
                     tracksToAdd.forEach { track ->
                         addTrackToPlaylist(pl.id, track)
+                    }
+                    appRunner()?.runOnRenderThread {
+                        val summary = if (tracksToAdd.size == 1) {
+                            "Added to '${pl.name}'"
+                        } else {
+                            "${tracksToAdd.size} tracks added to '${pl.name}'"
+                        }
+                        showToast(summary)
                     }
                 }
             }
