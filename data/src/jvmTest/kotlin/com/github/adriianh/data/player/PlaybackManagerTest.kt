@@ -584,6 +584,65 @@ class PlaybackManagerTest {
         coVerify { repo.invalidate("1") }
     }
 
+    @Test
+    fun `recovers playback automatically at last known position when stream drops`() = runTest {
+        val repo = cacheRepo()
+        coEvery { repo.getCachedUrl(any(), any()) } returns null
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = PlaybackManagerImpl(
+            meloPlayer = meloPlayer,
+            getStreamUseCase = getStreamUseCase,
+            scope = scope,
+            streamCacheRepository = repo
+        )
+
+        manager.setQueue(listOf(fakeTrack("1")))
+        scope.advanceUntilIdle()
+        verify { meloPlayer.load("http://stream.url", any(), 0L) }
+
+        // Simulate stream drop: player emits error at 45000ms
+        meloPlayerState.value = PlaybackState(
+            currentTrack = fakeTrack("1"),
+            isPlaying = false,
+            isBuffering = false,
+            progressMs = 45000L,
+            durationMs = 180_000,
+            error = "Playback stopped unexpectedly (exit code 1)"
+        )
+        scope.advanceUntilIdle()
+
+        // Verify it attempted recovery and reloaded player at 45000ms
+        verify { meloPlayer.load("http://stream.url", any(), 45000L) }
+    }
+
+    @Test
+    fun `does not skip track when stream resolution fails while replaying loaded track`() = runTest {
+        coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+        val scope = managerScope()
+        val manager = createManager(scope)
+
+        manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+        scope.advanceUntilIdle()
+        assertEquals("1", manager.queueState.value.currentTrack?.id)
+
+        // Simulate network drop where resolving stream fails
+        coEvery { getStreamUseCase(any()) } returns null
+
+        meloPlayerState.value = PlaybackState(
+            currentTrack = fakeTrack("1"),
+            isPlaying = false,
+            progressMs = 30000L,
+            error = "Playback error"
+        )
+        manager.togglePlayPause()
+        scope.advanceUntilIdle()
+
+        // Should NOT skip to track 2
+        assertEquals(0, manager.queueState.value.currentIndex)
+        assertEquals("1", manager.queueState.value.currentTrack?.id)
+    }
+
     private fun collectEvents(
         scope: TestScope,
         manager: PlaybackManagerImpl
