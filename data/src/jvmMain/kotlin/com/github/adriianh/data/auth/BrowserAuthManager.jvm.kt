@@ -300,7 +300,7 @@ object BrowserAuthManager {
             if (cookieDb != null) {
                 val cookies = readCookies(cookieDb, browser)
                 if (cookies != null && cookies.hasValidSession()) {
-                    log.info("Found YouTube session on final check with ${cookies.size} cookies: ${cookies.keys}")
+                    log.fine("Found YouTube session on final check with ${cookies.size} cookies: ${cookies.keys}")
                     val header = cookies.toHeaderStringOrNull()
                     if (header != null) return@withContext BrowserAuthResult.Success(header)
                 }
@@ -343,7 +343,7 @@ object BrowserAuthManager {
                 if (cookieDb != null && cookieDb.length() > 0L) {
                     val cookies = readCookies(cookieDb, browser)
                     if (cookies != null && cookies.hasValidSession()) {
-                        log.info("Found YouTube session with ${cookies.size} cookies: ${cookies.keys}")
+                        log.fine("Found YouTube session with ${cookies.size} cookies: ${cookies.keys}")
                         val header = cookies.toHeaderStringOrNull()
                         if (header != null) {
                             return@withTimeoutOrNull BrowserAuthResult.Success(header)
@@ -353,7 +353,7 @@ object BrowserAuthManager {
                 if (!process.isAlive) {
                     postExitChecks++
                     if (postExitChecks >= 3) {
-                        log.info("Browser process has exited. Exiting poll loop.")
+                        log.fine("Browser process has exited. Exiting poll loop.")
                         break
                     }
                 }
@@ -469,7 +469,7 @@ object BrowserAuthManager {
                 if (!cookieDb.exists() || cookieDb.length() == 0L) continue
                 val cookies = withTempCopy(cookieDb) { readFirefoxCookies(it) }
                 if (cookies != null && cookies.hasValidSession()) {
-                    log.info("Found valid session in ${profile.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
+                    log.fine("Found valid session in ${profile.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
                     val header = cookies.toHeaderStringOrNull()
                     if (header != null) return header
                 }
@@ -495,7 +495,7 @@ object BrowserAuthManager {
                     readChromiumCookies(tempDb, keychainService, localStateFile)
                 }
                 if (cookies != null && cookies.hasValidSession()) {
-                    log.info("Found valid session in ${profileDir.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
+                    log.fine("Found valid session in ${profileDir.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")
                     val header = cookies.toHeaderStringOrNull()
                     if (header != null) return header
                 } else {
@@ -621,7 +621,7 @@ object BrowserAuthManager {
         log.fine("readFirefoxCookies read ${cookies.size} cookies from ${dbFile.name}: ${cookies.keys}")
         cookies
     }.getOrElse { e ->
-        log.warning("readFirefoxCookies failed for ${dbFile.absolutePath}: ${e.message}")
+        log.fine("readFirefoxCookies failed for ${dbFile.absolutePath}: ${e.message}")
         null
     }
 

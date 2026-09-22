@@ -155,23 +155,23 @@ internal object CookieCrypto {
             ?.groupValues
             ?.get(1)
         if (encryptedKeyBase64 == null) {
-            log.warning("No encrypted_key regex match in: ${localStateFile.absolutePath}")
+            log.fine("No encrypted_key regex match in: ${localStateFile.absolutePath}")
             return null
         }
 
         val dpapiBlob = Base64.getDecoder().decode(encryptedKeyBase64)
         val dpapiPrefixSize = 5
         if (dpapiBlob.size <= dpapiPrefixSize) {
-            log.warning("DPAPI blob too small in: ${localStateFile.absolutePath}")
+            log.fine("DPAPI blob too small in: ${localStateFile.absolutePath}")
             return null
         }
         val key = unprotectWithDpapi(dpapiBlob.copyOfRange(dpapiPrefixSize, dpapiBlob.size))
         if (key != null) {
-            log.info("Successfully loaded Windows AES key (${key.size} bytes) from: ${localStateFile.absolutePath}")
+            log.fine("Successfully loaded Windows AES key (${key.size} bytes) from: ${localStateFile.absolutePath}")
         }
         key
     }.getOrElse {
-        log.warning("Failed to parse Local State from ${localStateFile.absolutePath}: ${it.message}")
+        log.fine("Failed to parse Local State from ${localStateFile.absolutePath}: ${it.message}")
         null
     }
 
@@ -182,7 +182,7 @@ internal object CookieCrypto {
                 return jnaResult
             }
         } catch (e: Throwable) {
-            log.warning("JNA Crypt32Util.cryptUnprotectData failed: ${e.message}, attempting PowerShell fallback")
+            log.fine("JNA Crypt32Util.cryptUnprotectData failed: ${e.message}, attempting PowerShell fallback")
         }
 
         return runCatching {

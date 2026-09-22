@@ -4,6 +4,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.logging.Logger
 
 /**
  * Ensures yt-dlp is available on the system before the AudioProvider is used.
@@ -14,6 +15,8 @@ import java.nio.file.StandardCopyOption
  *   3. Download from GitHub releases and store in ~/.config/melo/yt-dlp
  */
 object YtDlpBootstrap {
+
+    private val log = Logger.getLogger("Melo.YtDlpBootstrap")
 
     private val meloConfigDir: File by lazy {
         val os = System.getProperty("os.name").lowercase()
@@ -83,7 +86,7 @@ object YtDlpBootstrap {
         val downloadUrl =
             "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$assetName"
 
-        println("yt-dlp not found — downloading from $downloadUrl …")
+        log.fine("yt-dlp not found — downloading from $downloadUrl …")
 
         try {
             URI(downloadUrl).toURL().openStream().use { input ->
@@ -105,7 +108,7 @@ object YtDlpBootstrap {
             )
         }
 
-        println("yt-dlp downloaded to ${bundledBin.absolutePath}")
+        log.fine("yt-dlp downloaded to ${bundledBin.absolutePath}")
         return bundledBin.absolutePath
     }
 }

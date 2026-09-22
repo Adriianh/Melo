@@ -30,6 +30,7 @@ import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.cli.tui.util.TuiLogGuard
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
@@ -91,48 +92,50 @@ class MeloCommand : CliktCommand(
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
 
-        startKoin { modules(appModule) }
+        TuiLogGuard.withLogGuard {
+            startKoin { modules(appModule) }
 
-        val searchInteractors: SearchInteractors by inject()
-        val discoveryInteractors: DiscoveryInteractors by inject()
-        val libraryInteractors: LibraryInteractors by inject()
-        val playbackInteractors: PlaybackInteractors by inject()
-        val offlineInteractors: OfflineInteractors by inject()
-        val statsInteractors: StatsInteractors by inject()
-        val sessionInteractors: SessionInteractors by inject()
-        val settingsInteractors: SettingsInteractors by inject()
-        val artworkRenderer: ArtworkRenderer by inject()
-        val metadataProvider: MetadataProvider by inject()
-        val pipedApiClient: PipedApiClient by inject()
-        val offlineRepository: OfflineRepository by inject()
-        val httpClient: HttpClient by inject()
-        val dispatcher: CoroutineDispatcher by inject()
-        val audioProvider: AudioProvider by inject()
-        val discordRpcManager: DiscordRpcManager by inject()
-        val youTubeAuthService: YouTubeAuthService by inject()
+            val searchInteractors: SearchInteractors by inject()
+            val discoveryInteractors: DiscoveryInteractors by inject()
+            val libraryInteractors: LibraryInteractors by inject()
+            val playbackInteractors: PlaybackInteractors by inject()
+            val offlineInteractors: OfflineInteractors by inject()
+            val statsInteractors: StatsInteractors by inject()
+            val sessionInteractors: SessionInteractors by inject()
+            val settingsInteractors: SettingsInteractors by inject()
+            val artworkRenderer: ArtworkRenderer by inject()
+            val metadataProvider: MetadataProvider by inject()
+            val pipedApiClient: PipedApiClient by inject()
+            val offlineRepository: OfflineRepository by inject()
+            val httpClient: HttpClient by inject()
+            val dispatcher: CoroutineDispatcher by inject()
+            val audioProvider: AudioProvider by inject()
+            val discordRpcManager: DiscordRpcManager by inject()
+            val youTubeAuthService: YouTubeAuthService by inject()
 
-        try {
-            MeloScreen(
-                httpClient = httpClient,
-                pipedApiClient = pipedApiClient,
-                searchInteractors = searchInteractors,
-                discoveryInteractors = discoveryInteractors,
-                libraryInteractors = libraryInteractors,
-                playbackInteractors = playbackInteractors,
-                offlineInteractors = offlineInteractors,
-                statsInteractors = statsInteractors,
-                sessionInteractors = sessionInteractors,
-                settingsInteractors = settingsInteractors,
-                offlineRepository = offlineRepository,
-                artworkRenderer = artworkRenderer,
-                metadataProvider = metadataProvider,
-                audioProvider = audioProvider,
-                discordRpcManager = discordRpcManager,
-                youTubeAuthService = youTubeAuthService,
-                dispatcher = dispatcher
-            ).run()
-        } finally {
-            stopKoin()
+            try {
+                MeloScreen(
+                    httpClient = httpClient,
+                    pipedApiClient = pipedApiClient,
+                    searchInteractors = searchInteractors,
+                    discoveryInteractors = discoveryInteractors,
+                    libraryInteractors = libraryInteractors,
+                    playbackInteractors = playbackInteractors,
+                    offlineInteractors = offlineInteractors,
+                    statsInteractors = statsInteractors,
+                    sessionInteractors = sessionInteractors,
+                    settingsInteractors = settingsInteractors,
+                    offlineRepository = offlineRepository,
+                    artworkRenderer = artworkRenderer,
+                    metadataProvider = metadataProvider,
+                    audioProvider = audioProvider,
+                    discordRpcManager = discordRpcManager,
+                    youTubeAuthService = youTubeAuthService,
+                    dispatcher = dispatcher
+                ).run()
+            } finally {
+                stopKoin()
+            }
         }
     }
 }

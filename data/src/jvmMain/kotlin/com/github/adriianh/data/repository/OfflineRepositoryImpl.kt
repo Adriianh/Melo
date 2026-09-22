@@ -18,12 +18,30 @@ import org.jaudiotagger.audio.AudioHeader
 import org.jaudiotagger.audio.exceptions.CannotReadVideoException
 import org.jaudiotagger.tag.FieldKey
 import java.io.File
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class OfflineRepositoryImpl(
     dataDir: File,
     private val settingsRepository: SettingsRepository,
     private val dispatcher: CoroutineDispatcher
 ) : OfflineRepository {
+
+    companion object {
+        init {
+            silenceJaudiotagger()
+        }
+
+        fun silenceJaudiotagger() {
+            try {
+                val jtLogger = Logger.getLogger("org.jaudiotagger")
+                jtLogger.level = Level.OFF
+                jtLogger.useParentHandlers = false
+                jtLogger.handlers.forEach { jtLogger.removeHandler(it) }
+            } catch (_: Throwable) {
+            }
+        }
+    }
 
     private val defaultDownloadsDir = File(dataDir, "cache")
     private val metadataFile = File(defaultDownloadsDir, "downloads.json")
@@ -327,8 +345,8 @@ class OfflineRepositoryImpl(
                                     )
                                 )
                             }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (_: Exception) {
+                        // Skip corrupted or unreadable audio file
                     }
                 }
             }
@@ -385,8 +403,7 @@ class OfflineRepositoryImpl(
         if (!metadataFile.exists()) return emptyList()
         return try {
             json.decodeFromString<List<OfflineTrack>>(metadataFile.readText())
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -397,8 +414,7 @@ class OfflineRepositoryImpl(
                 if (!defaultDownloadsDir.exists()) defaultDownloadsDir.mkdirs()
                 val jsonString = json.encodeToString(tracks)
                 metadataFile.writeText(jsonString)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (_: Exception) {
             }
         }
     }
