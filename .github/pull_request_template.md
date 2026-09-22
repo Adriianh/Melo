@@ -53,4 +53,3 @@
 ## Checklist
 - [ ] PR title follows Conventional Commits format (`type(scope): summary`)
 - [ ] No new dependencies introduced without justification
-- [ ] `.docs/WALKTHROUGH.md` updated if the change is significant
