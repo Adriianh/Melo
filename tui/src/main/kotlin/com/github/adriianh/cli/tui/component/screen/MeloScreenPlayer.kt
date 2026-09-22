@@ -19,19 +19,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 internal fun MeloScreen.handleMediaSessionPlayPause() {
-    appRunner()?.runOnRenderThread { togglePlayPause() }
+    try {
+        appRunner()?.runOnRenderThread { togglePlayPause() } ?: playbackManager.togglePlayPause()
+    } catch (_: Throwable) {}
 }
 
 internal fun MeloScreen.handleMediaSessionNext() {
-    appRunner()?.runOnRenderThread { seekForward() }
+    try {
+        appRunner()?.runOnRenderThread { seekForward() } ?: playbackManager.playNext()
+    } catch (_: Throwable) {}
 }
 
 internal fun MeloScreen.handleMediaSessionPrevious() {
-    appRunner()?.runOnRenderThread { seekBackward() }
+    try {
+        appRunner()?.runOnRenderThread { seekBackward() } ?: playbackManager.playPrevious()
+    } catch (_: Throwable) {}
 }
 
 internal fun MeloScreen.handleMediaSessionStop() {
-    appRunner()?.runOnRenderThread { clearQueue() }
+    try {
+        appRunner()?.runOnRenderThread { clearQueue() } ?: clearQueue()
+    } catch (_: Throwable) {}
 }
 
 /**

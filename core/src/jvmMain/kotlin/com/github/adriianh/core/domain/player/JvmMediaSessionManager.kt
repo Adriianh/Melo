@@ -100,19 +100,45 @@ class JvmMediaSessionManager(
 
                 val callbacks = JMTCCallbacks()
                 callbacks.onPlay = JMTCButtonCallback {
-                    jmtc?.playingState = JMTCPlayingState.PLAYING
-                    onTogglePlayPause()
+                    scope.launch {
+                        try {
+                            onTogglePlayPause()
+                        } catch (_: Throwable) {
+                        }
+                    }
                 }
                 callbacks.onPause = JMTCButtonCallback {
-                    jmtc?.playingState = JMTCPlayingState.PAUSED
-                    onTogglePlayPause()
+                    scope.launch {
+                        try {
+                            onTogglePlayPause()
+                        } catch (_: Throwable) {
+                        }
+                    }
                 }
                 callbacks.onStop = JMTCButtonCallback {
-                    jmtc?.playingState = JMTCPlayingState.STOPPED
-                    onStopPlayback()
+                    scope.launch {
+                        try {
+                            onStopPlayback()
+                        } catch (_: Throwable) {
+                        }
+                    }
                 }
-                callbacks.onNext = JMTCButtonCallback { onPlayNext() }
-                callbacks.onPrevious = JMTCButtonCallback { onPlayPrevious() }
+                callbacks.onNext = JMTCButtonCallback {
+                    scope.launch {
+                        try {
+                            onPlayNext()
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
+                callbacks.onPrevious = JMTCButtonCallback {
+                    scope.launch {
+                        try {
+                            onPlayPrevious()
+                        } catch (_: Throwable) {
+                        }
+                    }
+                }
 
                 instance.setCallbacks(callbacks)
                 instance.mediaType = JMTCMediaType.Music
