@@ -33,9 +33,7 @@ class DiscordRpcManager(
     private var isConnected: Boolean = false
 
     private val scope: CoroutineScope = providedScope ?: CoroutineScope(
-        Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
-            if (throwable is CancellationException) return@CoroutineExceptionHandler
-            throwable.printStackTrace()
+        Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ ->
         }
     )
     private val clientId = "1485113215905042515"
@@ -85,10 +83,7 @@ class DiscordRpcManager(
                 }
 
                 newIpc.connect()
-            } catch (e: Throwable) {
-                if (e !is CancellationException) {
-                    e.printStackTrace()
-                }
+            } catch (_: Throwable) {
                 ipc = null
                 isConnected = false
             }

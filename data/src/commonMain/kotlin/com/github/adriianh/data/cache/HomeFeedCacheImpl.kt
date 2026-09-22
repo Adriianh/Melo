@@ -32,8 +32,7 @@ class HomeFeedCacheImpl(
             try {
                 val text = json.encodeToString(HomeFeed.serializer(), feed)
                 PlatformFileSystem.writeText(cacheFilePath, text)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (_: Exception) {
             }
         }
     }
@@ -43,8 +42,7 @@ class HomeFeedCacheImpl(
         return try {
             val content = PlatformFileSystem.readText(cacheFilePath) ?: return null
             json.decodeFromString(HomeFeed.serializer(), content)
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
             null
         }
     }

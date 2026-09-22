@@ -119,7 +119,7 @@ class JvmMeloPlayer : MeloPlayer {
             )
             player.audio().setVolume(currentVolume)
         } catch (e: Throwable) {
-            log.warning("Could not initialize VLC MediaPlayerFactory: ${e.message}")
+            log.fine("Could not initialize VLC MediaPlayerFactory: ${e.message}")
             _state.update {
                 it.copy(error = "VLC media engine could not be loaded: ${e.message}")
             }
@@ -381,7 +381,7 @@ class JvmMeloPlayer : MeloPlayer {
                         "libvlc.so"
                     ).exists())
                 ) {
-                    log.info("Found VLC libraries in: ${dir.absolutePath}")
+                    log.fine("Found VLC libraries in: ${dir.absolutePath}")
                     try {
                         NativeLibrary.addSearchPath("libvlc", dir.absolutePath)
                         NativeLibrary.addSearchPath("libvlccore", dir.absolutePath)
@@ -391,7 +391,7 @@ class JvmMeloPlayer : MeloPlayer {
                             System.setProperty("VLC_PLUGIN_PATH", pluginsDir.absolutePath)
                         }
                     } catch (e: Throwable) {
-                        log.warning("Could not set VLC search paths for ${dir.absolutePath}: ${e.message}")
+                        log.fine("Could not set VLC search paths for ${dir.absolutePath}: ${e.message}")
                     }
                     break
                 }

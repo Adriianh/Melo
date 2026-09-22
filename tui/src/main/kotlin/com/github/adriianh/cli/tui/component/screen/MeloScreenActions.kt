@@ -109,8 +109,7 @@ internal fun MeloScreen.downloadTrackAction(
                         offlineTrack.copy(downloadStatus = DownloadStatus.FAILED)
                     )
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (_: Exception) {
                 downloadTrack.invoke(
                     OfflineTrack(
                         track = track,

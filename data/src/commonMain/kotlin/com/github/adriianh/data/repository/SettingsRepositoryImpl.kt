@@ -56,8 +56,7 @@ class SettingsRepositoryImpl(
         return try {
             val content = PlatformFileSystem.readText(settingsFilePath) ?: return Settings()
             json.decodeFromString(Settings.serializer(), content)
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
             Settings()
         }
     }
@@ -67,8 +66,7 @@ class SettingsRepositoryImpl(
             try {
                 val jsonString = json.encodeToString(settings)
                 PlatformFileSystem.writeText(settingsFilePath, jsonString)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (_: Exception) {
             }
         }
     }
