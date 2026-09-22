@@ -1,6 +1,7 @@
 .gradle
 .serena
 /.github/**.md
+!/.github/pull_request_template.md
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
