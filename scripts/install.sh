@@ -151,25 +151,39 @@ main() {
     print_banner
     check_dependencies
 
+    for arg in "$@"; do
+        case "$arg" in
+            --nightly|nightly) VERSION="nightly" ;;
+            --version=*|-v=*) VERSION="${arg#*=}" ;;
+        esac
+    done
+
     local os arch
     os="$(detect_os)"
     arch="$(detect_arch)"
 
-    log_step "Resolving target release..."
-    if [ -z "$VERSION" ]; then
-        VERSION="$(resolve_latest_version)"
+    local version_display asset_name download_url
+    if [ "$VERSION" = "nightly" ] || [ "$VERSION" = "dev" ]; then
+        version_display="nightly (dev build)"
+        asset_name="melo-nightly-${os}.tar.gz"
+        download_url="https://github.com/$REPO/releases/download/nightly/${asset_name}"
+    else
+        log_step "Resolving target release..."
+        if [ -z "$VERSION" ]; then
+            VERSION="$(resolve_latest_version)"
+        fi
+        VERSION="${VERSION#v}"
+        version_display="v$VERSION"
+        asset_name="melo-${VERSION}-${os}.tar.gz"
+        download_url="https://github.com/$REPO/releases/download/v${VERSION}/${asset_name}"
     fi
-    VERSION="${VERSION#v}"
 
     printf "  ${GRAY}┌────────────────────────────────────────────────────────┐${RESET}\n"
     printf "  ${GRAY}│${RESET}  ${BOLD}Platform:${RESET}  %-44s${GRAY}│${RESET}\n" "$os ($arch)"
-    printf "  ${GRAY}│${RESET}  ${BOLD}Version:${RESET}   %-44s${GRAY}│${RESET}\n" "v$VERSION"
+    printf "  ${GRAY}│${RESET}  ${BOLD}Version:${RESET}   %-44s${GRAY}│${RESET}\n" "$version_display"
     printf "  ${GRAY}│${RESET}  ${BOLD}Target:${RESET}    %-44s${GRAY}│${RESET}\n" "$INSTALL_DIR"
     printf "  ${GRAY}│${RESET}  ${BOLD}Binaries:${RESET}  %-44s${GRAY}│${RESET}\n" "$BIN_DIR"
     printf "  ${GRAY}└────────────────────────────────────────────────────────┘${RESET}\n\n"
-
-    local asset_name="melo-${VERSION}-${os}.tar.gz"
-    local download_url="https://github.com/$REPO/releases/download/v${VERSION}/${asset_name}"
 
     local tmp_dir
     tmp_dir="$(mktemp -d)"

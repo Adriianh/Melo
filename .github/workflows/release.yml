@@ -71,8 +71,6 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    # Only create a GitHub Release when a tag is pushed
-    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Download all artifacts
@@ -80,10 +78,49 @@ jobs:
         with:
           path: dist/
 
-      - name: Create GitHub Release
+      - name: Prepare nightly assets
+        if: startsWith(github.ref, 'refs/heads/master')
+        run: |
+          mkdir -p nightly_dist
+          win_zip=$(find dist/ -name "*windows.zip" | head -n 1)
+          if [ -n "$win_zip" ]; then cp "$win_zip" nightly_dist/melo-nightly-windows.zip; fi
+          linux_tar=$(find dist/ -name "*linux.tar.gz" | head -n 1)
+          if [ -n "$linux_tar" ]; then cp "$linux_tar" nightly_dist/melo-nightly-linux.tar.gz; fi
+          macos_tar=$(find dist/ -name "*macos.tar.gz" | head -n 1)
+          if [ -n "$macos_tar" ]; then cp "$macos_tar" nightly_dist/melo-nightly-macos.tar.gz; fi
+          ls -la nightly_dist/
+
+      - name: Publish Nightly Release
+        if: startsWith(github.ref, 'refs/heads/master')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          target_commitish: ${{ github.sha }}
+          name: "Melo Development Build (Nightly)"
+          body: |
+            Automated development build from commit ${{ github.sha }}.
+            
+            Install on Windows:
+            ```powershell
+            $env:MELO_VERSION="nightly"; irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.ps1 | iex
+            ```
+            
+            Install on Linux/macOS:
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly
+            ```
+          prerelease: true
+          make_latest: false
+          files: nightly_dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Official Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/**/*
           generate_release_notes: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
