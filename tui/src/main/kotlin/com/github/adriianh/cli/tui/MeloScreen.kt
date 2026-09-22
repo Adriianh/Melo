@@ -11,6 +11,8 @@ import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.cli.tui.util.pushToast
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
@@ -139,6 +141,7 @@ class MeloScreen(
     internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
     internal var marqueeJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
+    internal var toastJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var playRecorded = false
@@ -222,6 +225,7 @@ class MeloScreen(
     internal val trackOptionsOverlay = buildTrackOptionsOverlay()
     internal val commandBarSuggestionsOverlay = buildCommandBarSuggestionsOverlay()
     internal val languagePickerOverlay = buildLanguagePickerOverlay()
+    internal val toastOverlay = buildToastOverlay()
 
     override fun configure(): dev.tamboui.tui.TuiConfig = dev.tamboui.tui.TuiConfig.builder().mouseCapture(true).build()
 
@@ -237,4 +241,23 @@ class MeloScreen(
 
     internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) =
         downloadTrackAction(track, downloadType)
+
+    private var toastIdCounter = 0L
+
+    /**
+     * Enqueues a transient confirmation toast. Safe to call from key handlers
+     * (render thread); coroutine call sites must wrap it in `runOnRenderThread`
+     * like the rest of their state updates.
+     */
+    internal fun showToast(message: String, kind: ToastKind = ToastKind.INFO) {
+        state = state.copy(
+            toasts = pushToast(
+                toasts = state.toasts,
+                message = message,
+                kind = kind,
+                nowMs = System.currentTimeMillis(),
+                id = ++toastIdCounter,
+            )
+        )
+    }
 }

@@ -30,6 +30,9 @@ const val TOAST_FADE_IN_MS = 250L
 /** Exit animation window, rendered *after* the TTL and before removal. */
 const val TOAST_FADE_OUT_MS = 300L
 
+/** Heartbeat interval driving the fade/slide animation and expired-toast pruning. */
+const val TOAST_TICK_MS = 200L
+
 /** Maximum toasts rendered at once; oldest is dropped when exceeded. */
 const val MAX_VISIBLE_TOASTS = 3
 

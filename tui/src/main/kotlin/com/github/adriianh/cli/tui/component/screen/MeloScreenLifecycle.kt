@@ -9,6 +9,8 @@ import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
+import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
+import com.github.adriianh.cli.tui.util.pruneExpiredToasts
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -110,10 +112,22 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }, Duration.ofMillis(150))
+
+    // Heartbeat that re-renders active toasts (driving their fade/slide animation)
+    // and prunes fully-expired ones. Cheap no-op when no toast is visible.
+    toastJob = appRunner()?.scheduleRepeating({
+        appRunner()?.runOnRenderThread {
+            val alive = pruneExpiredToasts(state.toasts, System.currentTimeMillis())
+            if (alive.size != state.toasts.size) {
+                state = state.copy(toasts = alive)
+            }
+        }
+    }, Duration.ofMillis(TOAST_TICK_MS))
 }
 
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
+    toastJob?.cancel()
     playlistTracksJob?.cancel()
     try { playbackManager.release() } catch (_: Throwable) {}
     try { audioPlayer.release() } catch (_: Throwable) {}

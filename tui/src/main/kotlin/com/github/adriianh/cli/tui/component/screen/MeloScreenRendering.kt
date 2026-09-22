@@ -166,10 +166,13 @@ internal fun MeloScreen.renderRoot(): Element {
         PlaylistInputMode.NONE -> withCommandBarSuggestions
     }
 
-    return if (state.languagePicker.isVisible) stack(
+    val layered = if (state.languagePicker.isVisible) stack(
         withPlaylist,
         languagePickerOverlay
     ) else withPlaylist
+
+    // Toasts are the top-most layer: transient confirmations must always be visible.
+    return stack(layered, toastOverlay)
 }
 
 internal fun MeloScreen.renderMainContentInternal(
