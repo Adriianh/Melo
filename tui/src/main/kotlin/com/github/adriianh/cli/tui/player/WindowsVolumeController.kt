@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.player
 
+import com.sun.jna.Function
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Guid
