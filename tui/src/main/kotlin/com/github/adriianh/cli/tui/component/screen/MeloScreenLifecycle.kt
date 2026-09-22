@@ -128,12 +128,15 @@ internal fun MeloScreen.onStartLifecycle() {
     }, Duration.ofMillis(150))
 
     // Heartbeat that re-renders active toasts (driving their fade/slide animation)
-    // and prunes fully-expired ones. Cheap no-op when no toast is visible.
+    // and prunes fully-expired ones. Assigning state while any toast is visible
+    // forces the render loop to tick, the same way the marquee job does. Cheap
+    // no-op (no assignment) when nothing is shown.
     toastJob = appRunner()?.scheduleRepeating({
         appRunner()?.runOnRenderThread {
-            val alive = pruneExpiredToasts(state.toasts, System.currentTimeMillis())
-            if (alive.size != state.toasts.size) {
-                state = state.copy(toasts = alive)
+            if (state.toasts.isNotEmpty()) {
+                state = state.copy(
+                    toasts = pruneExpiredToasts(state.toasts, System.currentTimeMillis())
+                )
             }
         }
     }, Duration.ofMillis(TOAST_TICK_MS))
