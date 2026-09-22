@@ -3,7 +3,7 @@ package buildsrc.convention
 import java.net.URI
 import java.util.zip.ZipFile
 
-val desktopAppVersion = "2.1.3"
+val desktopAppVersion = "2.1.4"
 
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"

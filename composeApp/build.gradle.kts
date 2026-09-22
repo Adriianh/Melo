@@ -104,8 +104,8 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
         applicationId = "com.github.adriianh.melo"
         minSdk = 24
         targetSdk = 37
-        versionCode = 6
-        versionName = "2.1.3"
+        versionCode = 7
+        versionName = "2.1.4"
     }
     packaging {
         jniLibs {
@@ -189,7 +189,7 @@ compose.desktop {
             )
 
             packageName = "Melo"
-            packageVersion = "2.1.3"
+            packageVersion = "2.1.4"
             vendor = "Adriianh"
             description = "Melo"
             copyright = "© 2025 Adriianh. Licensed under GPLv3."

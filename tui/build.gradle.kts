@@ -32,7 +32,7 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-val appVersion = "2.1.3"
+val appVersion = "2.1.4"
 val appName = "melo"
 
 // Root of the distribution script templates
