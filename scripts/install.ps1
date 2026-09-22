@@ -37,7 +37,7 @@ if (-not $Version) {
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ "User-Agent" = "Melo-Installer" }
         $Version = $release.tag_name.TrimStart('v')
     } catch {
-        $Version = "2.1.4"
+        $Version = "2.1.5"
     }
 } else {
     $Version = $Version.TrimStart('v')

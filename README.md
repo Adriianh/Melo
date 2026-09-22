@@ -35,7 +35,7 @@
 
 ## 📦 Downloads
 
-Pre-built binaries and packages for **v2.1.4** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
+Pre-built binaries and packages for **v2.1.5** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
 
 | Platform | Format / Package | Description |
 |---|---|---|
