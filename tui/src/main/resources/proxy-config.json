@@ -42,5 +42,35 @@
       "com.sun.jna.platform.win32.Ole32",
       "com.sun.jna.Library"
     ]
+  },
+  {
+    "interfaces": [
+      "com.sun.jna.Callback"
+    ]
+  },
+  {
+    "interfaces": [
+      "com.sun.jna.CallbackProxy"
+    ]
+  },
+  {
+    "interfaces": [
+      "com.sun.jna.win32.DLLCallback"
+    ]
+  },
+  {
+    "interfaces": [
+      "io.github.selemba1000.JMTCButtonCallback"
+    ]
+  },
+  {
+    "interfaces": [
+      "io.github.selemba1000.JMTCValueChangedCallback"
+    ]
+  },
+  {
+    "interfaces": [
+      "io.github.selemba1000.JMTCSeekCallback"
+    ]
   }
 ]
