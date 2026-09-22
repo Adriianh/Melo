@@ -1,7 +1,10 @@
 package com.github.adriianh.cli.tui.player
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Adjusts the volume of the ffplay sink-input via pactl without interrupting playback.
@@ -29,26 +32,35 @@ internal object PactlVolumeController {
     }
 
     fun applyVolume(scope: CoroutineScope, pid: Long, pct: Int) {
-        scope.launch {
-            try {
-                val clientsOutput = ProcessBuilder("pactl", "list", "clients")
-                    .redirectErrorStream(true).start()
-                    .inputStream.bufferedReader().readText()
-                val clientIds = parseClientIds(clientsOutput, pid)
-                if (clientIds.isEmpty()) return@launch
-
-                val sinksOutput = ProcessBuilder("pactl", "list", "sink-inputs")
-                    .redirectErrorStream(true).start()
-                    .inputStream.bufferedReader().readText()
-
-                val sinkIndex = clientIds.firstNotNullOfOrNull { cid ->
-                    parseSinkInputByClientId(sinksOutput, cid)
-                } ?: return@launch
-
-                ProcessBuilder("pactl", "set-sink-input-volume", sinkIndex, "$pct%")
-                    .redirectErrorStream(true).start().waitFor()
-            } catch (_: Exception) { /* best-effort */
+        scope.launch(Dispatchers.IO) {
+            val clampedPct = pct.coerceIn(0, 100)
+            for (attempt in 0 until 10) {
+                if (setSinkVolume(pid, clampedPct)) break
+                delay(100.milliseconds)
             }
+        }
+    }
+
+    internal fun setSinkVolume(pid: Long, pct: Int): Boolean {
+        return try {
+            val clientsOutput = ProcessBuilder("pactl", "list", "clients")
+                .redirectErrorStream(true).start()
+                .inputStream.bufferedReader().readText()
+            val clientIds = parseClientIds(clientsOutput, pid)
+            if (clientIds.isEmpty()) return false
+
+            val sinksOutput = ProcessBuilder("pactl", "list", "sink-inputs")
+                .redirectErrorStream(true).start()
+                .inputStream.bufferedReader().readText()
+
+            val sinkIndex = clientIds.firstNotNullOfOrNull { cid ->
+                parseSinkInputByClientId(sinksOutput, cid)
+            } ?: return false
+
+            ProcessBuilder("pactl", "set-sink-input-volume", sinkIndex, "$pct%")
+                .redirectErrorStream(true).start().waitFor() == 0
+        } catch (_: Exception) {
+            false
         }
     }
 

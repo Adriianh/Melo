@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.bundles.ktor)
     implementation(libs.bundles.tamboui)
     implementation(libs.jmtc)
+    implementation(libs.jnaPlatform)
     implementation(libs.kotter)
     implementation(libs.kdiscordipc)
     implementation(libs.slf4jApi)

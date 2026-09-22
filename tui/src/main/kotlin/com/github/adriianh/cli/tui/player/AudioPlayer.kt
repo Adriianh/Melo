@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.milliseconds
  *   Windows → DirectSound / WASAPI
  *
  * Pause: SIGSTOP / SIGCONT — instantaneous, no buffer delay.
- * Volume: pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
+ * Volume: WASAPI (Core Audio) on Windows, pactl set-sink-input-volume on Linux/PulseAudio (no interruption);
  *          fallback: stored and applied on next play() via -af volume= filter.
  *
  * Implements [MeloPlayer] so the same playback contract used by the Compose
@@ -180,8 +180,14 @@ class AudioPlayer(
         _state.update { it.copy(isPlaying = true) }
     }
 
+    val hasRealtimeVolumeControl: Boolean
+        get() = (FfplayProcessManager.isWindows && WindowsVolumeController.isAvailable) || PactlVolumeController.hasPactl
+
     /**
      * Set volume 0–100 without interrupting playback.
+     *
+     * On Windows: uses WASAPI (Core Audio) ISimpleAudioVolume to adjust the ffplay
+     * session volume dynamically in real time — zero interruption.
      *
      * On Linux with PulseAudio/PipeWire: uses `pactl set-sink-input-volume` to
      * adjust the volume of the ffplay stream in real time — zero interruption.
@@ -190,8 +196,10 @@ class AudioPlayer(
      */
     fun setVolume(pct: Int) {
         volumePct = pct.coerceIn(0, 100)
-        val pid = playerPid
-        if (PactlVolumeController.hasPactl && pid != null) {
+        val pid = playerPid ?: return
+        if (FfplayProcessManager.isWindows && WindowsVolumeController.isAvailable) {
+            WindowsVolumeController.applyVolume(scope, pid, volumePct)
+        } else if (PactlVolumeController.hasPactl) {
             PactlVolumeController.applyVolume(scope, pid, volumePct)
         }
     }
@@ -315,10 +323,21 @@ class AudioPlayer(
 
     private suspend fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
         try {
-            val process = FfplayProcessManager.buildProcess(url, volPct, seekMs)
+            val process = FfplayProcessManager.buildProcess(
+                url = url,
+                volPct = if (hasRealtimeVolumeControl) 100 else volPct,
+                seekMs = seekMs
+            )
             playerProcess = process
-            playerPid = process.pid()
+            val pid = process.pid()
+            playerPid = pid
             startTimeMs = System.currentTimeMillis()
+
+            if (FfplayProcessManager.isWindows && WindowsVolumeController.isAvailable) {
+                WindowsVolumeController.applyVolume(scope, pid, volPct)
+            } else if (PactlVolumeController.hasPactl) {
+                PactlVolumeController.applyVolume(scope, pid, volPct)
+            }
 
             val progressJob = scope.launch {
                 while (isActive && sessionId.get() == session) {

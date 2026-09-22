@@ -36,5 +36,11 @@
       "io.github.selemba1000.windows.SMTCAdapter",
       "com.sun.jna.Library"
     ]
+  },
+  {
+    "interfaces": [
+      "com.sun.jna.platform.win32.Ole32",
+      "com.sun.jna.Library"
+    ]
   }
 ]
