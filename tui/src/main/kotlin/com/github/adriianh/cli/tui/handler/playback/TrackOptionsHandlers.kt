@@ -76,12 +76,11 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
 
         TrackMenuAction.ADD_TO_QUEUE -> {
             if (isBatch) {
-                batch.forEach { addToQueue(it) }
+                batch.forEach { addToQueue(it, showConfirmation = false) }
                 state = state.copy(selection = state.selection.clear())
                 showToast("${batch.size} tracks added to queue")
             } else if (track != null) {
                 addToQueue(track)
-                showToast("Added to queue")
             }
         }
 

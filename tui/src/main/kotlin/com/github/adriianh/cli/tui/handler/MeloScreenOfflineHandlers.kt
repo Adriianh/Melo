@@ -170,11 +170,13 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
                     deleteDownloadedTrack(track.id)
                 }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${toDelete.size} downloads removed")
                 return EventResult.HANDLED
             }
             val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) {
                 deleteDownloadedTrack(track.id)
+                showToast("Download removed")
             }
             return EventResult.HANDLED
         }

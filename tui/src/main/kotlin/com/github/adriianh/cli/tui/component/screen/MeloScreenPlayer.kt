@@ -39,7 +39,8 @@ internal fun MeloScreen.handleMediaSessionPrevious() {
 
 internal fun MeloScreen.handleMediaSessionStop() {
     try {
-        appRunner()?.runOnRenderThread { clearQueue() } ?: clearQueue()
+        appRunner()?.runOnRenderThread { clearQueue(showConfirmation = false) }
+            ?: clearQueue(showConfirmation = false)
     } catch (_: Throwable) {}
 }
 

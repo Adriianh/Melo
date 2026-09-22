@@ -11,14 +11,17 @@ import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 
-internal fun MeloScreen.addToQueue(track: Track) {
+internal fun MeloScreen.addToQueue(track: Track, showConfirmation: Boolean = true) {
     if (!state.isPlayable(track)) return
     playbackManager.addToQueue(track)
+    if (showConfirmation) showToast("Added to queue: ${track.title}")
 }
 
 internal fun MeloScreen.removeFromQueue(index: Int) {
     if (index < 0 || index >= playbackManager.queueState.value.tracks.size) return
+    val title = playbackManager.queueState.value.tracks[index].title
     playbackManager.removeFromQueue(index)
+    showToast("Removed from queue: $title")
 }
 
 internal fun MeloScreen.moveQueueItem(fromIndex: Int, toIndex: Int) {
@@ -28,9 +31,10 @@ internal fun MeloScreen.moveQueueItem(fromIndex: Int, toIndex: Int) {
     state = state.copy(player = state.player.copy(queueCursor = toIndex))
 }
 
-internal fun MeloScreen.clearQueue() {
+internal fun MeloScreen.clearQueue(showConfirmation: Boolean = true) {
     state = state.copy(player = state.player.copy(isRadioMode = false))
     playbackManager.setQueue(emptyList())
+    if (showConfirmation) showToast("Queue cleared")
 }
 
 internal fun MeloScreen.toggleQueue() {
