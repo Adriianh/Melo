@@ -192,7 +192,26 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
-    "allPublicMethods": true
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.selemba1000.JMTCButtonCallback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": []
+      }
+    ]
   },
   {
     "name": "io.github.selemba1000.windows.RateCallback",
@@ -200,7 +219,15 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
-    "allPublicMethods": true
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Double"
+        ]
+      }
+    ]
   },
   {
     "name": "io.github.selemba1000.windows.ShuffleCallback",
@@ -208,7 +235,15 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
-    "allPublicMethods": true
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Boolean"
+        ]
+      }
+    ]
   },
   {
     "name": "io.github.selemba1000.windows.LoopStatusCallback",
@@ -216,7 +251,15 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
-    "allPublicMethods": true
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "io.github.selemba1000.windows.UnsignedInt"
+        ]
+      }
+    ]
   },
   {
     "name": "io.github.selemba1000.windows.SeekCallback",
@@ -224,7 +267,45 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
-    "allPublicMethods": true
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.github.selemba1000.JMTCValueChangedCallback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Object"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.github.selemba1000.JMTCSeekCallback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "long"
+        ]
+      }
+    ]
   },
   {
     "name": "io.github.selemba1000.windows.UnsignedInt",
@@ -5792,6 +5873,121 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allPublicFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.sun.jna.Callback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.sun.jna.CallbackProxy",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Object[]"
+        ]
+      },
+      {
+        "name": "getParameterTypes",
+        "parameterTypes": []
+      },
+      {
+        "name": "getReturnType",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.jna.CallbackReference$DefaultCallbackProxy",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "callback",
+        "parameterTypes": [
+          "java.lang.Object[]"
+        ]
+      },
+      {
+        "name": "getParameterTypes",
+        "parameterTypes": []
+      },
+      {
+        "name": "getReturnType",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "com.sun.jna.CallbackReference",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "methods": [
+      {
+        "name": "getCallback",
+        "parameterTypes": [
+          "java.lang.Class",
+          "com.sun.jna.Pointer",
+          "boolean"
+        ]
+      },
+      {
+        "name": "getFunctionPointer",
+        "parameterTypes": [
+          "com.sun.jna.Callback",
+          "boolean"
+        ]
+      },
+      {
+        "name": "getNativeString",
+        "parameterTypes": [
+          "java.lang.Object",
+          "boolean"
+        ]
+      },
+      {
+        "name": "initializeThread",
+        "parameterTypes": [
+          "com.sun.jna.Callback",
+          "com.sun.jna.CallbackReference$AttachOptions"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.sun.jna.CallbackReference$AttachOptions",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.sun.jna.win32.DLLCallback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.sun.jna.win32.StdCallLibrary$StdCallCallback",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allPublicMethods": true
   }
