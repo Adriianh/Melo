@@ -10,6 +10,7 @@ import com.github.adriianh.cli.tui.handler.loadMoreSimilar
 import com.github.adriianh.cli.tui.handler.openPlaylistPicker
 import com.github.adriianh.cli.tui.handler.removeFavoriteTrack
 import com.github.adriianh.cli.tui.handler.toggleFavorite
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
@@ -75,8 +76,9 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
 
         TrackMenuAction.ADD_TO_QUEUE -> {
             if (isBatch) {
-                batch.forEach { addToQueue(it) }
+                batch.forEach { addToQueue(it, showConfirmation = false) }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${batch.size} tracks added to queue")
             } else if (track != null) {
                 addToQueue(track)
             }
@@ -92,8 +94,9 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
 
         TrackMenuAction.ADD_TO_FAVORITES, TrackMenuAction.TOGGLE_FAVORITE -> {
             if (isBatch) {
-                batch.forEach { toggleFavorite(it) }
+                batch.forEach { toggleFavorite(it, showConfirmation = false) }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${batch.size} tracks added to favorites", ToastKind.HEART)
             } else if (track != null) {
                 toggleFavorite(track)
             }
@@ -101,8 +104,9 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
 
         TrackMenuAction.REMOVE_FROM_FAVORITES -> {
             if (isBatch) {
-                batch.forEach { removeFavoriteTrack(it) }
+                batch.forEach { removeFavoriteTrack(it, showConfirmation = false) }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${batch.size} tracks removed from favorites", ToastKind.HEART)
             } else if (track != null) {
                 removeFavoriteTrack(track)
             }
@@ -113,13 +117,20 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
             val pl = libraryScreen?.selectedPlaylist
             if (pl != null) {
                 if (isBatch) {
+                    val count = batch.size
                     scope.launch {
                         batch.forEach { removeTrackFromPlaylist(pl.id, it.id) }
+                        appRunner()?.runOnRenderThread {
+                            showToast("$count tracks removed from '${pl.name}'")
+                        }
                     }
                     state = state.copy(selection = state.selection.clear())
                 } else if (track != null) {
                     scope.launch {
                         removeTrackFromPlaylist(pl.id, track.id)
+                        appRunner()?.runOnRenderThread {
+                            showToast("Removed from '${pl.name}'")
+                        }
                     }
                 }
             }
@@ -129,8 +140,10 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
             if (isBatch) {
                 batch.forEach { downloadTrack(it, DownloadType.MANUAL) }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${batch.size} tracks downloading")
             } else if (track != null) {
                 downloadTrack(track, DownloadType.MANUAL)
+                showToast("Downloading: ${track.title}")
             }
         }
 
@@ -138,8 +151,10 @@ internal fun MeloScreen.executeTrackMenuAction(action: TrackMenuAction) {
             if (isBatch) {
                 batch.forEach { deleteDownloadedTrack(it.id) }
                 state = state.copy(selection = state.selection.clear())
+                showToast("${batch.size} downloads removed")
             } else if (track != null) {
                 deleteDownloadedTrack(track.id)
+                showToast("Download removed")
             }
         }
 

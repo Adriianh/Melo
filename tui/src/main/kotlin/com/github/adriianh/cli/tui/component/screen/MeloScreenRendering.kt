@@ -130,7 +130,8 @@ internal fun MeloScreen.renderRoot(): Element {
         )
 
     val dockWithRight = if (detailElement != null) {
-        val detailConstraint = if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
+        val detailConstraint =
+            if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
         dockWithBottom.right(detailElement, detailConstraint)
     } else {
         dockWithBottom
@@ -166,10 +167,12 @@ internal fun MeloScreen.renderRoot(): Element {
         PlaylistInputMode.NONE -> withCommandBarSuggestions
     }
 
-    return if (state.languagePicker.isVisible) stack(
+    val layered = if (state.languagePicker.isVisible) stack(
         withPlaylist,
         languagePickerOverlay
     ) else withPlaylist
+
+    return stack(layered, toastOverlay)
 }
 
 internal fun MeloScreen.renderMainContentInternal(

@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.PlaylistInputMode
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
+import com.github.adriianh.cli.tui.util.ToastKind
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -202,7 +203,13 @@ private fun MeloScreen.handlePlaylistListActionsKey(
         event.isCharIgnoreCase('d') || event.code() == KeyCode.DELETE -> {
             val item = filtered.getOrNull(playlistsList.selected()) ?: return handleGlobalShortcuts(event)
             if (item is LibraryPlaylistItem.Local) {
-                scope.launch { deletePlaylist(item.playlist.id) }
+                val playlistName = item.playlist.name
+                scope.launch {
+                    deletePlaylist(item.playlist.id)
+                    appRunner()?.runOnRenderThread {
+                        showToast("Playlist deleted: '$playlistName'", ToastKind.SUCCESS)
+                    }
+                }
                 return EventResult.HANDLED
             }
         }

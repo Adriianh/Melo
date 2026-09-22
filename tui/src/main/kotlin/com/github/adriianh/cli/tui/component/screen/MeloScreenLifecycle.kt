@@ -4,11 +4,15 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.checkYouTubeAuth
-import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
+import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
+import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
+import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.cli.tui.util.pruneExpiredToasts
+import com.github.adriianh.core.domain.model.DownloadStatus
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -62,6 +66,18 @@ internal fun MeloScreen.onStartLifecycle() {
                 state = state.copy(
                     collections = state.collections.copy(offlineTracks = downloads)
                 )
+
+                val currentIds = downloads.map { it.track.id }.toSet()
+                val freshlyCompleted = downloads.filter { offline ->
+                    val previous = lastDownloadStatusById[offline.track.id]
+                    offline.downloadStatus == DownloadStatus.COMPLETED &&
+                            previous != null && previous != DownloadStatus.COMPLETED
+                }
+                lastDownloadStatusById.keys.retainAll(currentIds)
+                downloads.forEach { lastDownloadStatusById[it.track.id] = it.downloadStatus }
+                freshlyCompleted.forEach { offline ->
+                    showToast("Download complete: ${offline.track.title}", ToastKind.SUCCESS)
+                }
             }
         }
     }
@@ -110,15 +126,41 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }, Duration.ofMillis(150))
+
+    toastJob = appRunner()?.scheduleRepeating({
+        appRunner()?.runOnRenderThread {
+            if (state.toasts.isNotEmpty()) {
+                state = state.copy(
+                    toasts = pruneExpiredToasts(state.toasts, System.currentTimeMillis())
+                )
+            }
+        }
+    }, Duration.ofMillis(TOAST_TICK_MS))
 }
 
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
+    toastJob?.cancel()
     playlistTracksJob?.cancel()
-    try { playbackManager.release() } catch (_: Throwable) {}
-    try { audioPlayer.release() } catch (_: Throwable) {}
-    try { mediaSession.release() } catch (_: Throwable) {}
-    try { discordRpcManager.disconnect() } catch (_: Throwable) {}
-    try { FfplayProcessManager.killAll() } catch (_: Throwable) {}
+    try {
+        playbackManager.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        audioPlayer.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        mediaSession.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        discordRpcManager.disconnect()
+    } catch (_: Throwable) {
+    }
+    try {
+        FfplayProcessManager.killAll()
+    } catch (_: Throwable) {
+    }
     scope.cancel()
 }

@@ -290,13 +290,21 @@ private fun MeloScreen.handlePlaylistDetailSelectionActions(
                     toRemove.forEach { track ->
                         removeTrackFromPlaylist(pl.id, track.id)
                     }
+                    appRunner()?.runOnRenderThread {
+                        showToast("${toRemove.size} tracks removed from '${pl.name}'")
+                    }
                 }
                 state = state.copy(selection = state.selection.clear())
                 return EventResult.HANDLED
             }
             val track = filtered.getOrNull(playlistTracksList.selected())
                 ?: return handleGlobalShortcuts(event)
-            scope.launch { removeTrackFromPlaylist(pl.id, track.id) }
+            scope.launch {
+                removeTrackFromPlaylist(pl.id, track.id)
+                appRunner()?.runOnRenderThread {
+                    showToast("Removed from '${pl.name}'")
+                }
+            }
             return EventResult.HANDLED
         }
     }

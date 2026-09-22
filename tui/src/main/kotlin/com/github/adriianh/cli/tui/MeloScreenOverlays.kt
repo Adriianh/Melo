@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
 import com.github.adriianh.cli.tui.component.QueueOverlay
 import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.SettingsOverlay
+import com.github.adriianh.cli.tui.component.ToastOverlay
 import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
@@ -55,3 +56,5 @@ internal fun MeloScreen.buildLanguagePickerOverlay() = LanguagePickerOverlay(
     { state },
     ::handleLanguagePickerKey
 )
+
+internal fun MeloScreen.buildToastOverlay() = ToastOverlay { state }

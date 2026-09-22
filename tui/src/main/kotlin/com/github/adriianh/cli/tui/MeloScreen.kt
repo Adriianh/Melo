@@ -11,6 +11,8 @@ import com.github.adriianh.cli.tui.component.screen.renderRoot
 import com.github.adriianh.cli.tui.player.AudioPlayer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
+import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.cli.tui.util.pushToast
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
@@ -19,6 +21,7 @@ import com.github.adriianh.core.domain.interactor.SearchInteractors
 import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -26,8 +29,10 @@ import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.app.ToolkitApp
+import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
+import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -138,7 +143,10 @@ class MeloScreen(
     internal var playlistTracksJob: Job? = null
     internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
-    internal var marqueeJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
+    internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    internal var toastJob: ToolkitRunner.ScheduledAction? = null
+    /** Last known download status per track id, used to detect completion transitions. */
+    internal val lastDownloadStatusById = mutableMapOf<String, DownloadStatus>()
     internal var marqueeTick = 0
     internal var scrobbleSubmitted = false
     internal var playRecorded = false
@@ -222,8 +230,9 @@ class MeloScreen(
     internal val trackOptionsOverlay = buildTrackOptionsOverlay()
     internal val commandBarSuggestionsOverlay = buildCommandBarSuggestionsOverlay()
     internal val languagePickerOverlay = buildLanguagePickerOverlay()
+    internal val toastOverlay = buildToastOverlay()
 
-    override fun configure(): dev.tamboui.tui.TuiConfig = dev.tamboui.tui.TuiConfig.builder().mouseCapture(true).build()
+    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() = onStartLifecycle()
 
@@ -237,4 +246,23 @@ class MeloScreen(
 
     internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) =
         downloadTrackAction(track, downloadType)
+
+    private var toastIdCounter = 0L
+
+    /**
+     * Enqueues a transient confirmation toast. Safe to call from key handlers
+     * (render thread); coroutine call sites must wrap it in `runOnRenderThread`
+     * like the rest of their state updates.
+     */
+    internal fun showToast(message: String, kind: ToastKind = ToastKind.INFO) {
+        state = state.copy(
+            toasts = pushToast(
+                toasts = state.toasts,
+                message = message,
+                kind = kind,
+                nowMs = System.currentTimeMillis(),
+                id = ++toastIdCounter,
+            )
+        )
+    }
 }

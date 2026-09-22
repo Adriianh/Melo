@@ -2,11 +2,12 @@ package com.github.adriianh.cli.tui.handler
 
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.isFavoriteTrack
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-internal fun MeloScreen.toggleFavorite(track: Track) {
+internal fun MeloScreen.toggleFavorite(track: Track, showConfirmation: Boolean = true) {
     scope.launch {
         val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix("piped:")
         val isRemoteFav = state.collections.remoteFavorites.any {
@@ -38,6 +39,19 @@ internal fun MeloScreen.toggleFavorite(track: Track) {
             state = state.copy(player = state.player.copy(isFavorite = newFavState))
         }
 
+        if (showConfirmation) {
+            appRunner()?.runOnRenderThread {
+                showToast(
+                    message = if (newFavState) {
+                        "${track.title} — ${track.artist}"
+                    } else {
+                        "Removed from favorites: ${track.title}"
+                    },
+                    kind = ToastKind.HEART
+                )
+            }
+        }
+
         val settings = settingsViewState.currentSettings
         val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
         if (isLoggedIn && settings.syncLikesToYouTube) {
@@ -55,7 +69,7 @@ internal fun MeloScreen.toggleFavorite(track: Track) {
     }
 }
 
-internal fun MeloScreen.removeFavoriteTrack(track: Track) {
+internal fun MeloScreen.removeFavoriteTrack(track: Track, showConfirmation: Boolean = true) {
     scope.launch {
         removeFavorite(track.id)
         val rawId = track.sourceId?.takeIf { it.isNotBlank() } ?: track.id.removePrefix("piped:")
@@ -69,6 +83,9 @@ internal fun MeloScreen.removeFavoriteTrack(track: Track) {
                 collections = state.collections.copy(remoteFavorites = updatedRemote),
                 player = if (isNowPlaying) state.player.copy(isFavorite = false) else state.player
             )
+            if (showConfirmation) {
+                showToast("Removed from favorites: ${track.title}", ToastKind.HEART)
+            }
         }
         val settings = settingsViewState.currentSettings
         val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
