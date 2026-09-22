@@ -174,6 +174,20 @@ cd Melo
 ./gradlew :tui:nativeCompile
 ```
 
+### 🧪 Pre-built Development Builds (Nightly)
+
+If you want to test the latest unreleased changes from `master` without installing compilers or building from source:
+
+**Linux & macOS**:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly
+```
+
+**Windows (PowerShell)**:
+```powershell
+$env:MELO_VERSION="nightly"; irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.ps1 | iex
+```
+
 ---
 
 ## 🗺️ Roadmap

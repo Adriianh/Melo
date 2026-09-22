@@ -12,8 +12,17 @@
 [CmdletBinding()]
 param (
     [string]$Version = "",
+    [switch]$Nightly = $false,
     [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui"
 )
+
+if (-not $Version -and $env:MELO_VERSION) {
+    $Version = $env:MELO_VERSION
+}
+
+if ($Nightly) {
+    $Version = "nightly"
+}
 
 $ErrorActionPreference = "Stop"
 $Repo = "Adriianh/Melo"
@@ -31,30 +40,36 @@ Write-Host "   Terminal Audio Player & CLI • https://github.com/$Repo" -Foregr
 Write-Host ""
 
 # Resolve version
-if (-not $Version) {
-    Write-Host "  ● Resolving target release..." -ForegroundColor Magenta
-    try {
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ "User-Agent" = "Melo-Installer" }
-        $Version = $release.tag_name.TrimStart('v')
-    } catch {
-        $Version = "2.1.5"
-    }
+if ($Version -eq "nightly" -or $Version -eq "dev") {
+    $VersionDisplay = "nightly (dev build)"
+    $AssetName = "melo-nightly-windows.zip"
+    $DownloadUrl = "https://github.com/$Repo/releases/download/nightly/$AssetName"
 } else {
-    $Version = $Version.TrimStart('v')
+    if (-not $Version) {
+        Write-Host "  ● Resolving target release..." -ForegroundColor Magenta
+        try {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ "User-Agent" = "Melo-Installer" }
+            $Version = $release.tag_name.TrimStart('v')
+        } catch {
+            $Version = "2.1.5"
+        }
+    } else {
+        $Version = $Version.TrimStart('v')
+    }
+    $VersionDisplay = "v$Version"
+    $AssetName = "melo-$Version-windows.zip"
+    $DownloadUrl = "https://github.com/$Repo/releases/download/v$Version/$AssetName"
 }
 
 $BinDir = Join-Path $InstallDir "bin"
 
 Write-Host "  ┌────────────────────────────────────────────────────────┐" -ForegroundColor DarkGray
 Write-Host "  │  Platform:  Windows (x86_64)                           │" -ForegroundColor DarkGray
-Write-Host "  │  Version:   v$($Version.PadRight(42))│" -ForegroundColor DarkGray
+Write-Host "  │  Version:   $($VersionDisplay.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  │  Target:    $($InstallDir.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  │  Binaries:  $($BinDir.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  └────────────────────────────────────────────────────────┘" -ForegroundColor DarkGray
 Write-Host ""
-
-$AssetName = "melo-$Version-windows.zip"
-$DownloadUrl = "https://github.com/$Repo/releases/download/v$Version/$AssetName"
 
 $TempZip = Join-Path $env:TEMP $AssetName
 $TempExtract = Join-Path $env:TEMP "melo_extract_$([System.IO.Path]::GetRandomFileName())"
