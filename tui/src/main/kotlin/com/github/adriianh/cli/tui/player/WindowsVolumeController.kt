@@ -1,6 +1,5 @@
 package com.github.adriianh.cli.tui.player
 
-import com.sun.jna.Function
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.Guid
@@ -73,9 +72,7 @@ internal object WindowsVolumeController {
         if (!isAvailable) return
         scope.launch(Dispatchers.IO) {
             val clampedPct = pct.coerceIn(0, 100)
-            // When ffplay starts, its WASAPI audio session takes 50-200ms to be registered.
-            // Retry for up to ~1s until the session appears.
-            for (attempt in 0 until 10) {
+            (0 until 10).forEach { _ ->
                 val applied = setProcessVolume(pid, clampedPct)
                 if (applied) return@launch
                 delay(100.milliseconds)
