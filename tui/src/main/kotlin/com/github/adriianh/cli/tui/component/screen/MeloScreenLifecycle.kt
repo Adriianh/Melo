@@ -4,10 +4,10 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.checkYouTubeAuth
-import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
+import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
 import com.github.adriianh.cli.tui.util.ToastKind
@@ -71,7 +71,7 @@ internal fun MeloScreen.onStartLifecycle() {
                 val freshlyCompleted = downloads.filter { offline ->
                     val previous = lastDownloadStatusById[offline.track.id]
                     offline.downloadStatus == DownloadStatus.COMPLETED &&
-                        previous != null && previous != DownloadStatus.COMPLETED
+                            previous != null && previous != DownloadStatus.COMPLETED
                 }
                 lastDownloadStatusById.keys.retainAll(currentIds)
                 downloads.forEach { lastDownloadStatusById[it.track.id] = it.downloadStatus }
@@ -127,10 +127,6 @@ internal fun MeloScreen.onStartLifecycle() {
         }
     }, Duration.ofMillis(150))
 
-    // Heartbeat that re-renders active toasts (driving their fade/slide animation)
-    // and prunes fully-expired ones. Assigning state while any toast is visible
-    // forces the render loop to tick, the same way the marquee job does. Cheap
-    // no-op (no assignment) when nothing is shown.
     toastJob = appRunner()?.scheduleRepeating({
         appRunner()?.runOnRenderThread {
             if (state.toasts.isNotEmpty()) {
@@ -146,10 +142,25 @@ internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     toastJob?.cancel()
     playlistTracksJob?.cancel()
-    try { playbackManager.release() } catch (_: Throwable) {}
-    try { audioPlayer.release() } catch (_: Throwable) {}
-    try { mediaSession.release() } catch (_: Throwable) {}
-    try { discordRpcManager.disconnect() } catch (_: Throwable) {}
-    try { FfplayProcessManager.killAll() } catch (_: Throwable) {}
+    try {
+        playbackManager.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        audioPlayer.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        mediaSession.release()
+    } catch (_: Throwable) {
+    }
+    try {
+        discordRpcManager.disconnect()
+    } catch (_: Throwable) {
+    }
+    try {
+        FfplayProcessManager.killAll()
+    } catch (_: Throwable) {
+    }
     scope.cancel()
 }

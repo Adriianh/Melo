@@ -130,7 +130,8 @@ internal fun MeloScreen.renderRoot(): Element {
         )
 
     val dockWithRight = if (detailElement != null) {
-        val detailConstraint = if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
+        val detailConstraint =
+            if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
         dockWithBottom.right(detailElement, detailConstraint)
     } else {
         dockWithBottom
@@ -171,7 +172,6 @@ internal fun MeloScreen.renderRoot(): Element {
         languagePickerOverlay
     ) else withPlaylist
 
-    // Toasts are the top-most layer: transient confirmations must always be visible.
     return stack(layered, toastOverlay)
 }
 

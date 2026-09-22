@@ -57,12 +57,9 @@ class ToastOverlay(
 
         val terminalW = area.width()
         val toastW = (terminalW / 2).coerceIn(TOAST_MIN_WIDTH, TOAST_MAX_WIDTH)
-        // Row immediately above the player bar; toasts stack upward from here.
         val laneBaseY = area.height() - PLAYER_BAR_ROWS - 1
         val x = area.x() + (terminalW - toastW) / 2
 
-        // Union area covering every toast row plus their entrance/exit slide rows,
-        // so nothing is left over once the stack shrinks.
         val firstRow = laneBaseY - (alive.size - 1) - 1
         val lastRow = laneBaseY + 1
         frame.buffer().clear(Rect(x, firstRow, toastW, lastRow - firstRow + 1))

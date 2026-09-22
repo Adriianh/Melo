@@ -29,8 +29,10 @@ import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.app.ToolkitApp
+import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
+import dev.tamboui.tui.TuiConfig
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -141,8 +143,8 @@ class MeloScreen(
     internal var playlistTracksJob: Job? = null
     internal var nowPlayingMetadataJob: Job? = null
     internal var lastQuery = ""
-    internal var marqueeJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
-    internal var toastJob: dev.tamboui.toolkit.app.ToolkitRunner.ScheduledAction? = null
+    internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
+    internal var toastJob: ToolkitRunner.ScheduledAction? = null
     /** Last known download status per track id, used to detect completion transitions. */
     internal val lastDownloadStatusById = mutableMapOf<String, DownloadStatus>()
     internal var marqueeTick = 0
@@ -230,7 +232,7 @@ class MeloScreen(
     internal val languagePickerOverlay = buildLanguagePickerOverlay()
     internal val toastOverlay = buildToastOverlay()
 
-    override fun configure(): dev.tamboui.tui.TuiConfig = dev.tamboui.tui.TuiConfig.builder().mouseCapture(true).build()
+    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
 
     override fun onStart() = onStartLifecycle()
 
