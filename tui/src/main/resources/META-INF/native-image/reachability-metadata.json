@@ -2425,6 +2425,18 @@
       "glob": "com/sun/jna/linux-x86-64/libjnidispatch.so"
     },
     {
+      "glob": "com/sun/jna/win32-x86-64/jnidispatch.dll"
+    },
+    {
+      "glob": "com/sun/jna/win32-x86/jnidispatch.dll"
+    },
+    {
+      "glob": "win32-x86-64/SMTCAdapter.dll"
+    },
+    {
+      "glob": "win32-x86/SMTCAdapter.dll"
+    },
+    {
       "glob": "dev/tamboui/tui/bindings/emacs.properties"
     },
     {

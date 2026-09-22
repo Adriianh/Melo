@@ -25,5 +25,16 @@
       "org.freedesktop.mpris.MediaPlayer2.Player",
       "org.freedesktop.dbus.interfaces.DBusInterface"
     ]
+  },
+  {
+    "interfaces": [
+      "io.github.selemba1000.windows.SMTCAdapter"
+    ]
+  },
+  {
+    "interfaces": [
+      "io.github.selemba1000.windows.SMTCAdapter",
+      "com.sun.jna.Library"
+    ]
   }
 ]

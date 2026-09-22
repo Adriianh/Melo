@@ -43,5 +43,16 @@
     "allDeclaredConstructors": true,
     "allDeclaredMethods": true,
     "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.windows.WindowsJMTC",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.selemba1000.windows.SMTCAdapter",
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   }
 ]

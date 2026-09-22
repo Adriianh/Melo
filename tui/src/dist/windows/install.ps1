@@ -11,9 +11,10 @@ New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
 
 Copy-Item -Path "$ScriptDir\melo.exe" -Destination "$InstallDir\melo.exe" -Force
 
-# Copy any shared libraries (e.g., AWT .dll files) if they exist
+# Copy any shared libraries (e.g., SMTCAdapter, jnidispatch .dll files) if they exist
 if (Test-Path "$ScriptDir\*.dll") {
     Copy-Item -Path "$ScriptDir\*.dll" -Destination "$InstallDir\" -Force
+    Copy-Item -Path "$ScriptDir\*.dll" -Destination "$BinDir\" -Force
 }
 
 # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly

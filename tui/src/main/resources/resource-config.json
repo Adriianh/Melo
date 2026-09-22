@@ -9,6 +9,24 @@
       },
       {
         "pattern": "org/newsclub/net/unix/lib/.*"
+      },
+      {
+        "pattern": "win32-x86-64/.*"
+      },
+      {
+        "pattern": "win32-x86/.*"
+      },
+      {
+        "pattern": "com/sun/jna/win32-x86-64/.*"
+      },
+      {
+        "pattern": "com/sun/jna/win32-x86/.*"
+      },
+      {
+        "pattern": ".*SMTCAdapter.*"
+      },
+      {
+        "pattern": ".*jnidispatch.*"
       }
     ]
   }

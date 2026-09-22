@@ -99,6 +99,8 @@ graalvmNative {
                 "--initialize-at-build-time=kotlin",
                 "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
                 "--initialize-at-run-time=io.github.selemba1000.linux.LinuxJMTC",
+                "--initialize-at-run-time=io.github.selemba1000.windows.WindowsJMTC",
+                "--initialize-at-run-time=io.github.selemba1000.windows.SMTCAdapter",
                 "--initialize-at-run-time=org.freedesktop.dbus",
                 "--initialize-at-build-time=kotlinx.coroutines",
                 "--initialize-at-build-time=kotlinx.serialization",
@@ -229,6 +231,13 @@ tasks.register("distWindows") {
                 val dest = File(rootDir, src.relativeTo(distSrc.resolve("windows")).path)
                 dest.parentFile.mkdirs()
                 src.copyTo(dest, overwrite = true)
+            }
+        }
+
+        listOf("SMTCAdapter.dll", "jnidispatch.dll").forEach { dllName ->
+            val dllFile = File(rootDir, dllName)
+            if (dllFile.exists()) {
+                dllFile.copyTo(File(rootDir, "bin/$dllName"), overwrite = true)
             }
         }
 

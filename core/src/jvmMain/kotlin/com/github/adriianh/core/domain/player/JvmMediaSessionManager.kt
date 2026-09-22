@@ -81,6 +81,19 @@ class JvmMediaSessionManager(
         synchronized(this) {
             if (initialized) return
             try {
+                val isWindows = System.getProperty("os.name")?.lowercase()?.contains("win") == true
+                if (isWindows) {
+                    val localAppData = System.getenv("LOCALAPPDATA")
+                    val existing = System.getProperty("jna.library.path") ?: ""
+                    val extraPaths = listOfNotNull(
+                        localAppData?.let { "$it\\melo-tui" },
+                        localAppData?.let { "$it\\melo-tui\\bin" },
+                        File(".").absolutePath
+                    )
+                    val combined = (listOf(existing).filter { it.isNotBlank() } + extraPaths).joinToString(File.pathSeparator)
+                    System.setProperty("jna.library.path", combined)
+                }
+
                 val sessionId = "melo-${UUID.randomUUID()}"
                 val instance = JMTC.getInstance(JMTCSettings(sessionId, "Melo"))
                 jmtc = instance
@@ -118,7 +131,11 @@ class JvmMediaSessionManager(
                     startObservers()
                 }
                 initialized = true
-            } catch (_: Throwable) {
+            } catch (e: Throwable) {
+                if (System.getProperty("melo.debug") == "true" || System.getenv("MELO_DEBUG") == "1") {
+                    System.err.println("[Melo] Failed to initialize MediaSession (SMTC/MPRIS): ${e.message}")
+                    e.printStackTrace()
+                }
             }
         }
     }

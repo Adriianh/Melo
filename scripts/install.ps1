@@ -85,6 +85,11 @@ try {
         New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
     }
 
+    # Ensure DLLs (e.g. SMTCAdapter.dll, jnidispatch.dll) exist in $BinDir as well
+    Get-ChildItem -Path $InstallDir -Filter "*.dll" | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $BinDir -Force -ErrorAction SilentlyContinue
+    }
+
     # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
     # without triggering PSSecurityException / ExecutionPolicy restrictions.
     Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
