@@ -3,7 +3,6 @@ package com.github.adriianh.cli.tui.player
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -96,7 +95,8 @@ internal object FfplayProcessManager {
             ffplayBinary(),
             "-nodisp",
             "-autoexit",
-            "-loglevel", "error",
+            "-stats",
+            "-loglevel", "warning",
             "-af", "volume=$volume",
         )
 
@@ -108,8 +108,12 @@ internal object FfplayProcessManager {
         if (url.startsWith("http://") || url.startsWith("https://")) {
             cmd += listOf(
                 "-reconnect", "1",
+                "-reconnect_at_eof", "1",
                 "-reconnect_streamed", "1",
+                "-reconnect_on_network_error", "1",
+                "-reconnect_on_http_error", "4xx,5xx",
                 "-reconnect_delay_max", "5",
+                "-timeout", "5000000",
             )
         }
 
@@ -117,7 +121,7 @@ internal object FfplayProcessManager {
 
         val process = ProcessBuilder(cmd)
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            // Keep stderr open as a pipe so AudioPlayer reads -stats for real-time PTS & buffer tracking
             .start()
         try {
             process.outputStream.close()

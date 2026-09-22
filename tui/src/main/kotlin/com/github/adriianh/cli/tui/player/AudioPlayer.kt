@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -321,6 +322,10 @@ class AudioPlayer(
         }
     }
 
+    companion object {
+        private val STATS_REGEX = Regex("""^\s*(-?\d+(?:\.\d+)?)\s+(?:[A-Z-]+:|[a-zA-Z:-]+).*?aq=\s*(\d+)KB""")
+    }
+
     private suspend fun launchPlayback(url: String, volPct: Int, seekMs: Long, session: Long) {
         try {
             val process = FfplayProcessManager.buildProcess(
@@ -339,15 +344,98 @@ class AudioPlayer(
                 PactlVolumeController.applyVolume(scope, pid, volPct)
             }
 
-            val progressJob = scope.launch {
-                while (isActive && sessionId.get() == session) {
-                    if (!isPaused.get()) {
-                        val elapsed = pausedAtMs + (System.currentTimeMillis() - startTimeMs)
-                        val positionMs = elapsed + seekMs
-                        _state.update { it.copy(progressMs = positionMs) }
-                        onProgress(positionMs)
+            val lastKnownPtsMs = AtomicLong(seekMs)
+            val lastPtsWallTimeMs = AtomicLong(System.currentTimeMillis())
+            val isStreamBuffering = AtomicBoolean(true)
+            val hasReceivedFirstPts = AtomicBoolean(false)
+            var lastEmittedProgressMs = seekMs
+
+            val isRemote = url.startsWith("http://") || url.startsWith("https://")
+
+            val stderrJob = scope.launch(Dispatchers.IO) {
+                try {
+                    process.errorStream.bufferedReader().use { reader ->
+                        while (isActive && sessionId.get() == session) {
+                            val line = reader.readLine() ?: break
+                            val match = STATS_REGEX.find(line)
+                            if (match != null) {
+                                val ptsSec = match.groupValues[1].toDoubleOrNull()
+                                val aqKb = match.groupValues[2].toIntOrNull() ?: 0
+                                if (ptsSec != null) {
+                                    val rawPtsMs = (ptsSec * 1000).toLong().coerceAtLeast(0L)
+                                    val actualMs = if (seekMs > 2000L && rawPtsMs < seekMs - 2000L) {
+                                        seekMs + rawPtsMs
+                                    } else {
+                                        rawPtsMs
+                                    }
+                                    lastKnownPtsMs.set(actualMs)
+                                    lastPtsWallTimeMs.set(System.currentTimeMillis())
+                                    hasReceivedFirstPts.set(true)
+                                    val isStalled = isRemote && aqKb == 0 && actualMs > 0
+                                    isStreamBuffering.set(isStalled)
+                                    if (!isPaused.get()) {
+                                        val shouldEmit = abs(actualMs - lastEmittedProgressMs) >= 250L
+                                        if (shouldEmit) {
+                                            lastEmittedProgressMs = actualMs
+                                            _state.update {
+                                                it.copy(
+                                                    progressMs = actualMs,
+                                                    isBuffering = isStalled,
+                                                    isPlaying = true
+                                                )
+                                            }
+                                            onProgress(actualMs)
+                                        }
+                                    }
+                                }
+                            } else if (line.contains("aq= 0KB") || line.contains("nan :")) {
+                                if (isRemote && !isPaused.get()) {
+                                    isStreamBuffering.set(true)
+                                    _state.update { it.copy(isBuffering = true) }
+                                }
+                            }
+                        }
                     }
-                    delay(1000.milliseconds)
+                } catch (_: Throwable) {
+                }
+            }
+
+            val watchdogJob = scope.launch {
+                while (isActive && sessionId.get() == session) {
+                    delay(500.milliseconds)
+                    if (!isPaused.get()) {
+                        val now = System.currentTimeMillis()
+                        val lastUpdate = lastPtsWallTimeMs.get()
+                        val timeSinceLastPts = now - lastUpdate
+
+                        if (hasReceivedFirstPts.get()) {
+                            if (isRemote) {
+                                if (timeSinceLastPts > 2500L && !isStreamBuffering.get()) {
+                                    isStreamBuffering.set(true)
+                                    _state.update { it.copy(isBuffering = true) }
+                                }
+                                if (timeSinceLastPts > 12000L) {
+                                    FfplayProcessManager.destroyImmediately(process, pid)
+                                    break
+                                }
+                            }
+                        } else {
+                            if (isRemote) {
+                                _state.update { it.copy(isBuffering = true) }
+                                if (now - startTimeMs > 10000L) {
+                                    FfplayProcessManager.destroyImmediately(process, pid)
+                                    break
+                                }
+                            } else {
+                                if (now - startTimeMs > 1000L) {
+                                    val elapsed = pausedAtMs + (now - startTimeMs)
+                                    val positionMs = elapsed + seekMs
+                                    _state.update { it.copy(progressMs = positionMs, isBuffering = false) }
+                                    onProgress(positionMs)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -355,16 +443,18 @@ class AudioPlayer(
                 process.waitFor()
             }
 
-            progressJob.cancel()
+            stderrJob.cancel()
+            watchdogJob.cancel()
+
             if (sessionId.get() == session) {
                 if (exitCode == 0) {
-                    _state.update { it.copy(isPlaying = false, isFinished = true) }
+                    _state.update { it.copy(isPlaying = false, isFinished = true, isBuffering = false) }
                     onFinish()
                 } else if (!isPaused.get()) {
                     val duration = _state.value.durationMs
-                    val progress = _state.value.progressMs
+                    val progress = lastKnownPtsMs.get().takeIf { it > 0 } ?: _state.value.progressMs
                     if (duration > 0 && progress >= duration - 2000L) {
-                        _state.update { it.copy(isPlaying = false, isFinished = true) }
+                        _state.update { it.copy(isPlaying = false, isFinished = true, isBuffering = false) }
                         onFinish()
                     } else {
                         _state.update {
@@ -372,6 +462,7 @@ class AudioPlayer(
                                 isPlaying = false,
                                 isBuffering = false,
                                 isFinished = false,
+                                progressMs = progress,
                                 error = "Playback stopped unexpectedly (exit code $exitCode)",
                             )
                         }

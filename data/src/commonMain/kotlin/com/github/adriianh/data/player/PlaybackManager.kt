@@ -87,6 +87,8 @@ class PlaybackManagerImpl(
     private var isAutoplayFetching = false
     private var lastHandledFinishedTrackId: String? = null
     private var lastHandledErrorTrackId: String? = null
+    private var recoveryAttempts = 0
+    private var recoveryJob: Job? = null
     private var isTrackLoaded = false
     private var pendingRestorePositionMs: Long = 0L
     private var lastSavedPositionMs: Long = 0L
@@ -124,13 +126,28 @@ class PlaybackManagerImpl(
             meloPlayer.state.collect { state ->
                 val trackId = state.currentTrack?.id
                 val loadError = state.error
-                if (loadError != null && (trackId == null || trackId != lastHandledErrorTrackId)) {
-                    lastHandledErrorTrackId = trackId
+                if (loadError != null) {
                     if (trackId != null) {
                         streamCacheRepository?.invalidate(trackId)
                     }
-                    emitPlaybackError(loadError)
+                    if (trackId != null && !trackId.startsWith("local:") && recoveryAttempts < MAX_PLAYBACK_RECOVERY_ATTEMPTS) {
+                        recoveryAttempts++
+                        recoveryJob?.cancel()
+                        val resumePos = state.progressMs
+                        recoveryJob = scope.launch(dispatcher) {
+                            delay((BASE_RECOVERY_DELAY_MS * recoveryAttempts).milliseconds)
+                            if (_queueState.value.currentTrack?.id == trackId && !playbackState.value.isPlaying) {
+                                playCurrentQueueTrack(initialSeekMs = resumePos)
+                            }
+                        }
+                    } else if (trackId == null || trackId != lastHandledErrorTrackId) {
+                        lastHandledErrorTrackId = trackId
+                        emitPlaybackError(loadError)
+                    }
                 } else if (state.isFinished && state.error == null) {
+                    recoveryAttempts = 0
+                    recoveryJob?.cancel()
+                    recoveryJob = null
                     if (trackId != null && trackId != lastHandledFinishedTrackId) {
                         lastHandledFinishedTrackId = trackId
                         handleTrackFinished()
@@ -138,6 +155,9 @@ class PlaybackManagerImpl(
                 } else if (state.isPlaying) {
                     lastHandledFinishedTrackId = null
                     lastHandledErrorTrackId = null
+                    recoveryAttempts = 0
+                    recoveryJob?.cancel()
+                    recoveryJob = null
                     if (abs(state.progressMs - lastSavedPositionMs) >= 5000) {
                         persistCurrentSession(immediate = true)
                     }
@@ -163,6 +183,9 @@ class PlaybackManagerImpl(
     }
 
     override fun togglePlayPause() {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         if (playbackState.value.isPlaying) {
             meloPlayer.pause()
             persistCurrentSession(immediate = true)
@@ -179,6 +202,9 @@ class PlaybackManagerImpl(
     }
 
     override fun seekTo(positionMs: Long) {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         if (!isTrackLoaded) {
             pendingRestorePositionMs = positionMs
             lastSavedPositionMs = positionMs
@@ -225,6 +251,9 @@ class PlaybackManagerImpl(
     }
 
     override fun release() {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         persistCurrentSession(immediate = true)
         playJob?.cancel()
         prefetchJob?.cancel()
@@ -234,6 +263,9 @@ class PlaybackManagerImpl(
     }
 
     override fun setQueue(tracks: List<Track>, startIndex: Int) {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         scope.launch(dispatcher) { cacheMutex.withLock { prefetchCache.clear() } }
         val validIndex = if (tracks.isEmpty()) -1 else startIndex.coerceIn(0, tracks.lastIndex)
         _queueState.update {
@@ -347,6 +379,9 @@ class PlaybackManagerImpl(
     }
 
     override fun playNext() {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         val q = _queueState.value
         if (!q.hasNext) {
             handleAutoplay(forcePlayNext = true)
@@ -370,6 +405,9 @@ class PlaybackManagerImpl(
     }
 
     override fun playPrevious() {
+        recoveryAttempts = 0
+        recoveryJob?.cancel()
+        recoveryJob = null
         if (playbackState.value.progressMs > 3000) {
             meloPlayer.seekTo(0)
             return
@@ -471,8 +509,23 @@ class PlaybackManagerImpl(
             }
 
             if (url == null) {
-                emitPlaybackError("Stream not available, skipping...")
-                skipCurrentQueueTrack()
+                if (replayingLoadedTrack) {
+                    if (recoveryAttempts < MAX_PLAYBACK_RECOVERY_ATTEMPTS) {
+                        recoveryAttempts++
+                        recoveryJob?.cancel()
+                        recoveryJob = scope.launch(dispatcher) {
+                            delay((BASE_RECOVERY_DELAY_MS * recoveryAttempts).milliseconds)
+                            if (_queueState.value.currentTrack?.id == track.id && !playbackState.value.isPlaying) {
+                                playCurrentQueueTrack(initialSeekMs = targetSeek)
+                            }
+                        }
+                    } else {
+                        emitPlaybackError("Network connection lost. Press play to retry.")
+                    }
+                } else {
+                    emitPlaybackError("Stream not available, skipping...")
+                    skipCurrentQueueTrack()
+                }
                 return@launch
             }
 
@@ -738,6 +791,12 @@ class PlaybackManagerImpl(
 
         /** Delay between stream resolution retries. */
         private const val STREAM_RETRY_DELAY_MS = 700L
+
+        /** Maximum attempts to recover an actively playing stream interrupted by network drops. */
+        private const val MAX_PLAYBACK_RECOVERY_ATTEMPTS = 4
+
+        /** Base delay for exponential backoff during playback recovery attempts. */
+        private const val BASE_RECOVERY_DELAY_MS = 2000L
 
         /**
          * How close to the end of the queue (tracks remaining) the radio
