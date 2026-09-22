@@ -86,7 +86,12 @@ fun buildPlayerBar(
         ).percent(35)
     }
 
-    val leftBottom = if (nowPlaying != null) {
+    val leftBottom = if (state.player.audioError != null) {
+        row(
+            text("    ").length(4),
+            text(state.player.audioError).fg(ACCENT_RED).ellipsis().fill(),
+        ).percent(35)
+    } else if (nowPlaying != null) {
         val albumPart = if (nowPlaying.album.isNotBlank()) " • ${nowPlaying.album}" else ""
         row(
             text("    ").length(4),

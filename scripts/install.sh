@@ -251,7 +251,15 @@ EOF
             printf "  ${YELLOW}│${RESET}  ${CYAN}echo 'export PATH=\"%s:\$PATH\"' >> ~/.bashrc${RESET}   ${YELLOW}│${RESET}\n" "$BIN_DIR"
             printf "  ${YELLOW}│${RESET}  ${CYAN}source ~/.bashrc${RESET}                                     ${YELLOW}│${RESET}\n"
         fi
-        printf "  ${YELLOW}└────────────────────────────────────────────────────────┘${RESET}\n\n"
+    fi
+
+    if ! command -v ffplay >/dev/null 2>&1; then
+        printf "  ${YELLOW}Notice:${RESET} ffplay was not detected in \$PATH.\n"
+        printf "  Audio playback requires ffmpeg (ffplay). Install it via your package manager:\n"
+        printf "    Ubuntu/Debian: sudo apt install ffmpeg\n"
+        printf "    Fedora:        sudo dnf install ffmpeg\n"
+        printf "    Arch:          sudo pacman -S ffmpeg\n"
+        printf "    macOS:         brew install ffmpeg\n\n"
     fi
 
     printf "  ${GREEN}┌────────────────────────────────────────────────────────┐${RESET}\n"

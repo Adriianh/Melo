@@ -124,9 +124,12 @@ class PlaybackManagerImpl(
             meloPlayer.state.collect { state ->
                 val trackId = state.currentTrack?.id
                 val loadError = state.error
-                if (loadError != null && trackId != null && trackId != lastHandledErrorTrackId) {
+                if (loadError != null && (trackId == null || trackId != lastHandledErrorTrackId)) {
                     lastHandledErrorTrackId = trackId
-                    streamCacheRepository?.invalidate(trackId)
+                    if (trackId != null) {
+                        streamCacheRepository?.invalidate(trackId)
+                    }
+                    emitPlaybackError(loadError)
                 } else if (state.isFinished && state.error == null) {
                     if (trackId != null && trackId != lastHandledFinishedTrackId) {
                         lastHandledFinishedTrackId = trackId
@@ -134,6 +137,7 @@ class PlaybackManagerImpl(
                     }
                 } else if (state.isPlaying) {
                     lastHandledFinishedTrackId = null
+                    lastHandledErrorTrackId = null
                     if (abs(state.progressMs - lastSavedPositionMs) >= 5000) {
                         persistCurrentSession(immediate = true)
                     }
@@ -421,6 +425,8 @@ class PlaybackManagerImpl(
             meloPlayer.stop()
         }
         isTrackLoaded = true
+        lastHandledFinishedTrackId = null
+        lastHandledErrorTrackId = null
         pendingRestorePositionMs = 0L
         playJob?.cancel()
         playJob = scope.launch(dispatcher) {

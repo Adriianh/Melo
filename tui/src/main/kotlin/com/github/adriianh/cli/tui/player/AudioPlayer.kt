@@ -140,8 +140,16 @@ class AudioPlayer(
         isPaused.set(true)
         pausedSinceMs = System.currentTimeMillis()
         pausedAtMs += System.currentTimeMillis() - startTimeMs
-        val pid = playerPid ?: return
-        FfplayProcessManager.suspendProcess(pid)
+        if (FfplayProcessManager.isWindows) {
+            val process = playerProcess
+            val pid = playerPid
+            playerProcess = null
+            playerPid = null
+            FfplayProcessManager.destroyImmediately(process, pid)
+        } else {
+            val pid = playerPid ?: return
+            FfplayProcessManager.suspendProcess(pid)
+        }
         _state.update { it.copy(isPlaying = false, isBuffering = false) }
     }
 
@@ -206,6 +214,13 @@ class AudioPlayer(
         val url = currentUrl ?: return
         val clampedMs = ms.coerceAtLeast(0L)
         val wasPaused = isPaused.get()
+
+        if (FfplayProcessManager.isWindows && wasPaused) {
+            pausedAtMs = clampedMs
+            _state.update { it.copy(progressMs = clampedMs) }
+            onProgress(clampedMs)
+            return
+        }
 
         val session = sessionId.incrementAndGet()
         val previousJob = playJob

@@ -115,24 +115,24 @@ internal object FfplayProcessManager {
 
         cmd += listOf("-i", url)
 
-        val devNull = File(if (isWindows) "NUL" else "/dev/null")
         val process = ProcessBuilder(cmd)
-            .redirectInput(ProcessBuilder.Redirect.from(devNull))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
             .redirectError(ProcessBuilder.Redirect.DISCARD)
             .start()
+        try {
+            process.outputStream.close()
+        } catch (_: Throwable) {
+        }
         activeProcesses.add(process)
         return process
     }
 
     fun suspendProcess(pid: Long) {
-        if (isWindows) suspendProcessWindows(pid)
-        else sendUnixSignal(pid, "SIGSTOP")
+        if (!isWindows) sendUnixSignal(pid, "SIGSTOP")
     }
 
     fun resumeProcess(pid: Long) {
-        if (isWindows) resumeProcessWindows(pid)
-        else sendUnixSignal(pid, "SIGCONT")
+        if (!isWindows) sendUnixSignal(pid, "SIGCONT")
     }
 
     private fun sendUnixSignal(pid: Long, signal: String) {
@@ -146,37 +146,34 @@ internal object FfplayProcessManager {
         }
     }
 
-    private fun suspendProcessWindows(pid: Long) {
-        try {
-            ProcessBuilder(
-                "powershell", "-Command",
-                $$"$proc = Get-Process -Id $$pid -ErrorAction SilentlyContinue; " +
-                        $$"if ($proc) { $proc.Suspend() }"
-            ).redirectErrorStream(true).start().waitFor()
-        } catch (_: Exception) {
-        }
-    }
-
-    private fun resumeProcessWindows(pid: Long) {
-        try {
-            ProcessBuilder(
-                "powershell", "-Command",
-                $$"$proc = [System.Diagnostics.Process]::GetProcessById($$pid); " +
-                        $$"if ($proc) { $proc.Resume() }"
-            ).redirectErrorStream(true).start().waitFor()
-        } catch (_: Exception) {
-        }
-    }
-
-    private fun ffplayBinary(): String {
+    fun findFfplayBinary(): String? {
         val name = if (isWindows) "ffplay.exe" else "ffplay"
-        val candidates = listOf(
-            name,
-            "/usr/bin/ffplay",
-            "/usr/local/bin/ffplay",
-            "/opt/homebrew/bin/ffplay",
-            "C:\\ffmpeg\\bin\\ffplay.exe",
-        )
+        val candidates = mutableListOf(name)
+        if (isWindows) {
+            val localAppData = System.getenv("LOCALAPPDATA")
+            if (!localAppData.isNullOrBlank()) {
+                candidates.add("$localAppData\\melo-tui\\bin\\ffplay.exe")
+                candidates.add("$localAppData\\melo-tui\\ffplay.exe")
+                candidates.add("$localAppData\\Microsoft\\WinGet\\Links\\ffplay.exe")
+            }
+            val userProfile = System.getenv("USERPROFILE")
+            if (!userProfile.isNullOrBlank()) {
+                candidates.add("$userProfile\\scoop\\shims\\ffplay.exe")
+                candidates.add("$userProfile\\scoop\\apps\\ffmpeg\\current\\bin\\ffplay.exe")
+            }
+            val programFiles = System.getenv("ProgramFiles") ?: "C:\\Program Files"
+            candidates.add("$programFiles\\ffmpeg\\bin\\ffplay.exe")
+            candidates.add("C:\\ffmpeg\\bin\\ffplay.exe")
+            candidates.add("C:\\ProgramData\\chocolatey\\bin\\ffplay.exe")
+        } else {
+            candidates.addAll(
+                listOf(
+                    "/usr/bin/ffplay",
+                    "/usr/local/bin/ffplay",
+                    "/opt/homebrew/bin/ffplay",
+                )
+            )
+        }
         for (bin in candidates) {
             try {
                 val p = ProcessBuilder(bin, "-version").redirectErrorStream(true).start()
@@ -186,6 +183,15 @@ internal object FfplayProcessManager {
                 continue
             }
         }
-        return name
+        return null
+    }
+
+    fun ffplayBinary(): String {
+        return findFfplayBinary()
+            ?: if (isWindows) {
+                throw IllegalStateException("ffplay not found. Please install FFmpeg (e.g., winget install Gyan.FFmpeg)")
+            } else {
+                throw IllegalStateException("ffplay not found. Please install ffmpeg")
+            }
     }
 }
