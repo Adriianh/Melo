@@ -37,4 +37,16 @@ internal fun MeloScreen.buildPlaybackManager(dispatcher: CoroutineDispatcher): P
         ioDispatcher = dispatcher,
     )
 
-internal fun MeloScreen.buildAudioPlayer(): AudioPlayer = AudioPlayer(scope = scope)
+internal fun MeloScreen.buildAudioPlayer(): AudioPlayer = AudioPlayer(
+    scope = scope,
+    onError = { err ->
+        appRunner()?.runOnRenderThread {
+            state = state.copy(
+                player = state.player.copy(
+                    audioError = err.message ?: "Playback error",
+                    isLoadingAudio = false,
+                )
+            )
+        }
+    },
+)

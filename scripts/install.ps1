@@ -131,6 +131,42 @@ exec "`$MELO_HOME/melo.exe" "`$@"
         Write-Host ""
     }
 
+    # Check for ffplay (required for audio playback)
+    $hasFfplay = $null -ne (Get-Command "ffplay" -ErrorAction SilentlyContinue)
+    if (-not $hasFfplay) {
+        $commonFfplayPaths = @(
+            "$InstallDir\ffplay.exe",
+            "$BinDir\ffplay.exe",
+            "$env:LOCALAPPDATA\Microsoft\WinGet\Links\ffplay.exe",
+            "$env:USERPROFILE\scoop\shims\ffplay.exe",
+            "$env:ProgramFiles\ffmpeg\bin\ffplay.exe",
+            "C:\ffmpeg\bin\ffplay.exe"
+        )
+        foreach ($p in $commonFfplayPaths) {
+            if (Test-Path $p) {
+                $hasFfplay = $true
+                break
+            }
+        }
+    }
+
+    if (-not $hasFfplay) {
+        Write-Host "  ● FFmpeg (ffplay) is required for audio playback." -ForegroundColor Yellow
+        $winget = Get-Command "winget" -ErrorAction SilentlyContinue
+        if ($winget) {
+            Write-Host "  ● Attempting to install FFmpeg via winget..." -ForegroundColor Magenta
+            try {
+                & winget install -e --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements
+                Write-Host "  ✔ FFmpeg installed via winget." -ForegroundColor Green
+            } catch {
+                Write-Host "  ⚠ Winget installation failed. Please install FFmpeg manually: winget install Gyan.FFmpeg" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  ⚠ winget not found. Please install FFmpeg (ffplay) manually: https://ffmpeg.org/download.html" -ForegroundColor Yellow
+        }
+        Write-Host ""
+    }
+
     Write-Host "  ┌────────────────────────────────────────────────────────┐" -ForegroundColor Green
     Write-Host "  │  ✦ Installation complete!                              │" -ForegroundColor Green
     Write-Host "  │                                                        │" -ForegroundColor Green

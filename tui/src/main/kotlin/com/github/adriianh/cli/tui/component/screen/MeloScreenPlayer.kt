@@ -72,6 +72,7 @@ private fun MeloScreen.observePlaybackState() {
                         isLoadingAudio = isLoading,
                         nowPlayingPositionMs = ps.progressMs,
                         progress = progress,
+                        audioError = if (ps.isPlaying) null else (ps.error ?: prev.audioError),
                     )
                 )
                 mediaSession.updatePosition(ps.progressMs)
