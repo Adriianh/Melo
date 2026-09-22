@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.util.LrcLine
+import com.github.adriianh.cli.tui.util.ToastMessage
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
@@ -290,6 +291,7 @@ data class MeloState(
     val isRestoringSession: Boolean = false,
     val needsGraphicsClear: Boolean = false,
     val youtubeAccountName: String? = null,
+    val toasts: List<ToastMessage> = emptyList(),
 )
 
 /**
