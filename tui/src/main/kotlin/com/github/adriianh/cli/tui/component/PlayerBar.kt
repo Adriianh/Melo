@@ -1,7 +1,6 @@
 package com.github.adriianh.cli.tui.component
 
 import com.github.adriianh.cli.tui.MeloState
-import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BG_ELEVATED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
@@ -83,6 +82,7 @@ fun buildPlayerBar(
     val leftTop = if (nowPlaying != null) {
         row(
             text(playingIndicator).fg(statusColor).length(4),
+            text(" ").length(1),
             text(nowPlaying.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
         ).percent(35)
     } else {
@@ -94,13 +94,13 @@ fun buildPlayerBar(
 
     val leftBottom = if (state.player.audioError != null) {
         row(
-            text("    ").length(4),
+            text("     ").length(5),
             text(state.player.audioError).fg(ACCENT_RED).ellipsis().fill(),
         ).percent(35)
     } else if (nowPlaying != null) {
         val albumPart = if (nowPlaying.album.isNotBlank()) " • ${nowPlaying.album}" else ""
         row(
-            text("    ").length(4),
+            text("     ").length(5),
             text("${nowPlaying.artist}$albumPart").fg(TEXT_SECONDARY).ellipsis().fill(),
         ).percent(35)
     } else {
