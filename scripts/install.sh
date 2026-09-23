@@ -9,6 +9,10 @@
 #   MELO_VERSION="2.1.0"      Install a specific version (default: latest)
 #   MELO_INSTALL_DIR="..."    Custom install directory (default: ~/.local/share/melo-tui)
 #   MELO_BIN_DIR="..."        Custom bin directory (default: ~/.local/bin)
+#
+# CLI flags:
+#   --nightly                 Install the latest nightly development build
+#   -v, --version <VERSION>   Install a specific version (e.g. 2.1.0)
 # ==============================================================================
 set -euo pipefail
 
@@ -16,6 +20,8 @@ REPO="Adriianh/Melo"
 INSTALL_DIR="${MELO_INSTALL_DIR:-$HOME/.local/share/melo-tui}"
 BIN_DIR="${MELO_BIN_DIR:-$HOME/.local/bin}"
 CONFIG_DIR="${MELO_CONFIG_DIR:-$HOME/.config/melo}"
+# Global (not local to main): the EXIT trap must see it after main() returns.
+tmp_dir=""
 
 # Check color support
 if [ -t 1 ] && [ -n "$(tput colors 2>/dev/null || true)" ] && [ "$(tput colors 2>/dev/null || true)" -ge 8 ]; then
@@ -63,8 +69,20 @@ VERSION="${MELO_VERSION:-}"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -v|--version)
+            if [ -z "${2:-}" ]; then
+                log_error "Option --version requires a value."
+                exit 1
+            fi
             VERSION="$2"
             shift 2
+            ;;
+        --version=*|-v=*)
+            VERSION="${1#*=}"
+            shift
+            ;;
+        --nightly|nightly)
+            VERSION="nightly"
+            shift
             ;;
         --uninstall)
             SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,6 +98,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  -v, --version <VERSION>   Install specific version (e.g. 2.1.0)"
+            echo "      --version=<VERSION>   Install specific version (e.g. 2.1.0)"
+            echo "      --nightly             Install the latest nightly development build"
             echo "      --uninstall           Uninstall Melo TUI"
             echo "  -h, --help                Show this help message"
             exit 0
@@ -151,13 +171,6 @@ main() {
     print_banner
     check_dependencies
 
-    for arg in "$@"; do
-        case "$arg" in
-            --nightly|nightly) VERSION="nightly" ;;
-            --version=*|-v=*) VERSION="${arg#*=}" ;;
-        esac
-    done
-
     local os arch
     os="$(detect_os)"
     arch="$(detect_arch)"
@@ -185,9 +198,8 @@ main() {
     printf "  ${GRAY}│${RESET}  ${BOLD}Binaries:${RESET}  %-44s${GRAY}│${RESET}\n" "$BIN_DIR"
     printf "  ${GRAY}└────────────────────────────────────────────────────────┘${RESET}\n\n"
 
-    local tmp_dir
     tmp_dir="$(mktemp -d)"
-    trap 'rm -rf "$tmp_dir"' EXIT
+    trap '[ -n "${tmp_dir:-}" ] && rm -rf "$tmp_dir"' EXIT
 
     log_step "Downloading ${CYAN}${asset_name}${RESET}..."
     if ! curl -fSL --progress-bar "$download_url" -o "$tmp_dir/$asset_name"; then
@@ -242,7 +254,7 @@ EOF
         ln -sf "melo-tui" "$BIN_DIR/melo"
     fi
 
-    log_success "Melo TUI v${VERSION} installed."
+    log_success "Melo TUI ${version_display} installed."
 
     # Verify PATH
     local in_path=false
