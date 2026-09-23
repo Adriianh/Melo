@@ -145,6 +145,7 @@ class MeloScreen(
     internal var lastQuery = ""
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var toastJob: ToolkitRunner.ScheduledAction? = null
+    internal var equalizerJob: ToolkitRunner.ScheduledAction? = null
     /** Last known download status per track id, used to detect completion transitions. */
     internal val lastDownloadStatusById = mutableMapOf<String, DownloadStatus>()
     internal var marqueeTick = 0

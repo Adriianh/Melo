@@ -75,10 +75,6 @@ object MeloTheme {
     val ICON_FOLDER: String get() = if (supportsUnicode) "▸" else "/"
     val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "▾" else "/"
 
-    val EQUALIZER_FRAMES = listOf(" ▂▃ ", "▃▅▆▃", "▅▇█▅", "▆▅▃ ", "▃ ▂▃")
-    fun getEqualizerFrame(tick: Long): String =
-        EQUALIZER_FRAMES[(tick % EQUALIZER_FRAMES.size).toInt()]
-
     var PRIMARY_COLOR: Color = Color.hex("#FF2D55")
     var SECONDARY_COLOR: Color = Color.hex("#1AA34A")
 

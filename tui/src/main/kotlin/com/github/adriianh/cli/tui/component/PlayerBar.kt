@@ -25,6 +25,7 @@ import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.util.equalizerFrame
 import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.layout.Flex
 import dev.tamboui.style.Style
@@ -69,7 +70,12 @@ fun buildPlayerBar(
         state.isRestoringSession -> ICON_LOADING
         state.player.isLoadingAudio -> ICON_LOADING
         state.player.audioError != null -> ICON_ERROR
-        state.player.isPlaying -> MeloTheme.getEqualizerFrame(state.player.marqueeOffset.toLong())
+        state.player.isPlaying ->
+            equalizerFrame(
+                progress = state.player.progress.toFloat(),
+                volume = state.player.volume,
+                tick = state.player.equalizerTick,
+            )
         else -> "$ICON_PAUSE "
     }
     val statusColor = if (state.player.audioError != null) ACCENT_RED else PRIMARY_COLOR
