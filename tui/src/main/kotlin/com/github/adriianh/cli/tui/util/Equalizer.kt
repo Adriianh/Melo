@@ -21,7 +21,7 @@ const val EQUALIZER_LEVEL_CHARS: String = "▁▂▃▄▅▆▇█"
 const val EQUALIZER_COLUMNS: Int = 4
 
 /** Cadence (ms) at which the animation tick advances while music is playing. */
-const val EQUALIZER_TICK_MS: Long = 200L
+const val EQUALIZER_TICK_MS: Long = 150L
 
 /** Highest level a bar can reach (index into [EQUALIZER_LEVEL_CHARS]). */
 const val EQUALIZER_MAX_LEVEL: Int = EQUALIZER_LEVEL_CHARS.length - 1
