@@ -1,0 +1,13 @@
+# Shared detekt configuration (merged over the default config via buildUponDefaultConfig).
+# Tuning choices:
+#   - MagicNumber: disabled. Music/metadata code is full of tempo, duration and byte-size
+#     literals; enforcing constants here would add noise without real quality value.
+#   - NewLineAtEndOfFile: disabled. Enforced by ktlint (standard:final-newline); keeping both
+#     would duplicate the check.
+# Everything else uses detekt defaults; existing findings are tracked in the per-module
+# baseline files (detekt-baseline.xml), so new issues fail the build.
+style:
+  MagicNumber:
+    active: false
+  NewLineAtEndOfFile:
+    active: false

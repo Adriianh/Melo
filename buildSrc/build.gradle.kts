@@ -15,4 +15,7 @@ dependencies {
     implementation(libs.composePlugin)
     implementation(libs.composeCompilerPlugin)
     implementation(kotlin("gradle-plugin"))
+
+    implementation("dev.detekt:detekt-gradle-plugin:2.0.0-alpha.6")
+    implementation("org.jlleitschuh.gradle:ktlint-gradle:14.2.0")
 }

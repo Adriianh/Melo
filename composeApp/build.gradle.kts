@@ -7,6 +7,7 @@ plugins {
     id("com.android.application")
     id("buildsrc.convention.compose-multiplatform")
     id("buildsrc.convention.desktop-packaging")
+    id("buildsrc.convention.quality-gates")
 }
 
 kotlin {

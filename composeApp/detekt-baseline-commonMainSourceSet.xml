@@ -1,0 +1,362 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:AlbumDetailScreen.kt:uiState.isLoading &amp;&amp; songs.isEmpty() &amp;&amp; initialTitle.isBlank() &amp;&amp; initialArtwork == null</ID>
+    <ID>ComplexCondition:ArtistDetailScreen.kt:uiState.isLoading &amp;&amp; !hasArtistContent &amp;&amp; initialName.isBlank() &amp;&amp; initialArtwork == null</ID>
+    <ID>ComplexCondition:EntityDetailViewModel.kt:EntityDetailViewModel$initialAuthor != null &amp;&amp; fullAuthor != null &amp;&amp; !fullAuthor.contains(initialAuthor, ignoreCase = true) &amp;&amp; !initialAuthor.contains(fullAuthor, ignoreCase = true)</ID>
+    <ID>ComplexCondition:PlaylistDetailScreen.kt:uiState.isLoading &amp;&amp; songs.isEmpty() &amp;&amp; initialTitle.isBlank() &amp;&amp; initialArtwork == null</ID>
+    <ID>CyclomaticComplexMethod:AlbumDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AlbumDetailScreen</ID>
+    <ID>CyclomaticComplexMethod:App.kt:@Composable fun App</ID>
+    <ID>CyclomaticComplexMethod:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
+    <ID>CyclomaticComplexMethod:DownloadsTabContent.kt:@Composable fun DownloadsTabContent</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun loadEntity</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun updateDownloadState</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
+    <ID>CyclomaticComplexMethod:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
+    <ID>CyclomaticComplexMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
+    <ID>CyclomaticComplexMethod:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
+    <ID>CyclomaticComplexMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>CyclomaticComplexMethod:HomeViewModel.kt:HomeViewModel$fun loadFeed</ID>
+    <ID>CyclomaticComplexMethod:LibraryHeader.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryHeader</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryScreen</ID>
+    <ID>CyclomaticComplexMethod:LibraryTabContent.kt:@Composable fun LibraryTabContent</ID>
+    <ID>CyclomaticComplexMethod:LibraryViewModel.kt:LibraryViewModel$fun selectTab</ID>
+    <ID>CyclomaticComplexMethod:LoginDialog.kt:@Composable fun LoginDialog</ID>
+    <ID>CyclomaticComplexMethod:MeloSlider.kt:@Composable fun MeloSlider</ID>
+    <ID>CyclomaticComplexMethod:NowPlayingQueueSection.kt:@Composable fun NowPlayingQueueSection</ID>
+    <ID>CyclomaticComplexMethod:NowPlayingScreen.kt:@Composable fun NowPlayingScreen</ID>
+    <ID>CyclomaticComplexMethod:PlayerBar.kt:@Composable internal fun DesktopPlayerBar</ID>
+    <ID>CyclomaticComplexMethod:PlaylistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun PlaylistDetailScreen</ID>
+    <ID>CyclomaticComplexMethod:PlaylistNameGenerator.kt:PlaylistNameGenerator$fun generateIdea: String</ID>
+    <ID>CyclomaticComplexMethod:SearchScreen.kt:@Composable fun SearchScreen</ID>
+    <ID>CyclomaticComplexMethod:TopResultHeroCard.kt:@Composable fun TopResultHeroCard</ID>
+    <ID>CyclomaticComplexMethod:TrackRow.kt:@OptIn(ExperimentalFoundationApi::class) @Composable fun TrackRow</ID>
+    <ID>CyclomaticComplexMethod:UpdateSettingsSection.kt:@Composable fun UpdateSettingsSection</ID>
+    <ID>ExplicitItLambdaParameter:LibraryViewModel.kt:LibraryViewModel${ it -&gt; it.copy( downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED } ) }</ID>
+    <ID>FunctionNaming:AdaptiveLazyRow.kt:@Composable fun &lt;T&gt; AdaptiveLazyRow</ID>
+    <ID>FunctionNaming:AddToPlaylistSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AddToPlaylistSheet</ID>
+    <ID>FunctionNaming:AlbumCard.kt:@Composable fun AlbumCard</ID>
+    <ID>FunctionNaming:AlbumDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AlbumDetailScreen</ID>
+    <ID>FunctionNaming:AlbumsTabContent.kt:@Composable fun AlbumsTabContent</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable fun AllResultsContent</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun AlbumResultCarousel</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun ArtistResultCarousel</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun MixedResultSection</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun NarrowTopResultColumn</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun PlaylistResultCarousel</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun SearchResultSongList</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun SongListSections</ID>
+    <ID>FunctionNaming:AllResultsContent.kt:@Composable private fun WideTopResultRow</ID>
+    <ID>FunctionNaming:AmbientCanvas.kt:@Composable fun AmbientCanvas</ID>
+    <ID>FunctionNaming:AnimatedEqualizerBars.kt:@Composable fun AnimatedEqualizerBars</ID>
+    <ID>FunctionNaming:AnimatedEqualizerBars.kt:@Composable private fun EqualizerBar</ID>
+    <ID>FunctionNaming:App.kt:@Composable expect fun InitImageLoader</ID>
+    <ID>FunctionNaming:App.kt:@Composable fun App</ID>
+    <ID>FunctionNaming:ArtistCircle.kt:@Composable fun ArtistCircle</ID>
+    <ID>FunctionNaming:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
+    <ID>FunctionNaming:ArtistHeaderCard.kt:@Composable fun ArtistHeaderCard</ID>
+    <ID>FunctionNaming:ArtistsTabContent.kt:@Composable fun ArtistsTabContent</ID>
+    <ID>FunctionNaming:BatchSelectionBottomBar.kt:@Composable fun BatchSelectionBottomBar</ID>
+    <ID>FunctionNaming:BatchSelectionBottomBar.kt:@Composable private fun BatchActionButton</ID>
+    <ID>FunctionNaming:CarouselScrollButtons.kt:@Composable fun CarouselScrollContainer</ID>
+    <ID>FunctionNaming:CarouselScrollButtons.kt:@Composable private fun ScrollButton</ID>
+    <ID>FunctionNaming:CategoryBrowsingContent.kt:@Composable fun CategoryBrowsingContent</ID>
+    <ID>FunctionNaming:CategoryCard.kt:@Composable fun CategoryCard</ID>
+    <ID>FunctionNaming:CuratedHighlightCard.kt:@Composable fun CuratedHighlightCard</ID>
+    <ID>FunctionNaming:DancingMelodyIndicator.kt:@Composable fun DancingMelodyIndicator</ID>
+    <ID>FunctionNaming:DockedArtistContent.kt:@Composable internal fun DockedArtistContent</ID>
+    <ID>FunctionNaming:DockedArtistContent.kt:@Composable private fun DockedArtistAlbumRow</ID>
+    <ID>FunctionNaming:DockedArtistContent.kt:@Composable private fun DockedArtistHeader</ID>
+    <ID>FunctionNaming:DockedArtistContent.kt:@Composable private fun DockedArtistLoading</ID>
+    <ID>FunctionNaming:DockedArtistContent.kt:@Composable private fun DockedArtistTopSongRow</ID>
+    <ID>FunctionNaming:DockedLyricsContent.kt:@Composable internal fun DockedLyricsContent</ID>
+    <ID>FunctionNaming:DockedQueueContent.kt:@Composable internal fun DockedQueueContent</ID>
+    <ID>FunctionNaming:DownloadsTabContent.kt:@Composable fun DownloadsTabContent</ID>
+    <ID>FunctionNaming:DownloadsTabContent.kt:@Composable private fun DownloadedTrackRow</ID>
+    <ID>FunctionNaming:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
+    <ID>FunctionNaming:ExpandableDescriptionCard.kt:@Composable fun ExpandableDescriptionCard</ID>
+    <ID>FunctionNaming:ExpandedSectionSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ExpandedSectionSheet</ID>
+    <ID>FunctionNaming:ExploreContent.kt:@Composable fun ExploreContent</ID>
+    <ID>FunctionNaming:GlassPanel.kt:@Composable fun GlassPanel</ID>
+    <ID>FunctionNaming:HeroDiscoverCard.kt:@Composable fun HeroDiscoverCard</ID>
+    <ID>FunctionNaming:HistoryTabContent.kt:@Composable fun HistoryTabContent</ID>
+    <ID>FunctionNaming:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
+    <ID>FunctionNaming:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>FunctionNaming:HomeSearchResultsView.kt:@Composable fun HomeSearchResultsView</ID>
+    <ID>FunctionNaming:HomeSkeletonLoading.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeSkeletonLoading</ID>
+    <ID>FunctionNaming:HoverableProgressBar.kt:@Composable internal fun HoverableProgressBar</ID>
+    <ID>FunctionNaming:InAppSignIn.kt:@Composable expect fun InAppSignInBrowser</ID>
+    <ID>FunctionNaming:LibraryHeader.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryHeader</ID>
+    <ID>FunctionNaming:LibraryNotLoggedInCard.kt:@Composable fun LibraryNotLoggedInCard</ID>
+    <ID>FunctionNaming:LibraryScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryScreen</ID>
+    <ID>FunctionNaming:LibraryTabContent.kt:@Composable fun LibraryTabContent</ID>
+    <ID>FunctionNaming:LikedSongsTabContent.kt:@Composable fun LikedSongsTabContent</ID>
+    <ID>FunctionNaming:LiveLyricsPreviewCard.kt:@Composable fun LiveLyricsPreviewCard</ID>
+    <ID>FunctionNaming:LiveLyricsPreviewCard.kt:@Composable private fun LyricsPreviewHeader</ID>
+    <ID>FunctionNaming:LiveLyricsPreviewCard.kt:@Composable private fun LyricsPreviewLines</ID>
+    <ID>FunctionNaming:LiveLyricsPreviewCard.kt:@Composable private fun LyricsUnavailableMessage</ID>
+    <ID>FunctionNaming:LocalFolderPathsEditor.kt:@Composable fun LocalFolderPathsEditor</ID>
+    <ID>FunctionNaming:LocalTabContent.kt:@Composable fun LocalTabContent</ID>
+    <ID>FunctionNaming:LocalTabContent.kt:@Composable private fun LocalTrackRow</ID>
+    <ID>FunctionNaming:LocalTabContent.kt:@Composable private fun ManageFoldersDialog</ID>
+    <ID>FunctionNaming:LoginDialog.kt:@Composable fun LoginDialog</ID>
+    <ID>FunctionNaming:LoginDialog.kt:@Composable private fun LoggedInContent</ID>
+    <ID>FunctionNaming:LoginDialog.kt:@Composable private fun NotLoggedInContent</ID>
+    <ID>FunctionNaming:LoginDialog.kt:@Composable private fun VerifyingContent</ID>
+    <ID>FunctionNaming:LoginDialog.kt:@Composable private fun WaitingBrowserContent</ID>
+    <ID>FunctionNaming:MainLayout.kt:@Composable private fun MobileMainLayout</ID>
+    <ID>FunctionNaming:MainLayout.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AdaptiveScaffold</ID>
+    <ID>FunctionNaming:MainLayout.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable private fun DesktopMainLayout</ID>
+    <ID>FunctionNaming:MeloAsyncImage.kt:@Composable expect fun PlatformAsyncImage</ID>
+    <ID>FunctionNaming:MeloAsyncImage.kt:@Composable fun MeloAsyncImage</ID>
+    <ID>FunctionNaming:MeloEmptyState.kt:@Composable fun MeloEmptyState</ID>
+    <ID>FunctionNaming:MeloErrorState.kt:@Composable fun MeloErrorState</ID>
+    <ID>FunctionNaming:MeloSearchBar.kt:@Composable fun MeloSearchBar</ID>
+    <ID>FunctionNaming:MeloSlider.kt:@Composable fun MeloSlider</ID>
+    <ID>FunctionNaming:MeloSnackbar.kt:@Composable fun MeloSnackbarHost</ID>
+    <ID>FunctionNaming:MeloSplashScreen.kt:@Composable fun MeloSplashScreen</ID>
+    <ID>FunctionNaming:MeloSplashScreen.kt:@Composable private fun SplashWaveBar</ID>
+    <ID>FunctionNaming:MeloSwipeableItem.kt:@Composable fun MeloSwipeableItem</ID>
+    <ID>FunctionNaming:MeloTheme.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun MeloTheme</ID>
+    <ID>FunctionNaming:Navigation.kt:@Composable internal fun FloatingNavigationBar</ID>
+    <ID>FunctionNaming:Navigation.kt:@Composable private fun FloatingNavItem</ID>
+    <ID>FunctionNaming:NowPlayingArtistSection.kt:@Composable fun NowPlayingArtistSection</ID>
+    <ID>FunctionNaming:NowPlayingBackground.kt:@Composable fun NowPlayingBackground</ID>
+    <ID>FunctionNaming:NowPlayingDesktopLayout.kt:@Composable internal fun NowPlayingDesktopLayout</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPane</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable private fun DockedPaneHeader</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable private fun DockedPaneTrackInfo</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable fun NowPlayingLyricsCard</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun BoxScope.LibraryShaderOverlay</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LanguageMenu</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsBody</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsEnvironmentVignette</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsHeaderActions</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsHeaderBar</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsLoading</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LyricsUnavailable</ID>
+    <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun TranslationButton</ID>
+    <ID>FunctionNaming:NowPlayingMobileActions.kt:@Composable internal fun NowPlayingMobileActions</ID>
+    <ID>FunctionNaming:NowPlayingMobileActions.kt:@Composable private fun MobileActionChip</ID>
+    <ID>FunctionNaming:NowPlayingMobileLayout.kt:@Composable internal fun NowPlayingMobileLayout</ID>
+    <ID>FunctionNaming:NowPlayingQueueSection.kt:@Composable fun NowPlayingQueueSection</ID>
+    <ID>FunctionNaming:NowPlayingScreen.kt:@Composable fun NowPlayingScreen</ID>
+    <ID>FunctionNaming:NowPlayingTopBar.kt:@Composable internal fun NowPlayingTopBar</ID>
+    <ID>FunctionNaming:OfflineModeBanner.kt:@Composable fun OfflineModeBanner</ID>
+    <ID>FunctionNaming:PlayerBar.kt:@Composable internal fun DesktopPlayerBar</ID>
+    <ID>FunctionNaming:PlayerBar.kt:@Composable internal fun MobilePlayerBar</ID>
+    <ID>FunctionNaming:PlayerBar.kt:@Composable private fun PlaybackTrackInfo</ID>
+    <ID>FunctionNaming:PlayerSlider.kt:@Composable fun PlayerSlider</ID>
+    <ID>FunctionNaming:PlayerTransportControls.kt:@Composable fun PlayerTransportControls</ID>
+    <ID>FunctionNaming:PlaylistDetailParts.kt:@Composable fun DeletePlaylistDialog</ID>
+    <ID>FunctionNaming:PlaylistDetailParts.kt:@Composable fun LazyItemScope.ReorderablePlaylistTrackItem</ID>
+    <ID>FunctionNaming:PlaylistDetailParts.kt:@Composable fun PlaylistTopBarActions</ID>
+    <ID>FunctionNaming:PlaylistDetailParts.kt:@Composable fun RenamePlaylistDialog</ID>
+    <ID>FunctionNaming:PlaylistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun PlaylistDetailScreen</ID>
+    <ID>FunctionNaming:PlaylistDialogs.kt:@Composable fun PlaylistDeleteDialog</ID>
+    <ID>FunctionNaming:PlaylistDialogs.kt:@Composable fun PlaylistNameDialog</ID>
+    <ID>FunctionNaming:PlaylistGridItems.kt:@Composable fun CreatePlaylistGridCard</ID>
+    <ID>FunctionNaming:PlaylistGridItems.kt:@Composable fun CustomPlaylistGridCard</ID>
+    <ID>FunctionNaming:PlaylistGridItems.kt:@Composable fun RemotePlaylistGridCard</ID>
+    <ID>FunctionNaming:PlaylistListItems.kt:@Composable fun CreatePlaylistCompactRow</ID>
+    <ID>FunctionNaming:PlaylistListItems.kt:@Composable fun CustomPlaylistCompactRow</ID>
+    <ID>FunctionNaming:PlaylistListItems.kt:@Composable fun RemotePlaylistCompactRow</ID>
+    <ID>FunctionNaming:PlaylistMosaicCover.kt:@Composable fun PlaylistMosaicCover</ID>
+    <ID>FunctionNaming:PlaylistOptionsMenu.kt:@Composable fun PlaylistOptionsMenu</ID>
+    <ID>FunctionNaming:PlaylistsTabContent.kt:@Composable fun PlaylistsTabContent</ID>
+    <ID>FunctionNaming:SearchActiveOverlay.kt:@Composable fun SearchActiveOverlay</ID>
+    <ID>FunctionNaming:SearchActiveOverlay.kt:@Composable fun SearchOverlayWrapper</ID>
+    <ID>FunctionNaming:SearchActiveOverlay.kt:@Composable private fun SearchItemRow</ID>
+    <ID>FunctionNaming:SearchFilterChipsRow.kt:@Composable fun SearchFilterChipsRow</ID>
+    <ID>FunctionNaming:SearchFilterGrids.kt:@Composable fun AlbumsResultsContent</ID>
+    <ID>FunctionNaming:SearchFilterGrids.kt:@Composable fun ArtistsResultsContent</ID>
+    <ID>FunctionNaming:SearchFilterGrids.kt:@Composable fun PlaylistsResultsContent</ID>
+    <ID>FunctionNaming:SearchFilterGrids.kt:@Composable fun VideosResultsContent</ID>
+    <ID>FunctionNaming:SearchResultsContent.kt:@Composable fun SearchResultsContent</ID>
+    <ID>FunctionNaming:SearchResultsContent.kt:@Composable private fun SearchResultsSkeleton</ID>
+    <ID>FunctionNaming:SearchResultsGrid.kt:@Composable internal fun &lt;T&gt; SearchResultsGrid</ID>
+    <ID>FunctionNaming:SearchScreen.kt:@Composable fun SearchScreen</ID>
+    <ID>FunctionNaming:SectionHeader.kt:@Composable fun SectionHeader</ID>
+    <ID>FunctionNaming:SegmentedControl.kt:@Composable fun &lt;T&gt; SegmentedControl</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable internal fun SettingsContent</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun &lt;T&gt; SettingOptionChips</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun AccountSettingsSection</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun AppearanceSettingsSection</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun DownloadsSettingsSection</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun LocalFoldersSection</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun MeloSettingsSwitch</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun PlaybackSettingsSection</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun SettingRow</ID>
+    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun SettingsGroupCard</ID>
+    <ID>FunctionNaming:SettingsSheet.kt:@Composable fun SettingsDialog</ID>
+    <ID>FunctionNaming:SettingsSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsSheet</ID>
+    <ID>FunctionNaming:Sidebar.kt:@Composable internal fun MainSidebar</ID>
+    <ID>FunctionNaming:Sidebar.kt:@Composable private fun SidebarNavItem</ID>
+    <ID>FunctionNaming:Sidebar.kt:@Composable private fun SidebarPlaylistRow</ID>
+    <ID>FunctionNaming:Sidebar.kt:@Composable private fun SidebarUtils</ID>
+    <ID>FunctionNaming:Sidebar.kt:@Composable private fun UtilIconButton</ID>
+    <ID>FunctionNaming:SongFourRowCarousel.kt:@Composable fun SongFourRowCarousel</ID>
+    <ID>FunctionNaming:SongsResultsContent.kt:@Composable fun SongsResultsContent</ID>
+    <ID>FunctionNaming:SpeedDialGrid.kt:@Composable fun SpeedDialGrid</ID>
+    <ID>FunctionNaming:SpeedDialGrid.kt:@Composable private fun SpeedDialRowContent</ID>
+    <ID>FunctionNaming:SuggestionTrackCard.kt:@Composable fun SuggestionSkeletonCard</ID>
+    <ID>FunctionNaming:SuggestionTrackCard.kt:@Composable fun SuggestionTrackCard</ID>
+    <ID>FunctionNaming:SwipeableTrackRow.kt:@Composable fun SwipeableTrackRow</ID>
+    <ID>FunctionNaming:SyncedLyricsList.kt:@Composable internal fun PlainLyricsView</ID>
+    <ID>FunctionNaming:SyncedLyricsList.kt:@Composable internal fun SyncedLyricsList</ID>
+    <ID>FunctionNaming:SyncedLyricsList.kt:@Composable private fun SyncedLyricItem</ID>
+    <ID>FunctionNaming:TopResultHeroCard.kt:@Composable fun TopResultHeroCard</ID>
+    <ID>FunctionNaming:TrackContextMenu.kt:@Composable fun TrackInteractionContextMenu</ID>
+    <ID>FunctionNaming:TrackContextMenu.kt:@Composable private fun ContextMenuItem</ID>
+    <ID>FunctionNaming:TrackContextMenu.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TrackContextMenu</ID>
+    <ID>FunctionNaming:TrackInfoBar.kt:@Composable internal fun TrackInfoBar</ID>
+    <ID>FunctionNaming:TrackRow.kt:@OptIn(ExperimentalFoundationApi::class) @Composable fun TrackRow</ID>
+    <ID>FunctionNaming:UpdateSettingsSection.kt:@Composable fun UpdateSettingsSection</ID>
+    <ID>FunctionNaming:VideoCard.kt:@Composable fun VideoCard</ID>
+    <ID>LongMethod:AddToPlaylistSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AddToPlaylistSheet</ID>
+    <ID>LongMethod:AlbumDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AlbumDetailScreen</ID>
+    <ID>LongMethod:AlbumsTabContent.kt:@Composable fun AlbumsTabContent</ID>
+    <ID>LongMethod:AllResultsContent.kt:@Composable fun AllResultsContent</ID>
+    <ID>LongMethod:AmbientCanvas.kt:@Composable fun AmbientCanvas</ID>
+    <ID>LongMethod:App.kt:@Composable fun App</ID>
+    <ID>LongMethod:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
+    <ID>LongMethod:ArtistHeaderCard.kt:@Composable fun ArtistHeaderCard</ID>
+    <ID>LongMethod:ArtistsTabContent.kt:@Composable fun ArtistsTabContent</ID>
+    <ID>LongMethod:BatchSelectionBottomBar.kt:@Composable fun BatchSelectionBottomBar</ID>
+    <ID>LongMethod:CarouselScrollButtons.kt:@Composable fun CarouselScrollContainer</ID>
+    <ID>LongMethod:CategoryBrowsingContent.kt:@Composable fun CategoryBrowsingContent</ID>
+    <ID>LongMethod:CuratedHighlightCard.kt:@Composable fun CuratedHighlightCard</ID>
+    <ID>LongMethod:DancingMelodyIndicator.kt:@Composable fun DancingMelodyIndicator</ID>
+    <ID>LongMethod:DockedArtistContent.kt:@Composable internal fun DockedArtistContent</ID>
+    <ID>LongMethod:DockedQueueContent.kt:@Composable internal fun DockedQueueContent</ID>
+    <ID>LongMethod:DownloadsTabContent.kt:@Composable fun DownloadsTabContent</ID>
+    <ID>LongMethod:DownloadsTabContent.kt:@Composable private fun DownloadedTrackRow</ID>
+    <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun loadEntity</ID>
+    <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun updateDownloadState</ID>
+    <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
+    <ID>LongMethod:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
+    <ID>LongMethod:ExpandedSectionSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ExpandedSectionSheet</ID>
+    <ID>LongMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
+    <ID>LongMethod:HeroDiscoverCard.kt:@Composable fun HeroDiscoverCard</ID>
+    <ID>LongMethod:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
+    <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>LongMethod:HomeSearchResultsView.kt:@Composable fun HomeSearchResultsView</ID>
+    <ID>LongMethod:HomeSkeletonLoading.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeSkeletonLoading</ID>
+    <ID>LongMethod:HomeViewModel.kt:HomeViewModel$fun loadFeed</ID>
+    <ID>LongMethod:HoverableProgressBar.kt:@Composable internal fun HoverableProgressBar</ID>
+    <ID>LongMethod:LibraryFilters.kt:@Composable fun rememberLibraryFilters: LibraryFilters</ID>
+    <ID>LongMethod:LibraryHeader.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryHeader</ID>
+    <ID>LongMethod:LibraryScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryScreen</ID>
+    <ID>LongMethod:LibraryTabContent.kt:@Composable fun LibraryTabContent</ID>
+    <ID>LongMethod:LiveLyricsPreviewCard.kt:@Composable fun LiveLyricsPreviewCard</ID>
+    <ID>LongMethod:LocalFolderPathsEditor.kt:@Composable fun LocalFolderPathsEditor</ID>
+    <ID>LongMethod:LocalTabContent.kt:@Composable fun LocalTabContent</ID>
+    <ID>LongMethod:LocalTabContent.kt:@Composable private fun ManageFoldersDialog</ID>
+    <ID>LongMethod:LoginDialog.kt:@Composable fun LoginDialog</ID>
+    <ID>LongMethod:LoginDialog.kt:@Composable private fun NotLoggedInContent</ID>
+    <ID>LongMethod:MainLayout.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable private fun DesktopMainLayout</ID>
+    <ID>LongMethod:MeloSearchBar.kt:@Composable fun MeloSearchBar</ID>
+    <ID>LongMethod:MeloSlider.kt:@Composable fun MeloSlider</ID>
+    <ID>LongMethod:MeloSnackbar.kt:@Composable fun MeloSnackbarHost</ID>
+    <ID>LongMethod:MeloSplashScreen.kt:@Composable fun MeloSplashScreen</ID>
+    <ID>LongMethod:MeloSwipeableItem.kt:@Composable fun MeloSwipeableItem</ID>
+    <ID>LongMethod:MeloTheme.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun MeloTheme</ID>
+    <ID>LongMethod:NowPlayingArtistSection.kt:@Composable fun NowPlayingArtistSection</ID>
+    <ID>LongMethod:NowPlayingDesktopLayout.kt:@Composable internal fun NowPlayingDesktopLayout</ID>
+    <ID>LongMethod:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPane</ID>
+    <ID>LongMethod:NowPlayingMobileLayout.kt:@Composable internal fun NowPlayingMobileLayout</ID>
+    <ID>LongMethod:NowPlayingQueueSection.kt:@Composable fun NowPlayingQueueSection</ID>
+    <ID>LongMethod:NowPlayingScreen.kt:@Composable fun NowPlayingScreen</ID>
+    <ID>LongMethod:OfflineModeBanner.kt:@Composable fun OfflineModeBanner</ID>
+    <ID>LongMethod:PlayerBar.kt:@Composable internal fun DesktopPlayerBar</ID>
+    <ID>LongMethod:PlayerBar.kt:@Composable internal fun MobilePlayerBar</ID>
+    <ID>LongMethod:PlayerTransportControls.kt:@Composable fun PlayerTransportControls</ID>
+    <ID>LongMethod:PlaylistDetailParts.kt:@Composable fun PlaylistTopBarActions</ID>
+    <ID>LongMethod:PlaylistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun PlaylistDetailScreen</ID>
+    <ID>LongMethod:PlaylistDialogs.kt:@Composable fun PlaylistDeleteDialog</ID>
+    <ID>LongMethod:PlaylistDialogs.kt:@Composable fun PlaylistNameDialog</ID>
+    <ID>LongMethod:PlaylistGridItems.kt:@Composable fun CustomPlaylistGridCard</ID>
+    <ID>LongMethod:PlaylistMosaicCover.kt:@Composable fun PlaylistMosaicCover</ID>
+    <ID>LongMethod:PlaylistNameGenerator.kt:PlaylistNameGenerator$fun generateIdea: String</ID>
+    <ID>LongMethod:PlaylistsTabContent.kt:@Composable fun PlaylistsTabContent</ID>
+    <ID>LongMethod:SearchResultsContent.kt:@Composable fun SearchResultsContent</ID>
+    <ID>LongMethod:SearchScreen.kt:@Composable fun SearchScreen</ID>
+    <ID>LongMethod:SearchViewModel.kt:SearchViewModel$private suspend fun performSearch</ID>
+    <ID>LongMethod:SettingsContent.kt:@Composable private fun DownloadsSettingsSection</ID>
+    <ID>LongMethod:Sidebar.kt:@Composable internal fun MainSidebar</ID>
+    <ID>LongMethod:Sidebar.kt:@Composable private fun SidebarNavItem</ID>
+    <ID>LongMethod:SongFourRowCarousel.kt:@Composable fun SongFourRowCarousel</ID>
+    <ID>LongMethod:SpeedDialGrid.kt:@Composable private fun SpeedDialRowContent</ID>
+    <ID>LongMethod:SuggestionTrackCard.kt:@Composable fun SuggestionTrackCard</ID>
+    <ID>LongMethod:SyncedLyricsList.kt:@Composable private fun SyncedLyricItem</ID>
+    <ID>LongMethod:TopResultHeroCard.kt:@Composable fun TopResultHeroCard</ID>
+    <ID>LongMethod:TrackContextMenu.kt:@Composable fun TrackInteractionContextMenu</ID>
+    <ID>LongMethod:TrackContextMenu.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TrackContextMenu</ID>
+    <ID>LongMethod:TrackRow.kt:@OptIn(ExperimentalFoundationApi::class) @Composable fun TrackRow</ID>
+    <ID>LongMethod:UpdateSettingsSection.kt:@Composable fun UpdateSettingsSection</ID>
+    <ID>LoopWithTooManyJumpStatements:MeloSlider.kt:while</ID>
+    <ID>MatchingDeclarationName:MeloSnackbar.kt:MeloSnackbarState</ID>
+    <ID>MatchingDeclarationName:NowPlayingScreen.kt:PanelSection</ID>
+    <ID>MatchingDeclarationName:PlaylistDialogs.kt:PlaylistCoverPreset</ID>
+    <ID>MatchingDeclarationName:UpdateInstaller.kt:PlatformUpdateInstaller</ID>
+    <ID>MaxLineLength:AlbumDetailScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
+    <ID>MaxLineLength:App.kt:ThemeMode.SYSTEM -&gt; if (isSystemDark) ThemeMode.LIGHT else ThemeMode.DARK</ID>
+    <ID>MaxLineLength:App.kt:current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })</ID>
+    <ID>MaxLineLength:App.kt:text = "Nueva versión ${currentUpdate.release.version} disponible"</ID>
+    <ID>MaxLineLength:CategoryBrowsingContent.kt:swipeRightIcon = if (isLiked(item.track)) Icons.Default.HeartBroken else Icons.Default.Favorite</ID>
+    <ID>MaxLineLength:DownloadsTabContent.kt:colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:DownloadsTabContent.kt:text = "Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos."</ID>
+    <ID>MaxLineLength:DownloadsTabContent.kt:text = "Descargando ${activeDownloads.size} canción(es) en segundo plano..."</ID>
+    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$.</ID>
+    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$entity.id.startsWith("local:") || entity.id.startsWith("custom:")</ID>
+    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$songs.firstOrNull { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }?.title</ID>
+    <ID>MaxLineLength:HomeContent.kt:if (section.title.isNotBlank()) "sec_${section.type}_${section.title}" else "sec_${section.type}_$index"</ID>
+    <ID>MaxLineLength:HomeContent.kt:text = "Descarga canciones o añade carpetas locales en la Biblioteca para escuchar cuando no tengas internet."</ID>
+    <ID>MaxLineLength:HomeScreen.kt:if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id</ID>
+    <ID>MaxLineLength:HomeScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
+    <ID>MaxLineLength:LibraryHeader.kt:color = if (sortOrder == order) MaterialTheme.colorScheme.primary else MeloColors.textPrimary</ID>
+    <ID>MaxLineLength:LibraryHeader.kt:if (viewMode == LibraryViewMode.GRID) LibraryViewMode.COMPACT_LIST else LibraryViewMode.GRID</ID>
+    <ID>MaxLineLength:LibraryHeader.kt:imageVector = if (viewMode == LibraryViewMode.GRID) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView</ID>
+    <ID>MaxLineLength:LibraryHeader.kt:tint = if (sortOrder != LibrarySortOrder.RECENTLY_ADDED) MaterialTheme.colorScheme.primary else MeloColors.textSecondary</ID>
+    <ID>MaxLineLength:LibraryNotLoggedInCard.kt:text = "Inicia sesión para sincronizar y reproducir tus playlists guardadas, canciones con 'Me Gusta', artistas favoritos e historial."</ID>
+    <ID>MaxLineLength:LibraryTabContent.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
+    <ID>MaxLineLength:LocalTabContent.kt:text = "${track.artist}${if (track.album.isNotBlank()) " • ${track.album}" else ""}${if (durationMinSec.isNotBlank()) " • $durationMinSec" else ""}"</ID>
+    <ID>MaxLineLength:LocalTabContent.kt:text = "Añade tus carpetas de música o escanea las carpetas por defecto para reproducir tus archivos MP3, FLAC, M4A y AAC."</ID>
+    <ID>MaxLineLength:LoginDialog.kt:text = "Inicia sesión con tu cuenta de Google. Melo detectará tu sesión automáticamente."</ID>
+    <ID>MaxLineLength:LoginViewModel.kt:LoginViewModel$error = "Las cookies no pudieron autenticar la sesión. Asegúrate de tener una sesión activa en music.youtube.com o inicia sesión con el navegador."</ID>
+    <ID>MaxLineLength:PlayerUiState.kt:PlayerUiState.Companion$(track != null &amp;&amp; !playback.isPlaying &amp;&amp; (playback.currentTrack == null || playback.currentTrack?.id != track.id))</ID>
+    <ID>MaxLineLength:PlaylistDetailScreen.kt:msg = if (selIds.size == 1) "1 canción eliminada de la playlist" else "${selIds.size} canciones eliminadas de la playlist"</ID>
+    <ID>MaxLineLength:PlaylistDetailScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
+    <ID>MaxLineLength:PlaylistDialogs.kt:color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary</ID>
+    <ID>MaxLineLength:PlaylistDialogs.kt:text = "Esta lista se borrará de tu biblioteca. Las canciones guardadas o descargadas en tu dispositivo no se verán afectadas."</ID>
+    <ID>MaxLineLength:PlaylistDialogs.kt:text = if (isEditing) "Cambia el nombre visible de tu lista" else "Personaliza el nombre y estilo de tu lista"</ID>
+    <ID>MaxLineLength:PlaylistDialogs.kt:tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary</ID>
+    <ID>MaxLineLength:Res.kt:Res$public</ID>
+    <ID>MaxLineLength:Res.kt:Res$public suspend</ID>
+    <ID>MaxLineLength:SearchResultsContent.kt:message = if (uiState.isOfflineSearch) "Intenta buscar el título de una canción guardada en tu dispositivo" else "Intenta buscar con otras palabras o cambiar de filtro"</ID>
+    <ID>MaxLineLength:SearchResultsContent.kt:title = if (uiState.isOfflineSearch) "No se encontraron descargas ni archivos locales" else "No se encontraron resultados"</ID>
+    <ID>MaxLineLength:SearchScreen.kt:if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id</ID>
+    <ID>MaxLineLength:SearchScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
+    <ID>MaxLineLength:SettingsContent.kt:text = if (isLoggedIn) "Tus playlists, likes y biblioteca están sincronizados." else "Inicia sesión para sincronizar tus playlists y favoritos."</ID>
+    <ID>MaxLineLength:TrackInteractionState.kt:TrackInteractionState$return</ID>
+    <ID>MaxLineLength:UpdateSettingsSection.kt:colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)</ID>
+    <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$fun moveLocalPlaylistTrack</ID>
+    <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$fun renameLocalPlaylist</ID>
+    <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
+    <ID>ReturnCount:HomeViewModel.kt:HomeViewModel$private fun mergeSections: List&lt;HomeSection&gt;</ID>
+    <ID>ReturnCount:MeloAsyncImage.kt:@OptIn(InternalCoroutinesApi::class) fun normalizeArtworkUrl: String?</ID>
+    <ID>ReturnCount:PlayerViewModel.kt:PlayerViewModel$fun setTargetLanguage</ID>
+    <ID>TooGenericExceptionCaught:EntityDetailViewModel.kt:EntityDetailViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HomeViewModel.kt:HomeViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LoginViewModel.kt:LoginViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SearchViewModel.kt:SearchViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:UpdateViewModel.kt:UpdateViewModel$e: Exception</ID>
+    <ID>TooManyFunctions:EntityDetailViewModel.kt:EntityDetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:LibraryViewModel.kt:LibraryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:PlayerViewModel.kt:PlayerViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:QueueViewModel.kt:QueueViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:SearchViewModel.kt:SearchViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:TrackInteractionState.kt:TrackInteractionState</ID>
+  </CurrentIssues>
+</SmellBaseline>

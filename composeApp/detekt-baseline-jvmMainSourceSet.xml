@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:WindowResizer.kt:WindowResizer$override fun mouseDragged</ID>
+    <ID>FunctionNaming:InAppSignIn.jvm.kt:@Composable actual fun InAppSignInBrowser</ID>
+    <ID>FunctionNaming:InitImageLoader.jvm.kt:@OptIn(ExperimentalCoilApi::class) @Composable actual fun InitImageLoader</ID>
+    <ID>FunctionNaming:MeloTitleBar.kt:@Composable fun WindowScope.MeloTitleBar</ID>
+    <ID>FunctionNaming:MeloTitleBar.kt:@Composable private fun TitleBarButton</ID>
+    <ID>FunctionNaming:PlatformAsyncImage.jvm.kt:@Composable actual fun PlatformAsyncImage</ID>
+    <ID>LongMethod:Main.kt:fun main</ID>
+    <ID>LongMethod:MeloTitleBar.kt:@Composable fun WindowScope.MeloTitleBar</ID>
+    <ID>LongMethod:WindowResizer.kt:WindowResizer$override fun mouseDragged</ID>
+    <ID>MatchingDeclarationName:Platform.kt:JVMPlatform : Platform</ID>
+    <ID>MatchingDeclarationName:UpdateInstaller.jvm.kt:PlatformUpdateInstaller</ID>
+    <ID>PrintStackTrace:PlatformDirectoryPicker.jvm.kt:e</ID>
+    <ID>TooGenericExceptionCaught:PlatformDirectoryPicker.jvm.kt:e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>
