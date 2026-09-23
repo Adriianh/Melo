@@ -138,6 +138,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
       - name: Create debug keystore if not present
         run: |
           mkdir -p ~/.android
