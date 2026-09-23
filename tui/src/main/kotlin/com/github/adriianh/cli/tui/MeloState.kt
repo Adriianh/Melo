@@ -132,6 +132,7 @@ data class PlayerState(
     val nowPlayingPositionMs: Long = 0L,
     val nowPlayingArtwork: ImageData? = null,
     val marqueeOffset: Int = 0,
+    val equalizerTick: Long = 0,
     val progress: Double = 0.0,
     val isFavorite: Boolean = false,
 )

@@ -9,6 +9,7 @@ import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
 import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
+import com.github.adriianh.cli.tui.util.EQUALIZER_TICK_MS
 import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
 import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pruneExpiredToasts
@@ -136,11 +137,24 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }, Duration.ofMillis(TOAST_TICK_MS))
+
+    equalizerJob = appRunner()?.scheduleRepeating({
+        appRunner()?.runOnRenderThread {
+            if (state.player.isPlaying) {
+                state = state.copy(
+                    player = state.player.copy(
+                        equalizerTick = state.player.equalizerTick + 1
+                    )
+                )
+            }
+        }
+    }, Duration.ofMillis(EQUALIZER_TICK_MS))
 }
 
 internal fun MeloScreen.onStopLifecycle() {
     marqueeJob?.cancel()
     toastJob?.cancel()
+    equalizerJob?.cancel()
     playlistTracksJob?.cancel()
     try {
         playbackManager.release()
