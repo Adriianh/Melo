@@ -1,0 +1,196 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ClassNaming:Favorite_entities.kt:Favorite_entities</ID>
+    <ID>ClassNaming:Play_history.kt:Play_history</ID>
+    <ID>ClassNaming:Playlist_tracks.kt:Playlist_tracks</ID>
+    <ID>ClassNaming:Search_history.kt:Search_history</ID>
+    <ID>ClassNaming:Stream_cache.kt:Stream_cache</ID>
+    <ID>ComplexCondition:DownloadManagerImpl.kt:DownloadManagerImpl$existing?.downloadStatus == DownloadStatus.COMPLETED &amp;&amp; existingPath != null &amp;&amp; PlatformFileSystem.fileExists(existingPath) &amp;&amp; PlatformFileSystem.fileSize(existingPath) &gt; 64 * 1024</ID>
+    <ID>ComplexCondition:PlaybackManager.kt:PlaybackManagerImpl$fromIndex &lt; 0 || fromIndex &gt;= q.tracks.size || toIndex &lt; 0 || toIndex &gt;= q.tracks.size || fromIndex == toIndex</ID>
+    <ID>ComplexCondition:PlaybackManager.kt:PlaybackManagerImpl$isTrackLoaded &amp;&amp; !state.isPlaying &amp;&amp; !state.isBuffering &amp;&amp; state.currentTrack != null</ID>
+    <ID>ConstructorParameterNaming:Favorite_entities.kt:Favorite_entities$public val added_at: Long</ID>
+    <ID>ConstructorParameterNaming:Favorite_entities.kt:Favorite_entities$public val artwork_url: String?</ID>
+    <ID>ConstructorParameterNaming:Favorite_entities.kt:Favorite_entities$public val track_count: Long?</ID>
+    <ID>ConstructorParameterNaming:Favorites.kt:Favorites$public val added_at: Long</ID>
+    <ID>ConstructorParameterNaming:Favorites.kt:Favorites$public val artwork_url: String?</ID>
+    <ID>ConstructorParameterNaming:Favorites.kt:Favorites$public val duration_ms: Long</ID>
+    <ID>ConstructorParameterNaming:Favorites.kt:Favorites$public val source_id: String?</ID>
+    <ID>ConstructorParameterNaming:Play_history.kt:Play_history$public val artwork_url: String?</ID>
+    <ID>ConstructorParameterNaming:Play_history.kt:Play_history$public val duration_ms: Long</ID>
+    <ID>ConstructorParameterNaming:Play_history.kt:Play_history$public val played_at: Long</ID>
+    <ID>ConstructorParameterNaming:Play_history.kt:Play_history$public val source_id: String?</ID>
+    <ID>ConstructorParameterNaming:Play_history.kt:Play_history$public val track_id: String</ID>
+    <ID>ConstructorParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectPlaylistIdsForTrackQuery$public val track_id: String</ID>
+    <ID>ConstructorParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectTracksForPlaylistQuery$public val playlist_id: Long</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val added_at: Long</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val artwork_url: String?</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val duration_ms: Long</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val playlist_id: Long</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val source_id: String?</ID>
+    <ID>ConstructorParameterNaming:Playlist_tracks.kt:Playlist_tracks$public val track_id: String</ID>
+    <ID>ConstructorParameterNaming:Playlists.kt:Playlists$public val created_at: Long</ID>
+    <ID>ConstructorParameterNaming:Search_history.kt:Search_history$public val searched_at: Long</ID>
+    <ID>ConstructorParameterNaming:SelectAllPlaylists.kt:SelectAllPlaylists$public val concatenated_artworks: String?</ID>
+    <ID>ConstructorParameterNaming:SelectAllPlaylists.kt:SelectAllPlaylists$public val created_at: Long</ID>
+    <ID>ConstructorParameterNaming:SelectAllPlaylists.kt:SelectAllPlaylists$public val track_count: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTopArtists.kt:SelectTopArtists$public val play_count: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTopArtists.kt:SelectTopArtists$public val total_ms: Long?</ID>
+    <ID>ConstructorParameterNaming:SelectTopTracks.kt:SelectTopTracks$public val artwork_url: String?</ID>
+    <ID>ConstructorParameterNaming:SelectTopTracks.kt:SelectTopTracks$public val play_count: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTopTracks.kt:SelectTopTracks$public val source_id: String?</ID>
+    <ID>ConstructorParameterNaming:SelectTopTracks.kt:SelectTopTracks$public val total_ms: Long?</ID>
+    <ID>ConstructorParameterNaming:SelectTopTracks.kt:SelectTopTracks$public val track_id: String</ID>
+    <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val total_ms: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val total_plays: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val unique_artists: Long</ID>
+    <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val unique_tracks: Long</ID>
+    <ID>ConstructorParameterNaming:Session.kt:Session$public val position_ms: Long</ID>
+    <ID>ConstructorParameterNaming:Session.kt:Session$public val queue_index: Long</ID>
+    <ID>ConstructorParameterNaming:Session.kt:Session$public val queue_json: String</ID>
+    <ID>ConstructorParameterNaming:Session.kt:Session$public val saved_at: Long</ID>
+    <ID>ConstructorParameterNaming:StreamCacheQueries.kt:StreamCacheQueries.SelectStreamQuery$public val track_id: String</ID>
+    <ID>ConstructorParameterNaming:Stream_cache.kt:Stream_cache$public val resolved_at: Long</ID>
+    <ID>ConstructorParameterNaming:Stream_cache.kt:Stream_cache$public val stream_url: String</ID>
+    <ID>ConstructorParameterNaming:Stream_cache.kt:Stream_cache$public val track_id: String</ID>
+    <ID>CyclomaticComplexMethod:CookieHeader.kt:CookieHeader$fun Map&lt;String, String&gt;.toHeaderStringOrNull: String?</ID>
+    <ID>CyclomaticComplexMethod:DownloadManagerImpl.kt:DownloadManagerImpl$override suspend fun downloadTrack: Boolean</ID>
+    <ID>CyclomaticComplexMethod:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$private suspend fun CoroutineScope.resolveStreamUrl: String?</ID>
+    <ID>CyclomaticComplexMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getAlbumDetails: SearchResult.Album?</ID>
+    <ID>CyclomaticComplexMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistDetails: SearchResult.Artist?</ID>
+    <ID>CyclomaticComplexMethod:MusicRepositoryImpl.kt:MusicRepositoryImpl$override suspend fun getRadio: List&lt;Track&gt;</ID>
+    <ID>CyclomaticComplexMethod:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
+    <ID>CyclomaticComplexMethod:PlaybackManager.kt:PlaybackManagerImpl$override fun moveQueueItem</ID>
+    <ID>CyclomaticComplexMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun handleAutoplay</ID>
+    <ID>CyclomaticComplexMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun playCurrentQueueTrack</ID>
+    <ID>EmptyCatchBlock:PipedApiClient.kt:PipedApiClient${ }</ID>
+    <ID>EmptyFunctionBlock:HistoryRepositoryImpl.kt:HistoryRepositoryImpl.&lt;no name provided&gt;${}</ID>
+    <ID>FunctionParameterNaming:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries$added_at: Long</ID>
+    <ID>FunctionParameterNaming:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries$artwork_url: String?</ID>
+    <ID>FunctionParameterNaming:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries$track_count: Long?</ID>
+    <ID>FunctionParameterNaming:FavoritesQueries.kt:FavoritesQueries$added_at: Long</ID>
+    <ID>FunctionParameterNaming:FavoritesQueries.kt:FavoritesQueries$artwork_url: String?</ID>
+    <ID>FunctionParameterNaming:FavoritesQueries.kt:FavoritesQueries$duration_ms: Long</ID>
+    <ID>FunctionParameterNaming:FavoritesQueries.kt:FavoritesQueries$source_id: String?</ID>
+    <ID>FunctionParameterNaming:PlayHistoryQueries.kt:PlayHistoryQueries$artwork_url: String?</ID>
+    <ID>FunctionParameterNaming:PlayHistoryQueries.kt:PlayHistoryQueries$duration_ms: Long</ID>
+    <ID>FunctionParameterNaming:PlayHistoryQueries.kt:PlayHistoryQueries$played_at: Long</ID>
+    <ID>FunctionParameterNaming:PlayHistoryQueries.kt:PlayHistoryQueries$source_id: String?</ID>
+    <ID>FunctionParameterNaming:PlayHistoryQueries.kt:PlayHistoryQueries$track_id: String</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$added_at: Long</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$artwork_url: String?</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$duration_ms: Long</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$playlist_id: Long</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$playlist_id_: Long</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$source_id: String?</ID>
+    <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$track_id: String</ID>
+    <ID>FunctionParameterNaming:PlaylistsQueries.kt:PlaylistsQueries$created_at: Long</ID>
+    <ID>FunctionParameterNaming:SearchHistoryQueries.kt:SearchHistoryQueries$searched_at: Long</ID>
+    <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$position_ms: Long</ID>
+    <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$queue_index: Long</ID>
+    <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$queue_json: String</ID>
+    <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$saved_at: Long</ID>
+    <ID>FunctionParameterNaming:StreamCacheQueries.kt:StreamCacheQueries$resolved_at: Long</ID>
+    <ID>FunctionParameterNaming:StreamCacheQueries.kt:StreamCacheQueries$stream_url: String</ID>
+    <ID>FunctionParameterNaming:StreamCacheQueries.kt:StreamCacheQueries$track_id: String</ID>
+    <ID>LargeClass:InnerTubeMusicProvider.kt:InnerTubeMusicProvider : MusicProvider</ID>
+    <ID>LargeClass:PlaybackManager.kt:PlaybackManagerImpl : PlaybackManager</ID>
+    <ID>LongMethod:DownloadManagerImpl.kt:DownloadManagerImpl$override suspend fun downloadTrack: Boolean</ID>
+    <ID>LongMethod:HistoryRepositoryImpl.kt:HistoryRepositoryImpl$override suspend fun recordPlay</ID>
+    <ID>LongMethod:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$private suspend fun CoroutineScope.resolveStreamUrl: String?</ID>
+    <ID>LongMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getAlbumDetails: SearchResult.Album?</ID>
+    <ID>LongMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistDetails: SearchResult.Artist?</ID>
+    <ID>LongMethod:MeloDatabaseImpl.kt:MeloDatabaseImpl.Schema$override fun create: QueryResult.Value&lt;Unit&gt;</ID>
+    <ID>LongMethod:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
+    <ID>LongMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun handleAutoplay</ID>
+    <ID>LongMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun playCurrentQueueTrack</ID>
+    <ID>LoopWithTooManyJumpStatements:CookieHeader.kt:CookieHeader$for</ID>
+    <ID>LoopWithTooManyJumpStatements:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$for</ID>
+    <ID>LoopWithTooManyJumpStatements:PipedApiClient.kt:PipedApiClient$for</ID>
+    <ID>LoopWithTooManyJumpStatements:PlaybackManager.kt:PlaybackManagerImpl$for</ID>
+    <ID>MatchingDeclarationName:LyricsDto.kt:LyricsResponse</ID>
+    <ID>MatchingDeclarationName:PlaybackManager.kt:PlaybackManagerImpl : PlaybackManager</ID>
+    <ID>MaxLineLength:CompositeDiscoveryProvider.kt:CompositeDiscoveryProvider$.</ID>
+    <ID>MaxLineLength:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries$)</ID>
+    <ID>MaxLineLength:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries$public fun selectFavoriteEntitiesByType: Query&lt;Favorite_entities&gt;</ID>
+    <ID>MaxLineLength:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries.IsFavoriteEntityQuery$override</ID>
+    <ID>MaxLineLength:FavoriteEntitiesQueries.kt:FavoriteEntitiesQueries.SelectFavoriteEntitiesByTypeQuery$override</ID>
+    <ID>MaxLineLength:FavoritesQueries.kt:FavoritesQueries$)</ID>
+    <ID>MaxLineLength:FavoritesQueries.kt:FavoritesQueries.IsFavoriteQuery$override</ID>
+    <ID>MaxLineLength:FavoritesQueries.kt:FavoritesQueries.SelectFavoriteByIdQuery$override</ID>
+    <ID>MaxLineLength:LyricsTranslator.kt:LyricsTranslator$url = "https://translate.google.com/translate_a/single?client=at&amp;dt=t&amp;dj=1&amp;hl=$targetLang&amp;ie=UTF-8&amp;oe=UTF-8"</ID>
+    <ID>MaxLineLength:PipedApiClient.kt:PipedApiClient$"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"</ID>
+    <ID>MaxLineLength:PlayHistoryQueries.kt:PlayHistoryQueries$public fun selectDistinctRecentTracks: Query&lt;Play_history&gt;</ID>
+    <ID>MaxLineLength:PlayHistoryQueries.kt:PlayHistoryQueries$public fun selectTopArtists: Query&lt;SelectTopArtists&gt;</ID>
+    <ID>MaxLineLength:PlayHistoryQueries.kt:PlayHistoryQueries$public fun selectTopTracks: Query&lt;SelectTopTracks&gt;</ID>
+    <ID>MaxLineLength:PlayHistoryQueries.kt:PlayHistoryQueries$public fun selectTotalListeningMs: Query&lt;SelectTotalListeningMs&gt;</ID>
+    <ID>MaxLineLength:PlayHistoryQueries.kt:PlayHistoryQueries.SelectRecentPlaysQuery$override</ID>
+    <ID>MaxLineLength:PlaybackManager.kt:PlaybackManagerImpl$if</ID>
+    <ID>MaxLineLength:PlaybackManager.kt:PlaybackManagerImpl$if (fromIndex &lt; 0 || fromIndex &gt;= q.tracks.size || toIndex &lt; 0 || toIndex &gt;= q.tracks.size || fromIndex == toIndex) return</ID>
+    <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries$public</ID>
+    <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries$public fun selectTracksForPlaylist: Query&lt;Playlist_tracks&gt;</ID>
+    <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries$val</ID>
+    <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectPlaylistIdsForTrackQuery$override</ID>
+    <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectTracksForPlaylistQuery$override</ID>
+    <ID>MaxLineLength:PlaylistsQueries.kt:PlaylistsQueries$public</ID>
+    <ID>MaxLineLength:SearchHistoryQueries.kt:SearchHistoryQueries$public</ID>
+    <ID>MaxLineLength:SessionQueries.kt:SessionQueries$)</ID>
+    <ID>MaxLineLength:StreamCacheQueries.kt:StreamCacheQueries.SelectStreamQuery$override</ID>
+    <ID>ReturnCount:DeezerApiClient.kt:DeezerApiClient$suspend fun getSimilarTracks: List&lt;SimilarTrack&gt;</ID>
+    <ID>ReturnCount:HomeFeedCacheImpl.kt:HomeFeedCacheImpl$private fun loadSync: HomeFeed?</ID>
+    <ID>ReturnCount:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$private fun extractExpiry: Long?</ID>
+    <ID>ReturnCount:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$private suspend fun CoroutineScope.resolveStreamUrl: String?</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getAlbumDetails: SearchResult.Album?</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistDetails: SearchResult.Artist?</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistRadio: List&lt;Track&gt;</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getRadio: List&lt;Track&gt;</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getRelated: List&lt;Track&gt;</ID>
+    <ID>ReturnCount:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getTrack: Track?</ID>
+    <ID>ReturnCount:LyricsRepositoryImpl.kt:LyricsRepositoryImpl$override suspend fun getLyrics: String?</ID>
+    <ID>ReturnCount:LyricsRepositoryImpl.kt:LyricsRepositoryImpl$override suspend fun getTrackLyrics: TrackLyrics</ID>
+    <ID>ReturnCount:LyricsTranslator.kt:LyricsTranslator$private suspend fun translateBatch: List&lt;String&gt;</ID>
+    <ID>ReturnCount:LyricsTranslator.kt:LyricsTranslator$suspend fun translateSyncedLyrics: List&lt;SyncedLine&gt;</ID>
+    <ID>ReturnCount:MergedMusicProvider.kt:MergedMusicProvider$override suspend fun getTrack: Track?</ID>
+    <ID>ReturnCount:MusicRepositoryImpl.kt:MusicRepositoryImpl$override suspend fun getRadio: List&lt;Track&gt;</ID>
+    <ID>ReturnCount:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
+    <ID>ReturnCount:PlaybackManager.kt:PlaybackManagerImpl$private suspend fun findNextOfflineTrackIndex: Int?</ID>
+    <ID>ReturnCount:SettingsRepositoryImpl.kt:SettingsRepositoryImpl$private fun loadSettingsSync: Settings</ID>
+    <ID>ReturnCount:UpdateRepositoryImpl.kt:UpdateRepositoryImpl.Companion$fun isNewerVersion: Boolean</ID>
+    <ID>SwallowedException:PipedApiClient.kt:PipedApiClient$e: Exception</ID>
+    <ID>SwallowedException:SpotifyApiClient.kt:SpotifyApiClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PipedApiClient.kt:PipedApiClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SpotifyApiClient.kt:SpotifyApiClient$e: Exception</ID>
+    <ID>TooManyFunctions:InnerTubeMusicProvider.kt:InnerTubeMusicProvider : MusicProvider</ID>
+    <ID>TooManyFunctions:MergedMusicProvider.kt:MergedMusicProvider : MusicProvider</ID>
+    <ID>TooManyFunctions:MusicRepositoryImpl.kt:MusicRepositoryImpl : MusicRepository</ID>
+    <ID>TooManyFunctions:PipedApiClient.kt:PipedApiClient</ID>
+    <ID>TooManyFunctions:PlayHistoryQueries.kt:PlayHistoryQueries : TransacterImpl</ID>
+    <ID>TooManyFunctions:PlaybackManager.kt:PlaybackManagerImpl : PlaybackManager</ID>
+    <ID>WildcardImport:DeezerApiClient.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:DeezerApiClient.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:DeezerApiClient.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:ItunesApiClient.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:ItunesApiClient.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:ItunesApiClient.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:LastFmApiClient.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:LastFmApiClient.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:LastFmApiClient.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:LastFmApiClient.kt:import io.ktor.client.statement.*</ID>
+    <ID>WildcardImport:LastFmApiClient.kt:import io.ktor.http.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.client.engine.cio.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.client.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:LyricsApiClient.kt:import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.client.engine.cio.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.client.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.http.*</ID>
+    <ID>WildcardImport:SpotifyApiClient.kt:import io.ktor.serialization.kotlinx.json.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

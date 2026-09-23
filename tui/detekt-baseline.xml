@@ -1,0 +1,340 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:AudioPlayer.kt:AudioPlayer$url != null &amp;&amp; (!isAlive || (pauseDuration &gt; 15_000L &amp;&amp; (url.startsWith("http://") || url.startsWith( "https://" ))))</ID>
+    <ID>ComplexCondition:DetailKeysHandlers.kt:track != null &amp;&amp; state.detail.lyrics == null &amp;&amp; state.detail.syncedLyrics.isEmpty() &amp;&amp; !state.detail.isLoadingLyrics</ID>
+    <ID>ComplexCondition:EntityDetailKeysHandlers.kt:event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB || (event.modifiers() .alt() &amp;&amp; event.code() == KeyCode.LEFT)</ID>
+    <ID>ComplexCondition:LibraryScreen.kt:state.selection.isNotEmpty &amp;&amp; (actualState.libraryTab == LibraryTab.FAVORITES || actualState.libraryTab == LibraryTab.LOCAL || actualState.isInPlaylistDetail)</ID>
+    <ID>ComplexCondition:LyricsCommand.kt:LyricsCommand$curTrackStr != "$title|||$artist" &amp;&amp; curTrackStr.isNotBlank() &amp;&amp; curTrackStr != "No players found"</ID>
+    <ID>ComplexCondition:MeloScreenActions.kt:existing.downloadStatus == DownloadStatus.COMPLETED &amp;&amp; existing.downloadType == DownloadType.PREFETCH &amp;&amp; downloadType == DownloadType.MANUAL &amp;&amp; existing.localFilePath != null</ID>
+    <ID>ComplexCondition:SettingsHandlers.kt:item == SettingsItem.SYNC_LIKES || item == SettingsItem.SYNC_HISTORY || item == SettingsItem.AUTO_DOWNLOAD || item == SettingsItem.OFFLINE_MODE || item == SettingsItem.DISCORD_RPC</ID>
+    <ID>ComplexCondition:StatusCommand.kt:StatusCommand$curTrackStr != "$title|||$artist" &amp;&amp; curTrackStr.isNotBlank() &amp;&amp; curTrackStr != "No players found"</ID>
+    <ID>CyclomaticComplexMethod:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:AudioPlayer.kt:AudioPlayer$private suspend fun launchPlayback</ID>
+    <ID>CyclomaticComplexMethod:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:DetailInfoTab.kt:internal fun renderTrackMetadata: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:DetailPanel.kt:fun buildDetailPanel: Element</ID>
+    <ID>CyclomaticComplexMethod:DetailSimilarTab.kt:internal fun renderSimilarTab: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:DetailTabHandlers.kt:internal fun MeloScreen.handleLyricsTabKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:DetailTabHandlers.kt:internal fun MeloScreen.handleSimilarTabKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:DirectoryPickerOverlay.kt:DirectoryPickerOverlay$override fun render</ID>
+    <ID>CyclomaticComplexMethod:DiscordRpcManager.kt:DiscordRpcManager$fun updateActivity</ID>
+    <ID>CyclomaticComplexMethod:DownloadActionHandler.kt:DownloadActionHandler$suspend fun downloadMultiple</ID>
+    <ID>CyclomaticComplexMethod:DownloadActionHandler.kt:DownloadActionHandler$suspend fun downloadTrack</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailArtist.kt:private fun artistDashboardRow: Element</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailArtist.kt:private fun buildArtistDashboardItems: MutableList&lt;StyledElement&lt;*&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailKeysHandlers.kt:internal fun MeloScreen.handleEntityDetailKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailKeysHandlers.kt:internal fun MeloScreen.toggleEntityFavorite</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailPanel.kt:fun buildEntityDetailPanel: Element</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailsHandlers.kt:internal fun MeloScreen.loadTrackDetails</ID>
+    <ID>CyclomaticComplexMethod:EntityDetailsHandlers.kt:internal fun MeloScreen.openEntityDetails</ID>
+    <ID>CyclomaticComplexMethod:EntityTracksKeyHandlers.kt:internal fun MeloScreen.handleEntityTracksKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:HomeFeed.kt:internal fun getSectionIcon: String</ID>
+    <ID>CyclomaticComplexMethod:HomeFeed.kt:internal fun renderFeedTab: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:HomeFeedKeyHandlers.kt:private fun MeloScreen.handleHomeFeedItemsKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:HomeRecent.kt:internal fun renderRecentTab: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryFavorites.kt:internal fun buildFavoriteSongsContent: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryFavorites.kt:internal fun buildFavoritesContent: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryLocal.kt:internal fun buildLocalContent: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryPlaylists.kt:internal fun buildPlaylistDetailContent: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryPlaylists.kt:internal fun buildPlaylistsContent: StyledElement&lt;*&gt;</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreen.kt:fun renderLibraryScreen: Element</ID>
+    <ID>CyclomaticComplexMethod:LocalIpcServer.kt:LocalIpcServer$private fun handleClient</ID>
+    <ID>CyclomaticComplexMethod:LyricsCommand.kt:LyricsCommand$override fun run</ID>
+    <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.cycleLyricsTranslation</ID>
+    <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.loadLyrics</ID>
+    <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.loadNowPlayingMetadata</ID>
+    <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.translateLyricsForTrack</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenActions.kt:internal fun MeloScreen.downloadTrackAction</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenFavoriteHandlers.kt:internal fun MeloScreen.removeFavoriteTrack</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenFavoriteHandlers.kt:internal fun MeloScreen.toggleFavorite</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoriteSongsKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenFeed.kt:internal fun MeloScreen.enrichActiveSectionTracks</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenFeed.kt:internal fun MeloScreen.loadHomeFeed</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenHomeHandlers.kt:internal fun MeloScreen.handleHomeKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenHomeHandlers.kt:private fun MeloScreen.handleHomeCursorTrackListKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenKeyHandlers.kt:internal fun MeloScreen.handleGlobalShortcuts: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenLibraryHandlers.kt:internal fun MeloScreen.handleTrackListSelectionActions: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenLibraryHandlers.kt:private fun MeloScreen.handleLocalNavigationKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenLifecycle.kt:internal fun MeloScreen.onStartLifecycle</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenObservers.kt:internal fun MeloScreen.observeSearchInput</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenOfflineHandlers.kt:internal fun MeloScreen.handleOfflineKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenPlayer.kt:private fun MeloScreen.observePlaybackState</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailNavigationKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailSelectionActions: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenPlaylistHandlers.kt:private fun MeloScreen.handlePlaylistListNavigationKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenPlaylistOverlayHandlers.kt:internal fun MeloScreen.handlePlaylistInput: EventResult</ID>
+    <ID>CyclomaticComplexMethod:MeloScreenRendering.kt:internal fun MeloScreen.renderRoot: Element</ID>
+    <ID>CyclomaticComplexMethod:NowPlayingScreen.kt:private fun buildLyricsPanel: Element</ID>
+    <ID>CyclomaticComplexMethod:OfflineScreen.kt:fun renderOfflineScreen: Element</ID>
+    <ID>CyclomaticComplexMethod:PlayActionHandler.kt:PlayActionHandler$private suspend fun startPlayback</ID>
+    <ID>CyclomaticComplexMethod:PlaybackHandlers.kt:internal fun MeloScreen.handleNowPlayingKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:PlaybackHandlers.kt:internal fun MeloScreen.handlePlayerBarKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:PlayerBar.kt:fun buildPlayerBar: Element</ID>
+    <ID>CyclomaticComplexMethod:QueueHandlers.kt:internal fun MeloScreen.handleQueueKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SearchCommand.kt:SearchCommand$private suspend fun showEntityListPicker</ID>
+    <ID>CyclomaticComplexMethod:SearchExecutionHandlers.kt:private fun MeloScreen.startNetworkSearch</ID>
+    <ID>CyclomaticComplexMethod:SearchResultsKeyHandlers.kt:internal fun MeloScreen.handleResultsKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SearchResultsKeyHandlers.kt:private fun MeloScreen.handleResultsActionKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SearchResultsKeyHandlers.kt:private fun MeloScreen.handleResultsMovementKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SearchScreen.kt:private fun renderResultsArea: Element</ID>
+    <ID>CyclomaticComplexMethod:SearchSuggestionsHandlers.kt:internal fun MeloScreen.handleSearchBarKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SearchSuggestionsHandlers.kt:internal fun MeloScreen.handleSearchQueryChange</ID>
+    <ID>CyclomaticComplexMethod:SettingsAdjustmentHandlers.kt:internal fun MeloScreen.adjustSetting</ID>
+    <ID>CyclomaticComplexMethod:SettingsDirectoryHandlers.kt:internal fun MeloScreen.handleDirectoryPicker: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SettingsDirectoryHandlers.kt:internal fun MeloScreen.handlePathEditing: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SettingsHandlers.kt:fun MeloScreen.handleSettingsKey: EventResult</ID>
+    <ID>CyclomaticComplexMethod:SettingsPanel.kt:SettingsOverlay$override fun render</ID>
+    <ID>CyclomaticComplexMethod:StatusCommand.kt:StatusCommand$override fun run</ID>
+    <ID>CyclomaticComplexMethod:TrackOptionsHandlers.kt:internal fun MeloScreen.executeTrackMenuAction</ID>
+    <ID>CyclomaticComplexMethod:TrackOptionsMenu.kt:fun buildTrackMenuContext: TrackMenuContext</ID>
+    <ID>CyclomaticComplexMethod:TuiLogGuard.kt:TuiLogGuard$fun &lt;R&gt; withLogGuard: R</ID>
+    <ID>CyclomaticComplexMethod:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
+    <ID>EmptyElseBlock:DetailSimilarTab.kt:if (isSelected) bold()</ID>
+    <ID>EmptyFunctionBlock:AuthCommand.kt:AuthCommand${}</ID>
+    <ID>EmptyFunctionBlock:AuthCommand.kt:YouTubeAuthCommand${}</ID>
+    <ID>EmptyFunctionBlock:PlaylistCommand.kt:PlaylistCommand${}</ID>
+    <ID>EmptyFunctionBlock:QueueCommand.kt:QueueCommand${}</ID>
+    <ID>EmptyFunctionBlock:ScrobbleCommand.kt:ScrobbleCommand${}</ID>
+    <ID>ExplicitItLambdaMultipleParameters:EntityDetailArtist.kt:{ i, it -&gt; artistDashboardRow( it, entity.title, i + offset, selected, detail, state, marqueeText ) }</ID>
+    <ID>ForEachOnRange:WindowsVolumeController.kt:WindowsVolumeController$0 until 10</ID>
+    <ID>LargeClass:MeloStateFilterSortTest.kt:MeloStateFilterSortTest</ID>
+    <ID>LongMethod:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
+    <ID>LongMethod:AudioPlayer.kt:AudioPlayer$private suspend fun launchPlayback</ID>
+    <ID>LongMethod:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
+    <ID>LongMethod:DetailInfoTab.kt:internal fun renderTrackMetadata: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailTabNavigationKey: EventResult</ID>
+    <ID>LongMethod:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:DetailSimilarTab.kt:internal fun renderSimilarTab: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:DetailTabHandlers.kt:internal fun MeloScreen.handleLyricsTabKey: EventResult</ID>
+    <ID>LongMethod:DirectoryPickerOverlay.kt:DirectoryPickerOverlay$override fun render</ID>
+    <ID>LongMethod:DownloadActionHandler.kt:DownloadActionHandler$suspend fun downloadMultiple</ID>
+    <ID>LongMethod:DownloadActionHandler.kt:DownloadActionHandler$suspend fun downloadTrack</ID>
+    <ID>LongMethod:DownloadCommand.kt:DownloadCommand$override fun run</ID>
+    <ID>LongMethod:EntityDetailArtist.kt:internal fun renderArtistDetail: Element</ID>
+    <ID>LongMethod:EntityDetailArtist.kt:private fun artistDashboardRow: Element</ID>
+    <ID>LongMethod:EntityDetailArtist.kt:private fun buildArtistDashboardItems: MutableList&lt;StyledElement&lt;*&gt;&gt;</ID>
+    <ID>LongMethod:EntityDetailPanel.kt:fun buildEntityDetailPanel: Element</ID>
+    <ID>LongMethod:EntityDetailTracks.kt:internal fun renderTracksDetail: Element</ID>
+    <ID>LongMethod:EntityDetailsHandlers.kt:internal fun MeloScreen.loadEntityDetails</ID>
+    <ID>LongMethod:EntityDetailsHandlers.kt:internal fun MeloScreen.loadTrackDetails</ID>
+    <ID>LongMethod:EntityDetailsHandlers.kt:internal fun MeloScreen.openEntityDetails</ID>
+    <ID>LongMethod:EntityTracksKeyHandlers.kt:internal fun MeloScreen.handleEntityTracksKey: EventResult</ID>
+    <ID>LongMethod:HomeFavorites.kt:internal fun renderFavoritesTab: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:HomeFeed.kt:internal fun renderFeedTab: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:HomeFeedKeyHandlers.kt:private fun MeloScreen.handleHomeFeedItemsKey: EventResult</ID>
+    <ID>LongMethod:HomeRecent.kt:internal fun renderRecentTab: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryFavorites.kt:internal fun buildFavoriteSongsContent: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryFavorites.kt:internal fun buildFavoritesContent: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryLocal.kt:internal fun buildLocalContent: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryPlaylists.kt:internal fun buildPlaylistDetailContent: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryPlaylists.kt:internal fun buildPlaylistsContent: StyledElement&lt;*&gt;</ID>
+    <ID>LongMethod:LibraryScreen.kt:fun renderLibraryScreen: Element</ID>
+    <ID>LongMethod:LyricsCommand.kt:LyricsCommand$override fun run</ID>
+    <ID>LongMethod:LyricsHandlers.kt:internal fun MeloScreen.loadLyrics</ID>
+    <ID>LongMethod:MeloScreenActions.kt:internal fun MeloScreen.downloadTrackAction</ID>
+    <ID>LongMethod:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoriteSongsKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenFeed.kt:internal fun MeloScreen.enrichActiveSectionTracks</ID>
+    <ID>LongMethod:MeloScreenFeed.kt:internal fun MeloScreen.loadHomeFeed</ID>
+    <ID>LongMethod:MeloScreenHomeHandlers.kt:private fun MeloScreen.handleHomeCursorTrackListKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenLibraryHandlers.kt:private fun MeloScreen.handleLocalNavigationKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenLifecycle.kt:internal fun MeloScreen.onStartLifecycle</ID>
+    <ID>LongMethod:MeloScreenOfflineHandlers.kt:internal fun MeloScreen.handleOfflineKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenPlayer.kt:private fun MeloScreen.handlePlaybackTrackStarted</ID>
+    <ID>LongMethod:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailNavigationKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailSelectionActions: EventResult</ID>
+    <ID>LongMethod:MeloScreenPlaylistHandlers.kt:private fun MeloScreen.handlePlaylistListNavigationKey: EventResult</ID>
+    <ID>LongMethod:MeloScreenPlaylistOverlayHandlers.kt:internal fun MeloScreen.handlePlaylistInput: EventResult</ID>
+    <ID>LongMethod:MeloScreenPlaylistOverlayHandlers.kt:internal fun MeloScreen.handlePlaylistPicker: EventResult</ID>
+    <ID>LongMethod:MeloScreenRendering.kt:internal fun MeloScreen.renderRoot: Element</ID>
+    <ID>LongMethod:MeloStateFilterSortTest.kt:MeloStateFilterSortTest$@Test fun testFilterAndSortOfflineTracks</ID>
+    <ID>LongMethod:MeloStateFilterSortTest.kt:MeloStateFilterSortTest$@Test fun testFilteredAndSortedFavorites</ID>
+    <ID>LongMethod:MeloStateFilterSortTest.kt:MeloStateFilterSortTest$@Test fun testFilteredAndSortedPlaylists</ID>
+    <ID>LongMethod:MeloStateFilterSortTest.kt:MeloStateFilterSortTest$@Test fun testResolveTrackMenuItemsContexts</ID>
+    <ID>LongMethod:MeloTheme.kt:MeloTheme$fun loadTheme</ID>
+    <ID>LongMethod:NowPlayingScreen.kt:private fun buildLyricsPanel: Element</ID>
+    <ID>LongMethod:OfflineScreen.kt:fun renderOfflineScreen: Element</ID>
+    <ID>LongMethod:PlayActionHandler.kt:PlayActionHandler$private suspend fun startPlayback</ID>
+    <ID>LongMethod:PlayCommand.kt:PlayCommand$override fun run</ID>
+    <ID>LongMethod:PlaybackHandlers.kt:internal fun MeloScreen.handleNowPlayingKey: EventResult</ID>
+    <ID>LongMethod:PlayerBar.kt:fun buildPlayerBar: Element</ID>
+    <ID>LongMethod:QueueHandlers.kt:internal fun MeloScreen.handleQueueKey: EventResult</ID>
+    <ID>LongMethod:QueuePanel.kt:QueueOverlay$override fun render</ID>
+    <ID>LongMethod:SearchCommand.kt:SearchCommand$override fun run</ID>
+    <ID>LongMethod:SearchCommand.kt:SearchCommand$private suspend fun showEntityListPicker</ID>
+    <ID>LongMethod:SearchExecutionHandlers.kt:internal fun MeloScreen.loadMore</ID>
+    <ID>LongMethod:SearchExecutionHandlers.kt:private fun MeloScreen.startNetworkSearch</ID>
+    <ID>LongMethod:SearchResultsKeyHandlers.kt:internal fun MeloScreen.handleResultsKey: EventResult</ID>
+    <ID>LongMethod:SearchResultsKeyHandlers.kt:private fun MeloScreen.handleResultsActionKey: EventResult</ID>
+    <ID>LongMethod:SearchScreen.kt:private fun renderResultsArea: Element</ID>
+    <ID>LongMethod:SearchSuggestionsHandlers.kt:internal fun MeloScreen.handleSearchBarKey: EventResult</ID>
+    <ID>LongMethod:SearchSuggestionsHandlers.kt:internal fun MeloScreen.handleSearchQueryChange</ID>
+    <ID>LongMethod:SettingsAdjustmentHandlers.kt:internal fun MeloScreen.adjustSetting</ID>
+    <ID>LongMethod:SettingsDirectoryHandlers.kt:internal fun MeloScreen.handleDirectoryPicker: EventResult</ID>
+    <ID>LongMethod:SettingsHandlers.kt:fun MeloScreen.handleSettingsKey: EventResult</ID>
+    <ID>LongMethod:SettingsPanel.kt:SettingsOverlay$override fun render</ID>
+    <ID>LongMethod:StatsScreen.kt:fun renderStatsScreen: Element</ID>
+    <ID>LongMethod:StatusCommand.kt:StatusCommand$override fun run</ID>
+    <ID>LongMethod:TrackOptionsHandlers.kt:internal fun MeloScreen.executeTrackMenuAction</ID>
+    <ID>LongMethod:TuiLogGuard.kt:TuiLogGuard$fun &lt;R&gt; withLogGuard: R</ID>
+    <ID>LongMethod:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
+    <ID>LoopWithTooManyJumpStatements:AudioPlayer.kt:AudioPlayer$while</ID>
+    <ID>LoopWithTooManyJumpStatements:DiscordRpcManager.kt:DiscordRpcManager$while</ID>
+    <ID>LoopWithTooManyJumpStatements:LyricsCommand.kt:LyricsCommand$while</ID>
+    <ID>LoopWithTooManyJumpStatements:MeloScreenFeed.kt:for</ID>
+    <ID>LoopWithTooManyJumpStatements:MeloScreenFeed.kt:while</ID>
+    <ID>LoopWithTooManyJumpStatements:MeloScreenSessionHandlers.kt:while</ID>
+    <ID>LoopWithTooManyJumpStatements:StatusCommand.kt:StatusCommand$while</ID>
+    <ID>LoopWithTooManyJumpStatements:WindowsVolumeController.kt:WindowsVolumeController$for</ID>
+    <ID>MatchingDeclarationName:QueuePanel.kt:QueueOverlay : Element</ID>
+    <ID>MaxLineLength:AudioPlayer.kt:AudioPlayer$get() = (FfplayProcessManager.isWindows &amp;&amp; WindowsVolumeController.isAvailable) || PactlVolumeController.hasPactl</ID>
+    <ID>MaxLineLength:AuthCommand.kt:YouTubeImportAuthCommand$terminal.println(gray(" 1. Export cookies to a file and run: melo auth youtube login --file &lt;cookies.txt&gt;"))</ID>
+    <ID>MaxLineLength:DaemonCommand.kt:DaemonStartCommand$terminal.println(yellow("Try running manually with: nohup melo daemon run &gt; ${logFile.absolutePath} 2&gt;&amp;1 &amp;"))</ID>
+    <ID>MaxLineLength:DetailKeysHandlers.kt:if</ID>
+    <ID>MaxLineLength:DetailLyricsTab.kt:LyricsTranslationMode.TRANSLATION_ONLY</ID>
+    <ID>MaxLineLength:DetailPanel.kt:(if (isNowPlaying &amp;&amp; state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()</ID>
+    <ID>MaxLineLength:DetailTabHandlers.kt:if</ID>
+    <ID>MaxLineLength:DownloadActionHandler.kt:DownloadActionHandler$terminal.println(cyan($$"Downloading $entityTitle (${tracks.size} tracks) into ${downloadFolder.absolutePath}..."))</ID>
+    <ID>MaxLineLength:DownloadActionHandler.kt:DownloadActionHandler$terminal.println(yellow($$"[!] Track is age-restricted and could not be resolved for download: ${track.title}"))</ID>
+    <ID>MaxLineLength:EntityDetailKeysHandlers.kt:if (actualDetail.returnScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"</ID>
+    <ID>MaxLineLength:EntityDetailTracks.kt:!detail.description.isNullOrBlank() || (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true || (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true</ID>
+    <ID>MaxLineLength:FfplayProcessManager.kt:FfplayProcessManager$throw IllegalStateException("ffplay not found. Please install FFmpeg (e.g., winget install Gyan.FFmpeg)")</ID>
+    <ID>MaxLineLength:HomeScreen.kt:HomeFeedFocus.ITEMS -&gt; "[Tab] Focus [↑↓] Move [v] Select [←/Esc] Sections [[/]] Jump [Enter] Play [Q] Queue [F] Fav [M] Options"</ID>
+    <ID>MaxLineLength:HomeScreen.kt:HomeFeedFocus.SECTIONS -&gt; "[Tab] Focus [↑↓] Sections [→/Enter] Items [[/]] Jump [1..3] Tabs [R] Refresh"</ID>
+    <ID>MaxLineLength:HomeScreen.kt:else -&gt; "[1..3] Tabs [Tab] Switch Tab [↑↓] Move [v] Select [Enter] Play [Q] Queue [F] Favorite [R] Refresh"</ID>
+    <ID>MaxLineLength:HomeScreen.kt:state.selection.isNotEmpty -&gt; "[Space/v] Toggle [Ctrl+A] All [m] Batch (${state.selection.count}) [Esc] Clear"</ID>
+    <ID>MaxLineLength:LibraryFavorites.kt:text(if (isCompact) " [${actualState.favoritesSortDirection.symbol}] " else " [${actualState.favoritesSortDirection.symbol} ${actualState.favoritesSortDirection.label} (O)] ")</ID>
+    <ID>MaxLineLength:LibraryFavorites.kt:text(if (isCompact) " [${actualState.favoritesSortOrder.label}] " else " [Sort: ${actualState.favoritesSortOrder.label} (o)] ")</ID>
+    <ID>MaxLineLength:LibraryLocal.kt:text(if (hasPaths) " No audio files found in configured folders" else " No local folders configured").fg(TEXT_SECONDARY).centered()</ID>
+    <ID>MaxLineLength:LibraryPlaylists.kt:text(" [${actualState.playlistDetailSortDirection.symbol} ${actualState.playlistDetailSortDirection.label} (O)] ")</ID>
+    <ID>MaxLineLength:LibraryPlaylists.kt:text(if (isCompact) " [${actualState.playlistsSortDirection.symbol}] " else " [${actualState.playlistsSortDirection.symbol} ${actualState.playlistsSortDirection.label} (O)] ")</ID>
+    <ID>MaxLineLength:LibraryPlaylists.kt:text(if (isCompact) " [${actualState.playlistsSortOrder.label}] " else " [Sort: ${actualState.playlistsSortOrder.label} (o)] ")</ID>
+    <ID>MaxLineLength:LibraryScreen.kt:val actualState = state.screen as? ScreenState.Library ?: return panel(text("Library not active").centered()).rounded()</ID>
+    <ID>MaxLineLength:LibraryScreen.kt:}</ID>
+    <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""</ID>
+    <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{mpris:length}}\""</ID>
+    <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$if</ID>
+    <ID>MaxLineLength:LyricsHandlers.kt:if</ID>
+    <ID>MaxLineLength:MeloScreenActions.kt:if</ID>
+    <ID>MaxLineLength:MeloScreenDiscoveryHandlers.kt:appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingMoreSimilar = false)) }</ID>
+    <ID>MaxLineLength:MeloScreenKeyHandlers.kt:if</ID>
+    <ID>MaxLineLength:MeloScreenLibraryHandlers.kt:LibraryTab.PLAYLISTS</ID>
+    <ID>MaxLineLength:MeloScreenRendering.kt:if</ID>
+    <ID>MaxLineLength:MeloStateLibrary.kt:.</ID>
+    <ID>MaxLineLength:MeloStateLibrary.kt:LibraryPlaylistItem.Local$override val trackCountText: String get() = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"</ID>
+    <ID>MaxLineLength:PlayCommand.kt:PlayCommand$terminal.println(green("Added playlist tracks to active session: ") + detailedPlaylist.title)</ID>
+    <ID>MaxLineLength:SearchScreen.kt:actualState.results.isEmpty() &amp;&amp; actualState.albumResults.isEmpty() &amp;&amp; actualState.artistResults.isEmpty() &amp;&amp; actualState.playlistResults.isEmpty()</ID>
+    <ID>MaxLineLength:SearchSuggestionsHandlers.kt:updateScreen&lt;ScreenState.Search&gt; { it.copy(selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex) }</ID>
+    <ID>MaxLineLength:SettingsPanel.kt:SettingsOverlay$isAccountSection &amp;&amp; selectedItem == SettingsItem.YOUTUBE_ACCOUNT &amp;&amp; isAccountLoggedIn -&gt; "[Enter] re-import [D] log out [←] back [Esc] close"</ID>
+    <ID>MaxLineLength:SettingsPanel.kt:SettingsOverlay$isAccountSection &amp;&amp; selectedItem == SettingsItem.YOUTUBE_ACCOUNT -&gt; "[Enter] import from browser [←] back [Esc] close"</ID>
+    <ID>MaxLineLength:ShareCommand.kt:ShareCommand$terminal.println(cyan("Hint: Provide a search query to share a specific track, e.g., melo share 'Never Gonna Give You Up'"))</ID>
+    <ID>MaxLineLength:StatsCommand.kt:StatsCommand$terminal.println("${gray("${i + 1}.")} ${t.track.title} - ${t.track.artist} (${t.playCount} plays)")</ID>
+    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""</ID>
+    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\""</ID>
+    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$if</ID>
+    <ID>MaxLineLength:YouTubeAuthService.kt:YouTubeAuthService$IllegalStateException("The cookies did not produce a valid YouTube Music session. Make sure you are logged in to music.youtube.com.")</ID>
+    <ID>NestedBlockDepth:TuiLogGuard.kt:TuiLogGuard$fun &lt;R&gt; withLogGuard: R</ID>
+    <ID>NestedBlockDepth:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
+    <ID>ReturnCount:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
+    <ID>ReturnCount:AudioPlayer.kt:AudioPlayer$fun resume</ID>
+    <ID>ReturnCount:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
+    <ID>ReturnCount:CommandBarHandlers.kt:CommandBarHandlers$fun computeSuggestions: List&lt;String&gt;</ID>
+    <ID>ReturnCount:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailKey: EventResult</ID>
+    <ID>ReturnCount:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailTabNavigationKey: EventResult</ID>
+    <ID>ReturnCount:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:DetailSimilarTab.kt:internal fun renderSimilarTab: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:DetailTabHandlers.kt:internal fun MeloScreen.handleInfoTabKey: EventResult</ID>
+    <ID>ReturnCount:DetailTabHandlers.kt:internal fun MeloScreen.handleLyricsTabKey: EventResult</ID>
+    <ID>ReturnCount:DetailTabHandlers.kt:internal fun MeloScreen.handleSimilarTabKey: EventResult</ID>
+    <ID>ReturnCount:DirectoryPickerState.kt:fun DirectoryPickerState.confirmDelete: DirectoryPickerState</ID>
+    <ID>ReturnCount:DirectoryPickerState.kt:fun DirectoryPickerState.toggleMark: DirectoryPickerState</ID>
+    <ID>ReturnCount:DownloadCommand.kt:DownloadCommand$private fun &lt;T&gt; selectInteractive: T?</ID>
+    <ID>ReturnCount:EntityDetailArtist.kt:internal fun renderArtistDetail: Element</ID>
+    <ID>ReturnCount:EntityDetailKeysHandlers.kt:internal fun MeloScreen.handleEntityDetailKey: EventResult</ID>
+    <ID>ReturnCount:EntityDetailPanel.kt:fun buildEntityDetailPanel: Element</ID>
+    <ID>ReturnCount:EntityDetailTracks.kt:internal fun renderTracksDetail: Element</ID>
+    <ID>ReturnCount:EntityTracksKeyHandlers.kt:internal fun MeloScreen.handleEntityTracksKey: EventResult</ID>
+    <ID>ReturnCount:EnvConfig.kt:fun resolveEnv: String?</ID>
+    <ID>ReturnCount:HomeFeed.kt:internal fun renderFeedTab: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:HomeFeedKeyHandlers.kt:internal fun MeloScreen.handleHomeFeedKey: EventResult</ID>
+    <ID>ReturnCount:HomeFeedKeyHandlers.kt:private fun MeloScreen.handleHomeFeedChipsKey: EventResult</ID>
+    <ID>ReturnCount:HomeFeedKeyHandlers.kt:private fun MeloScreen.handleHomeFeedItemsKey: EventResult</ID>
+    <ID>ReturnCount:HomeFeedKeyHandlers.kt:private fun MeloScreen.handleHomeFeedSectionsKey: EventResult</ID>
+    <ID>ReturnCount:LibraryFavorites.kt:internal fun buildFavoriteSongsContent: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:LibraryLocal.kt:internal fun buildLocalContent: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:LibraryPlaylists.kt:internal fun buildPlaylistDetailContent: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:LibraryPlaylists.kt:internal fun buildPlaylistsContent: StyledElement&lt;*&gt;</ID>
+    <ID>ReturnCount:LocalIpcClient.kt:LocalIpcClient$fun sendCommand: String</ID>
+    <ID>ReturnCount:LyricsHandlers.kt:internal fun MeloScreen.handleLanguagePickerKey: EventResult</ID>
+    <ID>ReturnCount:LyricsHandlers.kt:internal fun MeloScreen.translateLyricsForTrack</ID>
+    <ID>ReturnCount:MeloScreenFavoritesHandlers.kt:internal fun MeloScreen.handleFavoritesKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoriteEntitiesKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoriteSongsKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoritesTypingKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenFeed.kt:internal fun MeloScreen.enrichActiveSectionTracks</ID>
+    <ID>ReturnCount:MeloScreenFeed.kt:internal fun MeloScreen.loadMoreHomeSections</ID>
+    <ID>ReturnCount:MeloScreenHomeHandlers.kt:internal fun MeloScreen.handleHomeKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenHomeHandlers.kt:private fun MeloScreen.handleHomeCursorTrackListKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenKeyHandlers.kt:internal fun KeyEvent.matchesAction: Boolean</ID>
+    <ID>ReturnCount:MeloScreenKeyHandlers.kt:internal fun MeloScreen.handleGlobalShortcuts: EventResult</ID>
+    <ID>ReturnCount:MeloScreenKeyHandlers.kt:internal fun MeloScreen.handleSidebarKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenKeyHandlers.kt:internal fun MeloScreen.isTyping: Boolean</ID>
+    <ID>ReturnCount:MeloScreenLibraryHandlers.kt:internal fun MeloScreen.handleLibraryKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenLibraryHandlers.kt:internal fun MeloScreen.handleLocalLibraryKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenLibraryHandlers.kt:internal fun MeloScreen.handleTrackListSelectionActions: EventResult</ID>
+    <ID>ReturnCount:MeloScreenLibraryHandlers.kt:private fun MeloScreen.handleLocalNavigationKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenLibraryHandlers.kt:private fun MeloScreen.handleLocalTypingKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenOfflineHandlers.kt:internal fun MeloScreen.handleOfflineKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistDetailHandlers.kt:internal fun MeloScreen.handlePlaylistDetailKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistDetailHandlers.kt:internal fun MeloScreen.reorderPlaylistTrack</ID>
+    <ID>ReturnCount:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailNavigationKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailSelectionActions: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistDetailHandlers.kt:private fun MeloScreen.handlePlaylistDetailTypingKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistHandlers.kt:internal fun MeloScreen.handlePlaylistsKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistHandlers.kt:private fun MeloScreen.handlePlaylistListActionsKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistHandlers.kt:private fun MeloScreen.handlePlaylistListNavigationKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistHandlers.kt:private fun MeloScreen.handlePlaylistTypingKey: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistOverlayHandlers.kt:internal fun MeloScreen.handlePlaylistInput: EventResult</ID>
+    <ID>ReturnCount:MeloScreenPlaylistOverlayHandlers.kt:internal fun MeloScreen.handlePlaylistPicker: EventResult</ID>
+    <ID>ReturnCount:MeloScreenStatsHandlers.kt:internal fun MeloScreen.handleStatsKey: EventResult</ID>
+    <ID>ReturnCount:MeloState.kt:fun MeloState.isPlayable: Boolean</ID>
+    <ID>ReturnCount:MeloStateLibrary.kt:fun MeloState.isFavoriteEntity: Boolean</ID>
+    <ID>ReturnCount:NowPlayingScreen.kt:private fun buildLyricsPanel: Element</ID>
+    <ID>ReturnCount:PactlVolumeController.kt:PactlVolumeController$internal fun setSinkVolume: Boolean</ID>
+    <ID>ReturnCount:PlayCommand.kt:PlayCommand$private fun &lt;T&gt; selectInteractive: T?</ID>
+    <ID>ReturnCount:PlaybackHandlers.kt:internal fun MeloScreen.handleNowPlayingKey: EventResult</ID>
+    <ID>ReturnCount:PlaybackHandlers.kt:internal fun MeloScreen.handlePlayerBarKey: EventResult</ID>
+    <ID>ReturnCount:PlaybackHandlers.kt:internal fun MeloScreen.playList</ID>
+    <ID>ReturnCount:PlaylistCommand.kt:LibraryCommand$protected fun &lt;T&gt; selectInteractive: T?</ID>
+    <ID>ReturnCount:PlaylistCommand.kt:LibraryCommand$protected fun findPlaylist: Playlist?</ID>
+    <ID>ReturnCount:QueueCommand.kt:QueueAddCommand$private fun &lt;T&gt; selectInteractive: T?</ID>
+    <ID>ReturnCount:QueueHandlers.kt:internal fun MeloScreen.handleQueueKey: EventResult</ID>
+    <ID>ReturnCount:SearchResultsKeyHandlers.kt:internal fun MeloScreen.handleResultsKey: EventResult</ID>
+    <ID>ReturnCount:SearchResultsKeyHandlers.kt:private fun MeloScreen.handleResultsActionKey: EventResult</ID>
+    <ID>ReturnCount:SearchResultsKeyHandlers.kt:private fun MeloScreen.handleResultsMovementKey: EventResult</ID>
+    <ID>ReturnCount:SearchSuggestionsHandlers.kt:internal fun MeloScreen.handleSearchBarKey: EventResult</ID>
+    <ID>ReturnCount:SettingsDirectoryHandlers.kt:internal fun MeloScreen.handleDirectoryPicker: EventResult</ID>
+    <ID>ReturnCount:SettingsHandlers.kt:fun MeloScreen.handleSettingsKey: EventResult</ID>
+    <ID>ReturnCount:TrackOptionsHandlers.kt:internal fun MeloScreen.handleTrackOptionsKey: EventResult</ID>
+    <ID>ReturnCount:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
+    <ID>TooGenericExceptionCaught:AudioPlayer.kt:AudioPlayer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DaemonCommand.kt:DaemonStartCommand$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:EntityDetailsHandlers.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LocalIpcClient.kt:LocalIpcClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LocalIpcServer.kt:LocalIpcServer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LyricsCommand.kt:LyricsCommand$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MeloScreenFeed.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PlayActionHandler.kt:PlayActionHandler$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:QueueCommand.kt:QueueListCommand$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SearchExecutionHandlers.kt:e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StatusCommand.kt:StatusCommand$e: Exception</ID>
+    <ID>TooManyFunctions:AudioPlayer.kt:AudioPlayer : MeloPlayer</ID>
+    <ID>TooManyFunctions:DirectoryPickerState.kt:com.github.adriianh.cli.tui.component.DirectoryPickerState.kt</ID>
+    <ID>TooManyFunctions:MeloScreenKeyHandlers.kt:com.github.adriianh.cli.tui.handler.MeloScreenKeyHandlers.kt</ID>
+    <ID>TooManyFunctions:MeloScreenLists.kt:com.github.adriianh.cli.tui.MeloScreenLists.kt</ID>
+    <ID>UnusedParameter:SearchBar.kt:state: ScreenState.Search?</ID>
+    <ID>WildcardImport:MeloScreenDiscoveryHandlers.kt:import kotlinx.coroutines.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:BrowserAuthManager.jvm.kt:BrowserAuthManager$private fun findChromiumSession: String?</ID>
+    <ID>CyclomaticComplexMethod:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$override suspend fun syncWithFileSystem</ID>
+    <ID>CyclomaticComplexMethod:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$override suspend fun updateTrackMetadata</ID>
+    <ID>CyclomaticComplexMethod:YtDlpAudioProvider.kt:YtDlpAudioProvider$override suspend fun downloadAudio: String?</ID>
+    <ID>LongMethod:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$override suspend fun syncWithFileSystem</ID>
+    <ID>LongMethod:YtDlpAudioProvider.kt:YtDlpAudioProvider$override suspend fun downloadAudio: String?</ID>
+    <ID>LoopWithTooManyJumpStatements:BrowserAuthManager.jvm.kt:BrowserAuthManager$for</ID>
+    <ID>LoopWithTooManyJumpStatements:BrowserAuthManager.jvm.kt:BrowserAuthManager$while</ID>
+    <ID>MaxLineLength:BrowserAuthManager.jvm.kt:BrowserAuthManager$log.fine("Found valid session in ${profile.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")</ID>
+    <ID>MaxLineLength:BrowserAuthManager.jvm.kt:BrowserAuthManager$log.fine("Found valid session in ${profileDir.absolutePath} with ${cookies.size} cookies: ${cookies.keys}")</ID>
+    <ID>MaxLineLength:BrowserAuthManager.jvm.kt:BrowserAuthManager$log.fine("Profile ${profileDir.name} in ${root.name} did not contain a complete session (found ${cookies?.size ?: 0} cookies)")</ID>
+    <ID>MaxLineLength:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$file.exists() &amp;&amp; (file.length() &lt;= 64 * 1024 || track.downloadStatus == DownloadStatus.DOWNLOADING)</ID>
+    <ID>MaxLineLength:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$file.exists() &amp;&amp; file.length() &gt; 64 * 1024 &amp;&amp; track.downloadStatus != DownloadStatus.COMPLETED &amp;&amp; track.downloadStatus != DownloadStatus.DOWNLOADING</ID>
+    <ID>MaxLineLength:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$file.exists() &amp;&amp; file.length() &gt; 64 * 1024 &amp;&amp; track.downloadStatus == DownloadStatus.COMPLETED -&gt; track</ID>
+    <ID>MaxLineLength:OfflineRepositoryImpl.kt:OfflineRepositoryImpl$it.downloadType != DownloadType.MANUAL &amp;&amp; it.downloadStatus == DownloadStatus.COMPLETED</ID>
+    <ID>ReturnCount:CookieCrypto.kt:CookieCrypto$fun decryptChromiumCookie: String?</ID>
+    <ID>ReturnCount:CookieCrypto.kt:CookieCrypto$private fun getWindowsAesKey: ByteArray?</ID>
+    <ID>ReturnCount:YtDlpBootstrap.kt:YtDlpBootstrap$fun resolve: String</ID>
+    <ID>TooGenericExceptionCaught:BrowserAuthManager.jvm.kt:BrowserAuthManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CookieCrypto.kt:CookieCrypto$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:YtDlpBootstrap.kt:YtDlpBootstrap$e: Exception</ID>
+    <ID>TooManyFunctions:BrowserAuthManager.jvm.kt:BrowserAuthManager</ID>
+    <ID>TooManyFunctions:OfflineRepositoryImpl.kt:OfflineRepositoryImpl : OfflineRepository</ID>
+  </CurrentIssues>
+</SmellBaseline>

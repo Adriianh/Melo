@@ -1,0 +1,160 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:Runs.kt:lower.endsWith("plays") || lower.endsWith("play") || lower.endsWith("views") || lower.endsWith("view") || lower.endsWith("reproducciones") || lower.endsWith("visualizaciones") || lower.endsWith("escuchas") || lower.endsWith("oyentes") || lower.endsWith("vistas") || lower.contains("de reproducciones") || lower.contains("de visualizaciones")</ID>
+    <ID>ComplexCondition:Runs.kt:name.isNotEmpty() &amp;&amp; name != "•" &amp;&amp; name != "&amp;" &amp;&amp; name != "," &amp;&amp; name != "/" &amp;&amp; name != "|"</ID>
+    <ID>ComplexCondition:YouTube.kt:YouTube$browseId.startsWith("VL") || (!browseId.startsWith("OLAK") &amp;&amp; !browseId.startsWith( "PL" ) &amp;&amp; !browseId.startsWith("RD"))</ID>
+    <ID>ComplexCondition:YouTube.kt:YouTube$clean == "•" || clean == "·" || clean == "|" || clean == "-"</ID>
+    <ID>ConstructorParameterNaming:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer.FlexColumn$@SerialName("musicResponsiveListItemFixedColumnRenderer") private val _musicResponsiveListItemFixedColumnRenderer: MusicResponsiveListItemFlexColumnRenderer? = null</ID>
+    <ID>ConstructorParameterNaming:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer.FlexColumn$@SerialName("musicResponsiveListItemFlexColumnRenderer") private val _musicResponsiveListItemFlexColumnRenderer: MusicResponsiveListItemFlexColumnRenderer? = null</ID>
+    <ID>CyclomaticComplexMethod:AlbumPage.kt:AlbumPage.Companion$fun getSong: SongItem?</ID>
+    <ID>CyclomaticComplexMethod:ArtistItemsPage.kt:ArtistItemsPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:ArtistPage.kt:ArtistPage.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:HomePage.kt:HomePage.Section.Companion$private fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:HomePage.kt:HomePage.Section.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:LibraryPage.kt:LibraryPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:RelatedPage.kt:RelatedPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:Runs.kt:fun List&lt;Run&gt;.extractArtists: List&lt;Artist&gt;</ID>
+    <ID>CyclomaticComplexMethod:Runs.kt:fun String.isInvalidArtistName: Boolean</ID>
+    <ID>CyclomaticComplexMethod:SearchPage.kt:SearchPage$fun toYTItem: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:SearchSuggestionPage.kt:SearchSuggestionPage$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicCardShelfRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>CyclomaticComplexMethod:YouTube.kt:YouTube$suspend fun album: Result&lt;AlbumPage&gt;</ID>
+    <ID>CyclomaticComplexMethod:YouTube.kt:YouTube$suspend fun playlist: Result&lt;PlaylistPage&gt;</ID>
+    <ID>CyclomaticComplexMethod:YouTube.kt:YouTube$suspend fun searchSummary: Result&lt;SearchSummaryPage&gt;</ID>
+    <ID>ExplicitItLambdaParameter:YouTube.kt:YouTube${ it -&gt; if (it.musicCardShelfRenderer != null) { val cardShelf = it.musicCardShelfRenderer val heroItem = SearchSummaryPage.fromMusicCardShelfRenderer(cardShelf) val shelfArtist: Artist? = when (heroItem) { is ArtistItem -&gt; Artist(name = heroItem.title, id = heroItem.id) is AlbumItem -&gt; heroItem.artists?.firstOrNull() is SongItem -&gt; heroItem.artists?.firstOrNull() else -&gt; cardShelf.title.runs?.firstOrNull()?.text?.let { name -&gt; Artist(name = name, id = cardShelf.onTap.browseEndpoint?.browseId) } } SearchSummary( title = cardShelf.header?.musicCardShelfHeaderBasicRenderer?.title?.runs?.firstOrNull()?.text ?: YoutubeConstants.DEFAULT_OTHER_RESULTS, items = listOfNotNull(heroItem) .plus( cardShelf.contents ?.mapNotNull { it.musicResponsiveListItemRenderer } ?.mapNotNull { SearchSummaryPage.fromMusicResponsiveListItemRenderer( it, defaultArtist = shelfArtist ) } .orEmpty() ) .distinctBy { it.id } .ifEmpty { null } ?: return@mapNotNull null ) } else if (it.musicShelfRenderer != null) { SearchSummary( title = it.musicShelfRenderer.title?.runs?.firstOrNull()?.text ?: YoutubeConstants.DEFAULT_OTHER_RESULTS, items = it.musicShelfRenderer.contents?.getItems() ?.mapNotNull { SearchSummaryPage.fromMusicResponsiveListItemRenderer(it) } ?.distinctBy { it.id } ?.ifEmpty { null } ?: return@mapNotNull null ) } else { null } }</ID>
+    <ID>LargeClass:YouTube.kt:YouTube</ID>
+    <ID>LongMethod:AlbumPage.kt:AlbumPage.Companion$fun getSong: SongItem?</ID>
+    <ID>LongMethod:ArtistItemsPage.kt:ArtistItemsPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>LongMethod:ArtistPage.kt:ArtistPage.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>LongMethod:HomePage.kt:HomePage.Section.Companion$private fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>LongMethod:HomePage.kt:HomePage.Section.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>LongMethod:RelatedPage.kt:RelatedPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>LongMethod:SearchPage.kt:SearchPage$fun toYTItem: YTItem?</ID>
+    <ID>LongMethod:SearchSuggestionPage.kt:SearchSuggestionPage$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>LongMethod:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicCardShelfRenderer: YTItem?</ID>
+    <ID>LongMethod:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>LongMethod:YouTube.kt:YouTube$suspend fun album: Result&lt;AlbumPage&gt;</ID>
+    <ID>LongMethod:YouTube.kt:YouTube$suspend fun browse: Result&lt;BrowseResult&gt;</ID>
+    <ID>LongMethod:YouTube.kt:YouTube$suspend fun playlist: Result&lt;PlaylistPage&gt;</ID>
+    <ID>LongMethod:YouTube.kt:YouTube$suspend fun searchSummary: Result&lt;SearchSummaryPage&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:Utils.kt:while</ID>
+    <ID>MaxLineLength:ArtistItemsPage.kt:ArtistItemsPage.Companion$endpoint = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint</ID>
+    <ID>MaxLineLength:ArtistPage.kt:ArtistPage.Companion$content.musicCarouselShelfRenderer != null -&gt; fromMusicCarouselShelfRenderer(content.musicCarouselShelfRenderer)</ID>
+    <ID>MaxLineLength:ArtistPage.kt:ArtistPage.Companion$moreEndpoint = renderer.header.musicCarouselShelfBasicHeaderRenderer.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint</ID>
+    <ID>MaxLineLength:ArtistPage.kt:ArtistPage.Companion$}</ID>
+    <ID>MaxLineLength:Endpoint.kt:BrowseEndpoint$browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK</ID>
+    <ID>MaxLineLength:Endpoint.kt:BrowseEndpoint$get</ID>
+    <ID>MaxLineLength:Endpoint.kt:BrowseEndpoint$get() = browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ARTIST</ID>
+    <ID>MaxLineLength:Endpoint.kt:BrowseEndpoint$get() = browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_PLAYLIST</ID>
+    <ID>MaxLineLength:HistoryPage.kt:HistoryPage.Companion$album</ID>
+    <ID>MaxLineLength:HistoryPage.kt:HistoryPage.Companion$artists</ID>
+    <ID>MaxLineLength:HistoryPage.kt:HistoryPage.Companion$fun</ID>
+    <ID>MaxLineLength:HomePage.kt:HomePage.Section.Companion$?:</ID>
+    <ID>MaxLineLength:HomePage.kt:HomePage.Section.Companion$endpoint = renderer.header.musicCarouselShelfBasicHeaderRenderer.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint</ID>
+    <ID>MaxLineLength:HomePage.kt:HomePage.Section.Companion$sectionType = if (renderer.contents.any { it.musicResponsiveListItemRenderer != null }) SectionType.GRID else SectionType.LIST</ID>
+    <ID>MaxLineLength:HomePage.kt:HomePage.Section.Companion$thumbnail = renderer.header.musicCarouselShelfBasicHeaderRenderer.thumbnail?.musicThumbnailRenderer?.getThumbnailUrl()</ID>
+    <ID>MaxLineLength:LibraryPage.kt:LibraryPage.Companion$?:</ID>
+    <ID>MaxLineLength:LibraryPage.kt:LibraryPage.Companion$album</ID>
+    <ID>MaxLineLength:LibraryPage.kt:LibraryPage.Companion$artists</ID>
+    <ID>MaxLineLength:LibraryPage.kt:LibraryPage.Companion$endpoint = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint</ID>
+    <ID>MaxLineLength:LibraryPage.kt:LibraryPage.Companion$title</ID>
+    <ID>MaxLineLength:MoodAndGenres.kt:MoodAndGenres.Companion$title = content.gridRenderer?.header?.gridHeaderRenderer?.title?.runs?.firstOrNull()?.text ?: return null</ID>
+    <ID>MaxLineLength:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer$get</ID>
+    <ID>MaxLineLength:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer$get() = navigationEndpoint == null || navigationEndpoint.watchEndpoint != null || navigationEndpoint.watchPlaylistEndpoint != null</ID>
+    <ID>MaxLineLength:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer$get() = navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ARTIST</ID>
+    <ID>MaxLineLength:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer$get() = navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_PLAYLIST</ID>
+    <ID>MaxLineLength:MusicResponsiveListItemRenderer.kt:MusicResponsiveListItemRenderer$navigationEndpoint?.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK</ID>
+    <ID>MaxLineLength:MusicTwoRowItemRenderer.kt:MusicTwoRowItemRenderer$get</ID>
+    <ID>MaxLineLength:MusicTwoRowItemRenderer.kt:MusicTwoRowItemRenderer$get() = navigationEndpoint.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_ARTIST</ID>
+    <ID>MaxLineLength:MusicTwoRowItemRenderer.kt:MusicTwoRowItemRenderer$get() = navigationEndpoint.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_PLAYLIST</ID>
+    <ID>MaxLineLength:MusicTwoRowItemRenderer.kt:MusicTwoRowItemRenderer$navigationEndpoint.browseEndpoint?.browseEndpointContextSupportedConfigs?.browseEndpointContextMusicConfig?.pageType == MUSIC_PAGE_TYPE_AUDIOBOOK</ID>
+    <ID>MaxLineLength:PageHelper.kt:PageHelper$?:</ID>
+    <ID>MaxLineLength:PageHelper.kt:PageHelper$val</ID>
+    <ID>MaxLineLength:PlaylistPage.kt:PlaylistPage.Companion$?:</ID>
+    <ID>MaxLineLength:PlaylistPage.kt:PlaylistPage.Companion$album</ID>
+    <ID>MaxLineLength:PlaylistPage.kt:PlaylistPage.Companion$endpoint = renderer.overlay?.musicItemThumbnailOverlayRenderer?.content?.musicPlayButtonRenderer?.playNavigationEndpoint?.watchEndpoint</ID>
+    <ID>MaxLineLength:RelatedPage.kt:RelatedPage.Companion$album</ID>
+    <ID>MaxLineLength:RelatedPage.kt:RelatedPage.Companion$playEndpoint</ID>
+    <ID>MaxLineLength:RelatedPage.kt:RelatedPage.Companion$renderer.flexColumns.getOrNull(1)?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.splitBySeparator()</ID>
+    <ID>MaxLineLength:RelatedPage.kt:RelatedPage.Companion$title</ID>
+    <ID>MaxLineLength:SearchPage.kt:SearchPage$?:</ID>
+    <ID>MaxLineLength:SearchSuggestionPage.kt:SearchSuggestionPage$album</ID>
+    <ID>MaxLineLength:SearchSuggestionPage.kt:SearchSuggestionPage$artists</ID>
+    <ID>MaxLineLength:SearchSuggestionPage.kt:SearchSuggestionPage$title = renderer.flexColumns.firstOrNull()?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.firstOrNull()?.text ?: return null</ID>
+    <ID>MaxLineLength:SearchSummaryPage.kt:SearchSummaryPage.Companion$?:</ID>
+    <ID>MaxLineLength:SearchSummaryPage.kt:SearchSummaryPage.Companion$playlistId</ID>
+    <ID>MaxLineLength:SearchSummaryPage.kt:SearchSummaryPage.Companion$title</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$?.</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$?:</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$channelId = response.header?.musicImmersiveHeaderRenderer?.subscriptionButton?.subscribeButtonRenderer?.channelId</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$continuationResponse.continuationContents?.musicPlaylistShelfContinuation?.continuations?.getContinuation()</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$if (clean.matches(Regex("^[0-9]+(\\s*(canciones|canción|songs|song|tracks|track|videos|video|vistas|views|min|horas|hrs|hr|s))?$"))) return false</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$initialResponse?.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$initialResponse?.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$is MusicTwoRowItemRenderer</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$it.musicCarouselShelfRenderer?.header?.musicCarouselShelfBasicHeaderRenderer?.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint?.browseId == "FEmusic_moods_and_genres"</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$it.musicCarouselShelfRenderer?.header?.musicCarouselShelfBasicHeaderRenderer?.moreContentButton?.buttonRenderer?.navigationEndpoint?.browseEndpoint?.browseId == "FEmusic_new_releases_albums"</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$lyricsEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$monthlyListenerCount = response.header?.musicImmersiveHeaderRenderer?.monthlyListenerCount?.runs?.firstOrNull()?.text</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$otherVersions</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$playlistPanelRenderer.contents.lastOrNull()?.automixPreviewVideoRenderer?.content?.automixPlaylistVideoRenderer?.navigationEndpoint?.watchPlaylistEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$queries</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$radioEndpoint = response.header?.musicImmersiveHeaderRenderer?.startRadioButton?.buttonRenderer?.navigationEndpoint?.watchEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$relatedEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.actions?.firstOrNull()?.updateEngagementPanelAction?.content?.transcriptRenderer?.body?.transcriptBodyRenderer?.cueGroups</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.contents.singleColumnMusicWatchNextResultsRenderer.tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content?.musicQueueRenderer?.header?.musicQueueHeaderRenderer?.subtitle?.runs?.firstOrNull()?.text</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents!!</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.contents?.singleColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents?.firstOrNull()?.gridRenderer?.items</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$response.contents?.twoColumnBrowseResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$shuffleEndpoint = response.header?.musicImmersiveHeaderRenderer?.playButton?.buttonRenderer?.navigationEndpoint?.watchEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$shuffleEndpoint = responsiveHeader?.buttons?.lastOrNull()?.menuRenderer?.items?.firstOrNull()?.menuNavigationItemRenderer?.navigationEndpoint?.watchPlaylistEndpoint</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$songsContinuation</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$thumbnail</ID>
+    <ID>MaxLineLength:YouTube.kt:YouTube$title = musicCarouselShelfRenderer.header?.musicCarouselShelfBasicHeaderRenderer?.title?.runs?.firstOrNull()?.text.orEmpty()</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "Mozilla/5.0 (PlayStation; PlayStation 4/12.02) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "Mozilla/5.0(SMART-TV; Linux; Tizen 4.0.0.2) AppleWebkit/605.1.15 (KHTML, like Gecko) SamsungBrowser/9.2 TV Safari/605.1.15"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "com.google.android.apps.youtube.creator/23.47.101 (Linux; U; Android 15; en_US; Pixel 9 Pro Fold; Build/AP3A.241005.015.A2; Cronet/132.0.6779.0)"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "com.google.android.apps.youtube.music/7.21.50 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UD1A.231105.004; Cronet/132.0.6808.3) gzip"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "com.google.android.apps.youtube.vr.oculus/1.43.32 (Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1; Cronet/107.0.5284.2)"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "com.google.android.apps.youtube.vr.oculus/1.61.48 (Linux; U; Android 12; en_US; Oculus Quest 3; Build/SQ3A.220605.009.A1; Cronet/132.0.6808.3)"</ID>
+    <ID>MaxLineLength:YouTubeClient.kt:YouTubeClient.Companion$userAgent = "com.google.android.apps.youtube.vr.oculus/1.61.48 (Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1; Cronet/132.0.6808.3)"</ID>
+    <ID>NestedBlockDepth:Runs.kt:fun List&lt;Run&gt;.extractDuration: Int?</ID>
+    <ID>ReturnCount:AlbumPage.kt:AlbumPage.Companion$fun getSong: SongItem?</ID>
+    <ID>ReturnCount:ArtistItemsPage.kt:ArtistItemsPage.Companion$fun fromMusicResponsiveListItemRenderer: SongItem?</ID>
+    <ID>ReturnCount:ArtistItemsPage.kt:ArtistItemsPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:ArtistPage.kt:ArtistPage.Companion$private fun fromMusicCarouselShelfRenderer: ArtistSection?</ID>
+    <ID>ReturnCount:ArtistPage.kt:ArtistPage.Companion$private fun fromMusicResponsiveListItemRenderer: SongItem?</ID>
+    <ID>ReturnCount:ArtistPage.kt:ArtistPage.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:HistoryPage.kt:HistoryPage.Companion$private fun fromMusicResponsiveListItemRenderer: SongItem?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$fun fromGridRenderer: Section?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$fun fromMusicCarouselShelfRenderer: Section?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$fun fromMusicShelfRenderer: Section?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$fun fromMusicTasteBuilderShelfRenderer: Section?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$private fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:HomePage.kt:HomePage.Section.Companion$private fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:LibraryPage.kt:LibraryPage.Companion$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:LibraryPage.kt:LibraryPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:MoodAndGenres.kt:MoodAndGenres.Companion$fun fromMusicNavigationButtonRenderer: Item?</ID>
+    <ID>ReturnCount:MusicResponsiveListItemRenderer.kt:fun MusicResponsiveListItemRenderer.extractDuration: Int?</ID>
+    <ID>ReturnCount:NewReleaseAlbumPage.kt:NewReleaseAlbumPage$fun fromMusicTwoRowItemRenderer: AlbumItem?</ID>
+    <ID>ReturnCount:NextPage.kt:NextPage$fun fromPlaylistPanelVideoRenderer: SongItem?</ID>
+    <ID>ReturnCount:PlaylistPage.kt:PlaylistPage.Companion$fun fromMusicResponsiveListItemRenderer: SongItem?</ID>
+    <ID>ReturnCount:RelatedPage.kt:RelatedPage.Companion$fun fromMusicResponsiveListItemRenderer: SongItem?</ID>
+    <ID>ReturnCount:RelatedPage.kt:RelatedPage.Companion$fun fromMusicTwoRowItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:Runs.kt:fun List&lt;Run&gt;.extractDuration: Int?</ID>
+    <ID>ReturnCount:Runs.kt:fun String.isInvalidArtistName: Boolean</ID>
+    <ID>ReturnCount:SearchPage.kt:SearchPage$fun toYTItem: YTItem?</ID>
+    <ID>ReturnCount:SearchSuggestionPage.kt:SearchSuggestionPage$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicCardShelfRenderer: YTItem?</ID>
+    <ID>ReturnCount:SearchSummaryPage.kt:SearchSummaryPage.Companion$fun fromMusicResponsiveListItemRenderer: YTItem?</ID>
+    <ID>ReturnCount:Utils.kt:fun String.parseTime: Int?</ID>
+    <ID>ReturnCount:YouTube.kt:YouTube$private fun isLikelyAuthorName: Boolean</ID>
+    <ID>TooManyFunctions:InnerTube.kt:InnerTube</ID>
+    <ID>TooManyFunctions:YouTube.kt:YouTube</ID>
+  </CurrentIssues>
+</SmellBaseline>

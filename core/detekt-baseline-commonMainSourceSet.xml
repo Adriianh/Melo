@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$!track.artworkUrl.isNullOrBlank() &amp;&amp; track.artist != "Artista Desconocido" &amp;&amp; track.artist != "Unknown Artist" &amp;&amp; track.album.isNotBlank()</ID>
+    <ID>CyclomaticComplexMethod:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$suspend operator fun invoke: List&lt;Track&gt;</ID>
+    <ID>CyclomaticComplexMethod:GetEntityDetailsUseCase.kt:GetEntityDetailsUseCase$suspend operator fun invoke: SearchResult</ID>
+    <ID>DestructuringDeclarationWithTooManyEntries:LrcParser.kt:LrcParser$val (mm, ss, cs, text) = match.destructured</ID>
+    <ID>EmptyFunctionBlock:MediaSessionManager.kt:NoOpMediaSessionManager${}</ID>
+    <ID>MatchingDeclarationName:DispatcherProvider.kt:MeloDispatchers</ID>
+    <ID>MaxLineLength:AudioProvider.kt:AudioProvider$suspend fun downloadAudio: String?</ID>
+    <ID>MaxLineLength:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$artist = if (track.artist == "Artista Desconocido" || track.artist == "Unknown Artist") bestMatch.artist else track.artist</ID>
+    <ID>MaxLineLength:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$if</ID>
+    <ID>MaxLineLength:GetEntityDetailsUseCase.kt:GetEntityDetailsUseCase$author = if (details.author == "Unknown" &amp;&amp; entity.author.isNotBlank()) entity.author else details.author</ID>
+    <ID>MaxLineLength:HistoryEntry.kt:(!remoteRawSourceId.isNullOrBlank() &amp;&amp; (remoteRawSourceId in localNormalizedIds || remoteRawSourceId in localSourceIds))</ID>
+    <ID>ReturnCount:GetEntityDetailsUseCase.kt:GetEntityDetailsUseCase$suspend operator fun invoke: SearchResult</ID>
+    <ID>ReturnCount:HistoryEntry.kt:fun mergeHistoryEntries: List&lt;HistoryEntry&gt;</ID>
+    <ID>ReturnCount:LrcParser.kt:LrcParser$private fun parseLine: SyncedLine?</ID>
+    <ID>ThrowsCount:ResilienceUtils.kt:suspend fun &lt;T&gt; retryWithBackoff: T</ID>
+    <ID>TooGenericExceptionCaught:ResilienceUtils.kt:CircuitBreaker$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ResilienceUtils.kt:e: Throwable</ID>
+    <ID>TooManyFunctions:MusicProvider.kt:MusicProvider</ID>
+    <ID>TooManyFunctions:MusicRepository.kt:MusicRepository</ID>
+    <ID>TooManyFunctions:PlatformFileSystem.kt:PlatformFileSystem</ID>
+    <ID>TooManyFunctions:PlaybackManager.kt:PlaybackManager</ID>
+    <ID>WildcardImport:PlaybackInteractors.kt:import com.github.adriianh.core.domain.usecase.playback.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
