@@ -11,8 +11,15 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  # Serialize publishes so concurrent runs never race updating the same
+  # release/tag (nightly on master, official on v*).
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  build:
+  # ─── Build TUI CLI (GraalVM native) ───────────────────────────────────────
+  build-tui:
     strategy:
       fail-fast: false
       matrix:
@@ -68,8 +75,107 @@ jobs:
           name: melo-${{ matrix.label }}
           path: ${{ matrix.artifact }}
 
+  # ─── Build Desktop GUI installers ─────────────────────────────────────────
+  # Each OS runner builds only the formats supported by its platform
+  # (jpackage cannot cross-compile).
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            tasks: "packageDeb packageLinuxTarGz packageAppImage"
+            artifacts: |
+              composeApp/build/compose/binaries/main/deb/*.deb
+              composeApp/build/compose/binaries/main/tar/*.tar.gz
+              composeApp/build/compose/binaries/main/appimage/output/*.AppImage
+            label: linux
+
+          - os: macos-latest
+            tasks: "packageDmg"
+            artifacts: "composeApp/build/compose/binaries/main/dmg/*.dmg"
+            label: macos
+
+          - os: windows-latest
+            tasks: "packageMsi packageInnoSetup"
+            artifacts: |
+              composeApp/build/compose/binaries/main/msi/*.msi
+              packaging/windows/Output/*.exe
+            label: windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Inno Setup
+        if: matrix.os == 'windows-latest'
+        run: choco install innosetup -y
+        shell: bash
+
+      - name: Run JVM tests
+        run: ./gradlew :composeApp:jvmTest
+
+      - name: Build desktop installers
+        run: |
+          for task in ${{ matrix.tasks }}; do
+            ./gradlew :composeApp:$task
+          done
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: melo-desktop-${{ matrix.label }}
+          path: ${{ matrix.artifacts }}
+
+  # ─── Build Android APK ────────────────────────────────────────────────────
+  # No secrets needed: the release signing config falls back to the debug
+  # keystore, and the runner uses the preinstalled Android SDK.
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Create debug keystore if not present
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Build release APK
+        run: ./gradlew :composeApp:assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: melo-android
+          path: composeApp/build/outputs/apk/release/*.apk
+
+  # ─── Create GitHub Release ────────────────────────────────────────────────
+  #   - push to master  -> update the "nightly" development prerelease
+  #   - tag v*           -> publish the official release
   release:
-    needs: build
+    needs: [ build-tui, build-desktop, build-android ]
     runs-on: ubuntu-latest
 
     steps:
@@ -81,13 +187,58 @@ jobs:
       - name: Prepare nightly assets
         if: startsWith(github.ref, 'refs/heads/master')
         run: |
+          set -euo pipefail
+
+          # Derive the app version from the built TUI artifact name.
+          tui_linux=$(find dist -name 'melo-*-linux.tar.gz' | head -n 1)
+          app_version=$(basename "$tui_linux" | sed -E 's/^melo-([0-9.]+)-linux\.tar\.gz$/\1/')
+          if [ -z "$app_version" ]; then
+            echo "::error::could not derive app version from TUI artifact"
+            exit 1
+          fi
+          echo "App version detected: $app_version"
+
           mkdir -p nightly_dist
-          win_zip=$(find dist/ -name "*windows.zip" | head -n 1)
-          if [ -n "$win_zip" ]; then cp "$win_zip" nightly_dist/melo-nightly-windows.zip; fi
-          linux_tar=$(find dist/ -name "*linux.tar.gz" | head -n 1)
-          if [ -n "$linux_tar" ]; then cp "$linux_tar" nightly_dist/melo-nightly-linux.tar.gz; fi
-          macos_tar=$(find dist/ -name "*macos.tar.gz" | head -n 1)
-          if [ -n "$macos_tar" ]; then cp "$macos_tar" nightly_dist/melo-nightly-macos.tar.gz; fi
+          find dist -type f | while read -r f; do
+            base=$(basename "$f")
+            # Script-compatible names (install.sh / install.ps1) must stay the same.
+            case "$base" in
+              melo-${app_version}-linux.tar.gz)  new="melo-nightly-linux.tar.gz"  ;;
+              melo-${app_version}-macos.tar.gz)  new="melo-nightly-macos.tar.gz"  ;;
+              melo-${app_version}-windows.zip)   new="melo-nightly-windows.zip"   ;;
+              composeApp-release.apk)            new="melo-nightly.apk"           ;;
+              *)                                 new=${base//${app_version}/nightly} ;;
+            esac
+            cp "$f" "nightly_dist/$new"
+          done
+
+          # Nightly release body: static header + dynamic asset list.
+          {
+            echo "Automated development build from commit \`$GITHUB_SHA\`."
+            echo
+            echo "> Nightly builds ship every push to \`master\`. They are development"
+            echo "> snapshots, not official releases."
+            echo
+            echo "### CLI (TUI)"
+            echo
+            echo "Install on Windows:"
+            echo '```powershell'
+            echo '$env:MELO_VERSION="nightly"; irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.ps1 | iex'
+            echo '```'
+            echo
+            echo "Install on Linux/macOS:"
+            echo '```bash'
+            echo 'curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly'
+            echo '```'
+            echo
+            echo "### Assets"
+            echo
+            for f in nightly_dist/*; do
+              name=$(basename "$f")
+              echo "- [$name](https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/$name)"
+            done
+          } > nightly_body.md
+
           ls -la nightly_dist/
 
       - name: Publish Nightly Release
@@ -97,18 +248,7 @@ jobs:
           tag_name: nightly
           target_commitish: ${{ github.sha }}
           name: "Melo Development Build (Nightly)"
-          body: |
-            Automated development build from commit ${{ github.sha }}.
-            
-            Install on Windows:
-            ```powershell
-            $env:MELO_VERSION="nightly"; irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.ps1 | iex
-            ```
-            
-            Install on Linux/macOS:
-            ```bash
-            curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly
-            ```
+          body_path: nightly_body.md
           prerelease: true
           make_latest: false
           files: nightly_dist/*
