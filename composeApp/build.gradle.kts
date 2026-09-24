@@ -10,6 +10,11 @@ plugins {
     id("buildsrc.convention.quality-gates")
 }
 
+// Single source of truth for the app version (stable default from gradle.properties,
+// overridden by CI for nightly builds). jpackage uses only the numeric base for MSI.
+val meloVersion: String = providers.gradleProperty("melo.version").getOrElse("2.1.5")
+val meloPackageVersion: String = meloVersion.substringBefore('-')
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -106,7 +111,7 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
         minSdk = 24
         targetSdk = 37
         versionCode = 8
-        versionName = "2.1.5"
+        versionName = meloVersion
     }
     packaging {
         jniLibs {
@@ -190,7 +195,7 @@ compose.desktop {
             )
 
             packageName = "Melo"
-            packageVersion = "2.1.5"
+            packageVersion = meloPackageVersion
             vendor = "Adriianh"
             description = "Melo"
             copyright = "© 2025 Adriianh. Licensed under GPLv3."

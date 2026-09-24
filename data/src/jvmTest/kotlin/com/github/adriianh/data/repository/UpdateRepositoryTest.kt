@@ -34,6 +34,23 @@ class UpdateRepositoryTest {
     }
 
     @Test
+    fun `isNewerVersion treats nightly suffix as its numeric base`() {
+        // A nightly build (2.1.5-nightly.<date>) is not newer than an official
+        // 2.1.5 release of the same base version.
+        assertFalse(UpdateRepositoryImpl.isNewerVersion("2.1.5", "2.1.5-nightly.20260923"))
+        // But it is newer than an older base, and older than a future one.
+        assertTrue(UpdateRepositoryImpl.isNewerVersion("2.1.5-nightly.20260923", "2.1.4"))
+        assertTrue(UpdateRepositoryImpl.isNewerVersion("2.1.6", "2.1.5-nightly.20260923"))
+        // A nightly is never "newer" than itself.
+        assertFalse(
+            UpdateRepositoryImpl.isNewerVersion(
+                "2.1.5-nightly.20260923",
+                "2.1.5-nightly.20260923"
+            )
+        )
+    }
+
+    @Test
     fun `checkForUpdate returns release when newer version exists`() = runTest {
         val mockJson = """
             {

@@ -1064,9 +1064,6 @@
         <error line="44" column="88" source="standard:function-signature" />
         <error line="57" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/util/MeloVersion.kt">
-        <error line="5" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/util/ResilienceUtils.kt">
         <error line="28" column="18" source="standard:trailing-comma-on-declaration-site" />
         <error line="36" column="37" source="standard:multiline-expression-wrapping" />
