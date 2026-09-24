@@ -45,6 +45,7 @@ import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.subcommands
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
@@ -53,10 +54,15 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
-class MeloCommand : CliktCommand(
-    name = "melo"
-), KoinComponent {
+class MeloCommand :
+    CliktCommand(
+        name = "melo",
+    ),
+    KoinComponent {
     init {
+        context {
+            helpFormatter = { MeloHelpFormatter(it) }
+        }
         subcommands(
             ConfigCommand(),
             SearchCommand(),
@@ -85,9 +91,32 @@ class MeloCommand : CliktCommand(
         )
     }
 
+    override fun aliases(): Map<String, List<String>> =
+        mapOf(
+            "p" to listOf("play"),
+            "dl" to listOf("download"),
+            "np" to listOf("status"),
+            "st" to listOf("status"),
+            "q" to listOf("queue"),
+            "cfg" to listOf("config"),
+            "previous" to listOf("prev"),
+        )
+
     override val invokeWithoutSubcommand: Boolean = true
 
     override fun help(context: Context): String = Messages.get("help.melo_command")
+
+    override fun helpEpilog(context: Context): String =
+        """
+            Examples:
+            melo play "Bohemian Rhapsody"
+            melo search "Radiohead" --format json
+            melo status
+            melo download "Daft Punk" --type album
+
+            Run 'melo <command> --help' for details on a specific command.
+            Run 'melo' without arguments to launch the interactive TUI.
+        """.trimIndent()
 
     override fun run() {
         if (currentContext.invokedSubcommand != null) return
@@ -131,7 +160,7 @@ class MeloCommand : CliktCommand(
                     audioProvider = audioProvider,
                     discordRpcManager = discordRpcManager,
                     youTubeAuthService = youTubeAuthService,
-                    dispatcher = dispatcher
+                    dispatcher = dispatcher,
                 ).run()
             } finally {
                 stopKoin()
