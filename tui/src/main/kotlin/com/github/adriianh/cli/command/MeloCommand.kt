@@ -107,16 +107,13 @@ class MeloCommand :
     override fun help(context: Context): String = Messages.get("help.melo_command")
 
     override fun helpEpilog(context: Context): String =
-        """
-            Examples:
-            melo play "Bohemian Rhapsody"
-            melo search "Radiohead" --format json
-            melo status
-            melo download "Daft Punk" --type album
-
-            Run 'melo <command> --help' for details on a specific command.
-            Run 'melo' without arguments to launch the interactive TUI.
-        """.trimIndent()
+        "Examples:\n" +
+            "  melo play \"Bohemian Rhapsody\"\n" +
+            "  melo search \"Radiohead\" --format json\n" +
+            "  melo status\n" +
+            "  melo download \"Daft Punk\" --type album\n\n" +
+            "Run 'melo <command> --help' for details on a specific command.\n" +
+            "Run 'melo' without arguments to launch the interactive TUI."
 
     override fun run() {
         if (currentContext.invokedSubcommand != null) return

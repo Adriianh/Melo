@@ -18,13 +18,13 @@ class MeloCommandTest {
         assertTrue(output.contains("Playback Controls:"), "Missing Playback Controls category")
         assertTrue(
             output.contains("Now Playing & Discovery:"),
-            "Missing Now Playing & Discovery category"
+            "Missing Now Playing & Discovery category",
         )
         assertTrue(output.contains("Queue & Playlists:"), "Missing Queue & Playlists category")
         assertTrue(output.contains("Library & Offline:"), "Missing Library & Offline category")
         assertTrue(
             output.contains("Services & Configuration:"),
-            "Missing Services & Configuration category"
+            "Missing Services & Configuration category",
         )
     }
 
@@ -86,11 +86,11 @@ class MeloCommandTest {
         assertTrue(output.contains("Examples:"), "Help should contain Examples section")
         assertTrue(
             output.contains("melo play \"Bohemian Rhapsody\""),
-            "Help should contain play example"
+            "Help should contain play example",
         )
         assertTrue(
             output.contains("launch the interactive TUI"),
-            "Help should inform user how to launch TUI"
+            "Help should inform user how to launch TUI",
         )
     }
 
@@ -133,7 +133,7 @@ class MeloCommandTest {
 
         assertTrue(
             output.contains("Commands:"),
-            "Nested subcommands should use default 'Commands:' section"
+            "Nested subcommands should use default 'Commands:' section",
         )
         assertTrue(output.contains("list"), "config --help should list 'list' subcommand")
         assertTrue(output.contains("set"), "config --help should list 'set' subcommand")

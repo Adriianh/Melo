@@ -24,11 +24,11 @@ open class MeloHelpFormatter(
     showDefaultValues: Boolean = false,
     showRequiredTag: Boolean = false,
 ) : MordantHelpFormatter(
-    context = context,
-    requiredOptionMarker = requiredOptionMarker,
-    showDefaultValues = showDefaultValues,
-    showRequiredTag = showRequiredTag,
-) {
+        context = context,
+        requiredOptionMarker = requiredOptionMarker,
+        showDefaultValues = showDefaultValues,
+        showRequiredTag = showRequiredTag,
+    ) {
     companion object {
         val COMMAND_ORDER: List<String> =
             listOf(
@@ -97,8 +97,7 @@ open class MeloHelpFormatter(
             )
     }
 
-    override fun renderEpilog(epilog: String): Widget =
-        Text(epilog, whitespace = Whitespace.PRE_WRAP)
+    override fun renderEpilog(epilog: String): Widget = Text(epilog, whitespace = Whitespace.PRE_WRAP)
 
     override fun renderCommands(parameters: List<ParameterHelp>): List<RenderedSection<Widget>> {
         val subcommands = parameters.filterIsInstance<ParameterHelp.Subcommand>()
