@@ -45,8 +45,8 @@ class UpdateRepositoryTest {
         assertFalse(
             UpdateRepositoryImpl.isNewerVersion(
                 "2.1.5-nightly.20260923",
-                "2.1.5-nightly.20260923"
-            )
+                "2.1.5-nightly.20260923",
+            ),
         )
     }
 

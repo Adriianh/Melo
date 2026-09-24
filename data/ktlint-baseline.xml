@@ -3616,22 +3616,22 @@
     </file>
     <file name="src/jvmTest/kotlin/com/github/adriianh/data/repository/UpdateRepositoryTest.kt">
         <error line="23" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="37" column="72" source="standard:multiline-expression-wrapping" />
-        <error line="37" column="72" source="standard:function-signature" />
-        <error line="38" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="38" column="24" source="standard:string-template-indent" />
-        <error line="68" column="9" source="standard:string-template-indent" />
-        <error line="70" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="74" column="81" source="standard:trailing-comma-on-call-site" />
-        <error line="78" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="112" column="74" source="standard:multiline-expression-wrapping" />
-        <error line="112" column="74" source="standard:function-signature" />
-        <error line="113" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="113" column="24" source="standard:string-template-indent" />
-        <error line="122" column="9" source="standard:string-template-indent" />
-        <error line="124" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="128" column="81" source="standard:trailing-comma-on-call-site" />
-        <error line="132" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="144" column="1" source="standard:final-newline" />
+        <error line="54" column="72" source="standard:multiline-expression-wrapping" />
+        <error line="54" column="72" source="standard:function-signature" />
+        <error line="55" column="24" source="standard:multiline-expression-wrapping" />
+        <error line="55" column="24" source="standard:string-template-indent" />
+        <error line="85" column="9" source="standard:string-template-indent" />
+        <error line="87" column="26" source="standard:multiline-expression-wrapping" />
+        <error line="91" column="81" source="standard:trailing-comma-on-call-site" />
+        <error line="95" column="22" source="standard:multiline-expression-wrapping" />
+        <error line="129" column="74" source="standard:multiline-expression-wrapping" />
+        <error line="129" column="74" source="standard:function-signature" />
+        <error line="130" column="24" source="standard:multiline-expression-wrapping" />
+        <error line="130" column="24" source="standard:string-template-indent" />
+        <error line="139" column="9" source="standard:string-template-indent" />
+        <error line="141" column="26" source="standard:multiline-expression-wrapping" />
+        <error line="145" column="81" source="standard:trailing-comma-on-call-site" />
+        <error line="149" column="22" source="standard:multiline-expression-wrapping" />
+        <error line="161" column="1" source="standard:final-newline" />
     </file>
 </baseline>
