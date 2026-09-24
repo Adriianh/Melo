@@ -9,10 +9,13 @@
 #   MELO_VERSION="2.1.0"      Install a specific version (default: latest)
 #   MELO_INSTALL_DIR="..."    Custom install directory (default: ~/.local/share/melo-tui)
 #   MELO_BIN_DIR="..."        Custom bin directory (default: ~/.local/bin)
+#   MELO_CREATE_DESKTOP=1     Create a desktop menu entry (Linux, same as --desktop)
 #
 # CLI flags:
 #   --nightly                 Install the latest nightly development build
 #   -v, --version <VERSION>   Install a specific version (e.g. 2.1.0)
+#   --desktop                 Create/update the TUI menu entry (Linux, opt-in)
+#   --no-desktop              Skip the menu entry even if MELO_CREATE_DESKTOP=1
 # ==============================================================================
 set -euo pipefail
 
@@ -66,6 +69,10 @@ EOF
 }
 
 VERSION="${MELO_VERSION:-}"
+CREATE_DESKTOP=false
+case "${MELO_CREATE_DESKTOP:-}" in
+    1|true|yes|on) CREATE_DESKTOP=true ;;
+esac
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -v|--version)
@@ -84,6 +91,14 @@ while [[ $# -gt 0 ]]; do
             VERSION="nightly"
             shift
             ;;
+        --desktop)
+            CREATE_DESKTOP=true
+            shift
+            ;;
+        --no-desktop)
+            CREATE_DESKTOP=false
+            shift
+            ;;
         --uninstall)
             SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
             if [ -f "$SCRIPT_DIR/uninstall.sh" ]; then
@@ -100,6 +115,8 @@ while [[ $# -gt 0 ]]; do
             echo "  -v, --version <VERSION>   Install specific version (e.g. 2.1.0)"
             echo "      --version=<VERSION>   Install specific version (e.g. 2.1.0)"
             echo "      --nightly             Install the latest nightly development build"
+            echo "      --desktop             Create a desktop menu entry (Linux, opt-in)"
+            echo "      --no-desktop          Skip the menu entry even if MELO_CREATE_DESKTOP=1"
             echo "      --uninstall           Uninstall Melo TUI"
             echo "  -h, --help                Show this help message"
             exit 0
@@ -165,6 +182,56 @@ resolve_latest_version() {
     fi
 
     echo "${latest_tag#v}"
+}
+
+# ─── Optional Linux desktop menu entry ─────────────────────────────────────
+# Opt-in via --desktop or MELO_CREATE_DESKTOP=1. Only meaningful on Linux
+# (macOS/Windows have no freedesktop.org .desktop entries). Idempotent: the
+# file is rewritten only when its Exec target no longer matches $BIN_DIR/melo-tui,
+# so an existing entry (customized or from a previous install) is left alone
+# unless the install location actually changed.
+create_desktop_entry() {
+    if [ "$CREATE_DESKTOP" != "true" ]; then
+        return 0
+    fi
+
+    local os
+    os="$(detect_os)"
+    if [ "$os" != "linux" ]; then
+        log_warn "Desktop menu entry skipped: only supported on Linux."
+        return 0
+    fi
+
+    local desktop_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+    local desktop_file="$desktop_dir/melo-tui.desktop"
+    local exec_line="Exec=$BIN_DIR/melo-tui"
+
+    # Idempotent update: only rewrite if the entry is missing or points elsewhere.
+    if [ -f "$desktop_file" ] && grep -Fqx "$exec_line" "$desktop_file"; then
+        log_success "Desktop menu entry already up to date: $desktop_file"
+        return 0
+    fi
+
+    mkdir -p "$desktop_dir"
+
+    cat > "$desktop_file" << EOF
+[Desktop Entry]
+Type=Application
+Name=Melo (TUI)
+GenericName=Terminal Music Player
+Comment=Modern, fast terminal music player (TUI & CLI)
+Exec=$BIN_DIR/melo-tui
+Icon=melo
+Terminal=true
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=music;player;audio;streaming;terminal;cli;
+EOF
+    chmod 644 "$desktop_file"
+    log_success "Desktop menu entry created: $desktop_file"
+
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
+    fi
 }
 
 main() {
@@ -255,6 +322,8 @@ EOF
     fi
 
     log_success "Melo TUI ${version_display} installed."
+
+    create_desktop_entry
 
     # Verify PATH
     local in_path=false

@@ -70,6 +70,16 @@ fi
 # Remove launchers
 rm -f "$BIN_DIR/melo-tui" "$BIN_DIR/melo-cli"
 
+# Remove the optional TUI desktop menu entry (if present)
+DESKTOP_FILE="${XDG_DATA_HOME:-$HOME/.local/share}/applications/melo-tui.desktop"
+if [ -f "$DESKTOP_FILE" ]; then
+    rm -f "$DESKTOP_FILE"
+    log_success "Removed desktop menu entry."
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$(dirname "$DESKTOP_FILE")" >/dev/null 2>&1 || true
+    fi
+fi
+
 # Check if GUI is still present
 if [ -x "$BIN_DIR/melo-gui" ] || [ -d "$HOME/.local/share/melo-gui" ] || [ -d "/opt/melo-gui" ]; then
     log_info "Melo GUI is still installed; preserving unified launcher at $BIN_DIR/melo."
