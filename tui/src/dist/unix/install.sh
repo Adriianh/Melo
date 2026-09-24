@@ -1,12 +1,26 @@
 #!/usr/bin/env sh
 # =====================================================================
 # Melo TUI & CLI Installer for Unix (Linux & macOS)
+#
+# Optional: set MELO_CREATE_DESKTOP=1 or pass --desktop to create a
+# Linux desktop menu entry (Linux only).
 # =====================================================================
 set -e
 
 INSTALL_DIR="${MELO_INSTALL_DIR:-$HOME/.local/share/melo-tui}"
 BIN_DIR="${MELO_BIN_DIR:-$HOME/.local/bin}"
 CONFIG_DIR="${MELO_CONFIG_DIR:-$HOME/.config/melo}"
+
+CREATE_DESKTOP=false
+case "${MELO_CREATE_DESKTOP:-}" in
+    1|true|yes|on) CREATE_DESKTOP=true ;;
+esac
+for arg in "$@"; do
+    case "$arg" in
+        --desktop) CREATE_DESKTOP=true ;;
+        --no-desktop) CREATE_DESKTOP=false ;;
+    esac
+done
 
 mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
 
@@ -141,6 +155,43 @@ echo "✓ Dedicated launcher placed at $BIN_DIR/melo-tui (alias: melo-cli)"
 echo "✓ Unified smart launcher updated at $BIN_DIR/melo"
 echo "✓ Config directory created at $CONFIG_DIR"
 echo ""
+
+# ─── Optional Linux desktop menu entry ─────────────────────────────────────
+if [ "$CREATE_DESKTOP" = "true" ]; then
+    if [ "$(uname -s)" = "Linux" ]; then
+        DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+        DESKTOP_FILE="$DESKTOP_DIR/melo-tui.desktop"
+        EXEC_LINE="Exec=$BIN_DIR/melo-tui"
+
+        # Idempotent: only rewrite when the Exec target changed.
+        if [ -f "$DESKTOP_FILE" ] && grep -Fqx "$EXEC_LINE" "$DESKTOP_FILE"; then
+            echo "✓ Desktop menu entry already up to date: $DESKTOP_FILE"
+        else
+            mkdir -p "$DESKTOP_DIR"
+            cat > "$DESKTOP_FILE" << EOF
+[Desktop Entry]
+Type=Application
+Name=Melo (TUI)
+GenericName=Terminal Music Player
+Comment=Modern, fast terminal music player (TUI & CLI)
+$EXEC_LINE
+Icon=melo
+Terminal=true
+Categories=AudioVideo;Audio;Player;Music;
+Keywords=music;player;audio;streaming;terminal;cli;
+EOF
+            chmod 644 "$DESKTOP_FILE"
+            echo "✓ Desktop menu entry created: $DESKTOP_FILE"
+        fi
+
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
+        fi
+    else
+        echo "⚠ Desktop menu entry skipped: only supported on Linux."
+    fi
+fi
+
 echo "Add your API keys to $CONFIG_DIR/.env before running Melo."
 echo ""
 echo "Make sure $BIN_DIR is in your PATH:"
