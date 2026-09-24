@@ -18,8 +18,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ─── Resolve build version ────────────────────────────────────────────────
+  #   - tag v*  -> the tag version (official release)
+  #   - master  -> stable base + "-nightly.<UTC date>" (distinct from stable)
+  # The stable base is read from gradle.properties so it is never duplicated.
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      melo_version: ${{ steps.version.outputs.melo_version }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            melo_version="${GITHUB_REF#refs/tags/v}"
+          else
+            base=$(sed -nE 's/^melo\.version=(.*)$/\1/p' gradle.properties | tail -n 1)
+            melo_version="${base}-nightly.$(date -u +%Y%m%d)"
+          fi
+          echo "melo_version=${melo_version}" >> "$GITHUB_OUTPUT"
+          echo "Melo version: ${melo_version}"
+
   # ─── Build TUI CLI (GraalVM native) ───────────────────────────────────────
   build-tui:
+    needs: resolve-version
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +94,7 @@ jobs:
         run: ./gradlew :tui:test
 
       - name: Build distribution
-        run: ./gradlew :tui:${{ matrix.task }}
+        run: ./gradlew :tui:${{ matrix.task }} -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7.0.0
@@ -79,6 +106,7 @@ jobs:
   # Each OS runner builds only the formats supported by its platform
   # (jpackage cannot cross-compile).
   build-desktop:
+    needs: resolve-version
     strategy:
       fail-fast: false
       matrix:
@@ -125,7 +153,7 @@ jobs:
       - name: Build desktop installers
         run: |
           for task in ${{ matrix.tasks }}; do
-            ./gradlew :composeApp:$task
+            ./gradlew :composeApp:$task -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }}
           done
         shell: bash
 
@@ -139,6 +167,7 @@ jobs:
   # No secrets needed: the release signing config falls back to the debug
   # keystore, and the runner uses the preinstalled Android SDK.
   build-android:
+    needs: resolve-version
     runs-on: ubuntu-latest
 
     steps:
@@ -163,7 +192,7 @@ jobs:
           fi
 
       - name: Build release APK
-        run: ./gradlew :composeApp:assembleRelease
+        run: ./gradlew :composeApp:assembleRelease -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v7.0.0
@@ -189,13 +218,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Derive the app version from the built TUI artifact name.
+          # Derive the app version from the built TUI artifact name. Stable versions
+          # are just "2.1.5"; nightly builds carry a "-nightly.<date>" suffix.
           tui_linux=$(find dist -name 'melo-*-linux.tar.gz' | head -n 1)
-          app_version=$(basename "$tui_linux" | sed -E 's/^melo-([0-9.]+)-linux\.tar\.gz$/\1/')
+          app_version=$(basename "$tui_linux" | sed -E 's/^melo-(.+)-linux\.tar\.gz$/\1/')
           if [ -z "$app_version" ]; then
             echo "::error::could not derive app version from TUI artifact"
             exit 1
           fi
+          # Numeric base used by jpackage artifacts (MSI/DEB/DMG), e.g. 2.1.5.
+          app_version_base="${app_version%%-*}"
           echo "App version detected: $app_version"
 
           mkdir -p nightly_dist
@@ -207,7 +239,9 @@ jobs:
               melo-${app_version}-macos.tar.gz)  new="melo-nightly-macos.tar.gz"  ;;
               melo-${app_version}-windows.zip)   new="melo-nightly-windows.zip"   ;;
               composeApp-release.apk)            new="melo-nightly.apk"           ;;
-              *)                                 new=${base//${app_version}/nightly} ;;
+              *)  new=${base//${app_version}/nightly}
+                  new=${new//${app_version_base}/nightly}
+                  ;;
             esac
             cp "$f" "nightly_dist/$new"
           done
@@ -215,6 +249,8 @@ jobs:
           # Nightly release body: static header + dynamic asset list.
           {
             echo "Automated development build from commit \`$GITHUB_SHA\`."
+            echo
+            echo "Version: \`$app_version\`"
             echo
             echo "> Nightly builds ship every push to \`master\`. They are development"
             echo "> snapshots, not official releases."

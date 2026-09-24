@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
     <file name="build.gradle.kts">
-        <error line="24" column="28" source="standard:trailing-comma-on-call-site" />
-        <error line="156" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="166" column="1" source="standard:no-blank-line-in-list" />
-        <error line="170" column="1" source="standard:no-blank-line-in-list" />
-        <error line="174" column="1" source="standard:no-blank-line-in-list" />
-        <error line="176" column="1" source="standard:no-blank-line-in-list" />
-        <error line="185" column="35" source="standard:no-multi-spaces" />
-        <error line="186" column="35" source="standard:no-multi-spaces" />
-        <error line="187" column="35" source="standard:no-multi-spaces" />
-        <error line="188" column="35" source="standard:no-multi-spaces" />
-        <error line="237" column="1" source="standard:final-newline" />
+        <error line="29" column="28" source="standard:trailing-comma-on-call-site" />
+        <error line="161" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="171" column="1" source="standard:no-blank-line-in-list" />
+        <error line="175" column="1" source="standard:no-blank-line-in-list" />
+        <error line="179" column="1" source="standard:no-blank-line-in-list" />
+        <error line="181" column="1" source="standard:no-blank-line-in-list" />
+        <error line="190" column="35" source="standard:no-multi-spaces" />
+        <error line="191" column="35" source="standard:no-multi-spaces" />
+        <error line="192" column="35" source="standard:no-multi-spaces" />
+        <error line="193" column="35" source="standard:no-multi-spaces" />
+        <error line="242" column="1" source="standard:final-newline" />
     </file>
     <file name="build/generated/compose/resourceGenerator/kotlin/androidMainResourceCollectors/melo/composeapp/generated/resources/ActualResourceCollectors.kt">
         <error line="5" column="1" source="standard:import-ordering" />

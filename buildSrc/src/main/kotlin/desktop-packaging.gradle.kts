@@ -3,7 +3,8 @@ package buildsrc.convention
 import java.net.URI
 import java.util.zip.ZipFile
 
-val desktopAppVersion = "2.1.5"
+val desktopAppVersion: String =
+    project.providers.gradleProperty("melo.version").getOrElse("2.1.5")
 
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
