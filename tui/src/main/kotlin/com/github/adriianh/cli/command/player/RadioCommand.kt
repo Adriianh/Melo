@@ -3,6 +3,8 @@ package com.github.adriianh.cli.command.player
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
 import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.service.DaemonManager
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
@@ -12,6 +14,8 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
@@ -33,6 +37,11 @@ class RadioCommand :
         "--interactive",
         help = "Interactively select seed track from search results",
     ).flag(default = false)
+    private val foreground by option(
+        "-f",
+        "--foreground",
+        help = "Run in foreground with progress bar instead of detaching to daemon",
+    ).flag(default = false)
 
     private val terminal = Terminal()
 
@@ -41,7 +50,8 @@ class RadioCommand :
     override fun helpEpilog(context: Context): String =
         "Examples:\n" +
             "  melo radio \"Comfortably Numb\"\n" +
-            "  melo radio \"Daft Punk\" --interactive"
+            "  melo radio \"Daft Punk\" --interactive\n" +
+            "  melo radio \"Starboy\" --foreground"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -54,21 +64,7 @@ class RadioCommand :
             runBlocking {
                 terminal.println(gray("Searching for seed track '$query'..."))
                 val tracks = searchTracks(query)
-                val seedTrack =
-                    if (tracks.isEmpty()) {
-                        null
-                    } else if (!interactive || tracks.size == 1) {
-                        tracks.first()
-                    } else {
-                        val limited = tracks.take(15)
-                        ItemPicker.pickItem(limited, "Select Seed Track") { _, item, isSelected ->
-                            if (isSelected) {
-                                kotterYellow { textLine("> ${item.title} by ${item.artist}") }
-                            } else {
-                                textLine("  ${item.title} by ${item.artist}")
-                            }
-                        }
-                    }
+                val seedTrack = selectSeedTrack(tracks)
 
                 if (seedTrack == null) {
                     terminal.println("No seed track found or selection cancelled for '$query'.")
@@ -87,16 +83,63 @@ class RadioCommand :
                     return@runBlocking
                 }
 
-                PlayActionHandler.playMultiple(
-                    contextName = "Radio: ${seedTrack.title}",
-                    tracks = radioTracks,
-                    getStream = getStream,
-                    terminal = terminal,
-                )
+                dispatchRadioPlayback(seedTrack, radioTracks, getStream)
             }
         } finally {
             stopKoin()
             exitProcess(0)
         }
+    }
+
+    private fun selectSeedTrack(tracks: List<Track>): Track? =
+        when {
+            tracks.isEmpty() -> null
+            !interactive || tracks.size == 1 -> tracks.first()
+            else -> {
+                val limited = tracks.take(15)
+                ItemPicker.pickItem(limited, "Select Seed Track") { _, item, isSelected ->
+                    if (isSelected) {
+                        kotterYellow { textLine("> ${item.title} by ${item.artist}") }
+                    } else {
+                        textLine("  ${item.title} by ${item.artist}")
+                    }
+                }
+            }
+        }
+
+    private suspend fun dispatchRadioPlayback(
+        seedTrack: Track,
+        radioTracks: List<Track>,
+        getStream: GetStreamUseCase,
+    ) {
+        if (foreground) {
+            PlayActionHandler.playMultiple(
+                contextName = "Radio: ${seedTrack.title}",
+                tracks = radioTracks,
+                getStream = getStream,
+                terminal = terminal,
+            )
+            return
+        }
+
+        if (DaemonManager.ensureDaemonRunning(terminal)) {
+            DaemonManager.playTracks(radioTracks)
+            terminal.println(
+                green("▶ Started radio: ") + seedTrack.title + gray(" by ") + seedTrack.artist +
+                    gray(" (${radioTracks.size} tracks)"),
+            )
+            terminal.println(
+                gray("Playing in background. Use 'melo status' to inspect, 'melo next' to skip."),
+            )
+            return
+        }
+
+        terminal.println(yellow("Warning: Could not start daemon. Falling back to foreground playback."))
+        PlayActionHandler.playMultiple(
+            contextName = "Radio: ${seedTrack.title}",
+            tracks = radioTracks,
+            getStream = getStream,
+            terminal = terminal,
+        )
     }
 }

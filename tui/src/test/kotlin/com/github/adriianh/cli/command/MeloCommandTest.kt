@@ -177,4 +177,28 @@ class MeloCommandTest {
             "Help output with TRUECOLOR should contain ANSI styling sequences",
         )
     }
+
+    @Test
+    fun playbackCommandsExposeForegroundFlagInHelp() {
+        val playResult = MeloCommand().test("play --help")
+        assertEquals(0, playResult.statusCode)
+        assertTrue(
+            playResult.output.contains("--foreground"),
+            "play --help should document --foreground",
+        )
+
+        val radioResult = MeloCommand().test("radio --help")
+        assertEquals(0, radioResult.statusCode)
+        assertTrue(
+            radioResult.output.contains("--foreground"),
+            "radio --help should document --foreground",
+        )
+
+        val playlistPlayResult = MeloCommand().test("playlist play --help")
+        assertEquals(0, playlistPlayResult.statusCode)
+        assertTrue(
+            playlistPlayResult.output.contains("--foreground"),
+            "playlist play --help should document --foreground",
+        )
+    }
 }

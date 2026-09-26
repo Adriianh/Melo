@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.io.BufferedWriter
 import java.io.File
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -24,7 +25,10 @@ class LocalIpcServer(
     private val onQueueRemove: (Int) -> Boolean,
     private val onQueueClear: () -> Unit,
     private val getQueue: () -> List<Track>,
-    private val onCustomCommand: (String, String) -> String = { _, _ -> "ERROR Not implemented" }
+    private val onPlayNow: (Track) -> Unit = {},
+    private val onPlayList: (List<Track>) -> Unit = {},
+    private val onQueueAddList: (List<Track>) -> Unit = {},
+    private val onCustomCommand: (String, String) -> String = { _, _ -> "ERROR Not implemented" },
 ) {
     private val logger = LoggerFactory.getLogger(LocalIpcServer::class.java)
     private var serverSocket: ServerSocket? = null
@@ -42,18 +46,19 @@ class LocalIpcServer(
             portFile.writeText(port.toString())
             logger.info("Local IPC server started on port {}", port)
 
-            serverJob = scope.launch(Dispatchers.IO) {
-                while (!serverSocket!!.isClosed) {
-                    try {
-                        val client = serverSocket!!.accept()
-                        launch { handleClient(client) }
-                    } catch (_: SocketException) {
-                        break // Closed
-                    } catch (e: Exception) {
-                        logger.error("Error accepting IPC connection", e)
+            serverJob =
+                scope.launch(Dispatchers.IO) {
+                    while (!serverSocket!!.isClosed) {
+                        try {
+                            val client = serverSocket!!.accept()
+                            launch { handleClient(client) }
+                        } catch (_: SocketException) {
+                            break // Closed
+                        } catch (e: Exception) {
+                            logger.error("Error accepting IPC connection", e)
+                        }
                     }
                 }
-            }
         } catch (e: Exception) {
             logger.error("Failed to start IPC server", e)
         }
@@ -70,56 +75,14 @@ class LocalIpcServer(
                 val cmd = parts[0]
                 val payload = if (parts.size > 1) parts[1] else ""
 
-                when (cmd) {
-                    "PAUSE", "RESUME" -> {
-                        onPlayPause(); writer.write("OK\n")
-                    }
+                val handled =
+                    handleControlCommand(cmd, writer) ||
+                        handleQueueMutation(cmd, payload, writer) ||
+                        handlePlayCommand(cmd, payload, writer)
 
-                    "NEXT" -> {
-                        onNext(); writer.write("OK\n")
-                    }
-
-                    "PREV" -> {
-                        onPrevious(); writer.write("OK\n")
-                    }
-
-                    "STOP" -> {
-                        onStop(); writer.write("OK\n")
-                    }
-
-                    "QUEUE_ADD" -> {
-                        try {
-                            val track = json.decodeFromString(Track.serializer(), payload)
-                            onQueueAdd(track)
-                            writer.write("OK\n")
-                        } catch (_: Exception) {
-                            writer.write("ERROR Invalid payload\n")
-                        }
-                    }
-
-                    "QUEUE_REMOVE" -> {
-                        val index = payload.toIntOrNull()
-                        if (index != null && onQueueRemove(index)) {
-                            writer.write("OK\n")
-                        } else {
-                            writer.write("ERROR Invalid index\n")
-                        }
-                    }
-
-                    "QUEUE_CLEAR" -> {
-                        onQueueClear(); writer.write("OK\n")
-                    }
-
-                    "QUEUE_LIST" -> {
-                        val queue = getQueue()
-                        val res = json.encodeToString(ListSerializer(Track.serializer()), queue)
-                        writer.write("OK $res\n")
-                    }
-
-                    else -> {
-                        val response = onCustomCommand(cmd, payload)
-                        writer.write("$response\n")
-                    }
+                if (!handled) {
+                    val response = onCustomCommand(cmd, payload)
+                    writer.write("$response\n")
                 }
                 writer.flush()
             }
@@ -127,6 +90,116 @@ class LocalIpcServer(
             logger.error("Error handling IPC client", e)
         }
     }
+
+    private fun handleControlCommand(
+        cmd: String,
+        writer: BufferedWriter,
+    ): Boolean =
+        when (cmd) {
+            "PING" -> {
+                writer.write("OK PONG\n")
+                true
+            }
+            "PAUSE", "RESUME" -> {
+                onPlayPause()
+                writer.write("OK\n")
+                true
+            }
+            "NEXT" -> {
+                onNext()
+                writer.write("OK\n")
+                true
+            }
+            "PREV" -> {
+                onPrevious()
+                writer.write("OK\n")
+                true
+            }
+            "STOP" -> {
+                onStop()
+                writer.write("OK\n")
+                true
+            }
+            else -> false
+        }
+
+    private fun handleQueueMutation(
+        cmd: String,
+        payload: String,
+        writer: BufferedWriter,
+    ): Boolean =
+        when (cmd) {
+            "QUEUE_ADD" -> {
+                try {
+                    val track = json.decodeFromString(Track.serializer(), payload)
+                    onQueueAdd(track)
+                    writer.write("OK\n")
+                } catch (_: Exception) {
+                    writer.write("ERROR Invalid payload\n")
+                }
+                true
+            }
+            "QUEUE_ADD_LIST" -> {
+                try {
+                    val tracks = json.decodeFromString(ListSerializer(Track.serializer()), payload)
+                    onQueueAddList(tracks)
+                    writer.write("OK\n")
+                } catch (_: Exception) {
+                    writer.write("ERROR Invalid payload\n")
+                }
+                true
+            }
+            "QUEUE_REMOVE" -> {
+                val index = payload.toIntOrNull()
+                if (index != null && onQueueRemove(index)) {
+                    writer.write("OK\n")
+                } else {
+                    writer.write("ERROR Invalid index\n")
+                }
+                true
+            }
+            "QUEUE_CLEAR" -> {
+                onQueueClear()
+                writer.write("OK\n")
+                true
+            }
+            "QUEUE_LIST" -> {
+                val queue = getQueue()
+                val res = json.encodeToString(ListSerializer(Track.serializer()), queue)
+                writer.write("OK $res\n")
+                true
+            }
+            else -> false
+        }
+
+    private fun handlePlayCommand(
+        cmd: String,
+        payload: String,
+        writer: BufferedWriter,
+    ): Boolean =
+        when (cmd) {
+            "PLAY_NOW" -> {
+                try {
+                    val track = json.decodeFromString(Track.serializer(), payload)
+                    onPlayNow(track)
+                    writer.write("OK\n")
+                } catch (_: Exception) {
+                    writer.write("ERROR Invalid payload\n")
+                }
+                true
+            }
+            "PLAY_LIST" -> {
+                try {
+                    val tracks = json.decodeFromString(ListSerializer(Track.serializer()), payload)
+                    onPlayList(tracks)
+                    writer.write("OK\n")
+                } catch (_: Exception) {
+                    writer.write("ERROR Invalid payload\n")
+                }
+                true
+            }
+            else -> false
+        }
 
     fun stop() {
         try {

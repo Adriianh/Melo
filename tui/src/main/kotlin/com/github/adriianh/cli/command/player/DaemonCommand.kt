@@ -1,8 +1,8 @@
 package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
-import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.service.DaemonManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcClient
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.ajalt.clikt.core.CliktCommand
@@ -19,7 +19,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import java.io.File
 import kotlin.system.exitProcess
 
 class DaemonCommand :
@@ -87,52 +86,20 @@ class DaemonStartCommand :
             "  melo daemon start"
 
     override fun run() {
-        val javaHome = System.getProperty("java.home")
-        val javaBin = if (javaHome != null) "$javaHome/bin/java" else "java"
-        val classpath = System.getProperty("java.class.path")
-        val mainClass = "com.github.adriianh.cli.MeloKt"
-
-        val logFile = File(configDir, "daemon.log")
-        if (!logFile.parentFile.exists()) logFile.parentFile.mkdirs()
-
-        // We try to use the same command that started us if possible
-        // but spawning 'melo' directly is safer if it's in the PATH
-        val command = mutableListOf<String>()
-
-        // Check if we are running as a native image or jar
-        val isNative = System.getProperty("org.graalvm.nativeimage.imagecode") != null
-        if (isNative) {
-            val executablePath =
-                ProcessHandle
-                    .current()
-                    .info()
-                    .command()
-                    .orElse("melo")
-            if (executablePath != null) {
-                command.add(executablePath)
-            }
-        } else {
-            command.addAll(listOf(javaBin, "-cp", classpath, mainClass))
+        if (DaemonManager.isRunning()) {
+            terminal.println(green("Melo daemon is already running."))
+            return
         }
 
-        command.addAll(listOf("daemon", "run"))
-
-        val processBuilder = ProcessBuilder(command)
-        processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile))
-        processBuilder.redirectError(ProcessBuilder.Redirect.appendTo(logFile))
-
-        try {
-            val process = processBuilder.start()
-            if (process.isAlive) {
-                terminal.println(green("Melo daemon started in the background."))
-                terminal.println(cyan("Logs are being written to: ") + yellow(logFile.absolutePath))
-                terminal.println(cyan("Use 'melo daemon status' to verify."))
-            } else {
-                terminal.println(red("Daemon failed to start immediately. Check logs."))
-            }
-        } catch (e: Exception) {
-            terminal.println(red("Error starting background process: ${e.message}"))
-            terminal.println(yellow("Try running manually with: nohup melo daemon run > ${logFile.absolutePath} 2>&1 &"))
+        terminal.println(cyan("Starting Melo daemon in background..."))
+        if (DaemonManager.ensureDaemonRunning(terminal)) {
+            terminal.println(green("Melo daemon started in the background."))
+            terminal.println(cyan("Logs are being written to: ") + yellow(DaemonManager.logFile.absolutePath))
+            terminal.println(cyan("Use 'melo daemon status' to verify."))
+        } else {
+            terminal.println(
+                red("Daemon failed to start. Check logs at: ") + yellow(DaemonManager.logFile.absolutePath),
+            )
         }
     }
 }
@@ -150,6 +117,10 @@ class DaemonStopCommand :
             "  melo daemon stop"
 
     override fun run() {
+        if (!DaemonManager.isRunning()) {
+            terminal.println(yellow("Melo daemon is not running."))
+            return
+        }
         terminal.println(cyan("Stopping Melo daemon..."))
         val result = LocalIpcClient.sendCommand("STOP")
         if (result.startsWith("ERROR")) {
@@ -173,18 +144,12 @@ class DaemonStatusCommand :
             "  melo daemon status"
 
     override fun run() {
-        val result = LocalIpcClient.sendCommand("QUEUE_LIST")
-        if (result.startsWith("ERROR")) {
-            if (result.contains("Failed to connect") || result.contains("No active playback session")) {
-                terminal.println(red("Daemon is NOT running."))
-                terminal.println(yellow("Use 'melo daemon start' to launch it in the background."))
-            } else {
-                terminal.println(red("Daemon is running but returned an error:"))
-                terminal.println(yellow(result))
-            }
-        } else {
+        if (DaemonManager.isRunning()) {
             terminal.println(green("Daemon is running and healthy."))
             terminal.println(cyan("Connected to IPC server."))
+        } else {
+            terminal.println(red("Daemon is NOT running."))
+            terminal.println(yellow("Use 'melo daemon start' to launch it in the background."))
         }
     }
 }

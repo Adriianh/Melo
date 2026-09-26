@@ -3,7 +3,7 @@ package com.github.adriianh.cli.command.player
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
 import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
-import com.github.adriianh.cli.tui.player.ipc.LocalIpcClient
+import com.github.adriianh.cli.service.DaemonManager
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -19,10 +19,10 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
@@ -46,6 +46,11 @@ class PlayCommand :
         "--interactive",
         help = "Interactively select from search results",
     ).flag(default = false)
+    private val foreground by option(
+        "-f",
+        "--foreground",
+        help = "Run in foreground with progress bar instead of detaching to daemon",
+    ).flag(default = false)
 
     private val terminal = Terminal()
 
@@ -55,7 +60,8 @@ class PlayCommand :
         "Examples:\n" +
             "  melo play \"Bohemian Rhapsody\"\n" +
             "  melo play \"Abbey Road\" --type album\n" +
-            "  melo play \"Rock Classics\" --type playlist --interactive"
+            "  melo play \"Rock Classics\" --type playlist -i\n" +
+            "  melo play \"Comfortably Numb\" --foreground"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -87,16 +93,7 @@ class PlayCommand :
                             terminal.println("No tracks found in album '${album.title}'.")
                             return@runBlocking
                         }
-                        if (delegateToDaemon(tracks)) {
-                            terminal.println(green("Added album tracks to active session: ") + detailedAlbum.title)
-                        } else {
-                            PlayActionHandler.playMultiple(
-                                contextName = detailedAlbum.title,
-                                tracks = tracks,
-                                getStream = getStream,
-                                terminal = terminal,
-                            )
-                        }
+                        dispatchPlayback(detailedAlbum.title, tracks, getStream)
                     }
 
                     "playlist" -> {
@@ -116,16 +113,7 @@ class PlayCommand :
                             terminal.println("No tracks found in playlist '${playlist.title}'.")
                             return@runBlocking
                         }
-                        if (delegateToDaemon(tracks)) {
-                            terminal.println(green("Added playlist tracks to active session: ") + detailedPlaylist.title)
-                        } else {
-                            PlayActionHandler.playMultiple(
-                                contextName = detailedPlaylist.title,
-                                tracks = tracks,
-                                getStream = getStream,
-                                terminal = terminal,
-                            )
-                        }
+                        dispatchPlayback(detailedPlaylist.title, tracks, getStream)
                     }
 
                     else -> {
@@ -141,11 +129,7 @@ class PlayCommand :
                             return@runBlocking
                         }
 
-                        if (delegateToDaemon(listOf(track))) {
-                            terminal.println(green("Added to active session: ") + "${track.title} by ${track.artist}")
-                        } else {
-                            PlayActionHandler.playTrack(track, getStream, terminal)
-                        }
+                        dispatchPlayback(track.title, listOf(track), getStream)
                     }
                 }
             }
@@ -155,16 +139,59 @@ class PlayCommand :
         }
     }
 
-    private fun delegateToDaemon(tracks: List<Track>): Boolean {
-        val firstRes = LocalIpcClient.sendCommand("QUEUE_LIST")
-        if (firstRes.startsWith("ERROR")) return false
-
-        val json = Json { ignoreUnknownKeys = true }
-        tracks.forEach { track ->
-            val payload = json.encodeToString(Track.serializer(), track)
-            LocalIpcClient.sendCommand("QUEUE_ADD", payload)
+    private suspend fun dispatchPlayback(
+        contextName: String,
+        tracks: List<Track>,
+        getStream: GetStreamUseCase,
+    ) {
+        if (foreground) {
+            playForeground(contextName, tracks, getStream)
+            return
         }
-        return true
+
+        if (DaemonManager.ensureDaemonRunning(terminal)) {
+            val success =
+                if (tracks.size == 1) {
+                    DaemonManager.playTrack(tracks.first())
+                } else {
+                    DaemonManager.playTracks(tracks)
+                }
+            if (success) {
+                if (tracks.size == 1) {
+                    val track = tracks.first()
+                    terminal.println(green("▶ Playing: ") + "${track.title} by ${track.artist}")
+                    terminal.println(
+                        gray("Playing in background. Use 'melo status' to inspect, 'melo pause' to pause."),
+                    )
+                } else {
+                    terminal.println(green("▶ Playing: ") + "$contextName (${tracks.size} tracks)")
+                    terminal.println(
+                        gray("Playing in background. Use 'melo status' to inspect, 'melo next' to skip."),
+                    )
+                }
+                return
+            }
+        }
+
+        terminal.println(yellow("Warning: Could not start daemon. Falling back to foreground playback."))
+        playForeground(contextName, tracks, getStream)
+    }
+
+    private suspend fun playForeground(
+        contextName: String,
+        tracks: List<Track>,
+        getStream: GetStreamUseCase,
+    ) {
+        if (tracks.size == 1) {
+            PlayActionHandler.playTrack(tracks.first(), getStream, terminal)
+        } else {
+            PlayActionHandler.playMultiple(
+                contextName = contextName,
+                tracks = tracks,
+                getStream = getStream,
+                terminal = terminal,
+            )
+        }
     }
 
     private fun <T> selectInteractive(

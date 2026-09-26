@@ -2,6 +2,7 @@ package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.service.DaemonManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcClient
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
@@ -12,6 +13,8 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.github.ajalt.mordant.rendering.TextColors.green
+import com.github.ajalt.mordant.rendering.TextColors.red
 import com.github.ajalt.mordant.terminal.Terminal
 import com.varabyte.kotter.foundation.text.textLine
 import kotlinx.coroutines.runBlocking
@@ -81,12 +84,17 @@ class QueueAddCommand :
                     return@runBlocking
                 }
 
+                if (!DaemonManager.ensureDaemonRunning(terminal)) {
+                    terminal.println(red("Error: Could not connect to or start daemon."))
+                    return@runBlocking
+                }
+
                 val payload = json.encodeToString(Track.serializer(), track)
                 val result = LocalIpcClient.sendCommand("QUEUE_ADD", payload)
                 if (result.startsWith("ERROR")) {
-                    terminal.println(result)
+                    terminal.println(red(result))
                 } else {
-                    terminal.println("Successfully added to queue: ${track.title}")
+                    terminal.println(green("Successfully added to queue: ") + "${track.title} by ${track.artist}")
                 }
             }
         } finally {
@@ -130,7 +138,7 @@ class QueueListCommand : CliktCommand(name = "list") {
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_LIST")
         if (result.startsWith("ERROR")) {
-            terminal.println(result)
+            terminal.println(red(result))
         } else if (result.startsWith("OK ")) {
             val payload = result.removePrefix("OK ")
             try {
@@ -138,13 +146,13 @@ class QueueListCommand : CliktCommand(name = "list") {
                 if (queue.isEmpty()) {
                     terminal.println("The queue is empty.")
                 } else {
-                    terminal.println("Upcoming Tracks in Queue:")
+                    terminal.println(green("Upcoming Tracks in Queue:"))
                     queue.forEachIndexed { i, t ->
                         terminal.println("$i. ${t.title} by ${t.artist}")
                     }
                 }
             } catch (e: Exception) {
-                terminal.println("ERROR Failed to parse queue data: ${e.message}")
+                terminal.println(red("ERROR Failed to parse queue data: ${e.message}"))
                 terminal.println(gray("Raw payload: $payload"))
             }
         }
@@ -167,14 +175,14 @@ class QueueRemoveCommand : CliktCommand(name = "remove") {
     override fun run() {
         val idx = index.toIntOrNull()
         if (idx == null) {
-            terminal.println("Please provide a valid numeric index.")
+            terminal.println(red("Please provide a valid numeric index."))
             return
         }
         val result = LocalIpcClient.sendCommand("QUEUE_REMOVE", idx.toString())
         if (result.startsWith("ERROR")) {
-            terminal.println(result)
+            terminal.println(red(result))
         } else {
-            terminal.println("Track at index $idx removed.")
+            terminal.println(green("Track at index $idx removed."))
         }
     }
 }
@@ -191,9 +199,9 @@ class QueueClearCommand : CliktCommand(name = "clear") {
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_CLEAR")
         if (result.startsWith("ERROR")) {
-            terminal.println(result)
+            terminal.println(red(result))
         } else {
-            terminal.println("Queue cleared.")
+            terminal.println(green("Queue cleared."))
         }
     }
 }
