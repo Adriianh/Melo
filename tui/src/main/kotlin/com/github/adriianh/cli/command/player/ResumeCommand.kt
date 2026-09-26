@@ -7,10 +7,19 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 class ResumeCommand : CliktCommand(name = "resume") {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Resume playback"
+
+    override fun help(context: Context): String = "Resume paused playback in the active player or daemon."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo resume"
+
     override fun run() {
         val result = LocalIpcClient.sendCommand("RESUME")
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Playback resumed.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Playback resumed.")
+        }
     }
 }

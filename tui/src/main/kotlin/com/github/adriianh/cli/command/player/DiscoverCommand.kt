@@ -23,18 +23,29 @@ import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class DiscoverCommand : NoOpCliktCommand(
-    name = "discover"
-) {
-    override fun help(context: Context): String = "Discover new music (home, trending, explore)"
+class DiscoverCommand :
+    NoOpCliktCommand(
+        name = "discover",
+    ) {
+    override fun help(context: Context): String = "Browse recommendations, trending charts, and explore feeds."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo discover home\n" +
+            "  melo discover trending\n" +
+            "  melo discover explore"
 
     init {
         subcommands(Home(), Trending(), Explore())
     }
 
-    private class Home : CliktCommand(name = "home"), KoinComponent {
+    private class Home :
+        CliktCommand(name = "home"),
+        KoinComponent {
         private val terminal = Terminal()
-        override fun help(context: Context): String = "Show home recommendations"
+
+        override fun help(context: Context): String = "Show personalized home recommendations and mixes"
+
         override fun run() {
             startKoin { modules(appModule) }
             try {
@@ -59,22 +70,24 @@ class DiscoverCommand : NoOpCliktCommand(
                             }
                         } ?: return@runBlocking
 
-                    val selectedItem = ItemPicker.pickItem(
-                        selectedSection.items,
-                        selectedSection.title
-                    ) { _, item, isSelected ->
-                        val text = when (item) {
-                            is SearchResult.Song -> "[Song] ${item.track.title} - ${item.track.artist}"
-                            is SearchResult.Album -> "[Album] ${item.title} - ${item.author}"
-                            is SearchResult.Playlist -> "[Playlist] ${item.title} - ${item.author}"
-                            is SearchResult.Artist -> "[Artist] ${item.name}"
-                        }
-                        if (isSelected) {
-                            kotterYellow { textLine("> $text") }
-                        } else {
-                            textLine("  $text")
-                        }
-                    } ?: return@runBlocking
+                    val selectedItem =
+                        ItemPicker.pickItem(
+                            selectedSection.items,
+                            selectedSection.title,
+                        ) { _, item, isSelected ->
+                            val text =
+                                when (item) {
+                                    is SearchResult.Song -> "[Song] ${item.track.title} - ${item.track.artist}"
+                                    is SearchResult.Album -> "[Album] ${item.title} - ${item.author}"
+                                    is SearchResult.Playlist -> "[Playlist] ${item.title} - ${item.author}"
+                                    is SearchResult.Artist -> "[Artist] ${item.name}"
+                                }
+                            if (isSelected) {
+                                kotterYellow { textLine("> $text") }
+                            } else {
+                                textLine("  $text")
+                            }
+                        } ?: return@runBlocking
 
                     handleSelection(selectedItem, getStream, getEntityDetails, terminal)
                 }
@@ -85,9 +98,13 @@ class DiscoverCommand : NoOpCliktCommand(
         }
     }
 
-    private class Trending : CliktCommand(name = "trending"), KoinComponent {
+    private class Trending :
+        CliktCommand(name = "trending"),
+        KoinComponent {
         private val terminal = Terminal()
-        override fun help(context: Context): String = "Show trending tracks"
+
+        override fun help(context: Context): String = "Show trending charts and top popular releases"
+
         override fun run() {
             startKoin { modules(appModule) }
             try {
@@ -120,9 +137,13 @@ class DiscoverCommand : NoOpCliktCommand(
         }
     }
 
-    private class Explore : CliktCommand(name = "explore"), KoinComponent {
+    private class Explore :
+        CliktCommand(name = "explore"),
+        KoinComponent {
         private val terminal = Terminal()
-        override fun help(context: Context): String = "Explore new releases"
+
+        override fun help(context: Context): String = "Explore mood categories, genres, and new releases"
+
         override fun run() {
             startKoin { modules(appModule) }
             try {
@@ -147,20 +168,22 @@ class DiscoverCommand : NoOpCliktCommand(
                             }
                         } ?: return@runBlocking
 
-                    val selectedItem = ItemPicker.pickItem(
-                        selectedSection.items,
-                        selectedSection.title
-                    ) { _, item, isSelected ->
-                        val text = when (item) {
-                            is SearchResult.Album -> "${item.title} - ${item.author}"
-                            else -> item.toString()
-                        }
-                        if (isSelected) {
-                            kotterYellow { textLine("> $text") }
-                        } else {
-                            textLine("  $text")
-                        }
-                    } ?: return@runBlocking
+                    val selectedItem =
+                        ItemPicker.pickItem(
+                            selectedSection.items,
+                            selectedSection.title,
+                        ) { _, item, isSelected ->
+                            val text =
+                                when (item) {
+                                    is SearchResult.Album -> "${item.title} - ${item.author}"
+                                    else -> item.toString()
+                                }
+                            if (isSelected) {
+                                kotterYellow { textLine("> $text") }
+                            } else {
+                                textLine("  $text")
+                            }
+                        } ?: return@runBlocking
 
                     handleSelection(selectedItem, getStream, getEntityDetails, terminal)
                 }
@@ -176,7 +199,7 @@ class DiscoverCommand : NoOpCliktCommand(
             item: SearchResult,
             getStream: GetStreamUseCase,
             getEntityDetails: GetEntityDetailsUseCase,
-            terminal: Terminal
+            terminal: Terminal,
         ) {
             when (item) {
                 is SearchResult.Song -> PlayActionHandler.playTrack(item.track, getStream, terminal)

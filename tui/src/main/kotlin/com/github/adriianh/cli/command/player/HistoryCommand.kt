@@ -22,11 +22,20 @@ import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class HistoryCommand : CliktCommand(
-    name = "history"
-), KoinComponent {
-    override fun help(context: Context): String = "Show recently played tracks"
-    private val limit by option("-l", "--limit", help = "Number of tracks to show").int()
+class HistoryCommand :
+    CliktCommand(
+        name = "history",
+    ),
+    KoinComponent {
+    override fun help(context: Context): String = "View listening history and interactively pick a track to play."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo history\n" +
+            "  melo history --limit 50"
+
+    private val limit by option("-l", "--limit", help = "Number of recent tracks to display (default: 20)")
+        .int()
         .default(20)
 
     private val terminal = Terminal()

@@ -32,32 +32,42 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import java.io.InputStreamReader
 
-class StatusCommand : CliktCommand(
-    name = "status"
-), KoinComponent {
+class StatusCommand :
+    CliktCommand(
+        name = "status",
+    ),
+    KoinComponent {
     private val format by option(
         names = arrayOf("-f", "--format"),
-        help = "Output format: json or plain (default: plain)"
+        help = "Output format: plain or json (default: plain)",
     ).choice("json", "plain", ignoreCase = true).default("plain")
     private val lyrics by option(
-        "-l", "--lyrics",
-        help = "Fetch and display the lyrics for the currently playing track"
+        "-l",
+        "--lyrics",
+        help = "Fetch and display lyrics for the currently playing track",
     ).flag(default = false)
 
     private val synced by option(
-        "-s", "--synced",
-        help = "Fetch synchronized lyrics (LRC format) when using --lyrics"
+        "-s",
+        "--synced",
+        help = "Fetch synchronized lyrics (LRC format) when using --lyrics",
     ).flag(default = false)
 
     private val live by option(
         "--live",
-        help = "Live updating progress bar (runs continuously until stopped)"
-    ).flag(default = true)
+        help = "Continuously update progress bar until interrupted",
+    ).flag("--no-live", default = true)
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Show current playing status from MPRIS (Linux) and optionally its lyrics"
+    override fun help(context: Context): String = "Display playback status, track metadata, progress, and lyrics."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo status\n" +
+            "  melo status --format json\n" +
+            "  melo status --lyrics --synced\n" +
+            "  melo status --no-live"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -68,12 +78,13 @@ class StatusCommand : CliktCommand(
 
             runBlocking {
                 while (true) {
-                    val process = ProcessBuilder(
-                        "sh", "-c",
-                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\""
-                    )
-                        .redirectErrorStream(true)
-                        .start()
+                    val process =
+                        ProcessBuilder(
+                            "sh",
+                            "-c",
+                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\"",
+                        ).redirectErrorStream(true)
+                            .start()
 
                     val output = InputStreamReader(process.inputStream).readText().trim()
                     process.waitFor()
@@ -109,9 +120,10 @@ class StatusCommand : CliktCommand(
                     }
 
                     if (format == "json") {
-                        val escapedLyrics = lyricsText
-                            ?.replace("\"", "\\\"")
-                            ?.replace("\n", "\\n")
+                        val escapedLyrics =
+                            lyricsText
+                                ?.replace("\"", "\\\"")
+                                ?.replace("\n", "\\n")
                         val jsonLyricsPart =
                             if (escapedLyrics != null) ",\n    \"lyrics\": \"$escapedLyrics\"" else ""
                         echo(
@@ -123,7 +135,7 @@ class StatusCommand : CliktCommand(
                                 "position_ms": ${positionUs / 1000},
                                 "duration_ms": ${lengthUs / 1000}$jsonLyricsPart
                             }
-                            """.trimIndent()
+                            """.trimIndent(),
                         )
                         return@runBlocking
                     }
@@ -155,61 +167,78 @@ class StatusCommand : CliktCommand(
                         val isInteractive = terminal.terminalInfo.interactive || live
                         if (isInteractive) {
                             var currentLyric = if (lrcLines.isNotEmpty()) "..." else ""
-                            val activeProgressTask = progressBarLayout {
-                                if (lrcLines.isNotEmpty()) {
-                                    text(cyan("♪")); text {
-                                        cyan(currentLyric)
+                            val activeProgressTask =
+                                progressBarLayout {
+                                    if (lrcLines.isNotEmpty()) {
+                                        text(cyan("♪"))
+                                        text {
+                                            cyan(currentLyric)
+                                        }
                                     }
-                                }
-                                text("Time"); text {
-                                val currentSec = completed / 1000000L
-                                val tlSec = (total ?: 0L) / 1000000L
-                                val currentStr =
-                                    String.format("%02d:%02d", currentSec / 60, currentSec % 60)
-                                val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
-                                gray("$currentStr / $tlStr")
-                            }
-                                text("Progress"); progressBar()
-                                text(""); text(gray("Press Ctrl+C to stop."))
-                            }.animateOnThread(
-                                terminal,
-                                total = lengthUs,
-                                maker = VerticalProgressBarMaker
-                            )
+                                    text("Time")
+                                    text {
+                                        val currentSec = completed / 1000000L
+                                        val tlSec = (total ?: 0L) / 1000000L
+                                        val currentStr =
+                                            String.format("%02d:%02d", currentSec / 60, currentSec % 60)
+                                        val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
+                                        gray("$currentStr / $tlStr")
+                                    }
+                                    text("Progress")
+                                    progressBar()
+                                    text("")
+                                    text(gray("Press Ctrl+C to stop."))
+                                }.animateOnThread(
+                                    terminal,
+                                    total = lengthUs,
+                                    maker = VerticalProgressBarMaker,
+                                )
 
-                            val job = CoroutineScope(Dispatchers.IO).launch {
-                                activeProgressTask.execute()
-                            }
+                            val job =
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    activeProgressTask.execute()
+                                }
 
                             while (true) {
                                 try {
-                                    val curTrackProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
-                                    ).start()
+                                    val curTrackProcess =
+                                        ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
+                                        ).start()
                                     val curTrackStr =
-                                        InputStreamReader(curTrackProcess.inputStream).readText()
+                                        InputStreamReader(curTrackProcess.inputStream)
+                                            .readText()
                                             .trim()
                                     curTrackProcess.waitFor()
 
-                                    if (curTrackStr != "$title|||$artist" && curTrackStr.isNotBlank() && curTrackStr != "No players found") {
+                                    if (curTrackStr != "$title|||$artist" &&
+                                        curTrackStr.isNotBlank() &&
+                                        curTrackStr != "No players found"
+                                    ) {
                                         break
                                     }
 
-                                    val stateProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status"
-                                    ).start()
+                                    val stateProcess =
+                                        ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status",
+                                        ).start()
                                     val stateStr =
-                                        InputStreamReader(stateProcess.inputStream).readText()
+                                        InputStreamReader(stateProcess.inputStream)
+                                            .readText()
                                             .trim()
                                     stateProcess.waitFor()
                                     if (stateStr != "Playing" && stateStr != "Paused") return@runBlocking
 
-                                    val posProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position"
-                                    ).start()
+                                    val posProcess =
+                                        ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position",
+                                        ).start()
                                     val posOutput =
                                         InputStreamReader(posProcess.inputStream).readText().trim()
                                     posProcess.waitFor()
@@ -234,24 +263,29 @@ class StatusCommand : CliktCommand(
                             job.cancel()
                             activeProgressTask.clear()
                         } else {
-                            terminal.println(horizontalLayout {
-                                cell(
-                                    ProgressBar(
-                                        total = lengthUs,
-                                        completed = positionUs,
-                                        width = 30
+                            terminal.println(
+                                horizontalLayout {
+                                    cell(
+                                        ProgressBar(
+                                            total = lengthUs,
+                                            completed = positionUs,
+                                            width = 30,
+                                        ),
                                     )
-                                )
-                                cell(Text(gray(" $posStr / $lenStr")))
-                            })
+                                    cell(Text(gray(" $posStr / $lenStr")))
+                                },
+                            )
                             if (live) {
                                 while (true) {
-                                    val curTrackProcess = ProcessBuilder(
-                                        "sh", "-c",
-                                        "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
-                                    ).start()
+                                    val curTrackProcess =
+                                        ProcessBuilder(
+                                            "sh",
+                                            "-c",
+                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
+                                        ).start()
                                     val curTrackStr =
-                                        InputStreamReader(curTrackProcess.inputStream).readText()
+                                        InputStreamReader(curTrackProcess.inputStream)
+                                            .readText()
                                             .trim()
                                     curTrackProcess.waitFor()
                                     if (curTrackStr != "$title|||$artist") break
@@ -261,10 +295,12 @@ class StatusCommand : CliktCommand(
                         }
                     } else if (live) {
                         while (true) {
-                            val curTrackProcess = ProcessBuilder(
-                                "sh", "-c",
-                                "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""
-                            ).start()
+                            val curTrackProcess =
+                                ProcessBuilder(
+                                    "sh",
+                                    "-c",
+                                    "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
+                                ).start()
                             val curTrackStr =
                                 InputStreamReader(curTrackProcess.inputStream).readText().trim()
                             curTrackProcess.waitFor()

@@ -37,31 +37,43 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
-class SearchCommand : CliktCommand(
-    name = "search"
-), KoinComponent {
-    val query by argument(name = "query", help = "Track name to search for")
+class SearchCommand :
+    CliktCommand(
+        name = "search",
+    ),
+    KoinComponent {
+    val query by argument(name = "query", help = "Search query string")
     val format by option(
-        names = arrayOf("-f", "--format"), help = "Output format: json or plain (default: plain)"
+        names = arrayOf("-f", "--format"),
+        help = "Output format: plain or json (default: plain)",
     ).choice("json", "plain", ignoreCase = true).default("plain")
     val type by option(
         names = arrayOf("-t", "--type"),
-        help = "Type of resource to search: track, album, artist, playlist (default: track)"
+        help = "Resource type to search: track, album, artist, playlist (default: track)",
     ).choice("track", "album", "artist", "playlist", ignoreCase = true).default("track")
     val limit by option(
-        names = arrayOf("-l", "--limit"), help = "Maximum number of results to show (default: 10)"
+        names = arrayOf("-l", "--limit"),
+        help = "Maximum number of results to display (default: 10)",
     ).int().default(10)
     val similar by option(
         "-s",
         "--similar",
-        help = "Show similar tracks for the first result"
+        help = "Show recommendations similar to the top result",
     ).flag(default = false)
     val lyrics by option(
         "--lyrics",
-        help = "Show lyrics for the first result"
+        help = "Fetch and display lyrics for the top result",
     ).flag(default = false)
 
     override fun help(context: Context): String = Messages.get("help.search_command")
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo search \"Radiohead\"\n" +
+            "  melo search \"Abbey Road\" --type album\n" +
+            "  melo search \"Queen\" --limit 5 --format json\n" +
+            "  melo search \"Karma Police\" --similar\n" +
+            "  melo search \"Creep\" --lyrics"
 
     private val terminal = Terminal()
 
@@ -88,20 +100,27 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         when (format) {
-                            "json" -> echo(
-                                SearchOutputFormatter.outputJsonTracks(
-                                    results, query, similar, lyrics, getSimilarTracks, getLyrics
+                            "json" ->
+                                echo(
+                                    SearchOutputFormatter.outputJsonTracks(
+                                        results,
+                                        query,
+                                        similar,
+                                        lyrics,
+                                        getSimilarTracks,
+                                        getLyrics,
+                                    ),
                                 )
-                            )
 
-                            else -> outputPlainTracks(
-                                results,
-                                getSimilarTracks,
-                                getLyrics,
-                                getStream,
-                                getSettings,
-                                downloadTrack
-                            )
+                            else ->
+                                outputPlainTracks(
+                                    results,
+                                    getSimilarTracks,
+                                    getLyrics,
+                                    getStream,
+                                    getSettings,
+                                    downloadTrack,
+                                )
                         }
                     }
 
@@ -112,7 +131,11 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainAlbums(
-                            results, getEntityDetails, getStream, getSettings, downloadTrack
+                            results,
+                            getEntityDetails,
+                            getStream,
+                            getSettings,
+                            downloadTrack,
                         )
                     }
 
@@ -123,7 +146,11 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainArtists(
-                            results, getEntityDetails, getStream, getSettings, downloadTrack
+                            results,
+                            getEntityDetails,
+                            getStream,
+                            getSettings,
+                            downloadTrack,
                         )
                     }
 
@@ -134,7 +161,11 @@ class SearchCommand : CliktCommand(
                             return@runBlocking
                         }
                         outputPlainPlaylists(
-                            results, getEntityDetails, getStream, getSettings, downloadTrack
+                            results,
+                            getEntityDetails,
+                            getStream,
+                            getSettings,
+                            downloadTrack,
                         )
                     }
                 }
@@ -150,63 +181,85 @@ class SearchCommand : CliktCommand(
         getLyrics: GetLyricsUseCase,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
-        val title = Messages.get(
-            "search.results_header", "query" to query, "count" to tracks.size.toString()
-        )
-        val selectedTrack = ItemPicker.pickItem(tracks, title) { _, track, isSelected ->
-            val duration = SearchOutputFormatter.formatDuration(track.durationMs)
-            val genres =
-                if (track.genres.isNotEmpty()) " [${track.genres.joinToString(", ")}]" else ""
-            if (isSelected) {
-                yellow { textLine("> ${track.title} — ${track.artist} (${track.album}) $duration$genres") }
-            } else {
-                textLine("  ${track.title} — ${track.artist} (${track.album}) $duration$genres")
-            }
-        }
-        if (selectedTrack == null) return
-        SearchActionHandler.handleTrackAction(
-            selectedTrack, getStream, getSettings, downloadTrack, terminal
-        )
-        if (similar) {
-            echo("")
-            echo(
-                magenta(
-                    Messages.get(
-                        "search.similar_header",
-                        "title" to selectedTrack.title,
-                        "artist" to selectedTrack.artist
-                    )
-                )
+        val title =
+            Messages.get(
+                "search.results_header",
+                "query" to query,
+                "count" to tracks.size.toString(),
             )
-            val similarTracks = getSimilarTracks(selectedTrack.artist, selectedTrack.title)
-            if (similarTracks.isEmpty()) {
-                echo(gray("  ${Messages.get("search.no_similar")}"))
-            } else {
-                similarTracks.take(5).forEach { s ->
-                    val matchPct = "%.0f%%".format(s.match * 100)
-                    echo("  • ${s.title} — ${yellow(s.artist)} ${gray("($matchPct match)")}")
+        val selectedTrack =
+            ItemPicker.pickItem(tracks, title) { _, track, isSelected ->
+                val duration = SearchOutputFormatter.formatDuration(track.durationMs)
+                val genres =
+                    if (track.genres.isNotEmpty()) " [${track.genres.joinToString(", ")}]" else ""
+                if (isSelected) {
+                    yellow { textLine("> ${track.title} — ${track.artist} (${track.album}) $duration$genres") }
+                } else {
+                    textLine("  ${track.title} — ${track.artist} (${track.album}) $duration$genres")
                 }
             }
+        if (selectedTrack == null) return
+        SearchActionHandler.handleTrackAction(
+            selectedTrack,
+            getStream,
+            getSettings,
+            downloadTrack,
+            terminal,
+        )
+        if (similar) {
+            displaySimilarTracks(selectedTrack, getSimilarTracks)
         }
         if (lyrics) {
-            echo("")
-            echo(
-                magenta(
-                    Messages.get(
-                        "search.lyrics_header",
-                        "title" to selectedTrack.title,
-                        "artist" to selectedTrack.artist
-                    )
-                )
-            )
-            val lyricsText = getLyrics(selectedTrack.artist, selectedTrack.title)
-            if (lyricsText.isNullOrBlank()) {
-                echo(gray("  ${Messages.get("search.no_lyrics")}"))
-            } else {
-                echo(lyricsText)
+            displayLyrics(selectedTrack, getLyrics)
+        }
+    }
+
+    private suspend fun displaySimilarTracks(
+        track: Track,
+        getSimilarTracks: GetSimilarTracksUseCase,
+    ) {
+        echo("")
+        echo(
+            magenta(
+                Messages.get(
+                    "search.similar_header",
+                    "title" to track.title,
+                    "artist" to track.artist,
+                ),
+            ),
+        )
+        val similarTracks = getSimilarTracks(track.artist, track.title)
+        if (similarTracks.isEmpty()) {
+            echo(gray("  ${Messages.get("search.no_similar")}"))
+        } else {
+            similarTracks.take(5).forEach { s ->
+                val matchPct = "%.0f%%".format(s.match * 100)
+                echo("  • ${s.title} — ${yellow(s.artist)} ${gray("($matchPct match)")}")
             }
+        }
+    }
+
+    private suspend fun displayLyrics(
+        track: Track,
+        getLyrics: GetLyricsUseCase,
+    ) {
+        echo("")
+        echo(
+            magenta(
+                Messages.get(
+                    "search.lyrics_header",
+                    "title" to track.title,
+                    "artist" to track.artist,
+                ),
+            ),
+        )
+        val lyricsText = getLyrics(track.artist, track.title)
+        if (lyricsText.isNullOrBlank()) {
+            echo(gray("  ${Messages.get("search.no_lyrics")}"))
+        } else {
+            echo(lyricsText)
         }
     }
 
@@ -215,22 +268,27 @@ class SearchCommand : CliktCommand(
         getEntityDetails: GetEntityDetailsUseCase,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
         val title = "Search Results for '$query' ($type): ${albums.size}"
-        val selectedAlbum = ItemPicker.pickItem(albums, title) { _, album, isSelected ->
-            val yearStr = if (album.year != null) " [${album.year}]" else ""
-            if (isSelected) {
-                yellow { textLine("> ${album.title} — ${album.author}$yearStr") }
-            } else {
-                textLine("  ${album.title} — ${album.author}$yearStr")
+        val selectedAlbum =
+            ItemPicker.pickItem(albums, title) { _, album, isSelected ->
+                val yearStr = if (album.year != null) " [${album.year}]" else ""
+                if (isSelected) {
+                    yellow { textLine("> ${album.title} — ${album.author}$yearStr") }
+                } else {
+                    textLine("  ${album.title} — ${album.author}$yearStr")
+                }
             }
-        }
         if (selectedAlbum != null) {
             val detailedAlbum = getEntityDetails(selectedAlbum) as? SearchResult.Album
             val songs = detailedAlbum?.songs ?: emptyList()
             showTrackListPicker(
-                songs, "Tracks in ${detailedAlbum?.title}", getStream, getSettings, downloadTrack
+                songs,
+                "Tracks in ${detailedAlbum?.title}",
+                getStream,
+                getSettings,
+                downloadTrack,
             )
         }
     }
@@ -240,17 +298,18 @@ class SearchCommand : CliktCommand(
         getEntityDetails: GetEntityDetailsUseCase,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
         val title = "Search Results for '$query' ($type): ${artists.size}"
-        val selectedArtist = ItemPicker.pickItem(artists, title) { _, artist, isSelected ->
-            val subscribers = artist.subscriberCountText?.let { " ($it)" } ?: ""
-            if (isSelected) {
-                yellow { textLine("> ${artist.name}$subscribers") }
-            } else {
-                textLine("  ${artist.name}$subscribers")
+        val selectedArtist =
+            ItemPicker.pickItem(artists, title) { _, artist, isSelected ->
+                val subscribers = artist.subscriberCountText?.let { " ($it)" } ?: ""
+                if (isSelected) {
+                    yellow { textLine("> ${artist.name}$subscribers") }
+                } else {
+                    textLine("  ${artist.name}$subscribers")
+                }
             }
-        }
         if (selectedArtist != null) {
             val detailedArtist = getEntityDetails(selectedArtist) as? SearchResult.Artist
             val allItems = detailedArtist?.sections?.flatMap { it.items } ?: emptyList()
@@ -264,7 +323,7 @@ class SearchCommand : CliktCommand(
                 getEntityDetails,
                 getStream,
                 getSettings,
-                downloadTrack
+                downloadTrack,
             )
         }
     }
@@ -274,22 +333,27 @@ class SearchCommand : CliktCommand(
         getEntityDetails: GetEntityDetailsUseCase,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
         val title = "Search Results for '$query' ($type): ${playlists.size}"
-        val selectedPlaylist = ItemPicker.pickItem(playlists, title) { _, playlist, isSelected ->
-            val tCount = playlist.trackCount?.let { " [$it tracks]" } ?: ""
-            if (isSelected) {
-                yellow { textLine("> ${playlist.title} — ${playlist.author}$tCount") }
-            } else {
-                textLine("  ${playlist.title} — ${playlist.author}$tCount")
+        val selectedPlaylist =
+            ItemPicker.pickItem(playlists, title) { _, playlist, isSelected ->
+                val tCount = playlist.trackCount?.let { " [$it tracks]" } ?: ""
+                if (isSelected) {
+                    yellow { textLine("> ${playlist.title} — ${playlist.author}$tCount") }
+                } else {
+                    textLine("  ${playlist.title} — ${playlist.author}$tCount")
+                }
             }
-        }
         if (selectedPlaylist != null) {
             val detailedPlaylist = getEntityDetails(selectedPlaylist) as? SearchResult.Playlist
             val songs = detailedPlaylist?.songs ?: emptyList()
             showTrackListPicker(
-                songs, "Tracks in ${detailedPlaylist?.title}", getStream, getSettings, downloadTrack
+                songs,
+                "Tracks in ${detailedPlaylist?.title}",
+                getStream,
+                getSettings,
+                downloadTrack,
             )
         }
     }
@@ -300,32 +364,39 @@ class SearchCommand : CliktCommand(
         getEntityDetails: GetEntityDetailsUseCase,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
-        val selectedItem = ItemPicker.pickItem(items, "== $title ==") { _, item, isSelected ->
-            val typeStr = when (item) {
-                is SearchResult.Song -> "[Song]"
-                is SearchResult.Album -> "[Album]"
-                is SearchResult.Playlist -> "[Playlist]"
-                is SearchResult.Artist -> "[Artist]"
-            }.padEnd(10)
-            val nameStr = when (item) {
-                is SearchResult.Song -> "${item.track.title} — ${item.track.artist}"
-                is SearchResult.Album -> "${item.title} — ${item.author}"
-                is SearchResult.Playlist -> "${item.title} — ${item.author}"
-                is SearchResult.Artist -> item.name
+        val selectedItem =
+            ItemPicker.pickItem(items, "== $title ==") { _, item, isSelected ->
+                val typeStr =
+                    when (item) {
+                        is SearchResult.Song -> "[Song]"
+                        is SearchResult.Album -> "[Album]"
+                        is SearchResult.Playlist -> "[Playlist]"
+                        is SearchResult.Artist -> "[Artist]"
+                    }.padEnd(10)
+                val nameStr =
+                    when (item) {
+                        is SearchResult.Song -> "${item.track.title} — ${item.track.artist}"
+                        is SearchResult.Album -> "${item.title} — ${item.author}"
+                        is SearchResult.Playlist -> "${item.title} — ${item.author}"
+                        is SearchResult.Artist -> item.name
+                    }
+                if (isSelected) {
+                    yellow { textLine("> $typeStr $nameStr") }
+                } else {
+                    textLine("  $typeStr $nameStr")
+                }
             }
-            if (isSelected) {
-                yellow { textLine("> $typeStr $nameStr") }
-            } else {
-                textLine("  $typeStr $nameStr")
-            }
-        }
         when (selectedItem) {
             is SearchResult.Song -> {
                 echo(magenta("You selected Song: ${selectedItem.track.title}"))
                 SearchActionHandler.handleTrackAction(
-                    selectedItem.track, getStream, getSettings, downloadTrack, terminal
+                    selectedItem.track,
+                    getStream,
+                    getSettings,
+                    downloadTrack,
+                    terminal,
                 )
             }
 
@@ -336,7 +407,7 @@ class SearchCommand : CliktCommand(
                     "Tracks in ${detailedAlbum?.title}",
                     getStream,
                     getSettings,
-                    downloadTrack
+                    downloadTrack,
                 )
             }
 
@@ -347,7 +418,7 @@ class SearchCommand : CliktCommand(
                     "Tracks in ${detailedPlaylist?.title}",
                     getStream,
                     getSettings,
-                    downloadTrack
+                    downloadTrack,
                 )
             }
 
@@ -361,7 +432,7 @@ class SearchCommand : CliktCommand(
                         getEntityDetails,
                         getStream,
                         getSettings,
-                        downloadTrack
+                        downloadTrack,
                     )
                 } else {
                     echo("No details found for artist ${detailedArtist?.name}")
@@ -377,23 +448,28 @@ class SearchCommand : CliktCommand(
         title: String,
         getStream: GetStreamUseCase,
         getSettings: GetSettingsUseCase,
-        downloadTrack: DownloadTrackUseCase
+        downloadTrack: DownloadTrackUseCase,
     ) {
         if (tracks.isEmpty()) {
             echo("No tracks found.")
             return
         }
-        val selectedTrack = ItemPicker.pickItem(tracks, "== $title ==") { _, track, isSelected ->
-            val duration = SearchOutputFormatter.formatDuration(track.durationMs)
-            if (isSelected) {
-                yellow { textLine("> ${track.title} $duration") }
-            } else {
-                textLine("  ${track.title} $duration")
+        val selectedTrack =
+            ItemPicker.pickItem(tracks, "== $title ==") { _, track, isSelected ->
+                val duration = SearchOutputFormatter.formatDuration(track.durationMs)
+                if (isSelected) {
+                    yellow { textLine("> ${track.title} $duration") }
+                } else {
+                    textLine("  ${track.title} $duration")
+                }
             }
-        }
         selectedTrack?.let {
             SearchActionHandler.handleTrackAction(
-                it, getStream, getSettings, downloadTrack, terminal
+                it,
+                getStream,
+                getSettings,
+                downloadTrack,
+                terminal,
             )
         }
     }

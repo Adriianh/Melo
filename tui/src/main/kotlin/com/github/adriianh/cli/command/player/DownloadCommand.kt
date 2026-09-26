@@ -27,26 +27,34 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class DownloadCommand : CliktCommand(
-    name = "download"
-), KoinComponent {
-    private val query by argument(name = "query", help = "Query to download")
+class DownloadCommand :
+    CliktCommand(
+        name = "download",
+    ),
+    KoinComponent {
+    private val query by argument(name = "query", help = "Search query for track, album, or playlist to download")
     private val type by option(
         "-t",
         "--type",
-        help = "Type of download (track, album, playlist)"
+        help = "Download type: track, album, playlist (default: track)",
     ).default("track")
-    private val path by option("-p", "--path", help = "Custom download path")
+    private val path by option("-p", "--path", help = "Custom destination directory for downloaded files")
     private val interactive by option(
         "-i",
         "--interactive",
-        help = "Interactively select from search results"
+        help = "Interactively select from search results before downloading",
     ).flag(default = false)
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Download the best matching track, album, or playlist for the given query directly"
+    override fun help(context: Context): String = "Download tracks, albums, or playlists for offline playback."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo download \"Bohemian Rhapsody\"\n" +
+            "  melo download \"Discovery\" --type album\n" +
+            "  melo download \"Top Hits\" --type playlist --interactive\n" +
+            "  melo download \"Song Name\" --path ~/Music"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -65,10 +73,11 @@ class DownloadCommand : CliktCommand(
                 when (type.lowercase()) {
                     "album" -> {
                         val albums = searchAlbums(query)
-                        val album = selectInteractive(
-                            albums,
-                            "Select Album"
-                        ) { "${it.title} by ${it.author}" }
+                        val album =
+                            selectInteractive(
+                                albums,
+                                "Select Album",
+                            ) { "${it.title} by ${it.author}" }
                         if (album == null) {
                             terminal.println("No album found or selection cancelled for '$query'.")
                             return@runBlocking
@@ -86,7 +95,7 @@ class DownloadCommand : CliktCommand(
                             getStream = getStream,
                             getSettings = getSettings,
                             downloadTrackUseCase = downloadTrack,
-                            terminal = terminal
+                            terminal = terminal,
                         )
                     }
 
@@ -95,7 +104,7 @@ class DownloadCommand : CliktCommand(
                         val playlist =
                             selectInteractive(
                                 playlists,
-                                "Select Playlist"
+                                "Select Playlist",
                             ) { "${it.title} by ${it.author}" }
                         if (playlist == null) {
                             terminal.println("No playlist found or selection cancelled for '$query'.")
@@ -114,16 +123,17 @@ class DownloadCommand : CliktCommand(
                             getStream = getStream,
                             getSettings = getSettings,
                             downloadTrackUseCase = downloadTrack,
-                            terminal = terminal
+                            terminal = terminal,
                         )
                     }
 
                     else -> {
                         val tracks = searchTracks(query)
-                        val track = selectInteractive(
-                            tracks,
-                            "Select Track"
-                        ) { "${it.title} by ${it.artist}" }
+                        val track =
+                            selectInteractive(
+                                tracks,
+                                "Select Track",
+                            ) { "${it.title} by ${it.artist}" }
                         if (track == null) {
                             terminal.println("No track results found or selection cancelled for '$query'.")
                             return@runBlocking
@@ -134,7 +144,7 @@ class DownloadCommand : CliktCommand(
                             getStream = getStream,
                             getSettings = getSettings,
                             downloadTrackUseCase = downloadTrack,
-                            terminal = terminal
+                            terminal = terminal,
                         )
                     }
                 }
@@ -147,19 +157,20 @@ class DownloadCommand : CliktCommand(
     private fun <T> selectInteractive(
         results: List<T>,
         title: String,
-        titleSelector: (T) -> String
+        titleSelector: (T) -> String,
     ): T? {
         if (results.isEmpty()) return null
         if (!interactive || results.size == 1) return results.first()
 
         val limited = results.take(15)
-        val selected = ItemPicker.pickItem(limited, title) { _, item, isSelected ->
-            if (isSelected) {
-                kotterYellow { textLine("> " + titleSelector(item)) }
-            } else {
-                textLine("  " + titleSelector(item))
+        val selected =
+            ItemPicker.pickItem(limited, title) { _, item, isSelected ->
+                if (isSelected) {
+                    kotterYellow { textLine("> " + titleSelector(item)) }
+                } else {
+                    textLine("  " + titleSelector(item))
+                }
             }
-        }
 
         if (selected == null) {
             terminal.println(gray("Selection cancelled."))

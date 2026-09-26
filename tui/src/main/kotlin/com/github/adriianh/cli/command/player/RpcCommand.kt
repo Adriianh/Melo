@@ -18,25 +18,37 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
-class RpcCommand : NoOpCliktCommand(
-    name = "rpc"
-) {
-    override fun help(context: Context): String = "Manage Discord Rich Presence"
+class RpcCommand :
+    NoOpCliktCommand(
+        name = "rpc",
+    ) {
+    override fun help(context: Context): String = "Toggle or inspect Discord Rich Presence status."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo rpc status\n" +
+            "  melo rpc toggle"
 
     init {
         subcommands(
             RpcToggleCommand(),
-            RpcStatusCommand()
+            RpcStatusCommand(),
         )
     }
 }
 
-class RpcToggleCommand : CliktCommand(
-    name = "toggle"
-), KoinComponent {
+class RpcToggleCommand :
+    CliktCommand(
+        name = "toggle",
+    ),
+    KoinComponent {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String = "Toggle Discord Rich Presence on/off"
+    override fun help(context: Context): String = "Toggle Discord Rich Presence on or off"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo rpc toggle"
 
     override fun run() {
         val result = LocalIpcClient.sendCommand("RPC_TOGGLE")
@@ -62,12 +74,17 @@ class RpcToggleCommand : CliktCommand(
     }
 }
 
-class RpcStatusCommand : CliktCommand(
-    name = "status"
-) {
+class RpcStatusCommand :
+    CliktCommand(
+        name = "status",
+    ) {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String = "Show current RPC status"
+    override fun help(context: Context): String = "Display current Discord Rich Presence status"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo rpc status"
 
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_LIST")

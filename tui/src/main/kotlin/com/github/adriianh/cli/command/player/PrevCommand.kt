@@ -7,10 +7,19 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 class PrevCommand : CliktCommand(name = "prev") {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Skip to previous track or restart current"
+
+    override fun help(context: Context): String = "Skip to the previous track or restart the current track."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo prev"
+
     override fun run() {
         val result = LocalIpcClient.sendCommand("PREV")
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Skipped to previous track.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Skipped to previous track.")
+        }
     }
 }

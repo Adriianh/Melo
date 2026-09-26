@@ -22,28 +22,41 @@ import org.koin.core.context.stopKoin
 import java.io.File
 import kotlin.system.exitProcess
 
-class DaemonCommand : NoOpCliktCommand(
-    name = "daemon"
-) {
-    override fun help(context: Context): String = "Manage the Melo player daemon/service"
+class DaemonCommand :
+    NoOpCliktCommand(
+        name = "daemon",
+    ) {
+    override fun help(context: Context): String = "Manage the background player daemon for headless playback and IPC."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo daemon start\n" +
+            "  melo daemon status\n" +
+            "  melo daemon stop\n" +
+            "  melo daemon run"
 
     init {
         subcommands(
             DaemonStartCommand(),
             DaemonRunCommand(),
             DaemonStopCommand(),
-            DaemonStatusCommand()
+            DaemonStatusCommand(),
         )
     }
 }
 
-class DaemonRunCommand : CliktCommand(
-    name = "run"
-), KoinComponent {
+class DaemonRunCommand :
+    CliktCommand(
+        name = "run",
+    ),
+    KoinComponent {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Run the player daemon in the foreground (useful for debugging)"
+    override fun help(context: Context): String = "Run the player daemon in the foreground (useful for debugging)"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo daemon run"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -61,13 +74,17 @@ class DaemonRunCommand : CliktCommand(
     }
 }
 
-class DaemonStartCommand : CliktCommand(
-    name = "start"
-) {
+class DaemonStartCommand :
+    CliktCommand(
+        name = "start",
+    ) {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Start the player daemon in the background (detached)"
+    override fun help(context: Context): String = "Start the Melo player daemon in the background (detached)"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo daemon start"
 
     override fun run() {
         val javaHome = System.getProperty("java.home")
@@ -85,7 +102,12 @@ class DaemonStartCommand : CliktCommand(
         // Check if we are running as a native image or jar
         val isNative = System.getProperty("org.graalvm.nativeimage.imagecode") != null
         if (isNative) {
-            val executablePath = ProcessHandle.current().info().command().orElse("melo")
+            val executablePath =
+                ProcessHandle
+                    .current()
+                    .info()
+                    .command()
+                    .orElse("melo")
             if (executablePath != null) {
                 command.add(executablePath)
             }
@@ -115,12 +137,17 @@ class DaemonStartCommand : CliktCommand(
     }
 }
 
-class DaemonStopCommand : CliktCommand(
-    name = "stop"
-) {
+class DaemonStopCommand :
+    CliktCommand(
+        name = "stop",
+    ) {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String = "Stop the running daemon"
+    override fun help(context: Context): String = "Stop the running Melo player daemon"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo daemon stop"
 
     override fun run() {
         terminal.println(cyan("Stopping Melo daemon..."))
@@ -133,12 +160,17 @@ class DaemonStopCommand : CliktCommand(
     }
 }
 
-class DaemonStatusCommand : CliktCommand(
-    name = "status"
-) {
+class DaemonStatusCommand :
+    CliktCommand(
+        name = "status",
+    ) {
     private val terminal = Terminal()
 
-    override fun help(context: Context): String = "Check the daemon status"
+    override fun help(context: Context): String = "Check if the Melo player daemon is currently active"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo daemon status"
 
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_LIST")
