@@ -30,25 +30,32 @@ import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class PlayCommand : CliktCommand(
-    name = "play"
-), KoinComponent {
-    private val query by argument(name = "query", help = "Track name to play")
+class PlayCommand :
+    CliktCommand(
+        name = "play",
+    ),
+    KoinComponent {
+    private val query by argument(name = "query", help = "Name of track, album, or playlist to play")
     private val type by option(
         "-t",
         "--type",
-        help = "Type of playback (track, album, playlist)"
+        help = "Playback type: track, album, or playlist (default: track)",
     ).default("track")
     private val interactive by option(
         "-i",
         "--interactive",
-        help = "Interactively select from search results"
+        help = "Interactively select from search results",
     ).flag(default = false)
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Play the best matching track, album, or playlist for the given query directly"
+    override fun help(context: Context): String = "Play a track, album, or playlist from streaming or local library."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo play \"Bohemian Rhapsody\"\n" +
+            "  melo play \"Abbey Road\" --type album\n" +
+            "  melo play \"Rock Classics\" --type playlist --interactive"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -65,10 +72,11 @@ class PlayCommand : CliktCommand(
                 when (type.lowercase()) {
                     "album" -> {
                         val albums = searchAlbums(query)
-                        val album = selectInteractive(
-                            albums,
-                            "Select Album"
-                        ) { "${it.title} by ${it.author}" }
+                        val album =
+                            selectInteractive(
+                                albums,
+                                "Select Album",
+                            ) { "${it.title} by ${it.author}" }
                         if (album == null) {
                             terminal.println("No album found or selection cancelled for '$query'.")
                             return@runBlocking
@@ -86,17 +94,18 @@ class PlayCommand : CliktCommand(
                                 contextName = detailedAlbum.title,
                                 tracks = tracks,
                                 getStream = getStream,
-                                terminal = terminal
+                                terminal = terminal,
                             )
                         }
                     }
 
                     "playlist" -> {
                         val playlists = searchPlaylists(query)
-                        val playlist = selectInteractive(
-                            playlists,
-                            "Select Playlist"
-                        ) { "${it.title} by ${it.author}" }
+                        val playlist =
+                            selectInteractive(
+                                playlists,
+                                "Select Playlist",
+                            ) { "${it.title} by ${it.author}" }
                         if (playlist == null) {
                             terminal.println("No playlist found or selection cancelled for '$query'.")
                             return@runBlocking
@@ -114,17 +123,18 @@ class PlayCommand : CliktCommand(
                                 contextName = detailedPlaylist.title,
                                 tracks = tracks,
                                 getStream = getStream,
-                                terminal = terminal
+                                terminal = terminal,
                             )
                         }
                     }
 
                     else -> {
                         val tracks = searchTracks(query)
-                        val track = selectInteractive(
-                            tracks,
-                            "Select Track"
-                        ) { "${it.title} by ${it.artist}" }
+                        val track =
+                            selectInteractive(
+                                tracks,
+                                "Select Track",
+                            ) { "${it.title} by ${it.artist}" }
 
                         if (track == null) {
                             terminal.println("No track results found or selection cancelled for '$query'.")
@@ -160,19 +170,20 @@ class PlayCommand : CliktCommand(
     private fun <T> selectInteractive(
         results: List<T>,
         title: String,
-        titleSelector: (T) -> String
+        titleSelector: (T) -> String,
     ): T? {
         if (results.isEmpty()) return null
         if (!interactive || results.size == 1) return results.first()
 
         val limited = results.take(15)
-        val selected = ItemPicker.pickItem(limited, title) { _, item, isSelected ->
-            if (isSelected) {
-                kotterYellow { textLine("> " + titleSelector(item)) }
-            } else {
-                textLine("  " + titleSelector(item))
+        val selected =
+            ItemPicker.pickItem(limited, title) { _, item, isSelected ->
+                if (isSelected) {
+                    kotterYellow { textLine("> " + titleSelector(item)) }
+                } else {
+                    textLine("  " + titleSelector(item))
+                }
             }
-        }
 
         if (selected == null) {
             terminal.println(gray("Selection cancelled."))

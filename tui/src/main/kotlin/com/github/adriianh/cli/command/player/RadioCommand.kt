@@ -22,20 +22,26 @@ import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class RadioCommand : CliktCommand(
-    name = "radio"
-), KoinComponent {
-    private val query by argument(name = "query", help = "Seed track name for radio")
+class RadioCommand :
+    CliktCommand(
+        name = "radio",
+    ),
+    KoinComponent {
+    private val query by argument(name = "query", help = "Seed track or artist name for the radio station")
     private val interactive by option(
         "-i",
         "--interactive",
-        help = "Interactively select seed track from search results"
+        help = "Interactively select seed track from search results",
     ).flag(default = false)
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "Start an infinite radio session based on a seed track"
+    override fun help(context: Context): String = "Start an endless radio station based on a seed track or artist."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo radio \"Comfortably Numb\"\n" +
+            "  melo radio \"Daft Punk\" --interactive"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -48,30 +54,32 @@ class RadioCommand : CliktCommand(
             runBlocking {
                 terminal.println(gray("Searching for seed track '$query'..."))
                 val tracks = searchTracks(query)
-                val seedTrack = if (tracks.isEmpty()) {
-                    null
-                } else if (!interactive || tracks.size == 1) {
-                    tracks.first()
-                } else {
-                    val limited = tracks.take(15)
-                    ItemPicker.pickItem(limited, "Select Seed Track") { _, item, isSelected ->
-                        if (isSelected) {
-                            kotterYellow { textLine("> ${item.title} by ${item.artist}") }
-                        } else {
-                            textLine("  ${item.title} by ${item.artist}")
+                val seedTrack =
+                    if (tracks.isEmpty()) {
+                        null
+                    } else if (!interactive || tracks.size == 1) {
+                        tracks.first()
+                    } else {
+                        val limited = tracks.take(15)
+                        ItemPicker.pickItem(limited, "Select Seed Track") { _, item, isSelected ->
+                            if (isSelected) {
+                                kotterYellow { textLine("> ${item.title} by ${item.artist}") }
+                            } else {
+                                textLine("  ${item.title} by ${item.artist}")
+                            }
                         }
                     }
-                }
 
                 if (seedTrack == null) {
                     terminal.println("No seed track found or selection cancelled for '$query'.")
                     return@runBlocking
                 }
 
-                val videoId = seedTrack.sourceId
-                    ?: (if (seedTrack.id.startsWith("piped:")) seedTrack.id.removePrefix("piped:") else null)
-                    ?: getStream.resolveSourceId(seedTrack)
-                    ?: seedTrack.id
+                val videoId =
+                    seedTrack.sourceId
+                        ?: (if (seedTrack.id.startsWith("piped:")) seedTrack.id.removePrefix("piped:") else null)
+                        ?: getStream.resolveSourceId(seedTrack)
+                        ?: seedTrack.id
                 val radioTracks = getRadio(videoId)
 
                 if (radioTracks.isEmpty()) {
@@ -83,7 +91,7 @@ class RadioCommand : CliktCommand(
                     contextName = "Radio: ${seedTrack.title}",
                     tracks = radioTracks,
                     getStream = getStream,
-                    terminal = terminal
+                    terminal = terminal,
                 )
             }
         } finally {

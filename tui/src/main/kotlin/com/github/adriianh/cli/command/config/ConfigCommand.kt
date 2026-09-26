@@ -15,5 +15,11 @@ class ConfigCommand : CliktCommand(name = "config") {
 
     override fun help(context: Context): String = Messages.get("help.config_command")
 
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo config list\n" +
+            "  melo config set LASTFM_API_KEY \"your_api_key\"\n" +
+            "  melo config set SPOTIFY_CLIENT_ID \"your_client_id\""
+
     override fun run() = Unit
 }

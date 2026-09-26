@@ -3,19 +3,28 @@ package com.github.adriianh.cli.command.config
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.config.configDir
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.arguments.argument
 import java.io.File
 
-private val ALLOWED_KEYS = setOf(
-    "LASTFM_API_KEY",
-    "LASTFM_SHARED_SECRET",
-    "SPOTIFY_CLIENT_ID",
-    "SPOTIFY_CLIENT_SECRET",
-)
+private val ALLOWED_KEYS =
+    setOf(
+        "LASTFM_API_KEY",
+        "LASTFM_SHARED_SECRET",
+        "SPOTIFY_CLIENT_ID",
+        "SPOTIFY_CLIENT_SECRET",
+    )
 
 class ConfigSetCommand : CliktCommand(name = "set") {
-    private val key   by argument(help = "Config key (${ALLOWED_KEYS.joinToString(", ")})")
+    private val key by argument(help = "Config key (${ALLOWED_KEYS.joinToString(", ")})")
     private val value by argument(help = "Value to assign")
+
+    override fun help(context: Context): String = "Set or update a configuration key in .env"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo config set LASTFM_API_KEY \"your_key\"\n" +
+            "  melo config set SPOTIFY_CLIENT_ID \"your_id\""
 
     override fun run() {
         val upperKey = key.uppercase()
@@ -28,21 +37,26 @@ class ConfigSetCommand : CliktCommand(name = "set") {
         val envFile = File("$configDir/.env")
         envFile.parentFile.mkdirs()
 
-        val lines: List<String> = if (envFile.exists()) {
-            envFile.readLines()
-        } else {
-            emptyList()
-        }
+        val lines: List<String> =
+            if (envFile.exists()) {
+                envFile.readLines()
+            } else {
+                emptyList()
+            }
 
         val keyExists = lines.any { it.startsWith("$upperKey=") || it.startsWith("$upperKey =") }
-        val newLines = if (keyExists) {
-            lines.map { line ->
-                if (line.startsWith("$upperKey=") || line.startsWith("$upperKey =")) "$upperKey=$value"
-                else line
+        val newLines =
+            if (keyExists) {
+                lines.map { line ->
+                    if (line.startsWith("$upperKey=") || line.startsWith("$upperKey =")) {
+                        "$upperKey=$value"
+                    } else {
+                        line
+                    }
+                }
+            } else {
+                lines + "$upperKey=$value"
             }
-        } else {
-            lines + "$upperKey=$value"
-        }
 
         envFile.writeText(newLines.joinToString("\n") + "\n")
 
@@ -50,4 +64,3 @@ class ConfigSetCommand : CliktCommand(name = "set") {
         echo(Messages.get(messageKey, "key" to upperKey, "configDir" to configDir))
     }
 }
-

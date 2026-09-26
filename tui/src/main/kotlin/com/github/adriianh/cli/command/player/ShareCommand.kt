@@ -16,40 +16,51 @@ import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class ShareCommand : CliktCommand(
-    name = "share"
-), KoinComponent {
+class ShareCommand :
+    CliktCommand(
+        name = "share",
+    ),
+    KoinComponent {
     private val terminal = Terminal()
-    private val query by argument().optional()
+    private val query by argument(
+        help = "Track name to find link for (uses currently playing track if omitted)",
+    ).optional()
     private val searchTracks: SearchTracksUseCase by inject()
 
-    override fun help(context: Context): String =
-        "Share the current track or search for a track link"
+    override fun help(context: Context): String = "Generate and display shareable YouTube Music links for tracks."
 
-    override fun run() = runBlocking {
-        if (query == null) {
-            val result = LocalIpcClient.sendCommand("GET_CURRENT_TRACK")
-            if (result.startsWith("ERROR")) {
-                terminal.println(yellow("No track is currently playing in the daemon."))
-                terminal.println(cyan("Hint: Provide a search query to share a specific track, e.g., melo share 'Never Gonna Give You Up'"))
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo share\n" +
+            "  melo share \"Starboy\""
+
+    override fun run() =
+        runBlocking {
+            if (query == null) {
+                val result = LocalIpcClient.sendCommand("GET_CURRENT_TRACK")
+                if (result.startsWith("ERROR")) {
+                    terminal.println(yellow("No track is currently playing in the daemon."))
+                    terminal.println(
+                        cyan("Hint: Provide a query to share a track, e.g., melo share 'Never Gonna Give You Up'"),
+                    )
+                } else {
+                    val track = Json.decodeFromString(Track.serializer(), result)
+                    printTrackLink(track)
+                }
             } else {
-                val track = Json.decodeFromString(Track.serializer(), result)
-                printTrackLink(track)
-            }
-        } else {
-            terminal.println(cyan("Searching for track link..."))
-            val tracks = searchTracks(query!!)
-            if (tracks.isEmpty()) {
-                terminal.println(yellow("No tracks found for '$query'"))
-            } else {
-                printTrackLink(tracks.first())
+                terminal.println(cyan("Searching for track link..."))
+                val tracks = searchTracks(query!!)
+                if (tracks.isEmpty()) {
+                    terminal.println(yellow("No tracks found for '$query'"))
+                } else {
+                    printTrackLink(tracks.first())
+                }
             }
         }
-    }
 
     private fun printTrackLink(track: Track) {
         val trackId = track.id.split(":").last()
-        val link = "https://music.youtube.com/watch?v=${trackId}"
+        val link = "https://music.youtube.com/watch?v=$trackId"
         terminal.println(green("Track Found: ") + track.title + " by " + track.artist)
         terminal.println(cyan("Link: ") + link)
     }

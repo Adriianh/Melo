@@ -25,20 +25,33 @@ import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
-class LocalLibraryCommand : NoOpCliktCommand(
-    name = "library"
-) {
-    override fun help(context: Context): String = "Manage your local music library"
+class LocalLibraryCommand :
+    NoOpCliktCommand(
+        name = "library",
+    ) {
+    override fun help(context: Context): String = "Scan local folders and browse indexed offline audio files."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo library scan ~/Music\n" +
+            "  melo library scan /media/drive/songs /home/user/Music\n" +
+            "  melo library list"
 
     init {
         subcommands(Scan(), List())
     }
 
-    private class Scan : CliktCommand(name = "scan"), KoinComponent {
-        private val paths by argument(help = "Directories to scan").multiple()
+    private class Scan :
+        CliktCommand(name = "scan"),
+        KoinComponent {
+        private val paths by argument(help = "Directories to scan for audio files").multiple()
         private val terminal = Terminal()
 
-        override fun help(context: Context): String = "Scan directories for music files"
+        override fun help(context: Context): String = "Scan directories and index audio files into local library"
+
+        override fun helpEpilog(context: Context): String =
+            "Examples:\n" +
+                "  melo library scan ~/Music"
 
         override fun run() {
             startKoin { modules(appModule) }
@@ -72,10 +85,16 @@ class LocalLibraryCommand : NoOpCliktCommand(
         }
     }
 
-    private class List : CliktCommand(name = "list"), KoinComponent {
+    private class List :
+        CliktCommand(name = "list"),
+        KoinComponent {
         private val terminal = Terminal()
 
-        override fun help(context: Context): String = "List all offline tracks"
+        override fun help(context: Context): String = "List all indexed offline tracks with their local file paths"
+
+        override fun helpEpilog(context: Context): String =
+            "Examples:\n" +
+                "  melo library list"
 
         override fun run() {
             startKoin { modules(appModule) }
@@ -92,16 +111,17 @@ class LocalLibraryCommand : NoOpCliktCommand(
                         return@runBlocking
                     }
 
-                    val selected = ItemPicker.pickItem(
-                        offlineTracks,
-                        "Local Library (${offlineTracks.size} tracks)"
-                    ) { _, item, isSelected ->
-                        if (isSelected) {
-                            kotterYellow { textLine("> ${item.track.title} - ${item.track.artist}") }
-                        } else {
-                            textLine("  ${item.track.title} - ${item.track.artist}")
-                        }
-                    } ?: return@runBlocking
+                    val selected =
+                        ItemPicker.pickItem(
+                            offlineTracks,
+                            "Local Library (${offlineTracks.size} tracks)",
+                        ) { _, item, isSelected ->
+                            if (isSelected) {
+                                kotterYellow { textLine("> ${item.track.title} - ${item.track.artist}") }
+                            } else {
+                                textLine("  ${item.track.title} - ${item.track.artist}")
+                            }
+                        } ?: return@runBlocking
 
                     PlayActionHandler.playTrack(selected.track, getStream, terminal)
                 }

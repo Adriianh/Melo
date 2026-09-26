@@ -3,9 +3,16 @@ package com.github.adriianh.cli.command.config
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.config.configDir
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import java.io.File
 
 class ConfigListCommand : CliktCommand(name = "list") {
+    override fun help(context: Context): String = "List all current configuration values in .env"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo config list"
+
     override fun run() {
         val envFile = File("$configDir/.env")
 
@@ -14,8 +21,10 @@ class ConfigListCommand : CliktCommand(name = "list") {
             return
         }
 
-        val entries = envFile.readLines()
-            .filter { it.isNotBlank() && !it.startsWith("#") && "=" in it }
+        val entries =
+            envFile
+                .readLines()
+                .filter { it.isNotBlank() && !it.startsWith("#") && "=" in it }
 
         if (entries.isEmpty()) {
             echo(Messages.get("config.list.empty", "configDir" to configDir))
@@ -31,4 +40,3 @@ class ConfigListCommand : CliktCommand(name = "list") {
         }
     }
 }
-

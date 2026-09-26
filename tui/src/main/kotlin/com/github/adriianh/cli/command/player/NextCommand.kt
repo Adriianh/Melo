@@ -7,10 +7,19 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 class NextCommand : CliktCommand(name = "next") {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Skip to next track"
+
+    override fun help(context: Context): String = "Skip to the next track in the playback queue."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo next"
+
     override fun run() {
         val result = LocalIpcClient.sendCommand("NEXT")
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Skipped to next track.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Skipped to next track.")
+        }
     }
 }

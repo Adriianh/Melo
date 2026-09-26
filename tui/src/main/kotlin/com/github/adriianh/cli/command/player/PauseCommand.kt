@@ -7,10 +7,19 @@ import com.github.ajalt.mordant.terminal.Terminal
 
 class PauseCommand : CliktCommand(name = "pause") {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Pause playback"
+
+    override fun help(context: Context): String = "Pause current playback in the active player or daemon."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo pause"
+
     override fun run() {
         val result = LocalIpcClient.sendCommand("PAUSE")
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Playback paused.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Playback paused.")
+        }
     }
 }

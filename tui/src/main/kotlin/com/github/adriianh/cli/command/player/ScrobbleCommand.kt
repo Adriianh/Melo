@@ -17,21 +17,33 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
 class ScrobbleCommand : CliktCommand(name = "scrobble") {
-    override fun help(context: Context): String = "Last.fm scrobbling management"
+    override fun help(context: Context): String = "Check or disconnect Last.fm scrobbling integration."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo scrobble status\n" +
+            "  melo scrobble logout"
 
     init {
         subcommands(
             ScrobbleStatusCommand(),
-            ScrobbleLogoutCommand()
+            ScrobbleLogoutCommand(),
         )
     }
 
     override fun run() {}
 }
 
-class ScrobbleStatusCommand : CliktCommand(name = "status"), KoinComponent {
+class ScrobbleStatusCommand :
+    CliktCommand(name = "status"),
+    KoinComponent {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Show Last.fm scrobbling status"
+
+    override fun help(context: Context): String = "Display Last.fm scrobbling authentication status"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo scrobble status"
 
     override fun run() {
         if (GlobalContext.getOrNull() == null) {
@@ -55,9 +67,16 @@ class ScrobbleStatusCommand : CliktCommand(name = "status"), KoinComponent {
     }
 }
 
-class ScrobbleLogoutCommand : CliktCommand(name = "logout"), KoinComponent {
+class ScrobbleLogoutCommand :
+    CliktCommand(name = "logout"),
+    KoinComponent {
     private val terminal = Terminal()
-    override fun help(context: Context): String = "Logout from Last.fm"
+
+    override fun help(context: Context): String = "Disconnect and remove saved Last.fm session"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo scrobble logout"
 
     override fun run() {
         if (GlobalContext.getOrNull() == null) {

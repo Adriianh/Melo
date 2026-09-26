@@ -148,4 +148,33 @@ class MeloCommandTest {
             assertNotNull(cat, "Command '$cmd' must map to a valid CommandCategory")
         }
     }
+
+    @Test
+    fun subcommandsDisplayExamplesInHelpEpilog() {
+        val auditedCommands = listOf("play", "search", "status", "queue", "playlist", "download", "daemon", "auth")
+        for (name in auditedCommands) {
+            val cmd = MeloCommand()
+            val result = cmd.test("$name --help")
+            assertEquals(0, result.statusCode, "melo $name --help should succeed")
+            assertTrue(
+                result.output.contains("Examples:"),
+                "melo $name --help should display an Examples section",
+            )
+            assertTrue(
+                result.output.contains("melo $name"),
+                "melo $name --help should contain usage examples for melo $name",
+            )
+        }
+    }
+
+    @Test
+    fun epilogRendersAnsiStylesWhenColorIsEnabled() {
+        val cmd = MeloCommand()
+        val result = cmd.test("--help", ansiLevel = com.github.ajalt.mordant.rendering.AnsiLevel.TRUECOLOR)
+        assertEquals(0, result.statusCode)
+        assertTrue(
+            result.output.contains("\u001B["),
+            "Help output with TRUECOLOR should contain ANSI styling sequences",
+        )
+    }
 }

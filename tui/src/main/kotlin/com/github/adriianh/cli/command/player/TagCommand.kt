@@ -18,18 +18,26 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import kotlin.system.exitProcess
 
-class TagCommand : CliktCommand(
-    name = "tag"
-), KoinComponent {
-    private val id by argument(help = "Track ID to edit (local:path or innerTube ID)")
+class TagCommand :
+    CliktCommand(
+        name = "tag",
+    ),
+    KoinComponent {
+    private val id by argument(help = "Track ID to inspect or edit (e.g. local:/path/to/song.mp3)")
 
-    private val title by option("--title", help = "New title")
-    private val artist by option("--artist", help = "New artist")
-    private val album by option("--album", help = "New album")
+    private val title by option("--title", help = "New title tag")
+    private val artist by option("--artist", help = "New artist tag")
+    private val album by option("--album", help = "New album tag")
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String = "View or edit metadata of a local track"
+    override fun help(context: Context): String = "View or edit ID3 tags and metadata of local audio tracks."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo tag \"local:/path/to/song.mp3\"\n" +
+            "  melo tag \"local:/path/to/song.mp3\" --title \"Song Title\" --artist \"Artist Name\"\n" +
+            "  melo tag \"local:/path/to/song.mp3\" --album \"Album Name\""
 
     override fun run() {
         startKoin { modules(appModule) }

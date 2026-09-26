@@ -20,17 +20,24 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 
-class StatsCommand : CliktCommand(name = "stats"), KoinComponent {
+class StatsCommand :
+    CliktCommand(name = "stats"),
+    KoinComponent {
     private val terminal = Terminal()
     private val period by option(
         "-p",
         "--period",
-        help = "Stats period (WEEK, MONTH, YEAR, ALL_TIME)"
-    )
-        .enum<StatsPeriod>()
+        help = "Time range for statistics: WEEK, MONTH, YEAR, ALL_TIME (default: WEEK)",
+    ).enum<StatsPeriod>()
         .default(StatsPeriod.WEEK)
 
-    override fun help(context: Context): String = "View your listening statistics"
+    override fun help(context: Context): String = "View listening statistics, top tracks, and top artists by period."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo stats\n" +
+            "  melo stats --period MONTH\n" +
+            "  melo stats -p ALL_TIME"
 
     override fun run() {
         if (GlobalContext.getOrNull() == null) {
@@ -64,7 +71,7 @@ class StatsCommand : CliktCommand(name = "stats"), KoinComponent {
                 terminal.println("Unique Artists: ${yellow(general.uniqueArtists.toString())}")
 
                 val totalMin = general.totalMs / 1000 / 60
-                terminal.println("Total Listening Time: ${yellow("${totalMin} min")}")
+                terminal.println("Total Listening Time: ${yellow("$totalMin min")}")
             }
         } finally {
             stopKoin()

@@ -3,6 +3,8 @@ package com.github.adriianh.cli.command
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.output.HelpFormatter.ParameterHelp
 import com.github.ajalt.clikt.output.MordantHelpFormatter
+import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.rendering.TextStyles
 import com.github.ajalt.mordant.rendering.Whitespace
 import com.github.ajalt.mordant.rendering.Widget
 import com.github.ajalt.mordant.widgets.Text
@@ -95,9 +97,66 @@ open class MeloHelpFormatter(
                 "scrobble" to CommandCategory.SERVICES,
                 "rpc" to CommandCategory.SERVICES,
             )
+        val KNOWN_ALIASES: Set<String> =
+            setOf("p", "dl", "np", "st", "q", "cfg", "previous")
+
+        private val COMMAND_TOKEN_REGEX =
+            Regex("""("[^"]*"|'[^']*'|--[a-zA-Z0-9_-]+|-[a-zA-Z0-9]+|\S+)""")
+
+        private val QUOTE_REGEX = Regex("""'[^']+'""")
     }
 
-    override fun renderEpilog(epilog: String): Widget = Text(epilog, whitespace = Whitespace.PRE_WRAP)
+    override fun renderEpilog(epilog: String): Widget = Text(styleEpilog(epilog), whitespace = Whitespace.PRE_WRAP)
+
+    private fun styleEpilog(epilog: String): String =
+        epilog.lines().joinToString("\n") { line ->
+            when {
+                line.isBlank() -> line
+                !line.startsWith(" ") && line.endsWith(":") -> {
+                    styleSectionTitle(renderSectionTitle(line.removeSuffix(":").trim()))
+                }
+                line.trimStart().startsWith("melo ") || line.trimStart().startsWith("$ melo ") -> {
+                    styleCommandLine(line)
+                }
+                line.contains("'") -> {
+                    styleHintLine(line)
+                }
+                else -> line
+            }
+        }
+
+    private fun styleCommandLine(line: String): String {
+        val indent = line.takeWhile { it.isWhitespace() }
+        val content = line.substring(indent.length)
+        val hashIdx = content.indexOf('#')
+        val (cmdPart, commentPart) =
+            if (hashIdx != -1) {
+                content.substring(0, hashIdx) to content.substring(hashIdx)
+            } else {
+                content to ""
+            }
+
+        val styledCmd =
+            COMMAND_TOKEN_REGEX.replace(cmdPart) { match ->
+                val token = match.value
+                when {
+                    token == "melo" || token in COMMAND_CATEGORIES || token in KNOWN_ALIASES -> {
+                        (TextStyles.bold + TextColors.cyan)(token)
+                    }
+                    token.startsWith("-") -> TextColors.yellow(token)
+                    token.startsWith("\"") || token.startsWith("'") -> TextColors.green(token)
+                    else -> token
+                }
+            }
+
+        val styledComment = if (commentPart.isNotEmpty()) TextColors.gray(commentPart) else ""
+        return indent + styledCmd + styledComment
+    }
+
+    private fun styleHintLine(line: String): String =
+        QUOTE_REGEX.replace(line) { match ->
+            (TextStyles.bold + TextColors.cyan)(match.value)
+        }
 
     override fun renderCommands(parameters: List<ParameterHelp>): List<RenderedSection<Widget>> {
         val subcommands = parameters.filterIsInstance<ParameterHelp.Subcommand>()

@@ -25,31 +25,46 @@ import kotlin.system.exitProcess
 import com.varabyte.kotter.foundation.text.yellow as kotterYellow
 
 class QueueCommand : CliktCommand(name = "queue") {
-    override fun help(context: Context): String = "Manage the playback queue"
+    override fun help(context: Context): String = "Inspect and manage the active playback queue."
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo queue list\n" +
+            "  melo queue add \"Stairway to Heaven\"\n" +
+            "  melo queue add \"Blinding Lights\" --interactive\n" +
+            "  melo queue remove 0\n" +
+            "  melo queue clear"
 
     init {
         subcommands(
             QueueAddCommand(),
             QueueListCommand(),
             QueueRemoveCommand(),
-            QueueClearCommand()
+            QueueClearCommand(),
         )
     }
 
     override fun run() {}
 }
 
-class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
-    private val query by argument(name = "query", help = "Track name to add")
+class QueueAddCommand :
+    CliktCommand(name = "add"),
+    KoinComponent {
+    private val query by argument(name = "query", help = "Track name to search and enqueue")
     private val interactive by option(
         "-i",
         "--interactive",
-        help = "Interactively select from search results"
+        help = "Interactively select from search results",
     ).flag(default = false)
     private val terminal = Terminal()
     private val json = Json { ignoreUnknownKeys = true }
 
-    override fun help(context: Context): String = "Add a track to the queue"
+    override fun help(context: Context): String = "Add a track to the playback queue"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo queue add \"Song Title\"\n" +
+            "  melo queue add \"Artist Name\" --interactive"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -68,8 +83,11 @@ class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
 
                 val payload = json.encodeToString(Track.serializer(), track)
                 val result = LocalIpcClient.sendCommand("QUEUE_ADD", payload)
-                if (result.startsWith("ERROR")) terminal.println(result)
-                else terminal.println("Successfully added to queue: ${track.title}")
+                if (result.startsWith("ERROR")) {
+                    terminal.println(result)
+                } else {
+                    terminal.println("Successfully added to queue: ${track.title}")
+                }
             }
         } finally {
             stopKoin()
@@ -79,19 +97,20 @@ class QueueAddCommand : CliktCommand(name = "add"), KoinComponent {
 
     private fun <T> selectInteractive(
         results: List<T>,
-        titleSelector: (T) -> String
+        titleSelector: (T) -> String,
     ): T? {
         if (results.isEmpty()) return null
         if (!interactive || results.size == 1) return results.first()
 
         val limited = results.take(15)
-        val selected = ItemPicker.pickItem(limited, "Select Track") { _, item, isSelected ->
-            if (isSelected) {
-                kotterYellow { textLine("> " + titleSelector(item)) }
-            } else {
-                textLine("  " + titleSelector(item))
+        val selected =
+            ItemPicker.pickItem(limited, "Select Track") { _, item, isSelected ->
+                if (isSelected) {
+                    kotterYellow { textLine("> " + titleSelector(item)) }
+                } else {
+                    textLine("  " + titleSelector(item))
+                }
             }
-        }
 
         if (selected == null) terminal.println(gray("Selection cancelled."))
         return selected
@@ -103,6 +122,10 @@ class QueueListCommand : CliktCommand(name = "list") {
     private val json = Json { ignoreUnknownKeys = true }
 
     override fun help(context: Context): String = "List upcoming tracks in the queue"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo queue list"
 
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_LIST")
@@ -117,7 +140,7 @@ class QueueListCommand : CliktCommand(name = "list") {
                 } else {
                     terminal.println("Upcoming Tracks in Queue:")
                     queue.forEachIndexed { i, t ->
-                        terminal.println("${i}. ${t.title} by ${t.artist}")
+                        terminal.println("$i. ${t.title} by ${t.artist}")
                     }
                 }
             } catch (e: Exception) {
@@ -131,11 +154,15 @@ class QueueListCommand : CliktCommand(name = "list") {
 class QueueRemoveCommand : CliktCommand(name = "remove") {
     private val index by argument(
         name = "index",
-        help = "Index of the track to remove (0-based from 'queue list')"
+        help = "Zero-based index of track to remove (from 'melo queue list')",
     )
     private val terminal = Terminal()
 
     override fun help(context: Context): String = "Remove a track from the queue"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo queue remove 0"
 
     override fun run() {
         val idx = index.toIntOrNull()
@@ -144,8 +171,11 @@ class QueueRemoveCommand : CliktCommand(name = "remove") {
             return
         }
         val result = LocalIpcClient.sendCommand("QUEUE_REMOVE", idx.toString())
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Track at index $idx removed.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Track at index $idx removed.")
+        }
     }
 }
 
@@ -154,9 +184,16 @@ class QueueClearCommand : CliktCommand(name = "clear") {
 
     override fun help(context: Context): String = "Clear all upcoming tracks from the queue"
 
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo queue clear"
+
     override fun run() {
         val result = LocalIpcClient.sendCommand("QUEUE_CLEAR")
-        if (result.startsWith("ERROR")) terminal.println(result)
-        else terminal.println("Queue cleared.")
+        if (result.startsWith("ERROR")) {
+            terminal.println(result)
+        } else {
+            terminal.println("Queue cleared.")
+        }
     }
 }

@@ -111,7 +111,8 @@ class MeloCommand :
             "  melo play \"Bohemian Rhapsody\"\n" +
             "  melo search \"Radiohead\" --format json\n" +
             "  melo status\n" +
-            "  melo download \"Daft Punk\" --type album\n\n" +
+            "  melo download \"Daft Punk\" --type album\n" +
+            "  melo radio \"Comfortably Numb\"\n\n" +
             "Run 'melo <command> --help' for details on a specific command.\n" +
             "Run 'melo' without arguments to launch the interactive TUI."
 
