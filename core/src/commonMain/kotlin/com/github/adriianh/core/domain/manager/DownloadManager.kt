@@ -13,7 +13,10 @@ interface DownloadManager {
      * Downloads a single track.
      * @return true if download succeeded, false otherwise.
      */
-    suspend fun downloadTrack(track: Track, customPath: String? = null): Boolean
+    suspend fun downloadTrack(
+        track: Track,
+        customPath: String? = null,
+    ): Boolean
 
     /**
      * Auto-caches a track into the temporary LRU cache directory.
@@ -24,7 +27,10 @@ interface DownloadManager {
     /**
      * Downloads multiple tracks sequentially in the background.
      */
-    suspend fun downloadTracks(tracks: List<Track>, customPath: String? = null)
+    suspend fun downloadTracks(
+        tracks: List<Track>,
+        customPath: String? = null,
+    )
 
     /**
      * Cancels an ongoing download for a track.
@@ -40,4 +46,8 @@ interface DownloadManager {
      * Checks if a track is completed and available locally.
      */
     suspend fun isDownloaded(trackId: String): Boolean
+
+    companion object {
+        const val MAX_AUTO_CACHE_DURATION_MS = 45 * 60 * 1000L
+    }
 }

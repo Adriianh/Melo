@@ -11,9 +11,11 @@ import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.core.util.MeloDispatchers
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.onDownload
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.contentLength
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -32,31 +34,36 @@ class DownloadManagerImpl(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val offlineRepository: OfflineRepository,
     private val configDirPath: String,
-    private val dispatcher: CoroutineDispatcher = MeloDispatchers.IO
+    private val dispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : DownloadManager {
-
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val _activeDownloads = MutableStateFlow<Map<String, Float>>(emptyMap())
     override val activeDownloads: StateFlow<Map<String, Float>> = _activeDownloads.asStateFlow()
 
     private val downloadJobs = mutableMapOf<String, Job>()
 
-    override suspend fun downloadTrack(track: Track, customPath: String?): Boolean {
+    override suspend fun downloadTrack(
+        track: Track,
+        customPath: String?,
+    ): Boolean {
         return withContext(dispatcher) {
             val existing = offlineRepository.getOfflineTrack(track.id)
             val existingPath = existing?.localFilePath
-            val isCompleted = existing?.downloadStatus == DownloadStatus.COMPLETED &&
+            val isCompleted =
+                existing?.downloadStatus == DownloadStatus.COMPLETED &&
                     existingPath != null &&
                     PlatformFileSystem.fileExists(existingPath)
 
             val settings = getSettingsUseCase.getSnapshot()
             val formatExtension = settings.downloadFormat.displayName.lowercase()
-            val safeFileName = "${track.artist} - ${track.title}"
-                .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".$formatExtension"
+            val safeFileName =
+                "${track.artist} - ${track.title}"
+                    .replace(Regex("[\\\\/:*?\"<>|]"), "_") + ".$formatExtension"
 
-            val targetFolder = customPath
-                ?: settings.downloadPath
-                ?: "$configDirPath/downloads"
+            val targetFolder =
+                customPath
+                    ?: settings.downloadPath
+                    ?: "$configDirPath/downloads"
 
             PlatformFileSystem.makeDirs(targetFolder)
             val targetFilePath = "$targetFolder/$safeFileName"
@@ -65,29 +72,32 @@ class DownloadManagerImpl(
                 if (existing.downloadType == DownloadType.MANUAL && existingPath == targetFilePath) {
                     return@withContext true
                 }
-                if (existingPath != targetFilePath && PlatformFileSystem.fileExists(
-                        existingPath
+                if (existingPath != targetFilePath &&
+                    PlatformFileSystem.fileExists(
+                        existingPath,
                     )
                 ) {
                     PlatformFileSystem.copyFile(existingPath, targetFilePath)
                 }
-                val promotedTrack = existing.copy(
-                    localFilePath = targetFilePath,
-                    downloadStatus = DownloadStatus.COMPLETED,
-                    downloadType = DownloadType.MANUAL,
-                    downloadedAt = Clock.System.now().toEpochMilliseconds(),
-                    fileSize = existing.fileSize
-                )
+                val promotedTrack =
+                    existing.copy(
+                        localFilePath = targetFilePath,
+                        downloadStatus = DownloadStatus.COMPLETED,
+                        downloadType = DownloadType.MANUAL,
+                        downloadedAt = Clock.System.now().toEpochMilliseconds(),
+                        fileSize = existing.fileSize,
+                    )
                 offlineRepository.saveOfflineTrack(promotedTrack)
                 return@withContext true
             }
 
-            val offlineTrack = OfflineTrack(
-                track = track,
-                localFilePath = targetFilePath,
-                downloadStatus = DownloadStatus.DOWNLOADING,
-                downloadType = DownloadType.MANUAL
-            )
+            val offlineTrack =
+                OfflineTrack(
+                    track = track,
+                    localFilePath = targetFilePath,
+                    downloadStatus = DownloadStatus.DOWNLOADING,
+                    downloadType = DownloadType.MANUAL,
+                )
             offlineRepository.saveOfflineTrack(offlineTrack)
             _activeDownloads.update { it + (track.id to 0f) }
 
@@ -99,47 +109,41 @@ class DownloadManagerImpl(
                     offlineRepository.saveOfflineTrack(
                         offlineTrack.copy(
                             downloadStatus = DownloadStatus.FAILED,
-                            localFilePath = null
-                        )
+                            localFilePath = null,
+                        ),
                     )
                     _activeDownloads.update { it - track.id }
                     return@withContext false
                 }
 
-                val response = httpClient.get(streamUrl) {
-                    onDownload { bytesSentTotal, contentLength ->
-                        if (contentLength != null && contentLength > 0) {
-                            val progress =
-                                (bytesSentTotal.toFloat() / contentLength.toFloat()).coerceIn(
-                                    0f,
-                                    1f
-                                )
+                val totalBytes =
+                    streamToFile(streamUrl, tempFilePath) { written, total ->
+                        if (total != null && total > 0) {
+                            val progress = (written.toFloat() / total.toFloat()).coerceIn(0f, 1f)
                             _activeDownloads.update { it + (track.id to progress) }
                         }
                     }
+
+                if (totalBytes <= MIN_VALID_AUDIO_BYTES) {
+                    throw IllegalStateException("Downloaded audio file is too small ($totalBytes bytes)")
                 }
 
-                val bytes = response.bodyAsBytes()
-                if (bytes.size <= 64 * 1024) {
-                    throw IllegalStateException("Downloaded audio file is too small (${bytes.size} bytes)")
-                }
-
-                PlatformFileSystem.writeBytes(tempFilePath, bytes)
                 PlatformFileSystem.copyFile(tempFilePath, targetFilePath)
                 PlatformFileSystem.deleteFile(tempFilePath)
 
-                val completedTrack = offlineTrack.copy(
-                    localFilePath = targetFilePath,
-                    downloadStatus = DownloadStatus.COMPLETED,
-                    downloadedAt = Clock.System.now().toEpochMilliseconds(),
-                    fileSize = bytes.size.toLong()
-                )
+                val completedTrack =
+                    offlineTrack.copy(
+                        localFilePath = targetFilePath,
+                        downloadStatus = DownloadStatus.COMPLETED,
+                        downloadedAt = Clock.System.now().toEpochMilliseconds(),
+                        fileSize = totalBytes,
+                    )
                 offlineRepository.saveOfflineTrack(completedTrack)
                 _activeDownloads.update { it - track.id }
                 true
             } catch (_: Exception) {
                 offlineRepository.saveOfflineTrack(
-                    offlineTrack.copy(downloadStatus = DownloadStatus.FAILED, localFilePath = null)
+                    offlineTrack.copy(downloadStatus = DownloadStatus.FAILED, localFilePath = null),
                 )
                 _activeDownloads.update { it - track.id }
                 PlatformFileSystem.deleteFile(tempFilePath)
@@ -149,65 +153,108 @@ class DownloadManagerImpl(
         }
     }
 
-    override suspend fun cacheTrack(track: Track): Boolean {
-        if (track.id.startsWith("local:")) return true
-        return withContext(dispatcher) {
-            val existing = offlineRepository.getOfflineTrack(track.id)
-            val existingPath = existing?.localFilePath
-            if (existing?.downloadStatus == DownloadStatus.COMPLETED &&
-                existingPath != null &&
-                PlatformFileSystem.fileExists(existingPath) &&
-                PlatformFileSystem.fileSize(existingPath) > 64 * 1024
-            ) {
-                offlineRepository.markTrackAsAccessed(track.id)
-                return@withContext true
-            }
+    override suspend fun cacheTrack(track: Track): Boolean =
+        when {
+            track.id.startsWith("local:") -> true
+            track.durationMs !in 1..MAX_AUTO_CACHE_DURATION_MS -> false
+            else -> withContext(dispatcher) { performCacheTrack(track) }
+        }
 
-            val settings = getSettingsUseCase.getSnapshot()
-            val formatExtension = settings.downloadFormat.displayName.lowercase()
-            val safeFileName = "cache_${track.id.hashCode()}.$formatExtension"
-            val targetFolder = settings.cachePath ?: "$configDirPath/cache"
+    private suspend fun performCacheTrack(track: Track): Boolean {
+        val existing = offlineRepository.getOfflineTrack(track.id)
+        if (isCachedAndValid(existing)) {
+            offlineRepository.markTrackAsAccessed(track.id)
+            return true
+        }
 
-            PlatformFileSystem.makeDirs(targetFolder)
-            val targetFilePath = "$targetFolder/$safeFileName"
-            val tempFilePath = "$targetFilePath.tmp"
+        val settings = getSettingsUseCase.getSnapshot()
+        val formatExtension = settings.downloadFormat.displayName.lowercase()
+        val safeFileName = "cache_${track.id.hashCode()}.$formatExtension"
+        val targetFolder = settings.cachePath ?: "$configDirPath/cache"
 
-            try {
-                val streamUrl = getStreamUseCase(track) ?: return@withContext false
-                val response = httpClient.get(streamUrl)
-                val bytes = response.bodyAsBytes()
-                if (bytes.size <= 64 * 1024) {
-                    throw IllegalStateException("Cached audio file is too small (${bytes.size} bytes)")
+        PlatformFileSystem.makeDirs(targetFolder)
+        val targetFilePath = "$targetFolder/$safeFileName"
+        val tempFilePath = "$targetFilePath.tmp"
+
+        return executeCacheDownload(track, targetFilePath, tempFilePath, settings.maxOfflineSizeMb)
+    }
+
+    private suspend fun executeCacheDownload(
+        track: Track,
+        targetFilePath: String,
+        tempFilePath: String,
+        maxOfflineSizeMb: Int,
+    ): Boolean =
+        try {
+            val streamUrl = getStreamUseCase(track)
+            if (streamUrl == null) {
+                false
+            } else {
+                val totalBytes = streamToFile(streamUrl, tempFilePath)
+                if (totalBytes <= MIN_VALID_AUDIO_BYTES) {
+                    throw IllegalStateException("Cached audio file is too small ($totalBytes bytes)")
                 }
 
-                PlatformFileSystem.writeBytes(tempFilePath, bytes)
                 PlatformFileSystem.copyFile(tempFilePath, targetFilePath)
                 PlatformFileSystem.deleteFile(tempFilePath)
 
-                val cachedTrack = OfflineTrack(
-                    track = track,
-                    localFilePath = targetFilePath,
-                    downloadStatus = DownloadStatus.COMPLETED,
-                    downloadType = DownloadType.CACHE,
-                    downloadedAt = Clock.System.now().toEpochMilliseconds(),
-                    lastAccessedAt = Clock.System.now().toEpochMilliseconds(),
-                    fileSize = bytes.size.toLong()
-                )
+                val cachedTrack =
+                    OfflineTrack(
+                        track = track,
+                        localFilePath = targetFilePath,
+                        downloadStatus = DownloadStatus.COMPLETED,
+                        downloadType = DownloadType.CACHE,
+                        downloadedAt = Clock.System.now().toEpochMilliseconds(),
+                        lastAccessedAt = Clock.System.now().toEpochMilliseconds(),
+                        fileSize = totalBytes,
+                    )
                 offlineRepository.saveOfflineTrack(cachedTrack)
 
-                if (settings.maxOfflineSizeMb > 0) {
-                    offlineRepository.cleanupCache(settings.maxOfflineSizeMb)
+                if (maxOfflineSizeMb > 0) {
+                    offlineRepository.cleanupCache(maxOfflineSizeMb)
                 }
                 true
-            } catch (_: Exception) {
-                PlatformFileSystem.deleteFile(tempFilePath)
-                PlatformFileSystem.deleteFile(targetFilePath)
-                false
             }
+        } catch (_: Exception) {
+            PlatformFileSystem.deleteFile(tempFilePath)
+            PlatformFileSystem.deleteFile(targetFilePath)
+            false
         }
+
+    private suspend fun streamToFile(
+        streamUrl: String,
+        tempFilePath: String,
+        onProgress: ((bytesWritten: Long, totalBytes: Long?) -> Unit)? = null,
+    ): Long =
+        httpClient.prepareGet(streamUrl).execute { response ->
+            val contentLength = response.contentLength()
+            val channel: ByteReadChannel = response.bodyAsChannel()
+            var bytesWritten = 0L
+            val buffer = ByteArray(STREAM_BUFFER_SIZE)
+
+            PlatformFileSystem.writeStream(tempFilePath) { writeChunk ->
+                while (!channel.isClosedForRead) {
+                    val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                    if (bytesRead <= 0) break
+                    writeChunk(buffer, 0, bytesRead)
+                    bytesWritten += bytesRead
+                    onProgress?.invoke(bytesWritten, contentLength)
+                }
+            }
+            bytesWritten
+        }
+
+    private fun isCachedAndValid(existing: OfflineTrack?): Boolean {
+        val path = existing?.localFilePath ?: return false
+        return existing.downloadStatus == DownloadStatus.COMPLETED &&
+            PlatformFileSystem.fileExists(path) &&
+            PlatformFileSystem.fileSize(path) > MIN_VALID_AUDIO_BYTES
     }
 
-    override suspend fun downloadTracks(tracks: List<Track>, customPath: String?) {
+    override suspend fun downloadTracks(
+        tracks: List<Track>,
+        customPath: String?,
+    ) {
         scope.launch {
             for (track in tracks) {
                 downloadTrack(track, customPath)
@@ -235,12 +282,23 @@ class DownloadManagerImpl(
     }
 
     override suspend fun isDownloaded(trackId: String): Boolean {
-        val track = offlineRepository.getOfflineTrack(trackId) ?: return false
-        val path = track.localFilePath
-        return track.downloadStatus == DownloadStatus.COMPLETED &&
-                track.downloadType == DownloadType.MANUAL &&
-                path != null &&
-                PlatformFileSystem.fileExists(path) &&
-                PlatformFileSystem.fileSize(path) > 64 * 1024
+        val track = offlineRepository.getOfflineTrack(trackId)
+        val path = track?.localFilePath
+        val isManualCompleted =
+            track?.downloadStatus == DownloadStatus.COMPLETED &&
+                track.downloadType == DownloadType.MANUAL
+        return isManualCompleted &&
+            path != null &&
+            isDownloadedFileValid(path)
+    }
+
+    private fun isDownloadedFileValid(path: String): Boolean =
+        PlatformFileSystem.fileExists(path) &&
+            PlatformFileSystem.fileSize(path) > MIN_VALID_AUDIO_BYTES
+
+    companion object {
+        const val MAX_AUTO_CACHE_DURATION_MS = 45 * 60 * 1000L
+        private const val STREAM_BUFFER_SIZE = 64 * 1024
+        private const val MIN_VALID_AUDIO_BYTES = 64 * 1024L
     }
 }
