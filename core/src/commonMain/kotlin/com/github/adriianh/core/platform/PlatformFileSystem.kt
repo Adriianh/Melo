@@ -30,13 +30,29 @@ expect object PlatformFileSystem {
      * Writes the given [text] to a file at the given [path].
      * Creates the file and parent directories if they do not exist.
      */
-    fun writeText(path: String, text: String)
+    fun writeText(
+        path: String,
+        text: String,
+    )
 
     /**
      * Writes the given [bytes] to a file at the given [path].
      * Creates the file and parent directories if they do not exist.
      */
-    fun writeBytes(path: String, bytes: ByteArray)
+    fun writeBytes(
+        path: String,
+        bytes: ByteArray,
+    )
+
+    /**
+     * Streams binary data into [path] in chunks, creating parent directories if needed.
+     * Invokes [block] with a lambda `writeChunk(buffer, offset, length)` that appends to the open file.
+     * Returns the total number of bytes written.
+     */
+    suspend fun writeStream(
+        path: String,
+        block: suspend (writeChunk: suspend (buffer: ByteArray, offset: Int, length: Int) -> Unit) -> Unit,
+    ): Long
 
     /**
      * Reads the contents of a file at the given [path] as a byte array.
@@ -48,7 +64,10 @@ expect object PlatformFileSystem {
      * Copies a file from [sourcePath] to [destPath].
      * Creates parent directories of [destPath] if needed.
      */
-    fun copyFile(sourcePath: String, destPath: String): Boolean
+    fun copyFile(
+        sourcePath: String,
+        destPath: String,
+    ): Boolean
 
     /**
      * Deletes the file or empty directory at the given [path].

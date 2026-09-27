@@ -602,9 +602,11 @@ class PlaybackManagerImpl(
                 }
 
                 if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
-                    launch(dispatcher) {
-                        delay(4000.milliseconds)
-                        downloadManager?.cacheTrack(track)
+                    if (track.durationMs in 1..DownloadManager.MAX_AUTO_CACHE_DURATION_MS) {
+                        launch(dispatcher) {
+                            delay(4000.milliseconds)
+                            downloadManager?.cacheTrack(track)
+                        }
                     }
                 }
 

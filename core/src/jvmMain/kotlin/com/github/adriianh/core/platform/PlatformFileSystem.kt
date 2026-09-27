@@ -5,60 +5,104 @@ import java.io.File
 actual object PlatformFileSystem {
     actual fun fileExists(path: String): Boolean = File(path).exists()
 
-    actual fun fileSize(path: String): Long = try {
-        File(path).takeIf { it.exists() }?.length() ?: 0L
-    } catch (_: Exception) {
-        0L
-    }
+    actual fun fileSize(path: String): Long =
+        try {
+            File(path).takeIf { it.exists() }?.length() ?: 0L
+        } catch (_: Exception) {
+            0L
+        }
 
     actual fun toFileUri(path: String): String = File(path).toURI().toString()
 
-    actual fun readText(path: String): String? = try {
-        File(path).takeIf { it.exists() }?.readText()
-    } catch (_: Exception) { null }
+    actual fun readText(path: String): String? =
+        try {
+            File(path).takeIf { it.exists() }?.readText()
+        } catch (_: Exception) {
+            null
+        }
 
-    actual fun writeText(path: String, text: String) {
+    actual fun writeText(
+        path: String,
+        text: String,
+    ) {
         try {
             val file = File(path)
             file.parentFile?.mkdirs()
             file.writeText(text)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
-    actual fun writeBytes(path: String, bytes: ByteArray) {
+    actual fun writeBytes(
+        path: String,
+        bytes: ByteArray,
+    ) {
         try {
             val file = File(path)
             file.parentFile?.mkdirs()
             file.writeBytes(bytes)
-        } catch (_: Exception) {}
-    }
-
-    actual fun readBytes(path: String): ByteArray? = try {
-        File(path).takeIf { it.exists() }?.readBytes()
-    } catch (_: Exception) {
-        null
-    }
-
-    actual fun copyFile(sourcePath: String, destPath: String): Boolean = try {
-        val src = File(sourcePath)
-        val dst = File(destPath)
-        if (!src.exists()) false
-        else {
-            dst.parentFile?.mkdirs()
-            src.copyTo(dst, overwrite = true)
-            true
+        } catch (_: Exception) {
         }
-    } catch (_: Exception) {
-        false
     }
 
-    actual fun deleteFile(path: String): Boolean = try {
-        File(path).delete()
-    } catch (_: Exception) { false }
+    actual suspend fun writeStream(
+        path: String,
+        block: suspend (writeChunk: suspend (buffer: ByteArray, offset: Int, length: Int) -> Unit) -> Unit,
+    ): Long =
+        try {
+            val file = File(path)
+            file.parentFile?.mkdirs()
+            var totalBytes = 0L
+            file.outputStream().use { out ->
+                block { buffer, offset, length ->
+                    out.write(buffer, offset, length)
+                    totalBytes += length
+                }
+                out.flush()
+            }
+            totalBytes
+        } catch (_: Exception) {
+            0L
+        }
 
-    actual fun makeDirs(path: String): Boolean = try {
-        File(path).mkdirs()
-    } catch (_: Exception) { false }
+    actual fun readBytes(path: String): ByteArray? =
+        try {
+            File(path).takeIf { it.exists() }?.readBytes()
+        } catch (_: Exception) {
+            null
+        }
+
+    actual fun copyFile(
+        sourcePath: String,
+        destPath: String,
+    ): Boolean =
+        try {
+            val src = File(sourcePath)
+            val dst = File(destPath)
+            if (!src.exists()) {
+                false
+            } else {
+                dst.parentFile?.mkdirs()
+                src.copyTo(dst, overwrite = true)
+                true
+            }
+        } catch (_: Exception) {
+            false
+        }
+
+    actual fun deleteFile(path: String): Boolean =
+        try {
+            File(path).delete()
+        } catch (_: Exception) {
+            false
+        }
+
+    actual fun makeDirs(path: String): Boolean =
+        try {
+            File(path).mkdirs()
+        } catch (_: Exception) {
+            false
+        }
 
     actual fun getDefaultMusicPaths(): List<String> {
         val userHome = System.getProperty("user.home") ?: return emptyList()
