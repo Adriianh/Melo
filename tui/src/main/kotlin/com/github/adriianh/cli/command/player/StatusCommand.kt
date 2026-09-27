@@ -34,6 +34,7 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import java.io.InputStreamReader
+import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 
 private data class TrackStatusSnapshot(
@@ -135,7 +136,7 @@ class StatusCommand :
                     }
 
                     if (!live) break
-                    delay(1000)
+                    delay(1000.milliseconds)
                 }
             }
         } finally {
@@ -252,8 +253,9 @@ class StatusCommand :
                 text {
                     val currentSec = completed / 1000L
                     val tlSec = (total ?: 0L) / 1000L
-                    val currentStr = String.format("%02d:%02d", currentSec / 60, currentSec % 60)
-                    val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
+                    val currentStr =
+                        String.format(Locale.ROOT, "%02d:%02d", currentSec / 60, currentSec % 60)
+                    val tlStr = String.format(Locale.ROOT, "%02d:%02d", tlSec / 60, tlSec % 60)
                     gray("$currentStr / $tlStr")
                 }
                 text("Progress")
@@ -287,8 +289,8 @@ class StatusCommand :
     private fun renderStaticProgress(status: TrackStatusSnapshot) {
         val posSec = status.positionMs / 1000L
         val lenSec = status.durationMs / 1000L
-        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
-        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
+        val posStr = String.format(Locale.ROOT, "%02d:%02d", posSec / 60, posSec % 60)
+        val lenStr = String.format(Locale.ROOT, "%02d:%02d", lenSec / 60, lenSec % 60)
         terminal.println(
             horizontalLayout {
                 cell(
