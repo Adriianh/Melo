@@ -4,8 +4,8 @@ plugins {
 }
 
 // Single source of truth for the app version. Stable local builds default to the
-// value in gradle.properties; CI overrides it (e.g. -Pmelo.version=2.2.0-nightly.20260923).
-val meloVersion: String = providers.gradleProperty("melo.version").getOrElse("2.2.0")
+// value in gradle.properties; CI overrides it (e.g. -Pmelo.version=2.2.1-nightly.20260923).
+val meloVersion: String = providers.gradleProperty("melo.version").getOrElse("2.2.1")
 
 // Generate MeloVersion.kt so the version baked into every binary matches the
 // `melo.version` property used by the build (stable vs nightly).
