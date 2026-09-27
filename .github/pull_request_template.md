@@ -1,55 +1,59 @@
 ## Type of Change
-<!-- Check exactly one -->
+<!-- Select all applicable options -->
 - [ ] `fix` — Bug fix
 - [ ] `feat` — New feature
 - [ ] `style/ux` — Visual or UX improvement
-- [ ] `refactor` — Code restructuring, no functional change
+- [ ] `refactor` — Code restructuring without functional changes
+- [ ] `perf` — Performance improvement
 - [ ] `test` — Adding or updating tests
-- [ ] `docs` — Documentation only
-- [ ] `chore/ci` — Build, tooling, CI/CD
+- [ ] `docs` — Documentation changes
+- [ ] `chore/ci` — Tooling, dependencies, build, or CI/CD
+
+## Affected Modules
+- [ ] `:composeApp` (Desktop / Android UI)
+- [ ] `:tui` (Terminal UI)
+- [ ] `:core` / `:data` (Domain logic, repositories, audio engine)
+- [ ] Build & CI (Gradle, packaging, workflows)
 
 ---
 
 ## Summary
 <!-- What does this PR do and why? Be concise. -->
 
-
-
----
-
 ## Related Issue
-<!-- Closes #000  /  N/A -->
+<!-- Closes #000 / Fixes #000 / N/A -->
 
 ---
 
-## Changes
+## Key Changes
 <!-- Notable changes for the reviewer. One idea per bullet. -->
--
+- 
 
 ---
 
-## Verification
+## Verification & Testing
 
 ### Automated Tests
-- [ ] Unit tests added / updated
-- [ ] `./gradlew :data:jvmTest :tui:test` passes locally
+- [ ] Unit / Integration tests added or updated
+- [ ] Local tests and quality checks passed (`./gradlew check` or relevant test suite)
 
 ### Manual Testing
-<!-- Describe the steps you followed to manually verify the change -->
-- OS tested: <!-- Linux / Windows / macOS -->
-- Steps:
-  1.
-  2.
+- **Platform / OS tested:** <!-- e.g., Linux (Arch / Ubuntu), Windows 11, macOS, Android 14 -->
+- **Verification steps:**
+  1. 
+  2. 
 
 ---
 
-## Screenshots / Recording
-<!-- For TUI or Compose UI changes. Drag & drop images/GIFs here, or write N/A -->
-
-
+## Visual Preview (UI / TUI)
+<!-- Required or recommended if there are visual changes. Drag & drop images/GIFs, or write N/A -->
+| Before | After |
+| :---: | :---: |
+| *(image/GIF or N/A)* | *(image/GIF or N/A)* |
 
 ---
 
 ## Checklist
-- [ ] PR title follows Conventional Commits format (`type(scope): summary`)
-- [ ] No new dependencies introduced without justification
+- [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/) (`type(scope): summary`).
+- [ ] No new dependencies introduced without prior discussion / justification.
+- [ ] Code adheres to style guidelines and passes local linters (`ktlintCheck`, `detektCheck`).

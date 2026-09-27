@@ -1,0 +1,53 @@
+name: 💡 Feature Request
+description: Suggest an idea, new feature, or UX enhancement for Melo.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please fill out the sections below to help us understand your idea.
+  - type: input
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A concise title or summary of the proposed feature.
+      placeholder: "e.g., Floating graphic equalizer with presets"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or a missing capability? What need does it solve?
+      placeholder: "Currently, sound output cannot be adjusted for bass or treble frequencies..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like or how you envision the feature working.
+      placeholder: "Add an equalizer overlay accessible with shortcut 'e' or through the player settings..."
+    validations:
+      required: true
+  - type: checkboxes
+    id: target-platforms
+    attributes:
+      label: Target Platform(s)
+      options:
+        - label: "Desktop (Compose Multiplatform)"
+        - label: "Android"
+        - label: "TUI (Terminal)"
+        - label: "All platforms"
+  - type: textarea
+    id: references
+    attributes:
+      label: Visual References & Media (Mockups, Screenshots, GIFs, Videos)
+      description: Share any UI concepts, screenshots from other apps, design sketches, GIFs, or video links demonstrating the idea. You can drag and drop media files directly here!
+      placeholder: "Drag and drop media here, or paste links/references..."
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context & Alternatives Considered (Optional)
+      description: Any other context, alternative solutions, or workarounds you have considered.
