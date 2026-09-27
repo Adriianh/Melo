@@ -165,7 +165,7 @@ class MeloCommandTest {
                 "download",
                 "daemon",
                 "auth",
-                "volume"
+                "volume",
             )
         for (name in auditedCommands) {
             val cmd = MeloCommand()

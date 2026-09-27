@@ -77,7 +77,7 @@ class VolumeCommand :
                     applyVolumeChange(
                         "VOLUME_SET",
                         clamped.toString(),
-                        green("Volume set to $clamped%")
+                        green("Volume set to $clamped%"),
                     )
                 } else {
                     terminal.println(red("Invalid volume argument: '$arg'. Use 0-100, +step, -step, mute, or unmute."))
