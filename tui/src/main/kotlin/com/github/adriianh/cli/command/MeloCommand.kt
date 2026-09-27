@@ -24,6 +24,7 @@ import com.github.adriianh.cli.command.player.StatsCommand
 import com.github.adriianh.cli.command.player.StatusCommand
 import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.command.player.TagCommand
+import com.github.adriianh.cli.command.player.VolumeCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.service.YouTubeAuthService
@@ -43,6 +44,7 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.remote.piped.PipedApiClient
+import com.github.ajalt.clikt.completion.CompletionCommand
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.context
@@ -81,6 +83,7 @@ class MeloCommand :
             NextCommand(),
             PrevCommand(),
             StopCommand(),
+            VolumeCommand(),
             QueueCommand(),
             PlaylistCommand(),
             AuthCommand(),
@@ -88,6 +91,11 @@ class MeloCommand :
             ScrobbleCommand(),
             ShareCommand(),
             RpcCommand(),
+            CompletionCommand(
+                help = "Generate shell completion scripts (bash, zsh, fish).",
+                epilog = "Examples:\n  melo completions bash\n  melo completions zsh\n  melo completions fish",
+                name = "completions",
+            ),
         )
     }
 
@@ -100,6 +108,8 @@ class MeloCommand :
             "q" to listOf("queue"),
             "cfg" to listOf("config"),
             "previous" to listOf("prev"),
+            "vol" to listOf("volume"),
+            "completion" to listOf("completions"),
         )
 
     override val invokeWithoutSubcommand: Boolean = true
