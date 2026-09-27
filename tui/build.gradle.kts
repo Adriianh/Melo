@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-val appVersion: String = providers.gradleProperty("melo.version").getOrElse("2.1.5")
+val appVersion: String = providers.gradleProperty("melo.version").getOrElse("2.2.0")
 val appName = "melo"
 
 // Root of the distribution script templates

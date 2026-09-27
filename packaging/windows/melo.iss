@@ -4,7 +4,7 @@
 
 #define MyAppName "Melo"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.1.5"
+  #define MyAppVersion "2.2.0"
 #endif
 #define MyAppPublisher "Adriianh"
 #define MyAppURL "https://github.com/Adriianh/Melo"

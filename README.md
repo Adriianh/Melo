@@ -50,17 +50,17 @@
 
 ## Downloads
 
-Pre-built binaries and packages for **v2.1.5** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
+Pre-built binaries and packages for **v2.2.0** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
 
 | Platform | Format | Package |
 |---|---|---|
 | **Android** | APK | `composeApp-release.apk` |
-| **Linux — GUI** | AppImage / Debian | `Melo-2.1.5-x86_64.AppImage` • `melo_2.1.5_amd64.deb` |
-| **Linux — TUI** | Tarball | `melo-2.1.5-linux-x64.tar.gz` |
-| **Windows — GUI** | Setup / MSI | `Melo-Setup.exe` • `Melo-2.1.5.msi` |
-| **Windows — TUI** | Zip | `melo-2.1.5-windows.zip` |
-| **macOS — GUI** | DMG | `Melo-2.1.5.dmg` |
-| **macOS — TUI** | Tarball | `melo-2.1.5-macos.tar.gz` |
+| **Linux — GUI** | AppImage / Debian | `Melo-2.2.0-x86_64.AppImage` • `melo_2.2.0_amd64.deb` |
+| **Linux — TUI** | Tarball | `melo-2.2.0-linux-x64.tar.gz` |
+| **Windows — GUI** | Setup / MSI | `Melo-Setup.exe` • `Melo-2.2.0.msi` |
+| **Windows — TUI** | Zip | `melo-2.2.0-windows.zip` |
+| **macOS — GUI** | DMG | `Melo-2.2.0.dmg` |
+| **macOS — TUI** | Tarball | `melo-2.2.0-macos.tar.gz` |
 
 Nightly development builds of the TUI are also published for every push to `master` — see [Installation](#installation) for how to install them.
 
@@ -143,7 +143,7 @@ SPOTIFY_CLIENT_SECRET=
 
 - **Android**: install `composeApp-release.apk` from [Releases](https://github.com/Adriianh/Melo/releases/latest).
 - **Desktop**:
-  - **Linux**: AppImage (portable, no install needed) or Debian package (`sudo apt install ./melo_2.1.5_amd64.deb`).
+  - **Linux**: AppImage (portable, no install needed) or Debian package (`sudo apt install ./melo_2.2.0_amd64.deb`).
   - **Windows**: run `Melo-Setup.exe` or deploy the MSI (GPO-friendly).
   - **macOS**: open the DMG and drag Melo to Applications.
   - **Arch Linux (AUR)**: `yay -S melo-bin`.
