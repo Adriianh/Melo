@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,6 +101,7 @@ fun App(
     val playbackState by playerViewModel.playbackState.collectAsState()
     val settings by getSettingsUseCase().collectAsState()
     val updateState by updateViewModel.uiState.collectAsState()
+    var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(settings.autoCheckUpdates) {
         if (settings.autoCheckUpdates) {
@@ -232,20 +239,26 @@ fun App(
                                         )
 
                                         val currentUpdate = updateState
+                                        val isUpdateBannerVisible = currentUpdate is UpdateState.UpdateAvailable &&
+                                            currentUpdate.release.version != dismissedUpdateVersion
                                         AnimatedVisibility(
-                                            visible = currentUpdate is UpdateState.UpdateAvailable,
+                                            visible = isUpdateBannerVisible,
                                             enter = slideInVertically() + fadeIn(),
                                             exit = slideOutVertically() + fadeOut()
                                         ) {
                                             if (currentUpdate is UpdateState.UpdateAvailable) {
                                                 Surface(
                                                     color = MaterialTheme.colorScheme.primaryContainer,
-                                                    modifier = Modifier.fillMaxWidth()
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .statusBarsPadding()
                                                 ) {
                                                     Row(
                                                         modifier = Modifier.padding(
-                                                            horizontal = 16.dp,
-                                                            vertical = 8.dp
+                                                            start = 16.dp,
+                                                            end = 8.dp,
+                                                            top = 8.dp,
+                                                            bottom = 8.dp
                                                         ),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
@@ -259,6 +272,17 @@ fun App(
                                                             onClick = { showSettingsSheet = true }
                                                         ) {
                                                             Text("Actualizar")
+                                                        }
+                                                        IconButton(
+                                                            onClick = {
+                                                                dismissedUpdateVersion = currentUpdate.release.version
+                                                            }
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Close,
+                                                                contentDescription = "Descartar",
+                                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                                            )
                                                         }
                                                     }
                                                 }

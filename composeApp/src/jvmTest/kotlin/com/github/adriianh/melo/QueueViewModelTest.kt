@@ -14,12 +14,17 @@ import kotlin.test.assertEquals
 
 class QueueViewModelTest {
 
-    private val playbackManager = mockk<PlaybackManager>(relaxed = true)
-    private val vm = QueueViewModel(playbackManager)
+    private val queueStateFlow = MutableStateFlow(QueueState())
+    private val playbackManager =
+        mockk<PlaybackManager>(relaxed = true) {
+            every { queueState } returns queueStateFlow
+        }
+    private val vm by lazy { QueueViewModel(playbackManager) }
 
     @Test
-    fun `queueState delegates to manager`() = runTest {
-        val track = Track("t1", "Song", "Artist", "Album", 180_000, emptyList(), null, null)
+    fun `queueState delegates to manager`() =
+        runTest {
+            val track = Track("t1", "Song", "Artist", "Album", 180_000, emptyList(), null, null)
         val expectedState = QueueState(tracks = listOf(track), currentIndex = 0)
         every { playbackManager.queueState } returns MutableStateFlow(expectedState)
 
