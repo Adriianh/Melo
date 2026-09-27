@@ -3,6 +3,7 @@ package com.github.adriianh.data.player
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackManager
@@ -58,6 +59,7 @@ class PlaybackManagerImpl(
     private val restoreSessionUseCase: RestoreSessionUseCase? = null,
     private val clearSessionUseCase: ClearSessionUseCase? = null,
     private val streamCacheRepository: StreamCacheRepository? = null,
+    private val networkMonitor: NetworkMonitor? = null,
     ioDispatcher: CoroutineDispatcher? = null,
 ) : PlaybackManager {
     private val dispatcher: CoroutineDispatcher =
@@ -92,11 +94,13 @@ class PlaybackManagerImpl(
     private var pendingRestorePositionMs: Long = 0L
     private var pendingRestoreTrackId: String? = null
     private var lastSavedPositionMs: Long = 0L
+    private var isOfflineSettingsEnabled: Boolean = false
 
     init {
         meloPlayer.setVolume(_volume.value)
         scope.launch(dispatcher) {
             getSettingsUseCase?.invoke()?.collectLatest { s ->
+                isOfflineSettingsEnabled = s.offlineMode
                 val newVol = (s.volume.toFloat() / 100f).coerceIn(0f, 1f)
                 if (newVol > 0.05f) {
                     lastUnmutedVolume = newVol
@@ -299,15 +303,22 @@ class PlaybackManagerImpl(
     }
 
     override fun addToQueue(track: Track) {
-        val shouldAutoStart =
-            _queueState.value.currentIndex < 0 || _queueState.value.tracks.isEmpty()
+        val q = _queueState.value
+        val isQueueEnded =
+            !playbackState.value.isPlaying &&
+                (playbackState.value.isFinished || lastHandledFinishedTrackId != null) &&
+                q.currentIndex >= q.tracks.lastIndex
+        val shouldAutoStart = q.currentIndex < 0 || q.tracks.isEmpty() || isQueueEnded
         if (shouldAutoStart) {
             pendingRestorePositionMs = 0L
             pendingRestoreTrackId = null
         }
         _queueState.update { current ->
-            if (shouldAutoStart) {
+            if (current.currentIndex < 0 || current.tracks.isEmpty()) {
                 current.copy(tracks = listOf(track), currentIndex = 0, userQueueCount = 0)
+            } else if (isQueueEnded) {
+                val newTracks = current.tracks.toMutableList().apply { add(track) }
+                current.copy(tracks = newTracks, currentIndex = newTracks.lastIndex, userQueueCount = 0)
             } else {
                 val insertIndex =
                     (current.currentIndex + current.userQueueCount + 1).coerceAtMost(current.tracks.size)
@@ -536,20 +547,22 @@ class PlaybackManagerImpl(
                     return@launch
                 }
 
-                val settings = getSettingsUseCase?.invoke()?.firstOrNull()
-                val isOfflineMode = settings?.offlineMode == true
+                val isOffline = isEffectivelyOffline()
                 val offlineTrack = offlineRepository?.getOfflineTrack(track.id)
                 val isTrackAvailableOffline =
                     track.id.startsWith("local:") ||
                         (offlineTrack?.downloadStatus == DownloadStatus.COMPLETED)
 
-                if (isOfflineMode && !isTrackAvailableOffline) {
+                if (isOffline && !isTrackAvailableOffline) {
                     val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
                     if (nextOfflineIndex != null) {
                         _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
                         playCurrentQueueTrack()
-                        return@launch
+                    } else {
+                        meloPlayer.stop()
+                        emitPlaybackError("Track is not available offline")
                     }
+                    return@launch
                 }
 
                 val cachedUrl = cacheMutex.withLock { prefetchCache.remove(track.id) }
@@ -634,6 +647,7 @@ class PlaybackManagerImpl(
 
     private fun schedulePrefetch() {
         prefetchJob?.cancel()
+        if (isEffectivelyOffline()) return
         val q = _queueState.value
         if (shouldPrefetchRadio(q)) {
             handleAutoplay(forcePlayNext = false)
@@ -672,6 +686,8 @@ class PlaybackManagerImpl(
         return null
     }
 
+    private fun isEffectivelyOffline(): Boolean = isOfflineSettingsEnabled || (networkMonitor?.isOnline?.value == false)
+
     /**
      * Resolves the stream URL with up to [MAX_STREAM_RESOLVE_ATTEMPTS] attempts,
      * waiting [STREAM_RETRY_DELAY_MS] between failures. Returns null when the
@@ -703,6 +719,15 @@ class PlaybackManagerImpl(
      */
     private suspend fun skipCurrentQueueTrack() {
         val nextOfflineIndex = findNextOfflineTrackIndex(_queueState.value.currentIndex)
+        if (isEffectivelyOffline()) {
+            if (nextOfflineIndex != null) {
+                _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
+                playCurrentQueueTrack()
+            } else {
+                meloPlayer.stop()
+            }
+            return
+        }
         if (nextOfflineIndex != null) {
             _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
             playCurrentQueueTrack()
@@ -725,14 +750,16 @@ class PlaybackManagerImpl(
      * True when the queue is close enough to its end to fetch radio continuations
      * ahead of time, so playback transitions seamlessly without an interruption.
      */
-    private fun shouldPrefetchRadio(q: QueueState): Boolean {
-        if (getRadioUseCase == null || q.currentIndex < 0 || q.tracks.isEmpty()) return false
-        return q.currentIndex >= q.tracks.size - RADIO_AUTOPLAY_MARGIN
-    }
+    private fun shouldPrefetchRadio(q: QueueState): Boolean =
+        !isEffectivelyOffline() &&
+            getRadioUseCase != null &&
+            q.currentIndex >= 0 &&
+            q.tracks.isNotEmpty() &&
+            q.currentIndex >= q.tracks.size - RADIO_AUTOPLAY_MARGIN
 
     private fun handleAutoplay(forcePlayNext: Boolean) {
         val currentTrack = _queueState.value.currentTrack ?: return
-        if (isAutoplayFetching || getRadioUseCase == null) {
+        if (isAutoplayFetching || getRadioUseCase == null || isEffectivelyOffline()) {
             if (forcePlayNext) meloPlayer.stop()
             return
         }
@@ -740,6 +767,10 @@ class PlaybackManagerImpl(
         isAutoplayFetching = true
         scope.launch {
             try {
+                if (isEffectivelyOffline()) {
+                    if (forcePlayNext) meloPlayer.stop()
+                    return@launch
+                }
                 val autoplayEnabled = getSettingsUseCase?.invoke()?.firstOrNull()?.autoplay ?: true
                 if (!autoplayEnabled) {
                     if (forcePlayNext) meloPlayer.stop()

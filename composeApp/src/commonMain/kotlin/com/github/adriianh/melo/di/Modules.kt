@@ -196,6 +196,7 @@ val dataModule = module {
             restoreSessionUseCase = getOrNull(),
             clearSessionUseCase = getOrNull(),
             streamCacheRepository = getOrNull(),
+            networkMonitor = getOrNull(),
             ioDispatcher = MeloDispatchers.IO,
         )
     }
@@ -241,6 +242,7 @@ val viewModelModule = module {
             scanLocalTracksUseCase = get(),
             getRecentTracksUseCase = get(),
             homeFeedCache = get(),
+            networkMonitor = getOrNull(),
         )
     }
     viewModelOf(::LoginViewModel)

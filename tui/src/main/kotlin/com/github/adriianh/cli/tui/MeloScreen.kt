@@ -23,6 +23,7 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -60,6 +61,7 @@ class MeloScreen(
     internal val audioProvider: AudioProvider,
     internal val discordRpcManager: DiscordRpcManager,
     internal val youTubeAuthService: YouTubeAuthService,
+    internal val networkMonitor: NetworkMonitor? = null,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 

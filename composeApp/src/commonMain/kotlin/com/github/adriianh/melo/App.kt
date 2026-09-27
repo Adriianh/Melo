@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
@@ -96,16 +97,19 @@ fun App(
     val getSettingsUseCase: GetSettingsUseCase = koinInject()
     val updateSettingsUseCase: UpdateSettingsUseCase = koinInject()
     val offlineRepository: OfflineRepository = koinInject()
+    val networkMonitor: NetworkMonitor = koinInject()
+    val isOnline by networkMonitor.isOnline.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
     val playbackState by playerViewModel.playbackState.collectAsState()
     val settings by getSettingsUseCase().collectAsState()
+    val isOfflineMode = settings.offlineMode || !isOnline
     val updateState by updateViewModel.uiState.collectAsState()
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(settings.autoCheckUpdates) {
         if (settings.autoCheckUpdates) {
-            kotlinx.coroutines.delay(4000)
+            delay(4000.milliseconds)
             updateViewModel.checkForUpdates()
         }
     }
@@ -227,7 +231,7 @@ fun App(
                                         modifier = Modifier.fillMaxSize()
                                     ) {
                                         OfflineModeBanner(
-                                            visible = settings.offlineMode,
+                                            visible = isOfflineMode,
                                             onReconnect = {
                                                 coroutineScope.launch {
                                                     updateSettingsUseCase { current ->

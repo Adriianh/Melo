@@ -25,6 +25,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -899,4 +900,62 @@ class PlaybackManagerTest {
         assertEquals(0, manager.queueState.value.userQueueCount)
         assertEquals("x", manager.queueState.value.currentTrack?.id)
     }
+
+    @Test
+    fun `addToQueue auto-starts playback when previous queue finished playing`() =
+        runTest {
+            coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+            val scope = managerScope()
+            val manager = PlaybackManagerImpl(meloPlayer, getStreamUseCase, scope)
+
+            manager.setQueue(listOf(fakeTrack("1")))
+            scope.advanceUntilIdle()
+            assertEquals(0, manager.queueState.value.currentIndex)
+
+            meloPlayerState.value =
+                PlaybackState(
+                    currentTrack = fakeTrack("1"),
+                    isPlaying = false,
+                    isFinished = true,
+                )
+            scope.advanceUntilIdle()
+
+            manager.addToQueue(fakeTrack("2"))
+            scope.advanceUntilIdle()
+
+            val currentTrack = manager.queueState.value.currentTrack
+            assertNotNull(currentTrack)
+            assertEquals(2, manager.queueState.value.tracks.size)
+            assertEquals(1, manager.queueState.value.currentIndex)
+            assertEquals("2", currentTrack.id)
+            verify { meloPlayer.load("http://stream.url", fakeTrack("2"), 0L) }
+        }
+
+    @Test
+    fun `handleAutoplay does not fetch radio when offline via networkMonitor`() =
+        runTest {
+            val getRadioUseCase = mockk<GetRadioUseCase>(relaxed = true)
+            val networkMonitor =
+                mockk<com.github.adriianh.core.domain.network.NetworkMonitor> {
+                    every { isOnline } returns MutableStateFlow(false)
+                }
+            val scope = managerScope()
+            val manager =
+                PlaybackManagerImpl(
+                    meloPlayer = meloPlayer,
+                    getStreamUseCase = getStreamUseCase,
+                    scope = scope,
+                    getRadioUseCase = getRadioUseCase,
+                    networkMonitor = networkMonitor,
+                )
+
+            manager.setQueue(listOf(fakeTrack("1")))
+            scope.advanceUntilIdle()
+
+            manager.playNext()
+            scope.advanceUntilIdle()
+
+            coVerify(exactly = 0) { getRadioUseCase(any()) }
+            verify { meloPlayer.stop() }
+        }
 }

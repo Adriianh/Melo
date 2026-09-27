@@ -2,6 +2,7 @@ package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.IosMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
@@ -13,6 +14,7 @@ import com.github.adriianh.data.local.MeloDatabase
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
@@ -22,6 +24,11 @@ import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 
 actual val platformModule: Module = module {
+    single<NetworkMonitor> {
+        object : NetworkMonitor {
+            override val isOnline = MutableStateFlow(true)
+        }
+    }
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { IosMeloPlayer() }
     single<MediaSessionManager> { NoOpMediaSessionManager() }
