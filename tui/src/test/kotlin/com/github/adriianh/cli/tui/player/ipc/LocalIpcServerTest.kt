@@ -1,6 +1,7 @@
 package com.github.adriianh.cli.tui.player.ipc
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +37,8 @@ class LocalIpcServerTest {
             sourceId = null,
         )
 
+    private var currentVol = 75
+
     @BeforeTest
     fun setup() {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -44,6 +47,7 @@ class LocalIpcServerTest {
         queuedListTracks = null
         stopCalled = false
         activeQueue.clear()
+        currentVol = 75
 
         server =
             LocalIpcServer(
@@ -65,6 +69,19 @@ class LocalIpcServerTest {
                 onPlayNow = { playedNowTrack = it },
                 onPlayList = { playedListTracks = it },
                 onQueueAddList = { queuedListTracks = it },
+                getStatus = {
+                    PlaybackStatusDto(
+                        track = sampleTrack,
+                        isPlaying = true,
+                        positionMs = 15_000L,
+                        durationMs = 120_000L,
+                        volume = currentVol,
+                        queueSize = activeQueue.size,
+                    )
+                },
+                onVolumeGet = { currentVol },
+                onVolumeSet = { currentVol = it.coerceIn(0, 100) },
+                onVolumeAdjust = { currentVol = (currentVol + it).coerceIn(0, 100) },
             )
         server.start(scope)
         Thread.sleep(150)
@@ -119,5 +136,37 @@ class LocalIpcServerTest {
     fun invalidPayloadReturnsError() {
         val res = LocalIpcClient.sendCommand("PLAY_NOW", "not-a-json")
         assertEquals("ERROR Invalid payload", res)
+    }
+
+    @Test
+    fun statusReturnsSerializedDto() {
+        val res = LocalIpcClient.sendCommand("STATUS")
+        assertTrue(res.startsWith("OK "))
+        val dto = json.decodeFromString<PlaybackStatusDto>(res.removePrefix("OK ").trim())
+        assertEquals("Test Title", dto.track?.title)
+        assertTrue(dto.isPlaying)
+        assertEquals(15_000L, dto.positionMs)
+        assertEquals(75, dto.volume)
+    }
+
+    @Test
+    fun volumeGetAndSetWorkCorrectly() {
+        val getRes = LocalIpcClient.sendCommand("VOLUME_GET")
+        assertEquals("OK 75", getRes)
+
+        val setRes = LocalIpcClient.sendCommand("VOLUME_SET", "85")
+        assertEquals("OK 85", setRes)
+
+        val getRes2 = LocalIpcClient.sendCommand("VOLUME_GET")
+        assertEquals("OK 85", getRes2)
+    }
+
+    @Test
+    fun volumeAdjustWorksCorrectly() {
+        val adjustRes = LocalIpcClient.sendCommand("VOLUME_ADJUST", "-15")
+        assertEquals("OK 60", adjustRes)
+
+        val getRes = LocalIpcClient.sendCommand("VOLUME_GET")
+        assertEquals("OK 60", getRes)
     }
 }

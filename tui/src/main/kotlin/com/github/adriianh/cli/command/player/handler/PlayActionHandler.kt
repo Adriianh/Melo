@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
+import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -30,11 +31,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 object PlayActionHandler : KoinComponent {
     private val httpClient: HttpClient by inject()
@@ -80,6 +84,7 @@ object PlayActionHandler : KoinComponent {
     suspend fun startDaemon(
         getStream: GetStreamUseCase,
         terminal: Terminal = Terminal(),
+        idleTimeoutMinutes: Int = 0,
     ) {
         startPlayback(
             contextName = "Daemon Mode",
@@ -87,6 +92,7 @@ object PlayActionHandler : KoinComponent {
             getStream = getStream,
             terminal = terminal,
             shouldFetchSimilar = false,
+            idleTimeoutMinutes = idleTimeoutMinutes,
         )
     }
 
@@ -96,12 +102,16 @@ object PlayActionHandler : KoinComponent {
         getStream: GetStreamUseCase,
         terminal: Terminal,
         shouldFetchSimilar: Boolean,
+        idleTimeoutMinutes: Int = 0,
     ) {
         terminal.println(cyan("Starting playback for $contextName... Press Ctrl+C to stop."))
         rpcEnabled = getSettings.getSnapshot().discordRpcEnabled
         terminal.println(gray("Media keys (Play/Pause, Next, Prev) are supported in background."))
         var currentTrack: Track? = initialTracks.firstOrNull()
         var isPlaying = false
+        var currentPositionMs = 0L
+        var currentVolume = 75
+        var lastActiveAt = System.currentTimeMillis()
         val radioQueue = initialTracks.toMutableList()
         var queueIndex = 0
         var playPauseAction: (() -> Unit)? = null
@@ -111,6 +121,7 @@ object PlayActionHandler : KoinComponent {
         val stopSignal = CompletableDeferred<Unit>()
         val playerScope = CoroutineScope(Dispatchers.IO)
         var activeProgressJob: Job? = null
+        var idleWatchdogJob: Job? = null
         var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
 
         var trackStartedAt = System.currentTimeMillis()
@@ -133,6 +144,8 @@ object PlayActionHandler : KoinComponent {
             AudioPlayer(
                 scope = playerScope,
                 onProgress = { posMs ->
+                    currentPositionMs = posMs
+                    lastActiveAt = System.currentTimeMillis()
                     sessionManager.updatePosition(posMs)
                     activeProgressTask?.update { completed = posMs }
 
@@ -152,8 +165,14 @@ object PlayActionHandler : KoinComponent {
                         }
                     }
                 },
-                onFinish = { nextAction?.invoke() },
-                onError = { _ -> nextAction?.invoke() },
+                onFinish = {
+                    currentPositionMs = 0L
+                    nextAction?.invoke()
+                },
+                onError = { _ ->
+                    currentPositionMs = 0L
+                    nextAction?.invoke()
+                },
             )
 
         suspend fun playCurrentTrack() {
@@ -217,6 +236,7 @@ object PlayActionHandler : KoinComponent {
                 onPrevious = { prevAction?.invoke() },
                 onStop = { stopAction?.invoke() },
                 onQueueAdd = { track ->
+                    lastActiveAt = System.currentTimeMillis()
                     val wasEmpty = radioQueue.isEmpty()
                     radioQueue.add(track)
                     terminal.println(green("\n+ Added to queue: ") + track.title + gray(" by ") + track.artist)
@@ -229,6 +249,7 @@ object PlayActionHandler : KoinComponent {
                     }
                 },
                 onQueueRemove = { index ->
+                    lastActiveAt = System.currentTimeMillis()
                     val realIndex = queueIndex + 1 + index
                     if (realIndex in (queueIndex + 1) until radioQueue.size) {
                         val removed = radioQueue.removeAt(realIndex)
@@ -239,6 +260,7 @@ object PlayActionHandler : KoinComponent {
                     }
                 },
                 onQueueClear = {
+                    lastActiveAt = System.currentTimeMillis()
                     if (radioQueue.size > queueIndex + 1) {
                         val toKeep = radioQueue.subList(0, queueIndex + 1).toList()
                         radioQueue.clear()
@@ -248,6 +270,7 @@ object PlayActionHandler : KoinComponent {
                 },
                 getQueue = { radioQueue.drop(queueIndex + 1) },
                 onPlayNow = { track ->
+                    lastActiveAt = System.currentTimeMillis()
                     playerScope.launch {
                         player.stop()
                         radioQueue.clear()
@@ -259,6 +282,7 @@ object PlayActionHandler : KoinComponent {
                 },
                 onPlayList = { tracks ->
                     if (tracks.isNotEmpty()) {
+                        lastActiveAt = System.currentTimeMillis()
                         playerScope.launch {
                             player.stop()
                             radioQueue.clear()
@@ -271,6 +295,7 @@ object PlayActionHandler : KoinComponent {
                 },
                 onQueueAddList = { tracks ->
                     if (tracks.isNotEmpty()) {
+                        lastActiveAt = System.currentTimeMillis()
                         val wasEmpty = radioQueue.isEmpty()
                         radioQueue.addAll(tracks)
                         terminal.println(green("\n+ Added ${tracks.size} tracks to queue."))
@@ -282,6 +307,27 @@ object PlayActionHandler : KoinComponent {
                             }
                         }
                     }
+                },
+                getStatus = {
+                    PlaybackStatusDto(
+                        track = currentTrack,
+                        isPlaying = isPlaying,
+                        positionMs = currentPositionMs,
+                        durationMs = currentTrack?.durationMs ?: 0L,
+                        volume = currentVolume,
+                        queueSize = (radioQueue.size - (queueIndex + 1)).coerceAtLeast(0),
+                    )
+                },
+                onVolumeGet = { currentVolume },
+                onVolumeSet = { vol ->
+                    lastActiveAt = System.currentTimeMillis()
+                    currentVolume = vol.coerceIn(0, 100)
+                    player.setVolume(currentVolume)
+                },
+                onVolumeAdjust = { delta ->
+                    lastActiveAt = System.currentTimeMillis()
+                    currentVolume = (currentVolume + delta).coerceIn(0, 100)
+                    player.setVolume(currentVolume)
                 },
                 onCustomCommand = { cmd: String, _: String ->
                     when (cmd) {
@@ -312,7 +358,28 @@ object PlayActionHandler : KoinComponent {
         ipcServer.start(playerScope)
         sessionManager.init()
 
+        if (idleTimeoutMinutes > 0) {
+            idleWatchdogJob =
+                playerScope.launch {
+                    val timeoutMs = idleTimeoutMinutes * 60 * 1000L
+                    while (isActive) {
+                        delay(15_000L.milliseconds)
+                        if (!isPlaying) {
+                            val elapsed = System.currentTimeMillis() - lastActiveAt
+                            if (elapsed >= timeoutMs) {
+                                terminal.println(
+                                    yellow("\nDaemon idle timeout reached ($idleTimeoutMinutes min). Shutting down..."),
+                                )
+                                stopAction?.invoke()
+                                break
+                            }
+                        }
+                    }
+                }
+        }
+
         playPauseAction = {
+            lastActiveAt = System.currentTimeMillis()
             if (isPlaying) {
                 player.pause()
                 sessionManager.notifyPaused()
@@ -328,6 +395,7 @@ object PlayActionHandler : KoinComponent {
             }
         }
         nextAction = {
+            lastActiveAt = System.currentTimeMillis()
             playerScope.launch {
                 if (queueIndex + 1 < radioQueue.size) {
                     queueIndex++
@@ -366,6 +434,7 @@ object PlayActionHandler : KoinComponent {
             }
         }
         prevAction = {
+            lastActiveAt = System.currentTimeMillis()
             playerScope.launch {
                 if (queueIndex > 0) {
                     queueIndex--
@@ -377,11 +446,13 @@ object PlayActionHandler : KoinComponent {
             }
         }
         stopAction = {
+            idleWatchdogJob?.cancel()
             activeProgressJob?.cancel()
             player.release()
             sessionManager.notifyStopped()
             sessionManager.release()
             isPlaying = false
+            currentPositionMs = 0L
             stopSignal.complete(Unit)
             terminal.println(cyan("Playback stopped."))
         }
@@ -393,6 +464,7 @@ object PlayActionHandler : KoinComponent {
         try {
             stopSignal.await()
         } finally {
+            idleWatchdogJob?.cancel()
             activeProgressJob?.cancel()
             try {
                 player.release()

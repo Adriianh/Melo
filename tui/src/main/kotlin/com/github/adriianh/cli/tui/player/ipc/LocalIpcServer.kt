@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui.player.ipc
 
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,6 +29,10 @@ class LocalIpcServer(
     private val onPlayNow: (Track) -> Unit = {},
     private val onPlayList: (List<Track>) -> Unit = {},
     private val onQueueAddList: (List<Track>) -> Unit = {},
+    private val getStatus: () -> PlaybackStatusDto = { PlaybackStatusDto() },
+    private val onVolumeGet: () -> Int = { 75 },
+    private val onVolumeSet: (Int) -> Unit = {},
+    private val onVolumeAdjust: (Int) -> Unit = {},
     private val onCustomCommand: (String, String) -> String = { _, _ -> "ERROR Not implemented" },
 ) {
     private val logger = LoggerFactory.getLogger(LocalIpcServer::class.java)
@@ -78,7 +83,8 @@ class LocalIpcServer(
                 val handled =
                     handleControlCommand(cmd, writer) ||
                         handleQueueMutation(cmd, payload, writer) ||
-                        handlePlayCommand(cmd, payload, writer)
+                        handlePlayCommand(cmd, payload, writer) ||
+                        handleStatusAndVolumeCommand(cmd, payload, writer)
 
                 if (!handled) {
                     val response = onCustomCommand(cmd, payload)
@@ -198,6 +204,52 @@ class LocalIpcServer(
                 }
                 true
             }
+            else -> false
+        }
+
+    private fun handleStatusAndVolumeCommand(
+        cmd: String,
+        payload: String,
+        writer: BufferedWriter,
+    ): Boolean =
+        when (cmd) {
+            "STATUS" -> {
+                val status = getStatus()
+                val jsonStr = json.encodeToString(PlaybackStatusDto.serializer(), status)
+                writer.write("OK $jsonStr\n")
+                true
+            }
+
+            "VOLUME_GET" -> {
+                val vol = onVolumeGet()
+                writer.write("OK $vol\n")
+                true
+            }
+
+            "VOLUME_SET" -> {
+                val level = payload.toIntOrNull()
+                if (level != null) {
+                    onVolumeSet(level)
+                    val newVol = onVolumeGet()
+                    writer.write("OK $newVol\n")
+                } else {
+                    writer.write("ERROR Invalid volume level\n")
+                }
+                true
+            }
+
+            "VOLUME_ADJUST" -> {
+                val delta = payload.toIntOrNull()
+                if (delta != null) {
+                    onVolumeAdjust(delta)
+                    val newVol = onVolumeGet()
+                    writer.write("OK $newVol\n")
+                } else {
+                    writer.write("ERROR Invalid volume delta\n")
+                }
+                true
+            }
+
             else -> false
         }
 

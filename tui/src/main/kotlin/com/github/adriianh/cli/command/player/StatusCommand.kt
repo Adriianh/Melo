@@ -2,6 +2,8 @@ package com.github.adriianh.cli.command.player
 
 import com.github.adriianh.cli.command.player.util.VerticalProgressBarMaker
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.tui.player.ipc.LocalIpcClient
+import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import com.github.adriianh.core.domain.usecase.search.GetLyricsUseCase
 import com.github.adriianh.core.domain.usecase.search.GetSyncedLyricsUseCase
 import com.github.ajalt.clikt.core.CliktCommand
@@ -26,11 +28,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import java.io.InputStreamReader
+import kotlin.time.Duration.Companion.milliseconds
+
+private data class TrackStatusSnapshot(
+    val title: String,
+    val artist: String,
+    val album: String,
+    val positionMs: Long,
+    val durationMs: Long,
+    val isPlaying: Boolean,
+    val volume: Int,
+)
 
 class StatusCommand :
     CliktCommand(
@@ -59,6 +73,7 @@ class StatusCommand :
     ).flag("--no-live", default = true)
 
     private val terminal = Terminal()
+    private val json = Json { ignoreUnknownKeys = true }
 
     override fun help(context: Context): String = "Display playback status, track metadata, progress, and lyrics."
 
@@ -71,25 +86,14 @@ class StatusCommand :
 
     override fun run() {
         startKoin { modules(appModule) }
-
         try {
             val getLyrics: GetLyricsUseCase by inject()
             val getSyncedLyrics: GetSyncedLyricsUseCase by inject()
 
             runBlocking {
                 while (true) {
-                    val process =
-                        ProcessBuilder(
-                            "sh",
-                            "-c",
-                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\"",
-                        ).redirectErrorStream(true)
-                            .start()
-
-                    val output = InputStreamReader(process.inputStream).readText().trim()
-                    process.waitFor()
-
-                    if (process.exitValue() != 0 || output.isBlank() || output == "No players found") {
+                    val status = queryStatus()
+                    if (status == null) {
                         if (format == "json") {
                             echo("{}")
                         } else {
@@ -98,223 +102,204 @@ class StatusCommand :
                         return@runBlocking
                     }
 
-                    val parts = output.split("|||")
-                    val title = parts.getOrNull(0)?.trim() ?: "Unknown"
-                    val artist = parts.getOrNull(1)?.trim() ?: "Unknown"
-                    val album = parts.getOrNull(2)?.trim() ?: "Unknown"
-                    val positionRaw = parts.getOrNull(3)?.trim() ?: "0"
-                    val lengthRaw = parts.getOrNull(4)?.trim() ?: "0"
-
-                    val positionUs = positionRaw.toLongOrNull() ?: 0L
-                    val lengthUs = lengthRaw.toLongOrNull() ?: 0L
-                    val posSec = positionUs / 1000000L
-                    val lenSec = lengthUs / 1000000L
-
-                    val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
-                    val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
-
-                    var lyricsText: String? = null
-                    if (lyrics) {
-                        lyricsText =
-                            if (synced) getSyncedLyrics(artist, title) else getLyrics(artist, title)
-                    }
+                    val lyricsText =
+                        when {
+                            !lyrics -> null
+                            synced -> getSyncedLyrics(status.artist, status.title)
+                            else -> getLyrics(status.artist, status.title)
+                        }
 
                     if (format == "json") {
-                        val escapedLyrics =
-                            lyricsText
-                                ?.replace("\"", "\\\"")
-                                ?.replace("\n", "\\n")
-                        val jsonLyricsPart =
-                            if (escapedLyrics != null) ",\n    \"lyrics\": \"$escapedLyrics\"" else ""
-                        echo(
-                            """
-                            {
-                                "title": "$title",
-                                "artist": "$artist",
-                                "album": "$album",
-                                "position_ms": ${positionUs / 1000},
-                                "duration_ms": ${lengthUs / 1000}$jsonLyricsPart
-                            }
-                            """.trimIndent(),
-                        )
+                        renderJsonStatus(status, lyricsText)
                         return@runBlocking
                     }
 
-                    terminal.println("\nPlaying: ${cyan(title)} - ${gray("$artist ($album)")}")
-
-                    val lrcLines = mutableListOf<Pair<Long, String>>()
-                    if (lyricsText != null) {
-                        if (synced && lyricsText.contains(Regex("""\[\d{2}:\d{2}\.\d{2,3}]"""))) {
-                            val regex = Regex("""\[(\d{2}):(\d{2})\.(\d{2,3})](.*)""")
-                            lyricsText.lines().forEach { line ->
-                                val match = regex.find(line.trim())
-                                if (match != null) {
-                                    val m = match.groupValues[1].toLong()
-                                    val s = match.groupValues[2].toLong()
-                                    val msStr = match.groupValues[3]
-                                    val ms =
-                                        if (msStr.length == 2) msStr.toLong() * 10 else msStr.toLong()
-                                    val timeUs = (m * 60000000L) + (s * 1000000L) + (ms * 1000L)
-                                    lrcLines.add(timeUs to match.groupValues[4].trim())
-                                }
-                            }
-                        } else {
-                            terminal.println("\nLyrics for ${cyan(title)} by ${cyan(artist)}: \n\n$lyricsText\n")
-                        }
+                    terminal.println(
+                        "\nPlaying: ${cyan(status.title)} - ${gray("${status.artist} (${status.album})")}",
+                    )
+                    val lrcLines =
+                        if (synced && lyricsText != null) parseSyncedLyrics(lyricsText) else emptyList()
+                    if (lyricsText != null && lrcLines.isEmpty()) {
+                        terminal.println(
+                            "\nLyrics for ${cyan(status.title)} by ${cyan(status.artist)}:\n\n$lyricsText\n",
+                        )
                     }
 
-                    if (lengthUs > 0) {
+                    if (status.durationMs > 0) {
                         val isInteractive = terminal.terminalInfo.interactive || live
                         if (isInteractive) {
-                            var currentLyric = if (lrcLines.isNotEmpty()) "..." else ""
-                            val activeProgressTask =
-                                progressBarLayout {
-                                    if (lrcLines.isNotEmpty()) {
-                                        text(cyan("♪"))
-                                        text {
-                                            cyan(currentLyric)
-                                        }
-                                    }
-                                    text("Time")
-                                    text {
-                                        val currentSec = completed / 1000000L
-                                        val tlSec = (total ?: 0L) / 1000000L
-                                        val currentStr =
-                                            String.format("%02d:%02d", currentSec / 60, currentSec % 60)
-                                        val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
-                                        gray("$currentStr / $tlStr")
-                                    }
-                                    text("Progress")
-                                    progressBar()
-                                    text("")
-                                    text(gray("Press Ctrl+C to stop."))
-                                }.animateOnThread(
-                                    terminal,
-                                    total = lengthUs,
-                                    maker = VerticalProgressBarMaker,
-                                )
-
-                            val job =
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    activeProgressTask.execute()
-                                }
-
-                            while (true) {
-                                try {
-                                    val curTrackProcess =
-                                        ProcessBuilder(
-                                            "sh",
-                                            "-c",
-                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
-                                        ).start()
-                                    val curTrackStr =
-                                        InputStreamReader(curTrackProcess.inputStream)
-                                            .readText()
-                                            .trim()
-                                    curTrackProcess.waitFor()
-
-                                    if (curTrackStr != "$title|||$artist" &&
-                                        curTrackStr.isNotBlank() &&
-                                        curTrackStr != "No players found"
-                                    ) {
-                                        break
-                                    }
-
-                                    val stateProcess =
-                                        ProcessBuilder(
-                                            "sh",
-                                            "-c",
-                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) status",
-                                        ).start()
-                                    val stateStr =
-                                        InputStreamReader(stateProcess.inputStream)
-                                            .readText()
-                                            .trim()
-                                    stateProcess.waitFor()
-                                    if (stateStr != "Playing" && stateStr != "Paused") return@runBlocking
-
-                                    val posProcess =
-                                        ProcessBuilder(
-                                            "sh",
-                                            "-c",
-                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) position",
-                                        ).start()
-                                    val posOutput =
-                                        InputStreamReader(posProcess.inputStream).readText().trim()
-                                    posProcess.waitFor()
-
-                                    val posSecResult = posOutput.toDoubleOrNull()
-                                    if (posSecResult != null) {
-                                        val currentPosUs = (posSecResult * 1000000.0).toLong()
-                                        if (lrcLines.isNotEmpty()) {
-                                            val activeLine =
-                                                lrcLines.lastOrNull { it.first <= currentPosUs }
-                                            currentLyric = activeLine?.second ?: "..."
-                                        }
-                                        activeProgressTask.update { completed = currentPosUs }
-                                    } else {
-                                        break
-                                    }
-                                } catch (_: Exception) {
-                                    break
-                                }
-                                delay(500)
-                            }
-                            job.cancel()
-                            activeProgressTask.clear()
+                            runLiveProgress(status, lrcLines)
                         } else {
-                            terminal.println(
-                                horizontalLayout {
-                                    cell(
-                                        ProgressBar(
-                                            total = lengthUs,
-                                            completed = positionUs,
-                                            width = 30,
-                                        ),
-                                    )
-                                    cell(Text(gray(" $posStr / $lenStr")))
-                                },
-                            )
-                            if (live) {
-                                while (true) {
-                                    val curTrackProcess =
-                                        ProcessBuilder(
-                                            "sh",
-                                            "-c",
-                                            "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
-                                        ).start()
-                                    val curTrackStr =
-                                        InputStreamReader(curTrackProcess.inputStream)
-                                            .readText()
-                                            .trim()
-                                    curTrackProcess.waitFor()
-                                    if (curTrackStr != "$title|||$artist") break
-                                    delay(2000)
-                                }
-                            }
-                        }
-                    } else if (live) {
-                        while (true) {
-                            val curTrackProcess =
-                                ProcessBuilder(
-                                    "sh",
-                                    "-c",
-                                    "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\"",
-                                ).start()
-                            val curTrackStr =
-                                InputStreamReader(curTrackProcess.inputStream).readText().trim()
-                            curTrackProcess.waitFor()
-                            if (curTrackStr != "$title|||$artist") break
-                            delay(2000)
+                            renderStaticProgress(status)
                         }
                     }
+
                     if (!live) break
+                    delay(1000)
                 }
             }
-        } catch (e: Exception) {
-            terminal.println(gray("Failed to get status via playerctl: ${e.message}"))
         } finally {
             stopKoin()
         }
+    }
+
+    private fun queryStatus(): TrackStatusSnapshot? {
+        val fromIpc =
+            runCatching {
+                val ipcRes = LocalIpcClient.sendCommand("STATUS")
+                if (ipcRes.startsWith("OK ")) {
+                    val dto =
+                        json.decodeFromString<PlaybackStatusDto>(ipcRes.removePrefix("OK ").trim())
+                    dto.track?.let { track ->
+                        TrackStatusSnapshot(
+                            title = track.title,
+                            artist = track.artist,
+                            album = track.album,
+                            positionMs = dto.positionMs,
+                            durationMs = if (dto.durationMs > 0) dto.durationMs else track.durationMs,
+                            isPlaying = dto.isPlaying,
+                            volume = dto.volume,
+                        )
+                    }
+                } else {
+                    null
+                }
+            }.getOrNull()
+        return fromIpc ?: queryPlayerctlStatus()
+    }
+
+    private fun queryPlayerctlStatus(): TrackStatusSnapshot? {
+        if (System.getProperty("os.name").lowercase().contains("win")) return null
+        return runCatching {
+            val process =
+                ProcessBuilder(
+                    "sh",
+                    "-c",
+                    "playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata " +
+                        "--format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\"",
+                ).redirectErrorStream(true).start()
+            val output = InputStreamReader(process.inputStream).readText().trim()
+            process.waitFor()
+            if (process.exitValue() == 0 && output.isNotBlank() && output != "No players found") {
+                val parts = output.split("|||")
+                val posUs = parts.getOrNull(3)?.trim()?.toLongOrNull() ?: 0L
+                val lenUs = parts.getOrNull(4)?.trim()?.toLongOrNull() ?: 0L
+                TrackStatusSnapshot(
+                    title = parts.getOrNull(0)?.trim() ?: "Unknown",
+                    artist = parts.getOrNull(1)?.trim() ?: "Unknown",
+                    album = parts.getOrNull(2)?.trim() ?: "Unknown",
+                    positionMs = posUs / 1000L,
+                    durationMs = lenUs / 1000L,
+                    isPlaying = true,
+                    volume = 75,
+                )
+            } else {
+                null
+            }
+        }.getOrNull()
+    }
+
+    private fun parseSyncedLyrics(lyricsText: String): List<Pair<Long, String>> {
+        val regex = Regex("""\[(\d{2}):(\d{2})\.(\d{2,3})](.*)""")
+        return lyricsText.lines().mapNotNull { line ->
+            val match = regex.find(line.trim()) ?: return@mapNotNull null
+            val m = match.groupValues[1].toLong()
+            val s = match.groupValues[2].toLong()
+            val msStr = match.groupValues[3]
+            val ms = if (msStr.length == 2) msStr.toLong() * 10 else msStr.toLong()
+            val timeMs = (m * 60_000L) + (s * 1000L) + ms
+            timeMs to match.groupValues[4].trim()
+        }
+    }
+
+    private fun renderJsonStatus(
+        status: TrackStatusSnapshot,
+        lyricsText: String?,
+    ) {
+        val escapedLyrics =
+            lyricsText
+                ?.replace("\"", "\\\"")
+                ?.replace("\n", "\\n")
+        val jsonLyricsPart =
+            if (escapedLyrics != null) ",\n    \"lyrics\": \"$escapedLyrics\"" else ""
+        echo(
+            """
+            {
+                "title": "${status.title}",
+                "artist": "${status.artist}",
+                "album": "${status.album}",
+                "position_ms": ${status.positionMs},
+                "duration_ms": ${status.durationMs},
+                "is_playing": ${status.isPlaying},
+                "volume": ${status.volume}$jsonLyricsPart
+            }
+            """.trimIndent(),
+        )
+    }
+
+    private suspend fun runLiveProgress(
+        initialStatus: TrackStatusSnapshot,
+        lrcLines: List<Pair<Long, String>>,
+    ) {
+        var currentLyric = if (lrcLines.isNotEmpty()) "..." else ""
+        val activeProgressTask =
+            progressBarLayout {
+                if (lrcLines.isNotEmpty()) {
+                    text(cyan("♪"))
+                    text { cyan(currentLyric) }
+                }
+                text("Time")
+                text {
+                    val currentSec = completed / 1000L
+                    val tlSec = (total ?: 0L) / 1000L
+                    val currentStr = String.format("%02d:%02d", currentSec / 60, currentSec % 60)
+                    val tlStr = String.format("%02d:%02d", tlSec / 60, tlSec % 60)
+                    gray("$currentStr / $tlStr")
+                }
+                text("Progress")
+                progressBar()
+                text("")
+                text(gray("Press Ctrl+C to stop."))
+            }.animateOnThread(
+                terminal,
+                total = initialStatus.durationMs,
+                maker = VerticalProgressBarMaker,
+            )
+
+        val job = CoroutineScope(Dispatchers.IO).launch { activeProgressTask.execute() }
+        try {
+            while (true) {
+                val status = queryStatus() ?: break
+                if (status.title != initialStatus.title || status.artist != initialStatus.artist) break
+                if (lrcLines.isNotEmpty()) {
+                    val activeLine = lrcLines.lastOrNull { it.first <= status.positionMs }
+                    currentLyric = activeLine?.second ?: "..."
+                }
+                activeProgressTask.update { completed = status.positionMs }
+                delay(500.milliseconds)
+            }
+        } finally {
+            job.cancel()
+            activeProgressTask.clear()
+        }
+    }
+
+    private fun renderStaticProgress(status: TrackStatusSnapshot) {
+        val posSec = status.positionMs / 1000L
+        val lenSec = status.durationMs / 1000L
+        val posStr = String.format("%02d:%02d", posSec / 60, posSec % 60)
+        val lenStr = String.format("%02d:%02d", lenSec / 60, lenSec % 60)
+        terminal.println(
+            horizontalLayout {
+                cell(
+                    ProgressBar(
+                        total = status.durationMs,
+                        completed = status.positionMs,
+                        width = 30,
+                    ),
+                )
+                cell(Text(gray(" $posStr / $lenStr")))
+            },
+        )
     }
 }
