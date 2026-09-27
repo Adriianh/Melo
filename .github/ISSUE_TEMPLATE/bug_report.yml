@@ -1,0 +1,64 @@
+name: 🐛 Bug Report
+description: File a bug report to help us identify and fix issues in Melo.
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please fill out the sections below to help us investigate and resolve it.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Affected Component or Platform
+      description: Where did you encounter this problem?
+      options:
+        - "TUI (Terminal / CLI)"
+        - "Desktop (Compose Multiplatform)"
+        - "Android"
+        - "Core / Audio / Streaming"
+        - "Packaging / Build"
+        - "Other / Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "When doing X, Y happens unexpectedly..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open Melo with `melo`
+        2. Go to ...
+        3. Click / Press ...
+        4. See error ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs. Actual Behavior
+      description: What did you expect to happen, and what happened instead?
+      placeholder: "Expected playback to continue, but audio stopped completely."
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment & Version
+      description: Melo version, Operating System, desktop environment, and terminal emulator (if TUI).
+      placeholder: "v2.2.1 - Linux (Arch, GNOME 47), Alacritty / Windows 11 / Android 14"
+    validations:
+      required: true
+  - type: textarea
+    id: logs-screenshots
+    attributes:
+      label: Screenshots, Screen Recordings, or Logs (Optional)
+      description: Drag and drop screenshots/recordings here, or paste terminal logs and error stack traces.
