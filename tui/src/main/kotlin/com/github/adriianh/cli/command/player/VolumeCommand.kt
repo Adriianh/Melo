@@ -22,8 +22,7 @@ class VolumeCommand :
 
     private val terminal = Terminal()
 
-    override fun help(context: Context): String =
-        "View or adjust playback volume across active player or daemon."
+    override fun help(context: Context): String = "View or adjust playback volume across active player or daemon."
 
     override fun helpEpilog(context: Context): String =
         "Examples:\n" +
