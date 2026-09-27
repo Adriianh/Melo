@@ -4,7 +4,7 @@ import java.net.URI
 import java.util.zip.ZipFile
 
 val desktopAppVersion: String =
-    project.providers.gradleProperty("melo.version").getOrElse("2.1.5")
+    project.providers.gradleProperty("melo.version").getOrElse("2.2.0")
 
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
