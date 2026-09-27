@@ -6,6 +6,7 @@ import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
+import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
@@ -30,11 +31,14 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 object PlayActionHandler : KoinComponent {
     private val httpClient: HttpClient by inject()
@@ -47,17 +51,18 @@ object PlayActionHandler : KoinComponent {
     private val updateSettings: UpdateSettingsUseCase by inject()
 
     private var rpcEnabled = true
+
     suspend fun playTrack(
         seedTrack: Track,
         getStream: GetStreamUseCase,
-        terminal: Terminal = Terminal()
+        terminal: Terminal = Terminal(),
     ) {
         startPlayback(
             contextName = seedTrack.title,
             initialTracks = listOf(seedTrack),
             getStream = getStream,
             terminal = terminal,
-            shouldFetchSimilar = true
+            shouldFetchSimilar = true,
         )
     }
 
@@ -65,27 +70,29 @@ object PlayActionHandler : KoinComponent {
         contextName: String,
         tracks: List<Track>,
         getStream: GetStreamUseCase,
-        terminal: Terminal = Terminal()
+        terminal: Terminal = Terminal(),
     ) {
         startPlayback(
             contextName = contextName,
             initialTracks = tracks,
             getStream = getStream,
             terminal = terminal,
-            shouldFetchSimilar = false
+            shouldFetchSimilar = false,
         )
     }
 
     suspend fun startDaemon(
         getStream: GetStreamUseCase,
-        terminal: Terminal = Terminal()
+        terminal: Terminal = Terminal(),
+        idleTimeoutMinutes: Int = 0,
     ) {
         startPlayback(
             contextName = "Daemon Mode",
             initialTracks = emptyList(),
             getStream = getStream,
             terminal = terminal,
-            shouldFetchSimilar = false
+            shouldFetchSimilar = false,
+            idleTimeoutMinutes = idleTimeoutMinutes,
         )
     }
 
@@ -94,13 +101,17 @@ object PlayActionHandler : KoinComponent {
         initialTracks: List<Track>,
         getStream: GetStreamUseCase,
         terminal: Terminal,
-        shouldFetchSimilar: Boolean
+        shouldFetchSimilar: Boolean,
+        idleTimeoutMinutes: Int = 0,
     ) {
         terminal.println(cyan("Starting playback for $contextName... Press Ctrl+C to stop."))
         rpcEnabled = getSettings.getSnapshot().discordRpcEnabled
         terminal.println(gray("Media keys (Play/Pause, Next, Prev) are supported in background."))
         var currentTrack: Track? = initialTracks.firstOrNull()
         var isPlaying = false
+        var currentPositionMs = 0L
+        var currentVolume = 75
+        var lastActiveAt = System.currentTimeMillis()
         val radioQueue = initialTracks.toMutableList()
         var queueIndex = 0
         var playPauseAction: (() -> Unit)? = null
@@ -110,6 +121,7 @@ object PlayActionHandler : KoinComponent {
         val stopSignal = CompletableDeferred<Unit>()
         val playerScope = CoroutineScope(Dispatchers.IO)
         var activeProgressJob: Job? = null
+        var idleWatchdogJob: Job? = null
         var activeProgressTask: ThreadProgressTaskAnimator<Unit>? = null
 
         var trackStartedAt = System.currentTimeMillis()
@@ -119,67 +131,80 @@ object PlayActionHandler : KoinComponent {
             discordRpc.connect()
         }
 
-        val sessionManager = JvmMediaSessionManager(
-            httpClient = httpClient,
-            onPlayPause = { playPauseAction?.invoke() },
-            onNext = { nextAction?.invoke() },
-            onPrevious = { prevAction?.invoke() },
-            onStop = { stopAction?.invoke() }
-        )
+        val sessionManager =
+            JvmMediaSessionManager(
+                httpClient = httpClient,
+                onPlayPause = { playPauseAction?.invoke() },
+                onNext = { nextAction?.invoke() },
+                onPrevious = { prevAction?.invoke() },
+                onStop = { stopAction?.invoke() },
+            )
 
-        val player = AudioPlayer(
-            scope = playerScope,
-            onProgress = { posMs ->
-                sessionManager.updatePosition(posMs)
-                activeProgressTask?.update { completed = posMs }
+        val player =
+            AudioPlayer(
+                scope = playerScope,
+                onProgress = { posMs ->
+                    currentPositionMs = posMs
+                    lastActiveAt = System.currentTimeMillis()
+                    sessionManager.updatePosition(posMs)
+                    activeProgressTask?.update { completed = posMs }
 
-                currentTrack?.let { track ->
-                    if (!hasScrobbledCurrent && track.durationMs > 0) {
-                        val threshold = minOf(track.durationMs / 2, 4 * 60 * 1000L)
-                        if (posMs >= threshold) {
-                            hasScrobbledCurrent = true
-                            playerScope.launch {
-                                try {
-                                    scrobbling.scrobble(track, trackStartedAt)
-                                    recordPlay(track, trackStartedAt)
-                                } catch (_: Exception) {
+                    currentTrack?.let { track ->
+                        if (!hasScrobbledCurrent && track.durationMs > 0) {
+                            val threshold = minOf(track.durationMs / 2, 4 * 60 * 1000L)
+                            if (posMs >= threshold) {
+                                hasScrobbledCurrent = true
+                                playerScope.launch {
+                                    try {
+                                        scrobbling.scrobble(track, trackStartedAt)
+                                        recordPlay(track, trackStartedAt)
+                                    } catch (_: Exception) {
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            },
-            onFinish = { nextAction?.invoke() },
-            onError = { _ -> nextAction?.invoke() }
-        )
+                },
+                onFinish = {
+                    currentPositionMs = 0L
+                    nextAction?.invoke()
+                },
+                onError = { _ ->
+                    currentPositionMs = 0L
+                    nextAction?.invoke()
+                },
+            )
 
         suspend fun playCurrentTrack() {
             val track = currentTrack ?: return
             var isAgeRestricted = false
-            val url = try {
-                getStream(track)
-            } catch (_: AgeRestrictedException) {
-                isAgeRestricted = true
-                null
-            } catch (_: Exception) {
-                null
-            }
+            val url =
+                try {
+                    getStream(track)
+                } catch (_: AgeRestrictedException) {
+                    isAgeRestricted = true
+                    null
+                } catch (_: Exception) {
+                    null
+                }
             if (url != null) {
                 terminal.println(green("▶ Playing: ") + track.title + gray(" by ") + track.artist)
                 activeProgressJob?.cancel()
-                activeProgressTask = progressBarLayout {
-                    text {
-                        val posSec = completed / 1000L
-                        val lenSec = (total ?: 0L) / 1000L
-                        val posStr = formatDuration(posSec)
-                        val lenStr = formatDuration(lenSec)
-                        gray("$posStr / $lenStr")
+                activeProgressTask =
+                    progressBarLayout {
+                        text {
+                            val posSec = completed / 1000L
+                            val lenSec = (total ?: 0L) / 1000L
+                            val posStr = formatDuration(posSec)
+                            val lenStr = formatDuration(lenSec)
+                            gray("$posStr / $lenStr")
+                        }
+                        progressBar()
+                    }.animateOnThread(terminal, total = track.durationMs)
+                activeProgressJob =
+                    playerScope.launch {
+                        activeProgressTask.execute()
                     }
-                    progressBar()
-                }.animateOnThread(terminal, total = track.durationMs)
-                activeProgressJob = playerScope.launch {
-                    activeProgressTask.execute()
-                }
                 player.play(url)
                 isPlaying = true
                 trackStartedAt = System.currentTimeMillis()
@@ -204,70 +229,157 @@ object PlayActionHandler : KoinComponent {
             }
         }
 
-        val ipcServer = LocalIpcServer(
-            onPlayPause = { playPauseAction?.invoke() },
-            onNext = { nextAction?.invoke() },
-            onPrevious = { prevAction?.invoke() },
-            onStop = { stopAction?.invoke() },
-            onQueueAdd = { track ->
-                val wasEmpty = radioQueue.isEmpty()
-                radioQueue.add(track)
-                terminal.println(green("\n+ Added to queue: ") + track.title + gray(" by ") + track.artist)
-                if (wasEmpty) {
+        val ipcServer =
+            LocalIpcServer(
+                onPlayPause = { playPauseAction?.invoke() },
+                onNext = { nextAction?.invoke() },
+                onPrevious = { prevAction?.invoke() },
+                onStop = { stopAction?.invoke() },
+                onQueueAdd = { track ->
+                    lastActiveAt = System.currentTimeMillis()
+                    val wasEmpty = radioQueue.isEmpty()
+                    radioQueue.add(track)
+                    terminal.println(green("\n+ Added to queue: ") + track.title + gray(" by ") + track.artist)
+                    if (wasEmpty) {
+                        playerScope.launch {
+                            currentTrack = track
+                            queueIndex = 0
+                            playCurrentTrack()
+                        }
+                    }
+                },
+                onQueueRemove = { index ->
+                    lastActiveAt = System.currentTimeMillis()
+                    val realIndex = queueIndex + 1 + index
+                    if (realIndex in (queueIndex + 1) until radioQueue.size) {
+                        val removed = radioQueue.removeAt(realIndex)
+                        terminal.println(gray("\nRemoved from queue: ") + removed.title)
+                        true
+                    } else {
+                        false
+                    }
+                },
+                onQueueClear = {
+                    lastActiveAt = System.currentTimeMillis()
+                    if (radioQueue.size > queueIndex + 1) {
+                        val toKeep = radioQueue.subList(0, queueIndex + 1).toList()
+                        radioQueue.clear()
+                        radioQueue.addAll(toKeep)
+                        terminal.println(gray("\nQueue cleared (except history and current track)."))
+                    }
+                },
+                getQueue = { radioQueue.drop(queueIndex + 1) },
+                onPlayNow = { track ->
+                    lastActiveAt = System.currentTimeMillis()
                     playerScope.launch {
-                        currentTrack = track
+                        player.stop()
+                        radioQueue.clear()
+                        radioQueue.add(track)
                         queueIndex = 0
+                        currentTrack = track
                         playCurrentTrack()
                     }
-                }
-            },
-            onQueueRemove = { index ->
-                val realIndex = queueIndex + 1 + index
-                if (realIndex in (queueIndex + 1) until radioQueue.size) {
-                    val removed = radioQueue.removeAt(realIndex)
-                    terminal.println(gray("\nRemoved from queue: ") + removed.title)
-                    true
-                } else false
-            },
-            onQueueClear = {
-                if (radioQueue.size > queueIndex + 1) {
-                    val toKeep = radioQueue.subList(0, queueIndex + 1).toList()
-                    radioQueue.clear()
-                    radioQueue.addAll(toKeep)
-                    terminal.println(gray("\nQueue cleared (except history and current track)."))
-                }
-            },
-            getQueue = { radioQueue.drop(queueIndex + 1) },
-            onCustomCommand = { cmd: String, _: String ->
-                when (cmd) {
-                    "RPC_TOGGLE" -> {
-                        rpcEnabled = !rpcEnabled
+                },
+                onPlayList = { tracks ->
+                    if (tracks.isNotEmpty()) {
+                        lastActiveAt = System.currentTimeMillis()
                         playerScope.launch {
-                            val currentSettings = getSettings.getSnapshot()
-                            updateSettings(currentSettings.copy(discordRpcEnabled = rpcEnabled))
+                            player.stop()
+                            radioQueue.clear()
+                            radioQueue.addAll(tracks)
+                            queueIndex = 0
+                            currentTrack = tracks.first()
+                            playCurrentTrack()
                         }
-                        if (rpcEnabled) {
-                            discordRpc.connect()
-                            currentTrack?.let { discordRpc.updateActivity(it, isPlaying) }
-                        } else {
-                            discordRpc.disconnect()
+                    }
+                },
+                onQueueAddList = { tracks ->
+                    if (tracks.isNotEmpty()) {
+                        lastActiveAt = System.currentTimeMillis()
+                        val wasEmpty = radioQueue.isEmpty()
+                        radioQueue.addAll(tracks)
+                        terminal.println(green("\n+ Added ${tracks.size} tracks to queue."))
+                        if (wasEmpty) {
+                            playerScope.launch {
+                                currentTrack = tracks.first()
+                                queueIndex = 0
+                                playCurrentTrack()
+                            }
                         }
-                        "RPC is now ${if (rpcEnabled) "ENABLED" else "DISABLED"}"
                     }
+                },
+                getStatus = {
+                    PlaybackStatusDto(
+                        track = currentTrack,
+                        isPlaying = isPlaying,
+                        positionMs = currentPositionMs,
+                        durationMs = currentTrack?.durationMs ?: 0L,
+                        volume = currentVolume,
+                        queueSize = (radioQueue.size - (queueIndex + 1)).coerceAtLeast(0),
+                    )
+                },
+                onVolumeGet = { currentVolume },
+                onVolumeSet = { vol ->
+                    lastActiveAt = System.currentTimeMillis()
+                    currentVolume = vol.coerceIn(0, 100)
+                    player.setVolume(currentVolume)
+                },
+                onVolumeAdjust = { delta ->
+                    lastActiveAt = System.currentTimeMillis()
+                    currentVolume = (currentVolume + delta).coerceIn(0, 100)
+                    player.setVolume(currentVolume)
+                },
+                onCustomCommand = { cmd: String, _: String ->
+                    when (cmd) {
+                        "RPC_TOGGLE" -> {
+                            rpcEnabled = !rpcEnabled
+                            playerScope.launch {
+                                val currentSettings = getSettings.getSnapshot()
+                                updateSettings(currentSettings.copy(discordRpcEnabled = rpcEnabled))
+                            }
+                            if (rpcEnabled) {
+                                discordRpc.connect()
+                                currentTrack?.let { discordRpc.updateActivity(it, isPlaying) }
+                            } else {
+                                discordRpc.disconnect()
+                            }
+                            "RPC is now ${if (rpcEnabled) "ENABLED" else "DISABLED"}"
+                        }
 
-                    "GET_CURRENT_TRACK" -> {
-                        currentTrack?.let { Json.encodeToString(Track.serializer(), it) }
-                            ?: "ERROR No track playing"
+                        "GET_CURRENT_TRACK" -> {
+                            currentTrack?.let { Json.encodeToString(Track.serializer(), it) }
+                                ?: "ERROR No track playing"
+                        }
+
+                        else -> "ERROR Unknown command"
                     }
-
-                    else -> "ERROR Unknown command"
-                }
-            }
-        )
+                },
+            )
         ipcServer.start(playerScope)
         sessionManager.init()
 
+        if (idleTimeoutMinutes > 0) {
+            idleWatchdogJob =
+                playerScope.launch {
+                    val timeoutMs = idleTimeoutMinutes * 60 * 1000L
+                    while (isActive) {
+                        delay(15_000L.milliseconds)
+                        if (!isPlaying) {
+                            val elapsed = System.currentTimeMillis() - lastActiveAt
+                            if (elapsed >= timeoutMs) {
+                                terminal.println(
+                                    yellow("\nDaemon idle timeout reached ($idleTimeoutMinutes min). Shutting down..."),
+                                )
+                                stopAction?.invoke()
+                                break
+                            }
+                        }
+                    }
+                }
+        }
+
         playPauseAction = {
+            lastActiveAt = System.currentTimeMillis()
             if (isPlaying) {
                 player.pause()
                 sessionManager.notifyPaused()
@@ -283,6 +395,7 @@ object PlayActionHandler : KoinComponent {
             }
         }
         nextAction = {
+            lastActiveAt = System.currentTimeMillis()
             playerScope.launch {
                 if (queueIndex + 1 < radioQueue.size) {
                     queueIndex++
@@ -295,9 +408,11 @@ object PlayActionHandler : KoinComponent {
                                 terminal.println(gray("Fetching similar tracks..."))
                                 val similarRaw =
                                     getSimilarTracks(track.artist, track.title).take(5)
-                                val similarTracksResolved = similarRaw.mapNotNull { sim ->
-                                    searchTracks("${sim.title} ${sim.artist}").firstOrNull()
-                                }.filter { t -> radioQueue.none { it.id == t.id } }
+                                val similarTracksResolved =
+                                    similarRaw
+                                        .mapNotNull { sim ->
+                                            searchTracks("${sim.title} ${sim.artist}").firstOrNull()
+                                        }.filter { t -> radioQueue.none { it.id == t.id } }
                                 if (similarTracksResolved.isNotEmpty()) {
                                     radioQueue.addAll(similarTracksResolved)
                                     queueIndex++
@@ -319,6 +434,7 @@ object PlayActionHandler : KoinComponent {
             }
         }
         prevAction = {
+            lastActiveAt = System.currentTimeMillis()
             playerScope.launch {
                 if (queueIndex > 0) {
                     queueIndex--
@@ -330,11 +446,13 @@ object PlayActionHandler : KoinComponent {
             }
         }
         stopAction = {
+            idleWatchdogJob?.cancel()
             activeProgressJob?.cancel()
             player.release()
             sessionManager.notifyStopped()
             sessionManager.release()
             isPlaying = false
+            currentPositionMs = 0L
             stopSignal.complete(Unit)
             terminal.println(cyan("Playback stopped."))
         }
@@ -346,11 +464,24 @@ object PlayActionHandler : KoinComponent {
         try {
             stopSignal.await()
         } finally {
+            idleWatchdogJob?.cancel()
             activeProgressJob?.cancel()
-            try { player.release() } catch (_: Throwable) {}
-            try { sessionManager.release() } catch (_: Throwable) {}
-            try { ipcServer.stop() } catch (_: Throwable) {}
-            try { FfplayProcessManager.killAll() } catch (_: Throwable) {}
+            try {
+                player.release()
+            } catch (_: Throwable) {
+            }
+            try {
+                sessionManager.release()
+            } catch (_: Throwable) {
+            }
+            try {
+                ipcServer.stop()
+            } catch (_: Throwable) {
+            }
+            try {
+                FfplayProcessManager.killAll()
+            } catch (_: Throwable) {
+            }
         }
         exitProcess(0)
     }

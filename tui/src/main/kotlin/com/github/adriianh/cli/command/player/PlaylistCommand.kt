@@ -3,6 +3,7 @@ package com.github.adriianh.cli.command.player
 import com.github.adriianh.cli.command.player.handler.PlayActionHandler
 import com.github.adriianh.cli.command.player.util.ItemPicker
 import com.github.adriianh.cli.di.appModule
+import com.github.adriianh.cli.service.DaemonManager
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
 import com.github.adriianh.core.domain.model.Playlist
@@ -189,8 +190,18 @@ class PlaylistAddCommand : LibraryCommand("add") {
 
 class PlaylistPlayCommand : LibraryCommand("play") {
     private val playlistName by argument(help = "Playlist name or numeric ID to play")
+    private val foreground by option(
+        "-f",
+        "--foreground",
+        help = "Run in foreground with progress bar instead of detaching to daemon",
+    ).flag(default = false)
 
     override fun help(context: Context): String = "Play all tracks from a local playlist"
+
+    override fun helpEpilog(context: Context): String =
+        "Examples:\n" +
+            "  melo playlist play \"Chill Vibes\"\n" +
+            "  melo playlist play \"Workout\" --foreground"
 
     override fun run() =
         runWithKoin {
@@ -206,12 +217,30 @@ class PlaylistPlayCommand : LibraryCommand("play") {
                 return@runWithKoin
             }
 
-            PlayActionHandler.playMultiple(
-                contextName = playlist.name,
-                tracks = tracks,
-                getStream = getStream,
-                terminal = terminal,
-            )
+            if (foreground) {
+                PlayActionHandler.playMultiple(
+                    contextName = playlist.name,
+                    tracks = tracks,
+                    getStream = getStream,
+                    terminal = terminal,
+                )
+            } else if (DaemonManager.ensureDaemonRunning(terminal)) {
+                DaemonManager.playTracks(tracks)
+                terminal.println(green("▶ Playing playlist: ") + playlist.name + gray(" (${tracks.size} tracks)"))
+                terminal.println(
+                    gray("Playing in background. Use 'melo status' to inspect, 'melo next' to skip."),
+                )
+            } else {
+                terminal.println(
+                    yellow("Warning: Could not start daemon. Falling back to foreground playback."),
+                )
+                PlayActionHandler.playMultiple(
+                    contextName = playlist.name,
+                    tracks = tracks,
+                    getStream = getStream,
+                    terminal = terminal,
+                )
+            }
         }
 }
 

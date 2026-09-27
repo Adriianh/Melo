@@ -29,7 +29,7 @@ class MeloCommandTest {
     }
 
     @Test
-    fun helpContainsAllTwentyFourSubcommands() {
+    fun helpContainsAllTwentySixSubcommands() {
         val cmd = MeloCommand()
         val result = cmd.test("--help")
         val output = result.output
@@ -43,6 +43,7 @@ class MeloCommandTest {
                 "next",
                 "prev",
                 "stop",
+                "volume",
                 "radio",
                 // Now Playing & Discovery
                 "status",
@@ -65,9 +66,10 @@ class MeloCommandTest {
                 "stats",
                 "scrobble",
                 "rpc",
+                "completions",
             )
 
-        assertEquals(24, expectedCommands.size, "Expected exactly 24 commands to be audited")
+        assertEquals(26, expectedCommands.size, "Expected exactly 26 commands to be audited")
 
         for (name in expectedCommands) {
             assertTrue(
@@ -106,11 +108,13 @@ class MeloCommandTest {
         assertEquals(listOf("queue"), aliases["q"])
         assertEquals(listOf("config"), aliases["cfg"])
         assertEquals(listOf("prev"), aliases["previous"])
+        assertEquals(listOf("volume"), aliases["vol"])
+        assertEquals(listOf("completions"), aliases["completion"])
     }
 
     @Test
     fun aliasesExecuteTargetCommandsHelpSuccessfully() {
-        val testAliases = listOf("p", "dl", "np", "st", "q", "cfg", "previous")
+        val testAliases = listOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion")
 
         for (alias in testAliases) {
             val cmd = MeloCommand()
@@ -142,7 +146,7 @@ class MeloCommandTest {
     @Test
     fun allSubcommandsHaveValidCategoryMapping() {
         val allCategories = MeloHelpFormatter.COMMAND_CATEGORIES
-        assertEquals(24, allCategories.size, "All 24 commands must be categorized")
+        assertEquals(26, allCategories.size, "All 26 commands must be categorized")
 
         for ((cmd, cat) in allCategories) {
             assertNotNull(cat, "Command '$cmd' must map to a valid CommandCategory")
@@ -151,7 +155,18 @@ class MeloCommandTest {
 
     @Test
     fun subcommandsDisplayExamplesInHelpEpilog() {
-        val auditedCommands = listOf("play", "search", "status", "queue", "playlist", "download", "daemon", "auth")
+        val auditedCommands =
+            listOf(
+                "play",
+                "search",
+                "status",
+                "queue",
+                "playlist",
+                "download",
+                "daemon",
+                "auth",
+                "volume",
+            )
         for (name in auditedCommands) {
             val cmd = MeloCommand()
             val result = cmd.test("$name --help")
@@ -175,6 +190,30 @@ class MeloCommandTest {
         assertTrue(
             result.output.contains("\u001B["),
             "Help output with TRUECOLOR should contain ANSI styling sequences",
+        )
+    }
+
+    @Test
+    fun playbackCommandsExposeForegroundFlagInHelp() {
+        val playResult = MeloCommand().test("play --help")
+        assertEquals(0, playResult.statusCode)
+        assertTrue(
+            playResult.output.contains("--foreground"),
+            "play --help should document --foreground",
+        )
+
+        val radioResult = MeloCommand().test("radio --help")
+        assertEquals(0, radioResult.statusCode)
+        assertTrue(
+            radioResult.output.contains("--foreground"),
+            "radio --help should document --foreground",
+        )
+
+        val playlistPlayResult = MeloCommand().test("playlist play --help")
+        assertEquals(0, playlistPlayResult.statusCode)
+        assertTrue(
+            playlistPlayResult.output.contains("--foreground"),
+            "playlist play --help should document --foreground",
         )
     }
 }

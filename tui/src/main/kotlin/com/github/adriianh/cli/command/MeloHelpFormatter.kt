@@ -41,6 +41,7 @@ open class MeloHelpFormatter(
                 "next",
                 "prev",
                 "stop",
+                "volume",
                 "radio",
                 // Discovery
                 "status",
@@ -63,6 +64,7 @@ open class MeloHelpFormatter(
                 "stats",
                 "scrobble",
                 "rpc",
+                "completions",
             )
 
         val COMMAND_CATEGORIES: Map<String, CommandCategory> =
@@ -74,6 +76,7 @@ open class MeloHelpFormatter(
                 "next" to CommandCategory.PLAYBACK,
                 "prev" to CommandCategory.PLAYBACK,
                 "stop" to CommandCategory.PLAYBACK,
+                "volume" to CommandCategory.PLAYBACK,
                 "radio" to CommandCategory.PLAYBACK,
                 // Now Playing & Discovery
                 "status" to CommandCategory.DISCOVERY,
@@ -96,9 +99,10 @@ open class MeloHelpFormatter(
                 "stats" to CommandCategory.SERVICES,
                 "scrobble" to CommandCategory.SERVICES,
                 "rpc" to CommandCategory.SERVICES,
+                "completions" to CommandCategory.SERVICES,
             )
         val KNOWN_ALIASES: Set<String> =
-            setOf("p", "dl", "np", "st", "q", "cfg", "previous")
+            setOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion")
 
         private val COMMAND_TOKEN_REGEX =
             Regex("""("[^"]*"|'[^']*'|--[a-zA-Z0-9_-]+|-[a-zA-Z0-9]+|\S+)""")
