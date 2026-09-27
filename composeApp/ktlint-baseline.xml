@@ -130,11 +130,11 @@
         <error line="19" column="23" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/melo/di/Modules.android.kt">
-        <error line="21" column="37" source="standard:multiline-expression-wrapping" />
-        <error line="28" column="31" source="standard:trailing-comma-on-call-site" />
-        <error line="32" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="50" column="39" source="standard:trailing-comma-on-call-site" />
-        <error line="53" column="1" source="standard:final-newline" />
+        <error line="23" column="37" source="standard:multiline-expression-wrapping" />
+        <error line="31" column="31" source="standard:trailing-comma-on-call-site" />
+        <error line="35" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="53" column="39" source="standard:trailing-comma-on-call-site" />
+        <error line="56" column="1" source="standard:final-newline" />
     </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/melo/player/AndroidMediaSessionManager.kt">
         <error line="35" column="91" source="standard:trailing-comma-on-declaration-site" />
@@ -216,104 +216,104 @@
         <error line="4" column="1" source="standard:no-unused-imports" />
         <error line="5" column="1" source="standard:no-unused-imports" />
         <error line="42" column="1" source="standard:no-unused-imports" />
-        <error line="85" column="12" source="standard:function-naming" />
-        <error line="88" column="5" source="standard:function-naming" />
-        <error line="89" column="5" source="standard:function-signature" />
-        <error line="89" column="42" source="standard:function-signature" />
-        <error line="89" column="42" source="standard:trailing-comma-on-declaration-site" />
-        <error line="116" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="120" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="130" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="160" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="161" column="1" source="standard:indent" />
-        <error line="162" column="1" source="standard:indent" />
-        <error line="172" column="1" source="standard:no-empty-first-line-in-method-block" />
-        <error line="175" column="60" source="standard:trailing-comma-on-call-site" />
-        <error line="180" column="53" source="standard:trailing-comma-on-call-site" />
-        <error line="186" column="44" source="standard:multiline-expression-wrapping" />
-        <error line="188" column="52" source="standard:trailing-comma-on-call-site" />
-        <error line="195" column="59" source="standard:multiline-expression-wrapping" />
-        <error line="216" column="64" source="standard:multiline-expression-wrapping" />
-        <error line="224" column="38" source="standard:trailing-comma-on-call-site" />
-        <error line="227" column="74" source="standard:trailing-comma-on-call-site" />
-        <error line="238" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="242" column="69" source="standard:multiline-expression-wrapping" />
-        <error line="247" column="84" source="standard:trailing-comma-on-call-site" />
-        <error line="252" column="64" source="standard:multiline-expression-wrapping" />
-        <error line="254" column="77" source="standard:trailing-comma-on-call-site" />
-        <error line="257" column="68" source="standard:multiline-expression-wrapping" />
-        <error line="261" column="74" source="standard:trailing-comma-on-call-site" />
-        <error line="263" column="103" source="standard:trailing-comma-on-call-site" />
-        <error line="269" column="91" source="standard:trailing-comma-on-call-site" />
-        <error line="272" column="99" source="standard:trailing-comma-on-call-site" />
-        <error line="279" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="284" column="116" source="standard:trailing-comma-on-call-site" />
-        <error line="293" column="56" source="standard:multiline-expression-wrapping" />
-        <error line="295" column="64" source="standard:trailing-comma-on-call-site" />
-        <error line="298" column="69" source="standard:multiline-expression-wrapping" />
-        <error line="305" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="306" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="315" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="316" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="322" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="323" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="327" column="82" source="standard:trailing-comma-on-call-site" />
-        <error line="330" column="71" source="standard:multiline-expression-wrapping" />
-        <error line="334" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="335" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="344" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="345" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="351" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="352" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="356" column="82" source="standard:trailing-comma-on-call-site" />
-        <error line="359" column="72" source="standard:multiline-expression-wrapping" />
-        <error line="367" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="368" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="377" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="378" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="384" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="385" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="388" column="82" source="standard:trailing-comma-on-call-site" />
-        <error line="391" column="73" source="standard:multiline-expression-wrapping" />
-        <error line="401" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="402" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="408" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="409" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="411" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="414" column="76" source="standard:multiline-expression-wrapping" />
-        <error line="424" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="425" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="427" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="430" column="74" source="standard:multiline-expression-wrapping" />
-        <error line="439" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="440" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="446" column="67" source="standard:trailing-comma-on-call-site" />
-        <error line="447" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="456" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="457" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="459" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="470" column="37" source="standard:multiline-expression-wrapping" />
-        <error line="472" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="473" column="33" source="standard:multiline-expression-wrapping" />
-        <error line="474" column="68" source="standard:trailing-comma-on-call-site" />
-        <error line="476" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="478" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="479" column="33" source="standard:multiline-expression-wrapping" />
-        <error line="480" column="68" source="standard:trailing-comma-on-call-site" />
-        <error line="482" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="498" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="505" column="72" source="standard:trailing-comma-on-call-site" />
-        <error line="510" column="51" source="standard:multiline-expression-wrapping" />
-        <error line="599" column="47" source="standard:if-else-wrapping" />
-        <error line="599" column="52" source="standard:if-else-bracing" />
-        <error line="599" column="52" source="standard:if-else-wrapping" />
-        <error line="599" column="52" source="standard:multiline-if-else" />
-        <error line="631" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="639" column="78" source="standard:trailing-comma-on-call-site" />
-        <error line="646" column="78" source="standard:trailing-comma-on-call-site" />
-        <error line="653" column="70" source="standard:trailing-comma-on-call-site" />
-        <error line="657" column="1" source="standard:no-blank-line-before-rbrace" />
-        <error line="665" column="1" source="standard:final-newline" />
+        <error line="86" column="12" source="standard:function-naming" />
+        <error line="89" column="5" source="standard:function-naming" />
+        <error line="90" column="5" source="standard:function-signature" />
+        <error line="90" column="42" source="standard:function-signature" />
+        <error line="90" column="42" source="standard:trailing-comma-on-declaration-site" />
+        <error line="120" column="31" source="standard:multiline-expression-wrapping" />
+        <error line="124" column="23" source="standard:multiline-expression-wrapping" />
+        <error line="134" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="164" column="30" source="standard:multiline-expression-wrapping" />
+        <error line="165" column="1" source="standard:indent" />
+        <error line="166" column="1" source="standard:indent" />
+        <error line="176" column="1" source="standard:no-empty-first-line-in-method-block" />
+        <error line="179" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="184" column="53" source="standard:trailing-comma-on-call-site" />
+        <error line="190" column="44" source="standard:multiline-expression-wrapping" />
+        <error line="192" column="52" source="standard:trailing-comma-on-call-site" />
+        <error line="199" column="59" source="standard:multiline-expression-wrapping" />
+        <error line="220" column="64" source="standard:multiline-expression-wrapping" />
+        <error line="228" column="38" source="standard:trailing-comma-on-call-site" />
+        <error line="231" column="74" source="standard:trailing-comma-on-call-site" />
+        <error line="242" column="46" source="standard:trailing-comma-on-call-site" />
+        <error line="246" column="69" source="standard:multiline-expression-wrapping" />
+        <error line="251" column="84" source="standard:trailing-comma-on-call-site" />
+        <error line="256" column="64" source="standard:multiline-expression-wrapping" />
+        <error line="258" column="77" source="standard:trailing-comma-on-call-site" />
+        <error line="261" column="68" source="standard:multiline-expression-wrapping" />
+        <error line="265" column="74" source="standard:trailing-comma-on-call-site" />
+        <error line="267" column="103" source="standard:trailing-comma-on-call-site" />
+        <error line="273" column="91" source="standard:trailing-comma-on-call-site" />
+        <error line="276" column="99" source="standard:trailing-comma-on-call-site" />
+        <error line="283" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="288" column="116" source="standard:trailing-comma-on-call-site" />
+        <error line="297" column="56" source="standard:multiline-expression-wrapping" />
+        <error line="299" column="64" source="standard:trailing-comma-on-call-site" />
+        <error line="302" column="69" source="standard:multiline-expression-wrapping" />
+        <error line="309" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="310" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="319" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="320" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="326" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="327" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="331" column="82" source="standard:trailing-comma-on-call-site" />
+        <error line="334" column="71" source="standard:multiline-expression-wrapping" />
+        <error line="338" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="339" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="348" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="349" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="355" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="356" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="360" column="82" source="standard:trailing-comma-on-call-site" />
+        <error line="363" column="72" source="standard:multiline-expression-wrapping" />
+        <error line="371" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="372" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="381" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="382" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="388" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="389" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="392" column="82" source="standard:trailing-comma-on-call-site" />
+        <error line="395" column="73" source="standard:multiline-expression-wrapping" />
+        <error line="405" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="406" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="412" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="413" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="415" column="54" source="standard:trailing-comma-on-call-site" />
+        <error line="418" column="76" source="standard:multiline-expression-wrapping" />
+        <error line="428" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="429" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="431" column="54" source="standard:trailing-comma-on-call-site" />
+        <error line="434" column="74" source="standard:multiline-expression-wrapping" />
+        <error line="443" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="444" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="450" column="67" source="standard:trailing-comma-on-call-site" />
+        <error line="451" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="460" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="461" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="463" column="54" source="standard:trailing-comma-on-call-site" />
+        <error line="474" column="37" source="standard:multiline-expression-wrapping" />
+        <error line="476" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="477" column="33" source="standard:multiline-expression-wrapping" />
+        <error line="478" column="68" source="standard:trailing-comma-on-call-site" />
+        <error line="480" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="482" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="483" column="33" source="standard:multiline-expression-wrapping" />
+        <error line="484" column="68" source="standard:trailing-comma-on-call-site" />
+        <error line="486" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="502" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="509" column="72" source="standard:trailing-comma-on-call-site" />
+        <error line="514" column="51" source="standard:multiline-expression-wrapping" />
+        <error line="603" column="47" source="standard:if-else-wrapping" />
+        <error line="603" column="52" source="standard:if-else-bracing" />
+        <error line="603" column="52" source="standard:if-else-wrapping" />
+        <error line="603" column="52" source="standard:multiline-if-else" />
+        <error line="635" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="643" column="78" source="standard:trailing-comma-on-call-site" />
+        <error line="650" column="78" source="standard:trailing-comma-on-call-site" />
+        <error line="657" column="70" source="standard:trailing-comma-on-call-site" />
+        <error line="661" column="1" source="standard:no-blank-line-before-rbrace" />
+        <error line="669" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/di/Koin.kt">
         <error line="19" column="27" source="standard:trailing-comma-on-call-site" />
@@ -421,9 +421,9 @@
         <error line="160" column="18" source="standard:multiline-expression-wrapping" />
         <error line="168" column="39" source="standard:trailing-comma-on-call-site" />
         <error line="179" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="206" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="215" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="273" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="207" column="44" source="standard:trailing-comma-on-call-site" />
+        <error line="216" column="23" source="standard:multiline-expression-wrapping" />
+        <error line="275" column="49" source="standard:trailing-comma-on-call-site" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/theme/MeloTheme.kt">
         <error line="29" column="22" source="standard:multiline-expression-wrapping" />
@@ -2055,60 +2055,6 @@
         <error line="238" column="51" source="standard:trailing-comma-on-call-site" />
         <error line="243" column="66" source="standard:trailing-comma-on-call-site" />
         <error line="247" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/HomeViewModel.kt">
-        <error line="67" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="78" column="30" source="standard:multiline-expression-wrapping" />
-        <error line="83" column="38" source="standard:trailing-comma-on-call-site" />
-        <error line="97" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="99" column="27" source="standard:if-else-wrapping" />
-        <error line="99" column="32" source="standard:if-else-bracing" />
-        <error line="99" column="32" source="standard:if-else-wrapping" />
-        <error line="99" column="32" source="standard:multiline-if-else" />
-        <error line="104" column="106" source="standard:trailing-comma-on-call-site" />
-        <error line="132" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="150" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="150" column="51" source="standard:chain-method-continuation" />
-        <error line="153" column="21" source="standard:multiline-expression-wrapping" />
-        <error line="158" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="159" column="60" source="standard:condition-wrapping" />
-        <error line="159" column="60" source="standard:multiline-expression-wrapping" />
-        <error line="161" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="173" column="36" source="standard:trailing-comma-on-call-site" />
-        <error line="205" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="229" column="22" source="standard:multiline-expression-wrapping" />
-        <error line="243" column="41" source="standard:if-else-wrapping" />
-        <error line="243" column="41" source="standard:multiline-if-else" />
-        <error line="244" column="14" source="standard:if-else-wrapping" />
-        <error line="244" column="14" source="standard:multiline-if-else" />
-        <error line="246" column="18" source="standard:function-signature" />
-        <error line="246" column="43" source="standard:function-signature" />
-        <error line="246" column="61" source="standard:function-signature" />
-        <error line="249" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="267" column="67" source="standard:multiline-expression-wrapping" />
-        <error line="281" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="290" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="291" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="303" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="306" column="65" source="standard:trailing-comma-on-call-site" />
-        <error line="314" column="69" source="standard:trailing-comma-on-call-site" />
-        <error line="323" column="58" source="standard:trailing-comma-on-call-site" />
-        <error line="342" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="342" column="53" source="standard:chain-method-continuation" />
-        <error line="344" column="32" source="standard:multiline-expression-wrapping" />
-        <error line="349" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="355" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="361" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="367" column="75" source="standard:trailing-comma-on-call-site" />
-        <error line="368" column="22" source="standard:trailing-comma-on-call-site" />
-        <error line="376" column="79" source="standard:trailing-comma-on-call-site" />
-        <error line="377" column="22" source="standard:trailing-comma-on-call-site" />
-        <error line="385" column="74" source="standard:trailing-comma-on-call-site" />
-        <error line="386" column="22" source="standard:trailing-comma-on-call-site" />
-        <error line="398" column="37" source="standard:trailing-comma-on-call-site" />
-        <error line="426" column="65" source="standard:trailing-comma-on-call-site" />
-        <error line="451" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="459" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/components/HomeContent.kt">
         <error line="58" column="5" source="standard:function-naming" />
@@ -4306,19 +4252,19 @@
         <error line="6" column="46" source="standard:function-signature" />
     </file>
     <file name="src/iosMain/kotlin/com/github/adriianh/melo/di/Modules.ios.kt">
-        <error line="24" column="37" source="standard:multiline-expression-wrapping" />
-        <error line="38" column="39" source="standard:trailing-comma-on-call-site" />
-        <error line="45" column="13" source="standard:blank-line-before-declaration" />
-        <error line="46" column="13" source="standard:blank-line-before-declaration" />
-        <error line="47" column="13" source="standard:blank-line-before-declaration" />
-        <error line="48" column="13" source="standard:blank-line-before-declaration" />
-        <error line="49" column="13" source="standard:blank-line-before-declaration" />
-        <error line="50" column="13" source="standard:blank-line-before-declaration" />
-        <error line="51" column="13" source="standard:blank-line-before-declaration" />
+        <error line="26" column="37" source="standard:multiline-expression-wrapping" />
+        <error line="45" column="39" source="standard:trailing-comma-on-call-site" />
         <error line="52" column="13" source="standard:blank-line-before-declaration" />
         <error line="53" column="13" source="standard:blank-line-before-declaration" />
         <error line="54" column="13" source="standard:blank-line-before-declaration" />
-        <error line="58" column="28" source="standard:trailing-comma-on-declaration-site" />
+        <error line="55" column="13" source="standard:blank-line-before-declaration" />
+        <error line="56" column="13" source="standard:blank-line-before-declaration" />
+        <error line="57" column="13" source="standard:blank-line-before-declaration" />
+        <error line="58" column="13" source="standard:blank-line-before-declaration" />
+        <error line="59" column="13" source="standard:blank-line-before-declaration" />
+        <error line="60" column="13" source="standard:blank-line-before-declaration" />
+        <error line="61" column="13" source="standard:blank-line-before-declaration" />
+        <error line="65" column="28" source="standard:trailing-comma-on-declaration-site" />
     </file>
     <file name="src/iosMain/kotlin/com/github/adriianh/melo/ui/login/InAppSignIn.ios.kt">
         <error line="7" column="12" source="standard:function-naming" />
@@ -4362,14 +4308,13 @@
         <error line="99" column="1" source="standard:final-newline" />
     </file>
     <file name="src/jvmMain/kotlin/com/github/adriianh/melo/di/Modules.jvm.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="25" column="37" source="standard:multiline-expression-wrapping" />
-        <error line="34" column="31" source="standard:trailing-comma-on-call-site" />
-        <error line="45" column="29" source="standard:multiline-expression-wrapping" />
-        <error line="47" column="37" source="standard:trailing-comma-on-call-site" />
-        <error line="53" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="61" column="40" source="standard:trailing-comma-on-call-site" />
-        <error line="64" column="1" source="standard:final-newline" />
+        <error line="27" column="37" source="standard:multiline-expression-wrapping" />
+        <error line="37" column="31" source="standard:trailing-comma-on-call-site" />
+        <error line="48" column="29" source="standard:multiline-expression-wrapping" />
+        <error line="50" column="37" source="standard:trailing-comma-on-call-site" />
+        <error line="56" column="44" source="standard:trailing-comma-on-call-site" />
+        <error line="64" column="40" source="standard:trailing-comma-on-call-site" />
+        <error line="67" column="1" source="standard:final-newline" />
     </file>
     <file name="src/jvmMain/kotlin/com/github/adriianh/melo/ui/login/InAppSignIn.jvm.kt">
         <error line="21" column="12" source="standard:function-naming" />
@@ -4471,27 +4416,6 @@
         <error line="14" column="26" source="standard:multiline-expression-wrapping" />
         <error line="18" column="43" source="standard:trailing-comma-on-call-site" />
         <error line="33" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/jvmTest/kotlin/com/github/adriianh/melo/HomeViewModelTest.kt">
-        <error line="41" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="57" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="65" column="24" source="standard:trailing-comma-on-call-site" />
-        <error line="68" column="33" source="standard:multiline-expression-wrapping" />
-        <error line="71" column="55" source="standard:trailing-comma-on-call-site" />
-        <error line="74" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="77" column="28" source="standard:trailing-comma-on-call-site" />
-        <error line="96" column="87" source="standard:multiline-expression-wrapping" />
-        <error line="96" column="87" source="standard:function-signature" />
-        <error line="100" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="122" column="69" source="standard:chain-method-continuation" />
-        <error line="122" column="77" source="standard:chain-method-continuation" />
-        <error line="131" column="29" source="standard:multiline-expression-wrapping" />
-        <error line="157" column="85" source="standard:multiline-expression-wrapping" />
-        <error line="157" column="85" source="standard:function-signature" />
-        <error line="161" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="180" column="69" source="standard:chain-method-continuation" />
-        <error line="180" column="77" source="standard:chain-method-continuation" />
-        <error line="182" column="1" source="standard:final-newline" />
     </file>
     <file name="src/jvmTest/kotlin/com/github/adriianh/melo/LoginViewModelTest.kt">
         <error line="13" column="1" source="standard:no-unused-imports" />

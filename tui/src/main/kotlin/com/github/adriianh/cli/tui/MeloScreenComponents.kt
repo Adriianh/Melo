@@ -34,6 +34,7 @@ internal fun MeloScreen.buildPlaybackManager(dispatcher: CoroutineDispatcher): P
         saveSessionUseCase = saveSession,
         restoreSessionUseCase = restoreSession,
         clearSessionUseCase = clearSession,
+        networkMonitor = networkMonitor,
         ioDispatcher = dispatcher,
     )
 

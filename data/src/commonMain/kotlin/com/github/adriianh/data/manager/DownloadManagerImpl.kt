@@ -88,6 +88,15 @@ class DownloadManagerImpl(
                         fileSize = existing.fileSize,
                     )
                 offlineRepository.saveOfflineTrack(promotedTrack)
+                try {
+                    offlineRepository.updateTrackMetadata(
+                        trackId = track.id,
+                        title = track.title,
+                        artist = track.artist,
+                        album = track.album,
+                    )
+                } catch (_: Exception) {
+                }
                 return@withContext true
             }
 
@@ -139,6 +148,15 @@ class DownloadManagerImpl(
                         fileSize = totalBytes,
                     )
                 offlineRepository.saveOfflineTrack(completedTrack)
+                try {
+                    offlineRepository.updateTrackMetadata(
+                        trackId = track.id,
+                        title = track.title,
+                        artist = track.artist,
+                        album = track.album,
+                    )
+                } catch (_: Exception) {
+                }
                 _activeDownloads.update { it - track.id }
                 true
             } catch (_: Exception) {

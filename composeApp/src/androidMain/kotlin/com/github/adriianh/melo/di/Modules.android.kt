@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.di
 
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.AndroidMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
@@ -7,6 +8,7 @@ import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
+import com.github.adriianh.data.network.AndroidNetworkMonitor
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
@@ -19,6 +21,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 actual val platformModule: Module = module {
+    single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
     single<MeloDatabase> { DatabaseFactory.create() }
     single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
     single<MediaSessionManager> {

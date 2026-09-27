@@ -40,6 +40,7 @@ import com.github.adriianh.core.domain.interactor.SearchInteractors
 import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -149,6 +150,7 @@ class MeloCommand :
             val audioProvider: AudioProvider by inject()
             val discordRpcManager: DiscordRpcManager by inject()
             val youTubeAuthService: YouTubeAuthService by inject()
+            val networkMonitor: NetworkMonitor by inject()
 
             try {
                 MeloScreen(
@@ -168,6 +170,7 @@ class MeloCommand :
                     audioProvider = audioProvider,
                     discordRpcManager = discordRpcManager,
                     youTubeAuthService = youTubeAuthService,
+                    networkMonitor = networkMonitor,
                     dispatcher = dispatcher,
                 ).run()
             } finally {

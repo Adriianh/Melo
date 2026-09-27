@@ -15,6 +15,8 @@ import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pruneExpiredToasts
 import com.github.adriianh.core.domain.model.DownloadStatus
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.time.Duration
 
@@ -89,7 +91,10 @@ internal fun MeloScreen.onStartLifecycle() {
     scope.launch {
         var lastCookies: String? = null
         var isFirstEmit = true
-        getSettings().collect { settings ->
+        val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
+        combine(getSettings(), isOnlineFlow) { settings, isOnline ->
+            settings to isOnline
+        }.collect { (settings, isOnline) ->
             val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
             val isInitialWithCookies = isFirstEmit && !settings.sessionCookies.isNullOrBlank()
             lastCookies = settings.sessionCookies
@@ -98,7 +103,7 @@ internal fun MeloScreen.onStartLifecycle() {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
                 state = state.copy(
-                    isOfflineMode = settings.offlineMode,
+                    isOfflineMode = settings.offlineMode || !isOnline,
                     languagePicker = state.languagePicker.copy(
                         currentLanguage = settings.searchLanguage.ifBlank { "es" }
                     )

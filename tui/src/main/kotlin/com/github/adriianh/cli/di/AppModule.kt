@@ -14,12 +14,14 @@ import com.github.adriianh.core.domain.interactor.SearchInteractors
 import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.HistoryRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.data.network.JvmNetworkMonitor
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.repository.StatsRepository
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
@@ -177,6 +179,7 @@ val appModule = module {
     single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
     single<StatsRepository> { StatsRepositoryImpl(get()) }
     single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
+    single<NetworkMonitor> { JvmNetworkMonitor(dispatcher = get()) }
 
     single { YouTubeAuthService(get(), get(), get(), get()) }
 

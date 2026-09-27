@@ -11,6 +11,7 @@ import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -62,9 +64,9 @@ class HomeViewModel(
     private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
     private val getRecentTracksUseCase: GetRecentTracksUseCase,
     private val homeFeedCache: HomeFeedCache,
+    private val networkMonitor: NetworkMonitor? = null,
     private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -75,13 +77,14 @@ class HomeViewModel(
     init {
         val cached = homeFeedCache.getSync()
         if (cached != null && cached.sections.isNotEmpty()) {
-            _uiState.value = HomeUiState(
-                isLoading = false,
-                chips = cached.chips,
-                sections = cached.sections,
-                continuation = cached.continuation,
-                isOfflineFeed = false
-            )
+            _uiState.value =
+                HomeUiState(
+                    isLoading = false,
+                    chips = cached.chips,
+                    sections = cached.sections,
+                    continuation = cached.continuation,
+                    isOfflineFeed = false,
+                )
             loadFeed(silent = true, delayMs = 1800L)
         } else {
             viewModelScope.launch(ioDispatcher) {
@@ -94,24 +97,30 @@ class HomeViewModel(
                                 chips = cachedAsync.chips,
                                 sections = cachedAsync.sections,
                                 continuation = cachedAsync.continuation,
-                                isOfflineFeed = false
+                                isOfflineFeed = false,
                             )
-                        } else current
+                        } else {
+                            current
+                        }
                     }
                 }
                 loadFeed(
                     silent = cachedAsync != null && cachedAsync.sections.isNotEmpty(),
-                    delayMs = if (cachedAsync != null && cachedAsync.sections.isNotEmpty()) 1800L else 0L
+                    delayMs = if (cachedAsync != null && cachedAsync.sections.isNotEmpty()) 1800L else 0L,
                 )
             }
         }
 
         viewModelScope.launch {
-            getSettingsUseCase()
-                .map { it.offlineMode }
-                .distinctUntilChanged()
-                .collectLatest { offlineMode ->
-                    if (offlineMode) {
+            val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
+            combine(
+                getSettingsUseCase().map { it.offlineMode },
+                isOnlineFlow,
+            ) { offlineSetting, isOnline ->
+                offlineSetting || !isOnline
+            }.distinctUntilChanged()
+                .collectLatest { isOffline ->
+                    if (isOffline) {
                         loadOfflineFeed()
                     } else if (_uiState.value.isOfflineFeed) {
                         loadFeed()
@@ -129,38 +138,48 @@ class HomeViewModel(
             return
         }
 
-        searchJob = viewModelScope.launch {
-            delay(300.milliseconds)
-            _uiState.update { it.copy(isSearching = true) }
+        searchJob =
+            viewModelScope.launch {
+                delay(300.milliseconds)
+                _uiState.update { it.copy(isSearching = true) }
 
-            if (_uiState.value.isOfflineFeed || getSettingsUseCase.getSnapshot().offlineMode) {
-                performOfflineSearch(query)
-            } else {
-                try {
-                    val results = searchTracksUseCase(query)
-                    _uiState.update { it.copy(searchResults = results, isSearching = false) }
-                } catch (_: Exception) {
+                val isOffline =
+                    _uiState.value.isOfflineFeed ||
+                        getSettingsUseCase.getSnapshot().offlineMode ||
+                        (networkMonitor?.isOnline?.value == false)
+                if (isOffline) {
                     performOfflineSearch(query)
+                } else {
+                    try {
+                        val results = searchTracksUseCase(query)
+                        _uiState.update { it.copy(searchResults = results, isSearching = false) }
+                    } catch (_: Exception) {
+                        performOfflineSearch(query)
+                    }
                 }
             }
-        }
     }
 
     private suspend fun performOfflineSearch(query: String) {
-        val downloaded = getOfflineTracksUseCase().firstOrNull()
-            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-            ?.map { it.track } ?: emptyList()
-        val local = try {
-            scanLocalTracksUseCase()
-        } catch (_: Exception) {
-            emptyList()
-        }
-        val allLocal = (downloaded + local).distinctBy { it.id }.filter {
-            it.title.contains(query, ignoreCase = true) || it.artist.contains(
-                query,
-                ignoreCase = true
-            )
-        }
+        val downloaded =
+            getOfflineTracksUseCase()
+                .firstOrNull()
+                ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                ?.map { it.track } ?: emptyList()
+        val local =
+            try {
+                scanLocalTracksUseCase()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        val allLocal =
+            (downloaded + local).distinctBy { it.id }.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                    it.artist.contains(
+                        query,
+                        ignoreCase = true,
+                    )
+            }
         _uiState.update { it.copy(searchResults = allLocal, isSearching = false) }
     }
 
@@ -170,7 +189,7 @@ class HomeViewModel(
             it.copy(
                 searchQuery = "",
                 searchResults = emptyList(),
-                isSearching = false
+                isSearching = false,
             )
         }
     }
@@ -202,7 +221,7 @@ class HomeViewModel(
                         chips = chips,
                         sections = batch,
                         continuation = continuation,
-                        isOfflineFeed = false
+                        isOfflineFeed = false,
                     )
                 } else {
                     current.copy(sections = current.sections + batch)
@@ -226,9 +245,10 @@ class HomeViewModel(
         if (incoming.isEmpty()) return current
         if (current.isEmpty()) return incoming
         val incomingByKey = incoming.associateBy { sectionKey(it) }
-        val merged = current.mapNotNull { old ->
-            incomingByKey[sectionKey(old)]?.let { next -> if (next == old) old else next }
-        }
+        val merged =
+            current.mapNotNull { old ->
+                incomingByKey[sectionKey(old)]?.let { next -> if (next == old) old else next }
+            }
         val seen = merged.map { sectionKey(it) }.toMutableSet()
         val result = merged.toMutableList()
         for (next in incoming) {
@@ -240,153 +260,153 @@ class HomeViewModel(
     }
 
     private fun sectionKey(section: HomeSection): String =
-        if (section.title.isNotBlank()) "${section.type}_${section.title}"
-        else "blank_${System.identityHashCode(section)}"
+        if (section.title.isNotBlank()) {
+            "${section.type}_${section.title}"
+        } else {
+            "blank_${section.hashCode()}"
+        }
 
-    fun loadFeed(silent: Boolean = false, delayMs: Long = 0L) {
+    fun loadFeed(
+        silent: Boolean = false,
+        delayMs: Long = 0L,
+    ) {
         if (silent && loadFeedJob?.isActive == true) return
         loadFeedJob?.cancel()
-        loadFeedJob = viewModelScope.launch(ioDispatcher) {
-            if (delayMs > 0L) {
-                delay(delayMs.milliseconds)
-            }
-            if (!silent) {
-                _uiState.update { it.copy(isLoading = true, error = null, selectedChip = null) }
-            } else {
-                _uiState.update { it.copy(error = null, selectedChip = null) }
-            }
-            val settings = getSettingsUseCase.getSnapshot()
-            if (settings.offlineMode) {
-                loadOfflineFeed()
-                return@launch
-            }
-
-            try {
-                val homeFeed = getHomeUseCase()
-                val needsMore = homeFeed.sections.isEmpty()
-                val (exploreSections, chartsSections, trending) = if (needsMore) {
-                    coroutineScope {
-                        val exp =
-                            async { runCatching { getExploreUseCase() }.getOrDefault(emptyList()) }
-                        val chr =
-                            async { runCatching { getChartsUseCase() }.getOrDefault(emptyList()) }
-                        val trn =
-                            async { runCatching { getTrendingUseCase() }.getOrDefault(emptyList()) }
-                        Triple(exp.await(), chr.await(), trn.await())
-                    }
+        loadFeedJob =
+            viewModelScope.launch(ioDispatcher) {
+                if (delayMs > 0L) {
+                    delay(delayMs.milliseconds)
+                }
+                if (!silent) {
+                    _uiState.update { it.copy(isLoading = true, error = null, selectedChip = null) }
                 } else {
-                    Triple(emptyList(), emptyList(), emptyList())
+                    _uiState.update { it.copy(error = null, selectedChip = null) }
+                }
+                val settings = getSettingsUseCase.getSnapshot()
+                val isOffline = settings.offlineMode || (networkMonitor?.isOnline?.value == false)
+                if (isOffline) {
+                    loadOfflineFeed()
+                    return@launch
                 }
 
-                val combinedSections = homeFeed.sections.ifEmpty {
-                    buildList {
-                        addAll(exploreSections)
-                        addAll(chartsSections)
-                        if (trending.isNotEmpty()) {
-                            add(
-                                HomeSection(
-                                    title = "Trending",
-                                    type = HomeSectionType.SONGS,
-                                    items = trending.map { SearchResult.Song(it) }
-                                )
-                            )
+                try {
+                    val homeFeed = getHomeUseCase()
+                    val needsMore = homeFeed.sections.isEmpty()
+                    val (exploreSections, chartsSections, trending) =
+                        if (needsMore) {
+                            coroutineScope {
+                                val exp =
+                                    async { runCatching { getExploreUseCase() }.getOrDefault(emptyList()) }
+                                val chr =
+                                    async { runCatching { getChartsUseCase() }.getOrDefault(emptyList()) }
+                                val trn =
+                                    async { runCatching { getTrendingUseCase() }.getOrDefault(emptyList()) }
+                                Triple(exp.await(), chr.await(), trn.await())
+                            }
+                        } else {
+                            Triple(emptyList(), emptyList(), emptyList())
                         }
-                    }.distinctBy { it.title }
-                }
 
-                if (combinedSections.isEmpty()) {
+                    val combinedSections =
+                        homeFeed.sections.ifEmpty {
+                            buildList {
+                                addAll(exploreSections)
+                                addAll(chartsSections)
+                                if (trending.isNotEmpty()) {
+                                    add(
+                                        HomeSection(
+                                            title = "Trending",
+                                            type = HomeSectionType.SONGS,
+                                            items = trending.map { SearchResult.Song(it) },
+                                        ),
+                                    )
+                                }
+                            }.distinctBy { it.title }
+                        }
+
+                    if (combinedSections.isEmpty()) {
+                        if (_uiState.value.sections.isEmpty()) {
+                            loadOfflineFeed()
+                        }
+                    } else {
+                        if (_uiState.value.sections != combinedSections || _uiState.value.chips != homeFeed.chips) {
+                            val fullFeed =
+                                HomeFeed(
+                                    chips = homeFeed.chips,
+                                    sections = combinedSections,
+                                    continuation = homeFeed.continuation,
+                                )
+                            homeFeedCache.save(fullFeed)
+
+                            if (_uiState.value.isLoading) {
+                                emitSectionsProgressively(
+                                    sections = combinedSections,
+                                    chips = homeFeed.chips,
+                                    continuation = homeFeed.continuation,
+                                )
+                            } else {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        chips = homeFeed.chips,
+                                        sections = mergeSections(it.sections, combinedSections),
+                                        continuation = homeFeed.continuation,
+                                        isOfflineFeed = false,
+                                    )
+                                }
+                            }
+                        } else {
+                            _uiState.update { it.copy(isLoading = false) }
+                        }
+                    }
+                } catch (_: Exception) {
                     if (_uiState.value.sections.isEmpty()) {
                         loadOfflineFeed()
-                    }
-                } else {
-                    if (_uiState.value.sections != combinedSections || _uiState.value.chips != homeFeed.chips) {
-                        val fullFeed = HomeFeed(
-                            chips = homeFeed.chips,
-                            sections = combinedSections,
-                            continuation = homeFeed.continuation
-                        )
-                        homeFeedCache.save(fullFeed)
-
-                        if (_uiState.value.isLoading) {
-                            emitSectionsProgressively(
-                                sections = combinedSections,
-                                chips = homeFeed.chips,
-                                continuation = homeFeed.continuation
-                            )
-                        } else {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    chips = homeFeed.chips,
-                                    sections = mergeSections(it.sections, combinedSections),
-                                    continuation = homeFeed.continuation,
-                                    isOfflineFeed = false
-                                )
-                            }
-                        }
                     } else {
                         _uiState.update { it.copy(isLoading = false) }
                     }
                 }
-            } catch (_: Exception) {
-                if (_uiState.value.sections.isEmpty()) {
-                    loadOfflineFeed()
-                } else {
-                    _uiState.update { it.copy(isLoading = false) }
-                }
             }
-        }
     }
 
     private suspend fun loadOfflineFeed() {
-        val allCompleted = getOfflineTracksUseCase().firstOrNull()
-            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED } ?: emptyList()
-        val downloadedTracks = allCompleted
-            .filter { it.downloadType == DownloadType.MANUAL }
-            .map { it.track }
-            .ifEmpty { allCompleted.map { it.track } }
+        val allCompleted =
+            getOfflineTracksUseCase()
+                .firstOrNull()
+                ?.filter { it.downloadStatus == DownloadStatus.COMPLETED } ?: emptyList()
+        val manualDownloads =
+            allCompleted
+                .filter { it.downloadType == DownloadType.MANUAL }
+                .map { it.track }
+        val cachedTracks =
+            allCompleted
+                .filter { it.downloadType != DownloadType.MANUAL }
+                .map { it.track }
 
-        val localTracks = try {
-            scanLocalTracksUseCase()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        val localTracks =
+            try {
+                scanLocalTracksUseCase()
+            } catch (_: Exception) {
+                emptyList()
+            }
 
-        val recentTracks = try {
-            getRecentTracksUseCase(limit = 20).firstOrNull()?.map { it.track } ?: emptyList()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        val recentTracks =
+            try {
+                getRecentTracksUseCase(limit = 20).firstOrNull()?.map { it.track } ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
 
-        val offlineSections = buildList {
-            if (recentTracks.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Escuchado recientemente",
-                        type = HomeSectionType.SONGS,
-                        items = recentTracks.map { SearchResult.Song(it) }
-                    )
-                )
-            }
-            if (downloadedTracks.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Tus descargas",
-                        type = HomeSectionType.SONGS,
-                        items = downloadedTracks.map { SearchResult.Song(it) }
-                    )
-                )
-            }
-            if (localTracks.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Archivos locales",
-                        type = HomeSectionType.SONGS,
-                        items = localTracks.map { SearchResult.Song(it) }
-                    )
-                )
-            }
-        }
+        val availableOfflineIds = (allCompleted.map { it.track.id } + localTracks.map { it.id }).toSet()
+        val offlineRecentTracks = recentTracks.filter { it.id in availableOfflineIds }
+
+        val offlineSections =
+            buildOfflineSections(
+                offlineRecentTracks = offlineRecentTracks,
+                manualDownloads = manualDownloads,
+                cachedTracks = cachedTracks,
+                localTracks = localTracks,
+            )
 
         _uiState.update {
             it.copy(
@@ -395,10 +415,55 @@ class HomeViewModel(
                 chips = emptyList(),
                 sections = offlineSections,
                 continuation = null,
-                isOfflineFeed = true
+                isOfflineFeed = true,
             )
         }
     }
+
+    private fun buildOfflineSections(
+        offlineRecentTracks: List<Track>,
+        manualDownloads: List<Track>,
+        cachedTracks: List<Track>,
+        localTracks: List<Track>,
+    ): List<HomeSection> =
+        buildList {
+            if (offlineRecentTracks.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Escuchado recientemente",
+                        type = HomeSectionType.SONGS,
+                        items = offlineRecentTracks.map { SearchResult.Song(it) },
+                    ),
+                )
+            }
+            if (manualDownloads.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Tus descargas",
+                        type = HomeSectionType.SONGS,
+                        items = manualDownloads.map { SearchResult.Song(it) },
+                    ),
+                )
+            }
+            if (cachedTracks.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Música en caché",
+                        type = HomeSectionType.SONGS,
+                        items = cachedTracks.map { SearchResult.Song(it) },
+                    ),
+                )
+            }
+            if (localTracks.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Archivos locales",
+                        type = HomeSectionType.SONGS,
+                        items = localTracks.map { SearchResult.Song(it) },
+                    ),
+                )
+            }
+        }
 
     fun toggleChip(chip: HomeFeedChip) {
         if (_uiState.value.selectedChip == chip) {
@@ -423,7 +488,7 @@ class HomeViewModel(
                     it.copy(
                         isLoading = false,
                         sections = filteredFeed.sections,
-                        continuation = filteredFeed.continuation
+                        continuation = filteredFeed.continuation,
                     )
                 }
             } catch (e: Exception) {
@@ -448,7 +513,7 @@ class HomeViewModel(
                     it.copy(
                         isLoadingMore = false,
                         sections = newSections,
-                        continuation = nextFeed.continuation
+                        continuation = nextFeed.continuation,
                     )
                 }
             } catch (_: Exception) {
