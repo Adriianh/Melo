@@ -19,7 +19,7 @@ object DaemonManager {
         return response == "PONG" || response.startsWith("OK")
     }
 
-    fun startProcess(): Boolean {
+    fun startProcess(idleTimeout: Int = 0): Boolean {
         val javaHome = System.getProperty("java.home")
         val javaBin = if (javaHome != null) "$javaHome/bin/java" else "java"
         val classpath = System.getProperty("java.class.path")
@@ -44,6 +44,9 @@ object DaemonManager {
             command.addAll(listOf(javaBin, "-cp", classpath, mainClass))
         }
         command.addAll(listOf("daemon", "run"))
+        if (idleTimeout > 0) {
+            command.addAll(listOf("--idle-timeout", idleTimeout.toString()))
+        }
 
         val processBuilder = ProcessBuilder(command)
         processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile))
@@ -60,12 +63,13 @@ object DaemonManager {
     fun ensureDaemonRunning(
         terminal: Terminal? = null,
         maxWaitMs: Long = 4000L,
+        idleTimeout: Int = 0,
     ): Boolean {
         if (isRunning()) return true
 
         terminal?.println(gray("○ Starting Melo background daemon..."))
         var ready = false
-        if (startProcess()) {
+        if (startProcess(idleTimeout)) {
             val deadline = System.currentTimeMillis() + maxWaitMs
             while (System.currentTimeMillis() < deadline && !ready) {
                 Thread.sleep(150)
@@ -88,13 +92,6 @@ object DaemonManager {
         if (tracks.isEmpty()) return false
         val payload = json.encodeToString(ListSerializer(Track.serializer()), tracks)
         val res = LocalIpcClient.sendCommand("PLAY_LIST", payload)
-        return res.startsWith("OK")
-    }
-
-    fun queueTracks(tracks: List<Track>): Boolean {
-        if (tracks.isEmpty()) return false
-        val payload = json.encodeToString(ListSerializer(Track.serializer()), tracks)
-        val res = LocalIpcClient.sendCommand("QUEUE_ADD_LIST", payload)
         return res.startsWith("OK")
     }
 }

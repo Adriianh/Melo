@@ -9,7 +9,11 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.mordant.rendering.TextColors.cyan
+import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.rendering.TextColors.green
 import com.github.ajalt.mordant.rendering.TextColors.red
 import com.github.ajalt.mordant.rendering.TextColors.yellow
@@ -30,6 +34,7 @@ class DaemonCommand :
     override fun helpEpilog(context: Context): String =
         "Examples:\n" +
             "  melo daemon start\n" +
+            "  melo daemon start --idle-timeout 30\n" +
             "  melo daemon status\n" +
             "  melo daemon stop\n" +
             "  melo daemon run"
@@ -50,12 +55,17 @@ class DaemonRunCommand :
     ),
     KoinComponent {
     private val terminal = Terminal()
+    private val idleTimeout by option(
+        "--idle-timeout",
+        help = "Auto-shutdown after N minutes of inactivity (0 = disabled, default: 0)",
+    ).int().default(0)
 
     override fun help(context: Context): String = "Run the player daemon in the foreground (useful for debugging)"
 
     override fun helpEpilog(context: Context): String =
         "Examples:\n" +
-            "  melo daemon run"
+            "  melo daemon run\n" +
+            "  melo daemon run --idle-timeout 30"
 
     override fun run() {
         startKoin { modules(appModule) }
@@ -64,7 +74,10 @@ class DaemonRunCommand :
             runBlocking {
                 terminal.println(cyan("Melo Daemon is starting in idle mode..."))
                 terminal.println(yellow("Note: To run in the background (detached), use: melo daemon start"))
-                PlayActionHandler.startDaemon(getStream, terminal)
+                if (idleTimeout > 0) {
+                    terminal.println(gray("Idle timeout set to $idleTimeout minutes."))
+                }
+                PlayActionHandler.startDaemon(getStream, terminal, idleTimeoutMinutes = idleTimeout)
             }
         } finally {
             stopKoin()
@@ -78,12 +91,17 @@ class DaemonStartCommand :
         name = "start",
     ) {
     private val terminal = Terminal()
+    private val idleTimeout by option(
+        "--idle-timeout",
+        help = "Auto-shutdown after N minutes of inactivity (0 = disabled, default: 0)",
+    ).int().default(0)
 
     override fun help(context: Context): String = "Start the Melo player daemon in the background (detached)"
 
     override fun helpEpilog(context: Context): String =
         "Examples:\n" +
-            "  melo daemon start"
+            "  melo daemon start\n" +
+            "  melo daemon start --idle-timeout 30"
 
     override fun run() {
         if (DaemonManager.isRunning()) {
@@ -92,8 +110,11 @@ class DaemonStartCommand :
         }
 
         terminal.println(cyan("Starting Melo daemon in background..."))
-        if (DaemonManager.ensureDaemonRunning(terminal)) {
+        if (DaemonManager.ensureDaemonRunning(terminal, idleTimeout = idleTimeout)) {
             terminal.println(green("Melo daemon started in the background."))
+            if (idleTimeout > 0) {
+                terminal.println(gray("Idle timeout set to $idleTimeout minutes."))
+            }
             terminal.println(cyan("Logs are being written to: ") + yellow(DaemonManager.logFile.absolutePath))
             terminal.println(cyan("Use 'melo daemon status' to verify."))
         } else {
