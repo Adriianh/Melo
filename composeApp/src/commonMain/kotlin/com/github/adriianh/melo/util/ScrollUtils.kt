@@ -7,8 +7,12 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isShiftPressed
@@ -28,8 +32,14 @@ fun Modifier.desktopScroll(state: LazyListState): Modifier {
                 while (true) {
                     val event = awaitPointerEvent()
                     if (event.type == PointerEventType.Scroll) {
-                        val deltaX = event.changes.first().scrollDelta.x
-                        val deltaY = event.changes.first().scrollDelta.y
+                        val deltaX =
+                            event.changes
+                                .first()
+                                .scrollDelta.x
+                        val deltaY =
+                            event.changes
+                                .first()
+                                .scrollDelta.y
                         val isShiftPressed = event.keyboardModifiers.isShiftPressed
 
                         when {
@@ -45,7 +55,7 @@ fun Modifier.desktopScroll(state: LazyListState): Modifier {
                                 scope.launch {
                                     state.animateScrollBy(
                                         value = deltaY * 150f,
-                                        animationSpec = tween(150, easing = FastOutSlowInEasing)
+                                        animationSpec = tween(150, easing = FastOutSlowInEasing),
                                     )
                                 }
                             }
@@ -53,8 +63,7 @@ fun Modifier.desktopScroll(state: LazyListState): Modifier {
                     }
                 }
             }
-        }
-        .pointerInput(Unit) {
+        }.pointerInput(Unit) {
             detectDragGestures { change, dragAmount ->
                 change.consume()
                 scope.launch {
@@ -62,4 +71,25 @@ fun Modifier.desktopScroll(state: LazyListState): Modifier {
                 }
             }
         }
+}
+
+@Composable
+fun <T> LazyListState.autoScrollOnNewItem(
+    items: List<T>,
+    threshold: Int = 2,
+    enabled: Boolean = true,
+    keySelector: (T) -> Any? = { it },
+) {
+    val latestKey = remember(items) { items.firstOrNull()?.let { keySelector(it) } }
+    var previousKey by remember { mutableStateOf<Any?>(null) }
+
+    LaunchedEffect(latestKey) {
+        if (enabled && latestKey != null) {
+            val hasNewItem = previousKey != null && latestKey != previousKey
+            if (hasNewItem && firstVisibleItemIndex <= threshold) {
+                animateScrollToItem(0)
+            }
+        }
+        previousKey = latestKey
+    }
 }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.runtime.Composable
@@ -13,6 +14,8 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.util.autoScrollOnNewItem
+import com.github.adriianh.melo.util.desktopScroll
 
 @Composable
 fun LikedSongsTabContent(
@@ -32,27 +35,34 @@ fun LikedSongsTabContent(
         return
     }
 
+    val listState = rememberLazyListState()
+    listState.autoScrollOnNewItem(songs) { it.id }
+
     LazyColumn(
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().desktopScroll(listState),
     ) {
         items(songs, key = { it.id }) { track ->
             val isSelected = track.id in selectedTrackIds
             MeloSwipeableItem(
                 onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
                 onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
-                swipeRightIcon = Icons.Default.HeartBroken
+                swipeRightIcon = Icons.Default.HeartBroken,
             ) {
                 TrackRow(
                     track = track,
                     onClick = { onPlayTrack(track) },
-                    onMoreClick = if (isSelectionMode) null else {
-                        { onMoreClick(track) }
-                    },
+                    onMoreClick =
+                        if (isSelectionMode) {
+                            null
+                        } else {
+                            { onMoreClick(track) }
+                        },
                     isSelectionMode = isSelectionMode,
                     isSelected = isSelected,
                     onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
                 )
             }
         }
