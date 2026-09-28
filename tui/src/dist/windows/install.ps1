@@ -17,6 +17,11 @@ if (Test-Path "$ScriptDir\*.dll") {
     Copy-Item -Path "$ScriptDir\*.dll" -Destination "$BinDir\" -Force
 }
 
+# Copy uninstaller script if present
+if (Test-Path "$ScriptDir\uninstall.ps1") {
+    Copy-Item -Path "$ScriptDir\uninstall.ps1" -Destination "$InstallDir\uninstall.ps1" -Force
+}
+
 # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
 # without triggering PSSecurityException / ExecutionPolicy restrictions.
 Remove-Item "$BinDir\*.ps1" -Force -ErrorAction SilentlyContinue

@@ -4,7 +4,7 @@
 
 ### Unfocused panels respond to key events
 
-**Status:** Resolved (in v2.2.2 / PR #79)  
+**Status:** Resolved (in v2.2.2 / PR #80, Fixes #79)  
 **Affects:** All screens (Home, Search, Library, Sidebar)
 
 #### Description
@@ -35,8 +35,8 @@ and could become `null` across certain transitions.
 
 ### Artwork pixels bleed into non-image screens
 
-**Status:** Partially fixed  
-**Affects:** Home screen, Library screen (fixed); other future screens may be affected
+**Status:** Resolved (in TamboUI 0.4.0)  
+**Affects:** Terminal graphics rendering
 
 #### Description
 
