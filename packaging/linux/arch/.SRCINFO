@@ -1,5 +1,5 @@
-pkgbase = melo-bin
-	pkgdesc = Modern, fast music player for desktop
+pkgbase = melo-player-bin
+	pkgdesc = Modern, fast music player for desktop (Compose Multiplatform GUI & TUI)
 	pkgver = 2.2.1
 	pkgrel = 1
 	url = https://github.com/Adriianh/Melo
@@ -9,15 +9,18 @@ pkgbase = melo-bin
 	depends = hicolor-icon-theme
 	depends = glibc
 	depends = alsa-lib
+	optdepends = ffmpeg: Required for TUI/CLI audio playback
 	optdepends = pipewire-pulse: Modern low-latency audio server
 	optdepends = pulseaudio: Traditional Linux audio server
 	provides = melo
+	provides = melo-player
 	provides = melo-gui
 	conflicts = melo
+	conflicts = melo-bin
 	options = !strip
 	source = https://github.com/Adriianh/Melo/releases/download/v2.2.1/melo-2.2.1-linux-x64.tar.gz
 	source = melo.desktop
 	sha256sums = SKIP
 	sha256sums = SKIP
 
-pkgname = melo-bin
+pkgname = melo-player-bin

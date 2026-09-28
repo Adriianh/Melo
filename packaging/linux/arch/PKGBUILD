@@ -1,5 +1,5 @@
 # Maintainer: Adriianh <https://github.com/Adriianh>
-pkgname=melo-bin
+pkgname=melo-player-bin
 _pkgname=melo
 pkgver=2.2.1
 pkgrel=1
@@ -14,11 +14,12 @@ depends=(
     'alsa-lib'
 )
 optdepends=(
+    'ffmpeg: Required for TUI/CLI audio playback'
     'pipewire-pulse: Modern low-latency audio server'
     'pulseaudio: Traditional Linux audio server'
 )
-provides=('melo' 'melo-gui')
-conflicts=('melo')
+provides=('melo' 'melo-player' 'melo-gui')
+conflicts=('melo' 'melo-bin')
 options=('!strip')
 
 source=(

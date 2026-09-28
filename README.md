@@ -171,13 +171,18 @@ Choose your preferred installation format:
   sudo apt install ./melo_2.2.1_amd64.deb
   ```
 
-- **Arch Linux (AUR)**:
-  Install the official binary package via your preferred AUR helper:
+- **Arch Linux (AUR)** *(Coming soon)*:
+  The official `melo-player-bin` package will be available on the AUR soon:
   ```bash
-  yay -S melo-bin
-  # or
-  paru -S melo-bin
+  yay -S melo-player-bin   # Coming soon
   ```
+  In the meantime, you can install it directly from the repository using `makepkg`:
+  ```bash
+  git clone https://github.com/Adriianh/Melo.git
+  cd Melo/packaging/linux/arch
+  makepkg -si
+  ```
+  *(Or use the standalone AppImage or Portable Tarball below)*.
 
 - **Universal AppImage (Standalone)**:
   Download `Melo-2.2.1-x86_64.AppImage`, make it executable, and run directly without installation:
