@@ -11,18 +11,19 @@ import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 
 internal fun MeloScreen.returnFocusFromDetail() {
-    val target = when (val curScreen = state.screen) {
-        is ScreenState.Search -> "results-panel"
-        is ScreenState.Home -> "home-panel"
-        is ScreenState.Library -> "library-panel"
-        is ScreenState.Offline -> "offline-panel"
-        is ScreenState.Stats -> "stats-panel"
-        is ScreenState.EntityDetail -> {
-            if (curScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
-        }
+    val target =
+        when (val curScreen = state.screen) {
+            is ScreenState.Search -> "results-panel"
+            is ScreenState.Home -> "home-panel"
+            is ScreenState.Library -> "library-panel"
+            is ScreenState.Offline -> "offline-panel"
+            is ScreenState.Stats -> "stats-panel"
+            is ScreenState.EntityDetail -> {
+                if (curScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"
+            }
 
-        else -> "sidebar-nav"
-    }
+            else -> "sidebar-nav"
+        }
     appRunner()?.focusManager()?.setFocus(target)
 }
 
@@ -56,13 +57,15 @@ internal fun MeloScreen.handleDetailTabNavigationKey(event: KeyEvent): EventResu
         }
 
         event.isCharIgnoreCase('l') -> {
-            state = state.copy(
-                detail = state.detail.copy(
-                    detailTab = DetailTab.LYRICS,
-                    lyricsScrollOffset = 0,
-                    isAutoScrollLyrics = true
+            state =
+                state.copy(
+                    detail =
+                        state.detail.copy(
+                            detailTab = DetailTab.LYRICS,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true,
+                        ),
                 )
-            )
             loadLyricsIfNeeded()
             return EventResult.HANDLED
         }
@@ -77,13 +80,15 @@ internal fun MeloScreen.handleDetailTabNavigationKey(event: KeyEvent): EventResu
             val tabs = DetailTab.entries
             val prevOrdinal = (state.detail.detailTab.ordinal - 1 + tabs.size) % tabs.size
             val nextTab = tabs[prevOrdinal]
-            state = state.copy(
-                detail = state.detail.copy(
-                    detailTab = nextTab,
-                    lyricsScrollOffset = 0,
-                    isAutoScrollLyrics = true
+            state =
+                state.copy(
+                    detail =
+                        state.detail.copy(
+                            detailTab = nextTab,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true,
+                        ),
                 )
-            )
             if (nextTab == DetailTab.LYRICS) {
                 loadLyricsIfNeeded()
             } else if (nextTab == DetailTab.SIMILAR) {
@@ -96,13 +101,15 @@ internal fun MeloScreen.handleDetailTabNavigationKey(event: KeyEvent): EventResu
             val tabs = DetailTab.entries
             val nextOrdinal = (state.detail.detailTab.ordinal + 1) % tabs.size
             val nextTab = tabs[nextOrdinal]
-            state = state.copy(
-                detail = state.detail.copy(
-                    detailTab = nextTab,
-                    lyricsScrollOffset = 0,
-                    isAutoScrollLyrics = true
+            state =
+                state.copy(
+                    detail =
+                        state.detail.copy(
+                            detailTab = nextTab,
+                            lyricsScrollOffset = 0,
+                            isAutoScrollLyrics = true,
+                        ),
                 )
-            )
             if (nextTab == DetailTab.LYRICS) {
                 loadLyricsIfNeeded()
             } else if (nextTab == DetailTab.SIMILAR) {
@@ -118,15 +125,16 @@ internal fun MeloScreen.handleDetailKey(event: KeyEvent): EventResult {
     if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     val focusedId = appRunner()?.focusManager()?.focusedId()
     if (focusedId != "detail-panel") {
-        return handleGlobalShortcuts(event)
+        return EventResult.UNHANDLED
     }
 
     if (handleDetailTabNavigationKey(event) == EventResult.HANDLED) return EventResult.HANDLED
 
-    val handled = when (state.detail.detailTab) {
-        DetailTab.LYRICS -> handleLyricsTabKey(event)
-        DetailTab.SIMILAR -> handleSimilarTabKey(event)
-        DetailTab.INFO -> handleInfoTabKey(event)
-    }
+    val handled =
+        when (state.detail.detailTab) {
+            DetailTab.LYRICS -> handleLyricsTabKey(event)
+            DetailTab.SIMILAR -> handleSimilarTabKey(event)
+            DetailTab.INFO -> handleInfoTabKey(event)
+        }
     return if (handled == EventResult.HANDLED) handled else handleGlobalShortcuts(event)
 }

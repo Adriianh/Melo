@@ -25,39 +25,45 @@ import dev.tamboui.tui.event.KeyEvent
 /** Actualiza selección y detalle al mover el cursor dentro de los resultados. */
 private fun MeloScreen.updateSelectedResult(
     actualState: ScreenState.Search,
-    newIndex: Int
+    newIndex: Int,
 ) {
-    state = state.copy(
-        screen = actualState.copy(selectedIndex = newIndex),
-        player = state.player.copy(marqueeOffset = 0)
-    )
+    state =
+        state.copy(
+            screen = actualState.copy(selectedIndex = newIndex),
+            player = state.player.copy(marqueeOffset = 0),
+        )
     marqueeTick = 0
     if (actualState.tab == SearchTab.SONGS) {
         actualState.results.getOrNull(newIndex)?.let { track ->
-            state = state.copy(
-                detail = state.detail.copy(
-                    selectedTrack = track,
-                    selectedEntity = null,
-                    artworkData = null
+            state =
+                state.copy(
+                    detail =
+                        state.detail.copy(
+                            selectedTrack = track,
+                            selectedEntity = null,
+                            artworkData = null,
+                        ),
                 )
-            )
             debouncedLoadDetails(track)
         }
     } else {
-        val entity = when (actualState.tab) {
-            SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
-            SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
-            SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
-            SearchTab.SONGS -> null
-        }
+        val entity =
+            when (actualState.tab) {
+                SearchTab.ALBUMS -> actualState.albumResults.getOrNull(newIndex)
+                SearchTab.ARTISTS -> actualState.artistResults.getOrNull(newIndex)
+                SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(newIndex)
+                SearchTab.SONGS -> null
+            }
         if (entity != null) {
-            state = state.copy(
-                detail = state.detail.copy(
-                    selectedTrack = null,
-                    selectedEntity = entity,
-                    artworkData = null
+            state =
+                state.copy(
+                    detail =
+                        state.detail.copy(
+                            selectedTrack = null,
+                            selectedEntity = entity,
+                            artworkData = null,
+                        ),
                 )
-            )
             debouncedLoadEntityDetails(entity)
         }
     }
@@ -68,7 +74,7 @@ private fun MeloScreen.handleResultsMovementKey(
     actualState: ScreenState.Search,
     event: KeyEvent,
     isFocused: Boolean,
-    listSize: Int
+    listSize: Int,
 ): EventResult {
     when {
         event.matches(Actions.MOVE_DOWN) -> {
@@ -82,6 +88,10 @@ private fun MeloScreen.handleResultsMovementKey(
 
         event.matches(Actions.MOVE_UP) -> {
             if (!isFocused) return handleGlobalShortcuts(event)
+            if (actualState.selectedIndex == 0) {
+                appRunner()?.focusManager()?.setFocus("search-bar")
+                return EventResult.HANDLED
+            }
             val newIndex = maxOf(0, actualState.selectedIndex - 1)
             resultList.selected(newIndex)
             updateSelectedResult(actualState, newIndex)
@@ -92,30 +102,34 @@ private fun MeloScreen.handleResultsMovementKey(
             if (!isFocused) return handleGlobalShortcuts(event)
             when (actualState.tab) {
                 SearchTab.SONGS -> {
-                    val selected = actualState.results.getOrNull(resultList.selected())
-                        ?: return handleGlobalShortcuts(event)
+                    val selected =
+                        actualState.results.getOrNull(resultList.selected())
+                            ?: return handleGlobalShortcuts(event)
                     downloadTrack(selected, DownloadType.PREFETCH)
                     playTrack(selected)
                     return EventResult.HANDLED
                 }
 
                 SearchTab.ALBUMS -> {
-                    val selected = actualState.albumResults.getOrNull(resultList.selected())
-                        ?: return handleGlobalShortcuts(event)
+                    val selected =
+                        actualState.albumResults.getOrNull(resultList.selected())
+                            ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
 
                 SearchTab.ARTISTS -> {
-                    val selected = actualState.artistResults.getOrNull(resultList.selected())
-                        ?: return handleGlobalShortcuts(event)
+                    val selected =
+                        actualState.artistResults.getOrNull(resultList.selected())
+                            ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
 
                 SearchTab.PLAYLISTS -> {
-                    val selected = actualState.playlistResults.getOrNull(resultList.selected())
-                        ?: return handleGlobalShortcuts(event)
+                    val selected =
+                        actualState.playlistResults.getOrNull(resultList.selected())
+                            ?: return handleGlobalShortcuts(event)
                     openEntityDetails(selected)
                     return EventResult.HANDLED
                 }
@@ -128,49 +142,57 @@ private fun MeloScreen.handleResultsMovementKey(
 /** Acciones sobre el resultado seleccionado (favoritos, cola, selección, opciones...). */
 private fun MeloScreen.handleResultsActionKey(
     actualState: ScreenState.Search,
-    event: KeyEvent
+    event: KeyEvent,
 ): EventResult {
     when {
-        actualState.tab == SearchTab.SONGS && event.matchesAction(
-            MeloAction.FAVORITE,
-            settingsViewState.currentSettings
-        ) -> {
+        actualState.tab == SearchTab.SONGS &&
+            event.matchesAction(
+                MeloAction.FAVORITE,
+                settingsViewState.currentSettings,
+            ) -> {
             actualState.results.getOrNull(actualState.selectedIndex)?.let { toggleFavorite(it) }
             return EventResult.HANDLED
         }
 
-        actualState.tab != SearchTab.SONGS && (
-                event.isChar('F') || event.matchesAction(
-                    MeloAction.FAVORITE,
-                    settingsViewState.currentSettings
-                )
-                ) -> {
-            val entity = when (actualState.tab) {
-                SearchTab.ALBUMS -> actualState.albumResults.getOrNull(actualState.selectedIndex)
-                SearchTab.ARTISTS -> actualState.artistResults.getOrNull(actualState.selectedIndex)
-                SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(actualState.selectedIndex)
-                SearchTab.SONGS -> null
-            }
+        actualState.tab != SearchTab.SONGS &&
+            (
+                event.isChar('F') ||
+                    event.matchesAction(
+                        MeloAction.FAVORITE,
+                        settingsViewState.currentSettings,
+                    )
+            ) -> {
+            val entity =
+                when (actualState.tab) {
+                    SearchTab.ALBUMS -> actualState.albumResults.getOrNull(actualState.selectedIndex)
+                    SearchTab.ARTISTS -> actualState.artistResults.getOrNull(actualState.selectedIndex)
+                    SearchTab.PLAYLISTS -> actualState.playlistResults.getOrNull(actualState.selectedIndex)
+                    SearchTab.SONGS -> null
+                }
             if (entity != null) {
                 toggleEntityFavorite(entity)
                 return EventResult.HANDLED
             }
         }
 
-        actualState.tab == SearchTab.SONGS && event.matchesAction(
-            MeloAction.ADD_TO_QUEUE,
-            settingsViewState.currentSettings
-        ) -> {
+        actualState.tab == SearchTab.SONGS &&
+            event.matchesAction(
+                MeloAction.ADD_TO_QUEUE,
+                settingsViewState.currentSettings,
+            ) -> {
             actualState.results.getOrNull(actualState.selectedIndex)?.let { addToQueue(it) }
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && (
-                event.isCharIgnoreCase('v') || event.matchesAction(
-                    MeloAction.TOGGLE_SELECTION,
-                    settingsViewState.currentSettings
-                ) || (state.selection.isNotEmpty && event.isChar(' '))
-                ) -> {
+        actualState.tab == SearchTab.SONGS &&
+            (
+                event.isCharIgnoreCase('v') ||
+                    event.matchesAction(
+                        MeloAction.TOGGLE_SELECTION,
+                        settingsViewState.currentSettings,
+                    ) ||
+                    (state.selection.isNotEmpty && event.isChar(' '))
+            ) -> {
             val track = actualState.results.getOrNull(actualState.selectedIndex)
             if (track != null) {
                 state = state.copy(selection = state.selection.toggle(track))
@@ -188,10 +210,11 @@ private fun MeloScreen.handleResultsActionKey(
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && event.matchesAction(
-            MeloAction.ADD_PLAYLIST,
-            settingsViewState.currentSettings
-        ) -> {
+        actualState.tab == SearchTab.SONGS &&
+            event.matchesAction(
+                MeloAction.ADD_PLAYLIST,
+                settingsViewState.currentSettings,
+            ) -> {
             if (state.selection.isNotEmpty) {
                 openPlaylistPicker(state.selection.tracks())
             } else {
@@ -201,10 +224,14 @@ private fun MeloScreen.handleResultsActionKey(
             return EventResult.HANDLED
         }
 
-        actualState.tab == SearchTab.SONGS && (event.isCharIgnoreCase('m') || event.matchesAction(
-            MeloAction.TRACK_OPTIONS,
-            settingsViewState.currentSettings
-        )) -> {
+        actualState.tab == SearchTab.SONGS &&
+            (
+                event.isCharIgnoreCase('m') ||
+                    event.matchesAction(
+                        MeloAction.TRACK_OPTIONS,
+                        settingsViewState.currentSettings,
+                    )
+            ) -> {
             if (state.selection.isNotEmpty) {
                 openBatchOptions(state.selection.tracks())
                 return EventResult.HANDLED
@@ -243,7 +270,8 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
     // Overlay intercepts keys from any screen
     when (state.playlistInteraction.playlistInputMode) {
         PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
+        PlaylistInputMode.RENAME,
+        -> return handlePlaylistInput(event)
 
         PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
         PlaylistInputMode.NONE -> {}
@@ -263,15 +291,15 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
     }
 
     val isFocused = appRunner()?.focusManager()?.focusedId() == "results-panel"
-    if (isFocused) {
-        if (event.matches(Actions.MOVE_RIGHT)) {
-            switchSearchTab(true)
-            return EventResult.HANDLED
-        }
-        if (event.matches(Actions.MOVE_LEFT)) {
-            switchSearchTab(false)
-            return EventResult.HANDLED
-        }
+    if (!isFocused) return EventResult.UNHANDLED
+
+    if (event.matches(Actions.MOVE_RIGHT)) {
+        switchSearchTab(true)
+        return EventResult.HANDLED
+    }
+    if (event.matches(Actions.MOVE_LEFT)) {
+        switchSearchTab(false)
+        return EventResult.HANDLED
     }
 
     when {
@@ -317,12 +345,13 @@ internal fun MeloScreen.handleResultsKey(event: KeyEvent): EventResult {
         }
     }
 
-    val listSize = when (actualState.tab) {
-        SearchTab.SONGS -> actualState.results.size
-        SearchTab.ALBUMS -> actualState.albumResults.size
-        SearchTab.ARTISTS -> actualState.artistResults.size
-        SearchTab.PLAYLISTS -> actualState.playlistResults.size
-    }
+    val listSize =
+        when (actualState.tab) {
+            SearchTab.SONGS -> actualState.results.size
+            SearchTab.ALBUMS -> actualState.albumResults.size
+            SearchTab.ARTISTS -> actualState.artistResults.size
+            SearchTab.PLAYLISTS -> actualState.playlistResults.size
+        }
 
     if (listSize == 0) return handleGlobalShortcuts(event)
 
