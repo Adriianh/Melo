@@ -28,7 +28,7 @@
 
 ## Overview
 
-**Melo** is a cross-platform music streaming and local audio player that combines visual elegance with high-performance audio engineering. It gives you the best of both worlds:
+**Melo** (as in Spanish *melodía* or *melómano* — a true music lover) is a cross-platform music streaming and local audio player that combines visual elegance with high-performance audio engineering. It gives you the best of both worlds:
 
 - **Melo GUI (Compose Multiplatform)**: a native, fluid graphical interface for **Android** and **Desktop (Linux, Windows, macOS)** with dynamic ambient theming, synchronized LRC lyrics with live translation, and offline downloads.
 - **Melo TUI & CLI**: a fast, keyboard-centric terminal interface and headless daemon for lightweight background listening and shell integration. Both share the same unified core and library.
