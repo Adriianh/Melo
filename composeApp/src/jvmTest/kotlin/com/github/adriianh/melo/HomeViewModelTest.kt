@@ -353,4 +353,64 @@ class HomeViewModelTest {
 
             assertTrue(viewModel.uiState.value.isOfflineFeed)
         }
+
+    @Test
+    fun `when sessionCookies change, ViewModel clears cache and reloads feed`() =
+        runTest {
+            coEvery { homeFeedCache.get() } returns sampleCachedFeed
+            coEvery { getHomeUseCase(any(), any()) } returns sampleCachedFeed
+
+            val viewModel =
+                HomeViewModel(
+                    getHomeUseCase = getHomeUseCase,
+                    getExploreUseCase = getExploreUseCase,
+                    getChartsUseCase = getChartsUseCase,
+                    getTrendingUseCase = getTrendingUseCase,
+                    searchTracksUseCase = searchTracksUseCase,
+                    getSettingsUseCase = getSettingsUseCase,
+                    getOfflineTracksUseCase = getOfflineTracksUseCase,
+                    scanLocalTracksUseCase = scanLocalTracksUseCase,
+                    getRecentTracksUseCase = getRecentTracksUseCase,
+                    homeFeedCache = homeFeedCache,
+                    ioDispatcher = testDispatcher,
+                )
+
+            advanceUntilIdle()
+
+            settingsFlow.value = Settings(sessionCookies = "SAPISID=auth_token")
+            advanceUntilIdle()
+
+            coVerify { homeFeedCache.clear() }
+            coVerify(atLeast = 2) { getHomeUseCase(any(), any()) }
+        }
+
+    @Test
+    fun `when refresh is invoked, ViewModel clears cache and resets isRefreshing`() =
+        runTest {
+            coEvery { homeFeedCache.get() } returns sampleCachedFeed
+            coEvery { getHomeUseCase(any(), any()) } returns sampleCachedFeed
+
+            val viewModel =
+                HomeViewModel(
+                    getHomeUseCase = getHomeUseCase,
+                    getExploreUseCase = getExploreUseCase,
+                    getChartsUseCase = getChartsUseCase,
+                    getTrendingUseCase = getTrendingUseCase,
+                    searchTracksUseCase = searchTracksUseCase,
+                    getSettingsUseCase = getSettingsUseCase,
+                    getOfflineTracksUseCase = getOfflineTracksUseCase,
+                    scanLocalTracksUseCase = scanLocalTracksUseCase,
+                    getRecentTracksUseCase = getRecentTracksUseCase,
+                    homeFeedCache = homeFeedCache,
+                    ioDispatcher = testDispatcher,
+                )
+
+            advanceUntilIdle()
+
+            viewModel.refresh()
+            advanceUntilIdle()
+
+            coVerify { homeFeedCache.clear() }
+            assertFalse(viewModel.uiState.value.isRefreshing)
+        }
 }
