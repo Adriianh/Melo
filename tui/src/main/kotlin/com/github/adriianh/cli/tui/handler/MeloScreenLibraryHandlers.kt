@@ -16,41 +16,60 @@ import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 
+private fun MeloScreen.handleLibraryOverlayKey(event: KeyEvent): EventResult? =
+    when (state.playlistInteraction.playlistInputMode) {
+        PlaylistInputMode.CREATE,
+        PlaylistInputMode.RENAME,
+        -> handlePlaylistInput(event)
+        PlaylistInputMode.PICKER -> handlePlaylistPicker(event)
+        PlaylistInputMode.NONE -> null
+    }
+
+private fun MeloScreen.handleLibraryTabSelection(event: KeyEvent): EventResult? =
+    when {
+        event.isChar('1') -> {
+            updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.FAVORITES) }
+            EventResult.HANDLED
+        }
+        event.isChar('2') -> {
+            updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false) }
+            EventResult.HANDLED
+        }
+        event.isChar('3') -> {
+            updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.LOCAL) }
+            loadLocalTracks()
+            EventResult.HANDLED
+        }
+        else -> null
+    }
+
 /**
  * Handles key events for the Library screen, including Favorites, Playlists, and Local sections.
  */
 internal fun MeloScreen.handleLibraryKey(event: KeyEvent): EventResult {
-    when (state.playlistInteraction.playlistInputMode) {
-        PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> return handlePlaylistInput(event)
-
-        PlaylistInputMode.PICKER -> return handlePlaylistPicker(event)
-        PlaylistInputMode.NONE -> {}
-    }
+    handleLibraryOverlayKey(event)?.let { return it }
 
     val actualState = state.screen as? ScreenState.Library ?: return handleGlobalShortcuts(event)
     val isFocused = appRunner()?.focusManager()?.focusedId() == "library-panel"
-    if (!isFocused) return handleGlobalShortcuts(event)
+    if (!isFocused) return EventResult.UNHANDLED
 
-    if (event.isChar('1')) {
-        updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.FAVORITES) }
+    if (event.matches(Actions.MOVE_LEFT) && !actualState.isInPlaylistDetail && !actualState.isTyping) {
+        appRunner()?.focusManager()?.setFocus("sidebar-panel")
         return EventResult.HANDLED
     }
-    if (event.isChar('2')) {
-        updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.PLAYLISTS, isInPlaylistDetail = false) }
-        return EventResult.HANDLED
-    }
-    if (event.isChar('3')) {
-        updateScreen<ScreenState.Library> { it.copy(libraryTab = LibraryTab.LOCAL) }
-        loadLocalTracks()
-        return EventResult.HANDLED
-    }
+
+    handleLibraryTabSelection(event)?.let { return it }
 
     return when (actualState.libraryTab) {
         LibraryTab.FAVORITES -> handleFavoritesKey(event)
-        LibraryTab.PLAYLISTS -> if (actualState.isInPlaylistDetail) handlePlaylistDetailKey(event) else handlePlaylistsKey(
-            event
-        )
+        LibraryTab.PLAYLISTS ->
+            if (actualState.isInPlaylistDetail) {
+                handlePlaylistDetailKey(event)
+            } else {
+                handlePlaylistsKey(
+                    event,
+                )
+            }
 
         LibraryTab.LOCAL -> handleLocalLibraryKey(event)
     }
@@ -61,14 +80,16 @@ internal fun MeloScreen.handleTrackListSelectionActions(
     event: KeyEvent,
     tracks: List<Track>,
     selectedIndex: Int,
-    onFavorite: (Track) -> Unit
+    onFavorite: (Track) -> Unit,
 ): EventResult {
     val track = tracks.getOrNull(selectedIndex)
     when {
-        event.isCharIgnoreCase('v') || event.matchesAction(
-            MeloAction.TOGGLE_SELECTION,
-            settingsViewState.currentSettings
-        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+        event.isCharIgnoreCase('v') ||
+            event.matchesAction(
+                MeloAction.TOGGLE_SELECTION,
+                settingsViewState.currentSettings,
+            ) ||
+            (state.selection.isNotEmpty && event.isChar(' ')) -> {
             if (track != null) {
                 state = state.copy(selection = state.selection.toggle(track))
                 return EventResult.HANDLED
@@ -104,10 +125,11 @@ internal fun MeloScreen.handleTrackListSelectionActions(
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') || event.matchesAction(
-            MeloAction.TRACK_OPTIONS,
-            settingsViewState.currentSettings
-        ) -> {
+        event.isCharIgnoreCase('m') ||
+            event.matchesAction(
+                MeloAction.TRACK_OPTIONS,
+                settingsViewState.currentSettings,
+            ) -> {
             if (state.selection.isNotEmpty) {
                 openBatchOptions(state.selection.tracks())
                 return EventResult.HANDLED
@@ -121,21 +143,26 @@ internal fun MeloScreen.handleTrackListSelectionActions(
 
 private fun MeloScreen.localFilteredAndSortedTracks(actualState: ScreenState.Library): List<Track> {
     val allPaths = settingsViewState.currentSettings.localLibraryPaths
-    val tabFiltered = actualState.localTracks.filter { track ->
-        if (actualState.localFilterIndex == 0) true else {
-            val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
-            if (selectedPath != null) {
-                val clean = selectedPath.trimEnd('/')
-                track.id.startsWith("local:$clean/") || track.id == "local:$clean"
-            } else false
+    val tabFiltered =
+        actualState.localTracks.filter { track ->
+            if (actualState.localFilterIndex == 0) {
+                true
+            } else {
+                val selectedPath = allPaths.getOrNull(actualState.localFilterIndex - 1)
+                if (selectedPath != null) {
+                    val clean = selectedPath.trimEnd('/')
+                    track.id.startsWith("local:$clean/") || track.id == "local:$clean"
+                } else {
+                    false
+                }
+            }
         }
-    }
 
     return filterAndSortTracks(
         tracks = tabFiltered,
         sortOrder = actualState.localSortOrder,
         sortDirection = actualState.localSortDirection,
-        query = actualState.localSearchQuery
+        query = actualState.localSearchQuery,
     )
 }
 
@@ -151,7 +178,7 @@ private fun MeloScreen.handleLocalTypingKey(event: KeyEvent): EventResult {
                 it.copy(
                     isTyping = false,
                     localSearchQuery = "",
-                    searchQuery = ""
+                    searchQuery = "",
                 )
             }
             return EventResult.HANDLED
@@ -180,7 +207,7 @@ private fun MeloScreen.handleLocalTypingKey(event: KeyEvent): EventResult {
 private fun MeloScreen.handleLocalNavigationKey(
     actualState: ScreenState.Library,
     filtered: List<Track>,
-    event: KeyEvent
+    event: KeyEvent,
 ): EventResult {
     when {
         event.code() == KeyCode.TAB -> {
@@ -200,7 +227,7 @@ private fun MeloScreen.handleLocalNavigationKey(
             updateScreen<ScreenState.Library> {
                 it.copy(
                     localSortDirection = it.localSortDirection.toggle(),
-                    selectedIndex = 0
+                    selectedIndex = 0,
                 )
             }
             localLibraryList.selected(0)
@@ -211,7 +238,7 @@ private fun MeloScreen.handleLocalNavigationKey(
             updateScreen<ScreenState.Library> {
                 it.copy(
                     localSortOrder = it.localSortOrder.next(),
-                    selectedIndex = 0
+                    selectedIndex = 0,
                 )
             }
             localLibraryList.selected(0)
@@ -228,7 +255,7 @@ private fun MeloScreen.handleLocalNavigationKey(
                 updateScreen<ScreenState.Library> {
                     it.copy(
                         localSearchQuery = "",
-                        searchQuery = ""
+                        searchQuery = "",
                     )
                 }
                 return EventResult.HANDLED
@@ -267,11 +294,12 @@ internal fun MeloScreen.handleLocalLibraryKey(event: KeyEvent): EventResult {
     val navResult = handleLocalNavigationKey(actualState, filtered, event)
     if (navResult == EventResult.HANDLED) return navResult
 
-    val actionResult = handleTrackListSelectionActions(
-        event = event,
-        tracks = filtered,
-        selectedIndex = localLibraryList.selected(),
-        onFavorite = { toggleFavorite(it) }
-    )
+    val actionResult =
+        handleTrackListSelectionActions(
+            event = event,
+            tracks = filtered,
+            selectedIndex = localLibraryList.selected(),
+            onFavorite = { toggleFavorite(it) },
+        )
     return if (actionResult == EventResult.HANDLED) actionResult else handleGlobalShortcuts(event)
 }

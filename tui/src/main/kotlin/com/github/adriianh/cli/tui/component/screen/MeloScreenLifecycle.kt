@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 
 internal fun MeloScreen.onStartLifecycle() {
+    appRunner()?.focusManager()?.setFocus("home-panel")
     mediaSession.init()
     observePlaybackManager()
     if (settingsViewState.currentSettings.discordRpcEnabled) {
@@ -66,16 +67,19 @@ internal fun MeloScreen.onStartLifecycle() {
         getOfflineTracks().collect { downloads ->
             appRunner()?.runOnRenderThread {
                 updateScreen<ScreenState.Offline> { it.copy(downloads = downloads) }
-                state = state.copy(
-                    collections = state.collections.copy(offlineTracks = downloads)
-                )
+                state =
+                    state.copy(
+                        collections = state.collections.copy(offlineTracks = downloads),
+                    )
 
                 val currentIds = downloads.map { it.track.id }.toSet()
-                val freshlyCompleted = downloads.filter { offline ->
-                    val previous = lastDownloadStatusById[offline.track.id]
-                    offline.downloadStatus == DownloadStatus.COMPLETED &&
-                            previous != null && previous != DownloadStatus.COMPLETED
-                }
+                val freshlyCompleted =
+                    downloads.filter { offline ->
+                        val previous = lastDownloadStatusById[offline.track.id]
+                        offline.downloadStatus == DownloadStatus.COMPLETED &&
+                            previous != null &&
+                            previous != DownloadStatus.COMPLETED
+                    }
                 lastDownloadStatusById.keys.retainAll(currentIds)
                 downloads.forEach { lastDownloadStatusById[it.track.id] = it.downloadStatus }
                 freshlyCompleted.forEach { offline ->
@@ -102,12 +106,14 @@ internal fun MeloScreen.onStartLifecycle() {
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
-                state = state.copy(
-                    isOfflineMode = settings.offlineMode || !isOnline,
-                    languagePicker = state.languagePicker.copy(
-                        currentLanguage = settings.searchLanguage.ifBlank { "es" }
+                state =
+                    state.copy(
+                        isOfflineMode = settings.offlineMode || !isOnline,
+                        languagePicker =
+                            state.languagePicker.copy(
+                                currentLanguage = settings.searchLanguage.ifBlank { "es" },
+                            ),
                     )
-                )
             }
             if (cookiesChanged || isInitialWithCookies) {
                 checkYouTubeAuth()
@@ -115,45 +121,51 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }
-    marqueeJob = appRunner()?.scheduleRepeating({
-        appRunner()?.runOnRenderThread {
-            marqueeTick++
-            if (marqueeTick > 10) {
-                val track = state.detail.selectedTrack ?: return@runOnRenderThread
+    marqueeJob =
+        appRunner()?.scheduleRepeating({
+            appRunner()?.runOnRenderThread {
+                marqueeTick++
+                if (marqueeTick > 10) {
+                    val track = state.detail.selectedTrack ?: return@runOnRenderThread
 
-                if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
+                    if (track.title.length <= 30 && track.artist.length <= 30) return@runOnRenderThread
 
-                val newOffset = state.player.marqueeOffset + 1
-                val separator = "   •   "
-                val full = track.title + separator
-                if (newOffset % full.length == 0) marqueeTick = 0
+                    val newOffset = state.player.marqueeOffset + 1
+                    val separator = "   •   "
+                    val full = track.title + separator
+                    if (newOffset % full.length == 0) marqueeTick = 0
 
-                state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
+                    state = state.copy(player = state.player.copy(marqueeOffset = newOffset))
+                }
             }
-        }
-    }, Duration.ofMillis(150))
+        }, Duration.ofMillis(150))
 
-    toastJob = appRunner()?.scheduleRepeating({
-        appRunner()?.runOnRenderThread {
-            if (state.toasts.isNotEmpty()) {
-                state = state.copy(
-                    toasts = pruneExpiredToasts(state.toasts, System.currentTimeMillis())
-                )
+    toastJob =
+        appRunner()?.scheduleRepeating({
+            appRunner()?.runOnRenderThread {
+                if (state.toasts.isNotEmpty()) {
+                    state =
+                        state.copy(
+                            toasts = pruneExpiredToasts(state.toasts, System.currentTimeMillis()),
+                        )
+                }
             }
-        }
-    }, Duration.ofMillis(TOAST_TICK_MS))
+        }, Duration.ofMillis(TOAST_TICK_MS))
 
-    equalizerJob = appRunner()?.scheduleRepeating({
-        appRunner()?.runOnRenderThread {
-            if (state.player.isPlaying) {
-                state = state.copy(
-                    player = state.player.copy(
-                        equalizerTick = state.player.equalizerTick + 1
-                    )
-                )
+    equalizerJob =
+        appRunner()?.scheduleRepeating({
+            appRunner()?.runOnRenderThread {
+                if (state.player.isPlaying) {
+                    state =
+                        state.copy(
+                            player =
+                                state.player.copy(
+                                    equalizerTick = state.player.equalizerTick + 1,
+                                ),
+                        )
+                }
             }
-        }
-    }, Duration.ofMillis(EQUALIZER_TICK_MS))
+        }, Duration.ofMillis(EQUALIZER_TICK_MS))
 }
 
 internal fun MeloScreen.onStopLifecycle() {

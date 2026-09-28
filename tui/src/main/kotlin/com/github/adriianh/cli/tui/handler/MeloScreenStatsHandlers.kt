@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.StatsTimeUnit
 import com.github.adriianh.core.domain.model.StatsPeriod
 import dev.tamboui.toolkit.event.EventResult
+import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
@@ -18,7 +19,7 @@ internal fun MeloScreen.loadStats(period: StatsPeriod? = null) {
             updateScreen<ScreenState.Stats> {
                 it.copy(
                     statsLoading = true,
-                    statsPeriod = currentPeriod
+                    statsPeriod = currentPeriod,
                 )
             }
         }
@@ -46,6 +47,14 @@ internal fun MeloScreen.loadStats(period: StatsPeriod? = null) {
 
 internal fun MeloScreen.handleStatsKey(event: KeyEvent): EventResult {
     val s = state.screen as? ScreenState.Stats ?: return handleGlobalShortcuts(event)
+    val isFocused = appRunner()?.focusManager()?.focusedId() == "stats-panel"
+    if (!isFocused) return EventResult.UNHANDLED
+
+    if (event.matches(Actions.MOVE_LEFT)) {
+        appRunner()?.focusManager()?.setFocus("sidebar-panel")
+        return EventResult.HANDLED
+    }
+
     val periods = StatsPeriod.entries
     val units = StatsTimeUnit.entries
     val current = s.statsPeriod

@@ -4,40 +4,30 @@
 
 ### Unfocused panels respond to key events
 
-**Status:** Open  
+**Status:** Resolved (in v2.2.2 / PR #79)  
 **Affects:** All screens (Home, Search, Library, Sidebar)
 
 #### Description
 
-Pressing `↑`/`↓`/`Enter` while a panel is **not** the active focused element can
-still trigger actions in other panels (e.g. navigating the sidebar list while the
-search bar has focus, or scrolling the results list while the sidebar is selected).
+Pressing `↑`/`↓`/`Enter` while a panel was **not** the active focused element could
+trigger actions in other panels (e.g. navigating the sidebar list while the
+search bar had focus, or scrolling the results list while the sidebar was selected).
 
 #### Root cause
 
-tamboui's `EventRouter` broadcasts any key event that is **not consumed** by the
-focused element to **all registered elements** as a "global hotkey" pass. Each
-panel's `onKeyEvent` lambda is invoked with `isFocused = false`, but the lambda
-itself has no reliable way to distinguish a genuine global hotkey from a navigation
-key that should be scoped to the focused panel only.
+TamboUI's `EventRouter` broadcasts any key event that is **not consumed** by the
+focused element to **all registered elements** as a fallback "global hotkey" pass.
+`StyledElement` invokes each panel's `onKeyEvent` lambda regardless of whether the
+element is focused. Without explicit focus guards, panels responded to unconsumed
+navigation keys as if they were focused. Additionally, `focusedId` was `null` on startup
+and could become `null` across certain transitions.
 
-Guards based on `runner()?.focusManager()?.focusedId()` partially mitigate the
-issue but do not fully prevent it in all focus transition states (e.g. during the
-first render frame after switching sections, or when `focusedId` is `null`).
+#### Fix applied
 
-#### Workaround
-
-Use **Tab** to explicitly move focus to the desired panel before using arrow keys
-or Enter. The focused panel is indicated by a colored border (`PRIMARY_COLOR`).
-
-#### Potential fix
-
-Waiting on upstream tamboui support for a scoped `onKeyEvent` that receives an
-`isFocused: Boolean` parameter (already present in the internal `handleKeyEvent`
-API but not exposed to the toolkit lambda API).  
-Alternatively, a custom `FocusAwarePanel` wrapper that intercepts the `EventRouter`
-dispatch and short-circuits navigation keys when not focused could be implemented
-once the tamboui API is better understood.
+1. **Strict focus guards on all panel handlers:** Every panel key handler (`sidebar`, `home`, `results`, `library`, `now-playing`, `stats`, `offline`, `detail`) strictly checks that its element ID matches `appRunner()?.focusManager()?.focusedId()` before handling scoped keys, returning `EventResult.UNHANDLED` otherwise.
+2. **Self-healing focus management:** Guaranteed initial focus on startup (`home-panel`) and automatic focus recovery in `renderRoot()`, ensuring that `focusedId` is never `null` during render or transition frames.
+3. **Smooth search handoff:** Pressing `↓` from `search-bar` smoothly moves focus to `results-panel`, while pressing `↑` at index 0 or `/` from `results-panel` returns focus to `search-bar`. Arrow keys in `search-bar` are consumed to prevent leakage.
+4. **Bidirectional navigation:** Left arrow (`MOVE_LEFT`) seamlessly returns focus from main panels to `sidebar-panel` when on the leftmost list edge.
 
 ---
 

@@ -47,59 +47,102 @@ import dev.tamboui.toolkit.Toolkit.stack
 import dev.tamboui.toolkit.element.Element
 
 internal fun MeloScreen.renderRoot(): Element {
-    val playerBar = buildPlayerBar(
-        state, ::formatDuration, ::handlePlayerBarKey,
-        ::togglePlayPause, ::adjustVolume, ::seekForward, ::seekBackward,
-        ::toggleShuffle, ::cycleRepeat, ::toggleQueue, ::toggleDetailPanel,
-    )
-
-    val bottomContent = if (state.commandBar.isVisible) {
-        dock()
-            .top(playerBar, Constraint.length(4))
-            .bottom(
-                buildCommandBar(state) {
-                    handleCommandBarKey(it)
-                }, Constraint.length(1)
-            )
-    } else {
-        playerBar
+    val focusManager = appRunner()?.focusManager()
+    if (focusManager != null && focusManager.focusedId() == null) {
+        val defaultFocus =
+            when {
+                state.commandBar.isVisible -> "command-bar"
+                state.player.isQueueVisible -> "queue-panel"
+                state.isSettingsVisible -> "settings-panel"
+                state.trackOptions.isVisible -> "track-options-panel"
+                state.languagePicker.isVisible -> "language-picker-panel"
+                else ->
+                    when (state.navigation.activeSection) {
+                        SidebarSection.HOME -> "home-panel"
+                        SidebarSection.SEARCH -> "search-bar"
+                        SidebarSection.LIBRARY -> "library-panel"
+                        SidebarSection.NOW_PLAYING -> "now-playing-panel"
+                        SidebarSection.STATS -> "stats-panel"
+                        SidebarSection.OFFLINE -> "offline-panel"
+                        SidebarSection.SETTINGS -> "settings-panel"
+                    }
+            }
+        focusManager.setFocus(defaultFocus)
     }
+
+    val playerBar =
+        buildPlayerBar(
+            state,
+            ::formatDuration,
+            ::handlePlayerBarKey,
+            ::togglePlayPause,
+            ::adjustVolume,
+            ::seekForward,
+            ::seekBackward,
+            ::toggleShuffle,
+            ::cycleRepeat,
+            ::toggleQueue,
+            ::toggleDetailPanel,
+        )
+
+    val bottomContent =
+        if (state.commandBar.isVisible) {
+            dock()
+                .top(playerBar, Constraint.length(4))
+                .bottom(
+                    buildCommandBar(state) {
+                        handleCommandBarKey(it)
+                    },
+                    Constraint.length(1),
+                )
+        } else {
+            playerBar
+        }
 
     val isSearch =
         state.navigation.activeSection == SidebarSection.SEARCH && state.screen is ScreenState.Search
 
-    val terminalSize = try {
-        appRunner()?.tuiRunner()?.terminal()?.size()
-    } catch (_: Exception) {
-        null
-    }
+    val terminalSize =
+        try {
+            appRunner()?.tuiRunner()?.terminal()?.size()
+        } catch (_: Exception) {
+            null
+        }
     val terminalWidth = terminalSize?.width() ?: 120
     val terminalHeight = terminalSize?.height() ?: 30
 
     val minDetailWidth = if (state.screen is ScreenState.Home) 135 else 100
-    val canShowDetail = state.detail.isVisible &&
+    val canShowDetail =
+        state.detail.isVisible &&
             terminalWidth >= minDetailWidth &&
             state.screen !is ScreenState.NowPlaying &&
             state.screen !is ScreenState.EntityDetail
 
-    val detailElement: Element? = if (canShowDetail) {
-        if (state.screen is ScreenState.Search) {
-            val actualSearch = state.screen as ScreenState.Search
-            val isPlayable = actualSearch.tab == SearchTab.SONGS
-            if (isPlayable && state.detail.selectedTrack != null) {
-                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
-            } else if (!isPlayable && state.detail.selectedEntity != null) {
-                buildEntityDetailPanel(state, entityDescriptionArea, ::handleEntityDetailKey)
-            } else if (state.player.nowPlaying != null) {
-                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
-            } else null
+    val detailElement: Element? =
+        if (canShowDetail) {
+            if (state.screen is ScreenState.Search) {
+                val actualSearch = state.screen as ScreenState.Search
+                val isPlayable = actualSearch.tab == SearchTab.SONGS
+                if (isPlayable && state.detail.selectedTrack != null) {
+                    buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+                } else if (!isPlayable && state.detail.selectedEntity != null) {
+                    buildEntityDetailPanel(state, entityDescriptionArea, ::handleEntityDetailKey)
+                } else if (state.player.nowPlaying != null) {
+                    buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+                } else {
+                    null
+                }
+            } else {
+                val track = state.detail.selectedTrack ?: state.player.nowPlaying
+                if (track != null) {
+                    buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
+                } else {
+                    null
+                }
+            }
         } else {
-            val track = state.detail.selectedTrack ?: state.player.nowPlaying
-            if (track != null) {
-                buildDetailPanel(state, lyricsArea, similarArea, ::handleDetailKey, terminalHeight)
-            } else null
+            null
         }
-    } else null
 
     val layoutDock = dock()
     if (isSearch) {
@@ -108,86 +151,110 @@ internal fun MeloScreen.renderRoot(): Element {
                 searchInputState,
                 state.screen as? ScreenState.Search,
                 ::performSearch,
-                ::handleSearchBarKey
+                ::handleSearchBarKey,
             ),
-            Constraint.length(3)
+            Constraint.length(3),
         )
     }
 
-    val dockWithBottom = layoutDock
-        .bottom(
-            bottomContent,
-            Constraint.length(if (state.commandBar.isVisible) 5 else 4),
-        )
-        .left(
-            buildSidebar(
-                sidebarNavList,
-                sidebarUtilList,
-                state.navigation.sidebarInUtil,
-                ::handleSidebarKey
-            ),
-            Constraint.length(22)
-        )
+    val dockWithBottom =
+        layoutDock
+            .bottom(
+                bottomContent,
+                Constraint.length(if (state.commandBar.isVisible) 5 else 4),
+            ).left(
+                buildSidebar(
+                    sidebarNavList,
+                    sidebarUtilList,
+                    state.navigation.sidebarInUtil,
+                    ::handleSidebarKey,
+                ),
+                Constraint.length(22),
+            )
 
-    val dockWithRight = if (detailElement != null) {
-        val detailConstraint =
-            if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
-        dockWithBottom.right(detailElement, detailConstraint)
-    } else {
-        dockWithBottom
-    }
+    val dockWithRight =
+        if (detailElement != null) {
+            val detailConstraint =
+                if (terminalWidth < 120) Constraint.percentage(30) else Constraint.percentage(33)
+            dockWithBottom.right(detailElement, detailConstraint)
+        } else {
+            dockWithBottom
+        }
 
     val mainLayout = dockWithRight.center(renderMainContentInternal(terminalWidth, terminalHeight))
 
     val withQueue = if (state.player.isQueueVisible) stack(mainLayout, queueOverlay) else mainLayout
     val withSettings = if (state.isSettingsVisible) stack(withQueue, settingsOverlay) else withQueue
-    val withDirectoryPicker = if (settingsViewState.isPickingDirectory)
-        stack(withSettings, directoryPickerOverlay) else withSettings
+    val withDirectoryPicker =
+        if (settingsViewState.isPickingDirectory) {
+            stack(withSettings, directoryPickerOverlay)
+        } else {
+            withSettings
+        }
     val withTrackOptions =
-        if (state.trackOptions.isVisible) stack(
-            withDirectoryPicker,
-            trackOptionsOverlay
-        ) else withDirectoryPicker
+        if (state.trackOptions.isVisible) {
+            stack(
+                withDirectoryPicker,
+                trackOptionsOverlay,
+            )
+        } else {
+            withDirectoryPicker
+        }
 
     val withSearchSuggestions =
-        if (state.screen is ScreenState.Search && (state.screen as ScreenState.Search).isShowingSuggestions && (state.screen as ScreenState.Search).searchSuggestions.isNotEmpty())
+        if (state.screen is ScreenState.Search &&
+            (state.screen as ScreenState.Search).isShowingSuggestions &&
+            (state.screen as ScreenState.Search).searchSuggestions.isNotEmpty()
+        ) {
             stack(withTrackOptions, searchSuggestionsOverlay)
-        else withTrackOptions
+        } else {
+            withTrackOptions
+        }
 
     val withCommandBarSuggestions =
-        if (state.commandBar.isVisible && state.commandBar.suggestions.isNotEmpty())
+        if (state.commandBar.isVisible && state.commandBar.suggestions.isNotEmpty()) {
             stack(withSearchSuggestions, commandBarSuggestionsOverlay)
-        else withSearchSuggestions
+        } else {
+            withSearchSuggestions
+        }
 
-    val withPlaylist = when (state.playlistInteraction.playlistInputMode) {
-        PlaylistInputMode.CREATE,
-        PlaylistInputMode.RENAME -> stack(withCommandBarSuggestions, playlistInputOverlay)
+    val withPlaylist =
+        when (state.playlistInteraction.playlistInputMode) {
+            PlaylistInputMode.CREATE,
+            PlaylistInputMode.RENAME,
+            -> stack(withCommandBarSuggestions, playlistInputOverlay)
 
-        PlaylistInputMode.PICKER -> stack(withCommandBarSuggestions, playlistPickerOverlay)
-        PlaylistInputMode.NONE -> withCommandBarSuggestions
-    }
+            PlaylistInputMode.PICKER -> stack(withCommandBarSuggestions, playlistPickerOverlay)
+            PlaylistInputMode.NONE -> withCommandBarSuggestions
+        }
 
-    val layered = if (state.languagePicker.isVisible) stack(
-        withPlaylist,
-        languagePickerOverlay
-    ) else withPlaylist
+    val layered =
+        if (state.languagePicker.isVisible) {
+            stack(
+                withPlaylist,
+                languagePickerOverlay,
+            )
+        } else {
+            withPlaylist
+        }
 
     return stack(layered, toastOverlay)
 }
 
 internal fun MeloScreen.renderMainContentInternal(
     terminalWidth: Int = 120,
-    terminalHeight: Int = 30
-): Element {
-    return when (state.screen) {
-        is ScreenState.Home -> renderHomeScreen(
-            state,
-            homeFeedSectionList,
-            homeFeedItemList,
-            homeRecentList,
-            homeFavoritesList,
-            onKeyEvent = ::handleHomeKey,
-        )
+    terminalHeight: Int = 30,
+): Element =
+    when (state.screen) {
+        is ScreenState.Home ->
+            renderHomeScreen(
+                state,
+                homeFeedSectionList,
+                homeFeedItemList,
+                homeRecentList,
+                homeFavoritesList,
+                onKeyEvent = ::handleHomeKey,
+            )
 
         is ScreenState.Search -> {
             renderSearchScreen(
@@ -198,33 +265,35 @@ internal fun MeloScreen.renderMainContentInternal(
             )
         }
 
-        is ScreenState.Library -> renderLibraryScreen(
-            state,
-            settingsViewState,
-            favoritesList,
-            playlistsList,
-            playlistTracksList,
-            localLibraryList,
-            ::handleLibraryKey,
-            terminalWidth,
-        )
+        is ScreenState.Library ->
+            renderLibraryScreen(
+                state,
+                settingsViewState,
+                favoritesList,
+                playlistsList,
+                playlistTracksList,
+                localLibraryList,
+                ::handleLibraryKey,
+                terminalWidth,
+            )
 
-        is ScreenState.NowPlaying -> renderNowPlayingScreen(
-            state,
-            ::marqueeText,
-            ::handleNowPlayingKey,
-            terminalHeight,
-        )
+        is ScreenState.NowPlaying ->
+            renderNowPlayingScreen(
+                state,
+                ::marqueeText,
+                ::handleNowPlayingKey,
+                terminalHeight,
+            )
 
         is ScreenState.Stats -> renderStatsScreen(state, ::handleStatsKey)
         is ScreenState.Offline -> renderOfflineScreen(state, offlineList, ::handleOfflineKey)
-        is ScreenState.EntityDetail -> renderEntityDetailScreen(
-            state,
-            entityTracksList,
-            artistDashboardList,
-            entityDescriptionArea,
-            ::marqueeText,
-            ::handleEntityDetailKey,
-        )
+        is ScreenState.EntityDetail ->
+            renderEntityDetailScreen(
+                state,
+                entityTracksList,
+                artistDashboardList,
+                entityDescriptionArea,
+                ::marqueeText,
+                ::handleEntityDetailKey,
+            )
     }
-}

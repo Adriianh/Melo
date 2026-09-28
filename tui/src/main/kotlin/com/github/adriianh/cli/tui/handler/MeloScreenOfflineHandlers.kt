@@ -19,14 +19,22 @@ import dev.tamboui.tui.event.KeyEvent
  */
 internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
     val actualState = state.screen as? ScreenState.Offline ?: return handleGlobalShortcuts(event)
+    val isFocused = appRunner()?.focusManager()?.focusedId() == "offline-panel"
+    if (!isFocused) return EventResult.UNHANDLED
 
-    val filteredDownloads = filterAndSortOfflineTracks(
-        downloads = actualState.downloads,
-        filterType = actualState.filterType,
-        sortOrder = actualState.sortOrder,
-        sortDirection = actualState.sortDirection,
-        query = actualState.searchQuery
-    )
+    if (!actualState.isTyping && event.matches(Actions.MOVE_LEFT)) {
+        appRunner()?.focusManager()?.setFocus("sidebar-panel")
+        return EventResult.HANDLED
+    }
+
+    val filteredDownloads =
+        filterAndSortOfflineTracks(
+            downloads = actualState.downloads,
+            filterType = actualState.filterType,
+            sortOrder = actualState.sortOrder,
+            sortDirection = actualState.sortDirection,
+            query = actualState.searchQuery,
+        )
 
     if (actualState.isTyping) {
         when {
@@ -61,15 +69,16 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
         }
 
         event.code() == KeyCode.TAB || event.isCharIgnoreCase('s') -> {
-            val nextFilter = when (actualState.filterType) {
-                OfflineFilterType.ALL -> OfflineFilterType.MANUAL
-                OfflineFilterType.MANUAL -> OfflineFilterType.CACHE
-                OfflineFilterType.CACHE -> OfflineFilterType.ALL
-            }
+            val nextFilter =
+                when (actualState.filterType) {
+                    OfflineFilterType.ALL -> OfflineFilterType.MANUAL
+                    OfflineFilterType.MANUAL -> OfflineFilterType.CACHE
+                    OfflineFilterType.CACHE -> OfflineFilterType.ALL
+                }
             updateScreen<ScreenState.Offline> {
                 it.copy(
                     filterType = nextFilter,
-                    selectedIndex = 0
+                    selectedIndex = 0,
                 )
             }
             offlineList.selected(0)
@@ -80,7 +89,7 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             updateScreen<ScreenState.Offline> {
                 it.copy(
                     sortDirection = it.sortDirection.toggle(),
-                    selectedIndex = 0
+                    selectedIndex = 0,
                 )
             }
             offlineList.selected(0)
@@ -91,7 +100,7 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             updateScreen<ScreenState.Offline> {
                 it.copy(
                     sortOrder = it.sortOrder.next(),
-                    selectedIndex = 0
+                    selectedIndex = 0,
                 )
             }
             offlineList.selected(0)
@@ -115,10 +124,12 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('v') || event.matchesAction(
-            MeloAction.TOGGLE_SELECTION,
-            settingsViewState.currentSettings
-        ) || (state.selection.isNotEmpty && event.isChar(' ')) -> {
+        event.isCharIgnoreCase('v') ||
+            event.matchesAction(
+                MeloAction.TOGGLE_SELECTION,
+                settingsViewState.currentSettings,
+            ) ||
+            (state.selection.isNotEmpty && event.isChar(' ')) -> {
             val track = filteredDownloads.getOrNull(actualState.selectedIndex)?.track
             if (track != null) {
                 state = state.copy(selection = state.selection.toggle(track))
@@ -147,10 +158,11 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('m') || event.matchesAction(
-            MeloAction.TRACK_OPTIONS,
-            settingsViewState.currentSettings
-        ) -> {
+        event.isCharIgnoreCase('m') ||
+            event.matchesAction(
+                MeloAction.TRACK_OPTIONS,
+                settingsViewState.currentSettings,
+            ) -> {
             if (state.selection.isNotEmpty) {
                 openBatchOptions(state.selection.tracks())
                 return EventResult.HANDLED
@@ -160,10 +172,11 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             return EventResult.HANDLED
         }
 
-        event.isCharIgnoreCase('d') || event.matchesAction(
-            MeloAction.DELETE,
-            settingsViewState.currentSettings
-        ) -> {
+        event.isCharIgnoreCase('d') ||
+            event.matchesAction(
+                MeloAction.DELETE,
+                settingsViewState.currentSettings,
+            ) -> {
             if (state.selection.isNotEmpty) {
                 val toDelete = state.selection.tracks()
                 toDelete.forEach { track ->
@@ -195,7 +208,8 @@ internal fun MeloScreen.handleOfflineKey(event: KeyEvent): EventResult {
             if (state.selection.isNotEmpty) {
                 openPlaylistPicker(state.selection.tracks())
             } else {
-                filteredDownloads.getOrNull(actualState.selectedIndex)
+                filteredDownloads
+                    .getOrNull(actualState.selectedIndex)
                     ?.let { openPlaylistPicker(it.track) }
             }
             return EventResult.HANDLED

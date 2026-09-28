@@ -18,16 +18,21 @@ internal fun MeloScreen.playTrack(track: Track) {
     if (!state.isPlayable(track)) return
 
     val inQueue = state.player.queue.any { it.id == track.id }
-    state = state.copy(
-        player = state.player.copy(
-            isLoadingAudio = true,
-            audioError = null,
-            isRadioMode = if (inQueue) state.player.isRadioMode else true,
+    state =
+        state.copy(
+            player =
+                state.player.copy(
+                    isLoadingAudio = true,
+                    audioError = null,
+                    isRadioMode = if (inQueue) state.player.isRadioMode else true,
+                ),
         )
-    )
 
-    if (inQueue) playbackManager.playTrackInQueue(track)
-    else playbackManager.playTrack(track)
+    if (inQueue) {
+        playbackManager.playTrackInQueue(track)
+    } else {
+        playbackManager.playTrack(track)
+    }
 }
 
 internal fun MeloScreen.togglePlayPause() {
@@ -66,7 +71,10 @@ internal fun MeloScreen.seekForward() {
     playbackManager.playNext()
 }
 
-internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
+internal fun MeloScreen.playList(
+    tracks: List<Track>,
+    startIndex: Int,
+) {
     if (tracks.isEmpty() || startIndex !in tracks.indices) return
     val targetTrack = tracks[startIndex]
     if (!state.isPlayable(targetTrack)) return
@@ -75,21 +83,26 @@ internal fun MeloScreen.playList(tracks: List<Track>, startIndex: Int) {
     val newStartIndex = playableTracks.indexOfFirst { it.id == targetTrack.id }
     if (newStartIndex < 0) return
 
-    state = state.copy(
-        player = state.player.copy(
-            isLoadingAudio = true,
-            isRadioMode = false,
-            audioError = null,
+    state =
+        state.copy(
+            player =
+                state.player.copy(
+                    isLoadingAudio = true,
+                    isRadioMode = false,
+                    audioError = null,
+                ),
         )
-    )
     playbackManager.setQueue(playableTracks, newStartIndex)
 }
 
 internal fun MeloScreen.playFromQueue(index: Int) {
-    val track = playbackManager.queueState.value.tracks.getOrNull(index) ?: return
-    state = state.copy(
-        player = state.player.copy(isLoadingAudio = true, audioError = null)
-    )
+    val track =
+        playbackManager.queueState.value.tracks
+            .getOrNull(index) ?: return
+    state =
+        state.copy(
+            player = state.player.copy(isLoadingAudio = true, audioError = null),
+        )
     playbackManager.playTrackInQueue(track)
 }
 
@@ -98,54 +111,67 @@ internal fun MeloScreen.handlePlayerBarKey(event: KeyEvent): EventResult {
     val settings = settingsViewState.currentSettings
     when {
         event.matches(Actions.MOVE_LEFT) -> {
-            seekTo(state.player.progress - 0.05); return EventResult.HANDLED
+            seekTo(state.player.progress - 0.05)
+            return EventResult.HANDLED
         }
 
         event.matches(Actions.MOVE_RIGHT) -> {
-            seekTo(state.player.progress + 0.05); return EventResult.HANDLED
+            seekTo(state.player.progress + 0.05)
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.PREVIOUS, settings) -> {
-            seekBackward(); return EventResult.HANDLED
+            seekBackward()
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.NEXT, settings) -> {
-            seekForward(); return EventResult.HANDLED
+            seekForward()
+            return EventResult.HANDLED
         }
 
         event.isChar('<') || event.isChar(',') -> {
-            seekTo(state.player.progress - 0.05); return EventResult.HANDLED
+            seekTo(state.player.progress - 0.05)
+            return EventResult.HANDLED
         }
 
         event.isChar('>') || event.isChar('.') -> {
-            seekTo(state.player.progress + 0.05); return EventResult.HANDLED
+            seekTo(state.player.progress + 0.05)
+            return EventResult.HANDLED
         }
 
         event.matchesAction(
             MeloAction.PLAY_PAUSE,
-            settings
-        ) || event.isChar(' ') -> {
-            togglePlayPause(); return EventResult.HANDLED
+            settings,
+        ) ||
+            event.isChar(' ') -> {
+            togglePlayPause()
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.TOGGLE_QUEUE, settings) -> {
-            toggleQueue(); return EventResult.HANDLED
+            toggleQueue()
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.REPEAT, settings) -> {
-            cycleRepeat(); return EventResult.HANDLED
+            cycleRepeat()
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.SHUFFLE, settings) -> {
-            toggleShuffle(); return EventResult.HANDLED
+            toggleShuffle()
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.VOLUME_UP, settings) -> {
-            adjustVolume(5); return EventResult.HANDLED
+            adjustVolume(5)
+            return EventResult.HANDLED
         }
 
         event.matchesAction(MeloAction.VOLUME_DOWN, settings) -> {
-            adjustVolume(-5); return EventResult.HANDLED
+            adjustVolume(-5)
+            return EventResult.HANDLED
         }
     }
     return EventResult.UNHANDLED
@@ -163,44 +189,60 @@ internal fun MeloScreen.seekToMs(targetMs: Long) {
 
 internal fun MeloScreen.handleNowPlayingKey(event: KeyEvent): EventResult {
     if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
+    val isFocused = appRunner()?.focusManager()?.focusedId() == "now-playing-panel"
+    if (!isFocused) return EventResult.UNHANDLED
+
+    if (event.matches(Actions.MOVE_LEFT)) {
+        appRunner()?.focusManager()?.setFocus("sidebar-panel")
+        return EventResult.HANDLED
+    }
+
     val lines = state.player.syncedLyrics
     val nowPlayingState = (state.screen as? ScreenState.NowPlaying) ?: ScreenState.NowPlaying()
 
     when {
         event.matches(Actions.MOVE_UP) || event.isChar('k') -> {
             if (lines.isNotEmpty()) {
-                val base = if (nowPlayingState.isAutoScrollLyrics) {
-                    LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
-                        .coerceAtLeast(0)
-                } else {
-                    nowPlayingState.lyricsScrollOffset
-                }
+                val base =
+                    if (nowPlayingState.isAutoScrollLyrics) {
+                        LrcParser
+                            .currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                            .coerceAtLeast(0)
+                    } else {
+                        nowPlayingState.lyricsScrollOffset
+                    }
                 val newOffset = (base - 1).coerceAtLeast(0)
-                state = state.copy(
-                    screen = nowPlayingState.copy(
-                        isAutoScrollLyrics = false,
-                        lyricsScrollOffset = newOffset
+                state =
+                    state.copy(
+                        screen =
+                            nowPlayingState.copy(
+                                isAutoScrollLyrics = false,
+                                lyricsScrollOffset = newOffset,
+                            ),
                     )
-                )
                 return EventResult.HANDLED
             }
         }
 
         event.matches(Actions.MOVE_DOWN) || event.isChar('j') -> {
             if (lines.isNotEmpty()) {
-                val base = if (nowPlayingState.isAutoScrollLyrics) {
-                    LrcParser.currentLineIndex(lines, state.player.nowPlayingPositionMs)
-                        .coerceAtLeast(0)
-                } else {
-                    nowPlayingState.lyricsScrollOffset
-                }
+                val base =
+                    if (nowPlayingState.isAutoScrollLyrics) {
+                        LrcParser
+                            .currentLineIndex(lines, state.player.nowPlayingPositionMs)
+                            .coerceAtLeast(0)
+                    } else {
+                        nowPlayingState.lyricsScrollOffset
+                    }
                 val newOffset = (base + 1).coerceAtMost(lines.lastIndex)
-                state = state.copy(
-                    screen = nowPlayingState.copy(
-                        isAutoScrollLyrics = false,
-                        lyricsScrollOffset = newOffset
+                state =
+                    state.copy(
+                        screen =
+                            nowPlayingState.copy(
+                                isAutoScrollLyrics = false,
+                                lyricsScrollOffset = newOffset,
+                            ),
                     )
-                )
                 return EventResult.HANDLED
             }
         }
@@ -210,24 +252,28 @@ internal fun MeloScreen.handleNowPlayingKey(event: KeyEvent): EventResult {
                 val line = lines.getOrNull(nowPlayingState.lyricsScrollOffset)
                 if (line != null) {
                     seekToMs(line.timeMs)
-                    state = state.copy(
-                        screen = nowPlayingState.copy(
-                            isAutoScrollLyrics = true,
-                            lyricsScrollOffset = 0
+                    state =
+                        state.copy(
+                            screen =
+                                nowPlayingState.copy(
+                                    isAutoScrollLyrics = true,
+                                    lyricsScrollOffset = 0,
+                                ),
                         )
-                    )
                     return EventResult.HANDLED
                 }
             }
         }
 
         event.isCharIgnoreCase('a') -> {
-            state = state.copy(
-                screen = nowPlayingState.copy(
-                    isAutoScrollLyrics = true,
-                    lyricsScrollOffset = 0
+            state =
+                state.copy(
+                    screen =
+                        nowPlayingState.copy(
+                            isAutoScrollLyrics = true,
+                            lyricsScrollOffset = 0,
+                        ),
                 )
-            )
             return EventResult.HANDLED
         }
 
