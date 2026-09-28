@@ -37,6 +37,16 @@ class HomeFeedCacheImpl(
         }
     }
 
+    override suspend fun clear() {
+        memoryCache = null
+        withContext(dispatcher) {
+            try {
+                PlatformFileSystem.deleteFile(cacheFilePath)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun loadSync(): HomeFeed? {
         if (!PlatformFileSystem.fileExists(cacheFilePath)) return null
         return try {

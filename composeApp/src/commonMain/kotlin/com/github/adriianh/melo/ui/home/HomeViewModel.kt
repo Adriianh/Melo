@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -42,6 +43,7 @@ import kotlin.time.Duration.Companion.milliseconds
 data class HomeUiState(
     val isLoading: Boolean = true,
     val isLoadingMore: Boolean = false,
+    val isRefreshing: Boolean = false,
     val chips: List<HomeFeedChip> = emptyList(),
     val selectedChip: HomeFeedChip? = null,
     val sections: List<HomeSection> = emptyList(),
@@ -109,6 +111,21 @@ class HomeViewModel(
                     delayMs = if (cachedAsync != null && cachedAsync.sections.isNotEmpty()) 1800L else 0L,
                 )
             }
+        }
+
+        viewModelScope.launch(ioDispatcher) {
+            val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
+                ?.takeIf { it.isNotBlank() }
+
+            getSettingsUseCase()
+                .map { it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } }
+                .dropWhile { it == initialCookies }
+                .distinctUntilChanged()
+                .collectLatest { _ ->
+                    homeFeedCache.clear()
+                    loadFeedJob?.cancel()
+                    loadFeed(silent = false, delayMs = 0L)
+                }
         }
 
         viewModelScope.launch {
@@ -274,97 +291,120 @@ class HomeViewModel(
         loadFeedJob?.cancel()
         loadFeedJob =
             viewModelScope.launch(ioDispatcher) {
-                if (delayMs > 0L) {
-                    delay(delayMs.milliseconds)
-                }
-                if (!silent) {
-                    _uiState.update { it.copy(isLoading = true, error = null, selectedChip = null) }
-                } else {
-                    _uiState.update { it.copy(error = null, selectedChip = null) }
-                }
-                val settings = getSettingsUseCase.getSnapshot()
-                val isOffline = settings.offlineMode || (networkMonitor?.isOnline?.value == false)
-                if (isOffline) {
-                    loadOfflineFeed()
-                    return@launch
-                }
-
                 try {
-                    val homeFeed = getHomeUseCase()
-                    val needsMore = homeFeed.sections.isEmpty()
-                    val (exploreSections, chartsSections, trending) =
-                        if (needsMore) {
-                            coroutineScope {
-                                val exp =
-                                    async { runCatching { getExploreUseCase() }.getOrDefault(emptyList()) }
-                                val chr =
-                                    async { runCatching { getChartsUseCase() }.getOrDefault(emptyList()) }
-                                val trn =
-                                    async { runCatching { getTrendingUseCase() }.getOrDefault(emptyList()) }
-                                Triple(exp.await(), chr.await(), trn.await())
-                            }
-                        } else {
-                            Triple(emptyList(), emptyList(), emptyList())
-                        }
-
-                    val combinedSections =
-                        homeFeed.sections.ifEmpty {
-                            buildList {
-                                addAll(exploreSections)
-                                addAll(chartsSections)
-                                if (trending.isNotEmpty()) {
-                                    add(
-                                        HomeSection(
-                                            title = "Trending",
-                                            type = HomeSectionType.SONGS,
-                                            items = trending.map { SearchResult.Song(it) },
-                                        ),
-                                    )
-                                }
-                            }.distinctBy { it.title }
-                        }
-
-                    if (combinedSections.isEmpty()) {
-                        if (_uiState.value.sections.isEmpty()) {
-                            loadOfflineFeed()
+                    if (delayMs > 0L) {
+                        delay(delayMs.milliseconds)
+                    }
+                    if (!silent) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = true,
+                                error = null,
+                                selectedChip = null
+                            )
                         }
                     } else {
-                        if (_uiState.value.sections != combinedSections || _uiState.value.chips != homeFeed.chips) {
-                            val fullFeed =
-                                HomeFeed(
-                                    chips = homeFeed.chips,
-                                    sections = combinedSections,
-                                    continuation = homeFeed.continuation,
-                                )
-                            homeFeedCache.save(fullFeed)
+                        _uiState.update { it.copy(error = null, selectedChip = null) }
+                    }
+                    val settings = getSettingsUseCase.getSnapshot()
+                    val isOffline =
+                        settings.offlineMode || (networkMonitor?.isOnline?.value == false)
+                    if (isOffline) {
+                        loadOfflineFeed()
+                        return@launch
+                    }
 
-                            if (_uiState.value.isLoading) {
-                                emitSectionsProgressively(
-                                    sections = combinedSections,
-                                    chips = homeFeed.chips,
-                                    continuation = homeFeed.continuation,
-                                )
-                            } else {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        chips = homeFeed.chips,
-                                        sections = mergeSections(it.sections, combinedSections),
-                                        continuation = homeFeed.continuation,
-                                        isOfflineFeed = false,
-                                    )
+                    try {
+                        val homeFeed = getHomeUseCase()
+                        val needsMore = homeFeed.sections.isEmpty()
+                        val (exploreSections, chartsSections, trending) =
+                            if (needsMore) {
+                                coroutineScope {
+                                    val exp =
+                                        async {
+                                            runCatching { getExploreUseCase() }.getOrDefault(
+                                                emptyList()
+                                            )
+                                        }
+                                    val chr =
+                                        async {
+                                            runCatching { getChartsUseCase() }.getOrDefault(
+                                                emptyList()
+                                            )
+                                        }
+                                    val trn =
+                                        async {
+                                            runCatching { getTrendingUseCase() }.getOrDefault(
+                                                emptyList()
+                                            )
+                                        }
+                                    Triple(exp.await(), chr.await(), trn.await())
                                 }
+                            } else {
+                                Triple(emptyList(), emptyList(), emptyList())
                             }
+
+                        val combinedSections =
+                            homeFeed.sections.ifEmpty {
+                                buildList {
+                                    addAll(exploreSections)
+                                    addAll(chartsSections)
+                                    if (trending.isNotEmpty()) {
+                                        add(
+                                            HomeSection(
+                                                title = "Trending",
+                                                type = HomeSectionType.SONGS,
+                                                items = trending.map { SearchResult.Song(it) },
+                                            ),
+                                        )
+                                    }
+                                }.distinctBy { it.title }
+                            }
+
+                        if (combinedSections.isEmpty()) {
+                            if (_uiState.value.sections.isEmpty()) {
+                                loadOfflineFeed()
+                            }
+                        } else {
+                            if (_uiState.value.sections != combinedSections || _uiState.value.chips != homeFeed.chips) {
+                                val fullFeed =
+                                    HomeFeed(
+                                        chips = homeFeed.chips,
+                                        sections = combinedSections,
+                                        continuation = homeFeed.continuation,
+                                    )
+                                homeFeedCache.save(fullFeed)
+
+                                if (_uiState.value.isLoading) {
+                                    emitSectionsProgressively(
+                                        sections = combinedSections,
+                                        chips = homeFeed.chips,
+                                        continuation = homeFeed.continuation,
+                                    )
+                                } else {
+                                    _uiState.update {
+                                        it.copy(
+                                            isLoading = false,
+                                            chips = homeFeed.chips,
+                                            sections = mergeSections(it.sections, combinedSections),
+                                            continuation = homeFeed.continuation,
+                                            isOfflineFeed = false,
+                                        )
+                                    }
+                                }
+                            } else {
+                                _uiState.update { it.copy(isLoading = false) }
+                            }
+                        }
+                    } catch (_: Exception) {
+                        if (_uiState.value.sections.isEmpty()) {
+                            loadOfflineFeed()
                         } else {
                             _uiState.update { it.copy(isLoading = false) }
                         }
                     }
-                } catch (_: Exception) {
-                    if (_uiState.value.sections.isEmpty()) {
-                        loadOfflineFeed()
-                    } else {
-                        _uiState.update { it.copy(isLoading = false) }
-                    }
+                } finally {
+                    _uiState.update { it.copy(isRefreshing = false) }
                 }
             }
     }
@@ -519,6 +559,16 @@ class HomeViewModel(
             } catch (_: Exception) {
                 _uiState.update { it.copy(isLoadingMore = false) }
             }
+        }
+    }
+
+    fun refresh() {
+        if (_uiState.value.isRefreshing) return
+
+        _uiState.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch(ioDispatcher) {
+            homeFeedCache.clear()
+            loadFeed(silent = true, delayMs = 0L)
         }
     }
 }

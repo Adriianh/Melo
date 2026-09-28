@@ -16,7 +16,7 @@
     <ID>CyclomaticComplexMethod:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
     <ID>CyclomaticComplexMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
     <ID>CyclomaticComplexMethod:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
-    <ID>CyclomaticComplexMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>CyclomaticComplexMethod:HomeScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeScreen</ID>
     <ID>CyclomaticComplexMethod:HomeViewModel.kt:HomeViewModel$fun loadFeed</ID>
     <ID>CyclomaticComplexMethod:LibraryHeader.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryHeader</ID>
     <ID>CyclomaticComplexMethod:LibraryScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryScreen</ID>
@@ -82,7 +82,7 @@
     <ID>FunctionNaming:HeroDiscoverCard.kt:@Composable fun HeroDiscoverCard</ID>
     <ID>FunctionNaming:HistoryTabContent.kt:@Composable fun HistoryTabContent</ID>
     <ID>FunctionNaming:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
-    <ID>FunctionNaming:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>FunctionNaming:HomeScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeScreen</ID>
     <ID>FunctionNaming:HomeSearchResultsView.kt:@Composable fun HomeSearchResultsView</ID>
     <ID>FunctionNaming:HomeSkeletonLoading.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeSkeletonLoading</ID>
     <ID>FunctionNaming:HoverableProgressBar.kt:@Composable internal fun HoverableProgressBar</ID>
@@ -240,7 +240,7 @@
     <ID>LongMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
     <ID>LongMethod:HeroDiscoverCard.kt:@Composable fun HeroDiscoverCard</ID>
     <ID>LongMethod:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
-    <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>LongMethod:HomeScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeScreen</ID>
     <ID>LongMethod:HomeSearchResultsView.kt:@Composable fun HomeSearchResultsView</ID>
     <ID>LongMethod:HomeSkeletonLoading.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeSkeletonLoading</ID>
     <ID>LongMethod:HomeViewModel.kt:HomeViewModel$fun loadFeed</ID>
@@ -353,6 +353,7 @@
     <ID>TooGenericExceptionCaught:SearchViewModel.kt:SearchViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:UpdateViewModel.kt:UpdateViewModel$e: Exception</ID>
     <ID>TooManyFunctions:EntityDetailViewModel.kt:EntityDetailViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:HomeViewModel.kt:HomeViewModel : ViewModel</ID>
     <ID>TooManyFunctions:LibraryViewModel.kt:LibraryViewModel : ViewModel</ID>
     <ID>TooManyFunctions:PlayerViewModel.kt:PlayerViewModel : ViewModel</ID>
     <ID>TooManyFunctions:QueueViewModel.kt:QueueViewModel : ViewModel</ID>
