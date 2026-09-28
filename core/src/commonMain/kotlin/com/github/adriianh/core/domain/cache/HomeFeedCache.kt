@@ -6,4 +6,6 @@ interface HomeFeedCache {
     fun getSync(): HomeFeed?
     suspend fun get(): HomeFeed?
     suspend fun save(feed: HomeFeed)
+
+    suspend fun clear()
 }
