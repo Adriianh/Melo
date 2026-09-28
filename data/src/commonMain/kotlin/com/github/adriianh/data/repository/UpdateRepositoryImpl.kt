@@ -9,47 +9,58 @@ import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.data.remote.dto.GitHubReleaseDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.plugins.onDownload
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentLength
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class UpdateRepositoryImpl(
     private val httpClient: HttpClient,
     private val dispatcher: CoroutineDispatcher,
-    private val repoOwnerAndName: String = "Adriianh/Melo"
+    private val repoOwnerAndName: String = "Adriianh/Melo",
 ) : UpdateRepository {
-
     override suspend fun checkForUpdate(currentVersion: String): Result<AppRelease?> =
         withContext(dispatcher) {
             runCatching {
                 val url = "https://api.github.com/repos/$repoOwnerAndName/releases/latest"
-                val dto: GitHubReleaseDto = httpClient.get(url) {
-                    header(HttpHeaders.Accept, "application/vnd.github.v3+json")
-                    header(HttpHeaders.UserAgent, "Melo-Music-Player")
-                }.body()
+                val dto: GitHubReleaseDto =
+                    httpClient
+                        .get(url) {
+                            header(HttpHeaders.Accept, "application/vnd.github.v3+json")
+                            header(HttpHeaders.UserAgent, "Melo-Music-Player")
+                        }.body()
 
-                val remoteVersion = dto.tagName.trim().removePrefix("v").removePrefix("V")
+                val remoteVersion =
+                    dto.tagName
+                        .trim()
+                        .removePrefix("v")
+                        .removePrefix("V")
                 val isNewer = isNewerVersion(remoteVersion, currentVersion)
 
                 if (!isNewer) {
                     return@runCatching null
                 }
 
-                val assets = dto.assets.map { assetDto ->
-                    ReleaseAsset(
-                        name = assetDto.name,
-                        downloadUrl = assetDto.browserDownloadUrl,
-                        sizeBytes = assetDto.size,
-                        platform = detectPlatformFromFileName(assetDto.name)
-                    )
-                }
+                val assets =
+                    dto.assets.map { assetDto ->
+                        ReleaseAsset(
+                            name = assetDto.name,
+                            downloadUrl = assetDto.browserDownloadUrl,
+                            sizeBytes = assetDto.size,
+                            platform = detectPlatformFromFileName(assetDto.name),
+                        )
+                    }
 
                 AppRelease(
                     version = remoteVersion,
@@ -58,55 +69,117 @@ class UpdateRepositoryImpl(
                     releaseNotes = dto.body.orEmpty(),
                     htmlUrl = dto.htmlUrl,
                     publishedAt = dto.publishedAt.orEmpty(),
-                    assets = assets
+                    assets = assets,
                 )
             }
         }
 
     override fun downloadAsset(
         asset: ReleaseAsset,
-        destinationFilePath: String
-    ): Flow<DownloadProgress> = flow {
-        emit(DownloadProgress.Progress(0L, asset.sizeBytes))
+        destinationFilePath: String,
+    ): Flow<DownloadProgress> =
+        channelFlow {
+            send(DownloadProgress.Progress(0L, asset.sizeBytes))
 
-        val tempFilePath = "$destinationFilePath.tmp"
+            val tempFilePath = "$destinationFilePath.tmp"
+            val buffer = ByteArray(DOWNLOAD_BUFFER_SIZE)
+            var totalBytesWritten = 0L
 
-        val response = httpClient.get(asset.downloadUrl) {
-            onDownload { bytesSentTotal, contentLength ->
-                val total =
-                    if (contentLength != null && contentLength > 0L) contentLength else asset.sizeBytes
-                emit(DownloadProgress.Progress(bytesSentTotal, total))
+            try {
+                httpClient
+                    .prepareGet(asset.downloadUrl) {
+                        timeout {
+                            requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS
+                            socketTimeoutMillis = SOCKET_TIMEOUT_MS
+                            connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                        }
+                    }.execute { response ->
+                        if (response.status.value !in 200..299) {
+                            throw IllegalStateException(
+                                "Download failed with HTTP status " +
+                                    "${response.status.value}: ${response.status.description}",
+                            )
+                        }
+
+                        val contentLength = response.contentLength()
+                        val totalExpected =
+                            if (contentLength != null && contentLength > 0L) {
+                                contentLength
+                            } else {
+                                asset.sizeBytes
+                            }
+
+                        val channel: ByteReadChannel = response.bodyAsChannel()
+
+                        val written =
+                            PlatformFileSystem.writeStream(tempFilePath) { writeChunk ->
+                                while (!channel.isClosedForRead) {
+                                    val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                                    if (bytesRead <= 0) break
+                                    writeChunk(buffer, 0, bytesRead)
+                                    totalBytesWritten += bytesRead
+                                    send(DownloadProgress.Progress(totalBytesWritten, totalExpected))
+                                }
+                            }
+
+                        if (written <= 0L && totalBytesWritten == 0L) {
+                            throw IllegalStateException("Downloaded file is empty")
+                        }
+                    }
+
+                if (totalBytesWritten == 0L) {
+                    throw IllegalStateException("Downloaded file is empty")
+                }
+
+                PlatformFileSystem.deleteFile(destinationFilePath)
+                if (!PlatformFileSystem.copyFile(tempFilePath, destinationFilePath)) {
+                    throw IllegalStateException(
+                        "Failed to move downloaded file to destination: $destinationFilePath",
+                    )
+                }
+
+                send(DownloadProgress.Completed(destinationFilePath))
+            } finally {
+                PlatformFileSystem.deleteFile(tempFilePath)
+            }
+        }.flowOn(dispatcher)
+
+    companion object {
+        private const val DOWNLOAD_BUFFER_SIZE = 64 * 1024
+        private const val SOCKET_TIMEOUT_MS = 60_000L
+        private const val CONNECT_TIMEOUT_MS = 30_000L
+
+        fun detectPlatformFromFileName(fileName: String): UpdatePlatform {
+            val lower = fileName.lowercase()
+            return when {
+                isWindowsAsset(lower) -> UpdatePlatform.WINDOWS
+                isLinuxAsset(lower) -> UpdatePlatform.LINUX
+                isMacAsset(lower) -> UpdatePlatform.MACOS
+                lower.endsWith(".apk") -> UpdatePlatform.ANDROID
+                else -> UpdatePlatform.UNKNOWN
             }
         }
 
-        val bytes = response.bodyAsBytes()
-        if (bytes.isEmpty()) {
-            throw IllegalStateException("Downloaded file is empty")
-        }
+        private fun isWindowsAsset(name: String): Boolean =
+            name.endsWith(".exe") ||
+                name.endsWith(".msi") ||
+                (name.contains("windows") && name.endsWith(".zip"))
 
-        PlatformFileSystem.writeBytes(tempFilePath, bytes)
-        PlatformFileSystem.copyFile(tempFilePath, destinationFilePath)
-        PlatformFileSystem.deleteFile(tempFilePath)
+        private fun isLinuxAsset(name: String): Boolean =
+            name.endsWith(".appimage") ||
+                name.endsWith(".deb") ||
+                name.endsWith(".rpm") ||
+                (name.contains("linux") && name.endsWith(".tar.gz"))
 
-        emit(DownloadProgress.Completed(destinationFilePath))
-    }.flowOn(dispatcher)
+        private fun isMacAsset(name: String): Boolean =
+            name.endsWith(".dmg") ||
+                name.endsWith(".pkg") ||
+                (name.contains("mac") && (name.endsWith(".zip") || name.endsWith(".tar.gz")))
 
-    private fun detectPlatformFromFileName(fileName: String): UpdatePlatform {
-        val lower = fileName.lowercase()
-        return when {
-            lower.endsWith(".exe") || lower.endsWith(".msi") -> UpdatePlatform.WINDOWS
-            lower.endsWith(".deb") || (lower.contains("linux") && (lower.endsWith(".tar.gz") || lower.endsWith(
-                ".AppImage"
-            ))) -> UpdatePlatform.LINUX
-
-            lower.endsWith(".dmg") || (lower.contains("mac") && lower.endsWith(".zip")) -> UpdatePlatform.MACOS
-            lower.endsWith(".apk") -> UpdatePlatform.ANDROID
-            else -> UpdatePlatform.UNKNOWN
-        }
-    }
-
-    companion object {
-        fun isNewerVersion(remote: String, current: String): Boolean {
+        fun isNewerVersion(
+            remote: String,
+            current: String,
+        ): Boolean {
             val remoteParts = remote.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
             val currentParts =
                 current.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
