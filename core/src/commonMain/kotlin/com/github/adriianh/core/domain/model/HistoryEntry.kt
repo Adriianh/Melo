@@ -1,5 +1,8 @@
 package com.github.adriianh.core.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class HistoryEntry(
     val track: Track,
     val playedAt: Long,
