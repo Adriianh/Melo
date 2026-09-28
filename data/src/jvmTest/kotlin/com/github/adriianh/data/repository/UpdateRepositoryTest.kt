@@ -1,20 +1,28 @@
 package com.github.adriianh.data.repository
 
+import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
+import com.github.adriianh.core.domain.repository.DownloadProgress
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -158,4 +166,156 @@ class UpdateRepositoryTest {
         assertTrue(result.isSuccess)
         assertNull(result.getOrNull())
     }
+
+    @Test
+    fun `detectPlatformFromFileName correctly identifies platforms`() {
+        assertEquals(UpdatePlatform.WINDOWS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-Setup.exe"))
+        assertEquals(UpdatePlatform.WINDOWS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-2.2.1.msi"))
+        assertEquals(UpdatePlatform.WINDOWS, UpdateRepositoryImpl.detectPlatformFromFileName("melo-2.2.1-windows.zip"))
+
+        assertEquals(
+            UpdatePlatform.LINUX,
+            UpdateRepositoryImpl.detectPlatformFromFileName("Melo-2.2.1-x86_64.AppImage"),
+        )
+        assertEquals(UpdatePlatform.LINUX, UpdateRepositoryImpl.detectPlatformFromFileName("melo_2.2.1_amd64.deb"))
+        assertEquals(UpdatePlatform.LINUX, UpdateRepositoryImpl.detectPlatformFromFileName("melo-2.2.1-1.x86_64.rpm"))
+        assertEquals(UpdatePlatform.LINUX, UpdateRepositoryImpl.detectPlatformFromFileName("melo-2.2.1-linux.tar.gz"))
+
+        assertEquals(UpdatePlatform.MACOS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-2.2.1.dmg"))
+        assertEquals(UpdatePlatform.MACOS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-2.2.1.pkg"))
+        assertEquals(UpdatePlatform.MACOS, UpdateRepositoryImpl.detectPlatformFromFileName("melo-2.2.1-macos.tar.gz"))
+
+        assertEquals(UpdatePlatform.ANDROID, UpdateRepositoryImpl.detectPlatformFromFileName("app-release.apk"))
+
+        assertEquals(UpdatePlatform.UNKNOWN, UpdateRepositoryImpl.detectPlatformFromFileName("checksums.sha256"))
+        assertEquals(UpdatePlatform.UNKNOWN, UpdateRepositoryImpl.detectPlatformFromFileName("README.md"))
+    }
+
+    @Test
+    fun `downloadAsset streams chunks and emits progress and completed`() =
+        runTest {
+            val payload = ByteArray(2048) { (it % 128).toByte() }
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = ByteReadChannel(payload),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, payload.size.toString()),
+                    )
+                }
+            val client =
+                HttpClient(mockEngine) {
+                    install(HttpTimeout)
+                }
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+
+            val tempFile = File.createTempFile("melo_update_test", ".exe")
+            tempFile.delete()
+
+            try {
+                val asset =
+                    ReleaseAsset(
+                        name = "Melo-Setup.exe",
+                        downloadUrl = "https://example.com/Melo-Setup.exe",
+                        sizeBytes = payload.size.toLong(),
+                        platform = UpdatePlatform.WINDOWS,
+                    )
+
+                val events = repo.downloadAsset(asset, tempFile.absolutePath).toList()
+
+                assertTrue(events.isNotEmpty())
+                assertIs<DownloadProgress.Progress>(events.first())
+                val lastEvent = events.last()
+                assertIs<DownloadProgress.Completed>(lastEvent)
+                assertEquals(tempFile.absolutePath, lastEvent.filePath)
+
+                assertTrue(tempFile.exists())
+                assertEquals(payload.size.toLong(), tempFile.length())
+                assertEquals(payload.toList(), tempFile.readBytes().toList())
+            } finally {
+                tempFile.delete()
+                File("${tempFile.absolutePath}.tmp").delete()
+            }
+        }
+
+    @Test
+    fun `downloadAsset throws when HTTP fails and cleans up temp file`() =
+        runTest {
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = "Not Found",
+                        status = HttpStatusCode.NotFound,
+                    )
+                }
+            val client =
+                HttpClient(mockEngine) {
+                    install(HttpTimeout)
+                }
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+
+            val tempFile = File.createTempFile("melo_update_fail_test", ".exe")
+            tempFile.delete()
+
+            try {
+                val asset =
+                    ReleaseAsset(
+                        name = "Melo-Setup.exe",
+                        downloadUrl = "https://example.com/404.exe",
+                        sizeBytes = 1000L,
+                        platform = UpdatePlatform.WINDOWS,
+                    )
+
+                assertFailsWith<IllegalStateException> {
+                    repo.downloadAsset(asset, tempFile.absolutePath).toList()
+                }
+
+                assertFalse(tempFile.exists())
+                assertFalse(File("${tempFile.absolutePath}.tmp").exists())
+            } finally {
+                tempFile.delete()
+                File("${tempFile.absolutePath}.tmp").delete()
+            }
+        }
+
+    @Test
+    fun `downloadAsset throws when downloaded content is empty`() =
+        runTest {
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = ByteReadChannel(ByteArray(0)),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentLength, "0"),
+                    )
+                }
+            val client =
+                HttpClient(mockEngine) {
+                    install(HttpTimeout)
+                }
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+
+            val tempFile = File.createTempFile("melo_update_empty_test", ".exe")
+            tempFile.delete()
+
+            try {
+                val asset =
+                    ReleaseAsset(
+                        name = "Melo-Setup.exe",
+                        downloadUrl = "https://example.com/empty.exe",
+                        sizeBytes = 0L,
+                        platform = UpdatePlatform.WINDOWS,
+                    )
+
+                assertFailsWith<IllegalStateException> {
+                    repo.downloadAsset(asset, tempFile.absolutePath).toList()
+                }
+
+                assertFalse(tempFile.exists())
+                assertFalse(File("${tempFile.absolutePath}.tmp").exists())
+            } finally {
+                tempFile.delete()
+                File("${tempFile.absolutePath}.tmp").delete()
+            }
+        }
 }

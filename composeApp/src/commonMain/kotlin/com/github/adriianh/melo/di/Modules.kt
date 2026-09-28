@@ -122,6 +122,7 @@ import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.PlatformUpdateInstaller
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
@@ -142,6 +143,14 @@ import org.koin.dsl.module
 val commonModule = module {
     single<HttpClient> {
         HttpClient(CIO) {
+            engine {
+                requestTimeout = 0L
+            }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 30_000L
+                connectTimeoutMillis = 15_000L
+                socketTimeoutMillis = 30_000L
+            }
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
