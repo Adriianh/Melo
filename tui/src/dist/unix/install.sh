@@ -19,19 +19,38 @@ for arg in "$@"; do
     case "$arg" in
         --desktop) CREATE_DESKTOP=true ;;
         --no-desktop) CREATE_DESKTOP=false ;;
+        *) ;;
     esac
 done
+
+if [ -t 1 ]; then
+    GREEN='\033[38;5;84m'
+    YELLOW='\033[38;5;221m'
+    CYAN='\033[38;5;81m'
+    NC='\033[0m'
+else
+    GREEN=''
+    YELLOW=''
+    CYAN=''
+    NC=''
+fi
 
 mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Installing Melo TUI binary to $INSTALL_DIR..."
-cp "$SCRIPT_DIR/melo" "$INSTALL_DIR/melo"
+cp -f "$SCRIPT_DIR/melo" "$INSTALL_DIR/melo"
 chmod +x "$INSTALL_DIR/melo"
 
 # Copy any shared libraries (e.g., AWT .so or .dylib files) if they exist
-find "$SCRIPT_DIR" -maxdepth 1 \( -name "*.so" -o -name "*.dylib" \) -exec cp {} "$INSTALL_DIR/" \;
+find "$SCRIPT_DIR" -maxdepth 1 \( -name "*.so" -o -name "*.dylib" \) -exec cp -f {} "$INSTALL_DIR/" \; 2>/dev/null || true
+
+# Copy uninstaller script if present
+if [ -f "$SCRIPT_DIR/uninstall.sh" ]; then
+    cp -f "$SCRIPT_DIR/uninstall.sh" "$INSTALL_DIR/uninstall.sh"
+    chmod +x "$INSTALL_DIR/uninstall.sh"
+fi
 
 cat << 'EOF' > "$BIN_DIR/melo-tui"
 #!/usr/bin/env sh
@@ -149,12 +168,12 @@ SPOTIFY_CLIENT_SECRET=
 EOF
 fi
 
-echo ""
-echo "✓ Melo TUI native binary installed to $INSTALL_DIR"
-echo "✓ Dedicated launcher placed at $BIN_DIR/melo-tui (alias: melo-cli)"
-echo "✓ Unified smart launcher updated at $BIN_DIR/melo"
-echo "✓ Config directory created at $CONFIG_DIR"
-echo ""
+printf "\n"
+printf "  ${GREEN}✔${NC} Melo TUI native binary installed to %s\n" "$INSTALL_DIR"
+printf "  ${GREEN}✔${NC} Dedicated launcher placed at %s/melo-tui (alias: melo-cli)\n" "$BIN_DIR"
+printf "  ${GREEN}✔${NC} Unified smart launcher updated at %s/melo\n" "$BIN_DIR"
+printf "  ${GREEN}✔${NC} Config directory created at %s\n" "$CONFIG_DIR"
+printf "\n"
 
 # ─── Optional Linux desktop menu entry ─────────────────────────────────────
 if [ "$CREATE_DESKTOP" = "true" ]; then
@@ -165,7 +184,7 @@ if [ "$CREATE_DESKTOP" = "true" ]; then
 
         # Idempotent: only rewrite when the Exec target changed.
         if [ -f "$DESKTOP_FILE" ] && grep -Fqx "$EXEC_LINE" "$DESKTOP_FILE"; then
-            echo "✓ Desktop menu entry already up to date: $DESKTOP_FILE"
+            printf "  ${GREEN}✔${NC} Desktop menu entry already up to date: %s\n" "$DESKTOP_FILE"
         else
             mkdir -p "$DESKTOP_DIR"
             cat > "$DESKTOP_FILE" << EOF
@@ -181,14 +200,14 @@ Categories=AudioVideo;Audio;Player;Music;
 Keywords=music;player;audio;streaming;terminal;cli;
 EOF
             chmod 644 "$DESKTOP_FILE"
-            echo "✓ Desktop menu entry created: $DESKTOP_FILE"
+            printf "  ${GREEN}✔${NC} Desktop menu entry created: %s\n" "$DESKTOP_FILE"
         fi
 
         if command -v update-desktop-database >/dev/null 2>&1; then
             update-desktop-database "$DESKTOP_DIR" >/dev/null 2>&1 || true
         fi
     else
-        echo "⚠ Desktop menu entry skipped: only supported on Linux."
+        printf "  ${YELLOW}⚠${NC} Desktop menu entry skipped: only supported on Linux.\n"
     fi
 fi
 

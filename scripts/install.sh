@@ -184,55 +184,8 @@ resolve_latest_version() {
     echo "${latest_tag#v}"
 }
 
-# ─── Optional Linux desktop menu entry ─────────────────────────────────────
-# Opt-in via --desktop or MELO_CREATE_DESKTOP=1. Only meaningful on Linux
-# (macOS/Windows have no freedesktop.org .desktop entries). Idempotent: the
-# file is rewritten only when its Exec target no longer matches $BIN_DIR/melo-tui,
-# so an existing entry (customized or from a previous install) is left alone
-# unless the install location actually changed.
-create_desktop_entry() {
-    if [ "$CREATE_DESKTOP" != "true" ]; then
-        return 0
-    fi
 
-    local os
-    os="$(detect_os)"
-    if [ "$os" != "linux" ]; then
-        log_warn "Desktop menu entry skipped: only supported on Linux."
-        return 0
-    fi
 
-    local desktop_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-    local desktop_file="$desktop_dir/melo-tui.desktop"
-    local exec_line="Exec=$BIN_DIR/melo-tui"
-
-    # Idempotent update: only rewrite if the entry is missing or points elsewhere.
-    if [ -f "$desktop_file" ] && grep -Fqx "$exec_line" "$desktop_file"; then
-        log_success "Desktop menu entry already up to date: $desktop_file"
-        return 0
-    fi
-
-    mkdir -p "$desktop_dir"
-
-    cat > "$desktop_file" << EOF
-[Desktop Entry]
-Type=Application
-Name=Melo (TUI)
-GenericName=Terminal Music Player
-Comment=Modern, fast terminal music player (TUI & CLI)
-Exec=$BIN_DIR/melo-tui
-Icon=melo
-Terminal=true
-Categories=AudioVideo;Audio;Player;Music;
-Keywords=music;player;audio;streaming;terminal;cli;
-EOF
-    chmod 644 "$desktop_file"
-    log_success "Desktop menu entry created: $desktop_file"
-
-    if command -v update-desktop-database >/dev/null 2>&1; then
-        update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
-    fi
-}
 
 main() {
     print_banner
@@ -293,37 +246,23 @@ main() {
     fi
 
     log_step "Installing native binaries & libraries..."
-    mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
-
-    cp -f "$extract_root/melo" "$INSTALL_DIR/melo"
-    chmod +x "$INSTALL_DIR/melo"
-    find "$extract_root" -maxdepth 1 \( -name "*.so" -o -name "*.dylib" \) -exec cp -f {} "$INSTALL_DIR/" \; 2>/dev/null || true
-
-    # Create melo-tui launcher
-    cat << 'EOF' > "$BIN_DIR/melo-tui"
-#!/usr/bin/env sh
-INSTALL_DIR="%INSTALL_DIR%"
-if [ "$(uname)" = "Darwin" ]; then
-  export DYLD_LIBRARY_PATH="$INSTALL_DIR:$DYLD_LIBRARY_PATH"
-else
-  export LD_LIBRARY_PATH="$INSTALL_DIR:$LD_LIBRARY_PATH"
-fi
-exec "$INSTALL_DIR/melo" "$@"
-EOF
-    sed -i "s|%INSTALL_DIR%|$INSTALL_DIR|g" "$BIN_DIR/melo-tui" 2>/dev/null || sed -i '' "s|%INSTALL_DIR%|$INSTALL_DIR|g" "$BIN_DIR/melo-tui"
-    chmod +x "$BIN_DIR/melo-tui"
-    ln -sf "melo-tui" "$BIN_DIR/melo-cli"
-
-    # Create unified launcher
     if [ -f "$extract_root/install.sh" ]; then
-        MELO_INSTALL_DIR="$INSTALL_DIR" MELO_BIN_DIR="$BIN_DIR" MELO_CONFIG_DIR="$CONFIG_DIR" sh "$extract_root/install.sh" >/dev/null 2>&1 || true
+        MELO_INSTALL_DIR="$INSTALL_DIR" \
+        MELO_BIN_DIR="$BIN_DIR" \
+        MELO_CONFIG_DIR="$CONFIG_DIR" \
+        MELO_CREATE_DESKTOP="$([ "$CREATE_DESKTOP" = true ] && echo 1 || echo 0)" \
+        sh "$extract_root/install.sh" "$@"
     else
+        mkdir -p "$INSTALL_DIR" "$BIN_DIR" "$CONFIG_DIR"
+        cp -f "$extract_root/melo" "$INSTALL_DIR/melo"
+        chmod +x "$INSTALL_DIR/melo"
+        find "$extract_root" -maxdepth 1 \( -name "*.so" -o -name "*.dylib" \) -exec cp -f {} "$INSTALL_DIR/" \; 2>/dev/null || true
+        ln -sf "$INSTALL_DIR/melo" "$BIN_DIR/melo-tui"
+        ln -sf "melo-tui" "$BIN_DIR/melo-cli"
         ln -sf "melo-tui" "$BIN_DIR/melo"
     fi
 
     log_success "Melo TUI ${version_display} installed."
-
-    create_desktop_entry
 
     # Verify PATH
     local in_path=false

@@ -90,56 +90,59 @@ try {
     }
 
     Write-Host "  ● Installing binaries and wrappers..." -ForegroundColor Magenta
-    if (-not (Test-Path $InstallDir)) {
-        New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-    }
+    $installerScript = Join-Path $sourceDir "install.ps1"
+    if (Test-Path $installerScript) {
+        & $installerScript -InstallDir $InstallDir -ConfigDir "$env:APPDATA\melo"
+    } else {
+        if (-not (Test-Path $InstallDir)) {
+            New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+        }
 
-    Copy-Item -Path "$sourceDir\*" -Destination $InstallDir -Recurse -Force
+        Copy-Item -Path "$sourceDir\*" -Destination $InstallDir -Recurse -Force
 
-    if (-not (Test-Path $BinDir)) {
-        New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-    }
+        if (-not (Test-Path $BinDir)) {
+            New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
+        }
 
-    # Ensure DLLs (e.g. SMTCAdapter.dll, jnidispatch.dll) exist in $BinDir as well
-    Get-ChildItem -Path $InstallDir -Filter "*.dll" | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $BinDir -Force -ErrorAction SilentlyContinue
-    }
+        # Ensure DLLs (e.g. SMTCAdapter.dll, jnidispatch.dll) exist in $BinDir as well
+        Get-ChildItem -Path $InstallDir -Filter "*.dll" | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $BinDir -Force -ErrorAction SilentlyContinue
+        }
 
-    # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
-    # without triggering PSSecurityException / ExecutionPolicy restrictions.
-    Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
+        # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
+        # without triggering PSSecurityException / ExecutionPolicy restrictions.
+        Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
 
-    $wrapperCmd = @"
+        $wrapperCmd = @"
 @echo off
 "%~dp0..\melo.exe" %*
 "@
-    Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperCmd
 
-    Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
 
-    Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
-    Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
+        Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
 
-    $gitBashWrapper = @"
+        $gitBashWrapper = @"
 #!/usr/bin/env sh
 MELO_HOME="`$(cd "`$(dirname "`$0")/.." && pwd)"
 exec "`$MELO_HOME/melo.exe" "`$@"
 "@
-    Set-Content -Path (Join-Path $BinDir "melo") -Value $gitBashWrapper
-    Set-Content -Path (Join-Path $BinDir "melo-tui") -Value $gitBashWrapper
-    Set-Content -Path (Join-Path $BinDir "melo-cli") -Value $gitBashWrapper
+        Set-Content -Path (Join-Path $BinDir "melo") -Value $gitBashWrapper
+        Set-Content -Path (Join-Path $BinDir "melo-tui") -Value $gitBashWrapper
+        Set-Content -Path (Join-Path $BinDir "melo-cli") -Value $gitBashWrapper
 
-    # User PATH check
-    $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
-    $pathUpdated = $false
-    if ($userPath -notlike "*$BinDir*") {
-        Write-Host "  ● Adding $BinDir to User PATH..." -ForegroundColor Magenta
-        [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", [EnvironmentVariableTarget]::User)
-        $env:Path = "$env:Path;$BinDir"
-        $pathUpdated = $true
-        Write-Host "  ✔ Added to User PATH." -ForegroundColor Green
+        # User PATH check
+        $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+        if ($userPath -notlike "*$BinDir*") {
+            Write-Host "  ● Adding $BinDir to User PATH..." -ForegroundColor Magenta
+            [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", [EnvironmentVariableTarget]::User)
+            $env:Path = "$env:Path;$BinDir"
+            Write-Host "  ✔ Added to User PATH." -ForegroundColor Green
+        }
     }
 
     Write-Host ""
