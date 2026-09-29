@@ -76,60 +76,64 @@ fun LibraryScreen(
     val filters = rememberLibraryFilters(state, query, sortOrder)
 
     val activeCategory = LibraryCategory.fromTab(state.selectedTab)
-    val summaryText = remember(
-        activeCategory,
-        state.customPlaylists.size,
-        state.playlists.size,
-        state.likedSongs.size,
-        state.albums.size,
-        state.artists.size,
-        state.downloadedTracks.size,
-        state.localTracks.size,
-        state.history.size
-    ) {
-        when (activeCategory) {
-            LibraryCategory.COLLECTION -> {
-                val totalPlaylists = state.customPlaylists.size + state.playlists.size
-                "$totalPlaylists playlists • ${state.likedSongs.size} me gusta • ${state.albums.size} álbumes"
-            }
+    val summaryText =
+        remember(
+            activeCategory,
+            state.customPlaylists.size,
+            state.playlists.size,
+            state.likedSongs.size,
+            state.albums.size,
+            state.artists.size,
+            state.downloadedTracks.size,
+            state.localTracks.size,
+            state.history.size,
+        ) {
+            when (activeCategory) {
+                LibraryCategory.COLLECTION -> {
+                    val totalPlaylists = state.customPlaylists.size + state.playlists.size
+                    "$totalPlaylists playlists • ${state.likedSongs.size} me gusta • ${state.albums.size} álbumes"
+                }
 
-            LibraryCategory.DEVICE -> {
-                "${state.downloadedTracks.size} descargadas • ${state.localTracks.size} locales"
-            }
+                LibraryCategory.DEVICE -> {
+                    "${state.downloadedTracks.size} descargadas • ${state.localTracks.size} locales"
+                }
 
-            LibraryCategory.HISTORY -> {
-                "${state.history.size} canciones reproducidas"
+                LibraryCategory.HISTORY -> {
+                    "${state.history.size} canciones reproducidas"
+                }
             }
         }
-    }
 
     TrackInteractionContextMenu(
         interaction = interaction,
         libraryState = state,
         activeAccent = activeAccent,
-        onArtistClick = onArtistClick
+        onArtistClick = onArtistClick,
     )
 
     val platform = remember { getPlatform() }
     val horizontalPadding = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(
-                top = 16.dp,
-                start = horizontalPadding,
-                end = horizontalPadding,
-                bottom = paddingValues.calculateBottomPadding() + 16.dp
-            ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(
+                    top = 16.dp,
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                ),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        val showViewModeToggle = state.selectedTab in listOf(
-            LibraryTab.PLAYLISTS,
-            LibraryTab.ALBUMS,
-            LibraryTab.ARTISTS
-        )
+        val showViewModeToggle =
+            state.selectedTab in
+                listOf(
+                    LibraryTab.PLAYLISTS,
+                    LibraryTab.ALBUMS,
+                    LibraryTab.ARTISTS,
+                )
 
         LibraryHeader(
             profile = state.profile,
@@ -146,20 +150,31 @@ fun LibraryScreen(
             onSortOrderChange = viewModel::setSortOrder,
             onViewModeChange = viewModel::setViewMode,
             onOpenSettings = onOpenSettings,
-            onRefresh = viewModel::refreshAll
+            onRefresh = viewModel::refreshAll,
         )
 
         val isOfflineTab =
             state.selectedTab == LibraryTab.DOWNLOADS ||
-                    state.selectedTab == LibraryTab.LOCAL ||
-                    state.selectedTab == LibraryTab.PLAYLISTS ||
-                    state.selectedTab == LibraryTab.HISTORY
+                state.selectedTab == LibraryTab.LOCAL ||
+                state.selectedTab == LibraryTab.PLAYLISTS ||
+                state.selectedTab == LibraryTab.HISTORY
+        val hasTabContent =
+            when (state.selectedTab) {
+                LibraryTab.PLAYLISTS -> state.playlists.isNotEmpty() || state.customPlaylists.isNotEmpty()
+                LibraryTab.LIKED -> state.likedSongs.isNotEmpty()
+                LibraryTab.ALBUMS -> state.albums.isNotEmpty()
+                LibraryTab.ARTISTS -> state.artists.isNotEmpty()
+                LibraryTab.DOWNLOADS -> state.downloadedTracks.isNotEmpty()
+                LibraryTab.LOCAL -> state.localTracks.isNotEmpty()
+                LibraryTab.HISTORY -> state.history.isNotEmpty()
+            }
+
         if (!state.isLoggedIn && !isOfflineTab) {
             LibraryNotLoggedInCard(onLoginClick = onOpenSettings)
-        } else if (state.isLoading && !isOfflineTab) {
+        } else if (state.isLoading && !hasTabContent && !isOfflineTab) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }
@@ -185,12 +200,17 @@ fun LibraryScreen(
                 onClearSelection = { selectedTrackIds = emptySet() },
                 onSelectAllToggle = { visibleSongs ->
                     selectedTrackIds =
-                        if (selectedTrackIds.size == visibleSongs.size) emptySet() else visibleSongs.map { it.id }
-                            .toSet()
+                        if (selectedTrackIds.size == visibleSongs.size) {
+                            emptySet()
+                        } else {
+                            visibleSongs
+                                .map { it.id }
+                                .toSet()
+                        }
                 },
                 viewModel = viewModel,
                 queueViewModel = queueViewModel,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }

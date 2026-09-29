@@ -1,6 +1,7 @@
 package com.github.adriianh.data.di
 
 import com.github.adriianh.core.domain.cache.HomeFeedCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.DiscoveryRepository
 import com.github.adriianh.core.domain.repository.FavoritesRepository
@@ -116,6 +117,7 @@ import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.InnerTubeLoginRepository
+import com.github.adriianh.data.repository.LibraryCacheImpl
 import com.github.adriianh.data.repository.LyricsRepositoryImpl
 import com.github.adriianh.data.repository.MusicRepositoryImpl
 import com.github.adriianh.data.repository.PlaylistRepositoryImpl
@@ -158,7 +160,7 @@ val sharedModule: Module = module {
     single<MetadataProvider> {
         CompositeArtworkProvider(
             DeezerArtworkProvider(get()),
-            ItunesArtworkProvider(get())
+            ItunesArtworkProvider(get()),
         )
     }
 
@@ -168,7 +170,7 @@ val sharedModule: Module = module {
             musicProvider = get(),
             audioProvider = getOrNull(),
             discoveryProvider = getOrNull(),
-            metadataProvider = getOrNull()
+            metadataProvider = getOrNull(),
         )
     }
     single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
@@ -184,7 +186,7 @@ val sharedModule: Module = module {
     single<SettingsRepository> {
         SettingsRepositoryImpl(
             configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
+            dispatcher = MeloDispatchers.IO,
         )
     }
 
@@ -192,7 +194,13 @@ val sharedModule: Module = module {
     single<HomeFeedCache> {
         HomeFeedCacheImpl(
             configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
+            dispatcher = MeloDispatchers.IO,
+        )
+    }
+    single<LibraryCache> {
+        LibraryCacheImpl(
+            configDirPath = get<String>(named("configDirPath")),
+            dispatcher = MeloDispatchers.IO,
         )
     }
 
