@@ -160,7 +160,7 @@ val sharedModule: Module = module {
     single<MetadataProvider> {
         CompositeArtworkProvider(
             DeezerArtworkProvider(get()),
-            ItunesArtworkProvider(get())
+            ItunesArtworkProvider(get()),
         )
     }
 
@@ -170,7 +170,7 @@ val sharedModule: Module = module {
             musicProvider = get(),
             audioProvider = getOrNull(),
             discoveryProvider = getOrNull(),
-            metadataProvider = getOrNull()
+            metadataProvider = getOrNull(),
         )
     }
     single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
@@ -186,7 +186,7 @@ val sharedModule: Module = module {
     single<SettingsRepository> {
         SettingsRepositoryImpl(
             configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
+            dispatcher = MeloDispatchers.IO,
         )
     }
 
@@ -194,13 +194,13 @@ val sharedModule: Module = module {
     single<HomeFeedCache> {
         HomeFeedCacheImpl(
             configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
+            dispatcher = MeloDispatchers.IO,
         )
     }
     single<LibraryCache> {
         LibraryCacheImpl(
             configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO
+            dispatcher = MeloDispatchers.IO,
         )
     }
 

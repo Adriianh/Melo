@@ -12,18 +12,20 @@ class LibraryCacheImpl(
     private val dispatcher: CoroutineDispatcher,
 ) : LibraryCache {
     private val cacheFilePath = "$configDirPath/library_cache.json"
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     private var memoryCache: LibraryCacheData? = null
 
     override fun getSync(): LibraryCacheData? = memoryCache
 
-    override suspend fun get(): LibraryCacheData? = memoryCache ?: withContext(dispatcher) {
-        loadSync().also { memoryCache = it }
-    }
+    override suspend fun get(): LibraryCacheData? =
+        memoryCache ?: withContext(dispatcher) {
+            loadSync().also { memoryCache = it }
+        }
 
     override suspend fun save(data: LibraryCacheData) {
         memoryCache = data
@@ -46,13 +48,13 @@ class LibraryCacheImpl(
         }
     }
 
-    private fun loadSync(): LibraryCacheData? = runCatching {
-        if (PlatformFileSystem.fileExists(cacheFilePath)) {
-            PlatformFileSystem.readText(cacheFilePath)?.let { content ->
-                json.decodeFromString(LibraryCacheData.serializer(), content)
-            }
-        } else {
+    private fun loadSync(): LibraryCacheData? {
+        if (!PlatformFileSystem.fileExists(cacheFilePath)) return null
+        val content = PlatformFileSystem.readText(cacheFilePath)
+        return try {
+            content?.let { json.decodeFromString(LibraryCacheData.serializer(), it) }
+        } catch (_: Exception) {
             null
         }
-    }.getOrNull()
+    }
 }

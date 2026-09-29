@@ -14,19 +14,25 @@ data class HistoryEntry(
  */
 fun mergeHistoryEntries(
     localHistory: List<HistoryEntry>,
-    remoteHistory: List<HistoryEntry>
+    remoteHistory: List<HistoryEntry>,
 ): List<HistoryEntry> {
     if (localHistory.isEmpty()) return remoteHistory
     if (remoteHistory.isEmpty()) return localHistory
     val localNormalizedIds = localHistory.map { it.track.id.removePrefix("piped:") }.toSet()
-    val localSourceIds = localHistory.mapNotNull { it.track.sourceId?.removePrefix("piped:") }
-        .filter { it.isNotBlank() }.toSet()
-    val filteredRemote = remoteHistory.filterNot { remote ->
-        val remoteRawId = remote.track.id.removePrefix("piped:")
-        val remoteRawSourceId = remote.track.sourceId?.removePrefix("piped:")
-        remoteRawId in localNormalizedIds ||
-                remoteRawId in localSourceIds ||
-                (!remoteRawSourceId.isNullOrBlank() && (remoteRawSourceId in localNormalizedIds || remoteRawSourceId in localSourceIds))
-    }
+    val localSourceIds =
+        localHistory
+            .mapNotNull { it.track.sourceId?.removePrefix("piped:") }
+            .filter { it.isNotBlank() }
+            .toSet()
+    val filteredRemote =
+        remoteHistory.filterNot { remote ->
+            val remoteRawId = remote.track.id.removePrefix("piped:")
+            val remoteRawSourceId = remote.track.sourceId?.removePrefix("piped:")
+            val matchesId = remoteRawId in localNormalizedIds || remoteRawId in localSourceIds
+            val matchesSourceId =
+                !remoteRawSourceId.isNullOrBlank() &&
+                    (remoteRawSourceId in localNormalizedIds || remoteRawSourceId in localSourceIds)
+            matchesId || matchesSourceId
+        }
     return localHistory + filteredRemote
 }
