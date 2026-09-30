@@ -7,4 +7,9 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface NetworkMonitor {
     val isOnline: StateFlow<Boolean>
+
+    /**
+     * Synchronously returns or immediately evaluates the current connectivity state.
+     */
+    fun checkNow(): Boolean = isOnline.value
 }
