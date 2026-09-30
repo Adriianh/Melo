@@ -1,8 +1,6 @@
 package com.github.adriianh.melo
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -39,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
-import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.network.NetworkMonitor
@@ -232,14 +229,20 @@ fun App(
                                     ) {
                                         OfflineModeBanner(
                                             visible = isOfflineMode,
-                                            onReconnect = {
+                                            isManualOffline = settings.offlineMode,
+                                            onDisableManual = {
                                                 coroutineScope.launch {
                                                     updateSettingsUseCase { current ->
                                                         current.copy(offlineMode = false)
                                                     }
                                                     snackbarState.show("Modo sin conexión desactivado")
                                                 }
-                                            }
+                                            },
+                                            onRetry = {
+                                                coroutineScope.launch {
+                                                    networkMonitor.checkNow()
+                                                }
+                                            },
                                         )
 
                                         val currentUpdate = updateState
