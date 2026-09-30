@@ -24,6 +24,7 @@ fun LazyListScope.detailTrackItems(
     currentTrackId: String?,
     isPlaying: Boolean,
     isLiked: (Track) -> Boolean,
+    isOffline: Boolean = false,
     onTrackClick: (Int, Track) -> Unit,
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
@@ -50,11 +51,12 @@ fun LazyListScope.detailTrackItems(
         val downloading = isDownloading(song)
         val progress = downloadProgress(song)
         val isSelected = song.id in selectedTrackIds
+        val isTrackEnabled = !isOffline || downloaded
 
         Box(modifier = itemModifier) {
             MeloSwipeableItem(
-                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(song) },
-                onSwipeRight = { if (!isSelectionMode) onSwipeRight(song) },
+                onSwipeLeft = { if (!isSelectionMode && isTrackEnabled) onSwipeLeft(song) },
+                onSwipeRight = { if (!isSelectionMode && isTrackEnabled) onSwipeRight(song) },
                 swipeRightIcon = if (liked) Icons.Default.HeartBroken else Icons.Default.Favorite,
                 swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
                 swipeLeftColor = MeloColors.brandAccent
@@ -74,6 +76,7 @@ fun LazyListScope.detailTrackItems(
                         trackNumber = index + 1,
                         isCurrent = isPlayingThis,
                         isPlaying = isPlayingThis && isPlaying,
+                        isEnabled = isTrackEnabled,
                         isDownloaded = downloaded,
                         isDownloading = downloading,
                         downloadProgress = progress,

@@ -50,6 +50,7 @@ data class EntityDetailUiState(
     val downloadedTrackIds: Set<String> = emptySet(),
     val activeDownloadsMap: Map<String, Float> = emptyMap(),
     val downloadedArtistTracks: List<Track> = emptyList(),
+    val isOffline: Boolean = false,
 )
 
 class EntityDetailViewModel(
@@ -78,6 +79,7 @@ class EntityDetailViewModel(
 
     init {
         observeDownloads()
+        observeNetworkAndSettings()
     }
 
     private fun observeDownloads() {
@@ -88,6 +90,20 @@ class EntityDetailViewModel(
             ) { offlineTracks, activeDownloads ->
                 updateDownloadState(offlineTracks, activeDownloads)
             }.collect { }
+        }
+    }
+
+    private fun observeNetworkAndSettings() {
+        viewModelScope.launch(ioDispatcher) {
+            val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
+            combine(
+                getSettingsUseCase(),
+                isOnlineFlow
+            ) { settings, isOnline ->
+                settings.offlineMode || !isOnline
+            }.collectLatest { isOffline ->
+                _uiState.update { it.copy(isOffline = isOffline) }
+            }
         }
     }
 
