@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.cache.EntityCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
@@ -9,6 +10,7 @@ import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.entityId
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
@@ -61,6 +63,8 @@ class EntityDetailViewModel(
     private val downloadManager: DownloadManager,
     private val offlineRepository: OfflineRepository,
     private val getSettingsUseCase: GetSettingsUseCase,
+    private val networkMonitor: NetworkMonitor? = null,
+    private val entityCache: EntityCache? = null,
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
     private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase? = null,
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
@@ -71,8 +75,6 @@ class EntityDetailViewModel(
 
     private val _uiState = MutableStateFlow(EntityDetailUiState())
     val uiState: StateFlow<EntityDetailUiState> = _uiState.asStateFlow()
-
-    private val entityCache = mutableMapOf<String, SearchResult>()
 
     init {
         observeDownloads()
@@ -436,7 +438,7 @@ class EntityDetailViewModel(
 
     private fun loadEntity(initial: SearchResult) {
         currentLoadJob?.cancel()
-        val cached = entityCache[initial.entityId]
+        val cached = entityCache?.getSync(initial.entityId)
         if (cached != null) {
             _uiState.update {
                 it.copy(
@@ -472,7 +474,7 @@ class EntityDetailViewModel(
                 updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
             }
 
-            val isOffline = getSettingsUseCase.getSnapshot().offlineMode
+            val isOffline = getSettingsUseCase.getSnapshot().offlineMode || networkMonitor?.isOnline?.value == false
             if (isOffline) {
                 if (!loadedOffline && cached == null) {
                     _uiState.update {
@@ -509,7 +511,7 @@ class EntityDetailViewModel(
                 }
 
                 if (hasContent) {
-                    entityCache[initial.entityId] = fullDetails
+                    entityCache?.save(fullDetails)
                     if (loadedOffline && fullDetails is SearchResult.Album && initial is SearchResult.Album) {
                         val initialAuthor =
                             initial.author.takeIf { it.isNotBlank() && it != "Unknown" }
@@ -569,6 +571,18 @@ class EntityDetailViewModel(
     }
 
     private suspend fun loadEntityOffline(initial: SearchResult): Boolean {
+        val cached = entityCache?.get(initial.entityId)
+        if (cached != null) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    entity = cached,
+                    error = null
+                )
+            }
+            return true
+        }
+
         val allOffline = offlineRepository.getOfflineTracks()
         when (initial) {
             is SearchResult.Album -> {
