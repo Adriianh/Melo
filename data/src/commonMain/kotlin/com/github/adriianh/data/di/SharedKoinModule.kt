@@ -1,5 +1,6 @@
 package com.github.adriianh.data.di
 
+import com.github.adriianh.core.domain.cache.EntityCache
 import com.github.adriianh.core.domain.cache.HomeFeedCache
 import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.provider.MetadataProvider
@@ -115,6 +116,7 @@ import com.github.adriianh.data.remote.lyrics.LyricsApiClient
 import com.github.adriianh.data.remote.lyrics.LyricsTranslator
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.DiscoveryRepositoryImpl
+import com.github.adriianh.data.repository.EntityCacheImpl
 import com.github.adriianh.data.repository.FavoritesRepositoryImpl
 import com.github.adriianh.data.repository.InnerTubeLoginRepository
 import com.github.adriianh.data.repository.LibraryCacheImpl
@@ -200,6 +202,12 @@ val sharedModule: Module = module {
     single<LibraryCache> {
         LibraryCacheImpl(
             configDirPath = get<String>(named("configDirPath")),
+            dispatcher = MeloDispatchers.IO,
+        )
+    }
+    single<EntityCache> {
+        EntityCacheImpl(
+            configPathDir = get<String>(named("configDirPath")),
             dispatcher = MeloDispatchers.IO,
         )
     }
