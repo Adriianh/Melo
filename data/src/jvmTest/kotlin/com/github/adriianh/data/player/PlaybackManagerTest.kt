@@ -1,6 +1,7 @@
 package com.github.adriianh.data.player
 
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackState
@@ -957,5 +958,37 @@ class PlaybackManagerTest {
 
             coVerify(exactly = 0) { getRadioUseCase(any()) }
             verify { meloPlayer.stop() }
+        }
+
+    @Test
+    fun `recovers and plays current track when network transitions from offline to online`() =
+        runTest {
+            val isOnlineFlow = MutableStateFlow(false)
+            val networkMonitor =
+                mockk<NetworkMonitor> {
+                    every { isOnline } returns isOnlineFlow
+                }
+            val scope = managerScope()
+            val track = fakeTrack("track-1")
+            coEvery { getStreamUseCase(track) } returns "https://example.com/audio.mp3"
+
+            val manager =
+                PlaybackManagerImpl(
+                    meloPlayer = meloPlayer,
+                    getStreamUseCase = getStreamUseCase,
+                    scope = scope,
+                    networkMonitor = networkMonitor,
+                )
+
+            manager.playTrack(track)
+            scope.advanceUntilIdle()
+
+            verify(exactly = 0) { meloPlayer.load("https://example.com/audio.mp3", track, any()) }
+            verify { meloPlayer.setIdleTrack(track, any()) }
+
+            isOnlineFlow.value = true
+            scope.advanceUntilIdle()
+
+            verify(atLeast = 1) { meloPlayer.load("https://example.com/audio.mp3", track, any()) }
         }
 }
