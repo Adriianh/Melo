@@ -2,8 +2,11 @@ package com.github.adriianh.melo.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.core.domain.model.LibraryCacheData
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -31,6 +34,8 @@ class SidebarViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val getAccountProfileUseCase: GetAccountProfileUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    private val libraryCache: LibraryCache,
+    networkMonitor: NetworkMonitor? = null,
     private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
 
@@ -38,6 +43,38 @@ class SidebarViewModel(
     val uiState: StateFlow<SidebarUiState> = _uiState.asStateFlow()
 
     init {
+        val cached = libraryCache.getSync()
+        if (cached != null) {
+            _uiState.update {
+                it.copy(
+                    profile = cached.profile ?: it.profile,
+                    playlists = cached.playlists.ifEmpty { it.playlists }
+                )
+            }
+        } else {
+            viewModelScope.launch(ioDispatcher) {
+                libraryCache.get()?.let { asyncCached ->
+                    _uiState.update {
+                        it.copy(
+                            profile = asyncCached.profile ?: it.profile,
+                            playlists = asyncCached.playlists.ifEmpty { it.playlists }
+                        )
+                    }
+                }
+            }
+        }
+
+        networkMonitor?.let { monitor ->
+            viewModelScope.launch(ioDispatcher) {
+                monitor.isOnline
+                    .collectLatest { isOnline ->
+                        if (isOnline && _uiState.value.isLoggedIn) {
+                            refreshLibrary()
+                        }
+                    }
+            }
+        }
+
         viewModelScope.launch(ioDispatcher) {
             val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
                 ?.takeIf { it.isNotBlank() }
@@ -70,10 +107,24 @@ class SidebarViewModel(
             val profileResult = getAccountProfileUseCase()
             val playlistsResult = getUserPlaylistsUseCase()
 
+            val newProfile = profileResult.getOrNull() ?: _uiState.value.profile
+            val newPlaylists = playlistsResult.getOrNull() ?: _uiState.value.playlists
+
             _uiState.update {
                 it.copy(
-                    profile = profileResult.getOrNull() ?: it.profile,
-                    playlists = playlistsResult.getOrDefault(emptyList())
+                    profile = newProfile,
+                    playlists = newPlaylists
+                )
+            }
+
+            if (playlistsResult.isSuccess || profileResult.isSuccess) {
+                val currentCache = libraryCache.get() ?: LibraryCacheData()
+
+                libraryCache.save(
+                    currentCache.copy(
+                        profile = newProfile ?: currentCache.profile,
+                        playlists = if (playlistsResult.isSuccess) newPlaylists else currentCache.playlists
+                    )
                 )
             }
         }

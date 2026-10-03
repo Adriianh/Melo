@@ -195,7 +195,15 @@ val viewModelModule =
                 observeLibraryUpdatesUseCase = getOrNull(),
             )
         }
-        viewModelOf(::SidebarViewModel)
+        viewModel {
+            SidebarViewModel(
+                getSettingsUseCase = get(),
+                getAccountProfileUseCase = get(),
+                getUserPlaylistsUseCase = get(),
+                libraryCache = get(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModel {
             EntityDetailViewModel(
                 getEntityDetailsUseCase = get(),
