@@ -225,7 +225,31 @@ val viewModelModule =
                 reorderPlaylistTracksUseCase = getOrNull(),
             )
         }
-        viewModelOf(::SearchViewModel)
+        viewModel {
+            SearchViewModel(
+                searchTracksUseCase = get(),
+                searchAlbumsUseCase = get(),
+                searchArtistsUseCase = get(),
+                searchPlaylistsUseCase = get(),
+                searchVideosUseCase = get(),
+                searchSummaryUseCase = get(),
+                getExploreUseCase = get(),
+                getChartsUseCase = get(),
+                getTrendingUseCase = get(),
+                getMoodAndGenresUseCase = get(),
+                getSearchHistoryUseCase = get(),
+                saveSearchQueryUseCase = get(),
+                deleteSearchQueryUseCase = getOrNull(),
+                getSearchSuggestionsUseCase = get(),
+                getRecentTracksUseCase = get(),
+                getRemoteHistoryUseCase = get(),
+                browseCategoryUseCase = get(),
+                getSettingsUseCase = get(),
+                getOfflineTracksUseCase = get(),
+                scanLocalTracksUseCase = get(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModelOf(::UpdateViewModel)
     }
 

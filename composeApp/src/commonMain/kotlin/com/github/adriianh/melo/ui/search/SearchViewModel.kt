@@ -8,6 +8,7 @@ import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
@@ -33,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
@@ -102,6 +104,7 @@ class SearchViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val getOfflineTracksUseCase: GetOfflineTracksUseCase,
     private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
+    private val networkMonitor: NetworkMonitor? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -126,7 +129,26 @@ class SearchViewModel(
         }
     }
 
+    private suspend fun isOffline(): Boolean =
+        getSettingsUseCase.getSnapshot().offlineMode || (networkMonitor?.isOnline?.value == false)
+
     init {
+        networkMonitor?.let { monitor ->
+            viewModelScope.launch {
+                monitor.isOnline.collectLatest { isOnline ->
+                    if (!isOnline) return@collectLatest
+
+                    val state = _uiState.value
+                    if (state.exploreSections.isEmpty() || state.error != null) {
+                        loadExplore()
+                    }
+                    if (state.moodAndGenres.isEmpty()) {
+                        loadMoodAndGenres()
+                    }
+                }
+            }
+        }
+
         loadExplore()
         loadMoodAndGenres()
         loadRecentSearches()
@@ -146,7 +168,7 @@ class SearchViewModel(
         }
 
         suggestionsJob = viewModelScope.launch {
-            val isOffline = getSettingsUseCase.getSnapshot().offlineMode
+            val isOffline = isOffline()
             if (isOffline) return@launch
             delay(200.milliseconds)
             try {
@@ -186,7 +208,7 @@ class SearchViewModel(
 
     private suspend fun performSearch(query: String, filter: SearchFilterType) {
         _uiState.update { it.copy(isSearching = true) }
-        val isOffline = getSettingsUseCase.getSnapshot().offlineMode
+        val isOffline = isOffline()
         if (isOffline) {
             performOfflineSearch(query)
             return
@@ -308,7 +330,7 @@ class SearchViewModel(
                     HomeSection(
                         "Resultados locales y descargados",
                         com.github.adriianh.core.domain.model.HomeSectionType.SONGS,
-                        allLocal.map { SearchResult.Song(it) }
+                        allLocal.map { track -> SearchResult.Song(track) }
                     )
                 ) else emptyList(),
                 isSearching = false,
