@@ -250,12 +250,14 @@ class DownloadManagerImpl(
         httpClient.prepareGet(streamUrl) {
             header(
                 HttpHeaders.UserAgent,
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             )
             header(HttpHeaders.Accept, "*/*")
         }.execute { response ->
             if (!response.status.isSuccess()) {
-                throw IllegalStateException("HTTP ${response.status.value} downloading stream: ${response.status.description}")
+                val status = response.status
+                throw IllegalStateException("HTTP ${status.value} downloading stream: ${status.description}")
             }
             val contentLength = response.contentLength()
             val channel: ByteReadChannel = response.bodyAsChannel()
