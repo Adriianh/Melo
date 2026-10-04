@@ -25,6 +25,7 @@ class CommandBarSuggestionsOverlay(
         if (!commandBarState.isVisible || commandBarState.suggestions.isEmpty()) {
             return
         }
+
         val items = commandBarState.suggestions.mapIndexed { index, suggestion ->
             val isSelected = index == commandBarState.selectedSuggestionIndex
             row(
@@ -33,13 +34,14 @@ class CommandBarSuggestionsOverlay(
                     .fill()
             ).length(1)
         }
-        val overlayW = area.width()
-        val overlayH = items.size + 2
-        val overlayX = area.x()
-        // Determine Y based on height of suggestions, put it just above the command bar
-        val overlayY = area.y() + area.height() - (overlayH + 1)
+
+        val overlayW = minOf(56, maxOf(20, area.width() - 4))
+        val overlayH = minOf(items.size + 4, maxOf(4, area.height() - 2))
+        val overlayX = area.x() + 2
+        val overlayY = maxOf(0, area.y() + area.height() - (overlayH + 1))
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
         frame.buffer().clear(overlayArea)
+
         val hint = "[Tab] Complete - [Enter] Execute - [Esc] Cancel"
         val subtitle = "Commands"
         panel(

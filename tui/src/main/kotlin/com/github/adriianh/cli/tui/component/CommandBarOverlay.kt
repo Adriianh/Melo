@@ -22,10 +22,16 @@ fun buildCommandBar(
             text(" ").bg(Color.RED).fg(Color.WHITE).fill()
         )
     } else {
+        val input = state.commandBar.input
+        val cursor = state.commandBar.cursorPosition.coerceIn(0, input.length)
+        val beforeCursor = input.substring(0, cursor)
+        val afterCursor = input.substring(cursor)
+
         row(
             text(":").fg(PRIMARY_COLOR),
-            text(state.commandBar.input).fg(TEXT_PRIMARY),
+            text(beforeCursor).fg(TEXT_PRIMARY),
             text("▌").fg(PRIMARY_COLOR),
+            text(afterCursor).fg(TEXT_PRIMARY),
             spacer()
         )
     }
