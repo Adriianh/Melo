@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.SidebarSection
 import com.github.adriianh.cli.tui.component.buildHelpRows
+import com.github.adriianh.cli.tui.component.computeHelpOverlayDimensions
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -77,17 +78,18 @@ internal fun MeloScreen.handleHelpOverlayKey(event: KeyEvent): EventResult {
     if (!helpState.isVisible) return EventResult.UNHANDLED
 
     val allRows = buildHelpRows(settingsViewState.currentSettings)
-    val terminalH =
+    val terminalSize =
         try {
             appRunner()
                 ?.tuiRunner()
                 ?.terminal()
                 ?.size()
-                ?.height()
         } catch (_: Exception) {
             null
-        } ?: 30
-    val overlayH = (terminalH * 0.80).toInt().coerceIn(16, 32)
+        }
+    val terminalW = terminalSize?.width() ?: 100
+    val terminalH = terminalSize?.height() ?: 30
+    val (_, overlayH) = computeHelpOverlayDimensions(terminalW, terminalH)
     val visibleLines = (overlayH - 5).coerceAtLeast(1)
     val maxScroll = maxOf(0, allRows.size - visibleLines)
 

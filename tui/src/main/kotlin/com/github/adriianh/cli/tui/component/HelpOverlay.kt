@@ -59,7 +59,7 @@ fun buildHelpRows(settings: Settings): List<HelpRow> {
                 if (cmd.names.size > 1) {
                     "alias: ${cmd.names.drop(1).joinToString { ":$it" }}"
                 } else {
-                    ""
+                    null
                 }
 
             rows.add(HelpRow.Item(syntax, desc, aliases))
@@ -92,6 +92,17 @@ fun buildHelpRows(settings: Settings): List<HelpRow> {
     return rows
 }
 
+internal fun computeHelpOverlayDimensions(
+    availableWidth: Int,
+    availableHeight: Int,
+): Pair<Int, Int> {
+    val overlayW =
+        (availableWidth * 0.85).toInt().coerceIn(76, 120).coerceAtMost(maxOf(40, availableWidth - 2))
+    val overlayH =
+        (availableHeight * 0.80).toInt().coerceIn(16, 34).coerceAtMost(maxOf(10, availableHeight - 2))
+    return overlayW to overlayH
+}
+
 private fun MeloKey.toDisplayString(): String? {
     val base =
         when {
@@ -116,8 +127,7 @@ class HelpOverlay(
         if (!state.helpOverlay.isVisible) return
 
         val allRows = buildHelpRows(settingsProvider())
-        val overlayW = (area.width() * 0.72).toInt().coerceIn(68, 86)
-        val overlayH = (area.height() * 0.80).toInt().coerceIn(16, 32)
+        val (overlayW, overlayH) = computeHelpOverlayDimensions(area.width(), area.height())
         val overlayX = area.x() + (area.width() - overlayW) / 2
         val overlayY = area.y() + (area.height() - overlayH) / 2
         val overlayArea = Rect(overlayX, overlayY, overlayW, overlayH)
@@ -138,9 +148,10 @@ class HelpOverlay(
                         )
                     is HelpRow.Item -> {
                         val keyElement = text("  ${row.trigger}").fg(PRIMARY_COLOR).bold().length(24)
-                        val descElement = text(row.description).fg(TEXT_PRIMARY).fill()
-                        if (row.extra != null) {
-                            row(keyElement, descElement, text("  ${row.extra}").fg(TEXT_DIM))
+                        val descElement = text(row.description).fg(TEXT_PRIMARY).ellipsis().fill()
+                        if (!row.extra.isNullOrBlank()) {
+                            val extraElement = text("  ${row.extra}").fg(TEXT_DIM).length(26)
+                            row(keyElement, descElement, extraElement)
                         } else {
                             row(keyElement, descElement)
                         }
@@ -150,7 +161,7 @@ class HelpOverlay(
             }
 
         val scrollPos = "${currentScroll + 1}-${minOf(allRows.size, currentScroll + visibleLines)}/${allRows.size}"
-        val hint = "[↑/↓/j/k] Scroll   [PgUp/Dn]   [Esc/q/Enter] Close   [: ] Commands   [$scrollPos]"
+        val hint = "[↑/↓/j/k] Scroll  [PgUp/Dn]  [Esc/q] Close  [:] Command  [$scrollPos]"
 
         val content =
             column(

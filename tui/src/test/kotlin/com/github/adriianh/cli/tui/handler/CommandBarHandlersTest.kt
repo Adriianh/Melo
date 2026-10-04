@@ -108,5 +108,11 @@ class CommandBarHandlersTest {
         assertTrue(headers.contains(CommandCategory.GENERAL.title))
         assertTrue(headers.contains("Global Shortcuts"))
         assertTrue(headers.contains("Configured Actions"))
+
+        val items = rows.filterIsInstance<HelpRow.Item>()
+        val searchItem = items.first { it.trigger.startsWith(":search") }
+        assertEquals("alias: :track, :song", searchItem.extra)
+        val pauseItem = items.first { it.trigger == ":pause" }
+        assertEquals(null, pauseItem.extra)
     }
 }
