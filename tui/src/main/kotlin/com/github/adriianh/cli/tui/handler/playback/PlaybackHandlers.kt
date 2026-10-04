@@ -8,6 +8,7 @@ import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
 import com.github.adriianh.cli.tui.handler.search.openLanguagePicker
 import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.util.LrcParser
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
 import dev.tamboui.toolkit.event.EventResult
@@ -15,7 +16,10 @@ import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyEvent
 
 internal fun MeloScreen.playTrack(track: Track) {
-    if (!state.isPlayable(track)) return
+    if (!state.isPlayable(track)) {
+        showToast("Track unavailable offline", ToastKind.WARNING)
+        return
+    }
 
     val inQueue = state.player.queue.any { it.id == track.id }
     state =
@@ -77,7 +81,10 @@ internal fun MeloScreen.playList(
 ) {
     if (tracks.isEmpty() || startIndex !in tracks.indices) return
     val targetTrack = tracks[startIndex]
-    if (!state.isPlayable(targetTrack)) return
+    if (!state.isPlayable(targetTrack)) {
+        showToast("Track unavailable offline", ToastKind.WARNING)
+        return
+    }
 
     val playableTracks = tracks.filter { state.isPlayable(it) }
     val newStartIndex = playableTracks.indexOfFirst { it.id == targetTrack.id }
@@ -99,6 +106,12 @@ internal fun MeloScreen.playFromQueue(index: Int) {
     val track =
         playbackManager.queueState.value.tracks
             .getOrNull(index) ?: return
+
+    if (!state.isPlayable(track)) {
+        showToast("Track unavailable offline", ToastKind.WARNING)
+        return
+    }
+
     state =
         state.copy(
             player = state.player.copy(isLoadingAudio = true, audioError = null),

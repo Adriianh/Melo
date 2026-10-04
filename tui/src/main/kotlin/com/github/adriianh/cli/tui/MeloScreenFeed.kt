@@ -1,5 +1,9 @@
 package com.github.adriianh.cli.tui
 
+import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.HomeFeed
+import com.github.adriianh.core.domain.model.HomeSection
+import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +20,68 @@ import kotlinx.coroutines.sync.withPermit
 internal fun MeloScreen.loadHomeFeed(chipParams: String? = null, chipIndex: Int = 0) {
     val currentHome = (state.screen as? ScreenState.Home) ?: cachedHomeScreen
     if (currentHome.isLoadingFeed && chipParams == null && chipIndex == currentHome.selectedChipIndex) return
+
+    if (chipParams == null && currentHome.feedSections.isEmpty()) {
+        val cached = homeFeedCache?.getSync()
+
+        if (cached != null && cached.sections.isNotEmpty()) {
+            updateScreen<ScreenState.Home> { current ->
+                current.copy(
+                    feedSections = cached.sections,
+                    feedChips = cached.chips.ifEmpty { current.feedChips },
+                    feedContinuation = cached.continuation,
+                    selectedChipIndex = chipIndex,
+                    isLoadingFeed = false,
+                    feedError = null,
+                )
+            }
+        }
+    }
+
+    if (state.isOfflineMode) {
+        val existingSections =
+            ((state.screen as? ScreenState.Home) ?: cachedHomeScreen).feedSections
+        if (existingSections.isNotEmpty()) {
+            updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = false, feedError = null) }
+            return
+        }
+
+        val downloads = state.collections.offlineTracks
+            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+            .map { it.track }
+        val recentPlayable = state.collections.recentTracks
+            .map { it.track }
+            .filter { state.isPlayable(it) }
+
+        val offlineSections = buildList {
+            if (downloads.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Tus descargas",
+                        type = HomeSectionType.SONGS,
+                        items = downloads.map { SearchResult.Song(it) })
+                )
+            }
+            if (recentPlayable.isNotEmpty()) {
+                add(
+                    HomeSection(
+                        title = "Escuchado recientemente",
+                        type = HomeSectionType.SONGS,
+                        items = recentPlayable.map { SearchResult.Song(it) })
+                )
+            }
+        }
+
+        updateScreen<ScreenState.Home> {
+            it.copy(
+                feedSections = offlineSections,
+                isLoadingFeed = false,
+                feedError = if (offlineSections.isEmpty()) "No hay canciones descargadas" else null
+            )
+        }
+        return
+    }
+
     updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = true, feedError = null) }
     scope.launch {
         try {
@@ -69,13 +135,36 @@ internal fun MeloScreen.loadHomeFeed(chipParams: String? = null, chipIndex: Int 
                 }
                 enrichActiveSectionTracks()
             }
+
+            if (chipParams == null) {
+                val preservedChips = chips.ifEmpty { currentHome.feedChips }
+                homeFeedCache?.save(
+                    HomeFeed(
+                        sections = distinctSections,
+                        chips = preservedChips,
+                        continuation = nextContinuation
+                    )
+                )
+            }
         } catch (e: Exception) {
             appRunner()?.runOnRenderThread {
-                updateScreen<ScreenState.Home> {
-                    it.copy(
-                        isLoadingFeed = false,
-                        feedError = e.message ?: "Failed to load feed"
-                    )
+                updateScreen<ScreenState.Home> { current ->
+                    if (current.feedSections.isNotEmpty()) {
+                        current.copy(isLoadingFeed = false)
+                    } else {
+                        val downloads = state.collections.offlineTracks
+                            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                            .map { it.track }
+                        val offlineSections = if (downloads.isNotEmpty()) {
+                            listOf(HomeSection(title = "Tus descargas", type = HomeSectionType.SONGS, items = downloads.map { SearchResult.Song(it) }))
+                        } else emptyList()
+
+                        current.copy(
+                            feedSections = offlineSections,
+                            isLoadingFeed = false,
+                            feedError = if (offlineSections.isEmpty()) (e.message ?: "Failed to load feed") else null
+                        )
+                    }
                 }
             }
         }
@@ -198,7 +287,10 @@ internal fun MeloScreen.enrichActiveSectionTracks() {
     }
 }
 
-private fun MeloScreen.applyEnrichedTracksBatch(sectionIndex: Int, updates: List<Pair<Int, Track>>) {
+private fun MeloScreen.applyEnrichedTracksBatch(
+    sectionIndex: Int,
+    updates: List<Pair<Int, Track>>
+) {
     if (updates.isEmpty()) return
     updateScreen<ScreenState.Home> { current ->
         if (current.selectedSectionIndex != sectionIndex) return@updateScreen current
