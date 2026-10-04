@@ -11,7 +11,7 @@ package com.github.adriianh.cli.tui.util
  * [HEART] exists so favorite confirmations render the ♥ icon in the accent color
  * instead of a generic info glyph.
  */
-enum class ToastKind { INFO, SUCCESS, ERROR, HEART }
+enum class ToastKind { INFO, SUCCESS, WARNING, ERROR, HEART }
 
 /** How far along a toast's lifecycle it is at a given instant. */
 enum class ToastPhase { ENTERING, ACTIVE, LEAVING }
