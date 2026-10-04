@@ -63,14 +63,15 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
 
                 if (isActive) {
                     appRunner()?.runOnRenderThread {
-                        val s = state.screen as? ScreenState.Search ?: return@runOnRenderThread
-                        if (s.query == query) {
+                        val screen = state.screen as? ScreenState.Search ?: return@runOnRenderThread
+                        if (screen.query == query) {
                             val visualLocal = localHistory.map { "${MeloTheme.ICON_HISTORY} $it" }
                             updateScreen<ScreenState.Search> {
                                 it.copy(
                                     searchSuggestions =
                                         visualLocal.ifEmpty {
-                                            listOf("Loading network suggestions...")
+                                            if (state.isOfflineMode) emptyList()
+                                            else listOf("Loading network suggestions...")
                                         },
                                 )
                             }
@@ -79,10 +80,14 @@ internal fun MeloScreen.handleSearchQueryChange(query: String) {
                 }
 
                 val networkSuggestions =
-                    try {
-                        searchInteractors.getSearchSuggestions(query)
-                    } catch (_: Exception) {
+                    if (state.isOfflineMode) {
                         emptyList()
+                    } else {
+                        try {
+                            searchInteractors.getSearchSuggestions(query)
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
                     }
 
                 if (isActive) {
