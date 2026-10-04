@@ -48,7 +48,12 @@ import dev.tamboui.toolkit.element.Element
 
 internal fun MeloScreen.renderRoot(): Element {
     val focusManager = appRunner()?.focusManager()
-    if (focusManager != null && focusManager.focusedId() == null) {
+
+    if (state.commandBar.isVisible) {
+        if (focusManager?.focusedId() != "command-bar") {
+            focusManager?.setFocus("command-bar")
+        }
+    } else if (focusManager != null && focusManager.focusedId() == null) {
         val defaultFocus =
             when {
                 state.commandBar.isVisible -> "command-bar"
@@ -157,6 +162,7 @@ internal fun MeloScreen.renderRoot(): Element {
         )
     }
 
+    val isPanelFocusable = !state.commandBar.isVisible
     val dockWithBottom =
         layoutDock
             .bottom(
@@ -168,6 +174,7 @@ internal fun MeloScreen.renderRoot(): Element {
                     sidebarUtilList,
                     state.navigation.sidebarInUtil,
                     state.isOfflineMode,
+                    isPanelFocusable,
                     ::handleSidebarKey,
                 ),
                 Constraint.length(22),
