@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.handler
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.isFavoriteTrack
 import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.core.domain.model.LibraryCacheData
 import com.github.adriianh.core.domain.model.Track
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -114,6 +115,7 @@ internal fun MeloScreen.checkIsFavorite(trackId: String) {
 internal fun MeloScreen.syncYouTubeFavorites() {
     val settings = settingsViewState.currentSettings
     val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+
     if (!isLoggedIn) {
         appRunner()?.runOnRenderThread {
             state = state.copy(
@@ -146,6 +148,18 @@ internal fun MeloScreen.syncYouTubeFavorites() {
                     )
                 )
             }
+            libraryCache?.let { cache ->
+                val current = cache.get() ?: LibraryCacheData()
+
+                cache.save(
+                    current.copy(
+                        likedSongs = remoteSongs,
+                        albums = remoteAlbums,
+                        artists = remoteArtists,
+                        lastSyncedAt = System.currentTimeMillis()
+                    )
+                )
+            }
         } catch (_: Exception) {
         }
     }
@@ -154,6 +168,7 @@ internal fun MeloScreen.syncYouTubeFavorites() {
 internal fun MeloScreen.syncYouTubeHistory() {
     val settings = settingsViewState.currentSettings
     val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+
     if (!isLoggedIn || !settings.syncHistoryToYouTube) {
         appRunner()?.runOnRenderThread {
             state = state.copy(
@@ -168,6 +183,16 @@ internal fun MeloScreen.syncYouTubeHistory() {
             appRunner()?.runOnRenderThread {
                 state = state.copy(
                     collections = state.collections.copy(remoteRecentTracks = remoteHistory)
+                )
+            }
+            libraryCache?.let { cache ->
+                val current = cache.get() ?: LibraryCacheData()
+
+                cache.save(
+                    current.copy(
+                        remoteHistory = remoteHistory,
+                        lastSyncedAt = System.currentTimeMillis()
+                    )
                 )
             }
         } catch (_: Exception) {
