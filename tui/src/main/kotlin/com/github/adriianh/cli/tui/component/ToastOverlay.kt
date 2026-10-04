@@ -7,11 +7,13 @@ import com.github.adriianh.cli.tui.MeloTheme.ICON_CHECK
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_INFO
+import com.github.adriianh.cli.tui.MeloTheme.ICON_WARNING
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.SECONDARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_PRIMARY
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_SECONDARY
+import com.github.adriianh.cli.tui.MeloTheme.WARNING_COLOR
 import com.github.adriianh.cli.tui.util.TOAST_FADE_IN_MS
 import com.github.adriianh.cli.tui.util.TOAST_FADE_OUT_MS
 import com.github.adriianh.cli.tui.util.ToastKind
@@ -146,6 +148,7 @@ private fun drawToast(
 private fun iconOf(kind: ToastKind): String = when (kind) {
     ToastKind.INFO -> ICON_INFO
     ToastKind.SUCCESS -> ICON_CHECK
+    ToastKind.WARNING -> ICON_WARNING
     ToastKind.ERROR -> ICON_ERROR
     ToastKind.HEART -> ICON_HEART
 }
@@ -153,6 +156,7 @@ private fun iconOf(kind: ToastKind): String = when (kind) {
 private fun kindColor(kind: ToastKind): Color = when (kind) {
     ToastKind.INFO -> PRIMARY_COLOR
     ToastKind.SUCCESS -> SECONDARY_COLOR
+    ToastKind.WARNING -> WARNING_COLOR
     ToastKind.ERROR -> ACCENT_RED
     ToastKind.HEART -> PRIMARY_COLOR
 }
