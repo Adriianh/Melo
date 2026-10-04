@@ -167,6 +167,7 @@ internal fun MeloScreen.renderRoot(): Element {
                     sidebarNavList,
                     sidebarUtilList,
                     state.navigation.sidebarInUtil,
+                    state.isOfflineMode,
                     ::handleSidebarKey,
                 ),
                 Constraint.length(22),
