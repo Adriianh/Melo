@@ -37,12 +37,16 @@ import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
+import dev.tamboui.tui.bindings.Actions
+import dev.tamboui.tui.bindings.Bindings
+import dev.tamboui.tui.event.Event
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Semaphore
+import java.util.Optional
 
 class MeloScreen(
     // Shared infrastructure
@@ -241,7 +245,39 @@ class MeloScreen(
     internal val languagePickerOverlay = buildLanguagePickerOverlay()
     internal val toastOverlay = buildToastOverlay()
 
-    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
+    override fun configure(): TuiConfig {
+        val defaultBindings = TuiConfig.defaults().bindings()
+        val dynamicBindings =
+            object : Bindings by defaultBindings {
+                override fun matches(
+                    event: Event,
+                    action: String,
+                ): Boolean {
+                    if (state.commandBar.isVisible &&
+                        (action == Actions.FOCUS_NEXT || action == Actions.FOCUS_PREVIOUS)
+                    ) {
+                        return false
+                    }
+                    return defaultBindings.matches(event, action)
+                }
+
+                override fun actionFor(event: Event): Optional<String> {
+                    val action = defaultBindings.actionFor(event)
+                    if (state.commandBar.isVisible && action.isPresent) {
+                        val a = action.get()
+                        if (a == Actions.FOCUS_NEXT || a == Actions.FOCUS_PREVIOUS) {
+                            return Optional.empty()
+                        }
+                    }
+                    return action
+                }
+            }
+        return TuiConfig
+            .builder()
+            .mouseCapture(true)
+            .bindings(dynamicBindings)
+            .build()
+    }
 
     override fun onStart() = onStartLifecycle()
 

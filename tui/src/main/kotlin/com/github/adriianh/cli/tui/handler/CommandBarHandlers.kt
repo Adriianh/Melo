@@ -441,32 +441,35 @@ private fun computeCommandNameSuggestions(cmdInput: String): List<String> {
     )
 }
 
-private fun MeloScreen.handleTab(barState: CommandBarState, isShift: Boolean) {
+private fun MeloScreen.handleTab(
+    barState: CommandBarState,
+    isShift: Boolean,
+) {
     if (barState.suggestions.isEmpty()) return
 
-    if (isShift) {
-        val prevIndex = if (barState.selectedSuggestionIndex == null) {
-            barState.suggestions.size - 1
+    val total = barState.suggestions.size
+    val newIndex =
+        if (isShift) {
+            if (barState.selectedSuggestionIndex == null) {
+                total - 1
+            } else {
+                (barState.selectedSuggestionIndex - 1 + total) % total
+            }
         } else {
-            maxOf(0, barState.selectedSuggestionIndex - 1)
+            if (barState.selectedSuggestionIndex == null) {
+                0
+            } else {
+                (barState.selectedSuggestionIndex + 1) % total
+            }
         }
-        state = state.copy(commandBar = barState.copy(selectedSuggestionIndex = prevIndex))
-    } else {
-        val targetIndex = barState.selectedSuggestionIndex ?: 0
-        val sug = barState.suggestions[targetIndex]
-        val parts = sug.split(" ")
-        val isTemplate = parts.size > 1 && parts[1].startsWith("<")
-        val completedWord = if (isTemplate) parts[0] + " " else sug
 
-        state = state.copy(
-            commandBar = barState.copy(
-                input = completedWord,
-                cursorPosition = completedWord.length,
-                suggestions = CommandBarHandlers.computeSuggestions(completedWord),
-                selectedSuggestionIndex = null,
-            ),
+    state =
+        state.copy(
+            commandBar =
+                barState.copy(
+                    selectedSuggestionIndex = newIndex,
+                ),
         )
-    }
 }
 
 private fun MeloScreen.handleArrowUp(barState: CommandBarState) {
