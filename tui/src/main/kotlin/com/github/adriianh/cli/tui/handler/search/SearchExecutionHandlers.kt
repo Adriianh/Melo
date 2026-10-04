@@ -34,7 +34,6 @@ private fun MeloScreen.cancelSearchJobs() {
     loadMoreJob = null
 }
 
-/** Coincidencia difusa de un token dentro de un texto (mismo orden de caracteres). */
 private fun fuzzyMatch(token: String, text: String): Boolean {
     var i = 0
     for (c in text) {
@@ -108,6 +107,7 @@ private fun MeloScreen.startNetworkSearch(query: String, currentTab: SearchTab) 
         navigation = state.navigation.copy(activeSection = SidebarSection.SEARCH)
     )
     sidebarNavList.selected(NAV_SECTIONS.indexOf(SidebarSection.SEARCH))
+    focusResults()
 
     searchJob = scope.launch {
         try {

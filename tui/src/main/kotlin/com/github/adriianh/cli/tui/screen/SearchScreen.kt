@@ -42,48 +42,26 @@ fun renderSearchScreen(
             column(
                 spacer(), text("  Searching...").dim().centered(), spacer()
             )
-        ).title(" Results ").rounded().borderColor(BORDER_DEFAULT)
+        ).title(" Results ")
+            .rounded()
+            .borderColor(BORDER_DEFAULT)
+            .focusedBorderColor(BORDER_FOCUSED)
+            .id("results-panel")
+            .focusable()
+            .onKeyEvent(onResultsKeyEvent)
 
         actualState.errorMessage != null -> panel(
             text(actualState.errorMessage).fg(ACCENT_RED)
-        ).title(" Error ").rounded().borderColor(ACCENT_RED)
+        ).title(" Error ")
+            .rounded()
+            .borderColor(ACCENT_RED)
+            .focusedBorderColor(ACCENT_RED)
+            .id("results-panel")
+            .focusable()
+            .onKeyEvent(onResultsKeyEvent)
 
-        actualState.results.isEmpty() && actualState.albumResults.isEmpty() && actualState.artistResults.isEmpty() && actualState.playlistResults.isEmpty() -> {
-            val isOffline = state.isOfflineMode
-            val query = actualState.query
-            panel(
-                column(
-                    spacer(),
-                    if (isOffline && query.isNotBlank()) {
-                        text("  No offline tracks found matching \"$query\"").fg(TEXT_SECONDARY)
-                            .centered()
-                    } else if (query.isNotBlank()) {
-                        text("  No results found for \"$query\"").fg(TEXT_SECONDARY).centered()
-                    } else {
-                        row(
-                            spacer(), renderSearchTabs(actualState.tab), spacer()
-                        )
-                    },
-                    if (query.isBlank()) {
-                        text("  Search for music to get started").fg(TEXT_SECONDARY).centered()
-                    } else {
-                        text("  Try searching for a different song, artist, or album").fg(TEXT_DIM)
-                            .centered()
-                    },
-                    text("  Press [Tab] or [/] to focus search bar, [1..4] to change tab").fg(
-                        TEXT_DIM
-                    ).centered(),
-                    spacer()
-                )
-            ).title(if (isOffline) " Offline Search " else " Search ")
-                .bottomTitle(" [/] Search  [1..4] Category tabs ")
-                .rounded()
-                .borderColor(BORDER_DEFAULT)
-                .focusedBorderColor(BORDER_FOCUSED)
-                .id("results-panel")
-                .focusable()
-                .onKeyEvent(onResultsKeyEvent)
-        }
+        actualState.results.isEmpty() && actualState.albumResults.isEmpty() && actualState.artistResults.isEmpty() && actualState.playlistResults.isEmpty() ->
+            renderEmptySearchResults(state, actualState, onResultsKeyEvent)
 
         else -> renderResultsArea(
             state,
@@ -93,6 +71,49 @@ fun renderSearchScreen(
             onResultsKeyEvent,
         )
     }
+}
+
+private fun renderEmptySearchResults(
+    state: MeloState,
+    actualState: ScreenState.Search,
+    onResultsKeyEvent: (KeyEvent) -> EventResult,
+): Element {
+    val isOffline = state.isOfflineMode
+    val query = actualState.query
+    return panel(
+        column(
+            spacer(),
+            if (isOffline && query.isNotBlank()) {
+                text("  No offline tracks found matching \"$query\"").fg(TEXT_SECONDARY)
+                    .centered()
+            } else if (query.isNotBlank()) {
+                text("  No results found for \"$query\"").fg(TEXT_SECONDARY).centered()
+            } else {
+                row(
+                    spacer(),
+                    renderSearchTabs(actualState.tab),
+                    spacer(),
+                )
+            },
+            if (query.isBlank()) {
+                text("  Search for music to get started").fg(TEXT_SECONDARY).centered()
+            } else {
+                text("  Try searching for a different song, artist, or album").fg(TEXT_DIM)
+                    .centered()
+            },
+            text("  Press [Tab] or [/] to focus search bar, [1..4] to change tab").fg(
+                TEXT_DIM,
+            ).centered(),
+            spacer(),
+        ),
+    ).title(if (isOffline) " Offline Search " else " Search ")
+        .bottomTitle(" [/] Search  [1..4] Category tabs ")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .id("results-panel")
+        .focusable()
+        .onKeyEvent(onResultsKeyEvent)
 }
 
 private fun renderSearchTabs(activeTab: SearchTab): Element {

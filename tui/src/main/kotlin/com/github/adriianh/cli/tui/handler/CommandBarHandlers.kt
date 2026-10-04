@@ -243,7 +243,6 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
-                    activateSidebarSelection(SidebarSection.SEARCH)
                     state =
                         state.copy(screen = ScreenState.Search(query = arg, tab = SearchTab.SONGS))
                     searchInputState.setText(arg)
@@ -263,7 +262,6 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
-                    activateSidebarSelection(SidebarSection.SEARCH)
                     state =
                         state.copy(screen = ScreenState.Search(query = arg, tab = SearchTab.ALBUMS))
                     searchInputState.setText(arg)
@@ -283,7 +281,6 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
-                    activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
                         screen = ScreenState.Search(
                             query = arg,
@@ -307,7 +304,6 @@ object CommandBarHandlers {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
-                    activateSidebarSelection(SidebarSection.SEARCH)
                     state = state.copy(
                         screen = ScreenState.Search(
                             query = arg,
