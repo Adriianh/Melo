@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.HelpOverlayState
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SidebarSection
@@ -216,6 +217,7 @@ internal fun MeloScreen.toggleDetailPanel() {
 }
 
 internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
+    if (state.helpOverlay.isVisible) return handleHelpOverlayKey(event)
     if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
     if (state.isSettingsVisible) return handleSettingsKey(event)
     if (state.trackOptions.isVisible) return handleTrackOptionsKey(event)
@@ -223,6 +225,11 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
 
     if (event.isCtrlD() || event.matchesAction(MeloAction.TOGGLE_DETAIL, settingsViewState.currentSettings)) {
         toggleDetailPanel()
+        return EventResult.HANDLED
+    }
+
+    if (!isTyping() && event.code() == KeyCode.CHAR && event.isChar('?')) {
+        openHelpOverlay()
         return EventResult.HANDLED
     }
 
@@ -244,21 +251,7 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     when (event.code()) {
         KeyCode.CHAR -> {
             if (event.isChar(':')) {
-                val currentFocus = appRunner()?.focusManager()?.focusedId()
-                state =
-                    state.copy(
-                        commandBar =
-                            state.commandBar.copy(
-                                isVisible = true,
-                                input = "",
-                                errorMessage = null,
-                                cursorPosition = 0,
-                                previousFocusId = currentFocus,
-                                suggestions = CommandBarHandlers.computeSuggestions(""),
-                                selectedSuggestionIndex = null,
-                            ),
-                    )
-                appRunner()?.focusManager()?.setFocus("command-bar")
+                openCommandBar()
                 return EventResult.HANDLED
             }
             if (event.isChar('/')) {
@@ -279,4 +272,27 @@ internal fun MeloScreen.handleGlobalShortcuts(event: KeyEvent): EventResult {
     }
 
     return EventResult.UNHANDLED
+}
+
+internal fun MeloScreen.openCommandBar() {
+    val currentFocus = appRunner()?.focusManager()?.focusedId()
+    state =
+        state.copy(
+            commandBar =
+                state.commandBar.copy(
+                    isVisible = true,
+                    input = "",
+                    errorMessage = null,
+                    cursorPosition = 0,
+                    previousFocusId = currentFocus,
+                    suggestions = CommandBarHandlers.computeSuggestions(""),
+                    selectedSuggestionIndex = null,
+                ),
+        )
+    appRunner()?.focusManager()?.setFocus("command-bar")
+}
+
+internal fun MeloScreen.openHelpOverlay() {
+    state = state.copy(helpOverlay = HelpOverlayState(isVisible = true, scrollOffset = 0))
+    appRunner()?.focusManager()?.setFocus("help-overlay-panel")
 }

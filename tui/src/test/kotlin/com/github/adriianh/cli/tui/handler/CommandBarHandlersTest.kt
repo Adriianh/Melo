@@ -1,5 +1,8 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.component.HelpRow
+import com.github.adriianh.cli.tui.component.buildHelpRows
+import com.github.adriianh.core.domain.model.Settings
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -86,5 +89,24 @@ class CommandBarHandlersTest {
         val suggestions = CommandBarHandlers.computeSuggestions("play")
         assertTrue(suggestions.isNotEmpty())
         assertEquals("play", suggestions.first())
+    }
+
+    @Test
+    fun testAllCommandsHaveCategories() {
+        assertTrue(CommandBarHandlers.COMMANDS.all { it.category in CommandCategory.entries })
+        val categories = CommandBarHandlers.COMMANDS.map { it.category }.toSet()
+        assertEquals(setOf(CommandCategory.PLAYBACK, CommandCategory.NAVIGATION, CommandCategory.GENERAL), categories)
+    }
+
+    @Test
+    fun testBuildHelpRowsProducesExpectedHeaders() {
+        val rows = buildHelpRows(Settings())
+        assertTrue(rows.isNotEmpty())
+        val headers = rows.filterIsInstance<HelpRow.Header>().map { it.title }
+        assertTrue(headers.contains(CommandCategory.PLAYBACK.title))
+        assertTrue(headers.contains(CommandCategory.NAVIGATION.title))
+        assertTrue(headers.contains(CommandCategory.GENERAL.title))
+        assertTrue(headers.contains("Global Shortcuts"))
+        assertTrue(headers.contains("Configured Actions"))
     }
 }

@@ -57,6 +57,7 @@ internal fun MeloScreen.renderRoot(): Element {
         val defaultFocus =
             when {
                 state.commandBar.isVisible -> "command-bar"
+                state.helpOverlay.isVisible -> "help-overlay-panel"
                 state.player.isQueueVisible -> "queue-panel"
                 state.isSettingsVisible -> "settings-panel"
                 state.trackOptions.isVisible -> "track-options-panel"
@@ -245,8 +246,14 @@ internal fun MeloScreen.renderRoot(): Element {
         } else {
             withPlaylist
         }
+    val withHelp =
+        if (state.helpOverlay.isVisible) {
+            stack(layered, helpOverlay)
+        } else {
+            layered
+        }
 
-    return stack(layered, toastOverlay)
+    return stack(withHelp, toastOverlay)
 }
 
 internal fun MeloScreen.renderMainContentInternal(
