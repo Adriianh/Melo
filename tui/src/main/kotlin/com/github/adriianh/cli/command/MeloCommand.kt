@@ -32,6 +32,9 @@ import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.TuiLogGuard
+import com.github.adriianh.core.domain.cache.EntityCache
+import com.github.adriianh.core.domain.cache.HomeFeedCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
@@ -151,6 +154,9 @@ class MeloCommand :
             val discordRpcManager: DiscordRpcManager by inject()
             val youTubeAuthService: YouTubeAuthService by inject()
             val networkMonitor: NetworkMonitor by inject()
+            val libraryCache: LibraryCache by inject()
+            val homeFeedCache: HomeFeedCache by inject()
+            val entityCache: EntityCache by inject()
 
             try {
                 MeloScreen(
@@ -171,6 +177,9 @@ class MeloCommand :
                     discordRpcManager = discordRpcManager,
                     youTubeAuthService = youTubeAuthService,
                     networkMonitor = networkMonitor,
+                    libraryCache = libraryCache,
+                    homeFeedCache = homeFeedCache,
+                    entityCache = entityCache,
                     dispatcher = dispatcher,
                 ).run()
             } finally {
