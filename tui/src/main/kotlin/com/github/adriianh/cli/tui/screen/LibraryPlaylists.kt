@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.LibrarySourceFilter
 import com.github.adriianh.cli.tui.LibraryTab
 import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
+import com.github.adriianh.cli.tui.MeloTheme.ICON_CLOUD
 import com.github.adriianh.cli.tui.MeloTheme.ICON_NOTE
 import com.github.adriianh.cli.tui.MeloTheme.PRIMARY_COLOR
 import com.github.adriianh.cli.tui.MeloTheme.TEXT_DIM
@@ -107,12 +108,14 @@ internal fun buildPlaylistsContent(
     }
 
     val items = filtered.map { item ->
-        val iconColor = if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
-        val authorColor = if (item.isRemote) ACCENT_BLUE else TEXT_SECONDARY
+        val isDimmed = state.isOfflineMode && item.isRemote
+        val iconColor = if (isDimmed) TEXT_DIM else if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
+        val authorColor = if (isDimmed) TEXT_DIM else if (item.isRemote) ACCENT_BLUE else TEXT_SECONDARY
+        val authorText = if (isDimmed) "${item.author} $ICON_CLOUD" else item.author
         row(
             text("${item.icon} ").fg(iconColor).length(2),
-            text(item.title).fg(TEXT_PRIMARY).ellipsis().fill(),
-            text(item.author).fg(authorColor).ellipsis().percent(25),
+            text(item.title).fg(if (isDimmed) TEXT_DIM else TEXT_PRIMARY).ellipsis().fill(),
+            text(authorText).fg(authorColor).ellipsis().percent(25),
             text(item.trackCountText).fg(TEXT_DIM).length(12),
         )
     }

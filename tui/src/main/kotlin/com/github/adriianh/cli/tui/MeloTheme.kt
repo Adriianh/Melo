@@ -74,6 +74,7 @@ object MeloTheme {
     val ICON_FOLDER: String get() = if (supportsUnicode) "▸" else "/"
     val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "▾" else "/"
     val ICON_WARNING: String get() = if (supportsUnicode) "⚠" else "!"
+    val ICON_CLOUD: String get() = if (supportsUnicode) "☁" else "[C]"
 
     var PRIMARY_COLOR: Color = Color.hex("#FF2D55")
     var SECONDARY_COLOR: Color = Color.hex("#1AA34A")
