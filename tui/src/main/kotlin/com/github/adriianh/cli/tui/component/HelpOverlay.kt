@@ -16,7 +16,6 @@ import dev.tamboui.terminal.Frame
 import dev.tamboui.toolkit.Toolkit.column
 import dev.tamboui.toolkit.Toolkit.panel
 import dev.tamboui.toolkit.Toolkit.row
-import dev.tamboui.toolkit.Toolkit.spacer
 import dev.tamboui.toolkit.Toolkit.text
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.element.RenderContext
@@ -113,6 +112,29 @@ private fun MeloKey.toDisplayString(): String? {
     return if (ctrl) "Ctrl+$base" else base
 }
 
+private fun renderHelpRow(row: HelpRow): Element =
+    when (row) {
+        is HelpRow.Header ->
+            row(
+                text("─── ${row.title} ───")
+                    .fg(PRIMARY_COLOR)
+                    .bold()
+                    .centered()
+                    .fill(),
+            )
+        is HelpRow.Item -> {
+            val keyElement = text("  ${row.trigger}").fg(PRIMARY_COLOR).bold().length(24)
+            val descElement = text(row.description).fg(TEXT_PRIMARY).ellipsis().fill()
+            if (!row.extra.isNullOrBlank()) {
+                val extraElement = text("  ${row.extra}").fg(TEXT_DIM).length(26)
+                row(keyElement, descElement, extraElement)
+            } else {
+                row(keyElement, descElement)
+            }
+        }
+        is HelpRow.Separator -> text("")
+    }
+
 class HelpOverlay(
     private val stateProvider: () -> MeloState,
     private val settingsProvider: () -> Settings,
@@ -134,44 +156,39 @@ class HelpOverlay(
 
         frame.buffer().clear(overlayArea)
 
-        val visibleLines = (overlayH - 5).coerceAtLeast(1)
+        val visibleLines = (overlayH - 4).coerceAtLeast(1)
         val maxScroll = maxOf(0, allRows.size - visibleLines)
         val currentScroll = state.helpOverlay.scrollOffset.coerceIn(0, maxScroll)
         val visibleRows = allRows.subList(currentScroll, minOf(allRows.size, currentScroll + visibleLines))
 
-        val renderedRows =
-            visibleRows.map { row ->
-                when (row) {
-                    is HelpRow.Header ->
-                        row(
-                            text("─── ${row.title} ───").fg(PRIMARY_COLOR).bold().centered(),
-                        )
-                    is HelpRow.Item -> {
-                        val keyElement = text("  ${row.trigger}").fg(PRIMARY_COLOR).bold().length(24)
-                        val descElement = text(row.description).fg(TEXT_PRIMARY).ellipsis().fill()
-                        if (!row.extra.isNullOrBlank()) {
-                            val extraElement = text("  ${row.extra}").fg(TEXT_DIM).length(26)
-                            row(keyElement, descElement, extraElement)
-                        } else {
-                            row(keyElement, descElement)
-                        }
-                    }
-                    is HelpRow.Separator -> text("").length(1)
-                }
-            }
+        val tableHeader =
+            row(
+                text("  COMMAND / SHORTCUT").fg(TEXT_DIM).bold().length(24),
+                text("DESCRIPTION").fg(TEXT_DIM).bold().fill(),
+                text("  ALIASES / BINDING").fg(TEXT_DIM).bold().length(26),
+            )
+        val tableDivider =
+            row(
+                text("  ──────────────────").fg(TEXT_DIM).length(24),
+                text("───────────").fg(TEXT_DIM).fill(),
+                text("  ─────────────────").fg(TEXT_DIM).length(26),
+            )
+
+        val renderedRows = visibleRows.map(::renderHelpRow)
 
         val scrollPos = "${currentScroll + 1}-${minOf(allRows.size, currentScroll + visibleLines)}/${allRows.size}"
         val hint = "[↑/↓/j/k] Scroll  [PgUp/Dn]  [Esc/q] Close  [:] Command  [$scrollPos]"
 
         val content =
             column(
+                tableHeader,
+                tableDivider,
                 *renderedRows.toTypedArray(),
-                spacer(),
-                text(hint).fg(TEXT_DIM).centered(),
             )
 
         panel(content)
             .title(" Help & Commands ")
+            .bottomTitle(" $hint ")
             .rounded()
             .borderColor(BORDER_FOCUSED)
             .focusedBorderColor(BORDER_FOCUSED)

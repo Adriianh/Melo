@@ -90,7 +90,7 @@ internal fun MeloScreen.handleHelpOverlayKey(event: KeyEvent): EventResult {
     val terminalW = terminalSize?.width() ?: 100
     val terminalH = terminalSize?.height() ?: 30
     val (_, overlayH) = computeHelpOverlayDimensions(terminalW, terminalH)
-    val visibleLines = (overlayH - 5).coerceAtLeast(1)
+    val visibleLines = (overlayH - 4).coerceAtLeast(1)
     val maxScroll = maxOf(0, allRows.size - visibleLines)
 
     val handled =
