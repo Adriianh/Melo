@@ -7,6 +7,7 @@ import com.github.adriianh.cli.tui.checkYouTubeAuth
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
+import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.util.EQUALIZER_TICK_MS
@@ -135,6 +136,9 @@ internal fun MeloScreen.onStartLifecycle() {
             wasOnline = isOnline
             lastCookies = settings.sessionCookies
             isFirstEmit = false
+
+            val isOffline = settings.offlineMode || !isOnline
+            val unplayableNowPlaying = state.player.nowPlaying?.let { !state.isPlayable(it) } ?: false
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
@@ -145,7 +149,7 @@ internal fun MeloScreen.onStartLifecycle() {
                             state.languagePicker.copy(
                                 currentLanguage = settings.searchLanguage.ifBlank { "es" },
                             ),
-                        player = if (reconnected && state.player.isLoadingAudio) {
+                        player = if ((reconnected || (isOffline && unplayableNowPlaying)) && state.player.isLoadingAudio) {
                             state.player.copy(isLoadingAudio = false)
                         } else state.player
                     )
