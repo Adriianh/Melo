@@ -139,17 +139,20 @@ internal fun MeloScreen.onStartLifecycle() {
 
             val isOffline = settings.offlineMode || !isOnline
             val unplayableNowPlaying = state.player.nowPlaying?.let { !state.isPlayable(it) } ?: false
+            val unplayableBlocked = isOffline && unplayableNowPlaying
+            val shouldResetAudio = state.player.isLoadingAudio && (reconnected || unplayableBlocked)
+
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
                 state =
                     state.copy(
-                        isOfflineMode = settings.offlineMode || !isOnline,
+                        isOfflineMode = isOffline,
                         languagePicker =
                             state.languagePicker.copy(
                                 currentLanguage = settings.searchLanguage.ifBlank { "es" },
                             ),
-                        player = if ((reconnected || (isOffline && unplayableNowPlaying)) && state.player.isLoadingAudio) {
+                        player = if (shouldResetAudio) {
                             state.player.copy(isLoadingAudio = false)
                         } else state.player
                     )

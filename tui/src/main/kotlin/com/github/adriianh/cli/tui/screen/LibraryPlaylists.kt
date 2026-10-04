@@ -109,9 +109,18 @@ internal fun buildPlaylistsContent(
 
     val items = filtered.map { item ->
         val isDimmed = state.isOfflineMode && item.isRemote
-        val iconColor = if (isDimmed) TEXT_DIM else if (item.isRemote) ACCENT_BLUE else PRIMARY_COLOR
-        val authorColor = if (isDimmed) TEXT_DIM else if (item.isRemote) ACCENT_BLUE else TEXT_SECONDARY
+        val iconColor = when {
+            isDimmed -> TEXT_DIM
+            item.isRemote -> ACCENT_BLUE
+            else -> PRIMARY_COLOR
+        }
+        val authorColor = when {
+            isDimmed -> TEXT_DIM
+            item.isRemote -> ACCENT_BLUE
+            else -> TEXT_SECONDARY
+        }
         val authorText = if (isDimmed) "${item.author} $ICON_CLOUD" else item.author
+
         row(
             text("${item.icon} ").fg(iconColor).length(2),
             text(item.title).fg(if (isDimmed) TEXT_DIM else TEXT_PRIMARY).ellipsis().fill(),
