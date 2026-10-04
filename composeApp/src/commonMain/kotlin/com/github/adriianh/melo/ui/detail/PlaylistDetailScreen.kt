@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,14 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -63,6 +61,8 @@ import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.formatCollectionDuration
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -307,6 +307,11 @@ fun PlaylistDetailScreen(
                     }
                 }
 
+                val playableTracks = remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
+                    if (uiState.isOffline) songs.filter { it.id in uiState.downloadedTrackIds }
+                    else songs
+                }
+
                 LazyColumn(
                     state = lazyListState,
                     modifier = Modifier
@@ -337,13 +342,27 @@ fun PlaylistDetailScreen(
                             downloadedCount = uiState.downloadedTrackCount,
                             totalTrackCount = uiState.totalTrackCount,
                             currentDownloadingTrackTitle = uiState.currentDownloadingTrackTitle,
-                            onDownloadClick = if (songs.isNotEmpty()) viewModel::toggleDownload else null,
-                            onPlayClick = { queueViewModel.playTracks(songs, 0) },
-                            onShuffleClick = { queueViewModel.playShuffled(songs) },
+                            onDownloadClick = if (!uiState.isOffline && songs.isNotEmpty()) {
+                                viewModel::toggleDownload
+                            } else null,
+                            onPlayClick = {
+                                if (playableTracks.isNotEmpty()) {
+                                    queueViewModel.playTracks(playableTracks, 0)
+                                }
+                            },
+                            onShuffleClick = {
+                                if (playableTracks.isNotEmpty()) {
+                                    queueViewModel.playShuffled(playableTracks)
+                                }
+                            },
                             onToggleSave = if (isCustomPlaylist) null else viewModel::toggleSave,
-                            onAddToQueue = { queueViewModel.addAllToQueue(songs) },
+                            onAddToQueue = {
+                                if (playableTracks.isNotEmpty()) {
+                                    queueViewModel.addAllToQueue(playableTracks)
+                                }
+                            },
                             accentColor = accentColor,
-                            hasTracks = songs.isNotEmpty()
+                            hasTracks = playableTracks.isNotEmpty()
                         )
                     }
 
@@ -413,6 +432,7 @@ fun PlaylistDetailScreen(
                                 currentTrackId = queueState.currentTrack?.id,
                                 isPlaying = isPlaying,
                                 isLiked = { song -> song.id in likedTrackIds },
+                                isOffline = uiState.isOffline,
                                 isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
                                 isDownloading = { song -> song.id in uiState.activeDownloadsMap },
                                 downloadProgress = { song ->
@@ -432,11 +452,11 @@ fun PlaylistDetailScreen(
                                         selectedTrackIds + song.id
                                     }
                                 },
-                                onTrackClick = { index, _ ->
-                                    queueViewModel.playTracks(
-                                        songs,
-                                        index
-                                    )
+                                onTrackClick = { _, song ->
+                                    val trackIndex = playableTracks.indexOfFirst { it.id == song.id }
+                                    if (trackIndex != -1) {
+                                        queueViewModel.playTracks(playableTracks, trackIndex)
+                                    }
                                 },
                                 onMoreClick = { interaction.openContextMenu(it) },
                                 onSwipeLeft = {

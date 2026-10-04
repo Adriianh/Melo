@@ -36,14 +36,24 @@ import com.github.adriianh.melo.util.MeloType
 @Composable
 fun OfflineModeBanner(
     visible: Boolean,
-    onReconnect: () -> Unit,
-    modifier: Modifier = Modifier
+    isManualOffline: Boolean = false,
+    onDisableManual: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    val titleText = if (isManualOffline) "Modo sin conexión" else "Sin conexión a internet"
+    val subtitleText = if (isManualOffline) {
+        "Reproduciendo únicamente pistas descargadas y locales"
+    } else {
+        "Comprueba tu conexión para acceder a todo el catálogo"
+    }
+    val buttonText = if (isManualOffline) "Desactivar" else "Reintentar"
+
     AnimatedVisibility(
         visible = visible,
+        modifier = modifier,
         enter = expandVertically() + fadeIn(),
         exit = shrinkVertically() + fadeOut(),
-        modifier = modifier
     ) {
         val primaryAccent = MaterialTheme.colorScheme.primary
         Surface(
@@ -75,13 +85,13 @@ fun OfflineModeBanner(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Modo sin conexión",
+                            text = titleText,
                             style = MeloType.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = MeloColors.textPrimary
                         )
                         Text(
-                            text = "Reproduciendo únicamente pistas descargadas y locales",
+                            text = subtitleText,
                             style = MeloType.labelSmall,
                             color = MeloColors.textSecondary
                         )
@@ -89,14 +99,14 @@ fun OfflineModeBanner(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(
-                    onClick = onReconnect,
+                    onClick = if (isManualOffline) onDisableManual else onRetry,
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
                     border = BorderStroke(1.dp, primaryAccent.copy(alpha = 0.6f)),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryAccent)
                 ) {
                     Text(
-                        text = "Conectar",
+                        text = buttonText,
                         style = MeloType.labelSmall,
                         fontWeight = FontWeight.Medium
                     )

@@ -48,8 +48,11 @@ data class PlayerUiState(
                 (playback.progressMs.toFloat() / durationMs).coerceIn(0f, 1f)
             } else 0f
 
-            val isBuffering = playback.isBuffering ||
-                    (track != null && !playback.isPlaying && (playback.currentTrack == null || playback.currentTrack?.id != track.id))
+            val isWaitingForTrack =
+                track != null &&
+                    !playback.isPlaying &&
+                    (playback.currentTrack == null || playback.currentTrack?.id != track.id)
+            val isBuffering = (playback.isBuffering || isWaitingForTrack) && playback.error == null
 
             return PlayerUiState(
                 currentTrack = track,

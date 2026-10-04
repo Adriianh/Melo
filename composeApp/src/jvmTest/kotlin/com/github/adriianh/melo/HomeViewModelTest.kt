@@ -385,7 +385,7 @@ class HomeViewModelTest {
         }
 
     @Test
-    fun `when refresh is invoked, ViewModel clears cache and resets isRefreshing`() =
+    fun `when refresh is invoked, ViewModel reloads feed and resets isRefreshing`() =
         runTest {
             coEvery { homeFeedCache.get() } returns sampleCachedFeed
             coEvery { getHomeUseCase(any(), any()) } returns sampleCachedFeed
@@ -410,7 +410,7 @@ class HomeViewModelTest {
             viewModel.refresh()
             advanceUntilIdle()
 
-            coVerify { homeFeedCache.clear() }
+            coVerify(atLeast = 2) { getHomeUseCase(any(), any()) }
             assertFalse(viewModel.uiState.value.isRefreshing)
         }
 }

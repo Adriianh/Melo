@@ -567,7 +567,6 @@ class HomeViewModel(
 
         _uiState.update { it.copy(isRefreshing = true) }
         viewModelScope.launch(ioDispatcher) {
-            homeFeedCache.clear()
             loadFeed(silent = true, delayMs = 0L)
         }
     }

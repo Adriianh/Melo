@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
@@ -47,6 +48,7 @@ fun TrackRow(
     modifier: Modifier = Modifier,
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
+    isEnabled: Boolean = true,
     trackNumber: Int? = null,
     showGlassBackground: Boolean = false,
     isDownloaded: Boolean = false,
@@ -71,8 +73,10 @@ fun TrackRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
+            .alpha(if (isEnabled) 1f else 0.45f)
             .background(backgroundColor)
             .combinedClickable(
+                enabled = isEnabled,
                 onClick = {
                     if (isDownloading) {
                         // Incomplete/downloading track cannot be played yet

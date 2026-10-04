@@ -195,7 +195,15 @@ val viewModelModule =
                 observeLibraryUpdatesUseCase = getOrNull(),
             )
         }
-        viewModelOf(::SidebarViewModel)
+        viewModel {
+            SidebarViewModel(
+                getSettingsUseCase = get(),
+                getAccountProfileUseCase = get(),
+                getUserPlaylistsUseCase = get(),
+                libraryCache = get(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModel {
             EntityDetailViewModel(
                 getEntityDetailsUseCase = get(),
@@ -208,6 +216,8 @@ val viewModelModule =
                 downloadManager = get(),
                 offlineRepository = get(),
                 getSettingsUseCase = get(),
+                networkMonitor = getOrNull(),
+                entityCache = getOrNull(),
                 getPlaylistTracksUseCase = getOrNull(),
                 removeTrackFromPlaylistUseCase = getOrNull(),
                 deletePlaylistUseCase = getOrNull(),
@@ -215,7 +225,31 @@ val viewModelModule =
                 reorderPlaylistTracksUseCase = getOrNull(),
             )
         }
-        viewModelOf(::SearchViewModel)
+        viewModel {
+            SearchViewModel(
+                searchTracksUseCase = get(),
+                searchAlbumsUseCase = get(),
+                searchArtistsUseCase = get(),
+                searchPlaylistsUseCase = get(),
+                searchVideosUseCase = get(),
+                searchSummaryUseCase = get(),
+                getExploreUseCase = get(),
+                getChartsUseCase = get(),
+                getTrendingUseCase = get(),
+                getMoodAndGenresUseCase = get(),
+                getSearchHistoryUseCase = get(),
+                saveSearchQueryUseCase = get(),
+                deleteSearchQueryUseCase = getOrNull(),
+                getSearchSuggestionsUseCase = get(),
+                getRecentTracksUseCase = get(),
+                getRemoteHistoryUseCase = get(),
+                browseCategoryUseCase = get(),
+                getSettingsUseCase = get(),
+                getOfflineTracksUseCase = get(),
+                scanLocalTracksUseCase = get(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModelOf(::UpdateViewModel)
     }
 

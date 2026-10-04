@@ -95,6 +95,9 @@ class PlaybackManagerImpl(
     private var pendingRestoreTrackId: String? = null
     private var lastSavedPositionMs: Long = 0L
     private var isOfflineSettingsEnabled: Boolean = false
+    private var wasOfflineWaitingForNetwork: Boolean = false
+    private var pendingResumePositionMs: Long = 0L
+    private var pendingResumeTrackId: String? = null
 
     init {
         meloPlayer.setVolume(_volume.value)
@@ -148,6 +151,11 @@ class PlaybackManagerImpl(
                             }
                     } else if (trackId == null || trackId != lastHandledErrorTrackId) {
                         lastHandledErrorTrackId = trackId
+                        if (isEffectivelyOffline() || networkMonitor?.isOnline?.value == false) {
+                            wasOfflineWaitingForNetwork = true
+                            pendingResumePositionMs = state.progressMs
+                            pendingResumeTrackId = trackId
+                        }
                         emitPlaybackError(loadError)
                     }
                 } else if (state.isFinished && state.error == null) {
@@ -169,6 +177,30 @@ class PlaybackManagerImpl(
                     }
                 } else if (isTrackLoaded && !state.isPlaying && !state.isBuffering && state.currentTrack != null) {
                     persistCurrentSession(immediate = true)
+                }
+            }
+        }
+        if (networkMonitor != null) {
+            scope.launch(dispatcher) {
+                var wasOnline = networkMonitor.isOnline.value
+                networkMonitor.isOnline.collect { isOnline ->
+                    val reconnected = !wasOnline && isOnline
+                    wasOnline = isOnline
+                    if (reconnected && wasOfflineWaitingForNetwork && !isOfflineSettingsEnabled) {
+                        wasOfflineWaitingForNetwork = false
+                        val currentTrack = _queueState.value.currentTrack
+                        if (currentTrack != null && !playbackState.value.isPlaying) {
+                            val resumePos =
+                                if (pendingResumeTrackId == currentTrack.id) {
+                                    pendingResumePositionMs
+                                } else {
+                                    0L
+                                }
+                            recoveryAttempts = 0
+                            recoveryJob?.cancel()
+                            playCurrentQueueTrack(initialSeekMs = resumePos)
+                        }
+                    }
                 }
             }
         }
@@ -197,6 +229,9 @@ class PlaybackManagerImpl(
         recoveryJob?.cancel()
         recoveryJob = null
         if (playbackState.value.isPlaying) {
+            wasOfflineWaitingForNetwork = false
+            pendingResumeTrackId = null
+            pendingResumePositionMs = 0L
             meloPlayer.pause()
             persistCurrentSession(immediate = true)
         } else if (playbackState.value.isFinished) {
@@ -559,7 +594,10 @@ class PlaybackManagerImpl(
                         _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
                         playCurrentQueueTrack()
                     } else {
-                        meloPlayer.stop()
+                        meloPlayer.setIdleTrack(track, targetSeek)
+                        wasOfflineWaitingForNetwork = true
+                        pendingResumePositionMs = targetSeek
+                        pendingResumeTrackId = track.id
                         emitPlaybackError("Track is not available offline")
                     }
                     return@launch
@@ -578,6 +616,14 @@ class PlaybackManagerImpl(
                     }
 
                 if (url == null) {
+                    if (isEffectivelyOffline() || networkMonitor?.isOnline?.value == false) {
+                        meloPlayer.setIdleTrack(track, targetSeek)
+                        wasOfflineWaitingForNetwork = true
+                        pendingResumePositionMs = targetSeek
+                        pendingResumeTrackId = track.id
+                        emitPlaybackError("No internet connection")
+                        return@launch
+                    }
                     if (replayingLoadedTrack) {
                         if (recoveryAttempts < MAX_PLAYBACK_RECOVERY_ATTEMPTS) {
                             recoveryAttempts++
@@ -590,9 +636,14 @@ class PlaybackManagerImpl(
                                     }
                                 }
                         } else {
+                            meloPlayer.setIdleTrack(track, targetSeek)
+                            wasOfflineWaitingForNetwork = true
+                            pendingResumePositionMs = targetSeek
+                            pendingResumeTrackId = track.id
                             emitPlaybackError("Network connection lost. Press play to retry.")
                         }
                     } else {
+                        meloPlayer.setIdleTrack(track, targetSeek)
                         emitPlaybackError("Stream not available, skipping...")
                         skipCurrentQueueTrack()
                     }
@@ -615,10 +666,22 @@ class PlaybackManagerImpl(
                 }
 
                 if (!track.id.startsWith("local:") && !url.startsWith("file:")) {
-                    if (track.durationMs in 1..DownloadManager.MAX_AUTO_CACHE_DURATION_MS) {
-                        launch(dispatcher) {
-                            delay(4000.milliseconds)
-                            downloadManager?.cacheTrack(track)
+                    launch(dispatcher) {
+                        delay(4000.milliseconds)
+                        val effectiveDuration =
+                            if (track.durationMs > 0) {
+                                track.durationMs
+                            } else {
+                                meloPlayer.state.value.durationMs
+                            }
+                        if (effectiveDuration in 1..DownloadManager.MAX_AUTO_CACHE_DURATION_MS) {
+                            val trackToCache =
+                                if (track.durationMs <= 0) {
+                                    track.copy(durationMs = effectiveDuration)
+                                } else {
+                                    track
+                                }
+                            downloadManager?.cacheTrack(trackToCache)
                         }
                     }
                 }
