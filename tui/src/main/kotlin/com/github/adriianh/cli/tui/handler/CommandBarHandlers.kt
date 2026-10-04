@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.CommandBarState
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
@@ -42,7 +43,7 @@ abstract class Command(
 }
 
 object CommandBarHandlers {
-    private val COMMANDS = listOf(
+    internal val COMMANDS = listOf(
         object : Command(listOf("q", "quit")) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 onStopLifecycle()
@@ -323,208 +324,293 @@ object CommandBarHandlers {
         return if (hasSpace) {
             computeSubArgumentSuggestions(
                 cmdInput,
-                parts.getOrNull(1)?.trimStart() ?: ""
+                parts.getOrNull(1)?.trimStart() ?: "",
             )
         } else {
             computeCommandNameSuggestions(cmdInput)
         }
     }
 
-    private fun computeSubArgumentSuggestions(cmdInput: String, argPrefix: String): List<String> {
-        val matchingCommand = COMMANDS.firstOrNull { cmd ->
-            cmd.names.any { it.equals(cmdInput, ignoreCase = true) }
-        } ?: return emptyList()
-
-        return if (matchingCommand.subArguments.isNotEmpty()) {
-            matchingCommand.subArguments
-                .filter { it.startsWith(argPrefix, ignoreCase = true) }
-                .map { "$cmdInput $it" }
-                .take(6)
-        } else if (matchingCommand.requiresArgument && argPrefix.isBlank()) {
-            listOf("$cmdInput ${matchingCommand.argumentDescription ?: ""}")
-        } else {
-            emptyList()
-        }
-    }
-
-    private fun computeCommandNameSuggestions(cmdInput: String): List<String> {
-        return COMMANDS.flatMap { cmd ->
-            cmd.names.filter { it.contains(cmdInput, ignoreCase = true) }
-                .map { if (cmd.requiresArgument) "$it ${cmd.argumentDescription ?: ""}" else it }
-        }.sortedWith(
-            compareByDescending<String> {
-                it.split(" ").first().equals(cmdInput, ignoreCase = true)
-            }
-                .thenByDescending {
-                    it.split(" ")
-                        .first()
-                        .startsWith(cmdInput, ignoreCase = true)
-                }
-                .thenBy { it }
-        ).take(6)
-    }
-
     fun MeloScreen.handleCommandBarKey(event: KeyEvent): EventResult {
         if (!state.commandBar.isVisible) return EventResult.UNHANDLED
         val barState = state.commandBar
         when (event.code()) {
-            KeyCode.ESCAPE -> {
-                closeCommandBar()
-                return EventResult.HANDLED
-            }
-
-            KeyCode.ENTER -> {
-                var inputToExecute = barState.input.trim()
-
-                if (barState.selectedSuggestionIndex != null && barState.suggestions.isNotEmpty()) {
-                    val sug = barState.suggestions[barState.selectedSuggestionIndex]
-                    val parts = sug.split(" ")
-                    val isTemplate = parts.size > 1 && parts[1].startsWith("<")
-                    val completedWord = if (isTemplate) parts[0] + " " else sug
-
-                    if (isTemplate && barState.input.trim().split(Regex("\\s+")).size == 1) {
-                        state = state.copy(
-                            commandBar = barState.copy(
-                                input = completedWord,
-                                cursorPosition = completedWord.length,
-                                suggestions = computeSuggestions(completedWord),
-                                selectedSuggestionIndex = null
-                            )
-                        )
-                        return EventResult.HANDLED
-                    } else {
-                        if (!isTemplate) {
-                            inputToExecute = completedWord
-                        }
-                    }
-                }
-
-                if (inputToExecute.isNotEmpty()) {
-                    executeCommand(inputToExecute)
-                } else {
-                    closeCommandBar()
-                }
-                return EventResult.HANDLED
-            }
-
-            KeyCode.UP -> {
-                if (barState.suggestions.isNotEmpty()) {
-                    val prevIndex = if (barState.selectedSuggestionIndex == null) -1 else maxOf(
-                        -1,
-                        barState.selectedSuggestionIndex - 1
-                    )
-                    state = state.copy(
-                        commandBar = barState.copy(
-                            selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex
-                        )
-                    )
-                }
-                return EventResult.HANDLED
-            }
-
-            KeyCode.DOWN -> {
-                if (barState.suggestions.isNotEmpty()) {
-                    val nextIndex = if (barState.selectedSuggestionIndex == null) 0 else minOf(
-                        barState.suggestions.size - 1,
-                        barState.selectedSuggestionIndex + 1
-                    )
-                    state = state.copy(
-                        commandBar = barState.copy(
-                            selectedSuggestionIndex = nextIndex
-                        )
-                    )
-                }
-                return EventResult.HANDLED
-            }
-
-            KeyCode.BACKSPACE -> {
-                if (barState.input.isNotEmpty()) {
-                    val newInput = barState.input.substring(0, barState.input.length - 1)
-                    state = state.copy(
-                        commandBar = barState.copy(
-                            input = newInput,
-                            cursorPosition = maxOf(0, barState.cursorPosition - 1),
-                            errorMessage = null,
-                            suggestions = computeSuggestions(newInput),
-                            selectedSuggestionIndex = null
-                        )
-                    )
-                }
-                return EventResult.HANDLED
-            }
-
-            KeyCode.CHAR -> {
-                val str = event.string()
-                val newInput = barState.input + str
-                state = state.copy(
-                    commandBar = barState.copy(
-                        input = newInput,
-                        cursorPosition = barState.cursorPosition + str.length,
-                        errorMessage = null,
-                        suggestions = computeSuggestions(newInput),
-                        selectedSuggestionIndex = null
-                    )
-                )
-                return EventResult.HANDLED
-            }
-
+            KeyCode.ESCAPE -> closeCommandBar()
+            KeyCode.ENTER -> handleEnter(barState)
+            KeyCode.TAB -> handleTab(barState, event.modifiers().shift())
+            KeyCode.UP -> handleArrowUp(barState)
+            KeyCode.DOWN -> handleArrowDown(barState)
+            KeyCode.LEFT, KeyCode.RIGHT, KeyCode.HOME, KeyCode.END ->
+                handleCursorNavigation(event.code(), barState)
+            KeyCode.BACKSPACE, KeyCode.DELETE -> handleEditingKey(event.code(), barState)
+            KeyCode.CHAR -> handleChar(event, barState)
             else -> {}
         }
         return EventResult.HANDLED
     }
+}
 
-    private fun MeloScreen.closeCommandBar(restoreFocus: Boolean = true) {
-        val prevFocus = state.commandBar.previousFocusId
+private fun computeSubArgumentSuggestions(cmdInput: String, argPrefix: String): List<String> {
+    val matchingCommand = CommandBarHandlers.COMMANDS.firstOrNull { cmd ->
+        cmd.names.any { it.equals(cmdInput, ignoreCase = true) }
+    } ?: return emptyList()
+
+    return if (matchingCommand.subArguments.isNotEmpty()) {
+        matchingCommand.subArguments
+            .filter { it.startsWith(argPrefix, ignoreCase = true) }
+            .map { "$cmdInput $it" }
+            .take(6)
+    } else if (matchingCommand.requiresArgument && argPrefix.isBlank()) {
+        listOf("$cmdInput ${matchingCommand.argumentDescription ?: ""}")
+    } else {
+        emptyList()
+    }
+}
+
+private fun computeCommandNameSuggestions(cmdInput: String): List<String> {
+    return CommandBarHandlers.COMMANDS.flatMap { cmd ->
+        cmd.names.filter { it.contains(cmdInput, ignoreCase = true) }
+            .map { if (cmd.requiresArgument) "$it ${cmd.argumentDescription ?: ""}" else it }
+    }.sortedWith(
+        compareByDescending<String> {
+            it.split(" ").first().equals(cmdInput, ignoreCase = true)
+        }.thenByDescending {
+            it.split(" ").first().startsWith(cmdInput, ignoreCase = true)
+        }.thenBy { it },
+    ).take(6)
+}
+
+private fun MeloScreen.handleTab(barState: CommandBarState, isShift: Boolean) {
+    if (barState.suggestions.isEmpty()) return
+
+    if (isShift) {
+        val prevIndex = if (barState.selectedSuggestionIndex == null) {
+            barState.suggestions.size - 1
+        } else {
+            maxOf(0, barState.selectedSuggestionIndex - 1)
+        }
+        state = state.copy(commandBar = barState.copy(selectedSuggestionIndex = prevIndex))
+    } else {
+        val targetIndex = barState.selectedSuggestionIndex ?: 0
+        val sug = barState.suggestions[targetIndex]
+        val parts = sug.split(" ")
+        val isTemplate = parts.size > 1 && parts[1].startsWith("<")
+        val completedWord = if (isTemplate) parts[0] + " " else sug
+
         state = state.copy(
-            commandBar = state.commandBar.copy(
-                isVisible = false,
-                previousFocusId = null
-            )
+            commandBar = barState.copy(
+                input = completedWord,
+                cursorPosition = completedWord.length,
+                suggestions = CommandBarHandlers.computeSuggestions(completedWord),
+                selectedSuggestionIndex = null,
+            ),
         )
-        if (restoreFocus) {
-            if (prevFocus != null) {
-                appRunner()?.focusManager()?.setFocus(prevFocus)
-            } else {
-                appRunner()?.focusManager()?.setFocus("home-panel")
-            }
+    }
+}
+
+private fun MeloScreen.handleArrowUp(barState: CommandBarState) {
+    if (barState.selectedSuggestionIndex != null) {
+        val prev = barState.selectedSuggestionIndex - 1
+        state = state.copy(
+            commandBar = barState.copy(
+                selectedSuggestionIndex = if (prev < 0) null else prev,
+            ),
+        )
+        return
+    }
+
+    val history = barState.history
+    if (history.isNotEmpty()) {
+        val newIndex = if (barState.historyIndex in history.indices) {
+            maxOf(0, barState.historyIndex - 1)
+        } else {
+            history.size - 1
+        }
+        val pastInput = history[newIndex]
+        state = state.copy(
+            commandBar = barState.copy(
+                input = pastInput,
+                cursorPosition = pastInput.length,
+                historyIndex = newIndex,
+                suggestions = CommandBarHandlers.computeSuggestions(pastInput),
+                selectedSuggestionIndex = null,
+            ),
+        )
+    }
+}
+
+private fun MeloScreen.handleArrowDown(barState: CommandBarState) {
+    if (barState.selectedSuggestionIndex == null && barState.historyIndex in barState.history.indices) {
+        val newIndex = barState.historyIndex + 1
+        if (newIndex < barState.history.size) {
+            val pastInput = barState.history[newIndex]
+            state = state.copy(
+                commandBar = barState.copy(
+                    input = pastInput,
+                    cursorPosition = pastInput.length,
+                    historyIndex = newIndex,
+                    suggestions = CommandBarHandlers.computeSuggestions(pastInput),
+                    selectedSuggestionIndex = null,
+                ),
+            )
+        } else {
+            state = state.copy(
+                commandBar = barState.copy(
+                    input = "",
+                    cursorPosition = 0,
+                    historyIndex = barState.history.size,
+                    suggestions = CommandBarHandlers.computeSuggestions(""),
+                    selectedSuggestionIndex = null,
+                ),
+            )
+        }
+        return
+    }
+
+    if (barState.suggestions.isNotEmpty()) {
+        val next = if (barState.selectedSuggestionIndex == null) {
+            0
+        } else {
+            minOf(barState.suggestions.size - 1, barState.selectedSuggestionIndex + 1)
+        }
+        state = state.copy(commandBar = barState.copy(selectedSuggestionIndex = next))
+    }
+}
+
+private fun MeloScreen.handleCursorNavigation(code: KeyCode, barState: CommandBarState) {
+    val inputLen = barState.input.length
+    val newCursor = when (code) {
+        KeyCode.LEFT -> maxOf(0, barState.cursorPosition - 1)
+        KeyCode.RIGHT -> minOf(inputLen, barState.cursorPosition + 1)
+        KeyCode.HOME -> 0
+        KeyCode.END -> inputLen
+        else -> barState.cursorPosition
+    }
+    state = state.copy(commandBar = barState.copy(cursorPosition = newCursor))
+}
+
+private fun MeloScreen.handleEditingKey(code: KeyCode, barState: CommandBarState) {
+    val cursor = barState.cursorPosition.coerceIn(0, barState.input.length)
+    val newInput = when (code) {
+        KeyCode.BACKSPACE if cursor > 0 -> {
+            barState.input.removeRange(cursor - 1, cursor)
+        }
+        KeyCode.DELETE if cursor < barState.input.length -> {
+            barState.input.removeRange(cursor, cursor + 1)
+        }
+        else -> {
+            return
+        }
+    }
+    val newCursor = if (code == KeyCode.BACKSPACE) cursor - 1 else cursor
+    state = state.copy(
+        commandBar = barState.copy(
+            input = newInput,
+            cursorPosition = newCursor,
+            errorMessage = null,
+            suggestions = CommandBarHandlers.computeSuggestions(newInput),
+            selectedSuggestionIndex = null,
+        ),
+    )
+}
+
+private fun MeloScreen.handleChar(event: KeyEvent, barState: CommandBarState) {
+    val str = event.string()
+    val cursor = barState.cursorPosition.coerceIn(0, barState.input.length)
+    val newInput = StringBuilder(barState.input).insert(cursor, str).toString()
+    state = state.copy(
+        commandBar = barState.copy(
+            input = newInput,
+            cursorPosition = cursor + str.length,
+            errorMessage = null,
+            suggestions = CommandBarHandlers.computeSuggestions(newInput),
+            selectedSuggestionIndex = null,
+        ),
+    )
+}
+
+private fun MeloScreen.handleEnter(barState: CommandBarState) {
+    var inputToExecute = barState.input.trim()
+
+    if (barState.selectedSuggestionIndex != null && barState.suggestions.isNotEmpty()) {
+        val sug = barState.suggestions[barState.selectedSuggestionIndex]
+        val parts = sug.split(" ")
+        val isTemplate = parts.size > 1 && parts[1].startsWith("<")
+        val completedWord = if (isTemplate) parts[0] + " " else sug
+
+        if (isTemplate && barState.input.trim().split(Regex("\\s+")).size == 1) {
+            state = state.copy(
+                commandBar = barState.copy(
+                    input = completedWord,
+                    cursorPosition = completedWord.length,
+                    suggestions = CommandBarHandlers.computeSuggestions(completedWord),
+                    selectedSuggestionIndex = null,
+                ),
+            )
+            return
+        } else if (!isTemplate) {
+            inputToExecute = completedWord
         }
     }
 
-    private fun MeloScreen.executeCommand(input: String) {
-        val parts = input.split(" ", limit = 2)
-        val commandName = parts[0]
-        val arg = parts.getOrNull(1)
+    if (inputToExecute.isNotEmpty()) {
+        executeCommand(inputToExecute)
+    } else {
+        closeCommandBar()
+    }
+}
 
-        val command = COMMANDS.firstOrNull { cmd ->
-            cmd.names.any { it.equals(commandName, ignoreCase = true) }
+private fun MeloScreen.closeCommandBar(restoreFocus: Boolean = true) {
+    val prevFocus = state.commandBar.previousFocusId
+    state = state.copy(
+        commandBar = state.commandBar.copy(
+            isVisible = false,
+            previousFocusId = null,
+        ),
+    )
+    if (restoreFocus) {
+        if (prevFocus != null) {
+            appRunner()?.focusManager()?.setFocus(prevFocus)
+        } else {
+            appRunner()?.focusManager()?.setFocus("home-panel")
         }
+    }
+}
 
-        val newHistory = (state.commandBar.history + input).takeLast(50)
+private fun MeloScreen.executeCommand(input: String) {
+    val parts = input.split(" ", limit = 2)
+    val commandName = parts[0]
+    val arg = parts.getOrNull(1)
 
-        val result = command?.run { execute(arg) }
-            ?: CommandResult(
-                errorMessage = "Unrecognized command: $commandName",
-                keepBarOpen = true
-            )
+    val command = CommandBarHandlers.COMMANDS.firstOrNull { cmd ->
+        cmd.names.any { it.equals(commandName, ignoreCase = true) }
+    }
 
-        state = state.copy(
-            commandBar = state.commandBar.copy(
-                isVisible = result.keepBarOpen,
-                input = if (result.keepBarOpen) state.commandBar.input else "",
-                history = newHistory,
-                historyIndex = newHistory.size,
-                errorMessage = result.errorMessage,
-                previousFocusId = if (result.keepBarOpen) state.commandBar.previousFocusId else null
-            )
+    val newHistory = (state.commandBar.history + input).takeLast(50)
+
+    val result = command?.run { execute(arg) }
+        ?: CommandResult(
+            errorMessage = "Unrecognized command: $commandName",
+            keepBarOpen = true,
         )
 
-        if (!result.keepBarOpen && result.restoreFocus) {
-            val prevFocus = state.commandBar.previousFocusId
-            if (prevFocus != null) {
-                appRunner()?.focusManager()?.setFocus(prevFocus)
-            } else {
-                appRunner()?.focusManager()?.setFocus("home-panel")
-            }
+    state = state.copy(
+        commandBar = state.commandBar.copy(
+            isVisible = result.keepBarOpen,
+            input = if (result.keepBarOpen) state.commandBar.input else "",
+            history = newHistory,
+            historyIndex = newHistory.size,
+            errorMessage = result.errorMessage,
+            previousFocusId = if (result.keepBarOpen) state.commandBar.previousFocusId else null,
+        ),
+    )
+
+    if (!result.keepBarOpen && result.restoreFocus) {
+        val prevFocus = state.commandBar.previousFocusId
+        if (prevFocus != null) {
+            appRunner()?.focusManager()?.setFocus(prevFocus)
+        } else {
+            appRunner()?.focusManager()?.setFocus("home-panel")
         }
     }
 }
