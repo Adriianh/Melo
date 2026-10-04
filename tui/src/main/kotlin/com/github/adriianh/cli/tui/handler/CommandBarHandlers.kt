@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.SearchTab
@@ -13,7 +14,9 @@ import com.github.adriianh.cli.tui.handler.playback.setShuffleEnabled
 import com.github.adriianh.cli.tui.handler.playback.setVolumePercent
 import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
 import com.github.adriianh.cli.tui.handler.playback.toggleQueue
+import com.github.adriianh.cli.tui.handler.search.loadLyricsIfNeeded
 import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
@@ -29,7 +32,8 @@ data class CommandResult(
 abstract class Command(
     val names: List<String>,
     val argumentDescription: String? = null,
-    val requiresArgument: Boolean = false
+    val requiresArgument: Boolean = false,
+    val subArguments: List<String> = emptyList(),
 ) {
     val suggestionTexts: List<String>
         get() = names.map { if (argumentDescription != null) "$it $argumentDescription" else it }
@@ -76,7 +80,12 @@ object CommandBarHandlers {
                 return CommandResult()
             }
         },
-        object : Command(listOf("queue"), "<clear|open>", requiresArgument = true) {
+        object : Command(
+            listOf("queue"),
+            "<clear|open>",
+            requiresArgument = true,
+            subArguments = listOf("clear", "open"),
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
                     "clear" -> {
@@ -96,7 +105,12 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("shuffle"), "<on|off>", requiresArgument = true) {
+        object : Command(
+            listOf("shuffle"),
+            "<on|off>",
+            requiresArgument = true,
+            subArguments = listOf("on", "off"),
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
                     "on" -> {
@@ -116,7 +130,12 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("repeat"), "<off|one|all>", requiresArgument = true) {
+        object : Command(
+            listOf("repeat"),
+            "<off|one|all>",
+            requiresArgument = true,
+            subArguments = listOf("off", "one", "all"),
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return when (arg) {
                     "off", "none" -> {
@@ -155,8 +174,17 @@ object CommandBarHandlers {
         },
         object : Command(
             listOf("goto"),
-            "<home|search|library|nowplaying|statistics|downloads>",
-            requiresArgument = true
+            "<home|search|library|nowplaying|statistics|downloads|settings>",
+            requiresArgument = true,
+            subArguments = listOf(
+                "home",
+                "search",
+                "library",
+                "nowplaying",
+                "statistics",
+                "downloads",
+                "settings"
+            ),
         ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 val section = when (arg) {
@@ -166,6 +194,7 @@ object CommandBarHandlers {
                     "nowplaying" -> SidebarSection.NOW_PLAYING
                     "statistics" -> SidebarSection.STATS
                     "downloads" -> SidebarSection.OFFLINE
+                    "settings" -> SidebarSection.SETTINGS
                     else -> return CommandResult(
                         errorMessage = "Usage: goto <home|search|library|nowplaying|statistics|downloads>",
                         keepBarOpen = true
@@ -243,10 +272,45 @@ object CommandBarHandlers {
                     CommandResult(errorMessage = "Usage: playlist <name>", keepBarOpen = true)
                 }
             }
+        },
+        object : Command(listOf("help", "?")) {
+            override fun MeloScreen.execute(arg: String?): CommandResult {
+                showToast(
+                    "Commands: :play, :pause, :next, :prev, :goto, " +
+                        ":queue, :shuffle, :repeat, :vol, :like, :lyrics, :q",
+                    ToastKind.INFO,
+                )
+                return CommandResult()
+            }
+        },
+        object : Command(listOf("like", "fav")) {
+            override fun MeloScreen.execute(arg: String?): CommandResult {
+                val currentTrack = playbackManager.playbackState.value.currentTrack
+                return if (currentTrack != null) {
+                    toggleFavorite(currentTrack)
+                    CommandResult()
+                } else {
+                    CommandResult(errorMessage = "No track currently playing", keepBarOpen = true)
+                }
+            }
+        },
+        object : Command(listOf("lyrics")) {
+            override fun MeloScreen.execute(arg: String?): CommandResult {
+                state = state.copy(
+                    detail = state.detail.copy(
+                        detailTab = DetailTab.LYRICS,
+                        lyricsScrollOffset = 0,
+                        isAutoScrollLyrics = true
+                    )
+                )
+                loadLyricsIfNeeded()
+                appRunner()?.focusManager()?.setFocus("detail-panel")
+                return CommandResult(restoreFocus = false)
+            }
         }
     )
 
-    private val ALL_COMMANDS_FLAT = COMMANDS.flatMap { it.suggestionTexts }
+    private val ALL_COMMANDS_FLAT = COMMANDS.flatMap { it.suggestionTexts }.take(6)
 
     fun computeSuggestions(input: String): List<String> {
         val trimmed = input.trimStart()
@@ -256,20 +320,34 @@ object CommandBarHandlers {
         val cmdInput = parts[0]
         val hasSpace = trimmed.length > cmdInput.length
 
-        if (hasSpace) {
-            val matchingCommands = COMMANDS.filter { cmd ->
-                cmd.names.any { it.equals(cmdInput, ignoreCase = true) }
-            }
-            return matchingCommands.flatMap { cmd ->
-                if (cmd.requiresArgument) {
-                    cmd.names.filter { it.equals(cmdInput, ignoreCase = true) }
-                        .map { "$it ${cmd.argumentDescription ?: ""}" }
-                } else {
-                    emptyList()
-                }
-            }
+        return if (hasSpace) {
+            computeSubArgumentSuggestions(
+                cmdInput,
+                parts.getOrNull(1)?.trimStart() ?: ""
+            )
+        } else {
+            computeCommandNameSuggestions(cmdInput)
         }
+    }
 
+    private fun computeSubArgumentSuggestions(cmdInput: String, argPrefix: String): List<String> {
+        val matchingCommand = COMMANDS.firstOrNull { cmd ->
+            cmd.names.any { it.equals(cmdInput, ignoreCase = true) }
+        } ?: return emptyList()
+
+        return if (matchingCommand.subArguments.isNotEmpty()) {
+            matchingCommand.subArguments
+                .filter { it.startsWith(argPrefix, ignoreCase = true) }
+                .map { "$cmdInput $it" }
+                .take(6)
+        } else if (matchingCommand.requiresArgument && argPrefix.isBlank()) {
+            listOf("$cmdInput ${matchingCommand.argumentDescription ?: ""}")
+        } else {
+            emptyList()
+        }
+    }
+
+    private fun computeCommandNameSuggestions(cmdInput: String): List<String> {
         return COMMANDS.flatMap { cmd ->
             cmd.names.filter { it.contains(cmdInput, ignoreCase = true) }
                 .map { if (cmd.requiresArgument) "$it ${cmd.argumentDescription ?: ""}" else it }
@@ -277,9 +355,13 @@ object CommandBarHandlers {
             compareByDescending<String> {
                 it.split(" ").first().equals(cmdInput, ignoreCase = true)
             }
-                .thenByDescending { it.split(" ").first().startsWith(cmdInput, ignoreCase = true) }
+                .thenByDescending {
+                    it.split(" ")
+                        .first()
+                        .startsWith(cmdInput, ignoreCase = true)
+                }
                 .thenBy { it }
-        ).take(8)
+        ).take(6)
     }
 
     fun MeloScreen.handleCommandBarKey(event: KeyEvent): EventResult {
