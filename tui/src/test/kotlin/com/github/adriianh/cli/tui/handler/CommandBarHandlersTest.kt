@@ -9,14 +9,17 @@ class CommandBarHandlersTest {
     fun testEmptyInputReturnsCappedSuggestions() {
         val suggestions = CommandBarHandlers.computeSuggestions("")
         assertTrue(suggestions.isNotEmpty())
-        assertTrue(suggestions.size <= 6)
+        assertTrue(suggestions.size > 6)
     }
 
     @Test
     fun testSubArgumentSuggestionsForGoto() {
+        val gotoCommand = CommandBarHandlers.computeSuggestions("goto")
+        assertEquals(listOf("goto <view>"), gotoCommand)
+
         val allGoto = CommandBarHandlers.computeSuggestions("goto ")
         assertTrue(allGoto.isNotEmpty())
-        assertTrue(allGoto.size <= 6)
+        assertEquals(7, allGoto.size)
         assertTrue(allGoto.all { it.startsWith("goto ") })
         assertTrue(allGoto.contains("goto home"))
 

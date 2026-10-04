@@ -32,6 +32,7 @@ data class CommandResult(
 
 abstract class Command(
     val names: List<String>,
+    val description: String? = null,
     val argumentDescription: String? = null,
     val requiresArgument: Boolean = false,
     val subArguments: List<String> = emptyList(),
@@ -44,21 +45,32 @@ abstract class Command(
 
 object CommandBarHandlers {
     internal val COMMANDS = listOf(
-        object : Command(listOf("q", "quit")) {
+        object : Command(
+            names = listOf("q", "quit"),
+            description = "Quit the application",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 onStopLifecycle()
                 appRunner()?.quit()
                 exitProcess(0)
             }
         },
-        object : Command(listOf("settings")) {
+        object : Command(
+            names = listOf("settings"),
+            description = "Open the settings panel",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 applySidebarSelection(SidebarSection.SETTINGS)
                 activateSidebarSelection(SidebarSection.SETTINGS)
                 return CommandResult(restoreFocus = false)
             }
         },
-        object : Command(listOf("vol"), "<0-100>", requiresArgument = true) {
+        object : Command(
+            names = listOf("vol"),
+            description = "Set the playback volume",
+            argumentDescription = "<0-100>",
+            requiresArgument = true,
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 val vol = arg?.toIntOrNull()
                 return if (vol != null && vol in 0..100) {
@@ -69,21 +81,28 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("skip", "next")) {
+        object : Command(
+            names = listOf("skip", "next"),
+            description = "Skip to the next track",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 handleMediaSessionNext()
                 return CommandResult()
             }
         },
-        object : Command(listOf("prev")) {
+        object : Command(
+            names = listOf("prev"),
+            description = "Go to the previous track",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 handleMediaSessionPrevious()
                 return CommandResult()
             }
         },
         object : Command(
-            listOf("queue"),
-            "<clear|open>",
+            names = listOf("queue"),
+            description = "Open or clear the playback queue",
+            argumentDescription = "<action>",
             requiresArgument = true,
             subArguments = listOf("clear", "open"),
         ) {
@@ -107,8 +126,9 @@ object CommandBarHandlers {
             }
         },
         object : Command(
-            listOf("shuffle"),
-            "<on|off>",
+            names = listOf("shuffle"),
+            description = "Toggle shuffle mode",
+            argumentDescription = "<state>",
             requiresArgument = true,
             subArguments = listOf("on", "off"),
         ) {
@@ -132,8 +152,9 @@ object CommandBarHandlers {
             }
         },
         object : Command(
-            listOf("repeat"),
-            "<off|one|all>",
+            names = listOf("repeat"),
+            description = "Set the repeat mode",
+            argumentDescription = "<mode>",
             requiresArgument = true,
             subArguments = listOf("off", "one", "all"),
         ) {
@@ -161,21 +182,28 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("pause")) {
+        object : Command(
+            names = listOf("pause"),
+            description = "Pause playback",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 if (playbackManager.playbackState.value.isPlaying) togglePlayPause()
                 return CommandResult()
             }
         },
-        object : Command(listOf("play", "resume")) {
+        object : Command(
+            names = listOf("play", "resume"),
+            description = "Resume playback",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 if (!playbackManager.playbackState.value.isPlaying) togglePlayPause()
                 return CommandResult()
             }
         },
         object : Command(
-            listOf("goto"),
-            "<home|search|library|nowplaying|statistics|downloads|settings>",
+            names = listOf("goto"),
+            description = "Navigate directly to a view or a screen",
+            argumentDescription = "<view>",
             requiresArgument = true,
             subArguments = listOf(
                 "home",
@@ -206,7 +234,12 @@ object CommandBarHandlers {
                 return CommandResult(restoreFocus = false)
             }
         },
-        object : Command(listOf("search", "track", "song"), "<name>", requiresArgument = true) {
+        object : Command(
+            names = listOf("search", "track", "song"),
+            description = "Search for a track",
+            argumentDescription = "<name>",
+            requiresArgument = true,
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
@@ -221,7 +254,12 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("album"), "<name>", requiresArgument = true) {
+        object : Command(
+            names = listOf("album"),
+            description = "Search for an album",
+            argumentDescription = "<name>",
+            requiresArgument = true,
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
@@ -236,7 +274,12 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("artist"), "<name>", requiresArgument = true) {
+        object : Command(
+            names = listOf("artist"),
+            description = "Search for an artist",
+            argumentDescription = "<name>",
+            requiresArgument = true,
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
@@ -255,7 +298,12 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("playlist"), "<name>", requiresArgument = true) {
+        object : Command(
+            names = listOf("playlist"),
+            description = "Search for a playlist",
+            argumentDescription = "<name>",
+            requiresArgument = true,
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 return if (!arg.isNullOrBlank()) {
                     applySidebarSelection(SidebarSection.SEARCH)
@@ -274,7 +322,10 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("help", "?")) {
+        object : Command(
+            names = listOf("help", "?"),
+            description = "Show available commands",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 showToast(
                     "Commands: :play, :pause, :next, :prev, :goto, " +
@@ -284,7 +335,10 @@ object CommandBarHandlers {
                 return CommandResult()
             }
         },
-        object : Command(listOf("like", "fav")) {
+        object : Command(
+            names = listOf("like", "fav"),
+            description = "Like the current track",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 val currentTrack = playbackManager.playbackState.value.currentTrack
                 return if (currentTrack != null) {
@@ -295,7 +349,10 @@ object CommandBarHandlers {
                 }
             }
         },
-        object : Command(listOf("lyrics")) {
+        object : Command(
+            names = listOf("lyrics"),
+            description = "Show lyrics of the current track",
+        ) {
             override fun MeloScreen.execute(arg: String?): CommandResult {
                 state = state.copy(
                     detail = state.detail.copy(
@@ -311,7 +368,7 @@ object CommandBarHandlers {
         }
     )
 
-    private val ALL_COMMANDS_FLAT = COMMANDS.flatMap { it.suggestionTexts }.take(6)
+    private val ALL_COMMANDS_FLAT = COMMANDS.flatMap { it.suggestionTexts }
 
     fun computeSuggestions(input: String): List<String> {
         val trimmed = input.trimStart()
@@ -348,6 +405,11 @@ object CommandBarHandlers {
         }
         return EventResult.HANDLED
     }
+
+    fun findCommand(name: String): Command? =
+        COMMANDS.firstOrNull { cmd ->
+            cmd.names.any { it.equals(name, ignoreCase = true) }
+        }
 }
 
 private fun computeSubArgumentSuggestions(cmdInput: String, argPrefix: String): List<String> {
@@ -359,7 +421,6 @@ private fun computeSubArgumentSuggestions(cmdInput: String, argPrefix: String): 
         matchingCommand.subArguments
             .filter { it.startsWith(argPrefix, ignoreCase = true) }
             .map { "$cmdInput $it" }
-            .take(6)
     } else if (matchingCommand.requiresArgument && argPrefix.isBlank()) {
         listOf("$cmdInput ${matchingCommand.argumentDescription ?: ""}")
     } else {
@@ -377,7 +438,7 @@ private fun computeCommandNameSuggestions(cmdInput: String): List<String> {
         }.thenByDescending {
             it.split(" ").first().startsWith(cmdInput, ignoreCase = true)
         }.thenBy { it },
-    ).take(6)
+    )
 }
 
 private fun MeloScreen.handleTab(barState: CommandBarState, isShift: Boolean) {
