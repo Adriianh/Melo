@@ -7,6 +7,7 @@ import com.github.adriianh.cli.tui.ScreenState
 import com.github.adriianh.cli.tui.filteredAndSortedPlaylists
 import com.github.adriianh.cli.tui.handler.search.openEntityDetails
 import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.core.domain.model.LibraryCacheData
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.bindings.Actions
 import dev.tamboui.tui.event.KeyCode
@@ -38,6 +39,7 @@ internal fun MeloScreen.handlePlaylistsKey(event: KeyEvent): EventResult {
 internal fun MeloScreen.syncYouTubePlaylists() {
     val settings = settingsViewState.currentSettings
     val isLoggedIn = !settings.sessionCookies.isNullOrBlank()
+
     if (!isLoggedIn) return
     scope.launch {
         try {
@@ -47,6 +49,10 @@ internal fun MeloScreen.syncYouTubePlaylists() {
                 state = state.copy(
                     collections = state.collections.copy(remotePlaylists = playlists)
                 )
+            }
+            libraryCache?.let { cache ->
+                val current = cache.get() ?: LibraryCacheData()
+                cache.save(current.copy(playlists = playlists, lastSyncedAt = System.currentTimeMillis()))
             }
         } catch (_: Exception) {
         }

@@ -7,6 +7,7 @@ import com.github.adriianh.cli.tui.checkYouTubeAuth
 import com.github.adriianh.cli.tui.handler.loadStats
 import com.github.adriianh.cli.tui.handler.restoreLastSession
 import com.github.adriianh.cli.tui.handler.syncYouTubeLibrary
+import com.github.adriianh.cli.tui.isPlayable
 import com.github.adriianh.cli.tui.loadHomeFeed
 import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.util.EQUALIZER_TICK_MS
@@ -26,6 +27,34 @@ internal fun MeloScreen.onStartLifecycle() {
     observePlaybackManager()
     if (settingsViewState.currentSettings.discordRpcEnabled) {
         discordRpcManager.connect()
+    }
+
+    val cachedLib = libraryCache?.getSync()
+    if (cachedLib != null) {
+        state = state.copy(
+            collections = state.collections.copy(
+                remotePlaylists = cachedLib.playlists,
+                remoteFavorites = cachedLib.likedSongs,
+                remoteAlbums = cachedLib.albums,
+                remoteArtists = cachedLib.artists,
+                remoteRecentTracks = cachedLib.remoteHistory,
+            )
+        )
+    } else {
+        scope.launch {
+            val asyncLib = libraryCache?.get() ?: return@launch
+            appRunner()?.runOnRenderThread {
+                state = state.copy(
+                    collections = state.collections.copy(
+                        remotePlaylists = asyncLib.playlists,
+                        remoteFavorites = asyncLib.likedSongs,
+                        remoteAlbums = asyncLib.albums,
+                        remoteArtists = asyncLib.artists,
+                        remoteRecentTracks = asyncLib.remoteHistory,
+                    )
+                )
+            }
+        }
     }
     scope.launch {
         getFavorites().collect { tracks ->
@@ -95,29 +124,49 @@ internal fun MeloScreen.onStartLifecycle() {
     scope.launch {
         var lastCookies: String? = null
         var isFirstEmit = true
+        var wasOnline: Boolean? = null
         val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
         combine(getSettings(), isOnlineFlow) { settings, isOnline ->
             settings to isOnline
         }.collect { (settings, isOnline) ->
             val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
             val isInitialWithCookies = isFirstEmit && !settings.sessionCookies.isNullOrBlank()
+            val reconnected = wasOnline == false && isOnline
+
+            wasOnline = isOnline
             lastCookies = settings.sessionCookies
             isFirstEmit = false
+
+            val isOffline = settings.offlineMode || !isOnline
+            val unplayableNowPlaying = state.player.nowPlaying?.let { !state.isPlayable(it) } ?: false
+            val unplayableBlocked = isOffline && unplayableNowPlaying
+            val shouldResetAudio = state.player.isLoadingAudio && (reconnected || unplayableBlocked)
+
             appRunner()?.runOnRenderThread {
                 MeloTheme.loadTheme(settings.theme)
                 settingsViewState = settingsViewState.copy(currentSettings = settings)
                 state =
                     state.copy(
-                        isOfflineMode = settings.offlineMode || !isOnline,
+                        isOfflineMode = isOffline,
                         languagePicker =
                             state.languagePicker.copy(
                                 currentLanguage = settings.searchLanguage.ifBlank { "es" },
                             ),
+                        player = if (shouldResetAudio) {
+                            state.player.copy(isLoadingAudio = false)
+                        } else state.player
                     )
+
+                if (reconnected) {
+                    showToast("Reconnected to the internet", ToastKind.SUCCESS)
+                }
             }
-            if (cookiesChanged || isInitialWithCookies) {
+            if (cookiesChanged || isInitialWithCookies || reconnected) {
                 checkYouTubeAuth()
                 syncYouTubeLibrary()
+            }
+            if (reconnected) {
+                loadHomeFeed()
             }
         }
     }

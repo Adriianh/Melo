@@ -2,7 +2,6 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.core.domain.model.ThemePreset
 import dev.tamboui.style.Color
-import dev.tamboui.style.Style
 
 /**
  * Color theme for the Melo TUI.
@@ -74,6 +73,8 @@ object MeloTheme {
     val ICON_DOWNLOADING: String get() = if (supportsUnicode) "↓" else "~"
     val ICON_FOLDER: String get() = if (supportsUnicode) "▸" else "/"
     val ICON_FOLDER_OPENED: String get() = if (supportsUnicode) "▾" else "/"
+    val ICON_WARNING: String get() = if (supportsUnicode) "⚠" else "!"
+    val ICON_CLOUD: String get() = if (supportsUnicode) "☁" else "[C]"
 
     var PRIMARY_COLOR: Color = Color.hex("#FF2D55")
     var SECONDARY_COLOR: Color = Color.hex("#1AA34A")
@@ -93,11 +94,7 @@ object MeloTheme {
     var BORDER_DEFAULT: Color = Color.hex("#2A2A2E")
     var BORDER_FOCUSED: Color = PRIMARY_COLOR
 
-    val TITLE_STYLE: Style get() = Style.EMPTY.bold().fg(TEXT_PRIMARY)
-    val SUBTITLE_STYLE: Style get() = Style.EMPTY.fg(TEXT_SECONDARY)
-    val DIM_STYLE: Style get() = Style.EMPTY.fg(TEXT_DIM)
-    val HIGHLIGHT_STYLE: Style get() = Style.EMPTY.fg(PRIMARY_COLOR).bold()
-    val NOW_PLAYING_STYLE: Style get() = Style.EMPTY.fg(PRIMARY_COLOR)
+    val WARNING_COLOR: Color = Color.hex("#FFC107")
 
     fun loadTheme(preset: ThemePreset) {
         when (preset) {

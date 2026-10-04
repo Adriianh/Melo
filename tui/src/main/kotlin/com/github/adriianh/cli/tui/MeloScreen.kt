@@ -13,6 +13,9 @@ import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
 import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pushToast
+import com.github.adriianh.core.domain.cache.EntityCache
+import com.github.adriianh.core.domain.cache.HomeFeedCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.interactor.DiscoveryInteractors
 import com.github.adriianh.core.domain.interactor.LibraryInteractors
 import com.github.adriianh.core.domain.interactor.OfflineInteractors
@@ -23,8 +26,8 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
-import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -62,6 +65,9 @@ class MeloScreen(
     internal val discordRpcManager: DiscordRpcManager,
     internal val youTubeAuthService: YouTubeAuthService,
     internal val networkMonitor: NetworkMonitor? = null,
+    internal val libraryCache: LibraryCache? = null,
+    internal val homeFeedCache: HomeFeedCache? = null,
+    internal val entityCache: EntityCache? = null,
     dispatcher: CoroutineDispatcher
 ) : ToolkitApp() {
 

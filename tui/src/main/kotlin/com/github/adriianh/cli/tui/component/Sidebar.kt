@@ -24,8 +24,18 @@ fun buildSidebar(
     navList: ListElement<*>,
     utilList: ListElement<*>,
     sidebarInUtil: Boolean,
+    isOffline: Boolean = false,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
+    val homeTitle = if (isOffline) "${MeloTheme.ICON_HOME} Home [Offline]" else "${MeloTheme.ICON_HOME} Home"
+    val searchTitle = if (isOffline) "${MeloTheme.ICON_SEARCH} Search [Offline]" else "${MeloTheme.ICON_SEARCH} Search"
+    navList.items(
+        homeTitle,
+        searchTitle,
+        "${MeloTheme.ICON_LIBRARY} Your Library",
+        "${MeloTheme.ICON_NOW_PLAYING} Now Playing",
+    )
+
     if (sidebarInUtil) {
         navList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
         utilList.highlightStyle(Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
@@ -36,9 +46,16 @@ fun buildSidebar(
         utilList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
     }
 
-    val title = Line.from(
-        Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
-    )
+    val title = if (isOffline) {
+        Line.from(
+            Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
+            Span.styled("[Offline] ", Style.EMPTY.fg(MeloTheme.TEXT_DIM))
+        )
+    } else {
+        Line.from(
+            Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
+        )
+    }
 
     return panel(
         dock()
