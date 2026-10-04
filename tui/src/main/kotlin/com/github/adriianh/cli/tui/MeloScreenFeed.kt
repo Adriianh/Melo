@@ -43,41 +43,42 @@ internal fun MeloScreen.loadHomeFeed(chipParams: String? = null, chipIndex: Int 
             ((state.screen as? ScreenState.Home) ?: cachedHomeScreen).feedSections
         if (existingSections.isNotEmpty()) {
             updateScreen<ScreenState.Home> { it.copy(isLoadingFeed = false, feedError = null) }
-            return
-        }
+        } else {
+            val downloads = state.collections.offlineTracks
+                .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                .map { it.track }
+            val recentPlayable = state.collections.recentTracks
+                .map { it.track }
+                .filter { state.isPlayable(it) }
 
-        val downloads = state.collections.offlineTracks
-            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-            .map { it.track }
-        val recentPlayable = state.collections.recentTracks
-            .map { it.track }
-            .filter { state.isPlayable(it) }
+            val offlineSections = buildList {
+                if (downloads.isNotEmpty()) {
+                    add(
+                        HomeSection(
+                            title = "Tus descargas",
+                            type = HomeSectionType.SONGS,
+                            items = downloads.map { SearchResult.Song(it) }
+                        )
+                    )
+                }
+                if (recentPlayable.isNotEmpty()) {
+                    add(
+                        HomeSection(
+                            title = "Escuchado recientemente",
+                            type = HomeSectionType.SONGS,
+                            items = recentPlayable.map { SearchResult.Song(it) }
+                        )
+                    )
+                }
+            }
 
-        val offlineSections = buildList {
-            if (downloads.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Tus descargas",
-                        type = HomeSectionType.SONGS,
-                        items = downloads.map { SearchResult.Song(it) })
+            updateScreen<ScreenState.Home> {
+                it.copy(
+                    feedSections = offlineSections,
+                    isLoadingFeed = false,
+                    feedError = if (offlineSections.isEmpty()) "No offline content available" else null
                 )
             }
-            if (recentPlayable.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Escuchado recientemente",
-                        type = HomeSectionType.SONGS,
-                        items = recentPlayable.map { SearchResult.Song(it) })
-                )
-            }
-        }
-
-        updateScreen<ScreenState.Home> {
-            it.copy(
-                feedSections = offlineSections,
-                isLoadingFeed = false,
-                feedError = if (offlineSections.isEmpty()) "No hay canciones descargadas" else null
-            )
         }
         return
     }
@@ -156,7 +157,13 @@ internal fun MeloScreen.loadHomeFeed(chipParams: String? = null, chipIndex: Int 
                             .filter { it.downloadStatus == DownloadStatus.COMPLETED }
                             .map { it.track }
                         val offlineSections = if (downloads.isNotEmpty()) {
-                            listOf(HomeSection(title = "Tus descargas", type = HomeSectionType.SONGS, items = downloads.map { SearchResult.Song(it) }))
+                            listOf(
+                                HomeSection(
+                                    title = "Tus descargas",
+                                    type = HomeSectionType.SONGS,
+                                    items = downloads.map { SearchResult.Song(it) }
+                                )
+                            )
                         } else emptyList()
 
                         current.copy(

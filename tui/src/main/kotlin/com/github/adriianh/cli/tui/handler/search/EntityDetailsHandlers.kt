@@ -113,7 +113,12 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
             artistDashboardItems = emptyList(),
             selectedIndex = 0,
             isLoading = cachedSync == null && !state.isOfflineMode,
-            errorMessage = if (cachedSync == null && state.isOfflineMode) "No hay contenido disponible sin conexión" else null,
+            errorMessage =
+                if (cachedSync == null && state.isOfflineMode) {
+                    "No content available offline"
+                } else {
+                    null
+                },
             returnScreen = returnScreen,
             returnSection = returnSection
         )
