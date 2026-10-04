@@ -3,36 +3,10 @@ package com.github.adriianh.cli.tui.handler.search
 import com.github.adriianh.cli.tui.DetailTab
 import com.github.adriianh.cli.tui.MeloScreen
 import com.github.adriianh.cli.tui.ScreenState
-import com.github.adriianh.cli.tui.handler.handleGlobalShortcuts
-import com.github.adriianh.cli.tui.handler.isCtrlA
-import com.github.adriianh.cli.tui.handler.isCtrlF
-import com.github.adriianh.cli.tui.handler.loadMoreSimilar
-import com.github.adriianh.cli.tui.handler.matchesAction
-import com.github.adriianh.cli.tui.handler.openPlaylistPicker
-import com.github.adriianh.cli.tui.handler.playback.addToQueue
-import com.github.adriianh.cli.tui.handler.playback.openBatchOptions
-import com.github.adriianh.cli.tui.handler.playback.openTrackOptions
-import com.github.adriianh.cli.tui.handler.playback.playList
-import com.github.adriianh.cli.tui.handler.playback.playTrack
-import com.github.adriianh.cli.tui.handler.playback.seekToMs
 import com.github.adriianh.cli.tui.handler.resolveSimilarTracks
-import com.github.adriianh.cli.tui.handler.toggleFavorite
-import com.github.adriianh.cli.tui.isFavoriteEntity
-import com.github.adriianh.cli.tui.util.LrcParser
-import com.github.adriianh.core.domain.model.DownloadType
-import com.github.adriianh.core.domain.model.FavoriteEntityType
-import com.github.adriianh.core.domain.model.LyricsTranslationMode
-import com.github.adriianh.core.domain.model.MeloAction
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.domain.model.TrackLyrics
-import com.github.adriianh.core.domain.model.filterAndSortTracks
 import com.github.adriianh.core.domain.model.search.SearchResult
-import com.github.adriianh.core.domain.model.toFavoriteEntity
-import dev.tamboui.toolkit.event.EventResult
-import dev.tamboui.tui.bindings.Actions
-import dev.tamboui.tui.event.KeyCode
-import dev.tamboui.tui.event.KeyEvent
-import kotlinx.coroutines.Dispatchers
+import com.github.adriianh.core.domain.model.search.entityId
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -116,23 +90,30 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
         is SearchResult.Song -> null
     }
 
+    val cachedSync = entityCache?.getSync(entity.entityId)
+    val initialTracks = when (cachedSync) {
+        is SearchResult.Album -> cachedSync.songs.orEmpty()
+        is SearchResult.Playlist -> cachedSync.songs.orEmpty()
+        else -> emptyList()
+    }
+
     state = state.copy(
         detail = state.detail.copy(
-            selectedEntity = entity,
-            selectedTrack = null,
-            isLoadingEntityMeta = true,
+            selectedEntity = cachedSync ?: entity,
+            selectedTrack = initialTracks.firstOrNull(),
+            isLoadingEntityMeta = cachedSync == null,
             artworkData = null
         ),
         screen = ScreenState.EntityDetail(
-            entity = entity,
+            entity = cachedSync ?: entity,
             title = title,
             subtitle = subtitle,
             description = description,
-            tracks = emptyList(),
+            tracks = initialTracks,
             artistDashboardItems = emptyList(),
             selectedIndex = 0,
-            isLoading = true,
-            errorMessage = null,
+            isLoading = cachedSync == null && !state.isOfflineMode,
+            errorMessage = if (cachedSync == null && state.isOfflineMode) "No hay contenido disponible sin conexión" else null,
             returnScreen = returnScreen,
             returnSection = returnSection
         )
@@ -146,6 +127,7 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
         appRunner()?.focusManager()?.setFocus("artist-dashboard-list")
     }
 
+    if (state.isOfflineMode) return
     debouncedLoadEntityDetails(entity)
 
     scope.launch {
@@ -163,6 +145,8 @@ internal fun MeloScreen.openEntityDetails(entity: SearchResult) {
             }
             return@launch
         }
+
+        entityCache?.save(loaded)
 
         val tracks = when (loaded) {
             is SearchResult.Album -> loaded.songs.orEmpty()
