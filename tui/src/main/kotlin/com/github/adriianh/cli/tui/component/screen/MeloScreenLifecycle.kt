@@ -27,6 +27,34 @@ internal fun MeloScreen.onStartLifecycle() {
     if (settingsViewState.currentSettings.discordRpcEnabled) {
         discordRpcManager.connect()
     }
+
+    val cachedLib = libraryCache?.getSync()
+    if (cachedLib != null) {
+        state = state.copy(
+            collections = state.collections.copy(
+                remotePlaylists = cachedLib.playlists,
+                remoteFavorites = cachedLib.likedSongs,
+                remoteAlbums = cachedLib.albums,
+                remoteArtists = cachedLib.artists,
+                remoteRecentTracks = cachedLib.remoteHistory,
+            )
+        )
+    } else {
+        scope.launch {
+            val asyncLib = libraryCache?.get() ?: return@launch
+            appRunner()?.runOnRenderThread {
+                state = state.copy(
+                    collections = state.collections.copy(
+                        remotePlaylists = asyncLib.playlists,
+                        remoteFavorites = asyncLib.likedSongs,
+                        remoteAlbums = asyncLib.albums,
+                        remoteArtists = asyncLib.artists,
+                        remoteRecentTracks = asyncLib.remoteHistory,
+                    )
+                )
+            }
+        }
+    }
     scope.launch {
         getFavorites().collect { tracks ->
             appRunner()?.runOnRenderThread {
@@ -95,12 +123,16 @@ internal fun MeloScreen.onStartLifecycle() {
     scope.launch {
         var lastCookies: String? = null
         var isFirstEmit = true
+        var wasOnline: Boolean? = null
         val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
         combine(getSettings(), isOnlineFlow) { settings, isOnline ->
             settings to isOnline
         }.collect { (settings, isOnline) ->
             val cookiesChanged = !isFirstEmit && settings.sessionCookies != lastCookies
             val isInitialWithCookies = isFirstEmit && !settings.sessionCookies.isNullOrBlank()
+            val reconnected = wasOnline == false && isOnline
+
+            wasOnline = isOnline
             lastCookies = settings.sessionCookies
             isFirstEmit = false
             appRunner()?.runOnRenderThread {
@@ -113,11 +145,21 @@ internal fun MeloScreen.onStartLifecycle() {
                             state.languagePicker.copy(
                                 currentLanguage = settings.searchLanguage.ifBlank { "es" },
                             ),
+                        player = if (reconnected && state.player.isLoadingAudio) {
+                            state.player.copy(isLoadingAudio = false)
+                        } else state.player
                     )
+
+                if (reconnected) {
+                    showToast("Reconnected to the internet", ToastKind.SUCCESS)
+                }
             }
-            if (cookiesChanged || isInitialWithCookies) {
+            if (cookiesChanged || isInitialWithCookies || reconnected) {
                 checkYouTubeAuth()
                 syncYouTubeLibrary()
+            }
+            if (reconnected) {
+                loadHomeFeed()
             }
         }
     }
