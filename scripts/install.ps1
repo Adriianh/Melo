@@ -13,7 +13,8 @@
 param (
     [string]$Version = "",
     [switch]$Nightly = $false,
-    [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui"
+    [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui",
+    [string]$ConfigDir  = "$env:APPDATA\Melo"
 )
 
 if (-not $Version -and $env:MELO_VERSION) {
@@ -68,6 +69,7 @@ Write-Host "  │  Platform:  Windows (x86_64)                           │" -F
 Write-Host "  │  Version:   $($VersionDisplay.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  │  Target:    $($InstallDir.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  │  Binaries:  $($BinDir.PadRight(43))│" -ForegroundColor DarkGray
+Write-Host "  │  Config:    $($ConfigDir.PadRight(43))│" -ForegroundColor DarkGray
 Write-Host "  └────────────────────────────────────────────────────────┘" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -90,59 +92,110 @@ try {
     }
 
     Write-Host "  ● Installing binaries and wrappers..." -ForegroundColor Magenta
-    $installerScript = Join-Path $sourceDir "install.ps1"
-    if (Test-Path $installerScript) {
-        & $installerScript -InstallDir $InstallDir -ConfigDir "$env:APPDATA\melo"
-    } else {
-        if (-not (Test-Path $InstallDir)) {
-            New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-        }
 
-        Copy-Item -Path "$sourceDir\*" -Destination $InstallDir -Recurse -Force
+    # Unblock extracted archive files to strip internet download zone identifier
+    Get-ChildItem -Path $sourceDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 
-        if (-not (Test-Path $BinDir)) {
-            New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-        }
+    if (-not (Test-Path $InstallDir)) {
+        New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+    }
 
-        # Ensure DLLs (e.g. SMTCAdapter.dll, jnidispatch.dll) exist in $BinDir as well
-        Get-ChildItem -Path $InstallDir -Filter "*.dll" | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $BinDir -Force -ErrorAction SilentlyContinue
-        }
+    Copy-Item -Path "$sourceDir\*" -Destination $InstallDir -Recurse -Force
 
-        # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
-        # without triggering PSSecurityException / ExecutionPolicy restrictions.
-        Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
+    if (-not (Test-Path $BinDir)) {
+        New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
+    }
 
-        $wrapperCmd = @"
+    # Ensure DLLs (e.g. SMTCAdapter.dll, jnidispatch.dll) exist in $BinDir as well
+    Get-ChildItem -Path $InstallDir -Filter "*.dll" | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $BinDir -Force -ErrorAction SilentlyContinue
+    }
+
+    # Remove any legacy or stale .ps1 files from $BinDir so PowerShell executes .cmd wrappers directly
+    # without triggering PSSecurityException / ExecutionPolicy restrictions.
+    Remove-Item (Join-Path $BinDir "*.ps1") -Force -ErrorAction SilentlyContinue
+
+    $smartMeloCmd = @"
+@echo off
+if "%~1"=="--gui" (
+    shift
+    if exist "%LOCALAPPDATA%\Programs\Melo\Melo.exe" (
+        start "" "%LOCALAPPDATA%\Programs\Melo\Melo.exe" %*
+        exit /b 0
+    ) else (
+        echo Error: Melo GUI is not installed.
+        exit /b 1
+    )
+)
+if "%~1"=="-g" (
+    shift
+    if exist "%LOCALAPPDATA%\Programs\Melo\Melo.exe" (
+        start "" "%LOCALAPPDATA%\Programs\Melo\Melo.exe" %*
+        exit /b 0
+    ) else (
+        echo Error: Melo GUI is not installed.
+        exit /b 1
+    )
+)
+if "%~1"=="--tui" shift
+if "%~1"=="-t" shift
+"%~dp0..\melo.exe" %*
+"@
+    Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $smartMeloCmd
+    Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $smartMeloCmd
+
+    $wrapperCmd = @"
 @echo off
 "%~dp0..\melo.exe" %*
 "@
-        Set-Content -Path (Join-Path $BinDir "melo.cmd") -Value $wrapperCmd
-        Set-Content -Path (Join-Path $BinDir "melo.bat") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
 
-        Set-Content -Path (Join-Path $BinDir "melo-tui.cmd") -Value $wrapperCmd
-        Set-Content -Path (Join-Path $BinDir "melo-tui.bat") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
+    Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
 
-        Set-Content -Path (Join-Path $BinDir "melo-cli.cmd") -Value $wrapperCmd
-        Set-Content -Path (Join-Path $BinDir "melo-cli.bat") -Value $wrapperCmd
-
-        $gitBashWrapper = @"
+    $gitBashWrapper = @"
 #!/usr/bin/env sh
 MELO_HOME="`$(cd "`$(dirname "`$0")/.." && pwd)"
 exec "`$MELO_HOME/melo.exe" "`$@"
 "@
-        Set-Content -Path (Join-Path $BinDir "melo") -Value $gitBashWrapper
-        Set-Content -Path (Join-Path $BinDir "melo-tui") -Value $gitBashWrapper
-        Set-Content -Path (Join-Path $BinDir "melo-cli") -Value $gitBashWrapper
+    Set-Content -Path (Join-Path $BinDir "melo") -Value $gitBashWrapper
+    Set-Content -Path (Join-Path $BinDir "melo-tui") -Value $gitBashWrapper
+    Set-Content -Path (Join-Path $BinDir "melo-cli") -Value $gitBashWrapper
 
-        # User PATH check
-        $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
-        if ($userPath -notlike "*$BinDir*") {
-            Write-Host "  ● Adding $BinDir to User PATH..." -ForegroundColor Magenta
-            [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", [EnvironmentVariableTarget]::User)
-            $env:Path = "$env:Path;$BinDir"
-            Write-Host "  ✔ Added to User PATH." -ForegroundColor Green
-        }
+    # Unblock installed files in target folder
+    Get-ChildItem -Path $InstallDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
+
+    # Setup configuration directory and template .env if missing
+    if (-not (Test-Path $ConfigDir)) {
+        New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null
+    }
+    $envFile = Join-Path $ConfigDir ".env"
+    if (-not (Test-Path $envFile)) {
+        Set-Content -Path $envFile -Value @"
+# Melo configuration
+# Place your API keys here and restart the terminal.
+
+# Last.fm API key (required for music discovery)
+# Get yours at: https://www.last.fm/api/account/create
+LASTFM_API_KEY=
+
+# Spotify credentials (optional, improves search results)
+# Get yours at: https://developer.spotify.com/dashboard
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+"@
+    }
+
+    # User PATH check
+    $pathUpdated = $false
+    $userPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::User)
+    if ($userPath -notlike "*$BinDir*") {
+        Write-Host "  ● Adding $BinDir to User PATH..." -ForegroundColor Magenta
+        [Environment]::SetEnvironmentVariable("Path", "$userPath;$BinDir", [EnvironmentVariableTarget]::User)
+        $env:Path = "$env:Path;$BinDir"
+        $pathUpdated = $true
+        Write-Host "  ✔ Added to User PATH." -ForegroundColor Green
     }
 
     Write-Host ""

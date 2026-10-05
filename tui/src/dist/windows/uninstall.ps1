@@ -1,6 +1,6 @@
 param(
     [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui",
-    [string]$ConfigDir  = "$env:APPDATA\melo",
+    [string]$ConfigDir  = "$env:APPDATA\Melo",
     [switch]$Force      = $false
 )
 
@@ -15,19 +15,28 @@ if ($currentPath -like "*$BinDir*") {
 
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $InstallDir
 
-if (Test-Path $ConfigDir) {
+$configDirs = @($ConfigDir)
+$legacyDir = Join-Path $env:USERPROFILE ".melo"
+if (Test-Path $legacyDir) {
+    $configDirs += $legacyDir
+}
+$existingDirs = $configDirs | Where-Object { Test-Path $_ }
+if ($existingDirs) {
     $deleteConfig = $Force
     if (-not $deleteConfig) {
-        $answer = Read-Host "Remove config directory $ConfigDir? [y/N]"
+        $displayDirs = $existingDirs -join ", "
+        $answer = Read-Host "Remove config directory $displayDirs? [y/N]"
         if ($answer -match '^[yY]') {
             $deleteConfig = $true
         }
     }
     if ($deleteConfig) {
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $ConfigDir
+        foreach ($dir in $existingDirs) {
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $dir
+        }
         Write-Host "✓ Config removed."
     } else {
-        Write-Host "  Config kept at $ConfigDir"
+        Write-Host "  Config kept at $($existingDirs -join ', ')"
     }
 }
 
