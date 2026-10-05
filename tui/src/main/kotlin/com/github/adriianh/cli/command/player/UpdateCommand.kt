@@ -4,6 +4,7 @@ import com.github.adriianh.cli.di.appModule
 import com.github.adriianh.cli.service.SelfUpdater
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.currentPlatform
 import com.github.adriianh.core.domain.repository.DownloadProgress
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
@@ -74,6 +75,8 @@ class UpdateCommand(
         "Examples:\n" +
             "  melo update\n" +
             "  melo update --check\n" +
+            "  melo update --nightly\n" +
+            "  melo update --stable\n" +
             "  melo update -y\n" +
             "  melo update --force\n" +
             "  melo upgrade"
@@ -94,6 +97,16 @@ class UpdateCommand(
         help = "Force download and reinstall even if up to date.",
     ).flag(default = false)
 
+    val nightly by option(
+        "--nightly",
+        help = "Check for and install the latest nightly development build.",
+    ).flag(default = false)
+
+    val stable by option(
+        "--stable",
+        help = "Check for and install the latest stable release.",
+    ).flag(default = false)
+
     override fun run() {
         val needsKoin = checkForUpdateUseCase == null || downloadUpdateUseCase == null || selfUpdater == null
         if (needsKoin) {
@@ -103,20 +116,30 @@ class UpdateCommand(
         }
     }
 
+    private fun resolveChannel(): UpdateChannel =
+        when {
+            nightly -> UpdateChannel.NIGHTLY
+            stable -> UpdateChannel.STABLE
+            currentVersion.contains("nightly", ignoreCase = true) -> UpdateChannel.NIGHTLY
+            else -> UpdateChannel.STABLE
+        }
+
     private fun executeCommand() {
         val actualCheckUseCase = checkForUpdateUseCase ?: inject<CheckForUpdateUseCase>().value
         val actualDownloadUseCase = downloadUpdateUseCase ?: inject<DownloadUpdateUseCase>().value
         val actualUpdater = selfUpdater ?: inject<SelfUpdater>().value
 
-        terminal.println(cyan("Checking for updates..."))
+        val channel = resolveChannel()
+        val channelTag = if (channel == UpdateChannel.NIGHTLY) "nightly" else "stable"
+        terminal.println(cyan("Checking for updates ($channelTag channel)..."))
 
         runBlocking {
             val versionToCheck = if (force) "0.0.0" else currentVersion
-            val result = actualCheckUseCase(versionToCheck)
+            val result = actualCheckUseCase(versionToCheck, channel)
 
             result.fold(
                 onSuccess = { release ->
-                    handleRelease(release, actualUpdater, actualDownloadUseCase)
+                    handleRelease(release, channel, actualUpdater, actualDownloadUseCase)
                 },
                 onFailure = { error ->
                     terminal.println(red("Failed to check for updates: ${error.message}"))
@@ -127,11 +150,13 @@ class UpdateCommand(
 
     private suspend fun handleRelease(
         release: AppRelease?,
+        channel: UpdateChannel,
         actualUpdater: SelfUpdater,
         actualDownloadUseCase: DownloadUpdateUseCase,
     ) {
         if (release == null) {
-            terminal.println(green("Melo is up to date (v$currentVersion)."))
+            val tag = if (channel == UpdateChannel.NIGHTLY) "nightly" else "stable"
+            terminal.println(green("Melo is up to date (v$currentVersion, channel: $tag)."))
             return
         }
 
@@ -168,8 +193,9 @@ class UpdateCommand(
         release: AppRelease,
         targetAsset: ReleaseAsset,
     ) {
+        val channelNotice = if (release.channel == UpdateChannel.NIGHTLY) " [nightly]" else ""
         terminal.println(
-            bold("Update available: ") + gray("v$currentVersion") + " → " + green("v${release.version}"),
+            bold("Update available: ") + gray("v$currentVersion") + " → " + green("v${release.version}$channelNotice"),
         )
 
         if (release.releaseNotes.isNotBlank()) {

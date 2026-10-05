@@ -12,6 +12,12 @@ enum class UpdatePlatform {
     UNKNOWN,
 }
 
+@Serializable
+enum class UpdateChannel {
+    STABLE,
+    NIGHTLY,
+}
+
 fun currentPlatform(): UpdatePlatform = currentUpdatePlatform()
 
 @Serializable
@@ -31,6 +37,7 @@ data class AppRelease(
     val htmlUrl: String,
     val publishedAt: String,
     val assets: List<ReleaseAsset>,
+    val channel: UpdateChannel = UpdateChannel.STABLE,
 ) {
     fun getAssetForPlatform(platform: UpdatePlatform): ReleaseAsset? {
         val matching = assets.filter { it.platform == platform }

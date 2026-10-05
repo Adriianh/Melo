@@ -52,6 +52,18 @@ class CommandBarHandlersTest {
     }
 
     @Test
+    fun testSubArgumentSuggestionsForUpdate() {
+        val allUpdate = CommandBarHandlers.computeSuggestions("update ")
+        assertEquals(listOf("update nightly", "update stable"), allUpdate)
+
+        val filteredUpdate = CommandBarHandlers.computeSuggestions("update n")
+        assertEquals(listOf("update nightly"), filteredUpdate)
+
+        val allUpgrade = CommandBarHandlers.computeSuggestions("upgrade ")
+        assertEquals(listOf("upgrade nightly", "upgrade stable"), allUpgrade)
+    }
+
+    @Test
     fun testCommandWithTemplateArgument() {
         val volTemplate = CommandBarHandlers.computeSuggestions("vol ")
         assertEquals(listOf("vol <0-100>"), volTemplate)

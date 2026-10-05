@@ -2,6 +2,7 @@ package com.github.adriianh.data.repository
 
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.repository.DownloadProgress
 import com.github.adriianh.core.domain.repository.UpdateRepository
@@ -25,15 +26,104 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
+object NightlyVersionComparator {
+    fun compareNumericBase(
+        v1: String,
+        v2: String,
+    ): Int {
+        val p1 = v1.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
+        val p2 = v2.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
+        val maxLen = maxOf(p1.size, p2.size)
+        var result = 0
+        for (i in 0 until maxLen) {
+            val r = p1.getOrElse(i) { 0 }
+            val c = p2.getOrElse(i) { 0 }
+            if (r != c) {
+                result = r.compareTo(c)
+                break
+            }
+        }
+        return result
+    }
+
+    fun parseNightlyTimestamp(version: String): Long? {
+        if (!version.contains("nightly", ignoreCase = true)) return null
+        val afterNightly = version.substringAfter("nightly", "").trimStart('.', '-', '_')
+        val datePart = afterNightly.substringBefore('-').replace(".", "").trim()
+        val digits = datePart.takeWhile { it.isDigit() }
+        return when (digits.length) {
+            in 12..14 -> digits.take(12).toLongOrNull()
+            8 -> (digits + "0000").toLongOrNull()
+            else -> digits.toLongOrNull()
+        }
+    }
+
+    fun parsePublishedAtTimestamp(publishedAt: String): Long? {
+        val clean = publishedAt.take(16).filter { it.isDigit() }
+        return when (clean.length) {
+            in 12..14 -> clean.take(12).toLongOrNull()
+            8 -> (clean + "0000").toLongOrNull()
+            else -> clean.toLongOrNull()
+        }
+    }
+
+    fun isNewerNightly(
+        remoteVersion: String,
+        currentVersion: String,
+        remotePublishedAt: String = "",
+    ): Boolean {
+        if (!currentVersion.contains("nightly", ignoreCase = true)) {
+            return true
+        }
+
+        val baseCmp = compareNumericBase(remoteVersion, currentVersion)
+        return when {
+            baseCmp > 0 -> true
+            baseCmp < 0 -> false
+            else -> {
+                val remoteStamp =
+                    parseNightlyTimestamp(remoteVersion)
+                        ?: parsePublishedAtTimestamp(remotePublishedAt)
+                val currentStamp = parseNightlyTimestamp(currentVersion)
+                if (remoteStamp != null && currentStamp != null) {
+                    remoteStamp > currentStamp
+                } else {
+                    remoteVersion != currentVersion
+                }
+            }
+        }
+    }
+
+    fun isNewerStable(
+        remoteVersion: String,
+        currentVersion: String,
+    ): Boolean {
+        val baseCmp = compareNumericBase(remoteVersion, currentVersion)
+        return when {
+            baseCmp > 0 -> true
+            baseCmp < 0 -> false
+            else -> currentVersion.contains("nightly", ignoreCase = true)
+        }
+    }
+}
+
 class UpdateRepositoryImpl(
     private val httpClient: HttpClient,
     private val dispatcher: CoroutineDispatcher,
     private val repoOwnerAndName: String = "Adriianh/Melo",
 ) : UpdateRepository {
-    override suspend fun checkForUpdate(currentVersion: String): Result<AppRelease?> =
+    override suspend fun checkForUpdate(
+        currentVersion: String,
+        channel: UpdateChannel,
+    ): Result<AppRelease?> =
         withContext(dispatcher) {
             runCatching {
-                val url = "https://api.github.com/repos/$repoOwnerAndName/releases/latest"
+                val url =
+                    if (channel == UpdateChannel.NIGHTLY) {
+                        "https://api.github.com/repos/$repoOwnerAndName/releases/tags/nightly"
+                    } else {
+                        "https://api.github.com/repos/$repoOwnerAndName/releases/latest"
+                    }
                 val dto: GitHubReleaseDto =
                     httpClient
                         .get(url) {
@@ -41,12 +131,17 @@ class UpdateRepositoryImpl(
                             header(HttpHeaders.UserAgent, "Melo-Music-Player")
                         }.body()
 
-                val remoteVersion =
-                    dto.tagName
-                        .trim()
-                        .removePrefix("v")
-                        .removePrefix("V")
-                val isNewer = isNewerVersion(remoteVersion, currentVersion)
+                val remoteVersion = resolveRemoteVersion(dto, channel)
+                val isNewer =
+                    if (channel == UpdateChannel.NIGHTLY) {
+                        NightlyVersionComparator.isNewerNightly(
+                            remoteVersion,
+                            currentVersion,
+                            dto.publishedAt.orEmpty(),
+                        )
+                    } else {
+                        NightlyVersionComparator.isNewerStable(remoteVersion, currentVersion)
+                    }
 
                 if (!isNewer) {
                     return@runCatching null
@@ -70,6 +165,7 @@ class UpdateRepositoryImpl(
                     htmlUrl = dto.htmlUrl,
                     publishedAt = dto.publishedAt.orEmpty(),
                     assets = assets,
+                    channel = channel,
                 )
             }
         }
@@ -149,6 +245,27 @@ class UpdateRepositoryImpl(
         private const val SOCKET_TIMEOUT_MS = 60_000L
         private const val CONNECT_TIMEOUT_MS = 30_000L
 
+        private fun resolveRemoteVersion(
+            dto: GitHubReleaseDto,
+            channel: UpdateChannel,
+        ): String {
+            if (channel == UpdateChannel.STABLE) {
+                return dto.tagName
+                    .trim()
+                    .removePrefix("v")
+                    .removePrefix("V")
+            }
+            val match = Regex("""Version:\s*`?([0-9a-zA-Z._-]+)`?""").find(dto.body.orEmpty())
+            val fromBody = match?.groupValues?.get(1)?.trim()
+            val dateStr =
+                dto.publishedAt
+                    ?.take(16)
+                    ?.replace("-", "")
+                    ?.replace("T", ".")
+                    ?.replace(":", "")
+            return fromBody?.takeIf { it.isNotBlank() } ?: ("nightly." + (dateStr ?: "latest"))
+        }
+
         fun detectPlatformFromFileName(fileName: String): UpdatePlatform {
             val lower = fileName.lowercase()
             return when {
@@ -179,19 +296,6 @@ class UpdateRepositoryImpl(
         fun isNewerVersion(
             remote: String,
             current: String,
-        ): Boolean {
-            val remoteParts = remote.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
-            val currentParts =
-                current.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
-
-            val maxLen = maxOf(remoteParts.size, currentParts.size)
-            for (i in 0 until maxLen) {
-                val r = remoteParts.getOrElse(i) { 0 }
-                val c = currentParts.getOrElse(i) { 0 }
-                if (r > c) return true
-                if (r < c) return false
-            }
-            return false
-        }
+        ): Boolean = NightlyVersionComparator.compareNumericBase(remote, current) > 0
     }
 }
