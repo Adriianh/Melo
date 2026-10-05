@@ -15,6 +15,7 @@ import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
 import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pruneExpiredToasts
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.util.MeloVersion
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,28 +32,32 @@ internal fun MeloScreen.onStartLifecycle() {
 
     val cachedLib = libraryCache?.getSync()
     if (cachedLib != null) {
-        state = state.copy(
-            collections = state.collections.copy(
-                remotePlaylists = cachedLib.playlists,
-                remoteFavorites = cachedLib.likedSongs,
-                remoteAlbums = cachedLib.albums,
-                remoteArtists = cachedLib.artists,
-                remoteRecentTracks = cachedLib.remoteHistory,
+        state =
+            state.copy(
+                collections =
+                    state.collections.copy(
+                        remotePlaylists = cachedLib.playlists,
+                        remoteFavorites = cachedLib.likedSongs,
+                        remoteAlbums = cachedLib.albums,
+                        remoteArtists = cachedLib.artists,
+                        remoteRecentTracks = cachedLib.remoteHistory,
+                    ),
             )
-        )
     } else {
         scope.launch {
             val asyncLib = libraryCache?.get() ?: return@launch
             appRunner()?.runOnRenderThread {
-                state = state.copy(
-                    collections = state.collections.copy(
-                        remotePlaylists = asyncLib.playlists,
-                        remoteFavorites = asyncLib.likedSongs,
-                        remoteAlbums = asyncLib.albums,
-                        remoteArtists = asyncLib.artists,
-                        remoteRecentTracks = asyncLib.remoteHistory,
+                state =
+                    state.copy(
+                        collections =
+                            state.collections.copy(
+                                remotePlaylists = asyncLib.playlists,
+                                remoteFavorites = asyncLib.likedSongs,
+                                remoteAlbums = asyncLib.albums,
+                                remoteArtists = asyncLib.artists,
+                                remoteRecentTracks = asyncLib.remoteHistory,
+                            ),
                     )
-                )
             }
         }
     }
@@ -117,6 +122,20 @@ internal fun MeloScreen.onStartLifecycle() {
             }
         }
     }
+    if (settingsViewState.currentSettings.autoCheckUpdates && checkForUpdate != null) {
+        scope.launch {
+            checkForUpdate.invoke(MeloVersion.CURRENT).onSuccess { release ->
+                if (release != null) {
+                    appRunner()?.runOnRenderThread {
+                        showToast(
+                            "Update available: v${release.version} (run ':update' or 'melo update')",
+                            ToastKind.INFO,
+                        )
+                    }
+                }
+            }
+        }
+    }
     scope.launch { checkYouTubeAuth() }
     scope.launch { restoreLastSession() }
     scope.launch { loadHomeFeed() }
@@ -152,9 +171,12 @@ internal fun MeloScreen.onStartLifecycle() {
                             state.languagePicker.copy(
                                 currentLanguage = settings.searchLanguage.ifBlank { "es" },
                             ),
-                        player = if (shouldResetAudio) {
-                            state.player.copy(isLoadingAudio = false)
-                        } else state.player
+                        player =
+                            if (shouldResetAudio) {
+                                state.player.copy(isLoadingAudio = false)
+                            } else {
+                                state.player
+                            },
                     )
 
                 if (reconnected) {

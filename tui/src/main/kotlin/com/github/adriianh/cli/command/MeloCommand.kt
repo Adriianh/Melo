@@ -24,6 +24,7 @@ import com.github.adriianh.cli.command.player.StatsCommand
 import com.github.adriianh.cli.command.player.StatusCommand
 import com.github.adriianh.cli.command.player.StopCommand
 import com.github.adriianh.cli.command.player.TagCommand
+import com.github.adriianh.cli.command.player.UpdateCommand
 import com.github.adriianh.cli.command.player.VolumeCommand
 import com.github.adriianh.cli.config.Messages
 import com.github.adriianh.cli.di.appModule
@@ -47,6 +48,7 @@ import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.ajalt.clikt.completion.CompletionCommand
 import com.github.ajalt.clikt.core.CliktCommand
@@ -95,6 +97,7 @@ class MeloCommand :
             ScrobbleCommand(),
             ShareCommand(),
             RpcCommand(),
+            UpdateCommand(),
             CompletionCommand(
                 help = "Generate shell completion scripts (bash, zsh, fish).",
                 epilog = "Examples:\n  melo completions bash\n  melo completions zsh\n  melo completions fish",
@@ -114,6 +117,7 @@ class MeloCommand :
             "previous" to listOf("prev"),
             "vol" to listOf("volume"),
             "completion" to listOf("completions"),
+            "upgrade" to listOf("update"),
         )
 
     override val invokeWithoutSubcommand: Boolean = true
@@ -157,6 +161,7 @@ class MeloCommand :
             val libraryCache: LibraryCache by inject()
             val homeFeedCache: HomeFeedCache by inject()
             val entityCache: EntityCache by inject()
+            val checkForUpdate: CheckForUpdateUseCase by inject()
 
             try {
                 MeloScreen(
@@ -180,6 +185,7 @@ class MeloCommand :
                     libraryCache = libraryCache,
                     homeFeedCache = homeFeedCache,
                     entityCache = entityCache,
+                    checkForUpdate = checkForUpdate,
                     dispatcher = dispatcher,
                 ).run()
             } finally {

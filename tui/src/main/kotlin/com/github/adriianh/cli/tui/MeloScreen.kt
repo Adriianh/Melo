@@ -31,6 +31,7 @@ import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
+import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import dev.tamboui.toolkit.app.ToolkitApp
 import dev.tamboui.toolkit.app.ToolkitRunner
@@ -72,6 +73,7 @@ class MeloScreen(
     internal val libraryCache: LibraryCache? = null,
     internal val homeFeedCache: HomeFeedCache? = null,
     internal val entityCache: EntityCache? = null,
+    internal val checkForUpdate: CheckForUpdateUseCase? = null,
     dispatcher: CoroutineDispatcher,
 ) : ToolkitApp() {
     // Bridging properties to keep existing code working during refactor

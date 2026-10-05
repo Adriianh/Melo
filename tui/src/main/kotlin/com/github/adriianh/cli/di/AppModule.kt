@@ -3,6 +3,8 @@ package com.github.adriianh.cli.di
 import com.github.adriianh.cli.config.configDir
 import com.github.adriianh.cli.config.resolveEnv
 import com.github.adriianh.cli.config.shareDir
+import com.github.adriianh.cli.service.NativeSelfUpdater
+import com.github.adriianh.cli.service.SelfUpdater
 import com.github.adriianh.cli.service.YouTubeAuthService
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.cli.tui.util.ArtworkRenderer
@@ -16,7 +18,6 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
-import com.github.adriianh.core.platform.MeloDataDirectory
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -40,6 +41,7 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
+import com.github.adriianh.core.platform.MeloDataDirectory
 import com.github.adriianh.data.di.sharedModule
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
@@ -183,6 +185,7 @@ val appModule =
         single<StatsRepository> { StatsRepositoryImpl(get()) }
         single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
         single<NetworkMonitor> { JvmNetworkMonitor(dispatcher = get()) }
+        single<SelfUpdater> { NativeSelfUpdater() }
 
         single { YouTubeAuthService(get(), get(), get(), get()) }
 

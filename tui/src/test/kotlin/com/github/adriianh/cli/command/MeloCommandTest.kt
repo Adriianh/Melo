@@ -66,10 +66,11 @@ class MeloCommandTest {
                 "stats",
                 "scrobble",
                 "rpc",
+                "update",
                 "completions",
             )
 
-        assertEquals(26, expectedCommands.size, "Expected exactly 26 commands to be audited")
+        assertEquals(27, expectedCommands.size, "Expected exactly 27 commands to be audited")
 
         for (name in expectedCommands) {
             assertTrue(
@@ -110,11 +111,12 @@ class MeloCommandTest {
         assertEquals(listOf("prev"), aliases["previous"])
         assertEquals(listOf("volume"), aliases["vol"])
         assertEquals(listOf("completions"), aliases["completion"])
+        assertEquals(listOf("update"), aliases["upgrade"])
     }
 
     @Test
     fun aliasesExecuteTargetCommandsHelpSuccessfully() {
-        val testAliases = listOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion")
+        val testAliases = listOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion", "upgrade")
 
         for (alias in testAliases) {
             val cmd = MeloCommand()
@@ -146,7 +148,7 @@ class MeloCommandTest {
     @Test
     fun allSubcommandsHaveValidCategoryMapping() {
         val allCategories = MeloHelpFormatter.COMMAND_CATEGORIES
-        assertEquals(26, allCategories.size, "All 26 commands must be categorized")
+        assertEquals(27, allCategories.size, "All 27 commands must be categorized")
 
         for ((cmd, cat) in allCategories) {
             assertNotNull(cat, "Command '$cmd' must map to a valid CommandCategory")
@@ -166,6 +168,7 @@ class MeloCommandTest {
                 "daemon",
                 "auth",
                 "volume",
+                "update",
             )
         for (name in auditedCommands) {
             val cmd = MeloCommand()

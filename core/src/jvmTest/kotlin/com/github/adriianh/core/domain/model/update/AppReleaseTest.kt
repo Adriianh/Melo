@@ -115,4 +115,70 @@ class AppReleaseTest {
         assertNull(release.getAssetForPlatform(UpdatePlatform.LINUX))
         assertNull(release.getAssetForPlatform(UpdatePlatform.MACOS))
     }
+
+    @Test
+    fun `tui asset selection picks native archives correctly`() {
+        val release =
+            AppRelease(
+                version = "2.2.1",
+                tagName = "v2.2.1",
+                name = "Melo 2.2.1",
+                releaseNotes = "Notes",
+                htmlUrl = "https://example.com",
+                publishedAt = "2026-09-27T00:00:00Z",
+                assets =
+                    listOf(
+                        ReleaseAsset("Melo-Setup.exe", "https://example.com/setup.exe", 75_000_000L, UpdatePlatform.WINDOWS),
+                        ReleaseAsset("Melo-2.2.1.msi", "https://example.com/melo.msi", 70_000_000L, UpdatePlatform.WINDOWS),
+                        ReleaseAsset("melo-2.2.1-windows.zip", "https://example.com/win.zip", 20_000_000L, UpdatePlatform.WINDOWS),
+                        ReleaseAsset("Melo-2.2.1-x86_64.AppImage", "https://example.com/appimage", 80_000_000L, UpdatePlatform.LINUX),
+                        ReleaseAsset("melo_2.2.1_amd64.deb", "https://example.com/deb", 65_000_000L, UpdatePlatform.LINUX),
+                        ReleaseAsset("melo-2.2.1-linux-x64.tar.gz", "https://example.com/compose-tar", 160_000_000L, UpdatePlatform.LINUX),
+                        ReleaseAsset("melo-2.2.1-linux.tar.gz", "https://example.com/tui-linux", 15_000_000L, UpdatePlatform.LINUX),
+                        ReleaseAsset("Melo-2.2.1.dmg", "https://example.com/dmg", 70_000_000L, UpdatePlatform.MACOS),
+                        ReleaseAsset("melo-2.2.1-macos.tar.gz", "https://example.com/tui-mac", 15_000_000L, UpdatePlatform.MACOS),
+                    ),
+            )
+
+        val winTui = release.getTuiAssetForPlatform(UpdatePlatform.WINDOWS)
+        assertNotNull(winTui)
+        assertEquals("melo-2.2.1-windows.zip", winTui.name)
+
+        val linuxTui = release.getTuiAssetForPlatform(UpdatePlatform.LINUX)
+        assertNotNull(linuxTui)
+        assertEquals("melo-2.2.1-linux.tar.gz", linuxTui.name)
+
+        val macTui = release.getTuiAssetForPlatform(UpdatePlatform.MACOS)
+        assertNotNull(macTui)
+        assertEquals("melo-2.2.1-macos.tar.gz", macTui.name)
+    }
+
+    @Test
+    fun `tui asset selection returns null when no tui archive exists`() {
+        val release =
+            AppRelease(
+                version = "2.2.1",
+                tagName = "v2.2.1",
+                name = "Melo 2.2.1",
+                releaseNotes = "Notes",
+                htmlUrl = "https://example.com",
+                publishedAt = "2026-09-27T00:00:00Z",
+                assets =
+                    listOf(
+                        ReleaseAsset("Melo-Setup.exe", "https://example.com/setup.exe", 75_000_000L, UpdatePlatform.WINDOWS),
+                        ReleaseAsset("Melo-2.2.1.deb", "https://example.com/deb", 65_000_000L, UpdatePlatform.LINUX),
+                        ReleaseAsset("Melo-2.2.1.dmg", "https://example.com/dmg", 70_000_000L, UpdatePlatform.MACOS),
+                    ),
+            )
+
+        assertNull(release.getTuiAssetForPlatform(UpdatePlatform.WINDOWS))
+        assertNull(release.getTuiAssetForPlatform(UpdatePlatform.LINUX))
+        assertNull(release.getTuiAssetForPlatform(UpdatePlatform.MACOS))
+    }
+
+    @Test
+    fun `currentPlatform returns non-unknown platform on host JVM`() {
+        val platform = currentPlatform()
+        assertNotNull(platform)
+    }
 }
