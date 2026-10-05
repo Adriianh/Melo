@@ -1,5 +1,6 @@
 package com.github.adriianh.cli.config
 
+import com.github.adriianh.core.platform.MeloDataDirectory
 import io.github.cdimascio.dotenv.dotenv
 
 /**
@@ -15,16 +16,19 @@ fun resolveEnv(key: String): String? {
     // 1. Real env var takes priority over any .env file
     System.getenv(key)?.takeIf { it.isNotBlank() }?.let { return it }
 
-    val locations = listOf(
-        System.getProperty("user.dir"),
-        "${System.getProperty("user.home")}/.config/melo",
-        "${System.getenv("APPDATA") ?: ""}\\melo",
-    )
+    val locations =
+        listOf(
+            System.getProperty("user.dir"),
+            "${System.getProperty("user.home")}/.config/melo",
+            "${System.getenv("APPDATA") ?: ""}\\Melo",
+            "${System.getenv("APPDATA") ?: ""}\\melo",
+        )
     for (dir in locations) {
-        val value = dotenv {
-            directory = dir
-            ignoreIfMissing = true
-        }.get(key, null)?.takeIf { it.isNotBlank() }
+        val value =
+            dotenv {
+                directory = dir
+                ignoreIfMissing = true
+            }.get(key, null)?.takeIf { it.isNotBlank() }
         if (value != null) return value
     }
     return null
@@ -33,8 +37,8 @@ fun resolveEnv(key: String): String? {
 val configDir: String get() {
     val os = System.getProperty("os.name").lowercase()
     return when {
-        os.contains("win") -> "${System.getenv("APPDATA") ?: System.getProperty("user.home")}\\melo"
-        else               -> "${System.getProperty("user.home")}/.config/melo"
+        os.contains("win") -> MeloDataDirectory.resolve().absolutePath
+        else -> "${System.getProperty("user.home")}/.config/melo"
     }
 }
 
@@ -42,6 +46,6 @@ val shareDir: String get() {
     val os = System.getProperty("os.name").lowercase()
     return when {
         os.contains("win") -> "${System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home")}\\melo"
-        else               -> "${System.getProperty("user.home")}/.local/share/melo"
+        else -> "${System.getProperty("user.home")}/.local/share/melo"
     }
 }

@@ -1,6 +1,7 @@
 package com.github.adriianh.data.local
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.github.adriianh.core.platform.MeloDataDirectory
 import org.sqlite.JDBC
 import java.io.File
 import java.sql.DriverManager
@@ -13,8 +14,7 @@ actual object DatabaseFactory {
         } catch (_: Exception) {
             // Driver might already be registered
         }
-        val dbDir = File(System.getProperty("user.home"), ".melo")
-        dbDir.mkdirs()
+        val dbDir = MeloDataDirectory.resolve()
         val dbFile = File(dbDir, "melo.db")
         val url = "jdbc:sqlite:${dbFile.absolutePath}"
 

@@ -97,6 +97,10 @@ begin
       DataDir := ExpandConstant('{userappdata}\Melo');
       if DirExists(DataDir) then
         DelTree(DataDir, True, True, True);
+
+      DataDir := ExpandConstant('{userprofile}\.melo');
+      if DirExists(DataDir) then
+        DelTree(DataDir, True, True, True);
     end;
   end;
 end;

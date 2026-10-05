@@ -26,7 +26,7 @@ kotlin {
     listOf(
         iosX64(),
         iosArm64(),
-        iosSimulatorArm64()
+        iosSimulatorArm64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
@@ -158,39 +158,36 @@ compose.desktop {
     application {
         mainClass = "com.github.adriianh.melo.MainKt"
 
-        jvmArgs += listOf(
-            "-XX:-UseJVMCICompiler",
-            "-Xms64m",
-            "-Xmx384m",
-            "-Xss512k",
-            "-XX:+UseG1GC",
-            "-XX:G1PeriodicGCInterval=10000",
-            "-XX:MinHeapFreeRatio=15",
-            "-XX:MaxHeapFreeRatio=30",
-            "-XX:+UseStringDeduplication",
-
-            "-XX:ParallelGCThreads=2",
-            "-XX:ConcGCThreads=1",
-            "-XX:G1ConcRefinementThreads=2",
-
-            "-XX:ReservedCodeCacheSize=64m",
-            "-XX:MaxMetaspaceSize=160m",
-            "-XX:CompressedClassSpaceSize=48m",
-
-            "-Dskia.resource.cache.maxBytes=33554432",
-
-            "-Dkotlinx.coroutines.defaultParallelism=4",
-            "-Dkotlinx.coroutines.io.parallelism=8",
-        )
+        jvmArgs +=
+            listOf(
+                "-XX:-UseJVMCICompiler",
+                "-Xms64m",
+                "-Xmx384m",
+                "-Xss512k",
+                "-XX:+UseG1GC",
+                "-XX:G1PeriodicGCInterval=10000",
+                "-XX:MinHeapFreeRatio=15",
+                "-XX:MaxHeapFreeRatio=30",
+                "-XX:+UseStringDeduplication",
+                "-XX:ParallelGCThreads=2",
+                "-XX:ConcGCThreads=1",
+                "-XX:G1ConcRefinementThreads=2",
+                "-XX:ReservedCodeCacheSize=64m",
+                "-XX:MaxMetaspaceSize=160m",
+                "-XX:CompressedClassSpaceSize=48m",
+                "-Dskia.resource.cache.maxBytes=33554432",
+                "-Dkotlinx.coroutines.defaultParallelism=4",
+                "-Dkotlinx.coroutines.io.parallelism=8",
+            )
 
         nativeDistributions {
             // Note: Each format can only be built on its native OS (jpackage limitation).
             // CI builds each on the appropriate runner (macOS, Windows, Ubuntu).
             targetFormats(
-                TargetFormat.Dmg,       // macOS disk image
-                TargetFormat.Msi,       // Windows MSI installer (for enterprise/silent installs)
-                TargetFormat.Exe,       // Windows EXE installer (NSIS, user-friendly wizard)
-                TargetFormat.Deb,       // Debian/Ubuntu package
+                TargetFormat.Dmg, // macOS disk image
+                TargetFormat.Msi, // Windows MSI installer (for enterprise/silent installs)
+                TargetFormat.Exe, // Windows EXE installer (NSIS, user-friendly wizard)
+                TargetFormat.Deb, // Debian/Ubuntu package
                 // TargetFormat.Rpm,    // Fedora/RHEL package (uncomment if rpmbuild is installed)
             )
 
@@ -219,6 +216,7 @@ compose.desktop {
                 menu = true
                 shortcut = true
                 dirChooser = true
+                perUserInstall = true
                 upgradeUuid = "d3b07384-d9a1-4e3b-8c1a-2f0e5a8d7b42"
                 iconFile.set(project.file("src/jvmMain/resources/icons/icon.ico"))
             }
