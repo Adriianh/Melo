@@ -13,7 +13,7 @@
 [CmdletBinding()]
 param (
     [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui",
-    [string]$ConfigDir  = "$env:APPDATA\melo",
+    [string]$ConfigDir  = "$env:APPDATA\Melo",
     [switch]$Force      = $false
 )
 
@@ -45,21 +45,30 @@ if (Test-Path $InstallDir) {
 }
 
 # 3. Optional Config directory cleanup
-if (Test-Path $ConfigDir) {
+$configDirs = @($ConfigDir)
+$legacyDir = Join-Path $env:USERPROFILE ".melo"
+if (Test-Path $legacyDir) {
+    $configDirs += $legacyDir
+}
+$existingDirs = $configDirs | Where-Object { Test-Path $_ }
+if ($existingDirs) {
     $deleteConfig = $Force
     if (-not $deleteConfig) {
         Write-Host ""
-        $answer = Read-Host "  ? Remove user configuration & cache at $ConfigDir? [y/N]"
+        $displayDirs = $existingDirs -join ", "
+        $answer = Read-Host "  ? Remove user configuration & cache at $displayDirs? [y/N]"
         if ($answer -match '^[yY]') {
             $deleteConfig = $true
         }
     }
 
     if ($deleteConfig) {
-        Remove-Item -Path $ConfigDir -Recurse -Force -ErrorAction SilentlyContinue
+        foreach ($dir in $existingDirs) {
+            Remove-Item -Path $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
         Write-Host "  ✔ Configuration directory removed." -ForegroundColor Green
     } else {
-        Write-Host "  ℹ Configuration preserved at $ConfigDir" -ForegroundColor Cyan
+        Write-Host "  ℹ Configuration preserved at $($existingDirs -join ', ')" -ForegroundColor Cyan
     }
 }
 

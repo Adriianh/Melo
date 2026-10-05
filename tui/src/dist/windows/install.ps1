@@ -1,10 +1,13 @@
 param(
     [string]$InstallDir = "$env:LOCALAPPDATA\melo-tui",
-    [string]$ConfigDir  = "$env:APPDATA\melo"
+    [string]$ConfigDir  = "$env:APPDATA\Melo"
 )
 
 $BinDir    = "$InstallDir\bin"
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+
+# Strip zone identifier from downloaded archive contents
+Get-ChildItem -Path $ScriptDir -Recurse | Unblock-File -ErrorAction SilentlyContinue
 
 New-Item -ItemType Directory -Force -Path $BinDir   | Out-Null
 New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
@@ -17,9 +20,12 @@ if (Test-Path "$ScriptDir\*.dll") {
     Copy-Item -Path "$ScriptDir\*.dll" -Destination "$BinDir\" -Force
 }
 
-# Copy uninstaller script if present
+# Copy installer/uninstaller scripts if present
 if (Test-Path "$ScriptDir\uninstall.ps1") {
     Copy-Item -Path "$ScriptDir\uninstall.ps1" -Destination "$InstallDir\uninstall.ps1" -Force
+}
+if (Test-Path "$ScriptDir\uninstall.cmd") {
+    Copy-Item -Path "$ScriptDir\uninstall.cmd" -Destination "$InstallDir\uninstall.cmd" -Force
 }
 
 # Remove any legacy or stale .ps1 files so PowerShell executes .cmd wrappers directly
