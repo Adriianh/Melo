@@ -21,7 +21,7 @@ object YtDlpBootstrap {
     private val meloConfigDir: File by lazy {
         val os = System.getProperty("os.name").lowercase()
         if (os.contains("win")) {
-            File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "melo")
+            File(System.getenv("APPDATA") ?: System.getProperty("user.home"), "Melo")
         } else {
             File(System.getProperty("user.home"), ".config/melo")
         }

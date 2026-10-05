@@ -16,12 +16,12 @@ import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
+import com.github.adriianh.core.platform.MeloDataDirectory
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.HistoryRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
-import com.github.adriianh.data.network.JvmNetworkMonitor
 import com.github.adriianh.core.domain.repository.ScrobblingRepository
 import com.github.adriianh.core.domain.repository.StatsRepository
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
@@ -40,8 +40,10 @@ import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.TranslateLyricsUseCase
+import com.github.adriianh.data.di.sharedModule
 import com.github.adriianh.data.local.DatabaseFactory
 import com.github.adriianh.data.local.MeloDatabase
+import com.github.adriianh.data.network.JvmNetworkMonitor
 import com.github.adriianh.data.provider.audio.InnerTubeAudioProvider
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
@@ -72,174 +74,175 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
-import com.github.adriianh.data.di.sharedModule
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import java.io.File
 
 private fun hasSpotifyKeys() =
     resolveEnv("SPOTIFY_CLIENT_ID") != null &&
-            resolveEnv("SPOTIFY_CLIENT_SECRET") != null
+        resolveEnv("SPOTIFY_CLIENT_SECRET") != null
 
-val appModule = module {
-    includes(sharedModule)
-    single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
+val appModule =
+    module {
+        includes(sharedModule)
+        single<CoroutineDispatcher> { Dispatchers.IO.limitedParallelism(8) }
 
-    single {
-        HttpClient(CIO) {
-            engine {
-                dispatcher = get<CoroutineDispatcher>()
-                endpoint {
-                    maxConnectionsCount = 20
-                    connectTimeout = 5_000
-                    connectTimeout = 5_000
+        single {
+            HttpClient(CIO) {
+                engine {
+                    dispatcher = get<CoroutineDispatcher>()
+                    endpoint {
+                        maxConnectionsCount = 20
+                        connectTimeout = 5_000
+                        connectTimeout = 5_000
+                    }
                 }
-            }
-            install(ContentNegotiation) {
-                val jsonConfig = Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
+                install(ContentNegotiation) {
+                    val jsonConfig =
+                        Json {
+                            ignoreUnknownKeys = true
+                            isLenient = true
+                        }
+                    json(jsonConfig)
+                    json(jsonConfig, contentType = ContentType.Text.JavaScript)
                 }
-                json(jsonConfig)
-                json(jsonConfig, contentType = ContentType.Text.JavaScript)
-            }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 10_000
-                connectTimeoutMillis = 5_000
-                socketTimeoutMillis = 10_000
-            }
-            install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 2)
-                exponentialDelay()
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 10_000
+                    connectTimeoutMillis = 5_000
+                    socketTimeoutMillis = 10_000
+                }
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = 2)
+                    exponentialDelay()
+                }
             }
         }
-    }
 
-    single(named("configDirPath")) { configDir }
+        single(named("configDirPath")) { configDir }
 
-    single { ArtworkRenderer(get()) }
-    single {
-        SpotifyAuthClient(
-            httpClient = get(),
-            clientId = resolveEnv("SPOTIFY_CLIENT_ID") ?: "",
-            clientSecret = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
-        )
-    }
-    single { SpotifyApiClient(get(), get()) }
-    single {
-        LastFmApiClient(
-            httpClient = get(),
-            apiKey = resolveEnv("LASTFM_API_KEY") ?: "",
-            sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
-        )
-    }
-
-    single<MusicProvider> {
-        val itunes = ItunesMusicProvider(get())
-        val providers = mutableListOf(
-            itunes,
-            InnerTubeMusicProvider(
-                fallback = PipedMusicProvider(get())
+        single { ArtworkRenderer(get()) }
+        single {
+            SpotifyAuthClient(
+                httpClient = get(),
+                clientId = resolveEnv("SPOTIFY_CLIENT_ID") ?: "",
+                clientSecret = resolveEnv("SPOTIFY_CLIENT_SECRET") ?: "",
             )
-        )
-        if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
-        MergedMusicProvider(providers)
-    }
-    single<DiscoveryProvider> {
-        CompositeDiscoveryProvider(
-            listOf(
-                InnerTubeDiscoveryProvider(),
-                LastFmDiscoveryProvider(get()),
-                DeezerDiscoveryProvider(get()),
+        }
+        single { SpotifyApiClient(get(), get()) }
+        single {
+            LastFmApiClient(
+                httpClient = get(),
+                apiKey = resolveEnv("LASTFM_API_KEY") ?: "",
+                sharedSecret = resolveEnv("LASTFM_SHARED_SECRET") ?: "",
             )
-        )
-    }
-    single<AudioProvider> {
-        val dataDir = File(System.getProperty("user.home"), ".melo")
-        if (!dataDir.exists()) dataDir.mkdirs()
-        val ytDlp = YtDlpAudioProvider(pipedApiClient = get())
-        val piped = PipedAudioProvider(apiClient = get(), fallback = ytDlp)
-        InnerTubeAudioProvider(
-            configDirPath = dataDir.absolutePath,
-            fallback = piped,
-            settingsRepository = get(),
-            ageGateProvider = ytDlp
-        )
-    }
-    single { JvmMediaSessionManager(httpClient = get()) }
-    single { DiscordRpcManager() }
+        }
 
-    single<MeloDatabase> { DatabaseFactory.create() }
-    single<HistoryRepository> {
-        HistoryRepositoryImpl(
-            database = get(),
-            settingsRepository = get()
-        )
-    }
-    single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
-    single<StatsRepository> { StatsRepositoryImpl(get()) }
-    single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
-    single<NetworkMonitor> { JvmNetworkMonitor(dispatcher = get()) }
+        single<MusicProvider> {
+            val itunes = ItunesMusicProvider(get())
+            val providers =
+                mutableListOf(
+                    itunes,
+                    InnerTubeMusicProvider(
+                        fallback = PipedMusicProvider(get()),
+                    ),
+                )
+            if (hasSpotifyKeys()) providers.add(SpotifyMusicProvider(get()))
+            MergedMusicProvider(providers)
+        }
+        single<DiscoveryProvider> {
+            CompositeDiscoveryProvider(
+                listOf(
+                    InnerTubeDiscoveryProvider(),
+                    LastFmDiscoveryProvider(get()),
+                    DeezerDiscoveryProvider(get()),
+                ),
+            )
+        }
+        single<AudioProvider> {
+            val dataDir = MeloDataDirectory.resolve()
+            val ytDlp = YtDlpAudioProvider(pipedApiClient = get())
+            val piped = PipedAudioProvider(apiClient = get(), fallback = ytDlp)
+            InnerTubeAudioProvider(
+                configDirPath = dataDir.absolutePath,
+                fallback = piped,
+                settingsRepository = get(),
+                ageGateProvider = ytDlp,
+            )
+        }
+        single { JvmMediaSessionManager(httpClient = get()) }
+        single { DiscordRpcManager() }
 
-    single { YouTubeAuthService(get(), get(), get(), get()) }
+        single<MeloDatabase> { DatabaseFactory.create() }
+        single<HistoryRepository> {
+            HistoryRepositoryImpl(
+                database = get(),
+                settingsRepository = get(),
+            )
+        }
+        single<ScrobblingRepository> { ScrobblingRepositoryImpl(get(), configDir) }
+        single<StatsRepository> { StatsRepositoryImpl(get()) }
+        single<OfflineRepository> { OfflineRepositoryImpl(File(shareDir), get(), get()) }
+        single<NetworkMonitor> { JvmNetworkMonitor(dispatcher = get()) }
 
-    factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
-    factory {
-        SearchInteractors(
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            translateLyrics = getOrNull<TranslateLyricsUseCase>()
-        )
+        single { YouTubeAuthService(get(), get(), get(), get()) }
+
+        factory { DiscoveryInteractors(get(), get(), get(), get(), get()) }
+        factory {
+            SearchInteractors(
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                get(),
+                translateLyrics = getOrNull<TranslateLyricsUseCase>(),
+            )
+        }
+        factory {
+            LibraryInteractors(
+                getFavorites = get(),
+                addFavorite = get(),
+                removeFavorite = get(),
+                isFavorite = get(),
+                getPlaylists = get(),
+                getPlaylistTracks = get(),
+                createPlaylist = get(),
+                renamePlaylist = get(),
+                deletePlaylist = get(),
+                addTrackToPlaylist = get(),
+                removeTrackFromPlaylist = get(),
+                getLikedSongs = getOrNull<GetLikedSongsUseCase>(),
+                getUserPlaylists = getOrNull<GetUserPlaylistsUseCase>(),
+                toggleLikeTrack = getOrNull<ToggleLikeTrackUseCase>(),
+                getUserAlbums = getOrNull<GetUserAlbumsUseCase>(),
+                getUserArtists = getOrNull<GetUserArtistsUseCase>(),
+                toggleLikeAlbum = getOrNull<ToggleLikeAlbumUseCase>(),
+                toggleLikePlaylist = getOrNull<ToggleLikePlaylistUseCase>(),
+                subscribeChannel = getOrNull<SubscribeChannelUseCase>(),
+                getFavoriteEntities = getOrNull<GetFavoriteEntitiesUseCase>(),
+                addFavoriteEntity = getOrNull<AddFavoriteEntityUseCase>(),
+                removeFavoriteEntity = getOrNull<RemoveFavoriteEntityUseCase>(),
+                isFavoriteEntity = getOrNull<IsFavoriteEntityUseCase>(),
+                toggleFavoriteEntity = getOrNull<ToggleFavoriteEntityUseCase>(),
+                getRemoteHistory = getOrNull<GetRemoteHistoryUseCase>(),
+                reorderPlaylistTracks = getOrNull<ReorderPlaylistTracksUseCase>(),
+            )
+        }
+        factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
+        factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+        factory { StatsInteractors(get(), get(), get()) }
+        factory { SessionInteractors(get(), get(), get()) }
+        factory { SettingsInteractors(get(), get()) }
     }
-    factory {
-        LibraryInteractors(
-            getFavorites = get(),
-            addFavorite = get(),
-            removeFavorite = get(),
-            isFavorite = get(),
-            getPlaylists = get(),
-            getPlaylistTracks = get(),
-            createPlaylist = get(),
-            renamePlaylist = get(),
-            deletePlaylist = get(),
-            addTrackToPlaylist = get(),
-            removeTrackFromPlaylist = get(),
-            getLikedSongs = getOrNull<GetLikedSongsUseCase>(),
-            getUserPlaylists = getOrNull<GetUserPlaylistsUseCase>(),
-            toggleLikeTrack = getOrNull<ToggleLikeTrackUseCase>(),
-            getUserAlbums = getOrNull<GetUserAlbumsUseCase>(),
-            getUserArtists = getOrNull<GetUserArtistsUseCase>(),
-            toggleLikeAlbum = getOrNull<ToggleLikeAlbumUseCase>(),
-            toggleLikePlaylist = getOrNull<ToggleLikePlaylistUseCase>(),
-            subscribeChannel = getOrNull<SubscribeChannelUseCase>(),
-            getFavoriteEntities = getOrNull<GetFavoriteEntitiesUseCase>(),
-            addFavoriteEntity = getOrNull<AddFavoriteEntityUseCase>(),
-            removeFavoriteEntity = getOrNull<RemoveFavoriteEntityUseCase>(),
-            isFavoriteEntity = getOrNull<IsFavoriteEntityUseCase>(),
-            toggleFavoriteEntity = getOrNull<ToggleFavoriteEntityUseCase>(),
-            getRemoteHistory = getOrNull<GetRemoteHistoryUseCase>(),
-            reorderPlaylistTracks = getOrNull<ReorderPlaylistTracksUseCase>(),
-        )
-    }
-    factory { PlaybackInteractors(get(), get(), get(), get(), get()) }
-    factory { OfflineInteractors(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    factory { StatsInteractors(get(), get(), get()) }
-    factory { SessionInteractors(get(), get(), get()) }
-    factory { SettingsInteractors(get(), get()) }
-}
