@@ -64,6 +64,7 @@ open class MeloHelpFormatter(
                 "stats",
                 "scrobble",
                 "rpc",
+                "update",
                 "completions",
             )
 
@@ -99,10 +100,11 @@ open class MeloHelpFormatter(
                 "stats" to CommandCategory.SERVICES,
                 "scrobble" to CommandCategory.SERVICES,
                 "rpc" to CommandCategory.SERVICES,
+                "update" to CommandCategory.SERVICES,
                 "completions" to CommandCategory.SERVICES,
             )
         val KNOWN_ALIASES: Set<String> =
-            setOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion")
+            setOf("p", "dl", "np", "st", "q", "cfg", "previous", "vol", "completion", "upgrade")
 
         private val COMMAND_TOKEN_REGEX =
             Regex("""("[^"]*"|'[^']*'|--[a-zA-Z0-9_-]+|-[a-zA-Z0-9]+|\S+)""")

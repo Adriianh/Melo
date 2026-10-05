@@ -15,6 +15,7 @@ import com.github.adriianh.core.domain.repository.SearchHistoryRepository
 import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.repository.StreamCacheRepository
+import com.github.adriianh.core.domain.repository.UpdateRepository
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteEntityUseCase
 import com.github.adriianh.core.domain.usecase.library.AddFavoriteUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
@@ -128,6 +129,7 @@ import com.github.adriianh.data.repository.SearchHistoryRepositoryImpl
 import com.github.adriianh.data.repository.SessionRepositoryImpl
 import com.github.adriianh.data.repository.SettingsRepositoryImpl
 import com.github.adriianh.data.repository.StreamCacheRepositoryImpl
+import com.github.adriianh.data.repository.UpdateRepositoryImpl
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -146,161 +148,169 @@ import org.koin.dsl.module
  * Repos that differ between apps on purpose (e.g. `HistoryRepository`) are
  * also kept per-app to preserve their current behavior.
  */
-val sharedModule: Module = module {
+val sharedModule: Module =
+    module {
 
-    // ── Remote API clients ───────────────────────────────────────────────────
-    singleOf(::ItunesApiClient)
-    singleOf(::PipedApiClient)
-    singleOf(::LyricsApiClient)
-    singleOf(::LyricsTranslator)
-    singleOf(::DeezerApiClient)
+        // ── Remote API clients ───────────────────────────────────────────────────
+        singleOf(::ItunesApiClient)
+        singleOf(::PipedApiClient)
+        singleOf(::LyricsApiClient)
+        singleOf(::LyricsTranslator)
+        singleOf(::DeezerApiClient)
 
-    // ── Login / auth ─────────────────────────────────────────────────────────
-    singleOf(::InnerTubeLoginRepository) { bind<LoginRepository>() }
+        // ── Login / auth ─────────────────────────────────────────────────────────
+        singleOf(::InnerTubeLoginRepository) { bind<LoginRepository>() }
 
-    // ── Metadata / artwork ───────────────────────────────────────────────────
-    single<MetadataProvider> {
-        CompositeArtworkProvider(
-            DeezerArtworkProvider(get()),
-            ItunesArtworkProvider(get()),
-        )
+        // ── Metadata / artwork ───────────────────────────────────────────────────
+        single<MetadataProvider> {
+            CompositeArtworkProvider(
+                DeezerArtworkProvider(get()),
+                ItunesArtworkProvider(get()),
+            )
+        }
+
+        // ── Repositories ─────────────────────────────────────────────────────────
+        single<MusicRepository> {
+            MusicRepositoryImpl(
+                musicProvider = get(),
+                audioProvider = getOrNull(),
+                discoveryProvider = getOrNull(),
+                metadataProvider = getOrNull(),
+            )
+        }
+        single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
+        single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
+
+        singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
+        singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
+        singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
+        singleOf(::StreamCacheRepositoryImpl) { bind<StreamCacheRepository>() }
+        singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
+        singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
+
+        single<SettingsRepository> {
+            SettingsRepositoryImpl(
+                configDirPath = get<String>(named("configDirPath")),
+                dispatcher = MeloDispatchers.IO,
+            )
+        }
+
+        single<UpdateRepository> {
+            UpdateRepositoryImpl(
+                httpClient = get(),
+                dispatcher = MeloDispatchers.IO,
+            )
+        }
+
+        // ── Caches ───────────────────────────────────────────────────────────────
+        single<HomeFeedCache> {
+            HomeFeedCacheImpl(
+                configDirPath = get<String>(named("configDirPath")),
+                dispatcher = MeloDispatchers.IO,
+            )
+        }
+        single<LibraryCache> {
+            LibraryCacheImpl(
+                configDirPath = get<String>(named("configDirPath")),
+                dispatcher = MeloDispatchers.IO,
+            )
+        }
+        single<EntityCache> {
+            EntityCacheImpl(
+                configPathDir = get<String>(named("configDirPath")),
+                dispatcher = MeloDispatchers.IO,
+            )
+        }
+
+        // ── Use-case factories (union of every app's needs) ──────────────────────
+        singleOf(::GetStreamUseCase)
+        singleOf(::RecordPlayUseCase)
+        singleOf(::GetRecentTracksUseCase)
+        singleOf(::GetLyricsUseCase)
+        singleOf(::GetSyncedLyricsUseCase)
+        singleOf(::GetTrackLyricsUseCase)
+        singleOf(::TranslateLyricsUseCase)
+        singleOf(::GetTrackUseCase)
+        singleOf(::GetSimilarTracksUseCase)
+        singleOf(::GetArtistTagsUseCase)
+        singleOf(::SearchTracksUseCase)
+        singleOf(::SearchAlbumsUseCase)
+        singleOf(::SearchArtistsUseCase)
+        singleOf(::SearchPlaylistsUseCase)
+        singleOf(::SearchVideosUseCase)
+        singleOf(::SearchSummaryUseCase)
+        singleOf(::LoadMoreTracksUseCase)
+        singleOf(::LoadMoreAlbumsUseCase)
+        singleOf(::LoadMoreArtistsUseCase)
+        singleOf(::LoadMorePlaylistsUseCase)
+        singleOf(::GetHomeUseCase)
+        singleOf(::GetExploreUseCase)
+        singleOf(::GetChartsUseCase)
+        singleOf(::GetMoodAndGenresUseCase)
+        singleOf(::GetTrendingUseCase)
+        singleOf(::GetRadioUseCase)
+        singleOf(::GetArtistRadioUseCase)
+        singleOf(::GetRelatedTracksUseCase)
+        singleOf(::GetEntityDetailsUseCase)
+        singleOf(::GetSearchHistoryUseCase)
+        singleOf(::GetSearchSuggestionsUseCase)
+        singleOf(::SaveSearchQueryUseCase)
+        singleOf(::DeleteSearchQueryUseCase)
+        singleOf(::BrowseCategoryUseCase)
+        singleOf(::GetSettingsUseCase)
+        singleOf(::UpdateSettingsUseCase)
+        singleOf(::SetSessionCookiesUseCase)
+        singleOf(::VerifySessionUseCase)
+        singleOf(::GetAccountProfileUseCase)
+        singleOf(::GetUserPlaylistsUseCase)
+        singleOf(::GetPlaylistsUseCase)
+        singleOf(::GetPlaylistTracksUseCase)
+        singleOf(::CreatePlaylistUseCase)
+        singleOf(::RenamePlaylistUseCase)
+        singleOf(::DeletePlaylistUseCase)
+        singleOf(::AddTrackToPlaylistUseCase)
+        singleOf(::AddTracksToPlaylistUseCase)
+        singleOf(::RemoveTrackFromPlaylistUseCase)
+        singleOf(::ReorderPlaylistTracksUseCase)
+        singleOf(::GetPlaylistIdsForTrackUseCase)
+        singleOf(::GetLikedSongsUseCase)
+        singleOf(::GetUserArtistsUseCase)
+        singleOf(::GetUserAlbumsUseCase)
+        singleOf(::GetRemoteHistoryUseCase)
+        singleOf(::ObserveLibraryUpdatesUseCase)
+        singleOf(::ToggleLikeTrackUseCase)
+        singleOf(::ToggleLikeAlbumUseCase)
+        singleOf(::ToggleLikePlaylistUseCase)
+        singleOf(::SubscribeChannelUseCase)
+        singleOf(::GetFavoritesUseCase)
+        singleOf(::AddFavoriteUseCase)
+        singleOf(::RemoveFavoriteUseCase)
+        singleOf(::IsFavoriteUseCase)
+        singleOf(::GetFavoriteEntitiesUseCase)
+        singleOf(::AddFavoriteEntityUseCase)
+        singleOf(::RemoveFavoriteEntityUseCase)
+        singleOf(::IsFavoriteEntityUseCase)
+        singleOf(::ToggleFavoriteEntityUseCase)
+        singleOf(::GetOfflineTracksUseCase)
+        singleOf(::DownloadTrackUseCase)
+        singleOf(::DeleteDownloadedTrackUseCase)
+        singleOf(::ScanLocalTracksUseCase)
+        singleOf(::EnrichLocalTracksUseCase)
+        singleOf(::SyncOfflineTracksUseCase)
+        singleOf(::AutoCleanupUseCase)
+        singleOf(::MarkTrackAccessedUseCase)
+        singleOf(::UpdateTrackMetadataUseCase)
+        singleOf(::UpdateNowPlayingUseCase)
+        singleOf(::ScrobbleUseCase)
+        singleOf(::AuthenticateLastFmUseCase)
+        singleOf(::StartWebAuthUseCase)
+        singleOf(::CompleteWebAuthUseCase)
+        singleOf(::GetTopTracksUseCase)
+        singleOf(::GetTopArtistsUseCase)
+        singleOf(::GetListeningStatsUseCase)
+        singleOf(::SaveSessionUseCase)
+        singleOf(::RestoreSessionUseCase)
+        singleOf(::ClearSessionUseCase)
+        singleOf(::CheckForUpdateUseCase)
+        singleOf(::DownloadUpdateUseCase)
     }
-
-    // ── Repositories ─────────────────────────────────────────────────────────
-    single<MusicRepository> {
-        MusicRepositoryImpl(
-            musicProvider = get(),
-            audioProvider = getOrNull(),
-            discoveryProvider = getOrNull(),
-            metadataProvider = getOrNull(),
-        )
-    }
-    single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
-    single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
-
-    singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }
-    singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
-    singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
-    singleOf(::StreamCacheRepositoryImpl) { bind<StreamCacheRepository>() }
-    singleOf(::SessionRepositoryImpl) { bind<SessionRepository>() }
-    singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
-
-    single<SettingsRepository> {
-        SettingsRepositoryImpl(
-            configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO,
-        )
-    }
-
-    // ── Caches ───────────────────────────────────────────────────────────────
-    single<HomeFeedCache> {
-        HomeFeedCacheImpl(
-            configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO,
-        )
-    }
-    single<LibraryCache> {
-        LibraryCacheImpl(
-            configDirPath = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO,
-        )
-    }
-    single<EntityCache> {
-        EntityCacheImpl(
-            configPathDir = get<String>(named("configDirPath")),
-            dispatcher = MeloDispatchers.IO,
-        )
-    }
-
-    // ── Use-case factories (union of every app's needs) ──────────────────────
-    singleOf(::GetStreamUseCase)
-    singleOf(::RecordPlayUseCase)
-    singleOf(::GetRecentTracksUseCase)
-    singleOf(::GetLyricsUseCase)
-    singleOf(::GetSyncedLyricsUseCase)
-    singleOf(::GetTrackLyricsUseCase)
-    singleOf(::TranslateLyricsUseCase)
-    singleOf(::GetTrackUseCase)
-    singleOf(::GetSimilarTracksUseCase)
-    singleOf(::GetArtistTagsUseCase)
-    singleOf(::SearchTracksUseCase)
-    singleOf(::SearchAlbumsUseCase)
-    singleOf(::SearchArtistsUseCase)
-    singleOf(::SearchPlaylistsUseCase)
-    singleOf(::SearchVideosUseCase)
-    singleOf(::SearchSummaryUseCase)
-    singleOf(::LoadMoreTracksUseCase)
-    singleOf(::LoadMoreAlbumsUseCase)
-    singleOf(::LoadMoreArtistsUseCase)
-    singleOf(::LoadMorePlaylistsUseCase)
-    singleOf(::GetHomeUseCase)
-    singleOf(::GetExploreUseCase)
-    singleOf(::GetChartsUseCase)
-    singleOf(::GetMoodAndGenresUseCase)
-    singleOf(::GetTrendingUseCase)
-    singleOf(::GetRadioUseCase)
-    singleOf(::GetArtistRadioUseCase)
-    singleOf(::GetRelatedTracksUseCase)
-    singleOf(::GetEntityDetailsUseCase)
-    singleOf(::GetSearchHistoryUseCase)
-    singleOf(::GetSearchSuggestionsUseCase)
-    singleOf(::SaveSearchQueryUseCase)
-    singleOf(::DeleteSearchQueryUseCase)
-    singleOf(::BrowseCategoryUseCase)
-    singleOf(::GetSettingsUseCase)
-    singleOf(::UpdateSettingsUseCase)
-    singleOf(::SetSessionCookiesUseCase)
-    singleOf(::VerifySessionUseCase)
-    singleOf(::GetAccountProfileUseCase)
-    singleOf(::GetUserPlaylistsUseCase)
-    singleOf(::GetPlaylistsUseCase)
-    singleOf(::GetPlaylistTracksUseCase)
-    singleOf(::CreatePlaylistUseCase)
-    singleOf(::RenamePlaylistUseCase)
-    singleOf(::DeletePlaylistUseCase)
-    singleOf(::AddTrackToPlaylistUseCase)
-    singleOf(::AddTracksToPlaylistUseCase)
-    singleOf(::RemoveTrackFromPlaylistUseCase)
-    singleOf(::ReorderPlaylistTracksUseCase)
-    singleOf(::GetPlaylistIdsForTrackUseCase)
-    singleOf(::GetLikedSongsUseCase)
-    singleOf(::GetUserArtistsUseCase)
-    singleOf(::GetUserAlbumsUseCase)
-    singleOf(::GetRemoteHistoryUseCase)
-    singleOf(::ObserveLibraryUpdatesUseCase)
-    singleOf(::ToggleLikeTrackUseCase)
-    singleOf(::ToggleLikeAlbumUseCase)
-    singleOf(::ToggleLikePlaylistUseCase)
-    singleOf(::SubscribeChannelUseCase)
-    singleOf(::GetFavoritesUseCase)
-    singleOf(::AddFavoriteUseCase)
-    singleOf(::RemoveFavoriteUseCase)
-    singleOf(::IsFavoriteUseCase)
-    singleOf(::GetFavoriteEntitiesUseCase)
-    singleOf(::AddFavoriteEntityUseCase)
-    singleOf(::RemoveFavoriteEntityUseCase)
-    singleOf(::IsFavoriteEntityUseCase)
-    singleOf(::ToggleFavoriteEntityUseCase)
-    singleOf(::GetOfflineTracksUseCase)
-    singleOf(::DownloadTrackUseCase)
-    singleOf(::DeleteDownloadedTrackUseCase)
-    singleOf(::ScanLocalTracksUseCase)
-    singleOf(::EnrichLocalTracksUseCase)
-    singleOf(::SyncOfflineTracksUseCase)
-    singleOf(::AutoCleanupUseCase)
-    singleOf(::MarkTrackAccessedUseCase)
-    singleOf(::UpdateTrackMetadataUseCase)
-    singleOf(::UpdateNowPlayingUseCase)
-    singleOf(::ScrobbleUseCase)
-    singleOf(::AuthenticateLastFmUseCase)
-    singleOf(::StartWebAuthUseCase)
-    singleOf(::CompleteWebAuthUseCase)
-    singleOf(::GetTopTracksUseCase)
-    singleOf(::GetTopArtistsUseCase)
-    singleOf(::GetListeningStatsUseCase)
-    singleOf(::SaveSessionUseCase)
-    singleOf(::RestoreSessionUseCase)
-    singleOf(::ClearSessionUseCase)
-    singleOf(::CheckForUpdateUseCase)
-    singleOf(::DownloadUpdateUseCase)
-}

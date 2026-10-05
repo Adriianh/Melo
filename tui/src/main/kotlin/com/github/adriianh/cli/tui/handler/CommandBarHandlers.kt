@@ -18,10 +18,13 @@ import com.github.adriianh.cli.tui.handler.playback.togglePlayPause
 import com.github.adriianh.cli.tui.handler.playback.toggleQueue
 import com.github.adriianh.cli.tui.handler.search.loadLyricsIfNeeded
 import com.github.adriianh.cli.tui.handler.search.performSearch
+import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.core.util.MeloVersion
 import dev.tamboui.toolkit.event.EventResult
 import dev.tamboui.tui.event.KeyCode
 import dev.tamboui.tui.event.KeyEvent
+import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
 data class CommandResult(
@@ -75,6 +78,42 @@ object CommandBarHandlers {
                     applySidebarSelection(SidebarSection.SETTINGS)
                     activateSidebarSelection(SidebarSection.SETTINGS)
                     return CommandResult(restoreFocus = false)
+                }
+            },
+            object : Command(
+                names = listOf("update", "upgrade"),
+                description = "Check for updates to Melo",
+                category = CommandCategory.GENERAL,
+            ) {
+                override fun MeloScreen.execute(arg: String?): CommandResult {
+                    val updateUseCase = checkForUpdate
+                    if (updateUseCase == null) {
+                        showToast("Update service is not available", ToastKind.WARNING)
+                        return CommandResult()
+                    }
+                    showToast("Checking for updates...", ToastKind.INFO)
+                    scope.launch {
+                        updateUseCase(MeloVersion.CURRENT).fold(
+                            onSuccess = { release ->
+                                appRunner()?.runOnRenderThread {
+                                    if (release != null) {
+                                        showToast(
+                                            "Update v${release.version} available! Run 'melo update' to install.",
+                                            ToastKind.SUCCESS,
+                                        )
+                                    } else {
+                                        showToast("Melo is up to date (v${MeloVersion.CURRENT})", ToastKind.INFO)
+                                    }
+                                }
+                            },
+                            onFailure = { error ->
+                                appRunner()?.runOnRenderThread {
+                                    showToast("Update check failed: ${error.message}", ToastKind.ERROR)
+                                }
+                            },
+                        )
+                    }
+                    return CommandResult()
                 }
             },
             object : Command(

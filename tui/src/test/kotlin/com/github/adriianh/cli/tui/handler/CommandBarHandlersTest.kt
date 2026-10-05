@@ -82,6 +82,12 @@ class CommandBarHandlersTest {
 
         val question = CommandBarHandlers.computeSuggestions("?")
         assertTrue(question.contains("?"))
+
+        val update = CommandBarHandlers.computeSuggestions("update")
+        assertTrue(update.contains("update"))
+
+        val upgrade = CommandBarHandlers.computeSuggestions("upgrade")
+        assertTrue(upgrade.contains("upgrade"))
     }
 
     @Test

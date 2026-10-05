@@ -5,7 +5,6 @@ import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.HistoryRepository
-import com.github.adriianh.core.domain.repository.UpdateRepository
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.ObserveLibraryUpdatesUseCase
 import com.github.adriianh.core.util.MeloDispatchers
@@ -15,7 +14,6 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
-import com.github.adriianh.data.repository.UpdateRepositoryImpl
 import com.github.adriianh.melo.ui.SidebarViewModel
 import com.github.adriianh.melo.ui.detail.EntityDetailViewModel
 import com.github.adriianh.melo.ui.home.HomeViewModel
@@ -119,12 +117,6 @@ val dataModule =
             )
         }
 
-        single<UpdateRepository> {
-            UpdateRepositoryImpl(
-                httpClient = get(),
-                dispatcher = MeloDispatchers.IO,
-            )
-        }
         singleOf(::PlatformUpdateInstaller)
     }
 
