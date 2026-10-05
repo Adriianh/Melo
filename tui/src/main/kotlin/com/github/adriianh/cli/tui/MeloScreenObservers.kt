@@ -25,13 +25,16 @@ internal fun MeloScreen.observeSearchInput() {
             val isFocused = focusedId == "search-bar"
 
             if (state.screen is ScreenState.Search) {
-                if (currentQuery != lastObservedSearchQuery) {
+                if (isFocused) {
+                    if (currentQuery != lastObservedSearchQuery || !lastObservedFocus) {
+                        lastObservedSearchQuery = currentQuery
+                        handleSearchQueryChange(currentQuery)
+                    }
+                } else {
                     lastObservedSearchQuery = currentQuery
-                    handleSearchQueryChange(currentQuery)
-                } else if (isFocused && !lastObservedFocus) {
-                    handleSearchQueryChange(currentQuery)
-                } else if (!isFocused && lastObservedFocus) {
-                    updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+                    if (lastObservedFocus || (state.screen as ScreenState.Search).isShowingSuggestions) {
+                        updateScreen<ScreenState.Search> { it.copy(isShowingSuggestions = false) }
+                    }
                 }
             }
 

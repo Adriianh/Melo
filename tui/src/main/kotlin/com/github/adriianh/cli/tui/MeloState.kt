@@ -63,20 +63,25 @@ enum class LibraryTab {
     LOCAL,
 }
 
-enum class FavoritesSubTab(val label: String) {
+enum class FavoritesSubTab(
+    val label: String,
+) {
     SONGS("Songs"),
     ALBUMS("Albums"),
     ARTISTS("Artists"),
-    PLAYLISTS("Playlists");
+    PLAYLISTS("Playlists"),
+    ;
 
     fun next(): FavoritesSubTab = entries[(ordinal + 1) % entries.size]
+
     fun previous(): FavoritesSubTab = entries[(ordinal - 1 + entries.size) % entries.size]
 }
 
 enum class LibrarySourceFilter {
     ALL,
     LOCAL,
-    REMOTE;
+    REMOTE,
+    ;
 
     fun next(): LibrarySourceFilter = entries[(ordinal + 1) % entries.size]
 }
@@ -103,7 +108,9 @@ enum class PlaylistInputMode {
 /**
  * Unit used to display listening time in the statistics screen.
  */
-enum class StatsTimeUnit(val label: String) {
+enum class StatsTimeUnit(
+    val label: String,
+) {
     SECONDS("Secs"),
     MINUTES("Mins"),
     HOURS("Hours"),
@@ -178,7 +185,7 @@ sealed interface ScreenState {
         val isLoading: Boolean = false,
         val isLoadingMore: Boolean = false,
         val hasMore: Boolean = true,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
     ) : ScreenState
 
     data class Home(
@@ -248,7 +255,7 @@ sealed interface ScreenState {
         val sortDirection: SortDirection = SortDirection.ASCENDING,
         val searchQuery: String = "",
         val isTyping: Boolean = false,
-        val isLoading: Boolean = false
+        val isLoading: Boolean = false,
     ) : ScreenState
 
     data class EntityDetail(
@@ -287,6 +294,7 @@ data class MeloState(
     val selection: BatchSelectionState = BatchSelectionState(),
     val commandBar: CommandBarState = CommandBarState(),
     val languagePicker: LanguagePickerState = LanguagePickerState(),
+    val helpOverlay: HelpOverlayState = HelpOverlayState(),
     val isSettingsVisible: Boolean = false,
     val isOfflineMode: Boolean = false,
     val isRestoringSession: Boolean = false,
@@ -302,9 +310,10 @@ fun MeloState.isPlayable(track: Track): Boolean {
     if (!isOfflineMode) return true
     if (track.id.startsWith("local:")) return true
 
-    val byId = collections.offlineTracks.any {
-        it.track.id == track.id && it.downloadStatus == DownloadStatus.COMPLETED
-    }
+    val byId =
+        collections.offlineTracks.any {
+            it.track.id == track.id && it.downloadStatus == DownloadStatus.COMPLETED
+        }
     if (byId) return true
 
     val sourceId = track.sourceId
@@ -321,4 +330,7 @@ fun MeloState.isPlayable(track: Track): Boolean {
  * Returns merged local and remote playback history, with deduplication.
  */
 fun MeloState.allRecentTracks(): List<HistoryEntry> =
-    mergeHistoryEntries(collections.recentTracks, collections.remoteRecentTracks)
+    mergeHistoryEntries(
+        collections.recentTracks,
+        collections.remoteRecentTracks,
+    )

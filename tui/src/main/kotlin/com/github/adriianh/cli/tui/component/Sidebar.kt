@@ -3,6 +3,7 @@ package com.github.adriianh.cli.tui.component
 import com.github.adriianh.cli.tui.MeloTheme
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.util.focusableIf
 import dev.tamboui.layout.Constraint
 import dev.tamboui.style.Style
 import dev.tamboui.text.Line
@@ -25,6 +26,7 @@ fun buildSidebar(
     utilList: ListElement<*>,
     sidebarInUtil: Boolean,
     isOffline: Boolean = false,
+    isFocusable: Boolean = true,
     onKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val homeTitle = if (isOffline) "${MeloTheme.ICON_HOME} Home [Offline]" else "${MeloTheme.ICON_HOME} Home"
@@ -38,24 +40,27 @@ fun buildSidebar(
 
     if (sidebarInUtil) {
         navList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
-        utilList.highlightStyle(Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
+        utilList
+            .highlightStyle(Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
             .highlightSymbol("${MeloTheme.ICON_ARROW} ")
     } else {
-        navList.highlightStyle(Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
+        navList
+            .highlightStyle(Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
             .highlightSymbol("${MeloTheme.ICON_ARROW} ")
         utilList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
     }
 
-    val title = if (isOffline) {
-        Line.from(
-            Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
-            Span.styled("[Offline] ", Style.EMPTY.fg(MeloTheme.TEXT_DIM))
-        )
-    } else {
-        Line.from(
-            Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold())
-        )
-    }
+    val title =
+        if (isOffline) {
+            Line.from(
+                Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
+                Span.styled("[Offline] ", Style.EMPTY.fg(MeloTheme.TEXT_DIM)),
+            )
+        } else {
+            Line.from(
+                Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
+            )
+        }
 
     return panel(
         dock()
@@ -63,16 +68,16 @@ fun buildSidebar(
             .bottom(
                 column(
                     text("──────────────────").fg(BORDER_DEFAULT),
-                    utilList.length(UTIL_ITEMS)
+                    utilList.length(UTIL_ITEMS),
                 ),
-                Constraint.length(UTIL_ITEMS + 1)
-            )
-            .center(spacer()).fill()
+                Constraint.length(UTIL_ITEMS + 1),
+            ).center(spacer())
+            .fill(),
     ).title(title)
         .rounded()
         .borderColor(BORDER_DEFAULT)
         .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
+        .focusableIf(isFocusable)
         .id("sidebar-panel")
         .onKeyEvent(onKeyEvent)
 }

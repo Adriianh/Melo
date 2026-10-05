@@ -2,6 +2,7 @@ package com.github.adriianh.cli.tui
 
 import com.github.adriianh.cli.tui.component.CommandBarSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.DirectoryPickerOverlay
+import com.github.adriianh.cli.tui.component.HelpOverlay
 import com.github.adriianh.cli.tui.component.LanguagePickerOverlay
 import com.github.adriianh.cli.tui.component.PlaylistInputOverlay
 import com.github.adriianh.cli.tui.component.PlaylistPickerOverlay
@@ -10,6 +11,7 @@ import com.github.adriianh.cli.tui.component.SearchSuggestionsOverlay
 import com.github.adriianh.cli.tui.component.SettingsOverlay
 import com.github.adriianh.cli.tui.component.ToastOverlay
 import com.github.adriianh.cli.tui.component.TrackOptionsOverlay
+import com.github.adriianh.cli.tui.handler.handleHelpOverlayKey
 import com.github.adriianh.cli.tui.handler.playback.handleQueueKey
 import com.github.adriianh.cli.tui.handler.playback.handleTrackOptionsKey
 import com.github.adriianh.cli.tui.handler.search.handleLanguagePickerKey
@@ -26,35 +28,47 @@ internal fun MeloScreen.buildSearchSuggestionsOverlay() = SearchSuggestionsOverl
 
 internal fun MeloScreen.buildPlaylistPickerOverlay() = PlaylistPickerOverlay { state }
 
-internal fun MeloScreen.buildQueueOverlay() = QueueOverlay(
-    { state },
-    queueList,
-    ::handleQueueKey
-)
+internal fun MeloScreen.buildQueueOverlay() =
+    QueueOverlay(
+        { state },
+        queueList,
+        ::handleQueueKey,
+    )
 
-internal fun MeloScreen.buildSettingsOverlay() = SettingsOverlay(
-    { state },
-    { settingsViewState },
-    settingsSectionList,
-    settingsList,
-    ::handleSettingsKey
-)
+internal fun MeloScreen.buildSettingsOverlay() =
+    SettingsOverlay(
+        { state },
+        { settingsViewState },
+        settingsSectionList,
+        settingsList,
+        ::handleSettingsKey,
+    )
 
-internal fun MeloScreen.buildDirectoryPickerOverlay() = DirectoryPickerOverlay(
-    { settingsViewState },
-    ::handleSettingsKey
-)
+internal fun MeloScreen.buildDirectoryPickerOverlay() =
+    DirectoryPickerOverlay(
+        { settingsViewState },
+        ::handleSettingsKey,
+    )
 
-internal fun MeloScreen.buildTrackOptionsOverlay() = TrackOptionsOverlay(
-    { state },
-    ::handleTrackOptionsKey
-)
+internal fun MeloScreen.buildTrackOptionsOverlay() =
+    TrackOptionsOverlay(
+        { state },
+        ::handleTrackOptionsKey,
+    )
 
 internal fun MeloScreen.buildCommandBarSuggestionsOverlay() = CommandBarSuggestionsOverlay { state }
 
-internal fun MeloScreen.buildLanguagePickerOverlay() = LanguagePickerOverlay(
-    { state },
-    ::handleLanguagePickerKey
-)
+internal fun MeloScreen.buildLanguagePickerOverlay() =
+    LanguagePickerOverlay(
+        { state },
+        ::handleLanguagePickerKey,
+    )
 
 internal fun MeloScreen.buildToastOverlay() = ToastOverlay { state }
+
+internal fun MeloScreen.buildHelpOverlay() =
+    HelpOverlay(
+        stateProvider = { state },
+        settingsProvider = { settingsViewState.currentSettings },
+        onKeyEvent = ::handleHelpOverlayKey,
+    )

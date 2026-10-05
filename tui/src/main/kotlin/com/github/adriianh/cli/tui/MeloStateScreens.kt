@@ -46,7 +46,9 @@ data class BatchSelectionState(
     val count: Int get() = selectedTracks.size
     val isNotEmpty: Boolean get() = selectedTracks.isNotEmpty()
     val isEmpty: Boolean get() = selectedTracks.isEmpty()
+
     fun isSelected(trackId: String): Boolean = selectedTracks.containsKey(trackId)
+
     fun tracks(): List<Track> = selectedTracks.values.toList()
 
     fun toggle(track: Track): BatchSelectionState {
@@ -58,7 +60,7 @@ data class BatchSelectionState(
         }
         return copy(
             isSelectionMode = updated.isNotEmpty(),
-            selectedTracks = updated
+            selectedTracks = updated,
         )
     }
 
@@ -101,15 +103,24 @@ data class LanguagePickerState(
     val isVisible: Boolean = false,
     val selectedIndex: Int = 0,
     val currentLanguage: String = "es",
-    val languages: List<Pair<String, String>> = listOf(
-        "es" to "Español",
-        "en" to "English",
-        "pt" to "Português",
-        "fr" to "Français",
-        "de" to "Deutsch",
-        "it" to "Italiano",
-        "ja" to "日本語"
-    )
+    val languages: List<Pair<String, String>> =
+        listOf(
+            "es" to "Español",
+            "en" to "English",
+            "pt" to "Português",
+            "fr" to "Français",
+            "de" to "Deutsch",
+            "it" to "Italiano",
+            "ja" to "日本語",
+        ),
+)
+
+/*
+ * Global state for the help overlay.
+ */
+data class HelpOverlayState(
+    val isVisible: Boolean = false,
+    val scrollOffset: Int = 0,
 )
 
 /**
@@ -124,7 +135,7 @@ data class CommandBarState(
     val cursorPosition: Int = 0,
     val previousFocusId: String? = null,
     val suggestions: List<String> = emptyList(),
-    val selectedSuggestionIndex: Int? = null
+    val selectedSuggestionIndex: Int? = null,
 )
 
 /**

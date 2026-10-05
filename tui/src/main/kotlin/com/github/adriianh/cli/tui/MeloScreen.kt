@@ -37,12 +37,16 @@ import dev.tamboui.toolkit.app.ToolkitRunner
 import dev.tamboui.toolkit.element.Element
 import dev.tamboui.toolkit.elements.ListElement
 import dev.tamboui.tui.TuiConfig
+import dev.tamboui.tui.bindings.Actions
+import dev.tamboui.tui.bindings.Bindings
+import dev.tamboui.tui.event.Event
 import dev.tamboui.widgets.input.TextInputState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Semaphore
+import java.util.Optional
 
 class MeloScreen(
     // Shared infrastructure
@@ -68,9 +72,8 @@ class MeloScreen(
     internal val libraryCache: LibraryCache? = null,
     internal val homeFeedCache: HomeFeedCache? = null,
     internal val entityCache: EntityCache? = null,
-    dispatcher: CoroutineDispatcher
+    dispatcher: CoroutineDispatcher,
 ) : ToolkitApp() {
-
     // Bridging properties to keep existing code working during refactor
     internal val getHome get() = discoveryInteractors.getHome
     internal val searchTracks get() = searchInteractors.searchTracks
@@ -154,6 +157,7 @@ class MeloScreen(
     internal var marqueeJob: ToolkitRunner.ScheduledAction? = null
     internal var toastJob: ToolkitRunner.ScheduledAction? = null
     internal var equalizerJob: ToolkitRunner.ScheduledAction? = null
+
     /** Last known download status per track id, used to detect completion transitions. */
     internal val lastDownloadStatusById = mutableMapOf<String, DownloadStatus>()
     internal var marqueeTick = 0
@@ -240,8 +244,41 @@ class MeloScreen(
     internal val commandBarSuggestionsOverlay = buildCommandBarSuggestionsOverlay()
     internal val languagePickerOverlay = buildLanguagePickerOverlay()
     internal val toastOverlay = buildToastOverlay()
+    internal val helpOverlay = buildHelpOverlay()
 
-    override fun configure(): TuiConfig = TuiConfig.builder().mouseCapture(true).build()
+    override fun configure(): TuiConfig {
+        val defaultBindings = TuiConfig.defaults().bindings()
+        val dynamicBindings =
+            object : Bindings by defaultBindings {
+                override fun matches(
+                    event: Event,
+                    action: String,
+                ): Boolean {
+                    if (state.commandBar.isVisible &&
+                        (action == Actions.FOCUS_NEXT || action == Actions.FOCUS_PREVIOUS)
+                    ) {
+                        return false
+                    }
+                    return defaultBindings.matches(event, action)
+                }
+
+                override fun actionFor(event: Event): Optional<String> {
+                    val action = defaultBindings.actionFor(event)
+                    if (state.commandBar.isVisible && action.isPresent) {
+                        val a = action.get()
+                        if (a == Actions.FOCUS_NEXT || a == Actions.FOCUS_PREVIOUS) {
+                            return Optional.empty()
+                        }
+                    }
+                    return action
+                }
+            }
+        return TuiConfig
+            .builder()
+            .mouseCapture(true)
+            .bindings(dynamicBindings)
+            .build()
+    }
 
     override fun onStart() = onStartLifecycle()
 
@@ -253,8 +290,10 @@ class MeloScreen(
 
     internal fun deleteDownloadedTrack(trackId: String) = deleteDownloadedTrackAction(trackId)
 
-    internal fun downloadTrack(track: Track, downloadType: DownloadType = DownloadType.PREFETCH) =
-        downloadTrackAction(track, downloadType)
+    internal fun downloadTrack(
+        track: Track,
+        downloadType: DownloadType = DownloadType.PREFETCH,
+    ) = downloadTrackAction(track, downloadType)
 
     private var toastIdCounter = 0L
 
@@ -263,15 +302,20 @@ class MeloScreen(
      * (render thread); coroutine call sites must wrap it in `runOnRenderThread`
      * like the rest of their state updates.
      */
-    internal fun showToast(message: String, kind: ToastKind = ToastKind.INFO) {
-        state = state.copy(
-            toasts = pushToast(
-                toasts = state.toasts,
-                message = message,
-                kind = kind,
-                nowMs = System.currentTimeMillis(),
-                id = ++toastIdCounter,
+    internal fun showToast(
+        message: String,
+        kind: ToastKind = ToastKind.INFO,
+    ) {
+        state =
+            state.copy(
+                toasts =
+                    pushToast(
+                        toasts = state.toasts,
+                        message = message,
+                        kind = kind,
+                        nowMs = System.currentTimeMillis(),
+                        id = ++toastIdCounter,
+                    ),
             )
-        )
     }
 }
