@@ -19,6 +19,7 @@ import com.github.adriianh.cli.tui.handler.playback.toggleQueue
 import com.github.adriianh.cli.tui.handler.search.loadLyricsIfNeeded
 import com.github.adriianh.cli.tui.handler.search.performSearch
 import com.github.adriianh.cli.tui.util.ToastKind
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.core.util.MeloVersion
 import dev.tamboui.toolkit.event.EventResult
@@ -83,6 +84,8 @@ object CommandBarHandlers {
             object : Command(
                 names = listOf("update", "upgrade"),
                 description = "Check for updates to Melo",
+                argumentDescription = "[nightly|stable]",
+                subArguments = listOf("nightly", "stable"),
                 category = CommandCategory.GENERAL,
             ) {
                 override fun MeloScreen.execute(arg: String?): CommandResult {
@@ -91,18 +94,36 @@ object CommandBarHandlers {
                         showToast("Update service is not available", ToastKind.WARNING)
                         return CommandResult()
                     }
-                    showToast("Checking for updates...", ToastKind.INFO)
+                    val normalized = arg?.trim()?.lowercase().orEmpty()
+                    val channel =
+                        when {
+                            normalized == "nightly" || normalized == "--nightly" -> UpdateChannel.NIGHTLY
+                            normalized == "stable" || normalized == "--stable" -> UpdateChannel.STABLE
+                            MeloVersion.CURRENT.contains("nightly", ignoreCase = true) -> UpdateChannel.NIGHTLY
+                            else -> UpdateChannel.STABLE
+                        }
+                    val channelTag = if (channel == UpdateChannel.NIGHTLY) "nightly" else "stable"
+                    showToast("Checking for updates ($channelTag)...", ToastKind.INFO)
                     scope.launch {
-                        updateUseCase(MeloVersion.CURRENT).fold(
+                        updateUseCase(MeloVersion.CURRENT, channel).fold(
                             onSuccess = { release ->
                                 appRunner()?.runOnRenderThread {
                                     if (release != null) {
+                                        val runCmd =
+                                            if (channel == UpdateChannel.NIGHTLY) {
+                                                "melo update --nightly"
+                                            } else {
+                                                "melo update"
+                                            }
                                         showToast(
-                                            "Update v${release.version} available! Run 'melo update' to install.",
+                                            "Update v${release.version} available! Run '$runCmd' to install.",
                                             ToastKind.SUCCESS,
                                         )
                                     } else {
-                                        showToast("Melo is up to date (v${MeloVersion.CURRENT})", ToastKind.INFO)
+                                        showToast(
+                                            "Melo is up to date (v${MeloVersion.CURRENT}, $channelTag)",
+                                            ToastKind.INFO,
+                                        )
                                     }
                                 }
                             },

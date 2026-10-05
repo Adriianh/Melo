@@ -15,6 +15,7 @@ import com.github.adriianh.cli.tui.util.TOAST_TICK_MS
 import com.github.adriianh.cli.tui.util.ToastKind
 import com.github.adriianh.cli.tui.util.pruneExpiredToasts
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.util.MeloVersion
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -124,11 +125,23 @@ internal fun MeloScreen.onStartLifecycle() {
     }
     if (settingsViewState.currentSettings.autoCheckUpdates && checkForUpdate != null) {
         scope.launch {
-            checkForUpdate.invoke(MeloVersion.CURRENT).onSuccess { release ->
+            val channel =
+                if (MeloVersion.CURRENT.contains("nightly", ignoreCase = true)) {
+                    UpdateChannel.NIGHTLY
+                } else {
+                    UpdateChannel.STABLE
+                }
+            checkForUpdate.invoke(MeloVersion.CURRENT, channel).onSuccess { release ->
                 if (release != null) {
                     appRunner()?.runOnRenderThread {
+                        val runCmd =
+                            if (release.channel == UpdateChannel.NIGHTLY) {
+                                "melo update --nightly"
+                            } else {
+                                "melo update"
+                            }
                         showToast(
-                            "Update available: v${release.version} (run ':update' or 'melo update')",
+                            "Update available: v${release.version} (run ':update' or '$runCmd')",
                             ToastKind.INFO,
                         )
                     }

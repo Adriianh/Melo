@@ -4,6 +4,7 @@ import com.github.adriianh.cli.command.player.UpdateCommand
 import com.github.adriianh.cli.service.SelfUpdater
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.currentPlatform
 import com.github.adriianh.core.domain.repository.DownloadProgress
@@ -25,10 +26,15 @@ class UpdateCommandTest {
         var downloadedBytesEmitted: Long = 1024L,
     ) : UpdateRepository {
         var requestedVersion: String? = null
+        var requestedChannel: UpdateChannel? = null
         var downloadCalledWithAsset: ReleaseAsset? = null
 
-        override suspend fun checkForUpdate(currentVersion: String): Result<AppRelease?> {
+        override suspend fun checkForUpdate(
+            currentVersion: String,
+            channel: UpdateChannel,
+        ): Result<AppRelease?> {
             requestedVersion = currentVersion
+            requestedChannel = channel
             if (shouldThrow) {
                 return Result.failure(IllegalStateException("Simulated network timeout"))
             }
@@ -118,8 +124,78 @@ class UpdateCommandTest {
         assertTrue(result.output.contains("--check"))
         assertTrue(result.output.contains("-y, --yes"))
         assertTrue(result.output.contains("--force"))
+        assertTrue(result.output.contains("--nightly"))
+        assertTrue(result.output.contains("--stable"))
         assertTrue(result.output.contains("melo update --check"))
         assertTrue(result.output.contains("melo upgrade"))
+    }
+
+    @Test
+    fun `resolves nightly channel with nightly flag`() {
+        val repo = FakeUpdateRepository(releaseToReturn = null)
+        val checkUseCase = CheckForUpdateUseCase(repo)
+        val downloadUseCase = DownloadUpdateUseCase(repo)
+        val selfUpdater = FakeSelfUpdater()
+
+        val cmd =
+            UpdateCommand(
+                checkForUpdateUseCase = checkUseCase,
+                downloadUpdateUseCase = downloadUseCase,
+                selfUpdater = selfUpdater,
+                currentVersion = "2.2.1",
+            )
+
+        val result = cmd.test("--nightly")
+        assertEquals(0, result.statusCode)
+        assertEquals(UpdateChannel.NIGHTLY, repo.requestedChannel)
+    }
+
+    @Test
+    fun `resolves stable channel with stable flag`() {
+        val repo = FakeUpdateRepository(releaseToReturn = null)
+        val checkUseCase = CheckForUpdateUseCase(repo)
+        val downloadUseCase = DownloadUpdateUseCase(repo)
+        val selfUpdater = FakeSelfUpdater()
+
+        val cmd =
+            UpdateCommand(
+                checkForUpdateUseCase = checkUseCase,
+                downloadUpdateUseCase = downloadUseCase,
+                selfUpdater = selfUpdater,
+                currentVersion = "2.2.1-nightly.20261005.0915",
+            )
+
+        val result = cmd.test("--stable")
+        assertEquals(0, result.statusCode)
+        assertEquals(UpdateChannel.STABLE, repo.requestedChannel)
+    }
+
+    @Test
+    fun `auto-detects channel based on current version`() {
+        val repo = FakeUpdateRepository(releaseToReturn = null)
+        val checkUseCase = CheckForUpdateUseCase(repo)
+        val downloadUseCase = DownloadUpdateUseCase(repo)
+        val selfUpdater = FakeSelfUpdater()
+
+        val nightlyCmd =
+            UpdateCommand(
+                checkForUpdateUseCase = checkUseCase,
+                downloadUpdateUseCase = downloadUseCase,
+                selfUpdater = selfUpdater,
+                currentVersion = "2.2.1-nightly.20261005.0915",
+            )
+        nightlyCmd.test()
+        assertEquals(UpdateChannel.NIGHTLY, repo.requestedChannel)
+
+        val stableCmd =
+            UpdateCommand(
+                checkForUpdateUseCase = checkUseCase,
+                downloadUpdateUseCase = downloadUseCase,
+                selfUpdater = selfUpdater,
+                currentVersion = "2.2.1",
+            )
+        stableCmd.test()
+        assertEquals(UpdateChannel.STABLE, repo.requestedChannel)
     }
 
     @Test
@@ -139,7 +215,7 @@ class UpdateCommandTest {
 
         val result = cmd.test()
         assertEquals(0, result.statusCode)
-        assertTrue(result.output.contains("Melo is up to date (v2.2.1)."))
+        assertTrue(result.output.contains("Melo is up to date (v2.2.1, channel: stable)."))
         assertEquals("2.2.1", repo.requestedVersion)
         assertEquals(false, selfUpdater.applyUpdateCalled)
     }

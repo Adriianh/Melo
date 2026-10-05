@@ -39,7 +39,7 @@ jobs:
             melo_version="${GITHUB_REF#refs/tags/v}"
           else
             base=$(sed -nE 's/^melo\.version=(.*)$/\1/p' gradle.properties | tail -n 1)
-            melo_version="${base}-nightly.$(date -u +%Y%m%d)"
+            melo_version="${base}-nightly.$(date -u +%Y%m%d.%H%M)"
           fi
           echo "melo_version=${melo_version}" >> "$GITHUB_OUTPUT"
           echo "Melo version: ${melo_version}"
