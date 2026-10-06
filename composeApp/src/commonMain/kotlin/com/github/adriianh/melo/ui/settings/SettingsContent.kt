@@ -36,6 +36,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -52,6 +53,8 @@ import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.getPlatform
 
 @Composable
 internal fun SettingsContent(
@@ -61,6 +64,7 @@ internal fun SettingsContent(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val platform = remember { getPlatform() }
 
     Column(
         modifier = modifier
@@ -70,6 +74,9 @@ internal fun SettingsContent(
     ) {
         AppearanceSettingsSection(settings, actions)
         PlaybackSettingsSection(settings, actions)
+        if (platform.type != PlatformType.IOS) {
+            DiscordRpcSettingsSection(settings, actions, platform.type)
+        }
         DownloadsSettingsSection(settings, actions)
         LocalFoldersSection(settings, actions)
         AccountSettingsSection(settings, isLoggedIn, actions)
@@ -361,8 +368,9 @@ private fun AccountSettingsSection(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
-private fun SettingsGroupCard(
+internal fun SettingsGroupCard(
     title: String,
     icon: ImageVector,
     content: @Composable () -> Unit
@@ -408,8 +416,9 @@ private fun SettingsGroupCard(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     title: String,
     subtitle: String,
     content: @Composable () -> Unit
@@ -473,8 +482,9 @@ private fun <T> SettingOptionChips(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
-private fun MeloSettingsSwitch(
+internal fun MeloSettingsSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {

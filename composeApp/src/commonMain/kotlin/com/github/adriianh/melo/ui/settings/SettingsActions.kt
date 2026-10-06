@@ -20,6 +20,7 @@ data class SettingsActions(
     val onClearCache: () -> Unit = {},
     val onAutoplayToggle: (Boolean) -> Unit = {},
     val onDiscordRpcToggle: (Boolean) -> Unit = {},
+    val onDiscordTokenChanged: (String?) -> Unit = {},
     val onAddLocalPath: (String) -> Unit = {},
     val onRemoveLocalPath: (String) -> Unit = {},
     val onSyncHistoryToYouTubeChanged: (Boolean) -> Unit = {},
