@@ -1086,6 +1086,46 @@
     "allPublicMethods": true
   },
   {
+    "name": "com.github.adriianh.data.remote.dto.GitHubReleaseDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.dto.GitHubReleaseDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.dto.GitHubAssetDto",
+    "fields": [
+      {
+        "name": "Companion"
+      }
+    ],
+    "allPublicConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.github.adriianh.data.remote.dto.GitHubAssetDto$Companion",
+    "methods": [
+      {
+        "name": "serializer",
+        "parameterTypes": []
+      }
+    ],
+    "allPublicMethods": true
+  },
+  {
     "name": "org.jaudiotagger.audio.AudioFileIO",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
