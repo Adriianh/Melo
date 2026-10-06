@@ -288,6 +288,41 @@ class UpdateRepositoryTest {
         }
 
     @Test
+    fun `checkForUpdate returns null when release endpoint returns 404`() =
+        runTest {
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = "Not Found",
+                        status = HttpStatusCode.NotFound,
+                    )
+                }
+            val client = HttpClient(mockEngine)
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+            val result = repo.checkForUpdate("1.0.1")
+
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
+        }
+
+    @Test
+    fun `checkForUpdate returns failure when release endpoint returns error`() =
+        runTest {
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = "Internal Server Error",
+                        status = HttpStatusCode.InternalServerError,
+                    )
+                }
+            val client = HttpClient(mockEngine)
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+            val result = repo.checkForUpdate("1.0.1")
+
+            assertTrue(result.isFailure)
+        }
+
+    @Test
     fun `detectPlatformFromFileName correctly identifies platforms`() {
         assertEquals(UpdatePlatform.WINDOWS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-Setup.exe"))
         assertEquals(UpdatePlatform.WINDOWS, UpdateRepositoryImpl.detectPlatformFromFileName("Melo-2.2.1.msi"))
