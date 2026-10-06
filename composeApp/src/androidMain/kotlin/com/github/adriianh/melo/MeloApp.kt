@@ -1,6 +1,7 @@
 package com.github.adriianh.melo
 
 import android.app.Application
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.data.local.ContextHolder
@@ -23,6 +24,7 @@ class MeloApp : Application() {
         CoroutineScope(Dispatchers.IO).launch {
             koinApp.koin.getOrNull<MeloPlayer>()
             koinApp.koin.getOrNull<MediaSessionManager>()
+            koinApp.koin.getOrNull<DiscordRpcManager>()
         }
     }
 }

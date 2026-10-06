@@ -5,7 +5,6 @@ import com.github.adriianh.core.domain.player.AndroidMeloPlayer
 import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
-import com.github.adriianh.core.domain.player.NoOpDiscordRpcManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.local.DatabaseFactory
@@ -16,6 +15,7 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.repository.AndroidOfflineRepositoryImpl
 import com.github.adriianh.melo.player.AndroidMediaSessionManager
+import com.github.adriianh.melo.service.AndroidDiscordRpcManager
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
@@ -56,5 +56,10 @@ actual val platformModule: Module = module {
         )
     }
 
-    single<DiscordRpcManager> { NoOpDiscordRpcManager() }
+    single<DiscordRpcManager> {
+        AndroidDiscordRpcManager(
+            playbackManager = get(),
+            settingsRepository = get()
+        )
+    }
 }
