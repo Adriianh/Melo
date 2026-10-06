@@ -3,9 +3,11 @@ package com.github.adriianh.melo.di
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.IosMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.NoOpDiscordRpcManager
 import com.github.adriianh.core.domain.player.NoOpMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -67,4 +69,6 @@ actual val platformModule: Module = module {
             }
         }
     }
+
+    single<DiscordRpcManager> { NoOpDiscordRpcManager() }
 }

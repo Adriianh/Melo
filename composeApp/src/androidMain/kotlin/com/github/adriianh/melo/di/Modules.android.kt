@@ -2,8 +2,10 @@ package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.AndroidMeloPlayer
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.NoOpDiscordRpcManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.data.local.DatabaseFactory
@@ -53,4 +55,6 @@ actual val platformModule: Module = module {
             context = androidContext()
         )
     }
+
+    single<DiscordRpcManager> { NoOpDiscordRpcManager() }
 }
