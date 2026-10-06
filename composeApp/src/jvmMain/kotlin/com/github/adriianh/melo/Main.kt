@@ -9,6 +9,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.melo.di.initKoin
@@ -28,6 +29,7 @@ fun main() {
     CoroutineScope(Dispatchers.IO).launch {
         koinApp.koin.getOrNull<MeloPlayer>()
         koinApp.koin.getOrNull<MediaSessionManager>()
+        koinApp.koin.getOrNull<DiscordRpcManager>()
     }
 
     application {
@@ -64,6 +66,7 @@ fun main() {
         Window(
             onCloseRequest = {
                 koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
                 exitApplication()
             },
             state = windowState,
@@ -89,6 +92,7 @@ fun main() {
                         windowManager = windowManager,
                         onClose = {
                             koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                            koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
                             exitApplication()
                         }
                     )

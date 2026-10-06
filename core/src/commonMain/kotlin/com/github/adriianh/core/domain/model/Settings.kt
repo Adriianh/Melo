@@ -96,6 +96,7 @@ data class Settings(
     val theme: ThemePreset = ThemePreset.DEFAULT,
     val volume: Int = 75,
     val discordRpcEnabled: Boolean = true,
+    val discordRpcToken: String? = null,
     val searchLanguage: String = "en",
     val artworkResolution: Int = 300,
     val autoDownload: Boolean = false,
