@@ -73,6 +73,7 @@ kotlin {
                 implementation(libs.coilNetworkKtor)
                 implementation(libs.androidx.media3.session)
                 implementation(libs.androidx.media3.exoplayer)
+                implementation(libs.kizzyrpc)
             }
         }
         val iosMain by getting {
@@ -86,6 +87,7 @@ kotlin {
                 implementation(libs.jmtc)
                 implementation(libs.jnaPlatform)
                 implementation(libs.slf4jSimple)
+                implementation(libs.kdiscordipc)
             }
         }
         commonTest {
