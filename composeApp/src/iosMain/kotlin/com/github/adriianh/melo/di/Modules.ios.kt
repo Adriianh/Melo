@@ -25,50 +25,61 @@ import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 
-actual val platformModule: Module = module {
-    single<NetworkMonitor> {
-        object : NetworkMonitor {
-            override val isOnline = MutableStateFlow(true)
-        }
-    }
-    single<MeloDatabase> { DatabaseFactory.create() }
-    single<MeloPlayer> { IosMeloPlayer() }
-    single<MediaSessionManager> { NoOpMediaSessionManager() }
-
-    val paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
-    val documentsDirectory = paths.first() as String
-    single(named("configDirPath")) { documentsDirectory }
-
-    single<AudioProvider>(createdAtStart = true) {
-        val pipedProvider = PipedAudioProvider(apiClient = get())
-        InnerTubeAudioProvider(
-            configDirPath = get(named("configDirPath")),
-            fallback = pipedProvider,
-            settingsRepository = get()
-        )
-    }
-
-    single<OfflineRepository> {
-        object : OfflineRepository {
-            override fun getOfflineTracksFlow(): Flow<List<OfflineTrack>> = flowOf(emptyList())
-            override suspend fun getOfflineTracks(): List<OfflineTrack> = emptyList()
-            override suspend fun getOfflineTrack(trackId: String): OfflineTrack? = null
-            override suspend fun saveOfflineTrack(offlineTrack: OfflineTrack) {}
-            override suspend fun removeOfflineTrack(trackId: String) {}
-            override suspend fun markTrackAsAccessed(trackId: String) {}
-            override suspend fun cleanupExpired(maxAgeDays: Int) {}
-            override suspend fun cleanupCache(maxSizeMb: Int) {}
-            override suspend fun syncWithFileSystem() {}
-            override suspend fun scanLocalTracks(paths: List<String>): List<Track> = emptyList()
-            override suspend fun updateTrackMetadata(
-                id: String,
-                t: String?,
-                a: String?,
-                al: String?
-            ) {
+actual val platformModule: Module =
+    module {
+        single<NetworkMonitor> {
+            object : NetworkMonitor {
+                override val isOnline = MutableStateFlow(true)
             }
         }
-    }
+        single<MeloDatabase> { DatabaseFactory.create() }
+        single<MeloPlayer> { IosMeloPlayer() }
+        single<MediaSessionManager> { NoOpMediaSessionManager() }
 
-    single<DiscordRpcManager> { NoOpDiscordRpcManager() }
-}
+        val paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)
+        val documentsDirectory = paths.first() as String
+        single(named("configDirPath")) { documentsDirectory }
+
+        single<AudioProvider>(createdAtStart = true) {
+            val pipedProvider = PipedAudioProvider(apiClient = get())
+            InnerTubeAudioProvider(
+                configDirPath = get(named("configDirPath")),
+                fallback = pipedProvider,
+                settingsRepository = get(),
+            )
+        }
+
+        single<OfflineRepository> {
+            object : OfflineRepository {
+                override fun getOfflineTracksFlow(): Flow<List<OfflineTrack>> = flowOf(emptyList())
+
+                override suspend fun getOfflineTracks(): List<OfflineTrack> = emptyList()
+
+                override suspend fun getOfflineTrack(trackId: String): OfflineTrack? = null
+
+                override suspend fun saveOfflineTrack(offlineTrack: OfflineTrack) {}
+
+                override suspend fun removeOfflineTrack(trackId: String) {}
+
+                override suspend fun markTrackAsAccessed(trackId: String) {}
+
+                override suspend fun cleanupExpired(maxAgeDays: Int) {}
+
+                override suspend fun cleanupCache(maxSizeMb: Int) {}
+
+                override suspend fun syncWithFileSystem() {}
+
+                override suspend fun scanLocalTracks(paths: List<String>): List<Track> = emptyList()
+
+                override suspend fun updateTrackMetadata(
+                    id: String,
+                    t: String?,
+                    a: String?,
+                    al: String?,
+                ) {
+                }
+            }
+        }
+
+        single<DiscordRpcManager> { NoOpDiscordRpcManager() }
+    }

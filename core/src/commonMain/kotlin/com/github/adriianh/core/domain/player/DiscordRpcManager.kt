@@ -21,7 +21,11 @@ interface DiscordRpcManager {
      * @param playing Whether playback is currently active (`true`) or paused (`false`).
      * @param positionMs The current playback progress in milliseconds, used to compute start/end timestamps.
      */
-    fun updateActivity(track: Track?, playing: Boolean, positionMs: Long? = null)
+    fun updateActivity(
+        track: Track?,
+        playing: Boolean,
+        positionMs: Long? = null,
+    )
 
     /**
      * Clears the current presence and closes the connection to the Discord client.
@@ -38,10 +42,17 @@ interface DiscordRpcManager {
  * A no-op implementation of [DiscordRpcManager] used on platforms or configurations
  * where Discord Rich Presence is unavailable or disabled.
  */
+@Suppress("EmptyFunctionBlock")
 class NoOpDiscordRpcManager : DiscordRpcManager {
     override fun connect() {}
-    override fun updateActivity(track: Track?, playing: Boolean, positionMs: Long?) {}
+
+    override fun updateActivity(
+        track: Track?,
+        playing: Boolean,
+        positionMs: Long?,
+    ) {}
+
     override fun disconnect() {}
+
     override fun release() {}
 }
-

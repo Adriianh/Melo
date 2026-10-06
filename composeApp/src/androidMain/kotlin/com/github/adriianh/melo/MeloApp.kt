@@ -17,9 +17,10 @@ class MeloApp : Application() {
 
         ContextHolder.context = this
 
-        val koinApp = initKoin {
-            androidContext(this@MeloApp)
-        }
+        val koinApp =
+            initKoin {
+                androidContext(this@MeloApp)
+            }
 
         CoroutineScope(Dispatchers.IO).launch {
             koinApp.koin.getOrNull<MeloPlayer>()

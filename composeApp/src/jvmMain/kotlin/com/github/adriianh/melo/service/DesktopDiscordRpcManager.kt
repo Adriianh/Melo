@@ -60,29 +60,31 @@ class DesktopDiscordRpcManager(
         playbackManager: PlaybackManager,
         settingsRepository: SettingsRepository,
     ) {
-        observerJob = scope.launch {
-            launch {
-                settingsRepository.getSettingsFlow()
-                    .map { it.discordRpcEnabled }
-                    .distinctUntilChanged()
-                    .collect { enabled ->
-                        if (enabled) {
-                            connect()
-                        } else {
-                            disconnect()
+        observerJob =
+            scope.launch {
+                launch {
+                    settingsRepository
+                        .getSettingsFlow()
+                        .map { it.discordRpcEnabled }
+                        .distinctUntilChanged()
+                        .collect { enabled ->
+                            if (enabled) {
+                                connect()
+                            } else {
+                                disconnect()
+                            }
                         }
+                }
+                launch {
+                    playbackManager.playbackState.collect { state ->
+                        updateActivity(
+                            track = state.currentTrack,
+                            playing = state.isPlaying,
+                            positionMs = state.progressMs,
+                        )
                     }
-            }
-            launch {
-                playbackManager.playbackState.collect { state ->
-                    updateActivity(
-                        track = state.currentTrack,
-                        playing = state.isPlaying,
-                        positionMs = state.progressMs
-                    )
                 }
             }
-        }
     }
 
     override fun connect() {
@@ -144,6 +146,7 @@ class DesktopDiscordRpcManager(
         sendActivity(track, playing, positionMs)
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun sendActivity(
         track: Track?,
         playing: Boolean,
@@ -151,65 +154,81 @@ class DesktopDiscordRpcManager(
     ) {
         val currentIpc = ipc ?: return
         activityJob?.cancel()
-        activityJob = scope.launch {
-            try {
-                if (track == null) {
-                    currentIpc.activityManager.clearActivity()
-                    return@launch
-                }
-
-                val activity = activity(
-                    details = track.title.take(128),
-                    state = if (playing) "by ${track.artist}".take(128) else "Paused • ${track.artist}".take(128),
-                ) {
-                    type = ActivityType.Listening
-
-                    val imageUrl = track.artworkUrl
-                    if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
-                        largeImage(imageUrl, track.album.takeIf { it.isNotBlank() } ?: track.title)
-                    } else {
-                        largeImage("melo_logo", "Melo")
+        activityJob =
+            scope.launch {
+                try {
+                    if (track == null) {
+                        currentIpc.activityManager.clearActivity()
+                        return@launch
                     }
 
-                    if (playing) {
-                        val now = System.currentTimeMillis()
-                        val pos = (positionMs ?: 0L).coerceAtLeast(0L)
-                        val startMillis = now - pos
-                        if (track.durationMs > 0) {
-                            timestamps(startMillis, startMillis + track.durationMs)
+                    val stateText =
+                        if (playing) {
+                            "by ${track.artist}"
                         } else {
-                            timestamps(startMillis)
+                            "Paused • ${track.artist}"
                         }
-                    }
 
-                    val youtubeId = when {
-                        !track.id.startsWith("local:") && !track.id.startsWith("piped:") -> track.id
-                        track.sourceId != null && !track.sourceId!!.startsWith("local:") -> track.sourceId
-                        else -> null
-                    }
-                    if (!youtubeId.isNullOrBlank()) {
-                        button("Listen on YouTube", "https://youtube.com/watch?v=$youtubeId")
-                    }
+                    val activity =
+                        activity(
+                            details = track.title.take(128),
+                            state = stateText.take(128),
+                        ) {
+                            type = ActivityType.Listening
+
+                            val imageUrl =
+                                track.artworkUrl?.takeIf {
+                                    it.startsWith("http://") || it.startsWith("https://")
+                                }
+                            if (imageUrl != null) {
+                                val imageText = track.album.takeIf { it.isNotBlank() } ?: track.title
+                                largeImage(imageUrl, imageText)
+                            } else {
+                                largeImage("melo_logo", "Melo")
+                            }
+
+                            if (playing) {
+                                val now = System.currentTimeMillis()
+                                val pos = (positionMs ?: 0L).coerceAtLeast(0L)
+                                val startMillis = now - pos
+                                if (track.durationMs > 0) {
+                                    timestamps(startMillis, startMillis + track.durationMs)
+                                } else {
+                                    timestamps(startMillis)
+                                }
+                            }
+
+                            val youtubeId =
+                                when {
+                                    !track.id.startsWith("local:") && !track.id.startsWith("piped:") -> track.id
+                                    track.sourceId != null && !track.sourceId!!.startsWith("local:") -> track.sourceId
+                                    else -> null
+                                }
+                            if (!youtubeId.isNullOrBlank()) {
+                                button("Listen on YouTube", "https://youtube.com/watch?v=$youtubeId")
+                            }
+                        }
+
+                    currentIpc.activityManager.setActivity(activity)
+                } catch (_: Exception) {
                 }
-
-                currentIpc.activityManager.setActivity(activity)
-            } catch (_: Exception) {
             }
-        }
     }
 
     private fun scheduleReconnect() {
         if (manuallyDisconnected) return
         reconnectJob?.cancel()
-        reconnectJob = scope.launch {
-            if (reconnectAttempts < maxReconnectAttempts) {
-                val delayMs = (initialReconnectDelayMs * (1L shl reconnectAttempts))
-                    .coerceAtMost(maxReconnectDelayMs)
-                reconnectAttempts++
-                delay(delayMs.milliseconds)
-                connect()
+        reconnectJob =
+            scope.launch {
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    val delayMs =
+                        (initialReconnectDelayMs * (1L shl reconnectAttempts))
+                            .coerceAtMost(maxReconnectDelayMs)
+                    reconnectAttempts++
+                    delay(delayMs.milliseconds)
+                    connect()
+                }
             }
-        }
     }
 
     override fun disconnect() {

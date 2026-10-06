@@ -22,7 +22,6 @@ class AndroidDiscordRpcManager(
     settingsRepository: SettingsRepository? = null,
     providedScope: CoroutineScope? = null,
 ) : DiscordRpcManager {
-
     private val scope: CoroutineScope =
         providedScope ?: CoroutineScope(
             Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ -> },
@@ -50,33 +49,35 @@ class AndroidDiscordRpcManager(
         playbackManager: PlaybackManager,
         settingsRepository: SettingsRepository,
     ) {
-        observer = scope.launch {
-            launch {
-                settingsRepository.getSettingsFlow()
-                    .map { Pair(it.discordRpcEnabled, it.discordRpcToken) }
-                    .distinctUntilChanged()
-                    .collect { (enabled, token) ->
-                        isEnabled = enabled
-                        val tokenChanged = token != currentToken
-                        currentToken = token
+        observer =
+            scope.launch {
+                launch {
+                    settingsRepository
+                        .getSettingsFlow()
+                        .map { Pair(it.discordRpcEnabled, it.discordRpcToken) }
+                        .distinctUntilChanged()
+                        .collect { (enabled, token) ->
+                            isEnabled = enabled
+                            val tokenChanged = token != currentToken
+                            currentToken = token
 
-                        if (!enabled || token.isNullOrBlank()) {
-                            disconnect()
-                        } else if (tokenChanged || kizzyRpc == null) {
-                            connect()
+                            if (!enabled || token.isNullOrBlank()) {
+                                disconnect()
+                            } else if (tokenChanged || kizzyRpc == null) {
+                                connect()
+                            }
                         }
+                }
+                launch {
+                    playbackManager.playbackState.collect { state ->
+                        updateActivity(
+                            track = state.currentTrack,
+                            playing = state.isPlaying,
+                            positionMs = state.progressMs,
+                        )
                     }
-            }
-            launch {
-                playbackManager.playbackState.collect { state ->
-                    updateActivity(
-                        track = state.currentTrack,
-                        playing = state.isPlaying,
-                        positionMs = state.progressMs,
-                    )
                 }
             }
-        }
     }
 
     override fun connect() {
@@ -110,55 +111,60 @@ class AndroidDiscordRpcManager(
         sendActivity(track, playing, positionMs)
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun sendActivity(
         track: Track?,
         playing: Boolean,
         positionMs: Long?,
     ) {
         activityJob?.cancel()
-        activityJob = scope.launch {
-            try {
-                if (track == null || !playing) {
-                    kizzyRpc?.closeRPC()
-                    return@launch
+        activityJob =
+            scope.launch {
+                try {
+                    if (track == null || !playing) {
+                        kizzyRpc?.closeRPC()
+                        return@launch
+                    }
+
+                    val token = currentToken ?: return@launch
+                    val rpc = kizzyRpc ?: KizzyRPC(token).also { kizzyRpc = it }
+
+                    val now = System.currentTimeMillis()
+                    val pos = (positionMs ?: 0L).coerceAtLeast(0L)
+                    val startMillis = now - pos
+                    val endMillis = if (track.durationMs > 0) startMillis + track.durationMs else null
+
+                    val imageUrl =
+                        track.artworkUrl?.takeIf {
+                            it.startsWith("http://") || it.startsWith("https://")
+                        }
+
+                    val activity =
+                        Activity(
+                            name = "Melo",
+                            state = "by ${track.artist}".take(128),
+                            details = track.title.take(128),
+                            type = 2,
+                            timestamps = Timestamps(start = startMillis, end = endMillis),
+                            assets =
+                                Assets(
+                                    largeImage = imageUrl ?: "melo_logo",
+                                    smallImage = null,
+                                    largeText = track.album.takeIf { it.isNotBlank() } ?: track.title,
+                                    smallText = null,
+                                ),
+                            buttons = null,
+                            metadata = null,
+                            applicationId = clientId,
+                        )
+
+                    if (rpc.isRpcRunning()) {
+                        rpc.closeRPC()
+                    }
+                    rpc.setActivity(activity)
+                } catch (_: Exception) {
                 }
-
-                val token = currentToken ?: return@launch
-                val rpc = kizzyRpc ?: KizzyRPC(token).also { kizzyRpc = it }
-
-                val now = System.currentTimeMillis()
-                val pos = (positionMs ?: 0L).coerceAtLeast(0L)
-                val startMillis = now - pos
-                val endMillis = if (track.durationMs > 0) startMillis + track.durationMs else null
-
-                val imageUrl = track.artworkUrl?.takeIf {
-                    it.startsWith("http://") || it.startsWith("https://")
-                }
-
-                val activity = Activity(
-                    name = "Melo",
-                    state = "by ${track.artist}".take(128),
-                    details = track.title.take(128),
-                    type = 2,
-                    timestamps = Timestamps(start = startMillis, end = endMillis),
-                    assets = Assets(
-                        largeImage = imageUrl ?: "melo_logo",
-                        smallImage = null,
-                        largeText = track.album.takeIf { it.isNotBlank() } ?: track.title,
-                        smallText = null,
-                    ),
-                    buttons = null,
-                    metadata = null,
-                    applicationId = clientId,
-                )
-
-                if (rpc.isRpcRunning()) {
-                    rpc.closeRPC()
-                }
-                rpc.setActivity(activity)
-            } catch (_: Exception) {
             }
-        }
     }
 
     override fun disconnect() {
