@@ -6,12 +6,15 @@ import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.repository.SettingsRepository
 import dev.cbyrne.kdiscordipc.KDiscordIPC
 import dev.cbyrne.kdiscordipc.core.event.impl.DisconnectedEvent
+import dev.cbyrne.kdiscordipc.core.event.impl.ErrorEvent
 import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
+import dev.cbyrne.kdiscordipc.data.activity.StatusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.activity
 import dev.cbyrne.kdiscordipc.data.activity.button
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -101,29 +104,28 @@ class DesktopDiscordRpcManager(
                 newIpc.on<ReadyEvent> {
                     isConnected = true
                     reconnectAttempts = 0
+                    reconnectJob?.cancel()
+                    reconnectJob = null
                     sendActivity(currentTrack, isPlaying, currentPositionMs)
                 }
 
                 newIpc.on<DisconnectedEvent> {
                     isConnected = false
                     ipc = null
-                    if (!manuallyDisconnected) {
-                        scheduleReconnect()
-                    }
+                    scheduleReconnect()
+                }
+
+                newIpc.on<ErrorEvent> {
+                    isConnected = false
+                    ipc = null
+                    scheduleReconnect()
                 }
 
                 newIpc.connect()
+            } catch (_: Throwable) {
                 isConnected = false
                 ipc = null
-                if (!manuallyDisconnected) {
-                    scheduleReconnect()
-                }
-            } catch (_: Exception) {
-                isConnected = false
-                ipc = null
-                if (!manuallyDisconnected) {
-                    scheduleReconnect()
-                }
+                scheduleReconnect()
             }
         }
     }
@@ -146,7 +148,6 @@ class DesktopDiscordRpcManager(
         sendActivity(track, playing, positionMs)
     }
 
-    @Suppress("CyclomaticComplexMethod")
     private fun sendActivity(
         track: Track?,
         playing: Boolean,
@@ -157,24 +158,18 @@ class DesktopDiscordRpcManager(
         activityJob =
             scope.launch {
                 try {
-                    if (track == null) {
+                    if (track == null || !playing) {
                         currentIpc.activityManager.clearActivity()
                         return@launch
                     }
 
-                    val stateText =
-                        if (playing) {
-                            "by ${track.artist}"
-                        } else {
-                            "Paused • ${track.artist}"
-                        }
-
                     val activity =
                         activity(
                             details = track.title.take(128),
-                            state = stateText.take(128),
+                            state = "by ${track.artist}".take(128),
                         ) {
                             type = ActivityType.Listening
+                            statusDisplayType(StatusDisplayType.State)
 
                             val imageUrl =
                                 track.artworkUrl?.takeIf {
@@ -187,23 +182,16 @@ class DesktopDiscordRpcManager(
                                 largeImage("melo_logo", "Melo")
                             }
 
-                            if (playing) {
-                                val now = System.currentTimeMillis()
-                                val pos = (positionMs ?: 0L).coerceAtLeast(0L)
-                                val startMillis = now - pos
-                                if (track.durationMs > 0) {
-                                    timestamps(startMillis, startMillis + track.durationMs)
-                                } else {
-                                    timestamps(startMillis)
-                                }
+                            val now = System.currentTimeMillis()
+                            val pos = (positionMs ?: 0L).coerceAtLeast(0L)
+                            val startMillis = now - pos
+                            if (track.durationMs > 0) {
+                                timestamps(startMillis, startMillis + track.durationMs)
+                            } else {
+                                timestamps(startMillis)
                             }
 
-                            val youtubeId =
-                                when {
-                                    !track.id.startsWith("local:") && !track.id.startsWith("piped:") -> track.id
-                                    track.sourceId != null && !track.sourceId!!.startsWith("local:") -> track.sourceId
-                                    else -> null
-                                }
+                            val youtubeId = resolveYouTubeId(track)
                             if (!youtubeId.isNullOrBlank()) {
                                 button("Listen on YouTube", "https://youtube.com/watch?v=$youtubeId")
                             }
@@ -215,19 +203,45 @@ class DesktopDiscordRpcManager(
             }
     }
 
+    private fun resolveYouTubeId(track: Track): String? =
+        when {
+            !track.id.startsWith("local:") && !track.id.startsWith("piped:") -> track.id
+            track.sourceId != null && !track.sourceId!!.startsWith("local:") -> track.sourceId
+            else -> null
+        }
+
+    private val canReconnect: Boolean
+        get() = !manuallyDisconnected && !isConnected && ipc == null
+
     private fun scheduleReconnect() {
-        if (manuallyDisconnected) return
-        reconnectJob?.cancel()
+        if (!canReconnect) return
+        if (reconnectJob?.isActive == true) return
+
         reconnectJob =
             scope.launch {
-                if (reconnectAttempts < maxReconnectAttempts) {
+                while (reconnectAttempts < maxReconnectAttempts && canReconnect) {
                     val delayMs =
                         (initialReconnectDelayMs * (1L shl reconnectAttempts))
                             .coerceAtMost(maxReconnectDelayMs)
+                    try {
+                        delay(delayMs.milliseconds)
+                    } catch (_: CancellationException) {
+                        return@launch
+                    }
+
+                    if (!canReconnect) break
+
                     reconnectAttempts++
-                    delay(delayMs.milliseconds)
-                    connect()
+                    try {
+                        connect()
+                        delay(2000.milliseconds)
+                        if (isConnected) {
+                            reconnectAttempts = 0
+                        }
+                    } catch (_: Throwable) {
+                    }
                 }
+                reconnectJob = null
             }
     }
 

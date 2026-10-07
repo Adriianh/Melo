@@ -6,6 +6,7 @@ import dev.cbyrne.kdiscordipc.core.event.impl.DisconnectedEvent
 import dev.cbyrne.kdiscordipc.core.event.impl.ErrorEvent
 import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
+import dev.cbyrne.kdiscordipc.data.activity.StatusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -125,7 +126,7 @@ class DiscordRpcManager(
                         state = track.artist,
                     ) {
                         type = ActivityType.Listening
-                        statusDisplayType = 1
+                        statusDisplayType(StatusDisplayType.State)
 
                         val imageUrl = track.artworkUrl
                         if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
