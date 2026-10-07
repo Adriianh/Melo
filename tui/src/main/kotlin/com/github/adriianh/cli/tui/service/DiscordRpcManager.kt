@@ -8,6 +8,7 @@ import dev.cbyrne.kdiscordipc.core.event.impl.ReadyEvent
 import dev.cbyrne.kdiscordipc.data.activity.ActivityType
 import dev.cbyrne.kdiscordipc.data.activity.StatusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
+import dev.cbyrne.kdiscordipc.data.activity.statusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,7 @@ import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Manages Discord Rich Presence using KDiscordIPC.
@@ -175,7 +177,7 @@ class DiscordRpcManager(
                 )
 
                 try {
-                    delay(delayMs)
+                    delay(delayMs.milliseconds)
                 } catch (_: CancellationException) {
                     return@launch
                 }
@@ -185,7 +187,7 @@ class DiscordRpcManager(
                 reconnectAttempts++
                 try {
                     connect()
-                    delay(2_000L)
+                    delay(2_000L.milliseconds)
 
                     if (isConnected) {
                         reconnectAttempts = 0

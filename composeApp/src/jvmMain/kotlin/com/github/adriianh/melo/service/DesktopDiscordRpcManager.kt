@@ -13,6 +13,7 @@ import dev.cbyrne.kdiscordipc.data.activity.StatusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.activity
 import dev.cbyrne.kdiscordipc.data.activity.button
 import dev.cbyrne.kdiscordipc.data.activity.largeImage
+import dev.cbyrne.kdiscordipc.data.activity.statusDisplayType
 import dev.cbyrne.kdiscordipc.data.activity.timestamps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
