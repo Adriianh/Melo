@@ -1,9 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
     id("com.android.application")
     id("buildsrc.convention.compose-multiplatform")
     id("buildsrc.convention.desktop-packaging")
@@ -17,7 +17,6 @@ val meloPackageVersion: String = meloVersion.substringBefore('-')
 
 kotlin {
     androidTarget {
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
@@ -73,7 +72,7 @@ kotlin {
                 implementation(libs.coilNetworkKtor)
                 implementation(libs.androidx.media3.session)
                 implementation(libs.androidx.media3.exoplayer)
-                implementation(libs.kizzyrpc)
+                implementation(libs.ktorClientWebsockets)
             }
         }
         val iosMain by getting {
