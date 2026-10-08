@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.util.MeloColors
@@ -54,6 +57,13 @@ import org.koin.compose.viewmodel.koinViewModel
 fun UpdateSettingsSection(
     autoCheckUpdates: Boolean,
     onToggleAutoCheckUpdates: (Boolean) -> Unit,
+    updateChannel: UpdateChannel =
+        if (MeloVersion.CURRENT.contains("nightly", ignoreCase = true)) {
+            UpdateChannel.NIGHTLY
+        } else {
+            UpdateChannel.STABLE
+        },
+    onUpdateChannelSelected: (UpdateChannel) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: UpdateViewModel = koinViewModel()
 ) {
@@ -91,17 +101,43 @@ fun UpdateSettingsSection(
                         fontWeight = FontWeight.SemiBold,
                         color = MeloColors.textPrimary
                     )
-                    Text(
-                        text = "Versión instalada: v${MeloVersion.CURRENT}",
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Versión instalada: v${MeloVersion.CURRENT}",
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary
+                        )
+                        val isCurrentNightly =
+                            MeloVersion.CURRENT.contains("nightly", ignoreCase = true)
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (isCurrentNightly) {
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+                            } else {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            }
+                        ) {
+                            Text(
+                                text = if (isCurrentNightly) "Nightly" else "Estable",
+                                style = MeloType.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = if (isCurrentNightly) {
+                                    MaterialTheme.colorScheme.tertiary
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                 }
             }
 
             if (state !is UpdateState.Checking && state !is UpdateState.Downloading) {
                 OutlinedButton(
-                    onClick = { viewModel.checkForUpdates() },
+                    onClick = { viewModel.checkForUpdates(updateChannel) },
                     shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, MeloColors.border),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
@@ -143,6 +179,61 @@ fun UpdateSettingsSection(
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                 )
             )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Canal de actualización",
+                    style = MeloType.body,
+                    color = MeloColors.textPrimary
+                )
+                Text(
+                    text = if (updateChannel == UpdateChannel.NIGHTLY) {
+                        "Novedades continuas y correcciones automáticas de desarrollo"
+                    } else {
+                        "Versiones oficiales recomendadas y probadas"
+                    },
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textSecondary
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                UpdateChannel.entries.forEach { channel ->
+                    val selected = channel == updateChannel
+                    FilterChip(
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                onUpdateChannelSelected(channel)
+                                viewModel.checkForUpdates(channel)
+                            }
+                        },
+                        label = {
+                            Text(channel.displayName, style = MeloType.labelMedium)
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = MeloColors.surface2,
+                            labelColor = MeloColors.textSecondary,
+                            selectedContainerColor =
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            selectedLabelColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = selected,
+                            borderColor = MeloColors.border,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary,
+                            borderWidth = 0.5.dp,
+                            selectedBorderWidth = 1.dp
+                        )
+                    )
+                }
+            }
         }
 
         when (val s = state) {
@@ -193,7 +284,7 @@ fun UpdateSettingsSection(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = "¡Melo está actualizado! (v${s.currentVersion})",
+                            text = "¡Melo está actualizado! (v${s.currentVersion} • ${s.channel.displayName})",
                             style = MeloType.labelMedium,
                             color = MeloColors.textPrimary
                         )
@@ -221,8 +312,13 @@ fun UpdateSettingsSection(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
+                                val releaseTitle = if (s.release.channel == UpdateChannel.NIGHTLY) {
+                                    "¡Nueva versión Nightly disponible: v${s.release.version}!"
+                                } else {
+                                    "¡Nueva versión disponible: v${s.release.version}!"
+                                }
                                 Text(
-                                    text = "¡Nueva versión disponible: v${s.release.version}!",
+                                    text = releaseTitle,
                                     style = MeloType.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -417,7 +513,7 @@ fun UpdateSettingsSection(
                         }
                         if (s.canRetry) {
                             OutlinedButton(
-                                onClick = { viewModel.checkForUpdates() },
+                                onClick = { viewModel.checkForUpdates(updateChannel) },
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text("Reintentar", style = MeloType.labelSmall)

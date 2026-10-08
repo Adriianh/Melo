@@ -2,6 +2,7 @@ package com.github.adriianh.melo
 
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
@@ -74,10 +75,10 @@ class UpdateViewModelTest {
     fun `checkForUpdates transitions to UpdateAvailable when newer release is found`() =
         runTest {
             val release = fakeRelease("9.9.9")
-            coEvery { checkForUpdateUseCase(any()) } returns Result.success(release)
+            coEvery { checkForUpdateUseCase(any(), any()) } returns Result.success(release)
 
             val viewModel = createViewModel()
-            viewModel.checkForUpdates()
+            viewModel.checkForUpdates(UpdateChannel.STABLE)
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -86,15 +87,34 @@ class UpdateViewModelTest {
         }
 
     @Test
-    fun `checkForUpdates transitions to UpToDate when no newer release`() =
+    fun `checkForUpdates with NIGHTLY channel passes channel to usecase`() =
         runTest {
-            coEvery { checkForUpdateUseCase(any()) } returns Result.success(null)
+            val nightlyRelease =
+                fakeRelease("2.3.0-nightly.20261008.0100").copy(channel = UpdateChannel.NIGHTLY)
+            coEvery { checkForUpdateUseCase(any(), UpdateChannel.NIGHTLY) } returns Result.success(nightlyRelease)
 
             val viewModel = createViewModel()
-            viewModel.checkForUpdates()
+            viewModel.checkForUpdates(UpdateChannel.NIGHTLY)
             advanceUntilIdle()
 
-            assertIs<UpdateState.UpToDate>(viewModel.uiState.value)
+            val state = viewModel.uiState.value
+            assertIs<UpdateState.UpdateAvailable>(state)
+            assertEquals("2.3.0-nightly.20261008.0100", state.release.version)
+            assertEquals(UpdateChannel.NIGHTLY, state.release.channel)
+        }
+
+    @Test
+    fun `checkForUpdates transitions to UpToDate when no newer release`() =
+        runTest {
+            coEvery { checkForUpdateUseCase(any(), any()) } returns Result.success(null)
+
+            val viewModel = createViewModel()
+            viewModel.checkForUpdates(UpdateChannel.STABLE)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertIs<UpdateState.UpToDate>(state)
+            assertEquals(UpdateChannel.STABLE, state.channel)
         }
 
     @Test

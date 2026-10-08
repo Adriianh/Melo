@@ -6,6 +6,7 @@ import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 
 data class SettingsActions(
     val onThemeModeSelected: (ThemeMode) -> Unit,
@@ -25,6 +26,7 @@ data class SettingsActions(
     val onRemoveLocalPath: (String) -> Unit = {},
     val onSyncHistoryToYouTubeChanged: (Boolean) -> Unit = {},
     val onToggleAutoCheckUpdates: (Boolean) -> Unit = {},
+    val onUpdateChannelSelected: (UpdateChannel) -> Unit = {},
     val onOpenLogin: () -> Unit,
     val onLogout: () -> Unit,
 )
