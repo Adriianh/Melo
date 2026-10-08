@@ -15,6 +15,10 @@ detekt {
 
 ktlint {
     baseline.set(file("$projectDir/ktlint-baseline.xml"))
+    filter {
+        exclude("**/build/**")
+        exclude("**/generated/**")
+    }
 }
 
 // detekt 2.x analyzes source sets individually (the plain `detekt` task is a no-op on Kotlin
