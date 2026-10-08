@@ -1,6 +1,5 @@
 package com.github.adriianh.melo.service
 
-import android.util.Log
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.PlaybackManager
@@ -17,8 +16,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
-
-private const val TAG = "MeloDiscordRpc"
 
 class AndroidDiscordRpcManager(
     playbackManager: PlaybackManager? = null,
@@ -39,7 +36,6 @@ class AndroidDiscordRpcManager(
     private var isPlaying: Boolean = false
     private var currentPositionMs: Long? = null
 
-    private var pendingTrackId: String? = null
     private var lastSentTrackId: String? = null
     private var lastSentArtworkUrl: String? = null
     private var lastSentIsPlaying: Boolean = false
@@ -50,7 +46,6 @@ class AndroidDiscordRpcManager(
     private var activityJob: Job? = null
 
     init {
-        Log.d(TAG, "Initialized with playbackManager=${playbackManager != null}, settingsRepo=${settingsRepository != null}")
         if (playbackManager != null && settingsRepository != null) {
             startObservers(playbackManager, settingsRepository)
         }
@@ -68,7 +63,6 @@ class AndroidDiscordRpcManager(
                         .map { Pair(it.discordRpcEnabled, it.discordRpcToken) }
                         .distinctUntilChanged()
                         .collect { (enabled, token) ->
-                            Log.d(TAG, "Settings update: enabled=$enabled, token=${token?.take(6)}...")
                             isEnabled = enabled
                             val tokenChanged = token != currentToken
                             currentToken = token
@@ -87,6 +81,7 @@ class AndroidDiscordRpcManager(
                             playing = state.isPlaying,
                             positionMs = state.progressMs,
                             durationMs = state.durationMs,
+                            isBuffering = state.isBuffering,
                         )
                     }
                 }
@@ -94,7 +89,6 @@ class AndroidDiscordRpcManager(
     }
 
     override fun connect() {
-        Log.d(TAG, "connect() called: isEnabled=$isEnabled, hasToken=${!currentToken.isNullOrBlank()}")
         if (!isEnabled || currentToken.isNullOrBlank()) return
 
         gatewayClient?.disconnect()
@@ -104,7 +98,9 @@ class AndroidDiscordRpcManager(
             }
         currentTrack?.let { track ->
             if (isPlaying) {
-                sendActivity(track, currentPositionMs ?: 0L, null)
+                lastSentTrackId = null
+                lastSentIsPlaying = false
+                updateActivityInternal(track, true, currentPositionMs, null, isBuffering = false)
             }
         }
     }
@@ -114,7 +110,7 @@ class AndroidDiscordRpcManager(
         playing: Boolean,
         positionMs: Long?,
     ) {
-        updateActivityInternal(track, playing, positionMs, null)
+        updateActivityInternal(track, playing, positionMs, null, isBuffering = false)
     }
 
     private fun updateActivityInternal(
@@ -122,6 +118,7 @@ class AndroidDiscordRpcManager(
         playing: Boolean,
         positionMs: Long?,
         durationMs: Long?,
+        isBuffering: Boolean,
     ) {
         if (!isEnabled || currentToken.isNullOrBlank()) return
 
@@ -135,6 +132,9 @@ class AndroidDiscordRpcManager(
         }
 
         if (!playing) {
+            if (isBuffering) {
+                return
+            }
             handlePauseOrStop(immediate = false)
             return
         }
@@ -143,21 +143,31 @@ class AndroidDiscordRpcManager(
         pauseDebounceJob = null
 
         val pos = (positionMs ?: 0L).coerceAtLeast(0L)
-        val expectedPos = lastSentStartMillis?.let { System.currentTimeMillis() - it }
-        val seeked = expectedPos != null && abs(pos - expectedPos) > 4000L
-
-        val trackChanged = track.id != lastSentTrackId
+        val isSameTrack = track.id == lastSentTrackId
+        val trackChanged = !isSameTrack
         val playStateChanged = !lastSentIsPlaying
         val artworkChanged = track.artworkUrl != null && track.artworkUrl != lastSentArtworkUrl
 
-        if (pendingTrackId == track.id && activityJob?.isActive == true && !seeked) {
+        val seeked =
+            if (isSameTrack && lastSentIsPlaying && lastSentStartMillis != null) {
+                val expectedPos = System.currentTimeMillis() - lastSentStartMillis!!
+                abs(pos - expectedPos) > 4000L
+            } else {
+                false
+            }
+
+        if (!trackChanged && !playStateChanged && !artworkChanged && !seeked) {
             return
         }
 
-        if (trackChanged || playStateChanged || seeked || artworkChanged) {
-            Log.d(TAG, "updateActivity sending presence: track=${track.title}, seeked=$seeked")
-            sendActivity(track, pos, durationMs)
-        }
+        val now = System.currentTimeMillis()
+        val startMillis = now - pos
+        lastSentTrackId = track.id
+        lastSentArtworkUrl = track.artworkUrl
+        lastSentIsPlaying = true
+        lastSentStartMillis = startMillis
+
+        sendActivity(track, durationMs, startMillis)
     }
 
     private fun handlePauseOrStop(immediate: Boolean) {
@@ -165,8 +175,6 @@ class AndroidDiscordRpcManager(
         if (immediate) {
             activityJob?.cancel()
             activityJob = null
-            pendingTrackId = null
-            Log.d(TAG, "handlePauseOrStop: immediately clearing presence")
             gatewayClient?.updatePresence(null)
             lastSentTrackId = null
             lastSentArtworkUrl = null
@@ -175,12 +183,10 @@ class AndroidDiscordRpcManager(
         } else {
             pauseDebounceJob =
                 scope.launch {
-                    delay(1500.milliseconds)
+                    delay(300.milliseconds)
                     if (!isPlaying) {
                         activityJob?.cancel()
                         activityJob = null
-                        pendingTrackId = null
-                        Log.d(TAG, "handlePauseOrStop: clearing presence after debounce")
                         gatewayClient?.updatePresence(null)
                         lastSentTrackId = null
                         lastSentArtworkUrl = null
@@ -193,17 +199,14 @@ class AndroidDiscordRpcManager(
 
     private fun sendActivity(
         track: Track,
-        positionMs: Long,
         durationMs: Long?,
+        startMillis: Long,
     ) {
         activityJob?.cancel()
-        pendingTrackId = track.id
         activityJob =
             scope.launch {
                 try {
                     val client = gatewayClient ?: return@launch
-                    val now = System.currentTimeMillis()
-                    val startMillis = now - positionMs
                     val totalDuration =
                         if (track.durationMs > 0) track.durationMs else (durationMs ?: 0L)
                     val endMillis = if (totalDuration > 0) startMillis + totalDuration else null
@@ -247,20 +250,10 @@ class AndroidDiscordRpcManager(
                             statusDisplayType = 1,
                         )
 
-                    Log.d(TAG, "sendActivity: updating presence for ${activity.name} with asset $largeImage")
                     client.updatePresence(PresenceData(activities = listOf(activity)))
-                    lastSentTrackId = track.id
-                    lastSentArtworkUrl = track.artworkUrl
-                    lastSentIsPlaying = true
-                    lastSentStartMillis = startMillis
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    Log.e(TAG, "sendActivity exception", e)
-                } finally {
-                    if (pendingTrackId == track.id) {
-                        pendingTrackId = null
-                    }
+                } catch (_: Exception) {
                 }
             }
     }
@@ -277,7 +270,6 @@ class AndroidDiscordRpcManager(
         pauseDebounceJob = null
         activityJob?.cancel()
         activityJob = null
-        pendingTrackId = null
         lastSentTrackId = null
         lastSentArtworkUrl = null
         lastSentIsPlaying = false
