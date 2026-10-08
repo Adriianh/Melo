@@ -5,14 +5,18 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val TAG = "MeloDiscordRpc"
 
@@ -34,6 +38,13 @@ class AndroidDiscordRpcManager(
     private var currentTrack: Track? = null
     private var isPlaying: Boolean = false
     private var currentPositionMs: Long? = null
+
+    private var pendingTrackId: String? = null
+    private var lastSentTrackId: String? = null
+    private var lastSentArtworkUrl: String? = null
+    private var lastSentIsPlaying: Boolean = false
+    private var lastSentStartMillis: Long? = null
+    private var pauseDebounceJob: Job? = null
 
     private var observer: Job? = null
     private var activityJob: Job? = null
@@ -71,10 +82,11 @@ class AndroidDiscordRpcManager(
                 }
                 launch {
                     playbackManager.playbackState.collect { state ->
-                        updateActivity(
+                        updateActivityInternal(
                             track = state.currentTrack,
                             playing = state.isPlaying,
                             positionMs = state.progressMs,
+                            durationMs = state.durationMs,
                         )
                     }
                 }
@@ -90,7 +102,11 @@ class AndroidDiscordRpcManager(
             DiscordGatewayClient(currentToken!!, scope).also {
                 it.connect()
             }
-        sendActivity(currentTrack, isPlaying, currentPositionMs)
+        currentTrack?.let { track ->
+            if (isPlaying) {
+                sendActivity(track, currentPositionMs ?: 0L, null)
+            }
+        }
     }
 
     override fun updateActivity(
@@ -98,83 +114,155 @@ class AndroidDiscordRpcManager(
         playing: Boolean,
         positionMs: Long?,
     ) {
-        val trackChanged = track?.id != currentTrack?.id
-        val playStateChanged = playing != isPlaying
+        updateActivityInternal(track, playing, positionMs, null)
+    }
+
+    private fun updateActivityInternal(
+        track: Track?,
+        playing: Boolean,
+        positionMs: Long?,
+        durationMs: Long?,
+    ) {
+        if (!isEnabled || currentToken.isNullOrBlank()) return
 
         currentTrack = track
         isPlaying = playing
         currentPositionMs = positionMs
 
-        if (!isEnabled || currentToken.isNullOrBlank()) return
-        if (!trackChanged && !playStateChanged) return
+        if (track == null) {
+            handlePauseOrStop(immediate = true)
+            return
+        }
 
-        Log.d(TAG, "updateActivity triggered: track=${track?.title}, playing=$playing")
-        sendActivity(track, playing, positionMs)
+        if (!playing) {
+            handlePauseOrStop(immediate = false)
+            return
+        }
+
+        pauseDebounceJob?.cancel()
+        pauseDebounceJob = null
+
+        val pos = (positionMs ?: 0L).coerceAtLeast(0L)
+        val expectedPos = lastSentStartMillis?.let { System.currentTimeMillis() - it }
+        val seeked = expectedPos != null && abs(pos - expectedPos) > 4000L
+
+        val trackChanged = track.id != lastSentTrackId
+        val playStateChanged = !lastSentIsPlaying
+        val artworkChanged = track.artworkUrl != null && track.artworkUrl != lastSentArtworkUrl
+
+        if (pendingTrackId == track.id && activityJob?.isActive == true && !seeked) {
+            return
+        }
+
+        if (trackChanged || playStateChanged || seeked || artworkChanged) {
+            Log.d(TAG, "updateActivity sending presence: track=${track.title}, seeked=$seeked")
+            sendActivity(track, pos, durationMs)
+        }
+    }
+
+    private fun handlePauseOrStop(immediate: Boolean) {
+        pauseDebounceJob?.cancel()
+        if (immediate) {
+            activityJob?.cancel()
+            activityJob = null
+            pendingTrackId = null
+            Log.d(TAG, "handlePauseOrStop: immediately clearing presence")
+            gatewayClient?.updatePresence(null)
+            lastSentTrackId = null
+            lastSentArtworkUrl = null
+            lastSentIsPlaying = false
+            lastSentStartMillis = null
+        } else {
+            pauseDebounceJob =
+                scope.launch {
+                    delay(1500.milliseconds)
+                    if (!isPlaying) {
+                        activityJob?.cancel()
+                        activityJob = null
+                        pendingTrackId = null
+                        Log.d(TAG, "handlePauseOrStop: clearing presence after debounce")
+                        gatewayClient?.updatePresence(null)
+                        lastSentTrackId = null
+                        lastSentArtworkUrl = null
+                        lastSentIsPlaying = false
+                        lastSentStartMillis = null
+                    }
+                }
+        }
     }
 
     private fun sendActivity(
-        track: Track?,
-        playing: Boolean,
-        positionMs: Long?,
+        track: Track,
+        positionMs: Long,
+        durationMs: Long?,
     ) {
         activityJob?.cancel()
+        pendingTrackId = track.id
         activityJob =
             scope.launch {
                 try {
                     val client = gatewayClient ?: return@launch
-                    if (track == null || !playing) {
-                        Log.d(TAG, "sendActivity: clearing presence")
-                        client.updatePresence(null)
-                        return@launch
-                    }
+                    val now = System.currentTimeMillis()
+                    val startMillis = now - positionMs
+                    val totalDuration =
+                        if (track.durationMs > 0) track.durationMs else (durationMs ?: 0L)
+                    val endMillis = if (totalDuration > 0) startMillis + totalDuration else null
 
-                    val activity = createActivity(track, positionMs)
-                    Log.d(TAG, "sendActivity: updating presence for ${activity.name}")
+                    val rawImageUrl =
+                        track.artworkUrl?.takeIf {
+                            it.startsWith("http://") || it.startsWith("https://")
+                        }
+
+                    val largeImage =
+                        if (rawImageUrl != null) {
+                            client.resolveExternalAsset(rawImageUrl, clientId) ?: "melo_logo"
+                        } else {
+                            "melo_logo"
+                        }
+
+                    val youtubeId = resolveYouTubeId(track)
+                    val buttons = if (!youtubeId.isNullOrBlank()) listOf("Listen on YouTube") else null
+                    val metadata =
+                        if (!youtubeId.isNullOrBlank()) {
+                            ActivityMetadata(buttonUrls = listOf("https://youtube.com/watch?v=$youtubeId"))
+                        } else {
+                            null
+                        }
+
+                    val activity =
+                        ActivityData(
+                            name = "Melo",
+                            state = "by ${track.artist}".take(128),
+                            details = track.title.take(128),
+                            type = 2,
+                            timestamps = TimestampsData(start = startMillis, end = endMillis),
+                            assets =
+                                AssetsData(
+                                    largeImage = largeImage,
+                                    largeText = track.album.takeIf { it.isNotBlank() } ?: track.title,
+                                ),
+                            buttons = buttons,
+                            metadata = metadata,
+                            applicationId = clientId,
+                            statusDisplayType = 1,
+                        )
+
+                    Log.d(TAG, "sendActivity: updating presence for ${activity.name} with asset $largeImage")
                     client.updatePresence(PresenceData(activities = listOf(activity)))
+                    lastSentTrackId = track.id
+                    lastSentArtworkUrl = track.artworkUrl
+                    lastSentIsPlaying = true
+                    lastSentStartMillis = startMillis
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "sendActivity exception", e)
+                } finally {
+                    if (pendingTrackId == track.id) {
+                        pendingTrackId = null
+                    }
                 }
             }
-    }
-
-    private fun createActivity(
-        track: Track,
-        positionMs: Long?,
-    ): ActivityData {
-        val now = System.currentTimeMillis()
-        val pos = (positionMs ?: 0L).coerceAtLeast(0L)
-        val startMillis = now - pos
-        val endMillis = if (track.durationMs > 0) startMillis + track.durationMs else null
-
-        val imageUrl =
-            track.artworkUrl?.takeIf {
-                it.startsWith("http://") || it.startsWith("https://")
-            }
-
-        val youtubeId = resolveYouTubeId(track)
-        val buttons = if (!youtubeId.isNullOrBlank()) listOf("Listen on YouTube") else null
-        val metadata =
-            if (!youtubeId.isNullOrBlank()) {
-                ActivityMetadata(buttonUrls = listOf("https://youtube.com/watch?v=$youtubeId"))
-            } else {
-                null
-            }
-
-        return ActivityData(
-            name = "Melo",
-            state = "by ${track.artist}".take(128),
-            details = track.title.take(128),
-            type = 2,
-            timestamps = TimestampsData(start = startMillis, end = endMillis),
-            assets =
-                AssetsData(
-                    largeImage = imageUrl ?: "melo_logo",
-                    largeText = track.album.takeIf { it.isNotBlank() } ?: track.title,
-                ),
-            buttons = buttons,
-            metadata = metadata,
-            applicationId = clientId,
-        )
     }
 
     private fun resolveYouTubeId(track: Track): String? =
@@ -185,8 +273,15 @@ class AndroidDiscordRpcManager(
         }
 
     override fun disconnect() {
+        pauseDebounceJob?.cancel()
+        pauseDebounceJob = null
         activityJob?.cancel()
         activityJob = null
+        pendingTrackId = null
+        lastSentTrackId = null
+        lastSentArtworkUrl = null
+        lastSentIsPlaying = false
+        lastSentStartMillis = null
         try {
             gatewayClient?.disconnect()
         } catch (_: Exception) {
