@@ -598,6 +598,13 @@ fun App(
                                         }
                                     }
                                 },
+                                onDiscordTokenChanged = { token ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(discordRpcToken = token)
+                                        }
+                                    }
+                                },
                                 onAddLocalPath = { path ->
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->

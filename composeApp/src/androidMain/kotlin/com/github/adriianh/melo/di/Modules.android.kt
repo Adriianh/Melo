@@ -2,6 +2,7 @@ package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.AndroidMeloPlayer
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.provider.AudioProvider
@@ -14,43 +15,51 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.repository.AndroidOfflineRepositoryImpl
 import com.github.adriianh.melo.player.AndroidMediaSessionManager
+import com.github.adriianh.melo.service.AndroidDiscordRpcManager
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-actual val platformModule: Module = module {
-    single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
-    single<MeloDatabase> { DatabaseFactory.create() }
-    single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
-    single<MediaSessionManager> {
-        AndroidMediaSessionManager(
-            context = androidContext(),
-            playbackManager = get(),
-            meloPlayer = get()
-        ).also { it.init() }
+actual val platformModule: Module =
+    module {
+        single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
+        single<MeloDatabase> { DatabaseFactory.create() }
+        single<MeloPlayer> { AndroidMeloPlayer(androidContext()) }
+        single<MediaSessionManager> {
+            AndroidMediaSessionManager(
+                context = androidContext(),
+                playbackManager = get(),
+                meloPlayer = get(),
+            ).also { it.init() }
+        }
+
+        single(named("configDirPath")) { androidContext().filesDir.absolutePath }
+
+        single<AudioProvider> {
+            val pipedProvider = PipedAudioProvider(apiClient = get())
+            InnerTubeAudioProvider(
+                configDirPath = get(named("configDirPath")),
+                fallback = pipedProvider,
+                settingsRepository = get(),
+                ageGateProvider = YtDlpAudioProvider(context = androidContext()),
+            )
+        }
+
+        single<OfflineRepository> {
+            AndroidOfflineRepositoryImpl(
+                dataDir = androidContext().filesDir,
+                settingsRepository = get(),
+                dispatcher = Dispatchers.IO,
+                context = androidContext(),
+            )
+        }
+
+        single<DiscordRpcManager> {
+            AndroidDiscordRpcManager(
+                playbackManager = get(),
+                settingsRepository = get(),
+            )
+        }
     }
-
-
-    single(named("configDirPath")) { androidContext().filesDir.absolutePath }
-
-    single<AudioProvider> {
-        val pipedProvider = PipedAudioProvider(apiClient = get())
-        InnerTubeAudioProvider(
-            configDirPath = get(named("configDirPath")),
-            fallback = pipedProvider,
-            settingsRepository = get(),
-            ageGateProvider = YtDlpAudioProvider(context = androidContext()),
-        )
-    }
-
-    single<OfflineRepository> {
-        AndroidOfflineRepositoryImpl(
-            dataDir = androidContext().filesDir,
-            settingsRepository = get(),
-            dispatcher = Dispatchers.IO,
-            context = androidContext()
-        )
-    }
-}

@@ -27,7 +27,7 @@ sqldelight = "2.3.2"
 sqlite-jdbc = "3.53.2.1"
 jmtc = "0.0.3"
 jaudiotagger = "2.0.18"
-kdiscordipc = "5041c5b036"
+kdiscordipc = "0870931bd0"
 brotli = "0.1.2"
 newpipe = "v0.26.1"
 media3 = "1.11.0"
@@ -38,6 +38,7 @@ compose-plugin = "1.10.3"
 androidx-activityCompose = "1.13.0"
 kmpalette = "3.1.0"
 reorderable = "3.1.0"
+
 
 [libraries]
 kotlinMultiplatformPlugin = { module = "com.android.kotlin.multiplatform.library:com.android.kotlin.multiplatform.library.gradle.plugin", version.ref = "kotlinMultiplatformPlugin" }
@@ -60,6 +61,7 @@ ktorClientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "kto
 ktorClientOkhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktorClientEncoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktorClientWebsockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
 clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeCompose" }
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
@@ -113,6 +115,7 @@ composeUiToolingPreview = { module = "org.jetbrains.compose.components:component
 kmpaletteCore = { module = "com.kmpalette:kmpalette-core", version.ref = "kmpalette" }
 kmpaletteByteArray = { module = "com.kmpalette:extensions-bytearray", version.ref = "kmpalette" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+
 
 [bundles]
 kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]

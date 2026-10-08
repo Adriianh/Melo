@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.player.JvmMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
@@ -18,6 +19,7 @@ import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.audio.YtDlpAudioProvider
 import com.github.adriianh.data.remote.piped.PipedApiClient
 import com.github.adriianh.data.repository.OfflineRepositoryImpl
+import com.github.adriianh.melo.service.DesktopDiscordRpcManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
@@ -63,6 +65,13 @@ actual val platformModule: Module =
                 dataDir = dataDir,
                 settingsRepository = get<SettingsRepository>(),
                 dispatcher = Dispatchers.IO,
+            )
+        }
+
+        single<DiscordRpcManager> {
+            DesktopDiscordRpcManager(
+                playbackManager = get(),
+                settingsRepository = get<SettingsRepository>(),
             )
         }
     }

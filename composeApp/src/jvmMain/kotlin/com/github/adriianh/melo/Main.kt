@@ -9,6 +9,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.melo.di.initKoin
@@ -28,47 +29,60 @@ fun main() {
     CoroutineScope(Dispatchers.IO).launch {
         koinApp.koin.getOrNull<MeloPlayer>()
         koinApp.koin.getOrNull<MediaSessionManager>()
+        koinApp.koin.getOrNull<DiscordRpcManager>()
     }
 
     application {
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
         val defaultDevice = ge.defaultScreenDevice
-        val gc = defaultDevice?.defaultConfiguration
-            ?: ge.screenDevices.firstOrNull()?.defaultConfiguration
+        val gc =
+            defaultDevice?.defaultConfiguration
+                ?: ge.screenDevices.firstOrNull()?.defaultConfiguration
 
-        val (initialWidthDp, initialHeightDp) = if (gc != null) {
-            val insets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
-            val screenBounds = gc.bounds
+        val (initialWidthDp, initialHeightDp) =
+            if (gc != null) {
+                val insets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
+                val screenBounds = gc.bounds
 
-            val scaleX = gc.defaultTransform.scaleX.toFloat().coerceAtLeast(1f)
-            val scaleY = gc.defaultTransform.scaleY.toFloat().coerceAtLeast(1f)
+                val scaleX =
+                    gc.defaultTransform
+                        .scaleX
+                        .toFloat()
+                        .coerceAtLeast(1f)
+                val scaleY =
+                    gc.defaultTransform
+                        .scaleY
+                        .toFloat()
+                        .coerceAtLeast(1f)
 
-            val usableWidthPx = screenBounds.width - insets.left - insets.right
-            val usableHeightPx = screenBounds.height - insets.top - insets.bottom
+                val usableWidthPx = screenBounds.width - insets.left - insets.right
+                val usableHeightPx = screenBounds.height - insets.top - insets.bottom
 
-            val initialWidthPx =
-                (usableWidthPx * 0.85f).toInt().coerceIn(900.coerceAtMost(usableWidthPx), 1200)
-            val initialHeightPx =
-                (usableHeightPx * 0.85f).toInt().coerceIn(580.coerceAtMost(usableHeightPx), 750)
+                val initialWidthPx =
+                    (usableWidthPx * 0.85f).toInt().coerceIn(900.coerceAtMost(usableWidthPx), 1200)
+                val initialHeightPx =
+                    (usableHeightPx * 0.85f).toInt().coerceIn(580.coerceAtMost(usableHeightPx), 750)
 
-            Pair((initialWidthPx / scaleX).dp, (initialHeightPx / scaleY).dp)
-        } else {
-            Pair(1080.dp, 680.dp)
-        }
+                Pair((initialWidthPx / scaleX).dp, (initialHeightPx / scaleY).dp)
+            } else {
+                Pair(1080.dp, 680.dp)
+            }
 
-        val windowState = rememberWindowState(
-            size = DpSize(initialWidthDp, initialHeightDp),
-            position = WindowPosition.Aligned(Alignment.Center)
-        )
+        val windowState =
+            rememberWindowState(
+                size = DpSize(initialWidthDp, initialHeightDp),
+                position = WindowPosition.Aligned(Alignment.Center),
+            )
 
         Window(
             onCloseRequest = {
                 koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
                 exitApplication()
             },
             state = windowState,
             title = "Melo",
-            undecorated = true
+            undecorated = true,
         ) {
             val windowManager = remember(window) { DesktopWindowManager(window) }
 
@@ -89,10 +103,11 @@ fun main() {
                         windowManager = windowManager,
                         onClose = {
                             koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                            koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
                             exitApplication()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
     }
