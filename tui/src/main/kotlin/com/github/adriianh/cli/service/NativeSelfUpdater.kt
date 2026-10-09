@@ -155,6 +155,17 @@ private object WindowsUpdateHelper {
     }
 }
 
+private val NATIVE_MAGIC_PREFIXES =
+    listOf(
+        byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte()),
+        byteArrayOf('M'.code.toByte(), 'Z'.code.toByte()),
+        byteArrayOf(0xCF.toByte(), 0xFA.toByte(), 0xED.toByte(), 0xFE.toByte()),
+        byteArrayOf(0xFE.toByte(), 0xED.toByte(), 0xFA.toByte(), 0xCF.toByte()),
+        byteArrayOf(0xCE.toByte(), 0xFA.toByte(), 0xED.toByte(), 0xFE.toByte()),
+        byteArrayOf(0xFE.toByte(), 0xED.toByte(), 0xFA.toByte(), 0xCE.toByte()),
+        byteArrayOf(0xCA.toByte(), 0xFE.toByte(), 0xBA.toByte(), 0xBE.toByte()),
+    )
+
 open class NativeSelfUpdater(
     private val isWindows: Boolean = System.getProperty("os.name", "").lowercase().contains("win"),
 ) : SelfUpdater {
@@ -232,9 +243,46 @@ open class NativeSelfUpdater(
 
     override fun findBinaryInExtracted(extractedDir: File): File? {
         val binaryName = if (isWindows) "melo.exe" else "melo"
-        return extractedDir.walkTopDown().firstOrNull { file ->
-            file.isFile && file.name.equals(binaryName, ignoreCase = isWindows)
-        }
+        val candidates =
+            extractedDir
+                .walkTopDown()
+                .filter { it.isFile && it.name.equals(binaryName, ignoreCase = isWindows) }
+                .toList()
+
+        if (candidates.isEmpty()) return null
+
+        val nonScripts = candidates.filterNot { isShebangScript(it) }
+        val pool = if (nonScripts.isNotEmpty()) nonScripts else candidates
+
+        val outsideBin = pool.filterNot { it.parentFile?.name.equals("bin", ignoreCase = true) }
+        val preferredPool = if (outsideBin.isNotEmpty()) outsideBin else pool
+
+        val nativeBinaries = preferredPool.filter { isNativeBinary(it) }
+        return nativeBinaries.maxByOrNull { it.length() }
+            ?: preferredPool.maxByOrNull { it.length() }
+            ?: candidates.firstOrNull()
+    }
+
+    internal fun isShebangScript(file: File): Boolean {
+        if (!file.isFile || file.length() < 2L) return false
+        return runCatching {
+            file.inputStream().buffered().use { input ->
+                val b1 = input.read()
+                val b2 = input.read()
+                b1 == '#'.code && b2 == '!'.code
+            }
+        }.getOrDefault(false)
+    }
+
+    internal fun isNativeBinary(file: File): Boolean {
+        if (!file.isFile || file.length() < 4L) return false
+        return runCatching {
+            val header = ByteArray(4)
+            file.inputStream().buffered().use { it.read(header) }
+            NATIVE_MAGIC_PREFIXES.any { prefix ->
+                header.take(prefix.size).toByteArray().contentEquals(prefix)
+            }
+        }.getOrDefault(false)
     }
 
     override fun applyUpdate(
@@ -281,6 +329,18 @@ open class NativeSelfUpdater(
     ) {
         newBinary.setExecutable(true, false)
 
+        val oldExecutable = File(installDir, "${targetExecutable.name}.old")
+        val hadOld = targetExecutable.exists()
+        if (hadOld) {
+            if (oldExecutable.exists()) {
+                oldExecutable.delete()
+            }
+            if (!targetExecutable.renameTo(oldExecutable)) {
+                val timestamped = File(installDir, "${targetExecutable.name}.old.${System.currentTimeMillis()}")
+                targetExecutable.renameTo(timestamped)
+            }
+        }
+
         try {
             Files.move(
                 newBinary.toPath(),
@@ -289,16 +349,22 @@ open class NativeSelfUpdater(
                 StandardCopyOption.ATOMIC_MOVE,
             )
         } catch (_: IOException) {
-            Files.move(
-                newBinary.toPath(),
-                targetExecutable.toPath(),
-                StandardCopyOption.REPLACE_EXISTING,
-            )
+            try {
+                Files.move(
+                    newBinary.toPath(),
+                    targetExecutable.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (ex: IOException) {
+                if (hadOld && oldExecutable.exists() && !targetExecutable.exists()) {
+                    oldExecutable.renameTo(targetExecutable)
+                }
+                throw ex
+            }
         }
 
         targetExecutable.setExecutable(true, false)
 
-        // Copy companion shared libraries (.so, .dylib)
         extractedDir
             .walkTopDown()
             .filter { file ->
@@ -308,7 +374,6 @@ open class NativeSelfUpdater(
                 Files.copy(libFile.toPath(), targetLib.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
 
-        // Copy uninstall.sh if present
         val uninstallScript = extractedDir.walkTopDown().firstOrNull { it.isFile && it.name == "uninstall.sh" }
         if (uninstallScript != null) {
             val targetUninstall = File(installDir, "uninstall.sh")
