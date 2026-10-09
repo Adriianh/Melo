@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
-    <file name="build.gradle.kts">
-        <error line="40" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/core/domain/player/AndroidMeloPlayer.kt">
         <error line="39" column="25" source="standard:class-signature" />
         <error line="39" column="41" source="standard:class-signature" />
@@ -44,44 +41,6 @@
         <error line="237" column="27" source="standard:multiline-expression-wrapping" />
         <error line="252" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/androidMain/kotlin/com/github/adriianh/core/platform/PlatformFileSystem.kt">
-        <error line="7" column="52" source="standard:multiline-expression-wrapping" />
-        <error line="7" column="52" source="standard:function-signature" />
-        <error line="8" column="44" source="standard:if-else-wrapping" />
-        <error line="8" column="44" source="standard:multiline-if-else" />
-        <error line="9" column="14" source="standard:if-else-wrapping" />
-        <error line="9" column="14" source="standard:multiline-if-else" />
-        <error line="14" column="47" source="standard:multiline-expression-wrapping" />
-        <error line="14" column="47" source="standard:function-signature" />
-        <error line="21" column="106" source="standard:condition-wrapping" />
-        <error line="21" column="106" source="standard:multiline-expression-wrapping" />
-        <error line="22" column="27" source="standard:trailing-comma-on-call-site" />
-        <error line="30" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="30" column="50" source="standard:function-signature" />
-        <error line="36" column="26" source="standard:function-signature" />
-        <error line="36" column="40" source="standard:function-signature" />
-        <error line="36" column="52" source="standard:function-signature" />
-        <error line="45" column="27" source="standard:function-signature" />
-        <error line="45" column="41" source="standard:function-signature" />
-        <error line="45" column="57" source="standard:function-signature" />
-        <error line="54" column="54" source="standard:multiline-expression-wrapping" />
-        <error line="54" column="54" source="standard:function-signature" />
-        <error line="60" column="25" source="standard:function-signature" />
-        <error line="60" column="45" source="standard:function-signature" />
-        <error line="60" column="61" source="standard:function-signature" />
-        <error line="60" column="74" source="standard:multiline-expression-wrapping" />
-        <error line="60" column="74" source="standard:function-signature" />
-        <error line="63" column="28" source="standard:if-else-bracing" />
-        <error line="63" column="28" source="standard:if-else-wrapping" />
-        <error line="63" column="28" source="standard:multiline-if-else" />
-        <error line="73" column="52" source="standard:multiline-expression-wrapping" />
-        <error line="73" column="52" source="standard:function-signature" />
-        <error line="79" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="79" column="50" source="standard:function-signature" />
-        <error line="108" column="45" source="standard:multiline-expression-wrapping" />
-        <error line="108" column="45" source="standard:function-signature" />
-        <error line="115" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="8" column="18" source="standard:chain-method-continuation" />
         <error line="19" column="18" source="standard:chain-method-continuation" />
@@ -91,7 +50,6 @@
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/cache/HomeFeedCache.kt">
         <error line="7" column="5" source="standard:blank-line-before-declaration" />
         <error line="8" column="5" source="standard:blank-line-before-declaration" />
-        <error line="9" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/interactor/DiscoveryInteractors.kt">
         <error line="14" column="34" source="standard:trailing-comma-on-declaration-site" />
@@ -108,15 +66,6 @@
         <error line="3" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/interactor/SearchInteractors.kt">
-        <error line="43" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/manager/DownloadManager.kt">
-        <error line="16" column="31" source="standard:function-signature" />
-        <error line="16" column="45" source="standard:function-signature" />
-        <error line="16" column="71" source="standard:function-signature" />
-        <error line="27" column="32" source="standard:function-signature" />
-        <error line="27" column="53" source="standard:function-signature" />
-        <error line="27" column="79" source="standard:function-signature" />
         <error line="43" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/AccountProfile.kt">
@@ -169,16 +118,6 @@
         <error line="72" column="32" source="standard:trailing-comma-on-call-site" />
         <error line="74" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/HistoryEntry.kt">
-        <error line="14" column="38" source="standard:trailing-comma-on-declaration-site" />
-        <error line="19" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="19" column="38" source="standard:chain-method-continuation" />
-        <error line="20" column="36" source="standard:chain-method-continuation" />
-        <error line="21" column="26" source="standard:multiline-expression-wrapping" />
-        <error line="25" column="1" source="standard:indent" />
-        <error line="26" column="1" source="standard:indent" />
-        <error line="29" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/HomeFeed.kt">
         <error line="14" column="12" source="standard:enum-wrapping" />
         <error line="14" column="20" source="standard:enum-wrapping" />
@@ -209,32 +148,29 @@
         <error line="8" column="28" source="standard:trailing-comma-on-declaration-site" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/Settings.kt">
-        <error line="6" column="24" source="standard:class-signature" />
-        <error line="6" column="47" source="standard:class-signature" />
-        <error line="11" column="31" source="standard:trailing-comma-on-declaration-site" />
-        <error line="15" column="23" source="standard:class-signature" />
-        <error line="15" column="46" source="standard:class-signature" />
-        <error line="32" column="41" source="standard:trailing-comma-on-declaration-site" />
-        <error line="36" column="27" source="standard:class-signature" />
-        <error line="36" column="50" source="standard:class-signature" />
-        <error line="43" column="15" source="standard:trailing-comma-on-declaration-site" />
-        <error line="47" column="28" source="standard:class-signature" />
-        <error line="47" column="51" source="standard:class-signature" />
-        <error line="52" column="17" source="standard:trailing-comma-on-declaration-site" />
-        <error line="55" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="60" column="30" source="standard:trailing-comma-on-declaration-site" />
-        <error line="64" column="25" source="standard:class-signature" />
-        <error line="64" column="48" source="standard:class-signature" />
-        <error line="68" column="35" source="standard:trailing-comma-on-declaration-site" />
-        <error line="75" column="9" source="standard:trailing-comma-on-declaration-site" />
-        <error line="79" column="27" source="standard:class-signature" />
-        <error line="79" column="44" source="standard:class-signature" />
-        <error line="79" column="67" source="standard:class-signature" />
-        <error line="85" column="31" source="standard:trailing-comma-on-declaration-site" />
-        <error line="88" column="53" source="standard:function-expression-body" />
-        <error line="105" column="49" source="standard:multiline-expression-wrapping" />
-        <error line="122" column="69" source="standard:trailing-comma-on-call-site" />
-        <error line="139" column="1" source="standard:final-newline" />
+        <error line="8" column="24" source="standard:class-signature" />
+        <error line="8" column="47" source="standard:class-signature" />
+        <error line="13" column="31" source="standard:trailing-comma-on-declaration-site" />
+        <error line="17" column="23" source="standard:class-signature" />
+        <error line="17" column="46" source="standard:class-signature" />
+        <error line="34" column="41" source="standard:trailing-comma-on-declaration-site" />
+        <error line="38" column="27" source="standard:class-signature" />
+        <error line="38" column="50" source="standard:class-signature" />
+        <error line="45" column="15" source="standard:trailing-comma-on-declaration-site" />
+        <error line="49" column="28" source="standard:class-signature" />
+        <error line="49" column="51" source="standard:class-signature" />
+        <error line="54" column="17" source="standard:trailing-comma-on-declaration-site" />
+        <error line="57" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="62" column="30" source="standard:trailing-comma-on-declaration-site" />
+        <error line="66" column="25" source="standard:class-signature" />
+        <error line="66" column="48" source="standard:class-signature" />
+        <error line="70" column="35" source="standard:trailing-comma-on-declaration-site" />
+        <error line="77" column="9" source="standard:trailing-comma-on-declaration-site" />
+        <error line="81" column="27" source="standard:class-signature" />
+        <error line="81" column="44" source="standard:class-signature" />
+        <error line="81" column="67" source="standard:class-signature" />
+        <error line="87" column="31" source="standard:trailing-comma-on-declaration-site" />
+        <error line="90" column="53" source="standard:function-expression-body" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/SimilarTrack.kt">
         <error line="6" column="22" source="standard:trailing-comma-on-declaration-site" />
@@ -277,24 +213,8 @@
         <error line="61" column="38" source="standard:function-signature" />
         <error line="66" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/update/AppRelease.kt">
-        <error line="11" column="12" source="standard:trailing-comma-on-declaration-site" />
-        <error line="19" column="33" source="standard:trailing-comma-on-declaration-site" />
-        <error line="30" column="35" source="standard:trailing-comma-on-declaration-site" />
-        <error line="32" column="70" source="standard:function-expression-body" />
-        <error line="35" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/update/UpdateState.kt">
-        <error line="5" column="5" source="standard:blank-line-before-declaration" />
-        <error line="6" column="5" source="standard:blank-line-before-declaration" />
-        <error line="6" column="25" source="standard:class-signature" />
-        <error line="6" column="51" source="standard:class-signature" />
-        <error line="7" column="5" source="standard:blank-line-before-declaration" />
-        <error line="10" column="39" source="standard:trailing-comma-on-declaration-site" />
-        <error line="18" column="29" source="standard:trailing-comma-on-declaration-site" />
-        <error line="23" column="34" source="standard:trailing-comma-on-declaration-site" />
-        <error line="28" column="37" source="standard:trailing-comma-on-declaration-site" />
-        <error line="30" column="1" source="standard:final-newline" />
+        <error line="36" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/player/MediaSessionManager.kt">
         <error line="9" column="5" source="standard:blank-line-before-declaration" />
@@ -617,17 +537,6 @@
         <error line="5" column="54" source="standard:function-signature" />
         <error line="6" column="5" source="standard:blank-line-before-declaration" />
         <error line="7" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/repository/UpdateRepository.kt">
-        <error line="8" column="25" source="standard:class-signature" />
-        <error line="8" column="52" source="standard:class-signature" />
-        <error line="8" column="72" source="standard:class-signature" />
-        <error line="9" column="5" source="standard:blank-line-before-declaration" />
-        <error line="9" column="26" source="standard:class-signature" />
-        <error line="9" column="46" source="standard:class-signature" />
-        <error line="14" column="5" source="standard:blank-line-before-declaration" />
-        <error line="16" column="36" source="standard:trailing-comma-on-declaration-site" />
-        <error line="18" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/usecase/library/FavoritesUseCases.kt">
         <error line="9" column="27" source="standard:class-signature" />
@@ -1028,27 +937,11 @@
         <error line="20" column="71" source="standard:function-signature" />
         <error line="22" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/usecase/update/CheckForUpdateUseCase.kt">
-        <error line="8" column="45" source="standard:trailing-comma-on-declaration-site" />
-        <error line="10" column="100" source="standard:function-expression-body" />
-        <error line="13" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/usecase/update/DownloadUpdateUseCase.kt">
         <error line="9" column="45" source="standard:trailing-comma-on-declaration-site" />
         <error line="13" column="36" source="standard:trailing-comma-on-declaration-site" />
         <error line="14" column="31" source="standard:function-expression-body" />
         <error line="17" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/core/platform/PlatformFileSystem.kt">
-        <error line="33" column="19" source="standard:function-signature" />
-        <error line="33" column="33" source="standard:function-signature" />
-        <error line="33" column="45" source="standard:function-signature" />
-        <error line="39" column="20" source="standard:function-signature" />
-        <error line="39" column="34" source="standard:function-signature" />
-        <error line="39" column="50" source="standard:function-signature" />
-        <error line="51" column="18" source="standard:function-signature" />
-        <error line="51" column="38" source="standard:function-signature" />
-        <error line="51" column="54" source="standard:function-signature" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="7" column="1" source="standard:no-consecutive-comments" />
@@ -1085,40 +978,6 @@
         <error line="86" column="68" source="standard:function-signature" />
         <error line="95" column="29" source="standard:trailing-comma-on-call-site" />
         <error line="102" column="23" source="standard:multiline-expression-wrapping" />
-    </file>
-    <file name="src/iosMain/kotlin/com/github/adriianh/core/platform/PlatformFileSystem.kt">
-        <error line="15" column="51" source="standard:function-signature" />
-        <error line="18" column="47" source="standard:multiline-expression-wrapping" />
-        <error line="18" column="47" source="standard:function-signature" />
-        <error line="19" column="10" source="standard:wrapping" />
-        <error line="19" column="38" source="standard:chain-method-continuation" />
-        <error line="20" column="42" source="standard:wrapping" />
-        <error line="25" column="49" source="standard:function-signature" />
-        <error line="28" column="49" source="standard:function-signature" />
-        <error line="32" column="26" source="standard:function-signature" />
-        <error line="32" column="40" source="standard:function-signature" />
-        <error line="32" column="52" source="standard:function-signature" />
-        <error line="36" column="27" source="standard:function-signature" />
-        <error line="36" column="41" source="standard:function-signature" />
-        <error line="36" column="57" source="standard:function-signature" />
-        <error line="41" column="25" source="standard:function-signature" />
-        <error line="41" column="45" source="standard:function-signature" />
-        <error line="41" column="61" source="standard:function-signature" />
-        <error line="41" column="74" source="standard:multiline-expression-wrapping" />
-        <error line="41" column="74" source="standard:function-signature" />
-        <error line="47" column="52" source="standard:multiline-expression-wrapping" />
-        <error line="47" column="52" source="standard:function-signature" />
-        <error line="49" column="29" source="standard:try-catch-finally-spacing" />
-        <error line="49" column="30" source="standard:statement-wrapping" />
-        <error line="49" column="36" source="standard:statement-wrapping" />
-        <error line="49" column="36" source="standard:try-catch-finally-spacing" />
-        <error line="51" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="51" column="50" source="standard:function-signature" />
-        <error line="56" column="25" source="standard:trailing-comma-on-call-site" />
-        <error line="58" column="29" source="standard:try-catch-finally-spacing" />
-        <error line="58" column="30" source="standard:statement-wrapping" />
-        <error line="58" column="36" source="standard:statement-wrapping" />
-        <error line="58" column="36" source="standard:try-catch-finally-spacing" />
     </file>
     <file name="src/iosMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="31" column="42" source="standard:function-signature" />
@@ -1246,49 +1105,6 @@
         <error line="381" column="36" source="standard:trailing-comma-on-call-site" />
         <error line="382" column="30" source="standard:wrapping" />
         <error line="401" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/jvmMain/kotlin/com/github/adriianh/core/platform/PlatformFileSystem.kt">
-        <error line="8" column="47" source="standard:multiline-expression-wrapping" />
-        <error line="8" column="47" source="standard:function-signature" />
-        <error line="16" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="16" column="50" source="standard:function-signature" />
-        <error line="18" column="29" source="standard:try-catch-finally-spacing" />
-        <error line="18" column="30" source="standard:statement-wrapping" />
-        <error line="18" column="35" source="standard:statement-wrapping" />
-        <error line="18" column="35" source="standard:try-catch-finally-spacing" />
-        <error line="20" column="26" source="standard:function-signature" />
-        <error line="20" column="40" source="standard:function-signature" />
-        <error line="20" column="52" source="standard:function-signature" />
-        <error line="25" column="33" source="standard:try-catch-finally-spacing" />
-        <error line="25" column="33" source="standard:try-catch-finally-spacing" />
-        <error line="28" column="27" source="standard:function-signature" />
-        <error line="28" column="41" source="standard:function-signature" />
-        <error line="28" column="57" source="standard:function-signature" />
-        <error line="33" column="33" source="standard:try-catch-finally-spacing" />
-        <error line="33" column="33" source="standard:try-catch-finally-spacing" />
-        <error line="36" column="54" source="standard:multiline-expression-wrapping" />
-        <error line="36" column="54" source="standard:function-signature" />
-        <error line="42" column="25" source="standard:function-signature" />
-        <error line="42" column="45" source="standard:function-signature" />
-        <error line="42" column="61" source="standard:function-signature" />
-        <error line="42" column="74" source="standard:multiline-expression-wrapping" />
-        <error line="42" column="74" source="standard:function-signature" />
-        <error line="45" column="28" source="standard:if-else-bracing" />
-        <error line="45" column="28" source="standard:if-else-wrapping" />
-        <error line="45" column="28" source="standard:multiline-if-else" />
-        <error line="55" column="52" source="standard:multiline-expression-wrapping" />
-        <error line="55" column="52" source="standard:function-signature" />
-        <error line="57" column="29" source="standard:try-catch-finally-spacing" />
-        <error line="57" column="30" source="standard:statement-wrapping" />
-        <error line="57" column="36" source="standard:statement-wrapping" />
-        <error line="57" column="36" source="standard:try-catch-finally-spacing" />
-        <error line="59" column="50" source="standard:multiline-expression-wrapping" />
-        <error line="59" column="50" source="standard:function-signature" />
-        <error line="61" column="29" source="standard:try-catch-finally-spacing" />
-        <error line="61" column="30" source="standard:statement-wrapping" />
-        <error line="61" column="36" source="standard:statement-wrapping" />
-        <error line="61" column="36" source="standard:try-catch-finally-spacing" />
-        <error line="74" column="1" source="standard:final-newline" />
     </file>
     <file name="src/jvmMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="8" column="18" source="standard:chain-method-continuation" />

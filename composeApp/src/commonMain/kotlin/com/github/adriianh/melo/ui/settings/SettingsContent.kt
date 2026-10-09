@@ -82,7 +82,9 @@ internal fun SettingsContent(
         AccountSettingsSection(settings, isLoggedIn, actions)
         UpdateSettingsSection(
             autoCheckUpdates = settings.autoCheckUpdates,
-            onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates
+            onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates,
+            updateChannel = settings.updateChannel,
+            onUpdateChannelSelected = actions.onUpdateChannelSelected,
         )
 
         Spacer(modifier = Modifier.height(24.dp))

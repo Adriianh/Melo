@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.repository.DownloadProgress
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
@@ -29,12 +30,19 @@ class UpdateViewModel(
 
     private var downloadJob: Job? = null
 
-    fun checkForUpdates() {
+    fun checkForUpdates(
+        channel: UpdateChannel =
+            if (MeloVersion.CURRENT.contains("nightly", ignoreCase = true)) {
+                UpdateChannel.NIGHTLY
+            } else {
+                UpdateChannel.STABLE
+            },
+    ) {
         if (_uiState.value is UpdateState.Checking || _uiState.value is UpdateState.Downloading) return
 
         viewModelScope.launch {
             _uiState.value = UpdateState.Checking
-            val result = checkForUpdateUseCase(MeloVersion.CURRENT)
+            val result = checkForUpdateUseCase(MeloVersion.CURRENT, channel)
             result.onSuccess { release ->
                 if (release != null) {
                     val platform = currentUpdatePlatform()
@@ -46,7 +54,7 @@ class UpdateViewModel(
                         targetAsset = targetAsset
                     )
                 } else {
-                    _uiState.value = UpdateState.UpToDate(MeloVersion.CURRENT)
+                    _uiState.value = UpdateState.UpToDate(MeloVersion.CURRENT, channel)
                 }
             }.onFailure { error ->
                 _uiState.value = UpdateState.Error(

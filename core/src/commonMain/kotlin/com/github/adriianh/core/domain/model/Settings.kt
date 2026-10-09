@@ -1,5 +1,7 @@
 package com.github.adriianh.core.domain.model
 
+import com.github.adriianh.core.domain.model.update.UpdateChannel
+import com.github.adriianh.core.util.MeloVersion
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -137,5 +139,11 @@ data class Settings(
     val syncHistoryToYouTube: Boolean = true,
     val syncLikesToYouTube: Boolean = true,
     val autoCheckUpdates: Boolean = true,
+    val updateChannel: UpdateChannel =
+        if (MeloVersion.CURRENT.contains("nightly", ignoreCase = true)) {
+            UpdateChannel.NIGHTLY
+        } else {
+            UpdateChannel.STABLE
+        },
     val lastAccentColor: Long? = null,
 )

@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.ThemeMode
+import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -104,10 +105,10 @@ fun App(
     val updateState by updateViewModel.uiState.collectAsState()
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(settings.autoCheckUpdates) {
+    LaunchedEffect(settings.autoCheckUpdates, settings.updateChannel) {
         if (settings.autoCheckUpdates) {
             delay(4000.milliseconds)
-            updateViewModel.checkForUpdates()
+            updateViewModel.checkForUpdates(settings.updateChannel)
         }
     }
     val isSystemDark = isSystemInDarkTheme()
@@ -267,10 +268,18 @@ fun App(
                                                             top = 8.dp,
                                                             bottom = 8.dp
                                                         ),
-                                                        verticalAlignment = Alignment.CenterVertically
+                                                        verticalAlignment = Alignment.CenterVertically,
                                                     ) {
+                                                        val isNightly =
+                                                            currentUpdate.release.channel ==
+                                                                UpdateChannel.NIGHTLY
+                                                        val channelTag =
+                                                            if (isNightly) " (Nightly)" else ""
+                                                        val updateMessage =
+                                                            "Nueva versión " +
+                                                                "${currentUpdate.release.version}$channelTag disponible"
                                                         Text(
-                                                            text = "Nueva versión ${currentUpdate.release.version} disponible",
+                                                            text = updateMessage,
                                                             style = MaterialTheme.typography.bodyMedium,
                                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                             modifier = Modifier.weight(1f)
@@ -632,6 +641,13 @@ fun App(
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(autoCheckUpdates = enabled)
+                                        }
+                                    }
+                                },
+                                onUpdateChannelSelected = { channel ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(updateChannel = channel)
                                         }
                                     }
                                 },

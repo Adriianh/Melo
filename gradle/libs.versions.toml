@@ -26,7 +26,7 @@ graalvm = "1.1.10"
 sqldelight = "2.3.2"
 sqlite-jdbc = "3.53.2.1"
 jmtc = "0.0.3"
-jaudiotagger = "2.0.18"
+jaudiotagger = "3.0.1"
 kdiscordipc = "0870931bd0"
 brotli = "0.1.2"
 newpipe = "v0.26.1"
@@ -90,7 +90,7 @@ sqldelightSqliteDriver = { module = "app.cash.sqldelight:sqlite-driver", version
 sqldelightGradlePlugin = { module = "app.cash.sqldelight:gradle-plugin", version.ref = "sqldelight" }
 sqliteJdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 jmtc = { module = "io.github.selemba1000:JavaMediaTransportControls", version.ref = "jmtc" }
-jaudiotagger = { module = "com.github.RouHim:jaudiotagger", version.ref = "jaudiotagger" }
+jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger" }
 kdiscordipc = { module = "com.github.Adriianh:KDiscordIPC", version.ref = "kdiscordipc" }
 brotli = { module = "org.brotli:dec", version.ref = "brotli" }
 newpipeExtractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipe" }

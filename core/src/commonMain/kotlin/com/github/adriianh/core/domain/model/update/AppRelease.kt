@@ -13,9 +13,11 @@ enum class UpdatePlatform {
 }
 
 @Serializable
-enum class UpdateChannel {
-    STABLE,
-    NIGHTLY,
+enum class UpdateChannel(
+    val displayName: String,
+) {
+    STABLE("Estable"),
+    NIGHTLY("Nightly"),
 }
 
 fun currentPlatform(): UpdatePlatform = currentUpdatePlatform()

@@ -161,6 +161,7 @@ compose.desktop {
 
         jvmArgs +=
             listOf(
+                "-XX:+UnlockExperimentalVMOptions",
                 "-XX:-UseJVMCICompiler",
                 "-Xms64m",
                 "-Xmx384m",
