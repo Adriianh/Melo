@@ -95,6 +95,50 @@ class NativeSelfUpdaterTest {
     }
 
     @Test
+    fun `findBinaryInExtracted prefers root native binary over bin wrapper script on Unix`() {
+        val root = File(tempDir, "archive-root")
+        val pkg = File(root, "melo-2.3.0").apply { mkdirs() }
+        val binDir = File(pkg, "bin").apply { mkdirs() }
+
+        val wrapperScript = File(binDir, "melo")
+        wrapperScript.writeText("#!/usr/bin/env sh\nexec melo\n")
+
+        val realBinary = File(pkg, "melo")
+        val elfHeader = byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte(), 2, 1, 1, 0)
+        realBinary.writeBytes(elfHeader + ByteArray(1024))
+
+        val updater = NativeSelfUpdater(isWindows = false)
+        val found = updater.findBinaryInExtracted(root)
+        assertNotNull(found)
+        assertEquals(realBinary.canonicalPath, found.canonicalPath)
+    }
+
+    @Test
+    fun `binary and script detection helpers identify formats accurately`() {
+        val updater = NativeSelfUpdater(isWindows = false)
+
+        val scriptFile = File(tempDir, "script.sh")
+        scriptFile.writeText("#!/bin/sh\necho hi")
+        assertTrue(updater.isShebangScript(scriptFile))
+        assertFalse(updater.isNativeBinary(scriptFile))
+
+        val elfFile = File(tempDir, "sample.elf")
+        elfFile.writeBytes(byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte()))
+        assertFalse(updater.isShebangScript(elfFile))
+        assertTrue(updater.isNativeBinary(elfFile))
+
+        val peFile = File(tempDir, "sample.exe")
+        peFile.writeBytes(byteArrayOf('M'.code.toByte(), 'Z'.code.toByte(), 0, 0))
+        assertFalse(updater.isShebangScript(peFile))
+        assertTrue(updater.isNativeBinary(peFile))
+
+        val textFile = File(tempDir, "plain.txt")
+        textFile.writeText("plain text")
+        assertFalse(updater.isShebangScript(textFile))
+        assertFalse(updater.isNativeBinary(textFile))
+    }
+
+    @Test
     fun `applyUpdate replaces binary and cleans old files on Unix`() {
         val installDir = File(tempDir, "install-unix")
         installDir.mkdirs()
