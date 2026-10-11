@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
@@ -24,6 +25,7 @@ class QueueViewModel(
     private val getArtistRadioUseCase: GetArtistRadioUseCase? = null,
     private val getRelatedTracksUseCase: GetRelatedTracksUseCase? = null,
     private val getRecentTracksUseCase: GetRecentTracksUseCase? = null,
+    private val getOfflineSuggestionsUseCase: GetOfflineSuggestionsUseCase? = null,
 ) : ViewModel() {
     val queueState = manager.queueState
 
@@ -74,8 +76,13 @@ class QueueViewModel(
                 .distinctBy { it.id }
                 .filter { it.id != track.id && it.id !in queueIds }
 
-            val fresh = combined.filter { it.id !in recentIds }
-            val finalSuggestions = if (fresh.size >= 5) fresh else combined
+            val finalSuggestions =
+                if (combined.isEmpty() && getOfflineSuggestionsUseCase != null) {
+                    getOfflineSuggestionsUseCase(track, queueIds, 12)
+                } else {
+                    val fresh = combined.filter { it.id !in recentIds }
+                    if (fresh.size >= 5) fresh else combined
+                }
 
             _suggestions.value = finalSuggestions.take(12)
         } catch (_: Exception) {

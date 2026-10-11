@@ -14,6 +14,7 @@ import com.github.adriianh.core.domain.provider.AgeRestrictedException
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.repository.SavedSession
 import com.github.adriianh.core.domain.repository.StreamCacheRepository
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.playback.RecordPlayUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
@@ -61,6 +62,7 @@ class PlaybackManagerImpl(
     private val streamCacheRepository: StreamCacheRepository? = null,
     private val networkMonitor: NetworkMonitor? = null,
     ioDispatcher: CoroutineDispatcher? = null,
+    getOfflineSuggestionsUseCase: GetOfflineSuggestionsUseCase? = null,
 ) : PlaybackManager {
     private val dispatcher: CoroutineDispatcher =
         ioDispatcher
@@ -98,6 +100,9 @@ class PlaybackManagerImpl(
     private var wasOfflineWaitingForNetwork: Boolean = false
     private var pendingResumePositionMs: Long = 0L
     private var pendingResumeTrackId: String? = null
+
+    private val effectiveOfflineSuggestionsUseCase =
+        getOfflineSuggestionsUseCase ?: offlineRepository?.let { GetOfflineSuggestionsUseCase(it) }
 
     init {
         meloPlayer.setVolume(_volume.value)
@@ -813,16 +818,31 @@ class PlaybackManagerImpl(
      * True when the queue is close enough to its end to fetch radio continuations
      * ahead of time, so playback transitions seamlessly without an interruption.
      */
-    private fun shouldPrefetchRadio(q: QueueState): Boolean =
-        !isEffectivelyOffline() &&
-            getRadioUseCase != null &&
+    private fun shouldPrefetchRadio(q: QueueState): Boolean {
+        val hasProvider =
+            if (isEffectivelyOffline()) {
+                effectiveOfflineSuggestionsUseCase != null
+            } else {
+                getRadioUseCase != null
+            }
+
+        return hasProvider &&
             q.currentIndex >= 0 &&
             q.tracks.isNotEmpty() &&
             q.currentIndex >= q.tracks.size - RADIO_AUTOPLAY_MARGIN
+    }
 
     private fun handleAutoplay(forcePlayNext: Boolean) {
         val currentTrack = _queueState.value.currentTrack ?: return
-        if (isAutoplayFetching || getRadioUseCase == null || isEffectivelyOffline()) {
+        val offline = isEffectivelyOffline()
+        val hasAutoplayProvider =
+            if (offline) {
+                effectiveOfflineSuggestionsUseCase != null
+            } else {
+                getRadioUseCase != null
+            }
+
+        if (isAutoplayFetching || !hasAutoplayProvider) {
             if (forcePlayNext) meloPlayer.stop()
             return
         }
@@ -830,60 +850,30 @@ class PlaybackManagerImpl(
         isAutoplayFetching = true
         scope.launch {
             try {
-                if (isEffectivelyOffline()) {
-                    if (forcePlayNext) meloPlayer.stop()
-                    return@launch
-                }
                 val autoplayEnabled = getSettingsUseCase?.invoke()?.firstOrNull()?.autoplay ?: true
                 if (!autoplayEnabled) {
                     if (forcePlayNext) meloPlayer.stop()
                     return@launch
                 }
 
-                val resolvedSourceId =
-                    try {
-                        getStreamUseCase.resolveSourceId(currentTrack)
-                    } catch (_: Throwable) {
-                        null
+                val tracksToAdd =
+                    if (isEffectivelyOffline()) {
+                        val queueIds =
+                            _queueState.value.tracks
+                                .map { it.id }
+                                .toSet()
+                        val suggestions =
+                            effectiveOfflineSuggestionsUseCase?.invoke(currentTrack, queueIds, 10)
+                        suggestions ?: emptyList()
+                    } else {
+                        fetchOnlineRadioTracks(currentTrack)
                     }
 
-                if (resolvedSourceId != null && currentTrack.sourceId == null) {
+                if (tracksToAdd.isNotEmpty()) {
                     _queueState.update { current ->
-                        val updatedTracks =
-                            current.tracks.map {
-                                if (it.id == currentTrack.id) it.copy(sourceId = resolvedSourceId) else it
-                            }
-                        current.copy(tracks = updatedTracks)
-                    }
-                }
-
-                val videoId =
-                    resolvedSourceId
-                        ?: currentTrack.sourceId
-                        ?: (if (currentTrack.id.startsWith("piped:")) currentTrack.id.removePrefix("piped:") else null)
-                        ?: currentTrack.id
-
-                val radioTracks =
-                    getRadioUseCase(videoId).filter { rec ->
-                        _queueState.value.tracks.none {
-                            it.id == rec.id ||
-                                (!it.sourceId.isNullOrBlank() && it.sourceId == rec.sourceId) ||
-                                (
-                                    it.title.equals(rec.title, ignoreCase = true) &&
-                                        it.artist.equals(
-                                            rec.artist,
-                                            ignoreCase = true,
-                                        )
-                                )
-                        }
-                    }
-
-                if (radioTracks.isNotEmpty()) {
-                    _queueState.update { current ->
-                        val manualEnd =
-                            current.currentIndex + current.userQueueCount + 1
+                        val manualEnd = current.currentIndex + current.userQueueCount + 1
                         val newTracks = current.tracks.toMutableList()
-                        newTracks.addAll(manualEnd.coerceAtMost(current.tracks.size), radioTracks)
+                        newTracks.addAll(manualEnd.coerceAtMost(current.tracks.size), tracksToAdd)
                         current.copy(tracks = newTracks)
                     }
                     if (forcePlayNext) {
@@ -900,6 +890,43 @@ class PlaybackManagerImpl(
                 if (forcePlayNext) meloPlayer.stop()
             } finally {
                 isAutoplayFetching = false
+            }
+        }
+    }
+
+    private suspend fun fetchOnlineRadioTracks(currentTrack: Track): List<Track> {
+        val radioUseCase = getRadioUseCase ?: return emptyList()
+        val resolvedSourceId =
+            try {
+                getStreamUseCase.resolveSourceId(currentTrack)
+            } catch (_: Throwable) {
+                null
+            }
+
+        if (resolvedSourceId != null && currentTrack.sourceId == null) {
+            _queueState.update { current ->
+                val updatedTracks =
+                    current.tracks.map {
+                        if (it.id == currentTrack.id) it.copy(sourceId = resolvedSourceId) else it
+                    }
+                current.copy(tracks = updatedTracks)
+            }
+        }
+
+        val videoId =
+            resolvedSourceId
+                ?: currentTrack.sourceId
+                ?: (if (currentTrack.id.startsWith("piped:")) currentTrack.id.removePrefix("piped:") else null)
+                ?: currentTrack.id
+
+        return radioUseCase(videoId).filter { rec ->
+            _queueState.value.tracks.none {
+                it.id == rec.id ||
+                    (!it.sourceId.isNullOrBlank() && it.sourceId == rec.sourceId) ||
+                    (
+                        it.title.equals(rec.title, ignoreCase = true) &&
+                            it.artist.equals(rec.artist, ignoreCase = true)
+                    )
             }
         }
     }

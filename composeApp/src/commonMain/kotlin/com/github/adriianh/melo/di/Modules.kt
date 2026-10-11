@@ -115,6 +115,7 @@ val dataModule =
                 streamCacheRepository = getOrNull(),
                 networkMonitor = getOrNull(),
                 ioDispatcher = MeloDispatchers.IO,
+                getOfflineSuggestionsUseCase = getOrNull(),
             )
         }
 
