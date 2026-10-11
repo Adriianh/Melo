@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.cache.EntityCache
 import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.AccountProfile
@@ -13,6 +14,7 @@ import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.mergeHistoryEntries
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
@@ -22,6 +24,7 @@ import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistIdsForTrackUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
@@ -40,6 +43,7 @@ import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +51,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
@@ -121,6 +126,13 @@ data class LibraryUiState(
     val albums: List<SearchResult.Album> = emptyList(),
     val history: List<HistoryEntry> = emptyList(),
     val error: String? = null,
+    val isOffline: Boolean = false,
+    val downloadedTrackIds: Set<String> = emptySet(),
+    val localTrackIds: Set<String> = emptySet(),
+    val offlineAlbumIds: Set<String> = emptySet(),
+    val offlineArtistIds: Set<String> = emptySet(),
+    val offlineRemotePlaylistIds: Set<String> = emptySet(),
+    val offlineCustomPlaylistIds: Set<Long> = emptySet(),
 )
 
 class LibraryViewModel(
@@ -150,6 +162,9 @@ class LibraryViewModel(
     private val playbackManager: PlaybackManager,
     private val libraryCache: LibraryCache,
     observeLibraryUpdatesUseCase: ObserveLibraryUpdatesUseCase? = null,
+    private val networkMonitor: NetworkMonitor? = null,
+    private val entityCache: EntityCache? = null,
+    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
     private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -157,16 +172,36 @@ class LibraryViewModel(
 
     private var localHistory: List<HistoryEntry> = emptyList()
     private var remoteHistory: List<HistoryEntry> = emptyList()
+    private val customPlaylistTracksMap = mutableMapOf<Long, List<Track>>()
+    private val customPlaylistJobs = mutableMapOf<Long, Job>()
 
     private fun updateMergedHistory() {
         val merged = mergeHistoryEntries(localHistory, remoteHistory)
         _uiState.update { it.copy(history = merged) }
     }
 
+    fun isEffectivelyOffline(): Boolean =
+        getSettingsUseCase().value.offlineMode || (networkMonitor?.isOnline?.value == false)
+
     init {
+        viewModelScope.launch(ioDispatcher) {
+            val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
+            combine(
+                getSettingsUseCase().map { it.offlineMode },
+                isOnlineFlow,
+            ) { offlineMode, isOnline ->
+                offlineMode || !isOnline
+            }.distinctUntilChanged()
+                .collectLatest { isOffline ->
+                    _uiState.update { it.copy(isOffline = isOffline) }
+                    updateOfflineAvailability()
+                }
+        }
         viewModelScope.launch(ioDispatcher) {
             getPlaylistsUseCase().collectLatest { playlists ->
                 _uiState.update { it.copy(customPlaylists = playlists) }
+                observeCustomPlaylistTracks(playlists)
+                updateOfflineAvailability()
             }
         }
         viewModelScope.launch(ioDispatcher) {
@@ -177,11 +212,11 @@ class LibraryViewModel(
         }
         viewModelScope.launch(ioDispatcher) {
             getOfflineTracksUseCase().collectLatest { tracks ->
+                val completed = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
                 _uiState.update { current ->
-                    current.copy(
-                        downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED },
-                    )
+                    current.copy(downloadedTracks = completed)
                 }
+                updateOfflineAvailability()
             }
         }
         viewModelScope.launch(ioDispatcher) {
@@ -236,6 +271,7 @@ class LibraryViewModel(
                             )
                         }
                         updateMergedHistory()
+                        updateOfflineAvailability()
                     }
                 }
         }
@@ -252,6 +288,7 @@ class LibraryViewModel(
                     )
                 }
                 updateMergedHistory()
+                updateOfflineAvailability()
             }
         }
 
@@ -291,8 +328,59 @@ class LibraryViewModel(
         }
     }
 
+    private fun observeCustomPlaylistTracks(playlists: List<Playlist>) {
+        if (getPlaylistTracksUseCase == null) return
+        val currentIds = playlists.map { it.id }.toSet()
+        val removed = customPlaylistJobs.keys - currentIds
+        for (id in removed) {
+            customPlaylistJobs.remove(id)?.cancel()
+            customPlaylistTracksMap.remove(id)
+        }
+        for ((id) in playlists) {
+            if (!customPlaylistJobs.containsKey(id)) {
+                val job =
+                    viewModelScope.launch(ioDispatcher) {
+                        getPlaylistTracksUseCase.invoke(id).collectLatest { tracks ->
+                            customPlaylistTracksMap[id] = tracks
+                            updateOfflineAvailability()
+                        }
+                    }
+                customPlaylistJobs[id] = job
+            }
+        }
+    }
+
+    private fun updateOfflineAvailability() {
+        val current = _uiState.value
+        val dlIds = computeOfflineTrackIds(current.downloadedTracks)
+        val locIds = current.localTracks.map { it.id }.toSet()
+        val allOfflineTracks = current.downloadedTracks.map { it.track } + current.localTracks
+        val allOfflineTrackIds = dlIds + locIds
+
+        val offAlbumIds = computeOfflineAlbumIds(current.albums, allOfflineTracks, entityCache)
+        val offArtistIds = computeOfflineArtistIds(current.artists, allOfflineTracks, entityCache)
+        val offRemotePlIds = computeOfflineRemotePlaylistIds(current.playlists, allOfflineTrackIds, entityCache)
+        val offCustomPlIds =
+            if (getPlaylistTracksUseCase != null) {
+                computeOfflineCustomPlaylistIds(current.customPlaylists, customPlaylistTracksMap, allOfflineTrackIds)
+            } else {
+                current.customPlaylists.map { it.id }.toSet()
+            }
+
+        _uiState.update {
+            it.copy(
+                downloadedTrackIds = dlIds,
+                localTrackIds = locIds,
+                offlineAlbumIds = offAlbumIds,
+                offlineArtistIds = offArtistIds,
+                offlineRemotePlaylistIds = offRemotePlIds,
+                offlineCustomPlaylistIds = offCustomPlIds,
+            )
+        }
+    }
+
     fun onScreenVisible() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
 
         val cached = libraryCache.getSync()
         val isStale =
@@ -314,31 +402,31 @@ class LibraryViewModel(
             }
 
             LibraryTab.HISTORY -> {
-                if (_uiState.value.isLoggedIn) {
+                if (_uiState.value.isLoggedIn && !isEffectivelyOffline()) {
                     refreshRemoteHistory()
                 }
             }
 
             LibraryTab.LIKED -> {
-                if (_uiState.value.isLoggedIn && _uiState.value.likedSongs.isEmpty()) {
+                if (_uiState.value.isLoggedIn && !isEffectivelyOffline() && _uiState.value.likedSongs.isEmpty()) {
                     refreshLikedSongs()
                 }
             }
 
             LibraryTab.PLAYLISTS -> {
-                if (_uiState.value.isLoggedIn && _uiState.value.playlists.isEmpty()) {
+                if (_uiState.value.isLoggedIn && !isEffectivelyOffline() && _uiState.value.playlists.isEmpty()) {
                     refreshPlaylists()
                 }
             }
 
             LibraryTab.ALBUMS -> {
-                if (_uiState.value.isLoggedIn && _uiState.value.albums.isEmpty()) {
+                if (_uiState.value.isLoggedIn && !isEffectivelyOffline() && _uiState.value.albums.isEmpty()) {
                     refreshAlbums()
                 }
             }
 
             LibraryTab.ARTISTS -> {
-                if (_uiState.value.isLoggedIn && _uiState.value.artists.isEmpty()) {
+                if (_uiState.value.isLoggedIn && !isEffectivelyOffline() && _uiState.value.artists.isEmpty()) {
                     refreshArtists()
                 }
             }
@@ -348,7 +436,7 @@ class LibraryViewModel(
     }
 
     fun refreshRemoteHistory() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             val result = getRemoteHistoryUseCase()
             if (result.isSuccess) {
@@ -360,44 +448,48 @@ class LibraryViewModel(
     }
 
     fun refreshLikedSongs() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             val result = getLikedSongsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(likedSongs = result.getOrDefault(it.likedSongs)) }
+                updateOfflineAvailability()
             }
             saveCurrentCacheSnapshot()
         }
     }
 
     fun refreshPlaylists() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             val result = getUserPlaylistsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(playlists = result.getOrDefault(it.playlists)) }
+                updateOfflineAvailability()
             }
             saveCurrentCacheSnapshot()
         }
     }
 
     fun refreshAlbums() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             val result = getUserAlbumsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(albums = result.getOrDefault(it.albums)) }
+                updateOfflineAvailability()
             }
             saveCurrentCacheSnapshot()
         }
     }
 
     fun refreshArtists() {
-        if (!_uiState.value.isLoggedIn) return
+        if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             val result = getUserArtistsUseCase()
             if (result.isSuccess) {
                 _uiState.update { it.copy(artists = result.getOrDefault(it.artists)) }
+                updateOfflineAvailability()
             }
             saveCurrentCacheSnapshot()
         }
@@ -421,6 +513,7 @@ class LibraryViewModel(
                 val enriched = enrichLocalTracksUseCase(scanned)
                 _uiState.update { it.copy(localTracks = enriched) }
             }
+            updateOfflineAvailability()
         }
     }
 
@@ -464,7 +557,7 @@ class LibraryViewModel(
         viewModelScope.launch(ioDispatcher) {
             syncOfflineTracksUseCase()
             scanLocalTracks()
-            if (!_uiState.value.isLoggedIn) return@launch
+            if (!_uiState.value.isLoggedIn || isEffectivelyOffline()) return@launch
 
             if (!silent) {
                 _uiState.update { it.copy(isLoading = true, error = null) }
@@ -503,6 +596,7 @@ class LibraryViewModel(
                 )
             }
             updateMergedHistory()
+            updateOfflineAvailability()
             saveCurrentCacheSnapshot()
         }
     }
@@ -511,12 +605,31 @@ class LibraryViewModel(
         track: Track,
         queue: List<Track> = emptyList(),
     ) {
-        if (queue.isNotEmpty()) {
-            val index = queue.indexOf(track).coerceAtLeast(0)
-            playbackManager.setQueue(queue, index)
+        val isOffline = isEffectivelyOffline()
+        val isTrackOffline = isOfflineTrack(track)
+        if (isOffline && !isTrackOffline) {
+            return
+        }
+        val effectiveQueue =
+            if (isOffline) {
+                queue.filter { isOfflineTrack(it) }
+            } else {
+                queue
+            }
+        if (effectiveQueue.isNotEmpty()) {
+            val index = effectiveQueue.indexOf(track).coerceAtLeast(0)
+            playbackManager.setQueue(effectiveQueue, index)
         } else {
             playbackManager.playTrack(track)
         }
+    }
+
+    private fun isOfflineTrack(track: Track): Boolean {
+        val state = _uiState.value
+        return track.id in state.downloadedTrackIds ||
+            track.id.removePrefix("piped:") in state.downloadedTrackIds ||
+            (track.sourceId != null && track.sourceId in state.downloadedTrackIds) ||
+            track.id in state.localTrackIds
     }
 
     fun toggleLike(

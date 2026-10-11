@@ -199,6 +199,9 @@ val viewModelModule =
                 playbackManager = get(),
                 libraryCache = get(),
                 observeLibraryUpdatesUseCase = getOrNull(),
+                networkMonitor = getOrNull(),
+                entityCache = getOrNull(),
+                getPlaylistTracksUseCase = getOrNull(),
             )
         }
         viewModel {

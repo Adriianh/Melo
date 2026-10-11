@@ -83,27 +83,38 @@ fun PlaylistDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPlaying by playerViewModel.uiState.map { it.isPlaying }.distinctUntilChanged()
+    val isPlaying by playerViewModel.uiState
+        .map { it.isPlaying }
+        .distinctUntilChanged()
         .collectAsState(false)
-    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
-        .distinctUntilChanged().collectAsState(Color.Transparent)
+    val accentColorFromPlayer by playerViewModel.uiState
+        .map { it.accentColor }
+        .distinctUntilChanged()
+        .collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
     val accentColor = MaterialTheme.colorScheme.primary
-    val likedTrackIds = remember(libraryState.likedSongs) {
-        libraryState.likedSongs.map { it.id }.toSet()
-    }
+    val likedTrackIds =
+        remember(libraryState.likedSongs) {
+            libraryState.likedSongs.map { it.id }.toSet()
+        }
 
-    val isCustomPlaylist = remember(playlistId) {
-        playlistId.startsWith("local:")
-                || playlistId.startsWith("custom:")
-                || (playlistId.toLongOrNull() != null && !playlistId.startsWith(
-            "VL"
-        ) && !playlistId.startsWith("PL") && !playlistId.startsWith("RD"))
-    }
+    val isCustomPlaylist =
+        remember(playlistId) {
+            playlistId.startsWith("local:") ||
+                playlistId.startsWith("custom:") ||
+                (
+                    playlistId.toLongOrNull() != null &&
+                        !playlistId.startsWith(
+                            "VL",
+                        ) &&
+                        !playlistId.startsWith("PL") &&
+                        !playlistId.startsWith("RD")
+                )
+        }
 
     var showRenameDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -124,16 +135,19 @@ fun PlaylistDetailScreen(
         viewModel.loadPlaylist(playlistId, initialTitle, initialArtwork, initialAuthor)
     }
 
-    val playlist = (uiState.entity as? SearchResult.Playlist)?.takeIf {
-        it.id == playlistId || it.id == "local:$playlistId" ||
+    val playlist =
+        (uiState.entity as? SearchResult.Playlist)?.takeIf {
+            it.id == playlistId ||
+                it.id == "local:$playlistId" ||
                 it.id.removePrefix("local:") == playlistId.removePrefix("local:")
-    }
+        }
     val songs = remember(playlist) { playlist?.songs.orEmpty() }
-    val effectiveTitle = remember(playlist, initialTitle) {
-        playlist?.title?.takeIf { it.isNotBlank() }
-            ?: initialTitle.takeIf { it.isNotBlank() }
-            ?: "Playlist"
-    }
+    val effectiveTitle =
+        remember(playlist, initialTitle) {
+            playlist?.title?.takeIf { it.isNotBlank() }
+                ?: initialTitle.takeIf { it.isNotBlank() }
+                ?: "Playlist"
+        }
 
     if (showRenameDialog) {
         RenamePlaylistDialog(
@@ -142,7 +156,7 @@ fun PlaylistDetailScreen(
             onConfirm = { newName ->
                 viewModel.renameLocalPlaylist(newName)
                 showRenameDialog = false
-            }
+            },
         )
     }
 
@@ -153,7 +167,7 @@ fun PlaylistDetailScreen(
             onConfirm = {
                 showDeleteDialog = false
                 viewModel.deleteLocalPlaylist(onBack)
-            }
+            },
         )
     }
 
@@ -163,22 +177,27 @@ fun PlaylistDetailScreen(
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
         onAlbumClick = onAlbumClick,
-        onRemoveFromPlaylist = if (isCustomPlaylist) { track ->
-            viewModel.removeTrackFromLocalPlaylist(track.id)
-            interaction.snackbar.show(
-                msg = "Eliminada de la playlist",
-                vector = Icons.Default.DeleteOutline,
-                action = "Deshacer",
-                actionColor = activeAccent,
-                onAction = {
-                    val playlistIdLong =
-                        playlistId.removePrefix("local:").removePrefix("custom:").toLongOrNull()
-                    if (playlistIdLong != null) {
-                        libraryViewModel.addTrackToPlaylist(playlistIdLong, track)
-                    }
+        onRemoveFromPlaylist =
+            if (isCustomPlaylist) {
+                { track ->
+                    viewModel.removeTrackFromLocalPlaylist(track.id)
+                    interaction.snackbar.show(
+                        msg = "Eliminada de la playlist",
+                        vector = Icons.Default.DeleteOutline,
+                        action = "Deshacer",
+                        actionColor = activeAccent,
+                        onAction = {
+                            val playlistIdLong =
+                                playlistId.removePrefix("local:").removePrefix("custom:").toLongOrNull()
+                            if (playlistIdLong != null) {
+                                libraryViewModel.addTrackToPlaylist(playlistIdLong, track)
+                            }
+                        },
+                    )
                 }
-            )
-        } else null
+            } else {
+                null
+            },
     )
 
     Scaffold(
@@ -190,7 +209,7 @@ fun PlaylistDetailScreen(
                         if (isSelectionMode) "${selectedTrackIds.size} seleccionadas" else effectiveTitle,
                         style = MeloType.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -199,7 +218,7 @@ fun PlaylistDetailScreen(
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Cancelar selección",
-                                tint = MeloColors.textPrimary
+                                tint = MeloColors.textPrimary,
                             )
                         }
                     } else {
@@ -207,7 +226,7 @@ fun PlaylistDetailScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Atrás",
-                                tint = MeloColors.textPrimary
+                                tint = MeloColors.textPrimary,
                             )
                         }
                     }
@@ -220,31 +239,33 @@ fun PlaylistDetailScreen(
                         isCustomPlaylist = isCustomPlaylist,
                         accentColor = accentColor,
                         onToggleSelectAll = {
-                            selectedTrackIds = if (selectedTrackIds.size == songs.size) {
-                                emptySet()
-                            } else {
-                                songs.map { it.id }.toSet()
-                            }
+                            selectedTrackIds =
+                                if (selectedTrackIds.size == songs.size) {
+                                    emptySet()
+                                } else {
+                                    songs.map { it.id }.toSet()
+                                }
                         },
                         onRenameRequest = { showRenameDialog = true },
                         onDeleteRequest = { showDeleteDialog = true },
                         onAddAllToPlaylist = { interaction.openAddToPlaylist(songs) },
                         onStartSelection = {
                             if (songs.isNotEmpty()) selectedTrackIds = setOf(songs.first().id)
-                        }
+                        },
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MeloColors.textPrimary
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MeloColors.textPrimary,
+                    ),
             )
-        }
+        },
     ) { paddingValues ->
         if (uiState.isLoading && songs.isEmpty() && initialTitle.isBlank() && initialArtwork == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
@@ -256,70 +277,90 @@ fun PlaylistDetailScreen(
                         playlistId,
                         initialTitle,
                         initialArtwork,
-                        initialAuthor
+                        initialAuthor,
                     )
                 },
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
             )
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
-                            endY = 600f
-                        )
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
+                                endY = 600f,
+                            ),
+                        ),
             ) {
                 val totalDurationMs = remember(songs) { songs.sumOf { it.durationMs } }
-                val totalDurationFormatted = remember(totalDurationMs) {
-                    formatCollectionDuration(totalDurationMs)
-                }
+                val totalDurationFormatted =
+                    remember(totalDurationMs) {
+                        formatCollectionDuration(totalDurationMs)
+                    }
 
                 val isGenericAuthor = { s: String? ->
                     val c = s?.trim()?.lowercase() ?: ""
-                    c.isBlank() || c == "unknown" || c == "desconocido" || c == "playlist" ||
-                            c == "lista de reproducción" || c == "lista de reproduccion" ||
-                            c == "álbum" || c == "album" || c == "youtube music"
+                    c.isBlank() ||
+                        c == "unknown" ||
+                        c == "desconocido" ||
+                        c == "playlist" ||
+                        c == "lista de reproducción" ||
+                        c == "lista de reproduccion" ||
+                        c == "álbum" ||
+                        c == "album" ||
+                        c == "youtube music"
                 }
 
                 val authorText =
                     playlist?.author?.takeIf { !isGenericAuthor(it) }
                         ?: initialAuthor.takeIf { !isGenericAuthor(it) }
-                        ?: if (isCustomPlaylist) "Tú" else playlist?.author?.takeIf { it.isNotBlank() }
-                            ?: initialAuthor.takeIf { it.isNotBlank() } ?: "YouTube Music"
-                val metaParts = listOfNotNull(
-                    if (songs.isNotEmpty()) "${songs.size} canciones" else null,
-                    totalDurationFormatted.takeIf { it.isNotBlank() }
-                ).joinToString(" • ")
+                        ?: if (isCustomPlaylist) {
+                            "Tú"
+                        } else {
+                            playlist?.author?.takeIf { it.isNotBlank() }
+                                ?: initialAuthor.takeIf { it.isNotBlank() } ?: "YouTube Music"
+                        }
+                val metaParts =
+                    listOfNotNull(
+                        if (songs.isNotEmpty()) "${songs.size} canciones" else null,
+                        totalDurationFormatted.takeIf { it.isNotBlank() },
+                    ).joinToString(" • ")
 
-                val effectiveArtwork = playlist?.artworkUrl?.takeIf { it.isNotBlank() }
-                    ?: initialArtwork?.takeIf { it.isNotBlank() }
-                    ?: songs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+                val effectiveArtwork =
+                    playlist?.artworkUrl?.takeIf { it.isNotBlank() }
+                        ?: initialArtwork?.takeIf { it.isNotBlank() }
+                        ?: songs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
 
                 val lazyListState = rememberLazyListState()
-                val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                    val fromIndex = songs.indexOfFirst { "custom_pl_${it.id}" == from.key }
-                    val toIndex = songs.indexOfFirst { "custom_pl_${it.id}" == to.key }
-                    if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
-                        viewModel.moveLocalPlaylistTrack(fromIndex, toIndex)
+                val reorderState =
+                    rememberReorderableLazyListState(lazyListState) { from, to ->
+                        val fromIndex = songs.indexOfFirst { "custom_pl_${it.id}" == from.key }
+                        val toIndex = songs.indexOfFirst { "custom_pl_${it.id}" == to.key }
+                        if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
+                            viewModel.moveLocalPlaylistTrack(fromIndex, toIndex)
+                        }
                     }
-                }
 
-                val playableTracks = remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
-                    if (uiState.isOffline) songs.filter { it.id in uiState.downloadedTrackIds }
-                    else songs
-                }
+                val playableTracks =
+                    remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
+                        if (uiState.isOffline) {
+                            songs.filter { it.id in uiState.downloadedTrackIds }
+                        } else {
+                            songs
+                        }
+                    }
 
                 LazyColumn(
                     state = lazyListState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding())
+                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding()),
                 ) {
                     item {
                         EntityHeaderCard(
@@ -327,13 +368,17 @@ fun PlaylistDetailScreen(
                             artworkUrls = if (isCustomPlaylist) songs.mapNotNull { it.artworkUrl } else null,
                             title = effectiveTitle,
                             subtitle = authorText,
-                            onSubtitleClick = if (isCustomPlaylist || authorText.equals(
-                                    "Tú",
-                                    ignoreCase = true
-                                )
-                            ) null else {
-                                { onArtistClick(authorText) }
-                            },
+                            onSubtitleClick =
+                                if (isCustomPlaylist ||
+                                    authorText.equals(
+                                        "Tú",
+                                        ignoreCase = true,
+                                    )
+                                ) {
+                                    null
+                                } else {
+                                    { onArtistClick(authorText) }
+                                },
                             metadataText = metaParts,
                             isSaved = uiState.isSaved,
                             isDownloaded = uiState.isDownloaded,
@@ -342,9 +387,12 @@ fun PlaylistDetailScreen(
                             downloadedCount = uiState.downloadedTrackCount,
                             totalTrackCount = uiState.totalTrackCount,
                             currentDownloadingTrackTitle = uiState.currentDownloadingTrackTitle,
-                            onDownloadClick = if (!uiState.isOffline && songs.isNotEmpty()) {
-                                viewModel::toggleDownload
-                            } else null,
+                            onDownloadClick =
+                                if (!uiState.isOffline && songs.isNotEmpty()) {
+                                    viewModel::toggleDownload
+                                } else {
+                                    null
+                                },
                             onPlayClick = {
                                 if (playableTracks.isNotEmpty()) {
                                     queueViewModel.playTracks(playableTracks, 0)
@@ -362,7 +410,7 @@ fun PlaylistDetailScreen(
                                 }
                             },
                             accentColor = accentColor,
-                            hasTracks = playableTracks.isNotEmpty()
+                            hasTracks = playableTracks.isNotEmpty(),
                         )
                     }
 
@@ -372,7 +420,7 @@ fun PlaylistDetailScreen(
                             ExpandableDescriptionCard(
                                 title = "Descripción",
                                 description = description,
-                                accentColor = accentColor
+                                accentColor = accentColor,
                             )
                         }
                     }
@@ -381,7 +429,7 @@ fun PlaylistDetailScreen(
                         if (isCustomPlaylist) {
                             itemsIndexed(
                                 songs,
-                                key = { _, song -> "custom_pl_${song.id}" }
+                                key = { _, song -> "custom_pl_${song.id}" },
                             ) { index, song ->
                                 ReorderablePlaylistTrackItem(
                                     song = song,
@@ -394,23 +442,28 @@ fun PlaylistDetailScreen(
                                     isDownloaded = song.id in uiState.downloadedTrackIds,
                                     isDownloading = song.id in uiState.activeDownloadsMap,
                                     downloadProgress = uiState.activeDownloadsMap[song.id] ?: 0f,
+                                    isEnabled = !uiState.isOffline || song.id in uiState.downloadedTrackIds,
                                     itemKey = "custom_pl_${song.id}",
                                     accentColor = accentColor,
                                     activeAccent = activeAccent,
                                     onSelectionToggle = {
-                                        selectedTrackIds = if (song.id in selectedTrackIds) {
-                                            selectedTrackIds - song.id
-                                        } else {
-                                            selectedTrackIds + song.id
-                                        }
+                                        selectedTrackIds =
+                                            if (song.id in selectedTrackIds) {
+                                                selectedTrackIds - song.id
+                                            } else {
+                                                selectedTrackIds + song.id
+                                            }
                                     },
                                     onLongPress = {
                                         if (!isSelectionMode) selectedTrackIds = setOf(song.id)
                                     },
                                     onPlay = { queueViewModel.playTracks(songs, index) },
-                                    onMoreClick = if (isSelectionMode) null else {
-                                        { interaction.openContextMenu(song) }
-                                    },
+                                    onMoreClick =
+                                        if (isSelectionMode) {
+                                            null
+                                        } else {
+                                            { interaction.openContextMenu(song) }
+                                        },
                                     onSwipeLeft = {
                                         interaction.showAddedToQueueSnackbar(song, activeAccent)
                                     },
@@ -418,12 +471,17 @@ fun PlaylistDetailScreen(
                                         interaction.showToggledLikeSnackbar(
                                             song,
                                             song.id in likedTrackIds,
-                                            activeAccent
+                                            activeAccent,
                                         )
                                     },
-                                    swipeRightIcon = if (
-                                        song.id in likedTrackIds
-                                    ) Icons.Default.HeartBroken else Icons.Default.Favorite
+                                    swipeRightIcon =
+                                        if (
+                                            song.id in likedTrackIds
+                                        ) {
+                                            Icons.Default.HeartBroken
+                                        } else {
+                                            Icons.Default.Favorite
+                                        },
                                 )
                             }
                         } else {
@@ -446,11 +504,12 @@ fun PlaylistDetailScreen(
                                     }
                                 },
                                 onToggleSelectTrack = { song ->
-                                    selectedTrackIds = if (song.id in selectedTrackIds) {
-                                        selectedTrackIds - song.id
-                                    } else {
-                                        selectedTrackIds + song.id
-                                    }
+                                    selectedTrackIds =
+                                        if (song.id in selectedTrackIds) {
+                                            selectedTrackIds - song.id
+                                        } else {
+                                            selectedTrackIds + song.id
+                                        }
                                 },
                                 onTrackClick = { _, song ->
                                     val trackIndex = playableTracks.indexOfFirst { it.id == song.id }
@@ -462,7 +521,7 @@ fun PlaylistDetailScreen(
                                 onSwipeLeft = {
                                     interaction.showAddedToQueueSnackbar(
                                         it,
-                                        activeAccent
+                                        activeAccent,
                                     )
                                 },
                                 onSwipeRight = { song ->
@@ -470,21 +529,22 @@ fun PlaylistDetailScreen(
                                     interaction.showToggledLikeSnackbar(
                                         song,
                                         isLiked,
-                                        activeAccent
+                                        activeAccent,
                                     )
                                 },
                                 accentColor = accentColor,
-                                keyPrefix = "playlist"
+                                keyPrefix = "playlist",
                             )
                         }
                     } else if (uiState.isLoading) {
                         items(6) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MeloColors.surface2.copy(alpha = 0.5f))
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MeloColors.surface2.copy(alpha = 0.5f)),
                             )
                         }
                     }
@@ -497,8 +557,13 @@ fun PlaylistDetailScreen(
                     onClearSelection = { selectedTrackIds = emptySet() },
                     onSelectAllToggle = {
                         selectedTrackIds =
-                            if (selectedTrackIds.size == songs.size) emptySet() else songs.map { it.id }
-                                .toSet()
+                            if (selectedTrackIds.size == songs.size) {
+                                emptySet()
+                            } else {
+                                songs
+                                    .map { it.id }
+                                    .toSet()
+                            }
                     },
                     onAddToPlaylist = {
                         val selTracks = songs.filter { it.id in selectedTrackIds }
@@ -509,8 +574,15 @@ fun PlaylistDetailScreen(
                         val selTracks = songs.filter { it.id in selectedTrackIds }
                         queueViewModel.addAllToQueue(selTracks)
                         interaction.snackbar.show(
-                            msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
-                            actionColor = activeAccent
+                            msg =
+                                if (selTracks.size ==
+                                    1
+                                ) {
+                                    "1 canción añadida a la cola"
+                                } else {
+                                    "${selTracks.size} canciones añadidas a la cola"
+                                },
+                            actionColor = activeAccent,
                         )
                         selectedTrackIds = emptySet()
                     },
@@ -519,23 +591,33 @@ fun PlaylistDetailScreen(
                         selTracks.forEach { libraryViewModel.downloadTrack(it) }
                         interaction.snackbar.show(
                             msg = "Descargando ${selTracks.size} canciones...",
-                            actionColor = activeAccent
+                            actionColor = activeAccent,
                         )
                         selectedTrackIds = emptySet()
                     },
-                    onDeleteSelected = if (isCustomPlaylist) {
-                        {
-                            val selIds = selectedTrackIds.toList()
-                            selIds.forEach { viewModel.removeTrackFromLocalPlaylist(it) }
-                            selectedTrackIds = emptySet()
-                            interaction.snackbar.show(
-                                msg = if (selIds.size == 1) "1 canción eliminada de la playlist" else "${selIds.size} canciones eliminadas de la playlist",
-                                actionColor = activeAccent
-                            )
-                        }
-                    } else null,
+                    onDeleteSelected =
+                        if (isCustomPlaylist) {
+                            {
+                                val selIds = selectedTrackIds.toList()
+                                selIds.forEach { viewModel.removeTrackFromLocalPlaylist(it) }
+                                selectedTrackIds = emptySet()
+                                interaction.snackbar.show(
+                                    msg =
+                                        if (selIds.size ==
+                                            1
+                                        ) {
+                                            "1 canción eliminada de la playlist"
+                                        } else {
+                                            "${selIds.size} canciones eliminadas de la playlist"
+                                        },
+                                    actionColor = activeAccent,
+                                )
+                            }
+                        } else {
+                            null
+                        },
                     accentColor = accentColor,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

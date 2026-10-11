@@ -26,14 +26,16 @@ class EntityCacheImpl(
     private var isLoaded = false
 
     override fun getSync(entityId: String): SearchResult? {
+        ensureLoaded()
         val cleanId = entityId.removePrefix("VL").removePrefix("piped:").removePrefix("itunes:")
         return memoryCache[entityId] ?: memoryCache[cleanId]
     }
 
-    override suspend fun get(entityId: String): SearchResult? = withContext(dispatcher) {
-        ensureLoaded()
-        getSync(entityId)
-    }
+    override suspend fun get(entityId: String): SearchResult? =
+        withContext(dispatcher) {
+            ensureLoaded()
+            getSync(entityId)
+        }
 
     override suspend fun save(entity: SearchResult) {
         val id = entity.entityId
