@@ -27,6 +27,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.CategoryCard
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SongFourRowCarousel
 import com.github.adriianh.melo.ui.player.QueueViewModel
@@ -45,13 +46,44 @@ fun ExploreContent(
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isEmpty = uiState.recentHistory.isEmpty() &&
+        uiState.exploreSections.isEmpty() &&
+        uiState.moodAndGenres.isEmpty()
+
+    if (uiState.isLoadingExplore && isEmpty) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+        return
+    }
+
+    if (isEmpty) {
+        MeloEmptyState(
+            title = if (uiState.isOffline) {
+                "Sin contenido sin conexión"
+            } else {
+                "No se pudo cargar contenido"
+            },
+            message = if (uiState.isOffline) {
+                "Descarga canciones o añade archivos locales para explorarlos sin conexión"
+            } else {
+                "Verifica tu conexión a internet o intenta de nuevo más tarde"
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             top = 8.dp,
-            bottom = paddingValues.calculateBottomPadding() + 16.dp
+            bottom = paddingValues.calculateBottomPadding() + 16.dp,
         ),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         if (uiState.recentHistory.isNotEmpty()) {
             item {
