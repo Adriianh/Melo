@@ -54,6 +54,7 @@ import com.github.adriianh.core.domain.usecase.offline.AutoCleanupUseCase
 import com.github.adriianh.core.domain.usecase.offline.DeleteDownloadedTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.DownloadTrackUseCase
 import com.github.adriianh.core.domain.usecase.offline.EnrichLocalTracksUseCase
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
 import com.github.adriianh.core.domain.usecase.offline.MarkTrackAccessedUseCase
 import com.github.adriianh.core.domain.usecase.offline.ScanLocalTracksUseCase
@@ -303,6 +304,7 @@ val sharedModule: Module =
         singleOf(::ScanLocalTracksUseCase)
         singleOf(::EnrichLocalTracksUseCase)
         singleOf(::SyncOfflineTracksUseCase)
+        singleOf(::GetOfflineSuggestionsUseCase)
         singleOf(::AutoCleanupUseCase)
         singleOf(::MarkTrackAccessedUseCase)
         singleOf(::UpdateTrackMetadataUseCase)
