@@ -129,7 +129,13 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                _state.update { it.copy(error = error.message ?: "Playback error") }
+                _state.update {
+                    it.copy(
+                        isPlaying = false,
+                        isBuffering = false,
+                        error = error.message ?: "Playback error",
+                    )
+                }
             }
         })
     }
@@ -209,6 +215,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
 
     override fun setIdleTrack(track: Track, initialPositionMs: Long) {
         runOnMain {
+            exoPlayer.stop()
             val metadata = MediaMetadata.Builder()
                 .setTitle(track.title)
                 .setArtist(track.artist)

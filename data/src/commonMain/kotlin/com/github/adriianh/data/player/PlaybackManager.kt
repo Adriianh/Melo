@@ -108,7 +108,28 @@ class PlaybackManagerImpl(
         meloPlayer.setVolume(_volume.value)
         scope.launch(dispatcher) {
             getSettingsUseCase?.invoke()?.collectLatest { s ->
+                val wasOfflineSettings = isOfflineSettingsEnabled
                 isOfflineSettingsEnabled = s.offlineMode
+                val toggledToOnline = wasOfflineSettings && !s.offlineMode
+                if (
+                    toggledToOnline &&
+                    wasOfflineWaitingForNetwork &&
+                    networkMonitor?.isOnline?.value != false
+                ) {
+                    wasOfflineWaitingForNetwork = false
+                    val currentTrack = _queueState.value.currentTrack
+                    if (currentTrack != null && !playbackState.value.isPlaying) {
+                        val resumePos =
+                            if (pendingResumeTrackId == currentTrack.id) {
+                                pendingResumePositionMs
+                            } else {
+                                0L
+                            }
+                        recoveryAttempts = 0
+                        recoveryJob?.cancel()
+                        playCurrentQueueTrack(initialSeekMs = resumePos)
+                    }
+                }
                 val newVol = (s.volume.toFloat() / 100f).coerceIn(0f, 1f)
                 if (newVol > 0.05f) {
                     lastUnmutedVolume = newVol
@@ -143,7 +164,17 @@ class PlaybackManagerImpl(
                     if (trackId != null) {
                         streamCacheRepository?.invalidate(trackId)
                     }
-                    if (trackId != null && !trackId.startsWith("local:") && recoveryAttempts < MAX_PLAYBACK_RECOVERY_ATTEMPTS) {
+                    val isOffline = isEffectivelyOffline() || networkMonitor?.isOnline?.value == false
+                    if (isOffline) {
+                        wasOfflineWaitingForNetwork = true
+                        pendingResumePositionMs = state.progressMs
+                        pendingResumeTrackId = trackId
+                        emitPlaybackError(loadError)
+                    } else if (
+                        trackId != null &&
+                        !trackId.startsWith("local:") &&
+                        recoveryAttempts < MAX_PLAYBACK_RECOVERY_ATTEMPTS
+                    ) {
                         recoveryAttempts++
                         recoveryJob?.cancel()
                         val resumePos = state.progressMs
@@ -156,11 +187,6 @@ class PlaybackManagerImpl(
                             }
                     } else if (trackId == null || trackId != lastHandledErrorTrackId) {
                         lastHandledErrorTrackId = trackId
-                        if (isEffectivelyOffline() || networkMonitor?.isOnline?.value == false) {
-                            wasOfflineWaitingForNetwork = true
-                            pendingResumePositionMs = state.progressMs
-                            pendingResumeTrackId = trackId
-                        }
                         emitPlaybackError(loadError)
                     }
                 } else if (state.isFinished && state.error == null) {
@@ -191,7 +217,23 @@ class PlaybackManagerImpl(
                 networkMonitor.isOnline.collect { isOnline ->
                     val reconnected = !wasOnline && isOnline
                     wasOnline = isOnline
-                    if (reconnected && wasOfflineWaitingForNetwork && !isOfflineSettingsEnabled) {
+                    if (!isOnline) {
+                        val currentTrack = _queueState.value.currentTrack
+                        val offlineTrack = currentTrack?.let { offlineRepository?.getOfflineTrack(it.id) }
+                        val isTrackAvailableOffline =
+                            currentTrack != null &&
+                                (
+                                    currentTrack.id.startsWith("local:") ||
+                                        offlineTrack?.downloadStatus == DownloadStatus.COMPLETED
+                                )
+                        if (currentTrack != null && !isTrackAvailableOffline) {
+                            wasOfflineWaitingForNetwork = true
+                            if (pendingResumeTrackId != currentTrack.id) {
+                                pendingResumeTrackId = currentTrack.id
+                                pendingResumePositionMs = playbackState.value.progressMs
+                            }
+                        }
+                    } else if (reconnected && wasOfflineWaitingForNetwork && !isOfflineSettingsEnabled) {
                         wasOfflineWaitingForNetwork = false
                         val currentTrack = _queueState.value.currentTrack
                         if (currentTrack != null && !playbackState.value.isPlaying) {
