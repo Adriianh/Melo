@@ -10,10 +10,27 @@ internal fun computeOfflineTrackIds(downloadedTracks: List<OfflineTrack>): Set<S
     buildSet {
         for ((track) in downloadedTracks) {
             add(track.id)
-            add(track.id.removePrefix("piped:"))
-            track.sourceId?.let { add(it) }
+            val cleanId =
+                track.id
+                    .removePrefix("piped:")
+                    .removePrefix("local:")
+                    .removePrefix("file:")
+            add(cleanId)
+            add("piped:$cleanId")
+            track.sourceId?.let {
+                add(it)
+                add(it.removePrefix("piped:"))
+            }
         }
     }
+
+private fun isTrackOffline(
+    track: Track,
+    allOfflineTrackIds: Set<String>,
+): Boolean =
+    track.id in allOfflineTrackIds ||
+        track.id.removePrefix("piped:") in allOfflineTrackIds ||
+        (track.sourceId != null && track.sourceId in allOfflineTrackIds)
 
 internal fun computeOfflineAlbumIds(
     albums: List<SearchResult.Album>,
@@ -21,6 +38,7 @@ internal fun computeOfflineAlbumIds(
     entityCache: EntityCache?,
 ): Set<String> =
     buildSet {
+        val offlineTrackIds = allOfflineTracks.map { it.id }.toSet()
         for ((id, title, albumAuthor) in albums) {
             val albumTitle = title.trim().lowercase()
             val author =
@@ -41,8 +59,8 @@ internal fun computeOfflineAlbumIds(
                     matchesAlbum && matchesAuthor
                 }
             val cached = entityCache?.getSync(id) as? SearchResult.Album
-            val hasCache = cached?.songs?.isNotEmpty() == true
-            if (hasTracks || hasCache) {
+            val hasCachedTracks = cached?.songs?.any { isTrackOffline(it, offlineTrackIds) } == true
+            if (hasTracks || hasCachedTracks) {
                 add(id)
             }
         }
@@ -54,6 +72,7 @@ internal fun computeOfflineArtistIds(
     entityCache: EntityCache?,
 ): Set<String> =
     buildSet {
+        val offlineTrackIds = allOfflineTracks.map { it.id }.toSet()
         for ((id, name) in artists) {
             val artistName = name.trim().lowercase()
             val hasTracks =
@@ -65,10 +84,8 @@ internal fun computeOfflineArtistIds(
                             .contains(artistName)
                     }
             val cached = entityCache?.getSync(id) as? SearchResult.Artist
-            val hasCache =
-                cached != null &&
-                    (cached.topSongs?.isNotEmpty() == true || cached.sections.isNotEmpty())
-            if (hasTracks || hasCache) {
+            val hasCachedTracks = cached?.topSongs?.any { isTrackOffline(it, offlineTrackIds) } == true
+            if (hasTracks || hasCachedTracks) {
                 add(id)
             }
         }
@@ -82,12 +99,8 @@ internal fun computeOfflineRemotePlaylistIds(
     buildSet {
         for ((id) in playlists) {
             val cached = entityCache?.getSync(id) as? SearchResult.Playlist
-            val hasCache = cached?.songs?.isNotEmpty() == true
-            val hasTracks =
-                cached?.songs?.any { s ->
-                    s.id in allOfflineTrackIds || s.id.removePrefix("piped:") in allOfflineTrackIds
-                } == true
-            if (hasCache || hasTracks) {
+            val hasTracks = cached?.songs?.any { isTrackOffline(it, allOfflineTrackIds) } == true
+            if (hasTracks) {
                 add(id)
             }
         }
@@ -101,9 +114,7 @@ internal fun computeOfflineCustomPlaylistIds(
     buildSet {
         for ((id) in customPlaylists) {
             val tracks = customPlaylistTracks[id]
-            if (tracks != null &&
-                tracks.any { it.id in allOfflineTrackIds || it.id.removePrefix("piped:") in allOfflineTrackIds }
-            ) {
+            if (tracks != null && tracks.any { isTrackOffline(it, allOfflineTrackIds) }) {
                 add(id)
             }
         }

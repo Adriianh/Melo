@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
@@ -343,10 +344,19 @@ fun PlaylistDetailScreen(
                         }
                     }
 
+                val isTrackDownloaded: (Track) -> Boolean =
+                    remember(uiState.downloadedTrackIds) {
+                        { track ->
+                            track.id in uiState.downloadedTrackIds ||
+                                track.id.removePrefix("piped:") in uiState.downloadedTrackIds ||
+                                (track.sourceId != null && track.sourceId in uiState.downloadedTrackIds)
+                        }
+                    }
+
                 val playableTracks =
                     remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
                         if (uiState.isOffline) {
-                            songs.filter { it.id in uiState.downloadedTrackIds }
+                            songs.filter { isTrackDownloaded(it) }
                         } else {
                             songs
                         }
@@ -439,10 +449,15 @@ fun PlaylistDetailScreen(
                                     isSelected = song.id in selectedTrackIds,
                                     isCurrent = queueState.currentTrack?.id == song.id,
                                     isPlaying = queueState.currentTrack?.id == song.id && isPlaying,
-                                    isDownloaded = song.id in uiState.downloadedTrackIds,
-                                    isDownloading = song.id in uiState.activeDownloadsMap,
-                                    downloadProgress = uiState.activeDownloadsMap[song.id] ?: 0f,
-                                    isEnabled = !uiState.isOffline || song.id in uiState.downloadedTrackIds,
+                                    isDownloaded = isTrackDownloaded(song),
+                                    isDownloading =
+                                        song.id in uiState.activeDownloadsMap ||
+                                            song.id.removePrefix("piped:") in uiState.activeDownloadsMap,
+                                    downloadProgress =
+                                        uiState.activeDownloadsMap[song.id]
+                                            ?: uiState.activeDownloadsMap[song.id.removePrefix("piped:")]
+                                            ?: 0f,
+                                    isEnabled = !uiState.isOffline || isTrackDownloaded(song),
                                     itemKey = "custom_pl_${song.id}",
                                     accentColor = accentColor,
                                     activeAccent = activeAccent,
@@ -491,10 +506,15 @@ fun PlaylistDetailScreen(
                                 isPlaying = isPlaying,
                                 isLiked = { song -> song.id in likedTrackIds },
                                 isOffline = uiState.isOffline,
-                                isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
-                                isDownloading = { song -> song.id in uiState.activeDownloadsMap },
+                                isDownloaded = isTrackDownloaded,
+                                isDownloading = { song ->
+                                    song.id in uiState.activeDownloadsMap ||
+                                        song.id.removePrefix("piped:") in uiState.activeDownloadsMap
+                                },
                                 downloadProgress = { song ->
-                                    uiState.activeDownloadsMap[song.id] ?: 0f
+                                    uiState.activeDownloadsMap[song.id]
+                                        ?: uiState.activeDownloadsMap[song.id.removePrefix("piped:")]
+                                        ?: 0f
                                 },
                                 isSelectionMode = isSelectionMode,
                                 selectedTrackIds = selectedTrackIds,

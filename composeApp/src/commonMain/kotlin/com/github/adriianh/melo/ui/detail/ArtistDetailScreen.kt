@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,13 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
@@ -53,6 +52,8 @@ import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,36 +73,42 @@ fun ArtistDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPlaying by playerViewModel.uiState.map { it.isPlaying }.distinctUntilChanged()
+    val isPlaying by playerViewModel.uiState
+        .map { it.isPlaying }
+        .distinctUntilChanged()
         .collectAsState(false)
-    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
-        .distinctUntilChanged().collectAsState(Color.Transparent)
+    val accentColorFromPlayer by playerViewModel.uiState
+        .map { it.accentColor }
+        .distinctUntilChanged()
+        .collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
     val accentColor = MaterialTheme.colorScheme.primary
-    val likedTrackIds = remember(libraryState.likedSongs) {
-        libraryState.likedSongs.map { it.id }.toSet()
-    }
+    val likedTrackIds =
+        remember(libraryState.likedSongs) {
+            libraryState.likedSongs.map { it.id }.toSet()
+        }
 
     LaunchedEffect(artistId) {
         viewModel.loadArtist(artistId, initialName, initialArtwork)
     }
 
     val artist = (uiState.entity as? SearchResult.Artist)?.takeIf { it.id == artistId }
-    val effectiveName = remember(artist, initialName) {
-        artist?.name?.takeIf { it.isNotBlank() }
-            ?: initialName.takeIf { it.isNotBlank() }
-            ?: "Artista"
-    }
+    val effectiveName =
+        remember(artist, initialName) {
+            artist?.name?.takeIf { it.isNotBlank() }
+                ?: initialName.takeIf { it.isNotBlank() }
+                ?: "Artista"
+        }
 
     TrackInteractionContextMenu(
         interaction = interaction,
         libraryState = libraryState,
         activeAccent = activeAccent,
-        onAlbumClick = onAlbumClick
+        onAlbumClick = onAlbumClick,
     )
 
     Scaffold(
@@ -113,7 +120,7 @@ fun ArtistDetailScreen(
                         effectiveName,
                         style = MeloType.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -121,28 +128,42 @@ fun ArtistDetailScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás",
-                            tint = MeloColors.textPrimary
+                            tint = MeloColors.textPrimary,
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MeloColors.textPrimary
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MeloColors.textPrimary,
+                    ),
             )
-        }
+        },
     ) { paddingValues ->
         val downloadedSongs = uiState.downloadedArtistTracks
         val topSongs = remember(artist) { artist?.topSongs.orEmpty() }
-        val allPlayableTracks = remember(downloadedSongs, topSongs) {
-            (downloadedSongs + topSongs).distinctBy { it.id }
-        }
+        val isTrackDownloaded: (Track) -> Boolean =
+            remember(uiState.downloadedTrackIds) {
+                { track ->
+                    track.id in uiState.downloadedTrackIds ||
+                        track.id.removePrefix("piped:") in uiState.downloadedTrackIds ||
+                        (track.sourceId != null && track.sourceId in uiState.downloadedTrackIds)
+                }
+            }
+        val allPlayableTracks =
+            remember(downloadedSongs, topSongs, uiState.isOffline, isTrackDownloaded) {
+                if (uiState.isOffline) {
+                    (downloadedSongs + topSongs.filter { isTrackDownloaded(it) }).distinctBy { it.id }
+                } else {
+                    (downloadedSongs + topSongs).distinctBy { it.id }
+                }
+            }
         val hasArtistContent = allPlayableTracks.isNotEmpty() || !artist?.sections.isNullOrEmpty()
 
         if (uiState.isLoading && !hasArtistContent && initialName.isBlank() && initialArtwork == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
@@ -150,34 +171,38 @@ fun ArtistDetailScreen(
             MeloErrorState(
                 error = uiState.error,
                 onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
             )
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
-                            endY = 600f
-                        )
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
+                                endY = 600f,
+                            ),
+                        ),
             ) {
-                val effectiveArtwork = artist?.artworkUrl?.takeIf { it.isNotBlank() }
-                    ?: initialArtwork?.takeIf { it.isNotBlank() }
-                    ?: allPlayableTracks.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+                val effectiveArtwork =
+                    artist?.artworkUrl?.takeIf { it.isNotBlank() }
+                        ?: initialArtwork?.takeIf { it.isNotBlank() }
+                        ?: allPlayableTracks.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
 
-                val subtitleParts = listOfNotNull(
-                    artist?.monthlyListenerCount?.takeIf { it.isNotBlank() },
-                    artist?.subscriberCountText?.takeIf { it.isNotBlank() }
-                ).joinToString(" • ")
+                val subtitleParts =
+                    listOfNotNull(
+                        artist?.monthlyListenerCount?.takeIf { it.isNotBlank() },
+                        artist?.subscriberCountText?.takeIf { it.isNotBlank() },
+                    ).joinToString(" • ")
 
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding())
+                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding()),
                 ) {
                     item {
                         ArtistHeaderCard(
@@ -190,12 +215,12 @@ fun ArtistDetailScreen(
                             onRadioClick = {
                                 queueViewModel.startArtistRadio(
                                     artistId = artistId,
-                                    fallbackTracks = allPlayableTracks
+                                    fallbackTracks = allPlayableTracks,
                                 )
                             },
                             onToggleFollow = viewModel::toggleSave,
                             accentColor = accentColor,
-                            hasTracks = allPlayableTracks.isNotEmpty()
+                            hasTracks = allPlayableTracks.isNotEmpty(),
                         )
                     }
 
@@ -206,7 +231,7 @@ fun ArtistDetailScreen(
                                 title = "Biografía",
                                 description = bio,
                                 accentColor = accentColor,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
                     }
@@ -215,7 +240,7 @@ fun ArtistDetailScreen(
                         item {
                             SectionHeader(
                                 title = "En tus descargas (${downloadedSongs.size})",
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
                         detailTrackItems(
@@ -223,20 +248,21 @@ fun ArtistDetailScreen(
                             currentTrackId = queueState.currentTrack?.id,
                             isPlaying = isPlaying,
                             isLiked = { song -> song.id in likedTrackIds },
+                            isOffline = uiState.isOffline,
                             isDownloaded = { true },
                             isDownloading = { false },
                             downloadProgress = { 0f },
                             onTrackClick = { index, _ ->
                                 queueViewModel.playTracks(
                                     downloadedSongs,
-                                    index
+                                    index,
                                 )
                             },
                             onMoreClick = { interaction.openContextMenu(it) },
                             onSwipeLeft = {
                                 interaction.showAddedToQueueSnackbar(
                                     it,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             onSwipeRight = { song ->
@@ -244,12 +270,12 @@ fun ArtistDetailScreen(
                                 interaction.showToggledLikeSnackbar(
                                     song,
                                     isLiked,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             accentColor = accentColor,
                             keyPrefix = "artist_downloaded",
-                            itemModifier = Modifier.padding(horizontal = 16.dp)
+                            itemModifier = Modifier.padding(horizontal = 16.dp),
                         )
                     }
 
@@ -257,7 +283,7 @@ fun ArtistDetailScreen(
                         item {
                             SectionHeader(
                                 title = "Canciones populares",
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
                         detailTrackItems(
@@ -265,22 +291,34 @@ fun ArtistDetailScreen(
                             currentTrackId = queueState.currentTrack?.id,
                             isPlaying = isPlaying,
                             isLiked = { song -> song.id in likedTrackIds },
-                            isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
-                            isDownloading = { song -> song.id in uiState.activeDownloadsMap },
-                            downloadProgress = { song ->
-                                uiState.activeDownloadsMap[song.id] ?: 0f
+                            isOffline = uiState.isOffline,
+                            isDownloaded = isTrackDownloaded,
+                            isDownloading = { song ->
+                                song.id in uiState.activeDownloadsMap ||
+                                    song.id.removePrefix("piped:") in uiState.activeDownloadsMap
                             },
-                            onTrackClick = { index, _ ->
-                                queueViewModel.playTracks(
-                                    topSongs,
-                                    index
-                                )
+                            downloadProgress = { song ->
+                                uiState.activeDownloadsMap[song.id]
+                                    ?: uiState.activeDownloadsMap[song.id.removePrefix("piped:")]
+                                    ?: 0f
+                            },
+                            onTrackClick = { _, song ->
+                                val playableList =
+                                    if (uiState.isOffline) {
+                                        topSongs.filter { isTrackDownloaded(it) }
+                                    } else {
+                                        topSongs
+                                    }
+                                val trackIndex = playableList.indexOfFirst { it.id == song.id }
+                                if (trackIndex != -1) {
+                                    queueViewModel.playTracks(playableList, trackIndex)
+                                }
                             },
                             onMoreClick = { interaction.openContextMenu(it) },
                             onSwipeLeft = {
                                 interaction.showAddedToQueueSnackbar(
                                     it,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             onSwipeRight = { song ->
@@ -288,84 +326,89 @@ fun ArtistDetailScreen(
                                 interaction.showToggledLikeSnackbar(
                                     song,
                                     isLiked,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             accentColor = accentColor,
                             keyPrefix = "artist_top",
-                            itemModifier = Modifier.padding(horizontal = 16.dp)
+                            itemModifier = Modifier.padding(horizontal = 16.dp),
                         )
                     } else if (uiState.isLoading && downloadedSongs.isEmpty()) {
                         item {
                             SectionHeader(
                                 title = "Canciones populares",
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
                         items(5) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .height(56.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MeloColors.surface2.copy(alpha = 0.5f))
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .height(56.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MeloColors.surface2.copy(alpha = 0.5f)),
                             )
                         }
                     }
 
                     val sections = artist?.sections.orEmpty()
-                    for (section in sections) {
-                        if (section.items.isEmpty()) continue
+                    for ((title, items) in sections) {
+                        if (items.isEmpty()) continue
 
-                        item(key = "section_${section.title}") {
+                        item(key = "section_$title") {
                             SectionHeader(
-                                title = section.title,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                title = title,
+                                modifier = Modifier.padding(horizontal = 16.dp),
                             )
                             AdaptiveLazyRow(
-                                items = section.items,
+                                items = items,
                                 minCardWidth = 130.dp,
                                 spacing = 12.dp,
-                                horizontalPadding = 16.dp
+                                horizontalPadding = 16.dp,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Album -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = { onAlbumClick(item.id) }
-                                    )
+                                    is SearchResult.Album ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = { onAlbumClick(item.id) },
+                                        )
 
-                                    is SearchResult.Artist -> ArtistCircle(
-                                        name = item.name,
-                                        artworkUrl = item.artworkUrl,
-                                        onClick = { onArtistClick(item.id) },
-                                        size = cardWidth
-                                    )
+                                    is SearchResult.Artist ->
+                                        ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            onClick = { onArtistClick(item.id) },
+                                            size = cardWidth,
+                                        )
 
-                                    is SearchResult.Song -> TrackRow(
-                                        track = item.track,
-                                        onClick = { queueViewModel.playTrack(item.track) },
-                                        onMoreClick = { interaction.openContextMenu(item.track) },
-                                        modifier = Modifier.width(280.dp)
-                                    )
+                                    is SearchResult.Song ->
+                                        TrackRow(
+                                            track = item.track,
+                                            onClick = { queueViewModel.playTrack(item.track) },
+                                            onMoreClick = { interaction.openContextMenu(item.track) },
+                                            modifier = Modifier.width(280.dp),
+                                        )
 
-                                    is SearchResult.Playlist -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onPlaylistClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Playlist ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onPlaylistClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
                                 }
                             }
                         }
