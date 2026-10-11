@@ -1,4 +1,5 @@
 package com.github.adriianh.cli.tui.util
+
 import dev.tamboui.image.ImageData
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -7,10 +8,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.net.URI
+
 class ArtworkRenderer(private val httpClient: HttpClient) {
     companion object {
         private const val MAX_CACHE_SIZE = 10
     }
+
     private val cache = object : LinkedHashMap<String, ImageData>(MAX_CACHE_SIZE + 1, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ImageData>): Boolean =
             size > MAX_CACHE_SIZE
@@ -21,7 +26,11 @@ class ArtworkRenderer(private val httpClient: HttpClient) {
             cache[artworkUrl]?.let { return@withContext it }
         }
         try {
-            val bytes = httpClient.get(artworkUrl).body<ByteArray>()
+            val bytes = if (artworkUrl.startsWith("file:")) {
+                File(URI(artworkUrl)).readBytes()
+            } else {
+                httpClient.get(artworkUrl).body<ByteArray>()
+            }
             withContext(Dispatchers.Default) {
                 try {
                     ImageData.fromBytes(bytes)?.also {
