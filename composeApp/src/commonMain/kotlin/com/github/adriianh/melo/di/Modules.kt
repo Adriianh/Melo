@@ -142,7 +142,19 @@ val viewModelModule =
                 getSettingsUseCase = getOrNull(),
             )
         }
-        viewModelOf(::QueueViewModel)
+        viewModel {
+            QueueViewModel(
+                manager = get(),
+                searchTracksUseCase = getOrNull(),
+                getRadioUseCase = getOrNull(),
+                getArtistRadioUseCase = getOrNull(),
+                getRelatedTracksUseCase = getOrNull(),
+                getRecentTracksUseCase = getOrNull(),
+                getOfflineSuggestionsUseCase = getOrNull(),
+                getSettingsUseCase = getOrNull(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModel {
             HomeViewModel(
                 getHomeUseCase = get(),
