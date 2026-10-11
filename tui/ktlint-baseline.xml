@@ -2773,37 +2773,15 @@
         <error line="205" column="14" source="standard:multiline-if-else" />
         <error line="208" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/main/kotlin/com/github/adriianh/cli/tui/service/DiscordRpcManager.kt">
-        <error line="32" column="42" source="standard:trailing-comma-on-declaration-site" />
-        <error line="37" column="41" source="standard:multiline-expression-wrapping" />
-        <error line="38" column="44" source="standard:multiline-expression-wrapping" />
-        <error line="39" column="10" source="standard:trailing-comma-on-call-site" />
-        <error line="64" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="95" column="24" source="standard:function-signature" />
-        <error line="95" column="39" source="standard:function-signature" />
-        <error line="95" column="57" source="standard:function-signature" />
-        <error line="95" column="81" source="standard:function-signature" />
-        <error line="107" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="112" column="41" source="standard:try-catch-finally-spacing" />
-        <error line="112" column="42" source="standard:try-catch-finally-spacing" />
-        <error line="122" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="148" column="37" source="standard:try-catch-finally-spacing" />
-        <error line="148" column="38" source="standard:try-catch-finally-spacing" />
-        <error line="171" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="173" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="175" column="40" source="standard:trailing-comma-on-call-site" />
-        <error line="201" column="1" source="standard:final-newline" />
-    </file>
     <file name="src/main/kotlin/com/github/adriianh/cli/tui/util/ArtworkRenderer.kt">
-        <error line="10" column="1" source="standard:blank-line-before-declaration" />
-        <error line="10" column="23" source="standard:class-signature" />
-        <error line="10" column="57" source="standard:class-signature" />
-        <error line="14" column="5" source="standard:blank-line-before-declaration" />
-        <error line="14" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="15" column="102" source="standard:function-signature" />
-        <error line="19" column="5" source="standard:blank-line-before-declaration" />
-        <error line="19" column="56" source="standard:multiline-expression-wrapping" />
-        <error line="19" column="56" source="standard:function-signature" />
+        <error line="14" column="23" source="standard:class-signature" />
+        <error line="14" column="57" source="standard:class-signature" />
+        <error line="19" column="25" source="standard:multiline-expression-wrapping" />
+        <error line="20" column="102" source="standard:function-signature" />
+        <error line="24" column="5" source="standard:blank-line-before-declaration" />
+        <error line="24" column="56" source="standard:multiline-expression-wrapping" />
+        <error line="24" column="56" source="standard:function-signature" />
+        <error line="29" column="25" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/main/kotlin/com/github/adriianh/cli/tui/util/Equalizer.kt">
         <error line="17" column="1" source="standard:no-consecutive-comments" />
