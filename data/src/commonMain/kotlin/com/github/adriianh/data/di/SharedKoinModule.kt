@@ -178,7 +178,13 @@ val sharedModule: Module =
                 metadataProvider = getOrNull(),
             )
         }
-        single<LyricsRepository> { LyricsRepositoryImpl(get(), get()) }
+        single<LyricsRepository> {
+            LyricsRepositoryImpl(
+                lyricsApiClient = get(),
+                lyricsTranslator = get(),
+                configDirPath = getOrNull(named("configDirPath")),
+            )
+        }
         single<DiscoveryRepository> { DiscoveryRepositoryImpl(get()) }
 
         singleOf(::PlaylistRepositoryImpl) { bind<PlaylistRepository>() }

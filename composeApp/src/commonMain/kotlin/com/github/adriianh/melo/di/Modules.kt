@@ -91,6 +91,7 @@ val dataModule =
                 getStreamUseCase = get(),
                 getSettingsUseCase = get(),
                 offlineRepository = get(),
+                lyricsRepository = getOrNull(),
                 configDirPath = get<String>(named("configDirPath")),
                 dispatcher = MeloDispatchers.IO,
             )

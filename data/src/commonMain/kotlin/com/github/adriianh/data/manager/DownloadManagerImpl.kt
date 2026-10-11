@@ -5,6 +5,7 @@ import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -38,6 +39,7 @@ class DownloadManagerImpl(
     private val getStreamUseCase: GetStreamUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
     private val offlineRepository: OfflineRepository,
+    private val lyricsRepository: LyricsRepository? = null,
     private val configDirPath: String,
     private val dispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : DownloadManager {
@@ -156,6 +158,11 @@ class DownloadManagerImpl(
                         fileSize = totalBytes,
                     )
                 offlineRepository.saveOfflineTrack(completedTrack)
+                try {
+                    lyricsRepository?.getTrackLyrics(track.artist, track.title)
+                } catch (_: Exception) {
+                }
+
                 try {
                     offlineRepository.updateTrackMetadata(
                         trackId = track.id,
