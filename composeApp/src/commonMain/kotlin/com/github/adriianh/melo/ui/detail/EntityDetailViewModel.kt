@@ -178,7 +178,13 @@ class EntityDetailViewModel(
         when (val e = _uiState.value.entity) {
             is SearchResult.Album -> e.songs.orEmpty()
             is SearchResult.Playlist -> e.songs.orEmpty()
-            is SearchResult.Artist -> e.topSongs.orEmpty()
+            is SearchResult.Artist -> {
+                val sectionSongs =
+                    e.sections.flatMap { (_, items) ->
+                        items.filterIsInstance<SearchResult.Song>().map { it.track }
+                    }
+                (e.topSongs.orEmpty() + _uiState.value.downloadedArtistTracks + sectionSongs).distinctBy { it.id }
+            }
             else -> emptyList()
         }
 
@@ -514,6 +520,19 @@ class EntityDetailViewModel(
                 val loadedOffline = cached == null && loadEntityOffline(initial)
                 if (loadedOffline || cached != null) {
                     val offlineTracks = offlineRepository.getOfflineTracks()
+                    val artistEntity =
+                        (_uiState.value.entity as? SearchResult.Artist) ?: (cached as? SearchResult.Artist)
+                    if (artistEntity != null) {
+                        val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
+                        val matchingOfflineTracks =
+                            findMatchingOfflineArtistTracks(artistEntity, offlineTracks, initialArtistId)
+                        _uiState.update { current ->
+                            current.copy(
+                                downloadedArtistTracks =
+                                    matchingOfflineTracks.ifEmpty { current.downloadedArtistTracks },
+                            )
+                        }
+                    }
                     updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
                 }
 
@@ -580,20 +599,11 @@ class EntityDetailViewModel(
                         val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
                         val matchingOfflineArtistTracks =
                             if (fullDetails is SearchResult.Artist) {
-                                offlineRepository
-                                    .getOfflineTracks()
-                                    .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                                    .map { it.track }
-                                    .filter {
-                                        it.artist.contains(fullDetails.name, ignoreCase = true) ||
-                                            (
-                                                initialArtistId.isNotBlank() &&
-                                                    it.artist.contains(
-                                                        initialArtistId,
-                                                        ignoreCase = true,
-                                                    )
-                                            )
-                                    }
+                                findMatchingOfflineArtistTracks(
+                                    artist = fullDetails,
+                                    offlineTracks = offlineRepository.getOfflineTracks(),
+                                    initialArtistId = initialArtistId,
+                                )
                             } else {
                                 emptyList()
                             }
@@ -635,7 +645,11 @@ class EntityDetailViewModel(
         if (resolved != null) {
             val matchingArtistTracks =
                 if (resolved is SearchResult.Artist) {
-                    resolved.topSongs.orEmpty()
+                    findMatchingOfflineArtistTracks(
+                        artist = resolved,
+                        offlineTracks = offlineRepository.getOfflineTracks(),
+                        initialArtistId = resolved.id,
+                    )
                 } else {
                     emptyList()
                 }

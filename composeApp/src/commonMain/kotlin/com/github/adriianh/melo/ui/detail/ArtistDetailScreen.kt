@@ -148,9 +148,11 @@ fun ArtistDetailScreen(
         val isTrackDownloaded: (Track) -> Boolean =
             remember(uiState.downloadedTrackIds) {
                 { track ->
+                    val cleanId = cleanTrackId(track.id)
+                    val sourceId = track.sourceId
                     track.id in uiState.downloadedTrackIds ||
-                        track.id.removePrefix("piped:") in uiState.downloadedTrackIds ||
-                        (track.sourceId != null && track.sourceId in uiState.downloadedTrackIds)
+                        cleanId in uiState.downloadedTrackIds ||
+                        (sourceId != null && cleanTrackId(sourceId) in uiState.downloadedTrackIds)
                 }
             }
         val allPlayableTracks =
@@ -399,7 +401,12 @@ fun ArtistDetailScreen(
                             ) { item, cardWidth ->
                                 when (item) {
                                     is SearchResult.Album -> {
-                                        val isAvailable = !uiState.isOffline || item.id in libraryState.offlineAlbumIds
+                                        val hasOfflineTracks =
+                                            downloadedSongs.any { it.album.equals(item.title, ignoreCase = true) }
+                                        val isAvailable =
+                                            !uiState.isOffline ||
+                                                item.id in libraryState.offlineAlbumIds ||
+                                                hasOfflineTracks
                                         AlbumCard(
                                             title = item.title,
                                             subtitle = item.author,

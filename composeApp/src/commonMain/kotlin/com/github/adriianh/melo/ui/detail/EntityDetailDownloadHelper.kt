@@ -144,16 +144,33 @@ private fun resolveOfflineAlbum(
     )
 }
 
+internal fun findMatchingOfflineArtistTracks(
+    artist: SearchResult.Artist,
+    offlineTracks: List<OfflineTrack>,
+    initialArtistId: String = "",
+): List<Track> {
+    val cleanArtistName = artist.name.trim().lowercase()
+    val cleanInitialId = initialArtistId.trim()
+    return offlineTracks
+        .filter { it.downloadStatus == DownloadStatus.COMPLETED }
+        .map { it.track }
+        .filter { track ->
+            val trackArtist = track.artist.trim().lowercase()
+            val matchesName =
+                cleanArtistName.isNotBlank() &&
+                    (trackArtist.contains(cleanArtistName) || cleanArtistName.contains(trackArtist))
+            val matchesId =
+                cleanInitialId.isNotBlank() &&
+                    track.artist.contains(cleanInitialId, ignoreCase = true)
+            matchesName || matchesId
+        }
+}
+
 private fun resolveOfflineArtist(
     initial: SearchResult.Artist,
     allOffline: List<OfflineTrack>,
 ): SearchResult.Artist? {
-    val artistQuery = initial.name.ifBlank { initial.id }
-    val matchingTracks =
-        allOffline
-            .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-            .map { it.track }
-            .filter { it.artist.contains(artistQuery, ignoreCase = true) }
+    val matchingTracks = findMatchingOfflineArtistTracks(initial, allOffline, initial.id)
     if (matchingTracks.isEmpty()) return null
     return initial.copy(
         name = initial.name.ifBlank { matchingTracks.first().artist },
