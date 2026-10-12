@@ -64,7 +64,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ArtistDetailScreen(
     artistId: String,
     onBack: () -> Unit,
-    onAlbumClick: (String) -> Unit = {},
+    onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
     onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     initialName: String = "",
@@ -100,10 +100,13 @@ fun ArtistDetailScreen(
     }
 
     val artist = (uiState.entity as? SearchResult.Artist)?.takeIf { it.id == artistId }
+    val downloadedTracks = uiState.downloadedArtistTracks
+    val fallbackArtistName = downloadedTracks.firstOrNull()?.artist
     val effectiveName =
-        remember(artist, initialName) {
+        remember(artist, initialName, downloadedTracks) {
             artist?.name?.takeIf { it.isNotBlank() }
                 ?: initialName.takeIf { it.isNotBlank() }
+                ?: fallbackArtistName?.takeIf { it.isNotBlank() }
                 ?: "Artista"
         }
 
@@ -111,7 +114,7 @@ fun ArtistDetailScreen(
         interaction = interaction,
         libraryState = libraryState,
         activeAccent = activeAccent,
-        onAlbumClick = onAlbumClick,
+        onAlbumClick = { id -> onAlbumClick(id, "", null, "") },
     )
 
     Scaffold(
@@ -412,7 +415,9 @@ fun ArtistDetailScreen(
                                             subtitle = item.author,
                                             artworkUrl = item.artworkUrl,
                                             cardWidth = cardWidth,
-                                            onClick = { onAlbumClick(item.id) },
+                                            onClick = {
+                                                onAlbumClick(item.id, item.title, item.artworkUrl, item.author)
+                                            },
                                             modifier = Modifier.alpha(if (isAvailable) 1f else 0.45f),
                                         )
                                     }

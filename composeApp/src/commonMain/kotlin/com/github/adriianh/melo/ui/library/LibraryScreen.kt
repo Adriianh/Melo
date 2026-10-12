@@ -38,7 +38,7 @@ fun LibraryScreen(
     onOpenSettings: () -> Unit = {},
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onPlaylistClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
-    onArtistClick: (String) -> Unit = {},
+    onArtistClick: (id: String, name: String, artwork: String?) -> Unit = { _, _, _ -> },
     paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: LibraryViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
@@ -108,7 +108,7 @@ fun LibraryScreen(
         interaction = interaction,
         libraryState = state,
         activeAccent = activeAccent,
-        onArtistClick = onArtistClick,
+        onArtistClick = { id -> onArtistClick(id, id, null) },
     )
 
     val platform = remember { getPlatform() }

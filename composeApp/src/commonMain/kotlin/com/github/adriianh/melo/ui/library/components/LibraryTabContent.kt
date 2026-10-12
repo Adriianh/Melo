@@ -32,7 +32,7 @@ fun LibraryTabContent(
     interaction: TrackInteractionState,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit,
-    onArtistClick: (String) -> Unit,
+    onArtistClick: (id: String, name: String, artwork: String?) -> Unit,
     onToggleSelectTrack: (Track) -> Unit,
     onTrackLongClick: (Track) -> Unit,
     onClearSelection: () -> Unit,

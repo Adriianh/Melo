@@ -42,7 +42,7 @@ import com.github.adriianh.melo.util.PlatformAsyncImage
 @Composable
 fun ArtistsTabContent(
     artists: List<SearchResult.Artist>,
-    onArtistClick: (String) -> Unit,
+    onArtistClick: (id: String, name: String, artwork: String?) -> Unit,
     modifier: Modifier = Modifier,
     viewMode: LibraryViewMode = LibraryViewMode.GRID,
     isOffline: Boolean = false,
@@ -67,7 +67,7 @@ fun ArtistsTabContent(
                     artist = artist,
                     isAvailable = isAvailable,
                     hasDownloaded = hasDownloaded,
-                    onClick = { onArtistClick(artist.id) },
+                    onClick = { onArtistClick(artist.id, artist.name, artist.artworkUrl) },
                 )
             }
         }
@@ -83,7 +83,7 @@ fun ArtistsTabContent(
                     artist = artist,
                     isAvailable = isAvailable,
                     hasDownloaded = hasDownloaded,
-                    onClick = { onArtistClick(artist.id) },
+                    onClick = { onArtistClick(artist.id, artist.name, artist.artworkUrl) },
                 )
             }
         }

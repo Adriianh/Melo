@@ -1,11 +1,18 @@
 package com.github.adriianh.melo.ui.detail
 
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.LibraryCacheData
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.repository.OfflineRepository
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class EntityDetailDownloadHelperTest {
@@ -13,15 +20,16 @@ class EntityDetailDownloadHelperTest {
         id: String,
         title: String,
         artist: String,
+        album: String = "Test Album",
         sourceId: String? = null,
     ) = Track(
         id = id,
         title = title,
         artist = artist,
-        album = "Test Album",
+        album = album,
         durationMs = 180000L,
         genres = emptyList(),
-        artworkUrl = null,
+        artworkUrl = "https://example.com/art.jpg",
         sourceId = sourceId,
     )
 
@@ -54,7 +62,7 @@ class EntityDetailDownloadHelperTest {
             listOf(
                 OfflineTrack(track = track1, downloadStatus = DownloadStatus.COMPLETED),
                 OfflineTrack(track = track2, downloadStatus = DownloadStatus.COMPLETED),
-                OfflineTrack(track = track3, downloadStatus = DownloadStatus.DOWNLOADING), // Not completed
+                OfflineTrack(track = track3, downloadStatus = DownloadStatus.DOWNLOADING),
                 OfflineTrack(track = track4, downloadStatus = DownloadStatus.COMPLETED),
             )
 
@@ -96,4 +104,53 @@ class EntityDetailDownloadHelperTest {
         assertEquals(1, matches.size)
         assertEquals("t1", matches.first().id)
     }
+
+    @Test
+    fun resolveOfflineEntityResolvesArtistUsingLibraryCacheWhenNameIsBlank() =
+        runTest {
+            val initial =
+                SearchResult.Artist(
+                    id = "UC_CHANNEL_123",
+                    name = "",
+                    artworkUrl = null,
+                )
+
+            val track1 = createTrack("t1", "Harder Better Faster", "Daft Punk", album = "Discovery")
+            val offlineRepository = mockk<OfflineRepository>()
+            coEvery { offlineRepository.getOfflineTracks() } returns
+                listOf(
+                    OfflineTrack(track = track1, downloadStatus = DownloadStatus.COMPLETED),
+                )
+
+            val libraryCache = mockk<LibraryCache>()
+            coEvery { libraryCache.get() } returns
+                LibraryCacheData(
+                    artists =
+                        listOf(
+                            SearchResult.Artist(
+                                id = "UC_CHANNEL_123",
+                                name = "Daft Punk",
+                                artworkUrl = "https://example.com/daft.jpg",
+                            ),
+                        ),
+                )
+
+            val resolved =
+                resolveOfflineEntity(
+                    initial = initial,
+                    entityCache = null,
+                    offlineRepository = offlineRepository,
+                    libraryCache = libraryCache,
+                ) as? SearchResult.Artist
+
+            assertNotNull(resolved)
+            assertEquals("Daft Punk", resolved.name)
+            assertEquals("https://example.com/daft.jpg", resolved.artworkUrl)
+            assertEquals(1, resolved.topSongs?.size)
+            assertEquals(1, resolved.sections.size)
+            val firstSection = resolved.sections.first()
+            assertEquals("Álbumes en tus descargas", firstSection.title)
+            val albumCard = firstSection.items.first() as SearchResult.Album
+            assertEquals("Discovery", albumCard.title)
+        }
 }

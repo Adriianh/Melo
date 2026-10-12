@@ -80,7 +80,7 @@ fun DownloadsTabContent(
     modifier: Modifier = Modifier,
     activeDownloads: Map<String, Float> = emptyMap(),
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
-    onArtistClick: (String) -> Unit = {},
+    onArtistClick: (id: String, name: String, artwork: String?) -> Unit = { _, _, _ -> },
 ) {
     if (downloadedTracks.isEmpty()) {
         Box(
@@ -385,7 +385,7 @@ fun DownloadsTabContent(
                             ArtistCircle(
                                 name = artist.name,
                                 artworkUrl = artist.artworkUrl,
-                                onClick = { onArtistClick(artist.name) },
+                                onClick = { onArtistClick(artist.name, artist.name, artist.artworkUrl) },
                                 size = 130.dp,
                                 modifier = Modifier.fillMaxWidth(),
                             )

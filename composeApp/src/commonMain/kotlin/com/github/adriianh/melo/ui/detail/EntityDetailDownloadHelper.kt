@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.detail
 
 import com.github.adriianh.core.domain.cache.EntityCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
@@ -93,6 +94,7 @@ internal suspend fun resolveOfflineEntity(
     initial: SearchResult,
     entityCache: EntityCache?,
     offlineRepository: OfflineRepository,
+    libraryCache: LibraryCache? = null,
 ): SearchResult? {
     val cached = entityCache?.get(initial.entityId)
     if (cached != null) return cached
@@ -100,7 +102,7 @@ internal suspend fun resolveOfflineEntity(
     val allOffline = offlineRepository.getOfflineTracks()
     return when (initial) {
         is SearchResult.Album -> resolveOfflineAlbum(initial, allOffline)
-        is SearchResult.Artist -> resolveOfflineArtist(initial, allOffline)
+        is SearchResult.Artist -> resolveOfflineArtist(initial, allOffline, libraryCache)
         else -> null
     }
 }
@@ -166,15 +168,64 @@ internal fun findMatchingOfflineArtistTracks(
         }
 }
 
-private fun resolveOfflineArtist(
+private suspend fun resolveOfflineArtist(
     initial: SearchResult.Artist,
     allOffline: List<OfflineTrack>,
+    libraryCache: LibraryCache? = null,
 ): SearchResult.Artist? {
-    val matchingTracks = findMatchingOfflineArtistTracks(initial, allOffline, initial.id)
+    val cachedArtist =
+        if (initial.name.isBlank()) {
+            libraryCache?.get()?.artists?.firstOrNull { it.id == initial.id }
+        } else {
+            null
+        }
+    val effectiveName = initial.name.ifBlank { cachedArtist?.name.orEmpty() }
+    val effectiveArtwork = initial.artworkUrl ?: cachedArtist?.artworkUrl
+    val artistToMatch = initial.copy(name = effectiveName, artworkUrl = effectiveArtwork)
+
+    val matchingTracks =
+        findMatchingOfflineArtistTracks(
+            artist = artistToMatch,
+            offlineTracks = allOffline,
+            initialArtistId = initial.id,
+        )
     if (matchingTracks.isEmpty()) return null
+
+    val artistName = effectiveName.ifBlank { matchingTracks.first().artist }
+    val finalArtwork = effectiveArtwork ?: matchingTracks.firstOrNull { it.artworkUrl != null }?.artworkUrl
+
+    val albumGroups =
+        matchingTracks
+            .filter { it.album.isNotBlank() && it.album != "Unknown" }
+            .groupBy { it.album }
+
+    val sections =
+        if (albumGroups.isNotEmpty()) {
+            val albumCards =
+                albumGroups.map { (albumTitle, tracks) ->
+                    SearchResult.Album(
+                        id = albumTitle,
+                        title = albumTitle,
+                        author = artistName,
+                        year = null,
+                        artworkUrl = tracks.firstOrNull { it.artworkUrl != null }?.artworkUrl,
+                        songs = tracks,
+                    )
+                }
+            listOf(
+                SearchResult.ArtistSection(
+                    title = "Álbumes en tus descargas",
+                    items = albumCards,
+                ),
+            )
+        } else {
+            emptyList()
+        }
+
     return initial.copy(
-        name = initial.name.ifBlank { matchingTracks.first().artist },
+        name = artistName,
         topSongs = matchingTracks,
-        artworkUrl = initial.artworkUrl ?: matchingTracks.firstOrNull()?.artworkUrl,
+        artworkUrl = finalArtwork,
+        sections = sections,
     )
 }

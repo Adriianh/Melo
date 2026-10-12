@@ -3,6 +3,7 @@ package com.github.adriianh.melo.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.cache.EntityCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.OfflineTrack
@@ -67,6 +68,7 @@ class EntityDetailViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val networkMonitor: NetworkMonitor? = null,
     private val entityCache: EntityCache? = null,
+    private val libraryCache: LibraryCache? = null,
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
     private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase? = null,
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
@@ -641,7 +643,7 @@ class EntityDetailViewModel(
     }
 
     private suspend fun loadEntityOffline(initial: SearchResult): Boolean {
-        val resolved = resolveOfflineEntity(initial, entityCache, offlineRepository)
+        val resolved = resolveOfflineEntity(initial, entityCache, offlineRepository, libraryCache)
         if (resolved != null) {
             val matchingArtistTracks =
                 if (resolved is SearchResult.Artist) {

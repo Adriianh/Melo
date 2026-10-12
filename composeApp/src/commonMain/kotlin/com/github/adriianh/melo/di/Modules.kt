@@ -227,6 +227,7 @@ val viewModelModule =
                 getSettingsUseCase = get(),
                 networkMonitor = getOrNull(),
                 entityCache = getOrNull(),
+                libraryCache = getOrNull(),
                 getPlaylistTracksUseCase = getOrNull(),
                 removeTrackFromPlaylistUseCase = getOrNull(),
                 deletePlaylistUseCase = getOrNull(),
