@@ -380,7 +380,13 @@ class EntityDetailViewModel(
         )
     }
 
+    private fun isEffectivelyOffline(): Boolean =
+        _uiState.value.isOffline ||
+            getSettingsUseCase().value.offlineMode ||
+            networkMonitor?.isOnline?.value == false
+
     fun toggleSave() {
+        if (isEffectivelyOffline()) return
         val entity = _uiState.value.entity ?: return
         val newSaved = !_uiState.value.isSaved
         _uiState.update { it.copy(isSaved = newSaved) }
@@ -431,6 +437,7 @@ class EntityDetailViewModel(
     }
 
     private fun checkSavedStatus(entity: SearchResult) {
+        if (isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             try {
                 val isSaved =
@@ -499,7 +506,9 @@ class EntityDetailViewModel(
                 )
             }
         }
-        checkSavedStatus(initial)
+        if (!isEffectivelyOffline()) {
+            checkSavedStatus(initial)
+        }
         currentLoadJob =
             viewModelScope.launch(ioDispatcher) {
                 val loadedOffline = cached == null && loadEntityOffline(initial)
@@ -508,9 +517,7 @@ class EntityDetailViewModel(
                     updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
                 }
 
-                val isOffline =
-                    getSettingsUseCase.getSnapshot().offlineMode || networkMonitor?.isOnline?.value == false
-                if (isOffline) {
+                if (isEffectivelyOffline()) {
                     if (!loadedOffline && cached == null) {
                         _uiState.update {
                             it.copy(

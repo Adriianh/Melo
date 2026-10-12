@@ -1226,13 +1226,13 @@
         <error line="67" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/AlbumDetailScreen.kt">
-        <error line="72" column="5" source="standard:function-naming" />
+        <error line="74" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/ArtistDetailScreen.kt">
-        <error line="61" column="5" source="standard:function-naming" />
+        <error line="64" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/PlaylistDetailScreen.kt">
-        <error line="72" column="5" source="standard:function-naming" />
+        <error line="74" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/components/ArtistHeaderCard.kt">
         <error line="45" column="5" source="standard:function-naming" />

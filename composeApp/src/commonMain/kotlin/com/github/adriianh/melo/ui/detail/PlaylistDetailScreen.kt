@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
@@ -46,6 +47,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
@@ -271,18 +273,27 @@ fun PlaylistDetailScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else if (uiState.error != null && songs.isEmpty() && initialTitle.isBlank()) {
-            MeloErrorState(
-                error = uiState.error,
-                onRetry = {
-                    viewModel.loadPlaylist(
-                        playlistId,
-                        initialTitle,
-                        initialArtwork,
-                        initialAuthor,
-                    )
-                },
-                modifier = Modifier.padding(paddingValues),
-            )
+            if (uiState.isOffline) {
+                MeloEmptyState(
+                    icon = Icons.Default.CloudOff,
+                    title = "Sin contenido disponible",
+                    message = "No hay canciones descargadas para esta playlist.",
+                    modifier = Modifier.padding(paddingValues),
+                )
+            } else {
+                MeloErrorState(
+                    error = uiState.error,
+                    onRetry = {
+                        viewModel.loadPlaylist(
+                            playlistId,
+                            initialTitle,
+                            initialArtwork,
+                            initialAuthor,
+                        )
+                    },
+                    modifier = Modifier.padding(paddingValues),
+                )
+            }
         } else {
             Box(
                 modifier =
@@ -565,6 +576,15 @@ fun PlaylistDetailScreen(
                                         .height(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(MeloColors.surface2.copy(alpha = 0.5f)),
+                            )
+                        }
+                    } else if (uiState.isOffline && songs.isEmpty()) {
+                        item {
+                            MeloEmptyState(
+                                icon = Icons.Default.CloudOff,
+                                title = "Sin contenido disponible",
+                                message = "No hay canciones descargadas para esta playlist.",
+                                modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
                     }

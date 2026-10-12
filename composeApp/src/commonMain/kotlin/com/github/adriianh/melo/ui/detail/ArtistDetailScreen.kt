@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -39,6 +41,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -168,11 +171,20 @@ fun ArtistDetailScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else if (uiState.error != null && !hasArtistContent && initialName.isBlank()) {
-            MeloErrorState(
-                error = uiState.error,
-                onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
-                modifier = Modifier.padding(paddingValues),
-            )
+            if (uiState.isOffline) {
+                MeloEmptyState(
+                    icon = Icons.Default.CloudOff,
+                    title = "Sin contenido disponible",
+                    message = "No hay canciones descargadas para este artista.",
+                    modifier = Modifier.padding(paddingValues),
+                )
+            } else {
+                MeloErrorState(
+                    error = uiState.error,
+                    onRetry = { viewModel.loadArtist(artistId, initialName, initialArtwork) },
+                    modifier = Modifier.padding(paddingValues),
+                )
+            }
         } else {
             Box(
                 modifier =
@@ -213,12 +225,18 @@ fun ArtistDetailScreen(
                             onPlayClick = { queueViewModel.playTracks(allPlayableTracks, 0) },
                             onShuffleClick = { queueViewModel.playShuffled(allPlayableTracks) },
                             onRadioClick = {
-                                queueViewModel.startArtistRadio(
-                                    artistId = artistId,
-                                    fallbackTracks = allPlayableTracks,
-                                )
+                                if (!uiState.isOffline) {
+                                    queueViewModel.startArtistRadio(
+                                        artistId = artistId,
+                                        fallbackTracks = allPlayableTracks,
+                                    )
+                                }
                             },
-                            onToggleFollow = viewModel::toggleSave,
+                            onToggleFollow = {
+                                if (!uiState.isOffline) {
+                                    viewModel.toggleSave()
+                                }
+                            },
                             accentColor = accentColor,
                             hasTracks = allPlayableTracks.isNotEmpty(),
                         )
@@ -232,6 +250,17 @@ fun ArtistDetailScreen(
                                 description = bio,
                                 accentColor = accentColor,
                                 modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
+                    }
+
+                    if (uiState.isOffline && !hasArtistContent && !uiState.isLoading) {
+                        item {
+                            MeloEmptyState(
+                                icon = Icons.Default.CloudOff,
+                                title = "Sin contenido disponible",
+                                message = "No hay contenido descargado para este artista.",
+                                modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
                     }
@@ -369,32 +398,48 @@ fun ArtistDetailScreen(
                                 horizontalPadding = 16.dp,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Album ->
+                                    is SearchResult.Album -> {
+                                        val isAvailable = !uiState.isOffline || item.id in libraryState.offlineAlbumIds
                                         AlbumCard(
                                             title = item.title,
                                             subtitle = item.author,
                                             artworkUrl = item.artworkUrl,
                                             cardWidth = cardWidth,
                                             onClick = { onAlbumClick(item.id) },
+                                            modifier = Modifier.alpha(if (isAvailable) 1f else 0.45f),
                                         )
+                                    }
 
-                                    is SearchResult.Artist ->
+                                    is SearchResult.Artist -> {
+                                        val isAvailable =
+                                            !uiState.isOffline || item.id in libraryState.offlineArtistIds
                                         ArtistCircle(
                                             name = item.name,
                                             artworkUrl = item.artworkUrl,
-                                            onClick = { onArtistClick(item.id) },
+                                            onClick = { if (isAvailable) onArtistClick(item.id) },
                                             size = cardWidth,
+                                            modifier = Modifier.alpha(if (isAvailable) 1f else 0.45f),
                                         )
+                                    }
 
-                                    is SearchResult.Song ->
+                                    is SearchResult.Song -> {
+                                        val isDownloaded = isTrackDownloaded(item.track)
+                                        val isPlayable = !uiState.isOffline || isDownloaded
                                         TrackRow(
                                             track = item.track,
-                                            onClick = { queueViewModel.playTrack(item.track) },
+                                            onClick = {
+                                                if (isPlayable) {
+                                                    queueViewModel.playTrack(item.track)
+                                                }
+                                            },
                                             onMoreClick = { interaction.openContextMenu(item.track) },
-                                            modifier = Modifier.width(280.dp),
+                                            modifier = Modifier.width(280.dp).alpha(if (isPlayable) 1f else 0.45f),
                                         )
+                                    }
 
-                                    is SearchResult.Playlist ->
+                                    is SearchResult.Playlist -> {
+                                        val isAvailable =
+                                            !uiState.isOffline || item.id in libraryState.offlineRemotePlaylistIds
                                         AlbumCard(
                                             title = item.title,
                                             subtitle = item.author,
@@ -408,7 +453,9 @@ fun ArtistDetailScreen(
                                                     item.author,
                                                 )
                                             },
+                                            modifier = Modifier.alpha(if (isAvailable) 1f else 0.45f),
                                         )
+                                    }
                                 }
                             }
                         }

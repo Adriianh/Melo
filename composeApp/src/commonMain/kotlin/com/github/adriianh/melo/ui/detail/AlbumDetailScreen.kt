@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,6 +51,7 @@ import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -247,18 +249,27 @@ fun AlbumDetailScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else if (uiState.error != null && songs.isEmpty() && initialTitle.isBlank()) {
-            MeloErrorState(
-                error = uiState.error,
-                onRetry = {
-                    viewModel.loadAlbum(
-                        albumId,
-                        initialTitle,
-                        initialArtwork,
-                        initialAuthor,
-                    )
-                },
-                modifier = Modifier.padding(paddingValues),
-            )
+            if (uiState.isOffline) {
+                MeloEmptyState(
+                    icon = Icons.Default.CloudOff,
+                    title = "Sin contenido disponible",
+                    message = "No hay canciones descargadas para este álbum.",
+                    modifier = Modifier.padding(paddingValues),
+                )
+            } else {
+                MeloErrorState(
+                    error = uiState.error,
+                    onRetry = {
+                        viewModel.loadAlbum(
+                            albumId,
+                            initialTitle,
+                            initialArtwork,
+                            initialAuthor,
+                        )
+                    },
+                    modifier = Modifier.padding(paddingValues),
+                )
+            }
         } else {
             Box(
                 modifier =
@@ -434,6 +445,15 @@ fun AlbumDetailScreen(
                                         .height(56.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(MeloColors.surface2.copy(alpha = 0.5f)),
+                            )
+                        }
+                    } else if (uiState.isOffline && songs.isEmpty()) {
+                        item {
+                            MeloEmptyState(
+                                icon = Icons.Default.CloudOff,
+                                title = "Sin contenido disponible",
+                                message = "No hay canciones descargadas para este álbum.",
+                                modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
                     }
