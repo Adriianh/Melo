@@ -30,6 +30,9 @@ import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.util.extractOfflineAlbums
+import com.github.adriianh.core.util.extractOfflineArtists
+import com.github.adriianh.core.util.extractOfflineSongs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -368,11 +371,7 @@ class SearchViewModel(
             emptyList()
         }
         val allLocalTracks = (downloaded + local).distinctBy { it.id }
-        val matchingSongs = allLocalTracks.filter {
-            it.title.contains(query, ignoreCase = true) ||
-                it.artist.contains(query, ignoreCase = true) ||
-                it.album.contains(query, ignoreCase = true)
-        }
+        val matchingSongs = extractOfflineSongs(allLocalTracks, query)
         val matchingAlbums = extractOfflineAlbums(allLocalTracks, query)
         val matchingArtists = extractOfflineArtists(allLocalTracks, query)
         val summarySections = buildOfflineSummarySections(matchingSongs, matchingAlbums, matchingArtists)
@@ -632,34 +631,6 @@ class SearchViewModel(
         loadRecentHistory(isOffline = isEffectivelyOffline())
     }
 }
-
-private fun extractOfflineAlbums(tracks: List<Track>, query: String): List<SearchResult.Album> =
-    tracks
-        .filter { it.album.isNotBlank() && it.album.contains(query, ignoreCase = true) }
-        .groupBy { it.album }
-        .map { (albumTitle, albumTracks) ->
-            SearchResult.Album(
-                id = albumTitle,
-                title = albumTitle,
-                author = albumTracks.first().artist,
-                year = null,
-                artworkUrl = albumTracks.first().artworkUrl,
-                songs = albumTracks,
-            )
-        }
-
-private fun extractOfflineArtists(tracks: List<Track>, query: String): List<SearchResult.Artist> =
-    tracks
-        .filter { it.artist.isNotBlank() && it.artist.contains(query, ignoreCase = true) }
-        .groupBy { it.artist }
-        .map { (artistName, artistTracks) ->
-            SearchResult.Artist(
-                id = artistName,
-                name = artistName,
-                artworkUrl = artistTracks.first().artworkUrl,
-                topSongs = artistTracks,
-            )
-        }
 
 private fun buildOfflineSummarySections(
     songs: List<Track>,

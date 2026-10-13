@@ -158,31 +158,7 @@ fun resolveOfflineArtist(
     val artistName = effectiveName.ifBlank { matchingTracks.first().artist }
     val finalArtwork = effectiveArtwork ?: matchingTracks.firstOrNull { it.artworkUrl != null }?.artworkUrl
 
-    val albumGroups =
-        matchingTracks
-            .filter { it.album.isNotBlank() && it.album != "Unknown" }
-            .groupBy { it.album }
-
-    val sections = mutableListOf<SearchResult.ArtistSection>()
-    if (albumGroups.isNotEmpty()) {
-        val albumCards =
-            albumGroups.map { (albumTitle, tracks) ->
-                SearchResult.Album(
-                    id = albumTitle,
-                    title = albumTitle,
-                    author = artistName,
-                    year = null,
-                    artworkUrl = tracks.firstOrNull { it.artworkUrl != null }?.artworkUrl,
-                    songs = tracks,
-                )
-            }
-        sections.add(
-            SearchResult.ArtistSection(
-                title = "Álbumes en tus descargas",
-                items = albumCards,
-            ),
-        )
-    }
+    val sections = buildArtistSectionsFromTracks(artistName, matchingTracks)
 
     return initial.copy(
         name = artistName,
@@ -268,15 +244,11 @@ fun isEntityAvailableOffline(
         }
 
         is SearchResult.Playlist -> {
-            if (entity.id.startsWith("local:")) {
-                true
-            } else {
-                (entityCache?.getSync(entity.id) as? SearchResult.Playlist)?.songs?.isNotEmpty() == true ||
-                    entity.songs?.any { song ->
-                        val (keys, sigs) = buildCompletedTrackLookups(offlineTracks)
-                        isSongCompleted(song, keys, sigs)
-                    } == true
-            }
+            entity.id.startsWith("local:") || (entityCache?.getSync(entity.id) as? SearchResult.Playlist)?.songs?.isNotEmpty() == true ||
+                entity.songs?.any { song ->
+                    val (keys, sigs) = buildCompletedTrackLookups(offlineTracks)
+                    isSongCompleted(song, keys, sigs)
+                } == true
         }
 
         is SearchResult.Song -> {
