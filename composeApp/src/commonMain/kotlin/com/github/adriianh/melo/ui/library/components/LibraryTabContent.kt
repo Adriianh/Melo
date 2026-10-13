@@ -32,7 +32,7 @@ fun LibraryTabContent(
     interaction: TrackInteractionState,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit,
-    onArtistClick: (String) -> Unit,
+    onArtistClick: (id: String, name: String, artwork: String?) -> Unit,
     onToggleSelectTrack: (Track) -> Unit,
     onTrackLongClick: (Track) -> Unit,
     onClearSelection: () -> Unit,
@@ -41,67 +41,97 @@ fun LibraryTabContent(
     queueViewModel: QueueViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val likedTrackIds = remember(state.likedSongs) {
-        state.likedSongs.map { it.id }.toSet()
+    val likedTrackIds =
+        remember(state.likedSongs) {
+            state.likedSongs.map { it.id }.toSet()
+        }
+    val isTrackDownloaded: (Track) -> Boolean = { track ->
+        track.id in state.downloadedTrackIds ||
+            track.id.removePrefix("piped:") in state.downloadedTrackIds ||
+            track.id in state.localTrackIds
     }
-    val visibleSongs = when (tab) {
-        LibraryTab.LIKED -> filters.likedSongs
-        LibraryTab.HISTORY -> filters.history.map { it.track }
-        LibraryTab.LOCAL -> filters.localTracks
-        LibraryTab.DOWNLOADS -> filters.downloadedTracks.map { it.track }
-        else -> emptyList()
+    val isTrackDownloading: (Track) -> Boolean = { track ->
+        track.id in state.activeDownloads || track.id.removePrefix("piped:") in state.activeDownloads
     }
+    val trackDownloadProgress: (Track) -> Float = { track ->
+        state.activeDownloads[track.id] ?: state.activeDownloads[track.id.removePrefix("piped:")] ?: 0f
+    }
+    val visibleSongs =
+        when (tab) {
+            LibraryTab.LIKED -> filters.likedSongs
+            LibraryTab.HISTORY -> filters.history.map { it.track }
+            LibraryTab.LOCAL -> filters.localTracks
+            LibraryTab.DOWNLOADS -> filters.downloadedTracks.map { it.track }
+            else -> emptyList()
+        }
 
     Box(modifier = modifier.fillMaxSize()) {
         Crossfade(
             targetState = tab,
             label = "library_tab_crossfade",
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) { currentTab ->
             when (currentTab) {
-                LibraryTab.PLAYLISTS -> PlaylistsTabContent(
-                    customPlaylists = filters.customPlaylists,
-                    remotePlaylists = filters.remotePlaylists,
-                    userArtists = (state.artists.map { it.name } + state.likedSongs.map { it.artist }).distinct(),
-                    onCreatePlaylist = viewModel::createPlaylist,
-                    onRenamePlaylist = viewModel::renamePlaylist,
-                    onDeletePlaylist = viewModel::deletePlaylist,
-                    onPlaylistClick = onPlaylistClick,
-                    viewMode = state.viewMode
-                )
+                LibraryTab.PLAYLISTS ->
+                    PlaylistsTabContent(
+                        customPlaylists = filters.customPlaylists,
+                        remotePlaylists = filters.remotePlaylists,
+                        userArtists = (state.artists.map { it.name } + state.likedSongs.map { it.artist }).distinct(),
+                        onCreatePlaylist = viewModel::createPlaylist,
+                        onRenamePlaylist = viewModel::renamePlaylist,
+                        onDeletePlaylist = viewModel::deletePlaylist,
+                        onPlaylistClick = onPlaylistClick,
+                        viewMode = state.viewMode,
+                        isOffline = state.isOffline,
+                        offlineCustomPlaylistIds = state.offlineCustomPlaylistIds,
+                        offlineRemotePlaylistIds = state.offlineRemotePlaylistIds,
+                    )
 
-                LibraryTab.LIKED -> LikedSongsTabContent(
-                    songs = filters.likedSongs,
-                    onPlayTrack = { track ->
-                        viewModel.playTrack(track, filters.likedSongs)
-                    },
-                    onMoreClick = { interaction.openContextMenu(it) },
-                    onSwipeLeft = {
-                        interaction.showAddedToQueueSnackbar(it, activeAccent)
-                    },
-                    onSwipeRight = { track ->
-                        viewModel.toggleLike(track.id, false)
-                        interaction.snackbar.show(
-                            msg = "Eliminada de tus Me Gusta",
-                            vector = Icons.Default.HeartBroken,
-                            action = "Deshacer",
-                            actionColor = activeAccent,
-                            onAction = {
-                                viewModel.toggleLike(track.id, true)
-                            }
-                        )
-                    },
-                    isSelectionMode = isSelectionMode,
-                    selectedTrackIds = selectedTrackIds,
-                    onToggleSelectTrack = onToggleSelectTrack,
-                    onTrackLongClick = onTrackLongClick
-                )
+                LibraryTab.LIKED ->
+                    LikedSongsTabContent(
+                        songs = filters.likedSongs,
+                        onPlayTrack = { track ->
+                            val queue =
+                                if (state.isOffline) {
+                                    filters.likedSongs.filter(isTrackDownloaded)
+                                } else {
+                                    filters.likedSongs
+                                }
+                            viewModel.playTrack(track, queue)
+                        },
+                        onMoreClick = { interaction.openContextMenu(it) },
+                        onSwipeLeft = {
+                            interaction.showAddedToQueueSnackbar(it, activeAccent)
+                        },
+                        onSwipeRight = { track ->
+                            viewModel.toggleLike(track.id, false)
+                            interaction.snackbar.show(
+                                msg = "Eliminada de tus Me Gusta",
+                                vector = Icons.Default.HeartBroken,
+                                action = "Deshacer",
+                                actionColor = activeAccent,
+                                onAction = {
+                                    viewModel.toggleLike(track.id, true)
+                                },
+                            )
+                        },
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = onToggleSelectTrack,
+                        onTrackLongClick = onTrackLongClick,
+                        isOffline = state.isOffline,
+                        isDownloaded = isTrackDownloaded,
+                        isDownloading = isTrackDownloading,
+                        downloadProgress = trackDownloadProgress,
+                    )
 
                 LibraryTab.DOWNLOADS -> {
-                    val manualDownloads = filters.downloadedTracks
-                        .filter { it.downloadType == DownloadType.MANUAL }
-                    val cachedDownloads = filters.downloadedTracks
-                        .filter { it.downloadType != DownloadType.MANUAL }
+                    val manualDownloads =
+                        filters.downloadedTracks
+                            .filter { it.downloadType == DownloadType.MANUAL }
+                    val cachedDownloads =
+                        filters.downloadedTracks
+                            .filter { it.downloadType != DownloadType.MANUAL }
                     val prioritizedOfflineQueue =
                         manualDownloads.map { it.track } + cachedDownloads.map { it.track }
 
@@ -115,73 +145,85 @@ fun LibraryTabContent(
                             if (prioritizedOfflineQueue.isNotEmpty()) {
                                 viewModel.playTrack(
                                     prioritizedOfflineQueue.first(),
-                                    prioritizedOfflineQueue
+                                    prioritizedOfflineQueue,
                                 )
                             }
                         },
                         onDeleteDownload = viewModel::deleteDownloadedTrack,
                         onMoreClick = { interaction.openContextMenu(it) },
                         onAlbumClick = onAlbumClick,
-                        onArtistClick = onArtistClick
+                        onArtistClick = onArtistClick,
                     )
                 }
 
-                LibraryTab.LOCAL -> LocalTabContent(
-                    localTracks = filters.localTracks,
-                    localLibraryPaths = state.localLibraryPaths,
-                    isScanning = state.isScanningLocal,
-                    onRescan = viewModel::scanLocalTracks,
-                    onAddFolder = viewModel::addLocalLibraryPath,
-                    onRemoveFolder = viewModel::removeLocalLibraryPath,
-                    onPlayTrack = { track ->
-                        viewModel.playTrack(track, filters.localTracks)
-                    },
-                    onPlayAll = {
-                        if (filters.localTracks.isNotEmpty()) {
-                            viewModel.playTrack(
-                                filters.localTracks.first(),
-                                filters.localTracks
+                LibraryTab.LOCAL ->
+                    LocalTabContent(
+                        localTracks = filters.localTracks,
+                        localLibraryPaths = state.localLibraryPaths,
+                        isScanning = state.isScanningLocal,
+                        onRescan = viewModel::scanLocalTracks,
+                        onAddFolder = viewModel::addLocalLibraryPath,
+                        onRemoveFolder = viewModel::removeLocalLibraryPath,
+                        onPlayTrack = { track ->
+                            viewModel.playTrack(track, filters.localTracks)
+                        },
+                        onPlayAll = {
+                            if (filters.localTracks.isNotEmpty()) {
+                                viewModel.playTrack(
+                                    filters.localTracks.first(),
+                                    filters.localTracks,
+                                )
+                            }
+                        },
+                        onMoreClick = { interaction.openContextMenu(it) },
+                    )
+
+                LibraryTab.ARTISTS ->
+                    ArtistsTabContent(
+                        artists = filters.artists,
+                        onArtistClick = onArtistClick,
+                        viewMode = state.viewMode,
+                        isOffline = state.isOffline,
+                        offlineArtistIds = state.offlineArtistIds,
+                    )
+
+                LibraryTab.ALBUMS ->
+                    AlbumsTabContent(
+                        albums = filters.albums,
+                        onAlbumClick = { id -> onAlbumClick(id, "", null, "") },
+                        viewMode = state.viewMode,
+                        isOffline = state.isOffline,
+                        offlineAlbumIds = state.offlineAlbumIds,
+                    )
+
+                LibraryTab.HISTORY ->
+                    HistoryTabContent(
+                        history = filters.history,
+                        isLiked = { track -> track.id in likedTrackIds },
+                        onPlayTrack = { entry ->
+                            viewModel.playTrack(entry.track)
+                        },
+                        onMoreClick = { interaction.openContextMenu(it) },
+                        onSwipeLeft = {
+                            interaction.showAddedToQueueSnackbar(it, activeAccent)
+                        },
+                        onSwipeRight = { track ->
+                            val trackIsLiked = track.id in likedTrackIds
+                            interaction.showToggledLikeSnackbar(
+                                track,
+                                trackIsLiked,
+                                activeAccent,
                             )
-                        }
-                    },
-                    onMoreClick = { interaction.openContextMenu(it) }
-                )
-
-                LibraryTab.ARTISTS -> ArtistsTabContent(
-                    artists = filters.artists,
-                    onArtistClick = onArtistClick,
-                    viewMode = state.viewMode
-                )
-
-                LibraryTab.ALBUMS -> AlbumsTabContent(
-                    albums = filters.albums,
-                    onAlbumClick = { id -> onAlbumClick(id, "", null, "") },
-                    viewMode = state.viewMode
-                )
-
-                LibraryTab.HISTORY -> HistoryTabContent(
-                    history = filters.history,
-                    isLiked = { track -> track.id in likedTrackIds },
-                    onPlayTrack = { entry ->
-                        viewModel.playTrack(entry.track)
-                    },
-                    onMoreClick = { interaction.openContextMenu(it) },
-                    onSwipeLeft = {
-                        interaction.showAddedToQueueSnackbar(it, activeAccent)
-                    },
-                    onSwipeRight = { track ->
-                        val trackIsLiked = track.id in likedTrackIds
-                        interaction.showToggledLikeSnackbar(
-                            track,
-                            trackIsLiked,
-                            activeAccent
-                        )
-                    },
-                    isSelectionMode = isSelectionMode,
-                    selectedTrackIds = selectedTrackIds,
-                    onToggleSelectTrack = onToggleSelectTrack,
-                    onTrackLongClick = onTrackLongClick
-                )
+                        },
+                        isSelectionMode = isSelectionMode,
+                        selectedTrackIds = selectedTrackIds,
+                        onToggleSelectTrack = onToggleSelectTrack,
+                        onTrackLongClick = onTrackLongClick,
+                        isOffline = state.isOffline,
+                        isDownloaded = isTrackDownloaded,
+                        isDownloading = isTrackDownloading,
+                        downloadProgress = trackDownloadProgress,
+                    )
             }
         }
 
@@ -200,7 +242,7 @@ fun LibraryTabContent(
                 queueViewModel.addAllToQueue(selTracks)
                 interaction.snackbar.show(
                     msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
-                    actionColor = activeAccent
+                    actionColor = activeAccent,
                 )
             },
             onDownload = {
@@ -208,11 +250,11 @@ fun LibraryTabContent(
                 selTracks.forEach { viewModel.downloadTrack(it) }
                 interaction.snackbar.show(
                     msg = "Descargando ${selTracks.size} canciones...",
-                    actionColor = activeAccent
+                    actionColor = activeAccent,
                 )
             },
             accentColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
 }

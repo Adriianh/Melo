@@ -3,17 +3,26 @@ package com.github.adriianh.melo.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.PlaybackManager
+import com.github.adriianh.core.domain.usecase.offline.GetOfflineSuggestionsUseCase
 import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRelatedTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,6 +33,9 @@ class QueueViewModel(
     private val getArtistRadioUseCase: GetArtistRadioUseCase? = null,
     private val getRelatedTracksUseCase: GetRelatedTracksUseCase? = null,
     private val getRecentTracksUseCase: GetRecentTracksUseCase? = null,
+    private val getOfflineSuggestionsUseCase: GetOfflineSuggestionsUseCase? = null,
+    private val getSettingsUseCase: GetSettingsUseCase? = null,
+    private val networkMonitor: NetworkMonitor? = null,
 ) : ViewModel() {
     val queueState = manager.queueState
 
@@ -33,6 +45,8 @@ class QueueViewModel(
     private val _isLoadingSuggestions = MutableStateFlow(false)
     val isLoadingSuggestions: StateFlow<Boolean> = _isLoadingSuggestions.asStateFlow()
 
+    private var loadSuggestionsJob: Job? = null
+
     init {
         viewModelScope.launch {
             var lastTrackId: String? = null
@@ -41,45 +55,107 @@ class QueueViewModel(
                 if (track != null) {
                     if (track.id != lastTrackId) {
                         lastTrackId = track.id
-                        _suggestions.value = emptyList()
-                        loadSuggestionsForTrack(track)
+                        reloadSuggestions(track)
                     }
                 } else {
                     lastTrackId = null
+                    loadSuggestionsJob?.cancel()
                     _suggestions.value = emptyList()
+                    _isLoadingSuggestions.value = false
                 }
+            }
+        }
+
+        if (getSettingsUseCase != null || networkMonitor != null) {
+            viewModelScope.launch {
+                val offlineSettingsFlow =
+                    getSettingsUseCase?.invoke()?.map { it.offlineMode } ?: MutableStateFlow(false)
+                val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
+                combine(offlineSettingsFlow, isOnlineFlow) { offlineSetting, isOnline ->
+                    offlineSetting || !isOnline
+                }.distinctUntilChanged()
+                    .drop(1)
+                    .collectLatest { _ ->
+                        val track = queueState.value.currentTrack
+                        if (track != null) {
+                            reloadSuggestions(track)
+                        }
+                    }
             }
         }
     }
 
+    private fun isEffectivelyOffline(): Boolean {
+        val offlineSetting = getSettingsUseCase?.invoke()?.value?.offlineMode ?: false
+        val networkOffline = networkMonitor?.isOnline?.value == false
+        return offlineSetting || networkOffline
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> safeCall(block: suspend () -> T): T? =
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        }
+
+    private fun reloadSuggestions(track: Track) {
+        loadSuggestionsJob?.cancel()
+        loadSuggestionsJob =
+            viewModelScope.launch {
+                _suggestions.value = emptyList()
+                loadSuggestionsForTrack(track)
+            }
+    }
+
     private suspend fun loadSuggestionsForTrack(track: Track) {
         _isLoadingSuggestions.value = true
+        val queueIds =
+            queueState.value.tracks
+                .map { it.id }
+                .toSet()
         try {
-            val videoId = track.sourceId ?: track.id.removePrefix("piped:")
-            val queueIds = queueState.value.tracks.map { it.id }.toSet()
-            val recentIds: Set<String> = try {
-                getRecentTracksUseCase?.invoke(30)?.firstOrNull()?.map { it.track.id }?.toSet()
-                    .orEmpty()
-            } catch (_: Exception) {
-                emptySet()
+            if (isEffectivelyOffline()) {
+                _suggestions.value =
+                    safeCall { getOfflineSuggestionsUseCase?.invoke(track, queueIds, 12) }.orEmpty()
+                return
             }
 
-            val related = getRelatedTracksUseCase?.invoke(videoId).orEmpty()
-            val radio = getRadioUseCase?.invoke(videoId).orEmpty()
-            val search = if (related.isEmpty() && radio.isEmpty() && searchTracksUseCase != null) {
-                searchTracksUseCase.invoke(track.artist)
-            } else emptyList()
+            val videoId = track.sourceId ?: track.id.removePrefix("piped:")
+            val recentIds: Set<String> =
+                safeCall {
+                    getRecentTracksUseCase
+                        ?.invoke(30)
+                        ?.firstOrNull()
+                        ?.map { it.track.id }
+                        ?.toSet()
+                }.orEmpty()
 
-            val combined = (related + radio + search)
-                .distinctBy { it.id }
-                .filter { it.id != track.id && it.id !in queueIds }
+            val related = safeCall { getRelatedTracksUseCase?.invoke(videoId) }.orEmpty()
+            val radio = safeCall { getRadioUseCase?.invoke(videoId) }.orEmpty()
+            val search =
+                if (related.isEmpty() && radio.isEmpty() && searchTracksUseCase != null) {
+                    safeCall { searchTracksUseCase.invoke(track.artist) }.orEmpty()
+                } else {
+                    emptyList()
+                }
 
-            val fresh = combined.filter { it.id !in recentIds }
-            val finalSuggestions = if (fresh.size >= 5) fresh else combined
+            val combined =
+                (related + radio + search)
+                    .distinctBy { it.id }
+                    .filter { it.id != track.id && it.id !in queueIds }
+
+            val finalSuggestions =
+                if (combined.isEmpty() && getOfflineSuggestionsUseCase != null) {
+                    safeCall { getOfflineSuggestionsUseCase(track, queueIds, 12) }.orEmpty()
+                } else {
+                    val fresh = combined.filter { it.id !in recentIds }
+                    if (fresh.size >= 5) fresh else combined
+                }
 
             _suggestions.value = finalSuggestions.take(12)
-        } catch (_: Exception) {
-            _suggestions.value = emptyList()
         } finally {
             _isLoadingSuggestions.value = false
         }
@@ -87,15 +163,15 @@ class QueueViewModel(
 
     fun refreshSuggestions() {
         val track = queueState.value.currentTrack ?: return
-        viewModelScope.launch {
-            _suggestions.value = emptyList()
-            loadSuggestionsForTrack(track)
-        }
+        reloadSuggestions(track)
     }
 
     fun playTrack(track: Track) = manager.playTrack(track)
 
-    fun playTracks(tracks: List<Track>, startIndex: Int = 0) {
+    fun playTracks(
+        tracks: List<Track>,
+        startIndex: Int = 0,
+    ) {
         if (tracks.isEmpty()) return
         val validIndex = startIndex.coerceIn(0, tracks.lastIndex)
         manager.setQueue(tracks, validIndex)
@@ -110,32 +186,54 @@ class QueueViewModel(
     fun startRadio(track: Track) {
         viewModelScope.launch {
             manager.playTrack(track)
-            val videoId = track.sourceId ?: track.id.removePrefix("piped:")
-            val radioTracks =
-                getRadioUseCase?.invoke(videoId)?.filter { it.id != track.id }.orEmpty()
-            val relatedTracks =
-                getRelatedTracksUseCase?.invoke(videoId)?.filter { it.id != track.id }.orEmpty()
-
-            val blended = if (relatedTracks.isNotEmpty()) {
-                (radioTracks.take(15) + relatedTracks.take(15))
-                    .distinctBy { it.id }
-                    .shuffled()
-            } else {
-                radioTracks
+            if (isEffectivelyOffline()) {
+                val offlineTracks =
+                    safeCall { getOfflineSuggestionsUseCase?.invoke(track, setOf(track.id), 25) }.orEmpty()
+                if (offlineTracks.isNotEmpty()) {
+                    manager.setQueue(listOf(track) + offlineTracks, 0)
+                }
+                return@launch
             }
 
-            if (blended.isNotEmpty()) {
-                manager.setQueue(listOf(track) + blended, 0)
+            val videoId = track.sourceId ?: track.id.removePrefix("piped:")
+            val radioTracks =
+                safeCall { getRadioUseCase?.invoke(videoId)?.filter { it.id != track.id } }.orEmpty()
+            val relatedTracks =
+                safeCall { getRelatedTracksUseCase?.invoke(videoId)?.filter { it.id != track.id } }.orEmpty()
+
+            val blended =
+                if (relatedTracks.isNotEmpty()) {
+                    (radioTracks.take(15) + relatedTracks.take(15))
+                        .distinctBy { it.id }
+                        .shuffled()
+                } else {
+                    radioTracks
+                }
+
+            val finalTracks =
+                if (blended.isEmpty() && getOfflineSuggestionsUseCase != null) {
+                    safeCall { getOfflineSuggestionsUseCase.invoke(track, setOf(track.id), 25) }.orEmpty()
+                } else {
+                    blended
+                }
+
+            if (finalTracks.isNotEmpty()) {
+                manager.setQueue(listOf(track) + finalTracks, 0)
             }
         }
     }
 
     fun startArtistRadio(
         artistId: String,
-        fallbackTracks: List<Track> = emptyList()
+        fallbackTracks: List<Track> = emptyList(),
     ) {
         viewModelScope.launch {
-            val radioTracks = getArtistRadioUseCase?.invoke(artistId).orEmpty()
+            val radioTracks =
+                if (isEffectivelyOffline()) {
+                    emptyList()
+                } else {
+                    safeCall { getArtistRadioUseCase?.invoke(artistId) }.orEmpty()
+                }
             val queue = radioTracks.ifEmpty { fallbackTracks }
             if (queue.isNotEmpty()) {
                 manager.setQueue(queue, 0)
@@ -160,7 +258,10 @@ class QueueViewModel(
 
     fun playTrackInQueue(track: Track) = manager.playTrackInQueue(track)
 
-    fun insertTrackAt(track: Track, index: Int) {
+    fun insertTrackAt(
+        track: Track,
+        index: Int,
+    ) {
         manager.insertToQueue(track, index)
     }
 
@@ -181,7 +282,10 @@ class QueueViewModel(
         return idx
     }
 
-    fun moveTrack(fromIndex: Int, toIndex: Int) {
+    fun moveTrack(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
         manager.moveQueueItem(fromIndex, toIndex)
     }
 

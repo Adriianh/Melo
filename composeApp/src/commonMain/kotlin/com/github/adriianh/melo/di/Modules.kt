@@ -91,6 +91,7 @@ val dataModule =
                 getStreamUseCase = get(),
                 getSettingsUseCase = get(),
                 offlineRepository = get(),
+                lyricsRepository = getOrNull(),
                 configDirPath = get<String>(named("configDirPath")),
                 dispatcher = MeloDispatchers.IO,
             )
@@ -114,6 +115,7 @@ val dataModule =
                 streamCacheRepository = getOrNull(),
                 networkMonitor = getOrNull(),
                 ioDispatcher = MeloDispatchers.IO,
+                getOfflineSuggestionsUseCase = getOrNull(),
             )
         }
 
@@ -140,7 +142,19 @@ val viewModelModule =
                 getSettingsUseCase = getOrNull(),
             )
         }
-        viewModelOf(::QueueViewModel)
+        viewModel {
+            QueueViewModel(
+                manager = get(),
+                searchTracksUseCase = getOrNull(),
+                getRadioUseCase = getOrNull(),
+                getArtistRadioUseCase = getOrNull(),
+                getRelatedTracksUseCase = getOrNull(),
+                getRecentTracksUseCase = getOrNull(),
+                getOfflineSuggestionsUseCase = getOrNull(),
+                getSettingsUseCase = getOrNull(),
+                networkMonitor = getOrNull(),
+            )
+        }
         viewModel {
             HomeViewModel(
                 getHomeUseCase = get(),
@@ -185,6 +199,9 @@ val viewModelModule =
                 playbackManager = get(),
                 libraryCache = get(),
                 observeLibraryUpdatesUseCase = getOrNull(),
+                networkMonitor = getOrNull(),
+                entityCache = getOrNull(),
+                getPlaylistTracksUseCase = getOrNull(),
             )
         }
         viewModel {
@@ -210,6 +227,7 @@ val viewModelModule =
                 getSettingsUseCase = get(),
                 networkMonitor = getOrNull(),
                 entityCache = getOrNull(),
+                libraryCache = getOrNull(),
                 getPlaylistTracksUseCase = getOrNull(),
                 removeTrackFromPlaylistUseCase = getOrNull(),
                 deletePlaylistUseCase = getOrNull(),

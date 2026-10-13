@@ -129,25 +129,39 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                _state.update { it.copy(error = error.message ?: "Playback error") }
+                _state.update {
+                    it.copy(
+                        isPlaying = false,
+                        isBuffering = false,
+                        error = error.message ?: "Playback error",
+                    )
+                }
             }
         })
     }
 
-    override fun load(url: String, track: Track, initialPositionMs: Long) {
-        val metadata = MediaMetadata.Builder()
-            .setTitle(track.title)
-            .setArtist(track.artist)
-            .setAlbumTitle(track.album)
-            .setAlbumArtist(track.artist)
-            .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
-            .build()
+    override fun load(
+        url: String,
+        track: Track,
+        initialPositionMs: Long,
+    ) {
+        val metadata =
+            MediaMetadata
+                .Builder()
+                .setTitle(track.title)
+                .setArtist(track.artist)
+                .setAlbumTitle(track.album)
+                .setAlbumArtist(track.artist)
+                .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
+                .build()
 
-        val mediaItem = MediaItem.Builder()
-            .setUri(url)
-            .setMediaId(track.id)
-            .setMediaMetadata(metadata)
-            .build()
+        val mediaItem =
+            MediaItem
+                .Builder()
+                .setUri(url)
+                .setMediaId(track.id)
+                .setMediaMetadata(metadata)
+                .build()
 
         runOnMain {
             if (initialPositionMs > 0) {
@@ -162,7 +176,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                     progressMs = initialPositionMs,
                     durationMs = track.durationMs,
                     isFinished = false,
-                    error = null
+                    error = null,
                 )
             }
             exoPlayer.play()
@@ -207,15 +221,21 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         }
     }
 
-    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+    override fun setIdleTrack(
+        track: Track,
+        initialPositionMs: Long,
+    ) {
         runOnMain {
-            val metadata = MediaMetadata.Builder()
-                .setTitle(track.title)
-                .setArtist(track.artist)
-                .setAlbumTitle(track.album)
-                .setAlbumArtist(track.artist)
-                .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
-                .build()
+            exoPlayer.stop()
+            val metadata =
+                MediaMetadata
+                    .Builder()
+                    .setTitle(track.title)
+                    .setArtist(track.artist)
+                    .setAlbumTitle(track.album)
+                    .setAlbumArtist(track.artist)
+                    .setArtworkUri(track.artworkUrl?.let { Uri.parse(it) })
+                    .build()
             exoPlayer.playlistMetadata = metadata
             _state.update {
                 it.copy(
@@ -225,7 +245,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                     isPlaying = false,
                     isBuffering = false,
                     isFinished = false,
-                    error = null
+                    error = null,
                 )
             }
         }
@@ -234,12 +254,13 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     private fun startProgressUpdate() {
         runOnMain {
             progressJob?.cancel()
-            progressJob = scope.launch {
-                while (true) {
-                    _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
-                    delay(200.milliseconds)
+            progressJob =
+                scope.launch {
+                    while (true) {
+                        _state.update { it.copy(progressMs = exoPlayer.currentPosition) }
+                        delay(200.milliseconds)
+                    }
                 }
-            }
         }
     }
 

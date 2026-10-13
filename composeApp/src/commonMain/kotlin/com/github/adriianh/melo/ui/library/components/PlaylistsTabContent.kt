@@ -28,7 +28,10 @@ fun PlaylistsTabContent(
     onDeletePlaylist: (Long) -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     modifier: Modifier = Modifier,
-    viewMode: LibraryViewMode = LibraryViewMode.GRID
+    viewMode: LibraryViewMode = LibraryViewMode.GRID,
+    isOffline: Boolean = false,
+    offlineCustomPlaylistIds: Set<Long> = emptySet(),
+    offlineRemotePlaylistIds: Set<String> = emptySet(),
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
     var playlistToRename by remember { mutableStateOf<Playlist?>(null) }
@@ -45,7 +48,7 @@ fun PlaylistsTabContent(
                 onCreatePlaylist(name)
                 showCreateDialog = false
             },
-            onDismiss = { showCreateDialog = false }
+            onDismiss = { showCreateDialog = false },
         )
     }
 
@@ -59,7 +62,7 @@ fun PlaylistsTabContent(
                 onRenamePlaylist(target.id, newName)
                 playlistToRename = null
             },
-            onDismiss = { playlistToRename = null }
+            onDismiss = { playlistToRename = null },
         )
     }
 
@@ -70,7 +73,7 @@ fun PlaylistsTabContent(
                 onDeletePlaylist(target.id)
                 playlistToDelete = null
             },
-            onDismiss = { playlistToDelete = null }
+            onDismiss = { playlistToDelete = null },
         )
     }
 
@@ -79,13 +82,15 @@ fun PlaylistsTabContent(
             columns = GridCells.Adaptive(150.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize(),
         ) {
             item(key = "create_playlist_card") {
                 CreatePlaylistGridCard(onClick = { showCreateDialog = true })
             }
 
             items(customPlaylists, key = { "custom_${it.id}" }) { playlist ->
+                val hasDownloaded = isOffline && playlist.id in offlineCustomPlaylistIds
+                val isAvailable = !isOffline || hasDownloaded
                 CustomPlaylistGridCard(
                     playlist = playlist,
                     onClick = {
@@ -93,15 +98,19 @@ fun PlaylistsTabContent(
                             "local:${playlist.id}",
                             playlist.name,
                             playlist.artworks.firstOrNull(),
-                            "Tú"
+                            "Tú",
                         )
                     },
                     onRename = { playlistToRename = playlist },
-                    onDelete = { playlistToDelete = playlist }
+                    onDelete = { playlistToDelete = playlist },
+                    isAvailable = isAvailable,
+                    hasDownloaded = hasDownloaded,
                 )
             }
 
             items(remotePlaylists, key = { "remote_${it.id}" }) { playlist ->
+                val isAvailable = !isOffline || playlist.id in offlineRemotePlaylistIds
+                val hasDownloaded = isOffline && playlist.id in offlineRemotePlaylistIds
                 RemotePlaylistGridCard(
                     playlist = playlist,
                     onClick = {
@@ -109,22 +118,26 @@ fun PlaylistsTabContent(
                             playlist.id,
                             playlist.title,
                             playlist.artworkUrl,
-                            playlist.author
+                            playlist.author,
                         )
-                    }
+                    },
+                    isAvailable = isAvailable,
+                    hasDownloaded = hasDownloaded,
                 )
             }
         }
     } else {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize(),
         ) {
             item(key = "create_playlist_compact") {
                 CreatePlaylistCompactRow(onClick = { showCreateDialog = true })
             }
 
             items(customPlaylists, key = { "custom_compact_${it.id}" }) { playlist ->
+                val hasDownloaded = isOffline && playlist.id in offlineCustomPlaylistIds
+                val isAvailable = !isOffline || hasDownloaded
                 CustomPlaylistCompactRow(
                     playlist = playlist,
                     onClick = {
@@ -132,15 +145,19 @@ fun PlaylistsTabContent(
                             "local:${playlist.id}",
                             playlist.name,
                             playlist.artworks.firstOrNull(),
-                            "Tú"
+                            "Tú",
                         )
                     },
                     onRename = { playlistToRename = playlist },
-                    onDelete = { playlistToDelete = playlist }
+                    onDelete = { playlistToDelete = playlist },
+                    isAvailable = isAvailable,
+                    hasDownloaded = hasDownloaded,
                 )
             }
 
             items(remotePlaylists, key = { "remote_compact_${it.id}" }) { playlist ->
+                val isAvailable = !isOffline || playlist.id in offlineRemotePlaylistIds
+                val hasDownloaded = isOffline && playlist.id in offlineRemotePlaylistIds
                 RemotePlaylistCompactRow(
                     playlist = playlist,
                     onClick = {
@@ -148,9 +165,11 @@ fun PlaylistsTabContent(
                             playlist.id,
                             playlist.title,
                             playlist.artworkUrl,
-                            playlist.author
+                            playlist.author,
                         )
-                    }
+                    },
+                    isAvailable = isAvailable,
+                    hasDownloaded = hasDownloaded,
                 )
             }
         }

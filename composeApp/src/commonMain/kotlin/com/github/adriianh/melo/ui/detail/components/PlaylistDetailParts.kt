@@ -44,6 +44,7 @@ import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 
@@ -66,14 +67,15 @@ fun RenamePlaylistDialog(
                 placeholder = { Text("Nuevo nombre") },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MeloColors.border,
-                    focusedTextColor = MeloColors.textPrimary,
-                    unfocusedTextColor = MeloColors.textPrimary,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                ),
-                modifier = Modifier.fillMaxWidth()
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MeloColors.border,
+                        focusedTextColor = MeloColors.textPrimary,
+                        unfocusedTextColor = MeloColors.textPrimary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                    ),
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
@@ -83,7 +85,7 @@ fun RenamePlaylistDialog(
                 },
                 enabled = newName.isNotBlank(),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Text("Guardar", style = MeloType.labelMedium)
             }
@@ -93,7 +95,7 @@ fun RenamePlaylistDialog(
                 Text("Cancelar", color = MeloColors.textSecondary)
             }
         },
-        containerColor = MeloColors.surface1
+        containerColor = MeloColors.surface1,
     )
 }
 
@@ -112,19 +114,19 @@ fun DeletePlaylistDialog(
             Text(
                 "¿Estás seguro de que deseas eliminar \"$playlistName\"? Esta acción no se puede deshacer.",
                 style = MeloType.body,
-                color = MeloColors.textSecondary
+                color = MeloColors.textSecondary,
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(
                     "Eliminar",
                     style = MeloType.labelMedium,
-                    color = MaterialTheme.colorScheme.onError
+                    color = MaterialTheme.colorScheme.onError,
                 )
             }
         },
@@ -133,7 +135,7 @@ fun DeletePlaylistDialog(
                 Text("Cancelar", color = MeloColors.textSecondary)
             }
         },
-        containerColor = MeloColors.surface1
+        containerColor = MeloColors.surface1,
     )
 }
 
@@ -156,7 +158,7 @@ fun PlaylistTopBarActions(
             Icon(
                 Icons.Default.SelectAll,
                 contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
-                tint = if (isAllSelected) accentColor else MeloColors.textPrimary
+                tint = if (isAllSelected) accentColor else MeloColors.textPrimary,
             )
         }
     } else if (totalCount > 0) {
@@ -166,13 +168,13 @@ fun PlaylistTopBarActions(
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = "Opciones",
-                    tint = MeloColors.textPrimary
+                    tint = MeloColors.textPrimary,
                 )
             }
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                modifier = Modifier.background(MeloColors.surface1)
+                modifier = Modifier.background(MeloColors.surface1),
             ) {
                 if (isCustomPlaylist) {
                     DropdownMenuItem(
@@ -182,13 +184,13 @@ fun PlaylistTopBarActions(
                                 Icons.Default.Edit,
                                 contentDescription = null,
                                 tint = MeloColors.textPrimary,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         },
                         onClick = {
                             showMenu = false
                             onRenameRequest()
-                        }
+                        },
                     )
                 } else {
                     DropdownMenuItem(
@@ -198,13 +200,13 @@ fun PlaylistTopBarActions(
                                 Icons.AutoMirrored.Filled.PlaylistAdd,
                                 contentDescription = null,
                                 tint = accentColor,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         },
                         onClick = {
                             showMenu = false
                             onAddAllToPlaylist()
-                        }
+                        },
                     )
                 }
                 if (isCustomPlaylist) {
@@ -215,13 +217,13 @@ fun PlaylistTopBarActions(
                                 Icons.AutoMirrored.Filled.PlaylistAdd,
                                 contentDescription = null,
                                 tint = accentColor,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         },
                         onClick = {
                             showMenu = false
                             onAddAllToPlaylist()
-                        }
+                        },
                     )
                 }
                 DropdownMenuItem(
@@ -231,13 +233,13 @@ fun PlaylistTopBarActions(
                             Icons.Default.Checklist,
                             contentDescription = null,
                             tint = MeloColors.textPrimary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                     },
                     onClick = {
                         showMenu = false
                         onStartSelection()
-                    }
+                    },
                 )
                 if (isCustomPlaylist) {
                     DropdownMenuItem(
@@ -245,7 +247,7 @@ fun PlaylistTopBarActions(
                             Text(
                                 "Eliminar",
                                 style = MeloType.body,
-                                color = MaterialTheme.colorScheme.error
+                                color = MaterialTheme.colorScheme.error,
                             )
                         },
                         leadingIcon = {
@@ -253,13 +255,13 @@ fun PlaylistTopBarActions(
                                 Icons.Default.DeleteOutline,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(18.dp),
                             )
                         },
                         onClick = {
                             showMenu = false
                             onDeleteRequest()
-                        }
+                        },
                     )
                 }
             }
@@ -289,35 +291,34 @@ fun LazyItemScope.ReorderablePlaylistTrackItem(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     swipeRightIcon: ImageVector,
+    isEnabled: Boolean = true,
 ) {
     ReorderableItem(
         state = reorderState,
         key = itemKey,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) { isDragging ->
+        val bgColor = playlistItemBg(isDragging, isSelected, isCurrent, accentColor, activeAccent)
         MeloSwipeableItem(
-            onSwipeLeft = { if (!isSelectionMode) onSwipeLeft() },
-            onSwipeRight = { if (!isSelectionMode) onSwipeRight() },
+            onSwipeLeft = { if (!isSelectionMode && isEnabled) onSwipeLeft() },
+            onSwipeRight = { if (!isSelectionMode && isEnabled) onSwipeRight() },
             swipeRightIcon = swipeRightIcon,
             swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
-            swipeLeftColor = MeloColors.brandAccent
+            swipeLeftColor = MeloColors.brandAccent,
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (isDragging) activeAccent.copy(alpha = 0.25f)
-                        else if (isSelected) accentColor.copy(alpha = 0.18f)
-                        else if (isCurrent) accentColor.copy(alpha = 0.15f)
-                        else Color.Transparent
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(bgColor),
             ) {
                 TrackRow(
                     track = song,
                     trackNumber = index + 1,
                     isCurrent = isCurrent,
                     isPlaying = isPlaying,
+                    isEnabled = isEnabled,
                     isDownloaded = isDownloaded,
                     isDownloading = isDownloading,
                     downloadProgress = downloadProgress,
@@ -325,23 +326,51 @@ fun LazyItemScope.ReorderablePlaylistTrackItem(
                     isSelected = isSelected,
                     onSelectionToggle = onSelectionToggle,
                     onLongClick = onLongPress,
-                    onClick = onPlay,
-                    onMoreClick = onMoreClick,
-                    dragHandle = if (isSelectionMode) null else {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.DragHandle,
-                                contentDescription = "Reordenar pista",
-                                tint = if (isDragging) activeAccent else MeloColors.textMuted,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(6.dp)
-                                    .draggableHandle()
-                            )
+                    onClick = {
+                        if (isEnabled && !isDownloading) {
+                            onPlay()
                         }
-                    }
+                    },
+                    onMoreClick = onMoreClick,
+                    dragHandle =
+                        if (isSelectionMode) {
+                            null
+                        } else {
+                            { reorderDragHandle(isDragging, activeAccent) }
+                        },
                 )
             }
         }
     }
+}
+
+private fun playlistItemBg(
+    isDragging: Boolean,
+    isSelected: Boolean,
+    isCurrent: Boolean,
+    accentColor: Color,
+    activeAccent: Color,
+): Color =
+    when {
+        isDragging -> activeAccent.copy(alpha = 0.25f)
+        isSelected -> accentColor.copy(alpha = 0.18f)
+        isCurrent -> accentColor.copy(alpha = 0.15f)
+        else -> Color.Transparent
+    }
+
+@Composable
+private fun ReorderableCollectionItemScope.reorderDragHandle(
+    isDragging: Boolean,
+    activeAccent: Color,
+) {
+    Icon(
+        imageVector = Icons.Default.DragHandle,
+        contentDescription = "Reordenar pista",
+        tint = if (isDragging) activeAccent else MeloColors.textMuted,
+        modifier =
+            Modifier
+                .size(32.dp)
+                .padding(6.dp)
+                .draggableHandle(),
+    )
 }

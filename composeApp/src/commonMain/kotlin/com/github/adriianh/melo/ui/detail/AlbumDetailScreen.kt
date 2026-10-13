@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,11 +45,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
@@ -83,19 +86,24 @@ fun AlbumDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPlaying by playerViewModel.uiState.map { it.isPlaying }.distinctUntilChanged()
+    val isPlaying by playerViewModel.uiState
+        .map { it.isPlaying }
+        .distinctUntilChanged()
         .collectAsState(false)
-    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
-        .distinctUntilChanged().collectAsState(Color.Transparent)
+    val accentColorFromPlayer by playerViewModel.uiState
+        .map { it.accentColor }
+        .distinctUntilChanged()
+        .collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
     val accentColor = MaterialTheme.colorScheme.primary
-    val likedTrackIds = remember(libraryState.likedSongs) {
-        libraryState.likedSongs.map { it.id }.toSet()
-    }
+    val likedTrackIds =
+        remember(libraryState.likedSongs) {
+            libraryState.likedSongs.map { it.id }.toSet()
+        }
 
     LaunchedEffect(albumId) {
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
@@ -103,12 +111,13 @@ fun AlbumDetailScreen(
 
     val album = (uiState.entity as? SearchResult.Album)?.takeIf { it.id == albumId }
     val songs = remember(album) { album?.songs.orEmpty() }
-    val effectiveTitle = remember(album, initialTitle, songs) {
-        album?.title?.takeIf { it.isNotBlank() }
-            ?: initialTitle.takeIf { it.isNotBlank() }
-            ?: songs.firstOrNull()?.album?.takeIf { it.isNotBlank() }
-            ?: "Álbum"
-    }
+    val effectiveTitle =
+        remember(album, initialTitle, songs) {
+            album?.title?.takeIf { it.isNotBlank() }
+                ?: initialTitle.takeIf { it.isNotBlank() }
+                ?: songs.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+                ?: "Álbum"
+        }
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
@@ -130,7 +139,7 @@ fun AlbumDetailScreen(
         libraryState = libraryState,
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
-        onAlbumClick = onAlbumClick
+        onAlbumClick = onAlbumClick,
     )
 
     Scaffold(
@@ -142,7 +151,7 @@ fun AlbumDetailScreen(
                         if (isSelectionMode) "${selectedTrackIds.size} seleccionadas" else effectiveTitle,
                         style = MeloType.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -151,7 +160,7 @@ fun AlbumDetailScreen(
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Cancelar selección",
-                                tint = MeloColors.textPrimary
+                                tint = MeloColors.textPrimary,
                             )
                         }
                     } else {
@@ -159,7 +168,7 @@ fun AlbumDetailScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Atrás",
-                                tint = MeloColors.textPrimary
+                                tint = MeloColors.textPrimary,
                             )
                         }
                     }
@@ -171,12 +180,12 @@ fun AlbumDetailScreen(
                             onClick = {
                                 selectedTrackIds =
                                     if (isAllSelected) emptySet() else songs.map { it.id }.toSet()
-                            }
+                            },
                         ) {
                             Icon(
                                 Icons.Default.SelectAll,
                                 contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
-                                tint = if (isAllSelected) accentColor else MeloColors.textPrimary
+                                tint = if (isAllSelected) accentColor else MeloColors.textPrimary,
                             )
                         }
                     } else if (songs.isNotEmpty()) {
@@ -184,12 +193,12 @@ fun AlbumDetailScreen(
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = "Más opciones",
-                                tint = MeloColors.textPrimary
+                                tint = MeloColors.textPrimary,
                             )
                         }
                         DropdownMenu(
                             expanded = showTopMenu,
-                            onDismissRequest = { showTopMenu = false }
+                            onDismissRequest = { showTopMenu = false },
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Añadir todo a playlist...", style = MeloType.body) },
@@ -197,13 +206,13 @@ fun AlbumDetailScreen(
                                     Icon(
                                         Icons.AutoMirrored.Filled.PlaylistAdd,
                                         contentDescription = null,
-                                        tint = accentColor
+                                        tint = accentColor,
                                     )
                                 },
                                 onClick = {
                                     showTopMenu = false
                                     interaction.openAddToPlaylist(songs)
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text("Seleccionar canciones", style = MeloType.body) },
@@ -211,7 +220,7 @@ fun AlbumDetailScreen(
                                     Icon(
                                         Icons.Default.Checklist,
                                         contentDescription = null,
-                                        tint = MeloColors.textPrimary
+                                        tint = MeloColors.textPrimary,
                                     )
                                 },
                                 onClick = {
@@ -219,77 +228,105 @@ fun AlbumDetailScreen(
                                     if (songs.isNotEmpty()) {
                                         selectedTrackIds = setOf(songs.first().id)
                                     }
-                                }
+                                },
                             )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MeloColors.textPrimary
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MeloColors.textPrimary,
+                    ),
             )
-        }
+        },
     ) { paddingValues ->
         if (uiState.isLoading && songs.isEmpty() && initialTitle.isBlank() && initialArtwork == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = accentColor)
             }
         } else if (uiState.error != null && songs.isEmpty() && initialTitle.isBlank()) {
-            MeloErrorState(
-                error = uiState.error,
-                onRetry = {
-                    viewModel.loadAlbum(
-                        albumId,
-                        initialTitle,
-                        initialArtwork,
-                        initialAuthor
-                    )
-                },
-                modifier = Modifier.padding(paddingValues)
-            )
+            if (uiState.isOffline) {
+                MeloEmptyState(
+                    icon = Icons.Default.CloudOff,
+                    title = "Sin contenido disponible",
+                    message = "No hay canciones descargadas para este álbum.",
+                    modifier = Modifier.padding(paddingValues),
+                )
+            } else {
+                MeloErrorState(
+                    error = uiState.error,
+                    onRetry = {
+                        viewModel.loadAlbum(
+                            albumId,
+                            initialTitle,
+                            initialArtwork,
+                            initialAuthor,
+                        )
+                    },
+                    modifier = Modifier.padding(paddingValues),
+                )
+            }
         } else {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
-                            endY = 600f
-                        )
-                    )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(accentColor.copy(alpha = 0.20f), MeloColors.surface0),
+                                endY = 600f,
+                            ),
+                        ),
             ) {
                 val totalDurationMs = remember(songs) { songs.sumOf { it.durationMs } }
-                val totalDurationFormatted = remember(totalDurationMs) {
-                    formatCollectionDuration(totalDurationMs)
-                }
+                val totalDurationFormatted =
+                    remember(totalDurationMs) {
+                        formatCollectionDuration(totalDurationMs)
+                    }
 
                 val authorText = album?.author?.ifEmpty { null } ?: initialAuthor.ifEmpty { null }
-                val metaParts = listOfNotNull(
-                    album?.year?.takeIf { it.isNotBlank() },
-                    if (songs.isNotEmpty()) "${songs.size} canciones" else null,
-                    totalDurationFormatted.takeIf { it.isNotBlank() }
-                ).joinToString(" • ")
+                val metaParts =
+                    listOfNotNull(
+                        album?.year?.takeIf { it.isNotBlank() },
+                        if (songs.isNotEmpty()) "${songs.size} canciones" else null,
+                        totalDurationFormatted.takeIf { it.isNotBlank() },
+                    ).joinToString(" • ")
 
-                val effectiveArtwork = album?.artworkUrl?.takeIf { it.isNotBlank() }
-                    ?: initialArtwork?.takeIf { it.isNotBlank() }
-                    ?: songs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
+                val effectiveArtwork =
+                    album?.artworkUrl?.takeIf { it.isNotBlank() }
+                        ?: initialArtwork?.takeIf { it.isNotBlank() }
+                        ?: songs.firstOrNull()?.artworkUrl?.takeIf { it.isNotBlank() }
 
-                val playableTracks = remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
-                    if (uiState.isOffline) songs.filter { it.id in uiState.downloadedTrackIds }
-                    else songs
-                }
+                val isTrackDownloaded: (Track) -> Boolean =
+                    remember(uiState.downloadedTrackIds) {
+                        { track ->
+                            track.id in uiState.downloadedTrackIds ||
+                                track.id.removePrefix("piped:") in uiState.downloadedTrackIds ||
+                                (track.sourceId != null && track.sourceId in uiState.downloadedTrackIds)
+                        }
+                    }
+
+                val playableTracks =
+                    remember(songs, uiState.downloadedTrackIds, uiState.isOffline) {
+                        if (uiState.isOffline) {
+                            songs.filter { isTrackDownloaded(it) }
+                        } else {
+                            songs
+                        }
+                    }
 
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(horizontal = 16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding())
+                    contentPadding = PaddingValues(bottom = 32.dp + bottomPadding.calculateBottomPadding()),
                 ) {
                     item {
                         EntityHeaderCard(
@@ -305,9 +342,12 @@ fun AlbumDetailScreen(
                             downloadedCount = uiState.downloadedTrackCount,
                             totalTrackCount = uiState.totalTrackCount,
                             currentDownloadingTrackTitle = uiState.currentDownloadingTrackTitle,
-                            onDownloadClick = if (!uiState.isOffline && songs.isNotEmpty()) {
-                                viewModel::toggleDownload
-                            } else null,
+                            onDownloadClick =
+                                if (!uiState.isOffline && songs.isNotEmpty()) {
+                                    viewModel::toggleDownload
+                                } else {
+                                    null
+                                },
                             onPlayClick = {
                                 if (playableTracks.isNotEmpty()) {
                                     queueViewModel.playTracks(playableTracks, 0)
@@ -325,7 +365,7 @@ fun AlbumDetailScreen(
                                 }
                             },
                             accentColor = accentColor,
-                            hasTracks = playableTracks.isNotEmpty()
+                            hasTracks = playableTracks.isNotEmpty(),
                         )
                     }
 
@@ -335,7 +375,7 @@ fun AlbumDetailScreen(
                             ExpandableDescriptionCard(
                                 title = "Acerca de este álbum",
                                 description = description,
-                                accentColor = accentColor
+                                accentColor = accentColor,
                             )
                         }
                     }
@@ -347,10 +387,15 @@ fun AlbumDetailScreen(
                             isPlaying = isPlaying,
                             isLiked = { song -> song.id in likedTrackIds },
                             isOffline = uiState.isOffline,
-                            isDownloaded = { song -> song.id in uiState.downloadedTrackIds },
-                            isDownloading = { song -> song.id in uiState.activeDownloadsMap },
+                            isDownloaded = isTrackDownloaded,
+                            isDownloading = { song ->
+                                song.id in uiState.activeDownloadsMap ||
+                                    song.id.removePrefix("piped:") in uiState.activeDownloadsMap
+                            },
                             downloadProgress = { song ->
-                                uiState.activeDownloadsMap[song.id] ?: 0f
+                                uiState.activeDownloadsMap[song.id]
+                                    ?: uiState.activeDownloadsMap[song.id.removePrefix("piped:")]
+                                    ?: 0f
                             },
                             isSelectionMode = isSelectionMode,
                             selectedTrackIds = selectedTrackIds,
@@ -360,11 +405,12 @@ fun AlbumDetailScreen(
                                 }
                             },
                             onToggleSelectTrack = { song ->
-                                selectedTrackIds = if (song.id in selectedTrackIds) {
-                                    selectedTrackIds - song.id
-                                } else {
-                                    selectedTrackIds + song.id
-                                }
+                                selectedTrackIds =
+                                    if (song.id in selectedTrackIds) {
+                                        selectedTrackIds - song.id
+                                    } else {
+                                        selectedTrackIds + song.id
+                                    }
                             },
                             onTrackClick = { _, song ->
                                 val trackIndex = playableTracks.indexOfFirst { it.id == song.id }
@@ -376,7 +422,7 @@ fun AlbumDetailScreen(
                             onSwipeLeft = {
                                 interaction.showAddedToQueueSnackbar(
                                     it,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             onSwipeRight = { song ->
@@ -384,20 +430,30 @@ fun AlbumDetailScreen(
                                 interaction.showToggledLikeSnackbar(
                                     song,
                                     isLiked,
-                                    activeAccent
+                                    activeAccent,
                                 )
                             },
                             accentColor = accentColor,
-                            keyPrefix = "album"
+                            keyPrefix = "album",
                         )
                     } else if (uiState.isLoading) {
                         items(6) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MeloColors.surface2.copy(alpha = 0.5f))
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MeloColors.surface2.copy(alpha = 0.5f)),
+                            )
+                        }
+                    } else if (uiState.isOffline && songs.isEmpty()) {
+                        item {
+                            MeloEmptyState(
+                                icon = Icons.Default.CloudOff,
+                                title = "Sin contenido disponible",
+                                message = "No hay canciones descargadas para este álbum.",
+                                modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
                     }
@@ -410,14 +466,14 @@ fun AlbumDetailScreen(
                             AdaptiveLazyRow(
                                 items = otherVersions,
                                 minCardWidth = 130.dp,
-                                spacing = 12.dp
+                                spacing = 12.dp,
                             ) { item, cardWidth ->
                                 AlbumCard(
                                     title = item.title,
                                     subtitle = item.author,
                                     artworkUrl = item.artworkUrl,
                                     cardWidth = cardWidth,
-                                    onClick = { onAlbumClick(item.id) }
+                                    onClick = { onAlbumClick(item.id) },
                                 )
                             }
                         }
@@ -431,8 +487,13 @@ fun AlbumDetailScreen(
                     onClearSelection = { selectedTrackIds = emptySet() },
                     onSelectAllToggle = {
                         selectedTrackIds =
-                            if (selectedTrackIds.size == songs.size) emptySet() else songs.map { it.id }
-                                .toSet()
+                            if (selectedTrackIds.size == songs.size) {
+                                emptySet()
+                            } else {
+                                songs
+                                    .map { it.id }
+                                    .toSet()
+                            }
                     },
                     onAddToPlaylist = {
                         val selTracks = songs.filter { it.id in selectedTrackIds }
@@ -443,8 +504,15 @@ fun AlbumDetailScreen(
                         val selTracks = songs.filter { it.id in selectedTrackIds }
                         queueViewModel.addAllToQueue(selTracks)
                         interaction.snackbar.show(
-                            msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
-                            actionColor = activeAccent
+                            msg =
+                                if (selTracks.size ==
+                                    1
+                                ) {
+                                    "1 canción añadida a la cola"
+                                } else {
+                                    "${selTracks.size} canciones añadidas a la cola"
+                                },
+                            actionColor = activeAccent,
                         )
                         selectedTrackIds = emptySet()
                     },
@@ -453,12 +521,12 @@ fun AlbumDetailScreen(
                         selTracks.forEach { libraryViewModel.downloadTrack(it) }
                         interaction.snackbar.show(
                             msg = "Descargando ${selTracks.size} canciones...",
-                            actionColor = activeAccent
+                            actionColor = activeAccent,
                         )
                         selectedTrackIds = emptySet()
                     },
                     accentColor = accentColor,
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

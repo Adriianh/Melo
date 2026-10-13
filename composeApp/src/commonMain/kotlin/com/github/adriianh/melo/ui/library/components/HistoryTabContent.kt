@@ -33,6 +33,10 @@ fun HistoryTabContent(
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
     onTrackLongClick: ((Track) -> Unit)? = null,
+    isOffline: Boolean = false,
+    isDownloaded: (Track) -> Boolean = { false },
+    isDownloading: (Track) -> Boolean = { false },
+    downloadProgress: (Track) -> Float = { 0f },
 ) {
     if (history.isEmpty()) {
         MeloEmptyState(
@@ -53,41 +57,90 @@ fun HistoryTabContent(
         items(history, key = { it.track.id + "_" + it.playedAt }) { entry ->
             val track = entry.track
             val isSelected = track.id in selectedTrackIds
-            val relTime = formatRelativeTime(entry.playedAt)
-            val subtitleWithTime =
-                buildString {
-                    append(track.artist)
-                    if (track.album.isNotBlank() && track.album != track.title) {
-                        append(" • ")
-                        append(track.album)
-                    }
-                    if (relTime.isNotBlank()) {
-                        append(" • ")
-                        append(relTime)
-                    }
-                }
+            val downloaded = isDownloaded(track)
+            val downloading = isDownloading(track)
+            val progress = downloadProgress(track)
+            val isTrackEnabled = !isOffline || downloaded
 
-            MeloSwipeableItem(
-                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
-                onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
-                swipeRightIcon = if (isLiked(track)) Icons.Default.HeartBroken else Icons.Default.Favorite,
-            ) {
-                TrackRow(
-                    track = track,
-                    subtitleOverride = subtitleWithTime,
-                    onClick = { onPlayTrack(entry) },
-                    onMoreClick =
-                        if (isSelectionMode) {
-                            null
-                        } else {
-                            { onMoreClick(track) }
-                        },
-                    isSelectionMode = isSelectionMode,
-                    isSelected = isSelected,
-                    onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
-                )
+            historyItemRow(
+                entry = entry,
+                isSelected = isSelected,
+                isSelectionMode = isSelectionMode,
+                isTrackEnabled = isTrackEnabled,
+                downloaded = downloaded,
+                downloading = downloading,
+                progress = progress,
+                isLiked = isLiked(track),
+                onPlayTrack = onPlayTrack,
+                onMoreClick = onMoreClick,
+                onSwipeLeft = onSwipeLeft,
+                onSwipeRight = onSwipeRight,
+                onToggleSelectTrack = onToggleSelectTrack,
+                onTrackLongClick = onTrackLongClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun historyItemRow(
+    entry: HistoryEntry,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    isTrackEnabled: Boolean,
+    downloaded: Boolean,
+    downloading: Boolean,
+    progress: Float,
+    isLiked: Boolean,
+    onPlayTrack: (HistoryEntry) -> Unit,
+    onMoreClick: (Track) -> Unit,
+    onSwipeLeft: (Track) -> Unit,
+    onSwipeRight: (Track) -> Unit,
+    onToggleSelectTrack: ((Track) -> Unit)?,
+    onTrackLongClick: ((Track) -> Unit)?,
+) {
+    val track = entry.track
+    val relTime = formatRelativeTime(entry.playedAt)
+    val subtitleWithTime =
+        buildString {
+            append(track.artist)
+            if (track.album.isNotBlank() && track.album != track.title) {
+                append(" • ")
+                append(track.album)
+            }
+            if (relTime.isNotBlank()) {
+                append(" • ")
+                append(relTime)
             }
         }
+
+    MeloSwipeableItem(
+        onSwipeLeft = { if (!isSelectionMode && isTrackEnabled) onSwipeLeft(track) },
+        onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
+        swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
+    ) {
+        TrackRow(
+            track = track,
+            subtitleOverride = subtitleWithTime,
+            onClick = {
+                if (isTrackEnabled && !downloading) {
+                    onPlayTrack(entry)
+                }
+            },
+            isEnabled = isTrackEnabled,
+            isDownloaded = downloaded,
+            isDownloading = downloading,
+            downloadProgress = progress,
+            onMoreClick =
+                if (isSelectionMode) {
+                    null
+                } else {
+                    { onMoreClick(track) }
+                },
+            isSelectionMode = isSelectionMode,
+            isSelected = isSelected,
+            onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+            onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
+        )
     }
 }

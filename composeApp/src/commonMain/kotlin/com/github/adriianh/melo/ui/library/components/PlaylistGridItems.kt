@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,35 +43,41 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
 
 @Composable
-fun CreatePlaylistGridCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun CreatePlaylistGridCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
+        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Crear playlist",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(30.dp),
                 )
             }
             Spacer(Modifier.height(14.dp))
@@ -78,14 +86,14 @@ fun CreatePlaylistGridCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = "Lista personalizada",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -98,47 +106,76 @@ fun CustomPlaylistGridCard(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    isAvailable: Boolean = true,
+    hasDownloaded: Boolean = false,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
+        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(115.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(115.dp),
             ) {
                 PlaylistMosaicCover(
                     artworks = playlist.artworks,
-                    modifier = Modifier.fillMaxSize()
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .alpha(if (isAvailable) 1f else 0.45f),
                 )
 
+                if (hasDownloaded) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp)
+                                .background(
+                                    MeloColors.surface0.copy(alpha = 0.85f),
+                                    shape = RoundedCornerShape(6.dp),
+                                ).padding(3.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DownloadDone,
+                            contentDescription = "Disponible sin conexión",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
+
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp),
                 ) {
                     IconButton(
                         onClick = { showMenu = true },
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "Opciones",
                             tint = MeloColors.textSecondary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                     }
 
@@ -146,7 +183,7 @@ fun CustomPlaylistGridCard(
                         expanded = showMenu,
                         onDismiss = { showMenu = false },
                         onRename = onRename,
-                        onDelete = onDelete
+                        onDelete = onDelete,
                     )
                 }
             }
@@ -159,14 +196,14 @@ fun CustomPlaylistGridCard(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
             Text(
                 text = "${playlist.trackCount} canciones • Tuya",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -177,30 +214,30 @@ fun RemotePlaylistGridCard(
     playlist: SearchResult.Playlist,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isAvailable: Boolean = true,
+    hasDownloaded: Boolean = false,
 ) {
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .alpha(if (isAvailable) 1f else 0.45f)
+                .clickable(enabled = isAvailable, onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1)
+        colors = CardDefaults.cardColors(containerColor = MeloColors.surface1),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
         ) {
-            PlatformAsyncImage(
-                url = playlist.artworkUrl,
-                contentDescription = playlist.title,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(115.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                size = 140.dp,
-                shape = RoundedCornerShape(8.dp)
+            remotePlaylistGridCover(
+                artworkUrl = playlist.artworkUrl,
+                title = playlist.title,
+                hasDownloaded = hasDownloaded,
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -209,15 +246,59 @@ fun RemotePlaylistGridCard(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
             Text(
                 text = "${playlist.trackCount ?: 0} canciones • ${playlist.author}",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+@Composable
+private fun remotePlaylistGridCover(
+    artworkUrl: String?,
+    title: String,
+    hasDownloaded: Boolean,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(115.dp),
+    ) {
+        PlatformAsyncImage(
+            url = artworkUrl,
+            contentDescription = title,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(8.dp)),
+            size = 140.dp,
+            shape = RoundedCornerShape(8.dp),
+        )
+        if (hasDownloaded) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .background(
+                            MeloColors.surface0.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(6.dp),
+                        ).padding(3.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DownloadDone,
+                    contentDescription = "Disponible sin conexión",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
         }
     }
 }

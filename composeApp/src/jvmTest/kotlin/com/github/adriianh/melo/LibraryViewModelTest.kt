@@ -1,13 +1,17 @@
 package com.github.adriianh.melo
 
+import com.github.adriianh.core.domain.cache.EntityCache
 import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.LibraryCacheData
+import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.usecase.library.AddTrackToPlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.AddTracksToPlaylistUseCase
@@ -16,6 +20,7 @@ import com.github.adriianh.core.domain.usecase.library.DeletePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.GetAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.library.GetLikedSongsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistIdsForTrackUseCase
+import com.github.adriianh.core.domain.usecase.library.GetPlaylistTracksUseCase
 import com.github.adriianh.core.domain.usecase.library.GetPlaylistsUseCase
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.library.GetUserAlbumsUseCase
@@ -81,8 +86,12 @@ class LibraryViewModelTest {
     private val downloadManager = mockk<DownloadManager>(relaxed = true)
     private val playbackManager = mockk<PlaybackManager>(relaxed = true)
     private val libraryCache = mockk<LibraryCache>(relaxed = true)
+    private val entityCache = mockk<EntityCache>(relaxed = true)
+    private val networkMonitor = mockk<NetworkMonitor>(relaxed = true)
+    private val getPlaylistTracksUseCase = mockk<GetPlaylistTracksUseCase>(relaxed = true)
 
     private val settingsFlow = MutableStateFlow(Settings(sessionCookies = "auth_cookie"))
+    private val isOnlineFlow = MutableStateFlow(true)
 
     private val sampleTrack =
         Track(
@@ -142,12 +151,16 @@ class LibraryViewModelTest {
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        settingsFlow.value = Settings(sessionCookies = "auth_cookie")
+        isOnlineFlow.value = true
+        every { networkMonitor.isOnline } returns isOnlineFlow
+        every { getPlaylistTracksUseCase(any()) } returns MutableStateFlow(emptyList())
         every { getPlaylistsUseCase() } returns MutableStateFlow(emptyList())
         every { getRecentTracksUseCase(any()) } returns MutableStateFlow(emptyList())
         every { getOfflineTracksUseCase() } returns MutableStateFlow(emptyList())
         every { downloadManager.activeDownloads } returns MutableStateFlow(emptyMap())
         every { getSettingsUseCase() } returns settingsFlow
-        coEvery { getSettingsUseCase.getSnapshot() } returns settingsFlow.value
+        coEvery { getSettingsUseCase.getSnapshot() } answers { settingsFlow.value }
     }
 
     @AfterTest
@@ -183,6 +196,9 @@ class LibraryViewModelTest {
             playbackManager = playbackManager,
             libraryCache = libraryCache,
             observeLibraryUpdatesUseCase = null,
+            networkMonitor = networkMonitor,
+            entityCache = entityCache,
+            getPlaylistTracksUseCase = getPlaylistTracksUseCase,
             ioDispatcher = testDispatcher,
         )
 
@@ -286,5 +302,73 @@ class LibraryViewModelTest {
             advanceUntilIdle()
 
             coVerify { libraryCache.save(any()) }
+        }
+
+    @Test
+    fun `when offlineMode is enabled, refreshAll skips remote network calls`() =
+        runTest {
+            settingsFlow.value = Settings(sessionCookies = "auth_cookie", offlineMode = true)
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.refreshAll()
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { getUserPlaylistsUseCase() }
+            coVerify(exactly = 0) { getLikedSongsUseCase() }
+        }
+
+    @Test
+    fun `when offlineMode is enabled, playing non-downloaded track does not start playback`() =
+        runTest {
+            settingsFlow.value = Settings(sessionCookies = "auth_cookie", offlineMode = true)
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val remoteTrack = sampleTrack.copy(id = "not_downloaded")
+            viewModel.playTrack(remoteTrack)
+            advanceUntilIdle()
+
+            coVerify(exactly = 0) { playbackManager.playTrack(any()) }
+            coVerify(exactly = 0) { playbackManager.setQueue(any(), any()) }
+        }
+
+    @Test
+    fun `when offlineMode is enabled, playing downloaded track starts playback`() =
+        runTest {
+            settingsFlow.value = Settings(sessionCookies = "auth_cookie", offlineMode = true)
+            val offlineTrack =
+                OfflineTrack(
+                    track = sampleTrack,
+                    downloadStatus = DownloadStatus.COMPLETED,
+                )
+            every { getOfflineTracksUseCase() } returns MutableStateFlow(listOf(offlineTrack))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.playTrack(sampleTrack)
+            advanceUntilIdle()
+
+            coVerify { playbackManager.playTrack(sampleTrack) }
+        }
+
+    @Test
+    fun `when offlineMode is enabled, offline album and artist ids are computed from downloaded tracks`() =
+        runTest {
+            coEvery { libraryCache.get() } returns sampleCacheData
+            val offlineTrack =
+                OfflineTrack(
+                    track = sampleTrack,
+                    downloadStatus = DownloadStatus.COMPLETED,
+                )
+            every { getOfflineTracksUseCase() } returns MutableStateFlow(listOf(offlineTrack))
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue(sampleAlbum.id in state.offlineAlbumIds)
+            assertTrue(sampleArtist.id in state.offlineArtistIds)
         }
 }

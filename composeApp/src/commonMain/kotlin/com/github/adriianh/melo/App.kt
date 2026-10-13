@@ -394,11 +394,13 @@ fun App(
                                                             )
                                                         )
                                                     },
-                                                    onArtistClick = { id ->
+                                                    onArtistClick = { id, name, artwork ->
                                                         navigateTo(
                                                             ScreenRoute.Artist(
-                                                                id
-                                                            )
+                                                                id = id,
+                                                                name = name,
+                                                                artwork = artwork,
+                                                            ),
                                                         )
                                                     },
                                                     paddingValues = paddingValues
@@ -414,8 +416,9 @@ fun App(
                                                     onArtistClick = { id ->
                                                         navigateTo(
                                                             ScreenRoute.Artist(
-                                                                id
-                                                            )
+                                                                id = id,
+                                                                name = id,
+                                                            ),
                                                         )
                                                     },
                                                     onAlbumClick = { id ->
@@ -449,11 +452,14 @@ fun App(
                                                     initialArtwork = currentScreen.artwork,
                                                     bottomPadding = paddingValues,
                                                     onBack = ::navigateBack,
-                                                    onAlbumClick = { id ->
+                                                    onAlbumClick = { id, title, artwork, author ->
                                                         navigateTo(
                                                             ScreenRoute.Album(
-                                                                id
-                                                            )
+                                                                id = id,
+                                                                title = title,
+                                                                artwork = artwork,
+                                                                author = author,
+                                                            ),
                                                         )
                                                     },
                                                     onArtistClick = { id ->

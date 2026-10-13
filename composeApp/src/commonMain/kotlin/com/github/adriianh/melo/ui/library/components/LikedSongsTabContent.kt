@@ -29,6 +29,10 @@ fun LikedSongsTabContent(
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
     onTrackLongClick: ((Track) -> Unit)? = null,
+    isOffline: Boolean = false,
+    isDownloaded: (Track) -> Boolean = { false },
+    isDownloading: (Track) -> Boolean = { false },
+    downloadProgress: (Track) -> Float = { 0f },
 ) {
     if (songs.isEmpty()) {
         MeloEmptyState(message = "Aún no tienes canciones en tus 'Me Gusta'.", modifier = modifier)
@@ -45,14 +49,27 @@ fun LikedSongsTabContent(
     ) {
         items(songs, key = { it.id }) { track ->
             val isSelected = track.id in selectedTrackIds
+            val downloaded = isDownloaded(track)
+            val downloading = isDownloading(track)
+            val progress = downloadProgress(track)
+            val isTrackEnabled = !isOffline || downloaded
+
             MeloSwipeableItem(
-                onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
+                onSwipeLeft = { if (!isSelectionMode && isTrackEnabled) onSwipeLeft(track) },
                 onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
                 swipeRightIcon = Icons.Default.HeartBroken,
             ) {
                 TrackRow(
                     track = track,
-                    onClick = { onPlayTrack(track) },
+                    onClick = {
+                        if (isTrackEnabled && !downloading) {
+                            onPlayTrack(track)
+                        }
+                    },
+                    isEnabled = isTrackEnabled,
+                    isDownloaded = downloaded,
+                    isDownloading = downloading,
+                    downloadProgress = progress,
                     onMoreClick =
                         if (isSelectionMode) {
                             null

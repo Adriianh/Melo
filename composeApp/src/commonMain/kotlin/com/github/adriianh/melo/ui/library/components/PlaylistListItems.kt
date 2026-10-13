@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,29 +40,34 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
 
 @Composable
-fun CreatePlaylistCompactRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun CreatePlaylistCompactRow(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MeloColors.surface1)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MeloColors.surface1)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Crear playlist",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -68,13 +75,13 @@ fun CreatePlaylistCompactRow(onClick: () -> Unit, modifier: Modifier = Modifier)
                 text = "Crear playlist",
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Crea una lista personalizada con tus canciones favoritas",
                 style = MeloType.labelSmall,
-                color = MeloColors.textSecondary
+                color = MeloColors.textSecondary,
             )
         }
     }
@@ -87,24 +94,26 @@ fun CustomPlaylistCompactRow(
     onRename: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    isAvailable: Boolean = true,
+    hasDownloaded: Boolean = false,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MeloColors.surface1)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MeloColors.surface1)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PlaylistMosaicCover(
+        customPlaylistRowCover(
             artworks = playlist.artworks,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp))
+            isAvailable = isAvailable,
+            hasDownloaded = hasDownloaded,
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -113,7 +122,7 @@ fun CustomPlaylistCompactRow(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -121,24 +130,41 @@ fun CustomPlaylistCompactRow(
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Box {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
-                    tint = MeloColors.textSecondary
-                )
-            }
-            PlaylistOptionsMenu(
-                expanded = showMenu,
-                onDismiss = { showMenu = false },
-                onRename = onRename,
-                onDelete = onDelete
+        playlistCompactOptionsMenu(
+            expanded = showMenu,
+            onDismiss = { showMenu = false },
+            onRename = onRename,
+            onDelete = onDelete,
+            onOpen = { showMenu = true },
+        )
+    }
+}
+
+@Composable
+private fun playlistCompactOptionsMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+    onOpen: () -> Unit,
+) {
+    Box {
+        IconButton(onClick = onOpen) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Opciones",
+                tint = MeloColors.textSecondary,
             )
         }
+        PlaylistOptionsMenu(
+            expanded = expanded,
+            onDismiss = onDismiss,
+            onRename = onRename,
+            onDelete = onDelete,
+        )
     }
 }
 
@@ -147,25 +173,25 @@ fun RemotePlaylistCompactRow(
     playlist: SearchResult.Playlist,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isAvailable: Boolean = true,
+    hasDownloaded: Boolean = false,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MeloColors.surface1)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .alpha(if (isAvailable) 1f else 0.45f)
+                .background(MeloColors.surface1)
+                .clickable(enabled = isAvailable, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PlatformAsyncImage(
-            url = playlist.artworkUrl,
-            contentDescription = playlist.title,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(10.dp)),
-            size = 56.dp,
-            shape = RoundedCornerShape(10.dp)
+        remotePlaylistRowCover(
+            artworkUrl = playlist.artworkUrl,
+            title = playlist.title,
+            hasDownloaded = hasDownloaded,
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -174,7 +200,7 @@ fun RemotePlaylistCompactRow(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -182,7 +208,7 @@ fun RemotePlaylistCompactRow(
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             val desc = playlist.description
             if (!desc.isNullOrBlank()) {
@@ -192,7 +218,83 @@ fun RemotePlaylistCompactRow(
                     style = MeloType.labelSmall,
                     color = MeloColors.textMuted,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun customPlaylistRowCover(
+    artworks: List<String>,
+    isAvailable: Boolean,
+    hasDownloaded: Boolean,
+) {
+    Box(modifier = Modifier.size(56.dp)) {
+        PlaylistMosaicCover(
+            artworks = artworks,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .alpha(if (isAvailable) 1f else 0.45f),
+        )
+        if (hasDownloaded) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(3.dp)
+                        .background(
+                            MeloColors.surface0.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(4.dp),
+                        ).padding(2.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DownloadDone,
+                    contentDescription = "Disponible sin conexión",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun remotePlaylistRowCover(
+    artworkUrl: String?,
+    title: String,
+    hasDownloaded: Boolean,
+) {
+    Box(modifier = Modifier.size(56.dp)) {
+        PlatformAsyncImage(
+            url = artworkUrl,
+            contentDescription = title,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+            size = 56.dp,
+            shape = RoundedCornerShape(10.dp),
+        )
+        if (hasDownloaded) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(3.dp)
+                        .background(
+                            MeloColors.surface0.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(4.dp),
+                        ).padding(2.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DownloadDone,
+                    contentDescription = "Disponible sin conexión",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(12.dp),
                 )
             }
         }

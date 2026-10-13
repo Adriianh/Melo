@@ -3,9 +3,9 @@ package com.github.adriianh.melo.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.cache.EntityCache
+import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
-import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -66,6 +68,7 @@ class EntityDetailViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val networkMonitor: NetworkMonitor? = null,
     private val entityCache: EntityCache? = null,
+    private val libraryCache: LibraryCache? = null,
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
     private val removeTrackFromPlaylistUseCase: RemoveTrackFromPlaylistUseCase? = null,
     private val deletePlaylistUseCase: DeletePlaylistUseCase? = null,
@@ -73,7 +76,6 @@ class EntityDetailViewModel(
     private val reorderPlaylistTracksUseCase: ReorderPlaylistTracksUseCase? = null,
     private val ioDispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(EntityDetailUiState())
     val uiState: StateFlow<EntityDetailUiState> = _uiState.asStateFlow()
 
@@ -86,8 +88,9 @@ class EntityDetailViewModel(
         viewModelScope.launch(ioDispatcher) {
             combine(
                 offlineRepository.getOfflineTracksFlow(),
-                downloadManager.activeDownloads
-            ) { offlineTracks, activeDownloads ->
+                downloadManager.activeDownloads,
+                _uiState.map { it.entity }.distinctUntilChanged(),
+            ) { offlineTracks, activeDownloads, _ ->
                 updateDownloadState(offlineTracks, activeDownloads)
             }.collect { }
         }
@@ -98,7 +101,7 @@ class EntityDetailViewModel(
             val isOnlineFlow = networkMonitor?.isOnline ?: MutableStateFlow(true)
             combine(
                 getSettingsUseCase(),
-                isOnlineFlow
+                isOnlineFlow,
             ) { settings, isOnline ->
                 settings.offlineMode || !isOnline
             }.collectLatest { isOffline ->
@@ -109,81 +112,40 @@ class EntityDetailViewModel(
 
     private fun updateDownloadState(
         offlineTracks: List<OfflineTrack>,
-        activeDownloads: Map<String, Float>
+        activeDownloads: Map<String, Float>,
     ) {
         val songs = getEntitySongs()
         if (songs.isEmpty()) {
-            _uiState.update {
-                it.copy(
-                    isDownloaded = false,
-                    isDownloading = false,
-                    downloadProgress = 0f,
-                    downloadedTrackCount = 0,
-                    totalTrackCount = 0,
-                    currentDownloadingTrackTitle = null,
-                    downloadedTrackIds = emptySet(),
-                    activeDownloadsMap = emptyMap()
-                )
-            }
+            resetEmptyDownloadState()
             return
         }
 
-        val completedOffline = offlineTracks.filter {
-            it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.MANUAL
-        }
-
-        val completedKeys = mutableSetOf<String>()
-        val completedSignatures = mutableSetOf<String>()
-
-        for (ot in completedOffline) {
-            completedKeys.add(ot.track.id)
-            completedKeys.add(ot.track.id.removePrefix("piped:"))
-            completedKeys.add("piped:${ot.track.id.removePrefix("piped:")}")
-            ot.track.sourceId?.let { completedKeys.add(it) }
-            completedSignatures.add(
-                "${ot.track.title.trim().lowercase()}:::${
-                    ot.track.artist.trim().lowercase()
-                }"
-            )
-        }
-
+        val completedOffline =
+            offlineTracks.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+        val (completedKeys, completedSignatures) = buildCompletedTrackLookups(completedOffline)
         val completedTrackIds = mutableSetOf<String>()
         var completedCount = 0
 
         for (song in songs) {
-            val songSig = "${song.title.trim().lowercase()}:::${song.artist.trim().lowercase()}"
-            val isCompleted = song.id in completedKeys ||
-                    song.id.removePrefix("piped:") in completedKeys ||
-                    (song.sourceId != null && song.sourceId in completedKeys) ||
-                    songSig in completedSignatures
-
-            if (isCompleted) {
+            if (isSongCompleted(song, completedKeys, completedSignatures)) {
                 completedTrackIds.add(song.id)
+                completedTrackIds.add(cleanTrackId(song.id))
+                song.sourceId?.let { completedTrackIds.add(cleanTrackId(it)) }
                 completedCount++
             }
         }
 
         val isDownloading =
-            songs.any { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }
-        val isDownloaded = completedCount == songs.size && songs.isNotEmpty()
-
-        val currentDownloading =
-            songs.firstOrNull { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }?.title
-
-        val progress = if (songs.isNotEmpty()) {
-            val totalTrackProgress = songs.sumOf { track ->
-                when {
-                    track.id in completedTrackIds -> 1.0
-                    track.id in activeDownloads -> activeDownloads[track.id]?.toDouble() ?: 0.0
-                    track.id.removePrefix("piped:") in activeDownloads -> activeDownloads[track.id.removePrefix(
-                        "piped:"
-                    )]?.toDouble() ?: 0.0
-
-                    else -> 0.0
-                }
+            songs.any {
+                it.id in activeDownloads.keys || cleanTrackId(it.id) in activeDownloads.keys
             }
-            (totalTrackProgress / songs.size).toFloat()
-        } else 0f
+        val isDownloaded = completedCount == songs.size && songs.isNotEmpty()
+        val currentDownloading =
+            songs
+                .firstOrNull {
+                    it.id in activeDownloads.keys || cleanTrackId(it.id) in activeDownloads.keys
+                }?.title
+        val progress = computeOverallDownloadProgress(songs, completedTrackIds, activeDownloads)
 
         _uiState.update {
             it.copy(
@@ -194,25 +156,45 @@ class EntityDetailViewModel(
                 totalTrackCount = songs.size,
                 currentDownloadingTrackTitle = currentDownloading,
                 downloadedTrackIds = completedTrackIds,
-                activeDownloadsMap = activeDownloads
+                activeDownloadsMap = activeDownloads,
             )
         }
     }
 
-    private fun getEntitySongs(): List<Track> {
-        return when (val e = _uiState.value.entity) {
-            is SearchResult.Album -> e.songs.orEmpty()
-            is SearchResult.Playlist -> e.songs.orEmpty()
-            is SearchResult.Artist -> e.topSongs.orEmpty()
-            else -> emptyList()
+    private fun resetEmptyDownloadState() {
+        _uiState.update {
+            it.copy(
+                isDownloaded = false,
+                isDownloading = false,
+                downloadProgress = 0f,
+                downloadedTrackCount = 0,
+                totalTrackCount = 0,
+                currentDownloadingTrackTitle = null,
+                downloadedTrackIds = emptySet(),
+                activeDownloadsMap = emptyMap(),
+            )
         }
     }
+
+    private fun getEntitySongs(): List<Track> =
+        when (val e = _uiState.value.entity) {
+            is SearchResult.Album -> e.songs.orEmpty()
+            is SearchResult.Playlist -> e.songs.orEmpty()
+            is SearchResult.Artist -> {
+                val sectionSongs =
+                    e.sections.flatMap { (_, items) ->
+                        items.filterIsInstance<SearchResult.Song>().map { it.track }
+                    }
+                (e.topSongs.orEmpty() + _uiState.value.downloadedArtistTracks + sectionSongs).distinctBy { it.id }
+            }
+            else -> emptyList()
+        }
 
     fun loadAlbum(
         id: String,
         initialTitle: String = "",
         initialArtwork: String? = null,
-        initialAuthor: String = ""
+        initialAuthor: String = "",
     ) {
         loadEntity(
             SearchResult.Album(
@@ -220,8 +202,8 @@ class EntityDetailViewModel(
                 title = initialTitle,
                 author = initialAuthor,
                 year = null,
-                artworkUrl = initialArtwork
-            )
+                artworkUrl = initialArtwork,
+            ),
         )
     }
 
@@ -229,13 +211,19 @@ class EntityDetailViewModel(
         id: String,
         initialTitle: String = "",
         initialArtwork: String? = null,
-        initialAuthor: String = ""
+        initialAuthor: String = "",
     ) {
-        val isCustom = id.startsWith("local:")
-                || id.startsWith("custom:")
-                || (id.toLongOrNull() != null && !id.startsWith("VL") && !id.startsWith("PL") && !id.startsWith(
-            "RD"
-        ))
+        val isCustom =
+            id.startsWith("local:") ||
+                id.startsWith("custom:") ||
+                (
+                    id.toLongOrNull() != null &&
+                        !id.startsWith("VL") &&
+                        !id.startsWith("PL") &&
+                        !id.startsWith(
+                            "RD",
+                        )
+                )
         val localPlaylistId = id.removePrefix("local:").removePrefix("custom:").toLongOrNull()
         if (isCustom && localPlaylistId != null) {
             loadLocalPlaylist(localPlaylistId, id, initialTitle)
@@ -248,26 +236,31 @@ class EntityDetailViewModel(
                 title = initialTitle,
                 author = initialAuthor,
                 trackCount = null,
-                artworkUrl = initialArtwork
-            )
+                artworkUrl = initialArtwork,
+            ),
         )
     }
 
     private var currentLoadJob: Job? = null
 
-    private fun loadLocalPlaylist(playlistId: Long, rawId: String, initialTitle: String) {
+    private fun loadLocalPlaylist(
+        playlistId: Long,
+        rawId: String,
+        initialTitle: String,
+    ) {
         currentLoadJob?.cancel()
         _uiState.update {
             it.copy(
                 isLoading = true,
-                entity = SearchResult.Playlist(
-                    id = rawId,
-                    title = initialTitle.ifBlank { "Mi playlist" },
-                    author = "Tú",
-                    trackCount = 0,
-                    artworkUrl = null,
-                    songs = emptyList()
-                ),
+                entity =
+                    SearchResult.Playlist(
+                        id = rawId,
+                        title = initialTitle.ifBlank { "Mi playlist" },
+                        author = "Tú",
+                        trackCount = 0,
+                        artworkUrl = null,
+                        songs = emptyList(),
+                    ),
                 error = null,
                 isDownloaded = false,
                 isDownloading = false,
@@ -277,44 +270,49 @@ class EntityDetailViewModel(
                 currentDownloadingTrackTitle = null,
                 downloadedTrackIds = emptySet(),
                 activeDownloadsMap = emptyMap(),
-                downloadedArtistTracks = emptyList()
+                downloadedArtistTracks = emptyList(),
             )
         }
-        currentLoadJob = viewModelScope.launch(ioDispatcher) {
-            if (getPlaylistTracksUseCase != null) {
-                getPlaylistTracksUseCase(playlistId).collectLatest { tracks ->
-                    _uiState.update { current ->
-                        val currentPlaylist = current.entity as? SearchResult.Playlist
-                        val title =
-                            currentPlaylist?.title?.takeIf { t -> t.isNotBlank() && t != "Mi playlist" }
-                                ?: initialTitle.ifBlank { "Mi playlist" }
-                        val resolved = SearchResult.Playlist(
-                            id = rawId,
-                            title = title,
-                            author = "Tú",
-                            trackCount = tracks.size,
-                            artworkUrl = tracks.firstOrNull()?.artworkUrl,
-                            songs = tracks
-                        )
-                        current.copy(
-                            isLoading = false,
-                            entity = resolved,
-                            error = null
-                        )
+        currentLoadJob =
+            viewModelScope.launch(ioDispatcher) {
+                if (getPlaylistTracksUseCase != null) {
+                    getPlaylistTracksUseCase(playlistId).collectLatest { tracks ->
+                        _uiState.update { current ->
+                            val currentPlaylist = current.entity as? SearchResult.Playlist
+                            val title =
+                                currentPlaylist?.title?.takeIf { t -> t.isNotBlank() && t != "Mi playlist" }
+                                    ?: initialTitle.ifBlank { "Mi playlist" }
+                            val resolved =
+                                SearchResult.Playlist(
+                                    id = rawId,
+                                    title = title,
+                                    author = "Tú",
+                                    trackCount = tracks.size,
+                                    artworkUrl = tracks.firstOrNull()?.artworkUrl,
+                                    songs = tracks,
+                                )
+                            current.copy(
+                                isLoading = false,
+                                entity = resolved,
+                                error = null,
+                            )
+                        }
+                        val offlineTracks = offlineRepository.getOfflineTracks()
+                        updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
                     }
-                    val offlineTracks = offlineRepository.getOfflineTracks()
-                    updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
+                } else {
+                    _uiState.update { it.copy(isLoading = false) }
                 }
-            } else {
-                _uiState.update { it.copy(isLoading = false) }
             }
-        }
     }
 
     fun removeTrackFromLocalPlaylist(trackId: String) {
         val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
         val localPlaylistId =
-            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+            entity.id
+                .removePrefix("local:")
+                .removePrefix("custom:")
+                .toLongOrNull() ?: return
         val currentSongs = (entity.songs ?: emptyList()).filter { it.id != trackId }
         _uiState.update {
             it.copy(entity = entity.copy(songs = currentSongs, trackCount = currentSongs.size))
@@ -324,10 +322,16 @@ class EntityDetailViewModel(
         }
     }
 
-    fun moveLocalPlaylistTrack(fromIndex: Int, toIndex: Int) {
+    fun moveLocalPlaylistTrack(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
         val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
         val localPlaylistId =
-            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+            entity.id
+                .removePrefix("local:")
+                .removePrefix("custom:")
+                .toLongOrNull() ?: return
         val currentSongs = (entity.songs ?: emptyList()).toMutableList()
         if (fromIndex !in currentSongs.indices || toIndex !in currentSongs.indices || fromIndex == toIndex) return
         val movedTrack = currentSongs.removeAt(fromIndex)
@@ -343,7 +347,10 @@ class EntityDetailViewModel(
     fun renameLocalPlaylist(newName: String) {
         val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
         val localPlaylistId =
-            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+            entity.id
+                .removePrefix("local:")
+                .removePrefix("custom:")
+                .toLongOrNull() ?: return
         if (newName.isBlank()) return
         viewModelScope.launch {
             renamePlaylistUseCase?.invoke(localPlaylistId, newName)
@@ -357,24 +364,37 @@ class EntityDetailViewModel(
     fun deleteLocalPlaylist(onDeleted: () -> Unit) {
         val entity = _uiState.value.entity as? SearchResult.Playlist ?: return
         val localPlaylistId =
-            entity.id.removePrefix("local:").removePrefix("custom:").toLongOrNull() ?: return
+            entity.id
+                .removePrefix("local:")
+                .removePrefix("custom:")
+                .toLongOrNull() ?: return
         viewModelScope.launch {
             deletePlaylistUseCase?.invoke(localPlaylistId)
             onDeleted()
         }
     }
 
-    fun loadArtist(id: String, initialName: String = "", initialArtwork: String? = null) {
+    fun loadArtist(
+        id: String,
+        initialName: String = "",
+        initialArtwork: String? = null,
+    ) {
         loadEntity(
             SearchResult.Artist(
                 id = id,
                 name = initialName,
-                artworkUrl = initialArtwork
-            )
+                artworkUrl = initialArtwork,
+            ),
         )
     }
 
+    private fun isEffectivelyOffline(): Boolean =
+        _uiState.value.isOffline ||
+            getSettingsUseCase().value.offlineMode ||
+            networkMonitor?.isOnline?.value == false
+
     fun toggleSave() {
+        if (isEffectivelyOffline()) return
         val entity = _uiState.value.entity ?: return
         val newSaved = !_uiState.value.isSaved
         _uiState.update { it.copy(isSaved = newSaved) }
@@ -384,9 +404,16 @@ class EntityDetailViewModel(
                     is SearchResult.Album -> toggleLikeAlbumUseCase(entity.id, newSaved)
                     is SearchResult.Playlist -> {
                         val isCustom =
-                            entity.id.startsWith("local:") || entity.id.startsWith("custom:") || (entity.id.toLongOrNull() != null && !entity.id.startsWith(
-                                "VL"
-                            ) && !entity.id.startsWith("PL") && !entity.id.startsWith("RD"))
+                            entity.id.startsWith("local:") ||
+                                entity.id.startsWith("custom:") ||
+                                (
+                                    entity.id.toLongOrNull() != null &&
+                                        !entity.id.startsWith(
+                                            "VL",
+                                        ) &&
+                                        !entity.id.startsWith("PL") &&
+                                        !entity.id.startsWith("RD")
+                                )
                         if (!isCustom) {
                             toggleLikePlaylistUseCase(entity.id, newSaved)
                         }
@@ -408,8 +435,8 @@ class EntityDetailViewModel(
 
         viewModelScope.launch {
             if (currentlyDownloaded) {
-                for (track in songs) {
-                    downloadManager.deleteDownload(track.id)
+                for ((id) in songs) {
+                    downloadManager.deleteDownload(id)
                 }
             } else {
                 downloadManager.downloadTracks(songs)
@@ -418,34 +445,39 @@ class EntityDetailViewModel(
     }
 
     private fun checkSavedStatus(entity: SearchResult) {
+        if (isEffectivelyOffline()) return
         viewModelScope.launch(ioDispatcher) {
             try {
-                val isSaved = when (entity) {
-                    is SearchResult.Album -> {
-                        getUserAlbumsUseCase?.invoke()?.getOrNull()?.any {
-                            it.id == entity.id ||
-                                    (it.title.equals(
-                                        entity.title,
-                                        ignoreCase = true
-                                    ) && it.author.equals(entity.author, ignoreCase = true))
-                        } == true
-                    }
+                val isSaved =
+                    when (entity) {
+                        is SearchResult.Album -> {
+                            getUserAlbumsUseCase?.invoke()?.getOrNull()?.any {
+                                it.id == entity.id ||
+                                    (
+                                        it.title.equals(
+                                            entity.title,
+                                            ignoreCase = true,
+                                        ) &&
+                                            it.author.equals(entity.author, ignoreCase = true)
+                                    )
+                            } == true
+                        }
 
-                    is SearchResult.Playlist -> {
-                        val cleanId = entity.id.removePrefix("VL")
-                        getUserPlaylistsUseCase?.invoke()?.getOrNull()?.any {
-                            it.id == entity.id || it.id.removePrefix("VL") == cleanId
-                        } == true
-                    }
+                        is SearchResult.Playlist -> {
+                            val cleanId = entity.id.removePrefix("VL")
+                            getUserPlaylistsUseCase?.invoke()?.getOrNull()?.any {
+                                it.id == entity.id || it.id.removePrefix("VL") == cleanId
+                            } == true
+                        }
 
-                    is SearchResult.Artist -> {
-                        getUserArtistsUseCase?.invoke()?.getOrNull()?.any {
-                            it.id == entity.id || it.name.equals(entity.name, ignoreCase = true)
-                        } == true
-                    }
+                        is SearchResult.Artist -> {
+                            getUserArtistsUseCase?.invoke()?.getOrNull()?.any {
+                                it.id == entity.id || it.name.equals(entity.name, ignoreCase = true)
+                            } == true
+                        }
 
-                    else -> false
-                }
+                        else -> false
+                    }
                 _uiState.update { it.copy(isSaved = isSaved) }
             } catch (_: Exception) {
             }
@@ -460,7 +492,7 @@ class EntityDetailViewModel(
                 it.copy(
                     isLoading = false,
                     entity = cached,
-                    error = null
+                    error = null,
                 )
             }
         } else {
@@ -478,194 +510,160 @@ class EntityDetailViewModel(
                     currentDownloadingTrackTitle = null,
                     downloadedTrackIds = emptySet(),
                     activeDownloadsMap = emptyMap(),
-                    downloadedArtistTracks = emptyList()
+                    downloadedArtistTracks = emptyList(),
                 )
             }
         }
-        checkSavedStatus(initial)
-        currentLoadJob = viewModelScope.launch(ioDispatcher) {
-            val loadedOffline = if (cached == null) loadEntityOffline(initial) else false
-            if (loadedOffline) {
-                val offlineTracks = offlineRepository.getOfflineTracks()
-                updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
-            }
-
-            val isOffline = getSettingsUseCase.getSnapshot().offlineMode || networkMonitor?.isOnline?.value == false
-            if (isOffline) {
-                if (!loadedOffline && cached == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "No hay contenido descargado para este elemento."
-                        )
+        if (!isEffectivelyOffline()) {
+            checkSavedStatus(initial)
+        }
+        currentLoadJob =
+            viewModelScope.launch(ioDispatcher) {
+                val loadedOffline = cached == null && loadEntityOffline(initial)
+                if (loadedOffline || cached != null) {
+                    val offlineTracks = offlineRepository.getOfflineTracks()
+                    val artistEntity =
+                        (_uiState.value.entity as? SearchResult.Artist) ?: (cached as? SearchResult.Artist)
+                    if (artistEntity != null) {
+                        val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
+                        val matchingOfflineTracks =
+                            findMatchingOfflineArtistTracks(artistEntity, offlineTracks, initialArtistId)
+                        _uiState.update { current ->
+                            current.copy(
+                                downloadedArtistTracks =
+                                    matchingOfflineTracks.ifEmpty { current.downloadedArtistTracks },
+                            )
+                        }
                     }
-                }
-                return@launch
-            }
-
-            try {
-                val isOnlineAlbumId = when (initial) {
-                    is SearchResult.Album -> initial.id.startsWith("MPRE") || initial.id.startsWith(
-                        "OLAK"
-                    ) || initial.id.startsWith("VL") || initial.id.startsWith("FE") || initial.id.startsWith(
-                        "piped:"
-                    )
-
-                    else -> false
+                    updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
                 }
 
-                if (loadedOffline && initial is SearchResult.Album && !isOnlineAlbumId) {
+                if (isEffectivelyOffline()) {
+                    if (!loadedOffline && cached == null) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "No hay contenido descargado para este elemento.",
+                            )
+                        }
+                    }
                     return@launch
                 }
 
-                val fullDetails = getEntityDetailsUseCase(initial)
-                val hasContent = when (fullDetails) {
-                    is SearchResult.Album -> !fullDetails.songs.isNullOrEmpty()
-                    is SearchResult.Playlist -> !fullDetails.songs.isNullOrEmpty()
-                    is SearchResult.Artist -> !fullDetails.topSongs.isNullOrEmpty() || fullDetails.sections.isNotEmpty()
-                    else -> true
-                }
+                try {
+                    val isOnlineAlbumId =
+                        when (initial) {
+                            is SearchResult.Album ->
+                                initial.id.startsWith("MPRE") ||
+                                    initial.id.startsWith(
+                                        "OLAK",
+                                    ) ||
+                                    initial.id.startsWith("VL") ||
+                                    initial.id.startsWith("FE") ||
+                                    initial.id.startsWith(
+                                        "piped:",
+                                    )
 
-                if (hasContent) {
-                    entityCache?.save(fullDetails)
-                    if (loadedOffline && fullDetails is SearchResult.Album && initial is SearchResult.Album) {
-                        val initialAuthor =
-                            initial.author.takeIf { it.isNotBlank() && it != "Unknown" }
-                        val fullAuthor =
-                            fullDetails.author.takeIf { it.isNotBlank() && it != "Unknown" }
-                        if (initialAuthor != null && fullAuthor != null &&
-                            !fullAuthor.contains(initialAuthor, ignoreCase = true) &&
-                            !initialAuthor.contains(fullAuthor, ignoreCase = true)
-                        ) {
-                            return@launch
+                            else -> false
+                        }
+
+                    if (loadedOffline && initial is SearchResult.Album && !isOnlineAlbumId) {
+                        return@launch
+                    }
+
+                    val fullDetails = getEntityDetailsUseCase(initial)
+                    val hasContent =
+                        when (fullDetails) {
+                            is SearchResult.Album -> !fullDetails.songs.isNullOrEmpty()
+                            is SearchResult.Playlist -> !fullDetails.songs.isNullOrEmpty()
+                            is SearchResult.Artist ->
+                                !fullDetails.topSongs.isNullOrEmpty() || fullDetails.sections.isNotEmpty()
+
+                            else -> true
+                        }
+
+                    if (hasContent) {
+                        entityCache?.save(fullDetails)
+                        if (loadedOffline && fullDetails is SearchResult.Album && initial is SearchResult.Album) {
+                            val initialAuthor =
+                                initial.author.takeIf { it.isNotBlank() && it != "Unknown" }
+                            val fullAuthor =
+                                fullDetails.author.takeIf { it.isNotBlank() && it != "Unknown" }
+                            if (initialAuthor != null &&
+                                fullAuthor != null &&
+                                !fullAuthor.contains(initialAuthor, ignoreCase = true) &&
+                                !initialAuthor.contains(fullAuthor, ignoreCase = true)
+                            ) {
+                                return@launch
+                            }
+                        }
+
+                        val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
+                        val matchingOfflineArtistTracks =
+                            if (fullDetails is SearchResult.Artist) {
+                                findMatchingOfflineArtistTracks(
+                                    artist = fullDetails,
+                                    offlineTracks = offlineRepository.getOfflineTracks(),
+                                    initialArtistId = initialArtistId,
+                                )
+                            } else {
+                                emptyList()
+                            }
+
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                entity = fullDetails,
+                                downloadedArtistTracks =
+                                    matchingOfflineArtistTracks.ifEmpty { it.downloadedArtistTracks },
+                                error = null,
+                            )
+                        }
+                        val offlineTracks = offlineRepository.getOfflineTracks()
+                        updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
+                    } else if (!loadedOffline && cached == null) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = "No se pudieron obtener los detalles del elemento.",
+                            )
                         }
                     }
-
-                    val initialArtistId = (initial as? SearchResult.Artist)?.id.orEmpty()
-                    val matchingOfflineArtistTracks = if (fullDetails is SearchResult.Artist) {
-                        offlineRepository.getOfflineTracks()
-                            .filter { it.downloadStatus == DownloadStatus.COMPLETED && it.downloadType == DownloadType.MANUAL }
-                            .map { it.track }
-                            .filter {
-                                it.artist.contains(fullDetails.name, ignoreCase = true) ||
-                                        (initialArtistId.isNotBlank() && it.artist.contains(
-                                            initialArtistId,
-                                            ignoreCase = true
-                                        ))
-                            }
-                    } else emptyList()
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            entity = fullDetails,
-                            downloadedArtistTracks = matchingOfflineArtistTracks.ifEmpty { it.downloadedArtistTracks },
-                            error = null
-                        )
-                    }
-                    val offlineTracks = offlineRepository.getOfflineTracks()
-                    updateDownloadState(offlineTracks, downloadManager.activeDownloads.value)
-                } else if (!loadedOffline && cached == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "No se pudieron obtener los detalles del elemento."
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                if (!loadedOffline && cached == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = e.message ?: "Error al cargar detalles"
-                        )
+                } catch (e: Exception) {
+                    if (!loadedOffline && cached == null) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = e.message ?: "Error al cargar detalles",
+                            )
+                        }
                     }
                 }
             }
-        }
     }
 
     private suspend fun loadEntityOffline(initial: SearchResult): Boolean {
-        val cached = entityCache?.get(initial.entityId)
-        if (cached != null) {
+        val resolved = resolveOfflineEntity(initial, entityCache, offlineRepository, libraryCache)
+        if (resolved != null) {
+            val matchingArtistTracks =
+                if (resolved is SearchResult.Artist) {
+                    findMatchingOfflineArtistTracks(
+                        artist = resolved,
+                        offlineTracks = offlineRepository.getOfflineTracks(),
+                        initialArtistId = resolved.id,
+                    )
+                } else {
+                    emptyList()
+                }
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    entity = cached,
-                    error = null
+                    entity = resolved,
+                    downloadedArtistTracks = matchingArtistTracks.ifEmpty { it.downloadedArtistTracks },
+                    error = null,
                 )
             }
             return true
-        }
-
-        val allOffline = offlineRepository.getOfflineTracks()
-        when (initial) {
-            is SearchResult.Album -> {
-                val albumQuery = initial.title.ifBlank { initial.id }
-                val hasAuthor = initial.author.isNotBlank() && initial.author != "Unknown"
-                val matchingTracks = allOffline
-                    .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                    .map { it.track }
-                    .filter {
-                        val matchesAlbum = albumQuery.isNotBlank() && it.album.equals(
-                            albumQuery,
-                            ignoreCase = true
-                        )
-                        val matchesAuthor =
-                            hasAuthor && it.artist.equals(initial.author, ignoreCase = true)
-
-                        if (albumQuery.isNotBlank() && hasAuthor) {
-                            matchesAlbum && matchesAuthor
-                        } else if (albumQuery.isNotBlank()) {
-                            matchesAlbum
-                        } else if (hasAuthor) {
-                            matchesAuthor
-                        } else {
-                            false
-                        }
-                    }
-                if (matchingTracks.isNotEmpty()) {
-                    val resolved = initial.copy(
-                        title = initial.title.ifBlank { matchingTracks.first().album },
-                        songs = matchingTracks,
-                        artworkUrl = initial.artworkUrl ?: matchingTracks.firstOrNull()?.artworkUrl,
-                        author = initial.author.ifBlank { matchingTracks.first().artist }
-                    )
-                    _uiState.update { it.copy(isLoading = false, entity = resolved, error = null) }
-                    return true
-                }
-            }
-
-            is SearchResult.Playlist -> {
-                return false
-            }
-
-            is SearchResult.Artist -> {
-                val artistQuery = initial.name.ifBlank { initial.id }
-                val matchingTracks = allOffline
-                    .filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                    .map { it.track }
-                    .filter { it.artist.contains(artistQuery, ignoreCase = true) }
-                if (matchingTracks.isNotEmpty()) {
-                    val resolved = initial.copy(
-                        name = initial.name.ifBlank { matchingTracks.first().artist },
-                        topSongs = matchingTracks,
-                        artworkUrl = initial.artworkUrl ?: matchingTracks.firstOrNull()?.artworkUrl
-                    )
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            entity = resolved,
-                            downloadedArtistTracks = matchingTracks,
-                            error = null
-                        )
-                    }
-                    return true
-                }
-            }
-
-            else -> {}
         }
         return false
     }

@@ -5,12 +5,15 @@ import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.repository.LyricsRepository
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.core.util.MeloDispatchers
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
@@ -36,6 +39,7 @@ class DownloadManagerImpl(
     private val getStreamUseCase: GetStreamUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
     private val offlineRepository: OfflineRepository,
+    private val lyricsRepository: LyricsRepository? = null,
     private val configDirPath: String,
     private val dispatcher: CoroutineDispatcher = MeloDispatchers.IO,
 ) : DownloadManager {
@@ -82,8 +86,10 @@ class DownloadManagerImpl(
                 ) {
                     PlatformFileSystem.copyFile(existingPath, targetFilePath)
                 }
+
                 val promotedTrack =
                     existing.copy(
+                        track = resolveLocalArtwork(existing.track),
                         localFilePath = targetFilePath,
                         downloadStatus = DownloadStatus.COMPLETED,
                         downloadType = DownloadType.MANUAL,
@@ -145,12 +151,18 @@ class DownloadManagerImpl(
 
                 val completedTrack =
                     offlineTrack.copy(
+                        track = resolveLocalArtwork(track),
                         localFilePath = targetFilePath,
                         downloadStatus = DownloadStatus.COMPLETED,
                         downloadedAt = Clock.System.now().toEpochMilliseconds(),
                         fileSize = totalBytes,
                     )
                 offlineRepository.saveOfflineTrack(completedTrack)
+                try {
+                    lyricsRepository?.getTrackLyrics(track.artist, track.title)
+                } catch (_: Exception) {
+                }
+
                 try {
                     offlineRepository.updateTrackMetadata(
                         trackId = track.id,
@@ -221,7 +233,7 @@ class DownloadManagerImpl(
 
                 val cachedTrack =
                     OfflineTrack(
-                        track = track,
+                        track = resolveLocalArtwork(track),
                         localFilePath = targetFilePath,
                         downloadStatus = DownloadStatus.COMPLETED,
                         downloadType = DownloadType.CACHE,
@@ -247,40 +259,61 @@ class DownloadManagerImpl(
         tempFilePath: String,
         onProgress: ((bytesWritten: Long, totalBytes: Long?) -> Unit)? = null,
     ): Long =
-        httpClient.prepareGet(streamUrl) {
-            header(
-                HttpHeaders.UserAgent,
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            )
-            header(HttpHeaders.Accept, "*/*")
-        }.execute { response ->
-            if (!response.status.isSuccess()) {
-                val status = response.status
-                throw IllegalStateException("HTTP ${status.value} downloading stream: ${status.description}")
-            }
-            val contentLength = response.contentLength()
-            val channel: ByteReadChannel = response.bodyAsChannel()
-            var bytesWritten = 0L
-            val buffer = ByteArray(STREAM_BUFFER_SIZE)
-
-            PlatformFileSystem.writeStream(tempFilePath) { writeChunk ->
-                while (!channel.isClosedForRead) {
-                    val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
-                    if (bytesRead <= 0) break
-                    writeChunk(buffer, 0, bytesRead)
-                    bytesWritten += bytesRead
-                    onProgress?.invoke(bytesWritten, contentLength)
+        httpClient
+            .prepareGet(streamUrl) {
+                header(
+                    HttpHeaders.UserAgent,
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                )
+                header(HttpHeaders.Accept, "*/*")
+            }.execute { response ->
+                if (!response.status.isSuccess()) {
+                    val status = response.status
+                    throw IllegalStateException("HTTP ${status.value} downloading stream: ${status.description}")
                 }
+                val contentLength = response.contentLength()
+                val channel: ByteReadChannel = response.bodyAsChannel()
+                var bytesWritten = 0L
+                val buffer = ByteArray(STREAM_BUFFER_SIZE)
+
+                PlatformFileSystem.writeStream(tempFilePath) { writeChunk ->
+                    while (!channel.isClosedForRead) {
+                        val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                        if (bytesRead <= 0) break
+                        writeChunk(buffer, 0, bytesRead)
+                        bytesWritten += bytesRead
+                        onProgress?.invoke(bytesWritten, contentLength)
+                    }
+                }
+                bytesWritten
             }
-            bytesWritten
-        }
 
     private fun isCachedAndValid(existing: OfflineTrack?): Boolean {
         val path = existing?.localFilePath ?: return false
         return existing.downloadStatus == DownloadStatus.COMPLETED &&
             PlatformFileSystem.fileExists(path) &&
             PlatformFileSystem.fileSize(path) > MIN_VALID_AUDIO_BYTES
+    }
+
+    private suspend fun resolveLocalArtwork(track: Track): Track {
+        val rawUrl = extractArtworkUrl(track)
+        if (rawUrl == null || rawUrl.startsWith("file:") || rawUrl.startsWith("content:")) {
+            return track
+        }
+
+        val artworksDir = "$configDirPath/artworks"
+        PlatformFileSystem.makeDirs(artworksDir)
+        val artPath = "$artworksDir/art_${track.id.hashCode()}.jpg"
+
+        val localUri =
+            if (PlatformFileSystem.fileExists(artPath) && PlatformFileSystem.fileSize(artPath) > 0L) {
+                PlatformFileSystem.toFileUri(artPath)
+            } else {
+                fetchAndSaveArtwork(httpClient, rawUrl, artPath)
+            }
+
+        return if (localUri != null) track.copy(artworkUrl = localUri) else track
     }
 
     override suspend fun downloadTracks(
@@ -311,6 +344,11 @@ class DownloadManagerImpl(
     override suspend fun deleteDownload(trackId: String) {
         cancelDownload(trackId)
         offlineRepository.removeOfflineTrack(trackId)
+
+        val artPath = "$configDirPath/artworks/art_${trackId.hashCode()}.jpg"
+        if (PlatformFileSystem.fileExists(artPath)) {
+            PlatformFileSystem.deleteFile(artPath)
+        }
     }
 
     override suspend fun isDownloaded(trackId: String): Boolean {
@@ -321,12 +359,9 @@ class DownloadManagerImpl(
                 track.downloadType == DownloadType.MANUAL
         return isManualCompleted &&
             path != null &&
-            isDownloadedFileValid(path)
-    }
-
-    private fun isDownloadedFileValid(path: String): Boolean =
-        PlatformFileSystem.fileExists(path) &&
+            PlatformFileSystem.fileExists(path) &&
             PlatformFileSystem.fileSize(path) > MIN_VALID_AUDIO_BYTES
+    }
 
     companion object {
         const val MAX_AUTO_CACHE_DURATION_MS = 45 * 60 * 1000L
@@ -334,3 +369,44 @@ class DownloadManagerImpl(
         private const val MIN_VALID_AUDIO_BYTES = 64 * 1024L
     }
 }
+
+private fun extractArtworkUrl(track: Track): String? {
+    val existing = track.artworkUrl?.takeIf { it.isNotBlank() }
+    if (existing != null) return existing
+
+    val videoId =
+        track.sourceId?.takeIf { it.isNotBlank() }
+            ?: if (track.id.startsWith("piped:")) track.id.removePrefix("piped:") else null
+
+    return videoId?.let { "https://i.ytimg.com/vi/$it/hqdefault.jpg" }
+}
+
+private suspend fun fetchAndSaveArtwork(
+    httpClient: HttpClient,
+    url: String,
+    targetPath: String,
+): String? =
+    try {
+        val response =
+            httpClient.get(url) {
+                header(
+                    HttpHeaders.UserAgent,
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                )
+            }
+
+        if (response.status.isSuccess()) {
+            val bytes: ByteArray = response.body()
+            if (bytes.isNotEmpty()) {
+                PlatformFileSystem.writeBytes(targetPath, bytes)
+                PlatformFileSystem.toFileUri(targetPath)
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    } catch (_: Exception) {
+        null
+    }
