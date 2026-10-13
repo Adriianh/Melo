@@ -48,13 +48,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
-enum class SearchFilterType(val label: String) {
+enum class SearchFilterType(
+    val label: String,
+) {
     ALL("Todos"),
     SONGS("Canciones"),
     ALBUMS("Álbumes"),
     ARTISTS("Artistas"),
     PLAYLISTS("Playlists"),
-    VIDEOS("Videos")
+    VIDEOS("Videos"),
 }
 
 data class SearchUiState(
@@ -81,14 +83,15 @@ data class SearchUiState(
     val isOfflineSearch: Boolean = false,
 ) {
     val hasResults: Boolean
-        get() = when (selectedFilter) {
-            SearchFilterType.ALL -> summarySections.isNotEmpty()
-            SearchFilterType.SONGS -> songResults.isNotEmpty()
-            SearchFilterType.ALBUMS -> albumResults.isNotEmpty()
-            SearchFilterType.ARTISTS -> artistResults.isNotEmpty()
-            SearchFilterType.PLAYLISTS -> playlistResults.isNotEmpty()
-            SearchFilterType.VIDEOS -> videoResults.isNotEmpty()
-        }
+        get() =
+            when (selectedFilter) {
+                SearchFilterType.ALL -> summarySections.isNotEmpty()
+                SearchFilterType.SONGS -> songResults.isNotEmpty()
+                SearchFilterType.ALBUMS -> albumResults.isNotEmpty()
+                SearchFilterType.ARTISTS -> artistResults.isNotEmpty()
+                SearchFilterType.PLAYLISTS -> playlistResults.isNotEmpty()
+                SearchFilterType.VIDEOS -> videoResults.isNotEmpty()
+            }
 }
 
 class SearchViewModel(
@@ -114,7 +117,6 @@ class SearchViewModel(
     private val scanLocalTracksUseCase: ScanLocalTracksUseCase,
     private val networkMonitor: NetworkMonitor? = null,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
@@ -139,8 +141,11 @@ class SearchViewModel(
         }
     }
 
-    private fun isEffectivelyOffline(): Boolean =
-        getSettingsUseCase().value.offlineMode || (networkMonitor?.isOnline?.value == false)
+    private fun isEffectivelyOffline(): Boolean {
+        val isManualOffline = getSettingsUseCase().value.offlineMode
+        val isNetworkDisconnected = networkMonitor?.isOnline?.value == false
+        return isManualOffline || isNetworkDisconnected
+    }
 
     init {
         viewModelScope.launch {
@@ -205,24 +210,26 @@ class SearchViewModel(
             return
         }
 
-        suggestionsJob = viewModelScope.launch {
-            if (isEffectivelyOffline()) {
-                _uiState.update { it.copy(suggestions = emptyList()) }
-                return@launch
+        suggestionsJob =
+            viewModelScope.launch {
+                if (isEffectivelyOffline()) {
+                    _uiState.update { it.copy(suggestions = emptyList()) }
+                    return@launch
+                }
+                delay(200.milliseconds)
+                try {
+                    val suggestions = getSearchSuggestionsUseCase(query)
+                    _uiState.update { it.copy(suggestions = suggestions) }
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(suggestions = emptyList()) }
+                }
             }
-            delay(200.milliseconds)
-            try {
-                val suggestions = getSearchSuggestionsUseCase(query)
-                _uiState.update { it.copy(suggestions = suggestions) }
-            } catch (_: Exception) {
-                _uiState.update { it.copy(suggestions = emptyList()) }
-            }
-        }
 
-        searchJob = viewModelScope.launch {
-            delay(400.milliseconds)
-            performSearch(query, _uiState.value.selectedFilter)
-        }
+        searchJob =
+            viewModelScope.launch {
+                delay(400.milliseconds)
+                performSearch(query, _uiState.value.selectedFilter)
+            }
     }
 
     fun onFilterSelected(filter: SearchFilterType) {
@@ -241,12 +248,16 @@ class SearchViewModel(
         suggestionsJob.cancel()
         _uiState.update { it.copy(query = trimmed, suggestions = emptyList()) }
 
-        searchJob = viewModelScope.launch {
-            performSearch(trimmed, _uiState.value.selectedFilter)
-        }
+        searchJob =
+            viewModelScope.launch {
+                performSearch(trimmed, _uiState.value.selectedFilter)
+            }
     }
 
-    private suspend fun performSearch(query: String, filter: SearchFilterType) {
+    private suspend fun performSearch(
+        query: String,
+        filter: SearchFilterType,
+    ) {
         _uiState.update { it.copy(isSearching = true) }
         if (isEffectivelyOffline()) {
             performOfflineSearch(query)
@@ -268,17 +279,18 @@ class SearchViewModel(
                         }
                     } else {
                         val tracks = searchTracksUseCase(query)
-                        val fallbackSections = if (tracks.isNotEmpty()) {
-                            listOf(
-                                HomeSection(
-                                    "Canciones",
-                                    HomeSectionType.SONGS,
-                                    tracks.map { SearchResult.Song(it) },
+                        val fallbackSections =
+                            if (tracks.isNotEmpty()) {
+                                listOf(
+                                    HomeSection(
+                                        "Canciones",
+                                        HomeSectionType.SONGS,
+                                        tracks.map { SearchResult.Song(it) },
+                                    ),
                                 )
-                            )
-                        } else {
-                            emptyList()
-                        }
+                            } else {
+                                emptyList()
+                            }
                         _uiState.update {
                             it.copy(
                                 summarySections = fallbackSections,
@@ -358,18 +370,21 @@ class SearchViewModel(
     }
 
     private suspend fun performOfflineSearch(query: String) {
-        val downloaded = try {
-            getOfflineTracksUseCase().firstOrNull()
-                ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                ?.map { it.track } ?: emptyList()
-        } catch (_: Exception) {
-            emptyList()
-        }
-        val local = try {
-            scanLocalTracksUseCase()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        val downloaded =
+            try {
+                getOfflineTracksUseCase()
+                    .firstOrNull()
+                    ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                    ?.map { it.track } ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        val local =
+            try {
+                scanLocalTracksUseCase()
+            } catch (_: Exception) {
+                emptyList()
+            }
         val allLocalTracks = (downloaded + local).distinctBy { it.id }
         val matchingSongs = extractOfflineSongs(allLocalTracks, query)
         val matchingAlbums = extractOfflineAlbums(allLocalTracks, query)
@@ -432,23 +447,28 @@ class SearchViewModel(
     private fun loadRecentHistory(isOffline: Boolean) {
         viewModelScope.launch {
             try {
-                val localTracks = getRecentTracksUseCase(10).first()
-                    .map { it.track }
+                val localTracks =
+                    getRecentTracksUseCase(10)
+                        .first()
+                        .map { it.track }
 
                 if (isOffline) {
-                    val downloadedIds = try {
-                        getOfflineTracksUseCase().firstOrNull()
-                            ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                            ?.map { it.track.id }
-                            ?.toSet() ?: emptySet()
-                    } catch (_: Exception) {
-                        emptySet()
-                    }
-                    val localIds = try {
-                        scanLocalTracksUseCase().map { it.id }.toSet()
-                    } catch (_: Exception) {
-                        emptySet()
-                    }
+                    val downloadedIds =
+                        try {
+                            getOfflineTracksUseCase()
+                                .firstOrNull()
+                                ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                                ?.map { it.track.id }
+                                ?.toSet() ?: emptySet()
+                        } catch (_: Exception) {
+                            emptySet()
+                        }
+                    val localIds =
+                        try {
+                            scanLocalTracksUseCase().map { it.id }.toSet()
+                        } catch (_: Exception) {
+                            emptySet()
+                        }
                     val offlineAvailableIds = downloadedIds + localIds
                     val filtered = localTracks.filter { it.id in offlineAvailableIds }
                     _uiState.update { it.copy(recentHistory = filtered) }
@@ -456,8 +476,11 @@ class SearchViewModel(
                     if (localTracks.isNotEmpty()) {
                         _uiState.update { it.copy(recentHistory = localTracks) }
                     } else {
-                        val remoteTracks = getRemoteHistoryUseCase().getOrNull().orEmpty()
-                            .map { it.track }
+                        val remoteTracks =
+                            getRemoteHistoryUseCase()
+                                .getOrNull()
+                                .orEmpty()
+                                .map { it.track }
                         _uiState.update { it.copy(recentHistory = remoteTracks) }
                     }
                 }
@@ -498,19 +521,20 @@ class SearchViewModel(
                 val explore = getExploreUseCase()
                 val charts = getChartsUseCase()
                 val trending = getTrendingUseCase()
-                val combined = buildList {
-                    addAll(explore)
-                    addAll(charts)
-                    if (trending.isNotEmpty()) {
-                        add(
-                            HomeSection(
-                                title = "Trending",
-                                type = HomeSectionType.SONGS,
-                                items = trending.map { SearchResult.Song(it) },
+                val combined =
+                    buildList {
+                        addAll(explore)
+                        addAll(charts)
+                        if (trending.isNotEmpty()) {
+                            add(
+                                HomeSection(
+                                    title = "Trending",
+                                    type = HomeSectionType.SONGS,
+                                    items = trending.map { SearchResult.Song(it) },
+                                ),
                             )
-                        )
-                    }
-                }.distinctBy { it.title }
+                        }
+                    }.distinctBy { it.title }
                 _uiState.update {
                     it.copy(
                         exploreSections = combined,
@@ -546,39 +570,43 @@ class SearchViewModel(
                 error = null,
             )
         }
-        val downloaded = try {
-            getOfflineTracksUseCase().firstOrNull()
-                ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
-                ?.map { it.track } ?: emptyList()
-        } catch (_: Exception) {
-            emptyList()
-        }
-        val local = try {
-            scanLocalTracksUseCase()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        val downloaded =
+            try {
+                getOfflineTracksUseCase()
+                    .firstOrNull()
+                    ?.filter { it.downloadStatus == DownloadStatus.COMPLETED }
+                    ?.map { it.track } ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        val local =
+            try {
+                scanLocalTracksUseCase()
+            } catch (_: Exception) {
+                emptyList()
+            }
 
-        val offlineSections = buildList {
-            if (downloaded.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Descargas",
-                        type = HomeSectionType.SONGS,
-                        items = downloaded.map { SearchResult.Song(it) },
+        val offlineSections =
+            buildList {
+                if (downloaded.isNotEmpty()) {
+                    add(
+                        HomeSection(
+                            title = "Descargas",
+                            type = HomeSectionType.SONGS,
+                            items = downloaded.map { SearchResult.Song(it) },
+                        ),
                     )
-                )
-            }
-            if (local.isNotEmpty()) {
-                add(
-                    HomeSection(
-                        title = "Archivos locales",
-                        type = HomeSectionType.SONGS,
-                        items = local.map { SearchResult.Song(it) },
+                }
+                if (local.isNotEmpty()) {
+                    add(
+                        HomeSection(
+                            title = "Archivos locales",
+                            type = HomeSectionType.SONGS,
+                            items = local.map { SearchResult.Song(it) },
+                        ),
                     )
-                )
+                }
             }
-        }
 
         _uiState.update {
             it.copy(
@@ -592,7 +620,10 @@ class SearchViewModel(
         }
     }
 
-    fun browseCategory(browseId: String, params: String?) {
+    fun browseCategory(
+        browseId: String,
+        params: String?,
+    ) {
         if (isEffectivelyOffline()) return
         searchJob.cancel()
         suggestionsJob.cancel()
@@ -604,19 +635,20 @@ class SearchViewModel(
                 browseCategoryResult = null,
             )
         }
-        searchJob = viewModelScope.launch {
-            try {
-                val result = browseCategoryUseCase(browseId, params)
-                _uiState.update {
-                    it.copy(
-                        browseCategoryResult = result,
-                        isBrowsingCategory = false,
-                    )
+        searchJob =
+            viewModelScope.launch {
+                try {
+                    val result = browseCategoryUseCase(browseId, params)
+                    _uiState.update {
+                        it.copy(
+                            browseCategoryResult = result,
+                            isBrowsingCategory = false,
+                        )
+                    }
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(isBrowsingCategory = false) }
                 }
-            } catch (_: Exception) {
-                _uiState.update { it.copy(isBrowsingCategory = false) }
             }
-        }
     }
 
     fun exitBrowsing() {
@@ -666,4 +698,3 @@ private fun buildOfflineSummarySections(
             )
         }
     }
-

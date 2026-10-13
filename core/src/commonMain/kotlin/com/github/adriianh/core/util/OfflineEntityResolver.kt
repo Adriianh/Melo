@@ -244,11 +244,15 @@ fun isEntityAvailableOffline(
         }
 
         is SearchResult.Playlist -> {
-            entity.id.startsWith("local:") || (entityCache?.getSync(entity.id) as? SearchResult.Playlist)?.songs?.isNotEmpty() == true ||
+            val isLocal = entity.id.startsWith("local:")
+            val hasCachedSongs =
+                (entityCache?.getSync(entity.id) as? SearchResult.Playlist)?.songs?.isNotEmpty() == true
+            val hasDownloadedSongs =
                 entity.songs?.any { song ->
                     val (keys, sigs) = buildCompletedTrackLookups(offlineTracks)
                     isSongCompleted(song, keys, sigs)
                 } == true
+            isLocal || hasCachedSongs || hasDownloadedSongs
         }
 
         is SearchResult.Song -> {
