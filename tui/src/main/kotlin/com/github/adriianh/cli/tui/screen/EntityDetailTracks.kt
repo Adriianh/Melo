@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.MeloTheme.ACCENT_BLUE
 import com.github.adriianh.cli.tui.MeloTheme.ACCENT_RED
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_DEFAULT
 import com.github.adriianh.cli.tui.MeloTheme.BORDER_FOCUSED
+import com.github.adriianh.cli.tui.MeloTheme.ICON_CLOUD
 import com.github.adriianh.cli.tui.MeloTheme.ICON_ERROR
 import com.github.adriianh.cli.tui.MeloTheme.ICON_HEART
 import com.github.adriianh.cli.tui.MeloTheme.ICON_LOADING
@@ -52,96 +53,93 @@ internal fun renderTracksDetail(
     onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
 ): Element {
     val isSaved = state.isFavoriteEntity(detail.entity.entityId)
-    val favoriteBadge = if (isSaved) {
-        text(" [♥ Liked] ").fg(ACCENT_RED).bold()
-    } else {
-        text(" [♡ Like (F)] ").fg(TEXT_DIM)
-    }
+    val favoriteBadge =
+        if (isSaved) {
+            text(" [♥ Liked] ").fg(ACCENT_RED).bold()
+        } else {
+            text(" [♡ Like (F)] ").fg(TEXT_DIM)
+        }
 
     val totalDurationMs = detail.tracks.sumOf { it.durationMs }
     val totalDurationText =
         if (totalDurationMs > 0L) " • ${formatDuration(totalDurationMs)}" else ""
     val trackCountText = "${detail.tracks.size} track${if (detail.tracks.size != 1) "s" else ""}"
 
-    val heroHeader = buildTracksHeroHeader(
-        detail = detail,
-        favoriteBadge = favoriteBadge,
-        trackCountText = trackCountText,
-        totalDurationText = totalDurationText,
-    )
+    val heroHeader =
+        buildTracksHeroHeader(
+            detail = detail,
+            favoriteBadge = favoriteBadge,
+            trackCountText = trackCountText,
+            totalDurationText = totalDurationText,
+        )
 
     val rightPanel = buildEntityDetailPanel(state, entityDescriptionArea, onEntityDetailKeyEvent)
 
     if (detail.isLoading) {
-        val loadingPanel = panel(
-            column(
-                spacer(),
-                text("$ICON_LOADING  Loading tracks for \"${detail.title}\"...").fg(PRIMARY_COLOR)
-                    .centered(),
-                text("Fetching tracklist from source...").fg(TEXT_DIM).centered(),
-                spacer()
-            )
-        ).title(" ${detail.title} ")
-            .rounded()
-            .borderColor(BORDER_DEFAULT)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("entity-tracks-list")
-            .onKeyEvent(onEntityDetailKeyEvent)
-            .fill()
-
+        val loadingPanel = buildTracksLoadingPanel(detail.title, onEntityDetailKeyEvent)
         return dock().center(loadingPanel).right(rightPanel, Constraint.percentage(35)).fill()
     }
 
     if (detail.errorMessage != null) {
-        val errorPanel = panel(
-            column(
-                spacer(),
-                text("$ICON_ERROR  ${detail.errorMessage}").fg(ACCENT_RED).centered(),
-                text("Press Esc to go back").fg(TEXT_DIM).centered(),
-                spacer()
-            )
-        ).title(" Error ")
-            .rounded()
-            .borderColor(ACCENT_RED)
-            .focusedBorderColor(BORDER_FOCUSED)
-            .focusable()
-            .id("entity-tracks-list")
-            .onKeyEvent(onEntityDetailKeyEvent)
-            .fill()
-
+        val errorPanel = buildTracksErrorPanel(detail, state.isOfflineMode, onEntityDetailKeyEvent)
         return dock().center(errorPanel).right(rightPanel, Constraint.percentage(35)).fill()
     }
 
-    val filteredTracks = filterAndSortTracks(
-        tracks = detail.tracks,
-        sortOrder = detail.sortOrder,
-        sortDirection = detail.sortDirection,
-        query = detail.searchQuery
-    )
+    val filteredTracks =
+        filterAndSortTracks(
+            tracks = detail.tracks,
+            sortOrder = detail.sortOrder,
+            sortDirection = detail.sortDirection,
+            query = detail.searchQuery,
+        )
 
     val toolbar = buildTracksToolbar(detail, filteredTracks.size)
 
     val hasBio =
-        !detail.description.isNullOrBlank() || (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true || (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true
+        !detail.description.isNullOrBlank() ||
+            (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true ||
+            (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true
     val bioHint = if (hasBio) "  [Tab] Details" else ""
 
     val footer = buildTracksFooter(detail, state, bioHint)
 
     if (filteredTracks.isEmpty()) {
         entityTracksList.elements()
-        val emptyMessage = buildEmptyTracksMessage(detail)
+        val emptyEntityPanel =
+            buildTracksEmptyPanel(detail, heroHeader, toolbar, footer, onEntityDetailKeyEvent)
+        return dock()
+            .center(emptyEntityPanel)
+            .right(rightPanel, Constraint.percentage(35))
+            .fill()
+    }
 
-        val emptyEntityPanel = panel(
+    val items =
+        filteredTracks.mapIndexed { index, track ->
+            buildTrackListRow(
+                track = track,
+                index = index,
+                selectedIndex = entityTracksList.selected(),
+                state = state,
+                marqueeText = marqueeText,
+            )
+        }
+    entityTracksList.elements(*items.toTypedArray())
+
+    val headerElements = buildTracksColumnHeader(state)
+
+    val entityPanel =
+        panel(
             column(
                 heroHeader,
                 text("").length(1),
                 toolbar,
                 text("").length(1),
-                emptyMessage.fill(),
+                row(*headerElements.toTypedArray()).margin(Margin.horizontal(1)),
                 text("").length(1),
-                footer
-            )
+                entityTracksList.fill(),
+                text("").length(1),
+                footer,
+            ),
         ).title(detail.title)
             .rounded()
             .borderColor(BORDER_DEFAULT)
@@ -150,46 +148,6 @@ internal fun renderTracksDetail(
             .id("entity-tracks-list")
             .onKeyEvent(onEntityDetailKeyEvent)
             .fill()
-
-        return dock()
-            .center(emptyEntityPanel)
-            .right(rightPanel, Constraint.percentage(35))
-            .fill()
-    }
-
-    val items = filteredTracks.mapIndexed { index, track ->
-        buildTrackListRow(
-            track = track,
-            index = index,
-            selectedIndex = entityTracksList.selected(),
-            state = state,
-            marqueeText = marqueeText,
-        )
-    }
-    entityTracksList.elements(*items.toTypedArray())
-
-    val headerElements = buildTracksColumnHeader(state)
-
-    val entityPanel = panel(
-        column(
-            heroHeader,
-            text("").length(1),
-            toolbar,
-            text("").length(1),
-            row(*headerElements.toTypedArray()).margin(Margin.horizontal(1)),
-            text("").length(1),
-            entityTracksList.fill(),
-            text("").length(1),
-            footer
-        )
-    ).title(detail.title)
-        .rounded()
-        .borderColor(BORDER_DEFAULT)
-        .focusedBorderColor(BORDER_FOCUSED)
-        .focusable()
-        .id("entity-tracks-list")
-        .onKeyEvent(onEntityDetailKeyEvent)
-        .fill()
 
     return dock()
         .center(entityPanel)
@@ -210,46 +168,56 @@ private fun buildTracksHeroHeader(
     val typeBadge = if (isAlbum) "[ALBUM]" else "[PLAYLIST]"
     val typeColor = if (isAlbum) ACCENT_BLUE else SECONDARY_COLOR
     return panel(
-    column(
-        row(
-            text(" $typeBadge ").fg(typeColor).bold(),
-            text(" "),
-            text(detail.title).bold().fg(TEXT_PRIMARY).ellipsisMiddle().fill(),
-            text(" "),
-            favoriteBadge
-        ),
-        text("").length(1),
-        row(
-            text(detail.subtitle ?: (detail.entity as? SearchResult.Album)?.author ?: "").fg(
-                TEXT_SECONDARY
-            ).ellipsis(),
-            text(if (detail.subtitle.isNullOrBlank()) "" else " • ").dim(),
-            text("$trackCountText$totalDurationText").dim(),
-            spacer(),
-            text("[$ICON_PLAY Play (Space)] ").fg(PRIMARY_COLOR),
-            text("[$ICON_SHUFFLE Shuffle (s)] ").fg(ACCENT_BLUE),
-            text("[$ICON_RADIO Radio (r)] ").fg(TEXT_SECONDARY),
-        )
-    ).margin(Margin.symmetric(1, 1))
-).borderType(BorderType.ROUNDED)
+        column(
+            row(
+                text(" $typeBadge ").fg(typeColor).bold(),
+                text(" "),
+                text(detail.title)
+                    .bold()
+                    .fg(TEXT_PRIMARY)
+                    .ellipsisMiddle()
+                    .fill(),
+                text(" "),
+                favoriteBadge,
+            ),
+            text("").length(1),
+            row(
+                text(detail.subtitle ?: (detail.entity as? SearchResult.Album)?.author ?: "")
+                    .fg(
+                        TEXT_SECONDARY,
+                    ).ellipsis(),
+                text(if (detail.subtitle.isNullOrBlank()) "" else " • ").dim(),
+                text("$trackCountText$totalDurationText").dim(),
+                spacer(),
+                text("[$ICON_PLAY Play (Space)] ").fg(PRIMARY_COLOR),
+                text("[$ICON_SHUFFLE Shuffle (s)] ").fg(ACCENT_BLUE),
+                text("[$ICON_RADIO Radio (r)] ").fg(TEXT_SECONDARY),
+            ),
+        ).margin(Margin.symmetric(1, 1)),
+    ).borderType(BorderType.ROUNDED)
 }
 
 /**
  * Builds the search/sort toolbar for the tracks list.
  */
-private fun buildTracksToolbar(detail: ScreenState.EntityDetail, filteredCount: Int): Element {
-    val searchBadge = if (detail.isTyping) {
-        text(" [Search: ${detail.searchQuery}●] ").fg(PRIMARY_COLOR).bold()
-    } else if (detail.searchQuery.isNotBlank()) {
-        text(" [Search: \"${detail.searchQuery}\"] ").fg(PRIMARY_COLOR)
-    } else {
-        text(" [Ctrl+F Search] ").fg(TEXT_DIM)
-    }
+private fun buildTracksToolbar(
+    detail: ScreenState.EntityDetail,
+    filteredCount: Int,
+): Element {
+    val searchBadge =
+        if (detail.isTyping) {
+            text(" [Search: ${detail.searchQuery}●] ").fg(PRIMARY_COLOR).bold()
+        } else if (detail.searchQuery.isNotBlank()) {
+            text(" [Search: \"${detail.searchQuery}\"] ").fg(PRIMARY_COLOR)
+        } else {
+            text(" [Ctrl+F Search] ").fg(TEXT_DIM)
+        }
 
     val sortBadge = text(" [Sort: ${detail.sortOrder.label} (o)] ").fg(TEXT_SECONDARY)
-    val dirBadge = text(" [${detail.sortDirection.symbol} ${detail.sortDirection.label} (O)] ").fg(
-        TEXT_SECONDARY
-    )
+    val dirBadge =
+        text(" [${detail.sortDirection.symbol} ${detail.sortDirection.label} (O)] ").fg(
+            TEXT_SECONDARY,
+        )
 
     return row(
         searchBadge,
@@ -258,7 +226,7 @@ private fun buildTracksToolbar(detail: ScreenState.EntityDetail, filteredCount: 
         text("  "),
         dirBadge,
         spacer(),
-        text("$filteredCount / ${detail.tracks.size} tracks").dim()
+        text("$filteredCount / ${detail.tracks.size} tracks").dim(),
     ).margin(Margin.horizontal(1))
 }
 
@@ -269,29 +237,30 @@ private fun buildTracksFooter(
     detail: ScreenState.EntityDetail,
     state: MeloState,
     bioHint: String,
-): Element = if (detail.isTyping) {
-    row(
-        spacer(),
-        text("[Enter] Finish  [Esc] Clear").fg(TEXT_DIM).ellipsis(),
-        spacer()
-    ).length(1)
-} else if (state.selection.isNotEmpty) {
-    row(
-        spacer(),
-        text("[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [Esc] Clear")
-            .fg(TEXT_DIM)
-            .ellipsis(),
-        spacer()
-    ).length(1)
-} else {
-    row(
-        spacer(),
-        text("[Enter] Play  [s] Shuffle  [r] Radio  [f] Like Track  [F] Like Entity  [m] Opt$bioHint  [Esc] Back")
-            .fg(TEXT_DIM)
-            .ellipsis(),
-        spacer()
-    ).length(1)
-}
+): Element =
+    if (detail.isTyping) {
+        row(
+            spacer(),
+            text("[Enter] Finish  [Esc] Clear").fg(TEXT_DIM).ellipsis(),
+            spacer(),
+        ).length(1)
+    } else if (state.selection.isNotEmpty) {
+        row(
+            spacer(),
+            text("[Space/v] Toggle  [Ctrl+A] All  [m] Batch (${state.selection.count})  [Esc] Clear")
+                .fg(TEXT_DIM)
+                .ellipsis(),
+            spacer(),
+        ).length(1)
+    } else {
+        row(
+            spacer(),
+            text("[Enter] Play  [s] Shuffle  [r] Radio  [f] Like Track  [F] Like Entity  [m] Opt$bioHint  [Esc] Back")
+                .fg(TEXT_DIM)
+                .ellipsis(),
+            spacer(),
+        ).length(1)
+    }
 
 /**
  * Builds the empty-state message when there are no tracks to show.
@@ -326,8 +295,12 @@ private fun buildTrackListRow(
     val nowPlayingIndicator =
         if (track.id == state.player.nowPlaying?.id) "$ICON_NOTE " else "  "
     val isSelected = index == selectedIndex
-    val titleText = if (isSelected) marqueeText(track.title, state.player.marqueeOffset, 40)
-    else track.title
+    val titleText =
+        if (isSelected) {
+            marqueeText(track.title, state.player.marqueeOffset, 40)
+        } else {
+            track.title
+        }
     val isFav = state.isFavoriteTrack(track)
     val isTrackPlayable = state.isPlayable(track)
     val isBatchSelected = state.selection.isSelected(track.id)
@@ -337,13 +310,15 @@ private fun buildTrackListRow(
         rowElements.add(
             text(if (isBatchSelected) "[x] " else "[ ] ")
                 .fg(if (isBatchSelected) PRIMARY_COLOR else TEXT_DIM)
-                .length(4)
+                .length(4),
         )
     }
     rowElements.add(text("${index + 1}").dim().length(3))
     rowElements.add(
-        text(titleText).fg(if (isTrackPlayable) TEXT_PRIMARY else TEXT_DIM)
-            .apply { if (!isSelected) ellipsisMiddle() }.fill()
+        text(titleText)
+            .fg(if (isTrackPlayable) TEXT_PRIMARY else TEXT_DIM)
+            .apply { if (!isSelected) ellipsisMiddle() }
+            .fill(),
     )
     rowElements.add(text(track.artist).fg(TEXT_SECONDARY).ellipsis().percent(25))
     rowElements.add(text(if (isFav) ICON_HEART else " ").fg(PRIMARY_COLOR).length(2))
@@ -366,4 +341,88 @@ private fun buildTracksColumnHeader(state: MeloState): List<Element> {
     headerElements.add(text(ICON_HEART).dim().length(2))
     headerElements.add(text("Time").dim().length(6))
     return headerElements
+}
+
+private fun buildTracksLoadingPanel(
+    title: String,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
+): Element =
+    panel(
+        column(
+            spacer(),
+            text("$ICON_LOADING  Loading tracks for \"$title\"...").fg(PRIMARY_COLOR).centered(),
+            text("Fetching tracklist from source...").fg(TEXT_DIM).centered(),
+            spacer(),
+        ),
+    ).title(" $title ")
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("entity-tracks-list")
+        .onKeyEvent(onEntityDetailKeyEvent)
+        .fill()
+
+private fun buildTracksErrorPanel(
+    detail: ScreenState.EntityDetail,
+    isOfflineMode: Boolean,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
+): Element {
+    val isOfflineError = isOfflineMode && detail.errorMessage == "No content available offline"
+    val errorTitle = if (isOfflineError) " Offline Mode " else " Error "
+    val errorBorderColor = if (isOfflineError) BORDER_DEFAULT else ACCENT_RED
+    val icon = if (isOfflineError) ICON_CLOUD else ICON_ERROR
+    val iconColor = if (isOfflineError) TEXT_SECONDARY else ACCENT_RED
+    val entityTypeLabel = if (detail.entity is SearchResult.Album) "album" else "playlist"
+
+    return panel(
+        column(
+            spacer(),
+            text("$icon  ${detail.errorMessage}").fg(iconColor).centered(),
+            if (isOfflineError) {
+                text("This $entityTypeLabel has not been downloaded for offline playback")
+                    .fg(TEXT_DIM)
+                    .centered()
+            } else {
+                text("Press Esc to go back").fg(TEXT_DIM).centered()
+            },
+            if (isOfflineError) text("Press Esc to go back").fg(TEXT_DIM).centered() else spacer(),
+            spacer(),
+        ),
+    ).title(errorTitle)
+        .rounded()
+        .borderColor(errorBorderColor)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("entity-tracks-list")
+        .onKeyEvent(onEntityDetailKeyEvent)
+        .fill()
+}
+
+private fun buildTracksEmptyPanel(
+    detail: ScreenState.EntityDetail,
+    heroHeader: Element,
+    toolbar: Element,
+    footer: Element,
+    onEntityDetailKeyEvent: (KeyEvent) -> EventResult,
+): Element {
+    val emptyMessage = buildEmptyTracksMessage(detail)
+    return panel(
+        column(
+            heroHeader,
+            text("").length(1),
+            toolbar,
+            text("").length(1),
+            emptyMessage.fill(),
+            text("").length(1),
+            footer,
+        ),
+    ).title(detail.title)
+        .rounded()
+        .borderColor(BORDER_DEFAULT)
+        .focusedBorderColor(BORDER_FOCUSED)
+        .focusable()
+        .id("entity-tracks-list")
+        .onKeyEvent(onEntityDetailKeyEvent)
+        .fill()
 }

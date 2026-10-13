@@ -3,10 +3,12 @@ package com.github.adriianh.core.util
 import com.github.adriianh.core.domain.cache.EntityCache
 import com.github.adriianh.core.domain.cache.LibraryCache
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.FavoriteEntity
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.entityId
+import com.github.adriianh.core.domain.model.toSearchResult
 import com.github.adriianh.core.domain.repository.OfflineRepository
 
 fun cleanTrackId(id: String): String =
@@ -248,3 +250,43 @@ fun resolveOfflineEntitySync(
         else -> null
     }
 }
+
+fun isEntityAvailableOffline(
+    entity: SearchResult,
+    offlineTracks: List<OfflineTrack>,
+    entityCache: EntityCache? = null,
+): Boolean =
+    when (entity) {
+        is SearchResult.Album -> {
+            resolveOfflineAlbum(entity, offlineTracks) != null ||
+                (entityCache?.getSync(entity.id) as? SearchResult.Album)?.songs?.isNotEmpty() == true
+        }
+
+        is SearchResult.Artist -> {
+            findMatchingOfflineArtistTracks(entity, offlineTracks, entity.id).isNotEmpty() ||
+                (entityCache?.getSync(entity.id) as? SearchResult.Artist)?.topSongs?.isNotEmpty() == true
+        }
+
+        is SearchResult.Playlist -> {
+            if (entity.id.startsWith("local:")) {
+                true
+            } else {
+                (entityCache?.getSync(entity.id) as? SearchResult.Playlist)?.songs?.isNotEmpty() == true ||
+                    entity.songs?.any { song ->
+                        val (keys, sigs) = buildCompletedTrackLookups(offlineTracks)
+                        isSongCompleted(song, keys, sigs)
+                    } == true
+            }
+        }
+
+        is SearchResult.Song -> {
+            val (keys, sigs) = buildCompletedTrackLookups(offlineTracks)
+            isSongCompleted(entity.track, keys, sigs)
+        }
+    }
+
+fun isFavoriteEntityAvailableOffline(
+    entity: FavoriteEntity,
+    offlineTracks: List<OfflineTrack>,
+    entityCache: EntityCache? = null,
+): Boolean = isEntityAvailableOffline(entity.toSearchResult(), offlineTracks, entityCache)

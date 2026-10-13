@@ -1,12 +1,19 @@
 package com.github.adriianh.cli.tui.handler
 
+import com.github.adriianh.cli.tui.CollectionsState
+import com.github.adriianh.cli.tui.MeloState
 import com.github.adriianh.cli.tui.handler.search.buildArtistDashboardItems
+import com.github.adriianh.cli.tui.isEntityAvailableOffline
+import com.github.adriianh.cli.tui.isFavoriteEntityAvailableOffline
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.FavoriteEntity
+import com.github.adriianh.core.domain.model.FavoriteEntityType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.util.resolveOfflineEntitySync
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -173,5 +180,75 @@ class EntityDetailsHandlersTest {
         val right = pair.second as SearchResult.ArtistSection
         assertEquals("Top Songs", left.title)
         assertEquals("Álbumes en tus descargas", right.title)
+    }
+
+    @Test
+    fun testIsEntityAvailableOfflineRespectsOfflineMode() {
+        val track = sampleTrack("t1", "Paranoid Android", "Radiohead", "OK Computer")
+        val offlineTracks = listOf(sampleOffline(track))
+        val album =
+            SearchResult.Album(
+                id = "alb-okc",
+                title = "OK Computer",
+                author = "Radiohead",
+                year = "1997",
+                artworkUrl = null,
+            )
+        val missingAlbum =
+            SearchResult.Album(
+                id = "alb-kida",
+                title = "Kid A",
+                author = "Radiohead",
+                year = "2000",
+                artworkUrl = null,
+            )
+
+        val onlineState = MeloState(isOfflineMode = false)
+        assertTrue(onlineState.isEntityAvailableOffline(album))
+        assertTrue(onlineState.isEntityAvailableOffline(missingAlbum))
+
+        val offlineState =
+            MeloState(
+                isOfflineMode = true,
+                collections = CollectionsState(offlineTracks = offlineTracks),
+            )
+        assertTrue(offlineState.isEntityAvailableOffline(album))
+        assertFalse(offlineState.isEntityAvailableOffline(missingAlbum))
+    }
+
+    @Test
+    fun testIsFavoriteEntityAvailableOfflineInMeloState() {
+        val track = sampleTrack("t1", "Starboy", "The Weeknd", "Starboy")
+        val offlineTracks = listOf(sampleOffline(track))
+        val favAlbum =
+            FavoriteEntity(
+                id = "starboy",
+                type = FavoriteEntityType.ALBUM,
+                title = "Starboy",
+                subtitle = "The Weeknd",
+                artworkUrl = null,
+                trackCount = null,
+            )
+        val favMissing =
+            FavoriteEntity(
+                id = "after-hours",
+                type = FavoriteEntityType.ALBUM,
+                title = "After Hours",
+                subtitle = "The Weeknd",
+                artworkUrl = null,
+                trackCount = null,
+            )
+
+        val onlineState = MeloState(isOfflineMode = false)
+        assertTrue(onlineState.isFavoriteEntityAvailableOffline(favAlbum))
+        assertTrue(onlineState.isFavoriteEntityAvailableOffline(favMissing))
+
+        val offlineState =
+            MeloState(
+                isOfflineMode = true,
+                collections = CollectionsState(offlineTracks = offlineTracks),
+            )
+        assertTrue(offlineState.isFavoriteEntityAvailableOffline(favAlbum))
+        assertFalse(offlineState.isFavoriteEntityAvailableOffline(favMissing))
     }
 }

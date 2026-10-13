@@ -4,6 +4,7 @@ import com.github.adriianh.cli.tui.util.LrcLine
 import com.github.adriianh.cli.tui.util.ToastMessage
 import com.github.adriianh.core.domain.model.ArtistStat
 import com.github.adriianh.core.domain.model.DownloadStatus
+import com.github.adriianh.core.domain.model.FavoriteEntity
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.HomeFeedChip
 import com.github.adriianh.core.domain.model.HomeSection
@@ -22,6 +23,8 @@ import com.github.adriianh.core.domain.model.mergeHistoryEntries
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.player.RepeatMode
 import dev.tamboui.image.ImageData
+import com.github.adriianh.core.util.isEntityAvailableOffline as coreIsEntityAvailableOffline
+import com.github.adriianh.core.util.isFavoriteEntityAvailableOffline as coreIsFavoriteEntityAvailableOffline
 
 /**
  * Focus areas within the Home feed tab.
@@ -324,6 +327,22 @@ fun MeloState.isPlayable(track: Track): Boolean {
     }
 
     return false
+}
+
+/**
+ * Checks if a search result entity can be opened and played in offline mode.
+ */
+fun MeloState.isEntityAvailableOffline(entity: SearchResult): Boolean {
+    if (!isOfflineMode) return true
+    return coreIsEntityAvailableOffline(entity, collections.offlineTracks)
+}
+
+/**
+ * Checks if a favorite entity has downloaded content in offline mode.
+ */
+fun MeloState.isFavoriteEntityAvailableOffline(entity: FavoriteEntity): Boolean {
+    if (!isOfflineMode) return true
+    return coreIsFavoriteEntityAvailableOffline(entity, collections.offlineTracks)
 }
 
 /**
