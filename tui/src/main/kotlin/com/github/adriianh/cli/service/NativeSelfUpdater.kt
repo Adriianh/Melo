@@ -200,8 +200,12 @@ open class NativeSelfUpdater(
                 )
             } else {
                 val home = System.getProperty("user.home").orEmpty()
+                // Prefer the real native binary inside the install dir; the `bin`
+                // entries are launcher scripts and must only be a last resort.
                 listOfNotNull(
                     if (home.isNotBlank()) File(home, ".local/share/melo-tui/melo") else null,
+                    File("/usr/local/lib/melo-tui/melo"),
+                    File("/opt/melo-tui/melo"),
                     if (home.isNotBlank()) File(home, ".local/bin/melo") else null,
                     File("/usr/local/bin/melo"),
                     File("/usr/bin/melo"),
