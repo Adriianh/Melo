@@ -226,7 +226,10 @@ fun App(
                                     }
                                 ) { _, paddingValues ->
                                     Column(
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .statusBarsPadding()
                                     ) {
                                         OfflineModeBanner(
                                             visible = isOfflineMode,
@@ -259,7 +262,6 @@ fun App(
                                                     color = MaterialTheme.colorScheme.primaryContainer,
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .statusBarsPadding()
                                                 ) {
                                                     Row(
                                                         modifier = Modifier.padding(

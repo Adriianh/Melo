@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,7 @@ fun LikedSongsTabContent(
     isDownloaded: (Track) -> Boolean = { false },
     isDownloading: (Track) -> Boolean = { false },
     downloadProgress: (Track) -> Float = { 0f },
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (songs.isEmpty()) {
         MeloEmptyState(message = "Aún no tienes canciones en tus 'Me Gusta'.", modifier = modifier)
@@ -45,6 +47,7 @@ fun LikedSongsTabContent(
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(6.dp),
+        contentPadding = contentPadding,
         modifier = modifier.fillMaxSize().desktopScroll(listState),
     ) {
         items(songs, key = { it.id }) { track ->

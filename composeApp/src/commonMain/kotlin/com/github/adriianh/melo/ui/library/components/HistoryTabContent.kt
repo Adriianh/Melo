@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +38,7 @@ fun HistoryTabContent(
     isDownloaded: (Track) -> Boolean = { false },
     isDownloading: (Track) -> Boolean = { false },
     downloadProgress: (Track) -> Float = { 0f },
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (history.isEmpty()) {
         MeloEmptyState(
@@ -52,6 +54,7 @@ fun HistoryTabContent(
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(6.dp),
+        contentPadding = contentPadding,
         modifier = modifier.fillMaxSize().desktopScroll(listState),
     ) {
         items(history, key = { it.track.id + "_" + it.playedAt }) { entry ->

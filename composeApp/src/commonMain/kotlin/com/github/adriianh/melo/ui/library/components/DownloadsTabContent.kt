@@ -81,6 +81,7 @@ fun DownloadsTabContent(
     activeDownloads: Map<String, Float> = emptyMap(),
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (id: String, name: String, artwork: String?) -> Unit = { _, _, _ -> },
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (downloadedTracks.isEmpty()) {
         Box(
@@ -236,7 +237,7 @@ fun DownloadsTabContent(
             DownloadsFilter.SONGS -> {
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(bottom = 80.dp),
+                    contentPadding = contentPadding,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize().desktopScroll(listState),
                 ) {
@@ -341,7 +342,7 @@ fun DownloadsTabContent(
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(140.dp),
                         state = gridState,
-                        contentPadding = PaddingValues(bottom = 80.dp),
+                        contentPadding = contentPadding,
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.fillMaxSize(),
@@ -376,7 +377,7 @@ fun DownloadsTabContent(
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(140.dp),
                         state = gridState,
-                        contentPadding = PaddingValues(bottom = 80.dp),
+                        contentPadding = contentPadding,
                         horizontalArrangement = Arrangement.spacedBy(14.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                         modifier = Modifier.fillMaxSize(),

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,6 +49,7 @@ fun AlbumsTabContent(
     viewMode: LibraryViewMode = LibraryViewMode.GRID,
     isOffline: Boolean = false,
     offlineAlbumIds: Set<String> = emptySet(),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (albums.isEmpty()) {
         MeloEmptyState(message = "No tienes álbumes guardados.", modifier = modifier)
@@ -59,6 +61,7 @@ fun AlbumsTabContent(
             columns = GridCells.Adaptive(150.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = contentPadding,
             modifier = modifier.fillMaxSize(),
         ) {
             items(albums, key = { it.id }) { album ->
@@ -133,6 +136,7 @@ fun AlbumsTabContent(
     } else {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = contentPadding,
             modifier = modifier.fillMaxSize(),
         ) {
             items(albums, key = { "compact_${it.id}" }) { album ->

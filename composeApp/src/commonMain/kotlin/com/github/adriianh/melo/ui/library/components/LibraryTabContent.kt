@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HeartBroken
@@ -11,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
@@ -39,6 +41,7 @@ fun LibraryTabContent(
     onSelectAllToggle: (List<Track>) -> Unit,
     viewModel: LibraryViewModel,
     queueViewModel: QueueViewModel,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
     modifier: Modifier = Modifier,
 ) {
     val likedTrackIds =
@@ -85,6 +88,7 @@ fun LibraryTabContent(
                         isOffline = state.isOffline,
                         offlineCustomPlaylistIds = state.offlineCustomPlaylistIds,
                         offlineRemotePlaylistIds = state.offlineRemotePlaylistIds,
+                        contentPadding = contentPadding,
                     )
 
                 LibraryTab.LIKED ->
@@ -123,6 +127,7 @@ fun LibraryTabContent(
                         isDownloaded = isTrackDownloaded,
                         isDownloading = isTrackDownloading,
                         downloadProgress = trackDownloadProgress,
+                        contentPadding = contentPadding,
                     )
 
                 LibraryTab.DOWNLOADS -> {
@@ -153,6 +158,7 @@ fun LibraryTabContent(
                         onMoreClick = { interaction.openContextMenu(it) },
                         onAlbumClick = onAlbumClick,
                         onArtistClick = onArtistClick,
+                        contentPadding = contentPadding,
                     )
                 }
 
@@ -176,6 +182,7 @@ fun LibraryTabContent(
                             }
                         },
                         onMoreClick = { interaction.openContextMenu(it) },
+                        contentPadding = contentPadding,
                     )
 
                 LibraryTab.ARTISTS ->
@@ -185,6 +192,7 @@ fun LibraryTabContent(
                         viewMode = state.viewMode,
                         isOffline = state.isOffline,
                         offlineArtistIds = state.offlineArtistIds,
+                        contentPadding = contentPadding,
                     )
 
                 LibraryTab.ALBUMS ->
@@ -194,6 +202,7 @@ fun LibraryTabContent(
                         viewMode = state.viewMode,
                         isOffline = state.isOffline,
                         offlineAlbumIds = state.offlineAlbumIds,
+                        contentPadding = contentPadding,
                     )
 
                 LibraryTab.HISTORY ->
@@ -223,6 +232,7 @@ fun LibraryTabContent(
                         isDownloaded = isTrackDownloaded,
                         isDownloading = isTrackDownloading,
                         downloadProgress = trackDownloadProgress,
+                        contentPadding = contentPadding,
                     )
             }
         }

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
@@ -113,17 +112,16 @@ fun LibraryScreen(
 
     val platform = remember { getPlatform() }
     val horizontalPadding = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp
+    val listContentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding() + 16.dp)
 
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .padding(
                     top = 16.dp,
                     start = horizontalPadding,
                     end = horizontalPadding,
-                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
                 ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -173,7 +171,10 @@ fun LibraryScreen(
             LibraryNotLoggedInCard(onLoginClick = onOpenSettings)
         } else if (state.isLoading && !hasTabContent && !isOfflineTab) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(bottom = paddingValues.calculateBottomPadding()),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
@@ -210,6 +211,7 @@ fun LibraryScreen(
                 },
                 viewModel = viewModel,
                 queueViewModel = queueViewModel,
+                contentPadding = listContentPadding,
                 modifier = Modifier.weight(1f),
             )
         }

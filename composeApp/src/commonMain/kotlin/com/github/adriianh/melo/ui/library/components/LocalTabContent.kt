@@ -67,7 +67,8 @@ fun LocalTabContent(
     onPlayTrack: (Track) -> Unit,
     onPlayAll: () -> Unit,
     onMoreClick: (Track) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val requestAudioPermission = rememberAudioPermissionRequester { isGranted ->
         if (isGranted) {
@@ -184,7 +185,7 @@ fun LocalTabContent(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(bottom = 80.dp),
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier.fillMaxSize().desktopScroll(listState)
     ) {
