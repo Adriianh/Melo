@@ -108,11 +108,19 @@ The installer places:
 | `--desktop` | Create a Linux desktop menu entry (`~/.local/share/applications/melo-tui.desktop`) |
 | `--no-desktop` | Skip the menu entry even when `MELO_CREATE_DESKTOP=1` |
 | `-v, --version <VERSION>` | Install a specific version (e.g. `2.1.0`) |
+| `--user` | Per-user install into `~/.local` (default) |
+| `--system` | System-wide install into `/usr/local` (requires root) |
+| `--scope=<user\|system>` | Explicit scope selector |
 | `MELO_VERSION` | Environment variable equivalent to `--version` |
 | `MELO_INSTALL_DIR` | Custom install directory (default: `~/.local/share/melo-tui`) |
 | `MELO_BIN_DIR` | Custom bin directory (default: `~/.local/bin`) |
 | `MELO_CONFIG_DIR` | Custom config directory (default: `~/.config/melo`) |
 | `MELO_CREATE_DESKTOP=1` | Environment variable equivalent to `--desktop` |
+
+> Running the installer through `sudo` never writes into `/root`: the invoking
+> user's home is used for a per-user install (and files are chowned back to that
+> user), so `sudo install.sh` behaves exactly like `install.sh`. Use `--system`
+> for a system-wide install under `/usr/local`.
 
 **Nightly (Linux & macOS)**:
 
@@ -132,6 +140,8 @@ $env:MELO_VERSION="nightly"; irm https://raw.githubusercontent.com/Adriianh/Melo
 - **Uninstall**:
   - Linux & macOS: `curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/uninstall.sh | bash`
   - Windows: `irm https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/uninstall.ps1 | iex`
+  - The uninstaller removes the per-user install by default. Run it with `sudo`
+    to also remove the system-wide install, or pass `--all` to remove both.
 
 #### Configuration (`.env`)
 
@@ -201,9 +211,10 @@ Choose your preferred installation format:
   ./install.sh
 
   # Or system-wide installation (/opt/melo-gui and /usr/local/bin/melo-gui):
-  sudo ./install.sh
+  sudo ./install.sh --system
   ```
-  To uninstall later, run `./uninstall.sh` (or `sudo ./uninstall.sh`).
+  To uninstall later, run `./uninstall.sh` (per-user). Add `--system` (as root)
+  for the system-wide install, or `--all` to remove both at once.
 
 The GUI's `.desktop` entry integrates into your application launcher and includes an "Open Terminal UI (TUI)" action for quick terminal access.
 
