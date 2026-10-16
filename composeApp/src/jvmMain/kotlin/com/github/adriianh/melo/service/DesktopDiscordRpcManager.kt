@@ -167,7 +167,7 @@ class DesktopDiscordRpcManager(
                     val activity =
                         activity(
                             details = track.title.take(128),
-                            state = "by ${track.artist}".take(128),
+                            state = track.artist.take(128),
                         ) {
                             type = ActivityType.Listening
                             statusDisplayType(StatusDisplayType.State)

@@ -235,7 +235,7 @@ class AndroidDiscordRpcManager(
                     val activity =
                         ActivityData(
                             name = "Melo",
-                            state = "by ${track.artist}".take(128),
+                            state = track.artist.take(128),
                             details = track.title.take(128),
                             type = 2,
                             timestamps = TimestampsData(start = startMillis, end = endMillis),
