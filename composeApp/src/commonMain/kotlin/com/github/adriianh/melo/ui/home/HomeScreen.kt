@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -116,7 +115,6 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding()
     ) {
         MeloSearchBar(
             query = uiState.searchQuery,
@@ -173,6 +171,7 @@ fun HomeScreen(
                             queueViewModel = queueViewModel,
                             onMoreClick = { interaction.openContextMenu(it) },
                             interaction = interaction,
+                            paddingValues = paddingValues,
                             isSelectionMode = isSelectionMode,
                             selectedTrackIds = selectedTrackIds,
                             onToggleSelectTrack = { track ->

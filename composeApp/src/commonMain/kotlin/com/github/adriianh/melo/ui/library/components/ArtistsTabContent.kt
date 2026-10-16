@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +48,7 @@ fun ArtistsTabContent(
     viewMode: LibraryViewMode = LibraryViewMode.GRID,
     isOffline: Boolean = false,
     offlineArtistIds: Set<String> = emptySet(),
+    contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (artists.isEmpty()) {
         MeloEmptyState(message = "No sigues a ningún artista actualmente.", modifier = modifier)
@@ -58,6 +60,7 @@ fun ArtistsTabContent(
             columns = GridCells.Adaptive(130.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = contentPadding,
             modifier = modifier.fillMaxSize(),
         ) {
             items(artists, key = { it.id }) { artist ->
@@ -74,6 +77,7 @@ fun ArtistsTabContent(
     } else {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = contentPadding,
             modifier = modifier.fillMaxSize(),
         ) {
             items(artists, key = { "compact_${it.id}" }) { artist ->
