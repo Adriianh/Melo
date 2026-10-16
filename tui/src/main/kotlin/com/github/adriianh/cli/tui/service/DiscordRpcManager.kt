@@ -130,8 +130,8 @@ class DiscordRpcManager(
                 try {
                     if (isConnected) {
                         ipc?.activityManager?.setActivity(
-                            details = track.title,
-                            state = track.artist,
+                            details = track.title.take(128),
+                            state = track.artist.take(128),
                         ) {
                             type = ActivityType.Listening
                             statusDisplayType(StatusDisplayType.State)
