@@ -29,8 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
@@ -193,31 +191,6 @@ internal fun MainSidebar(
                                     collapsed = false
                                 )
                             }
-                        }
-
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                "MI COLECCIÓN",
-                                style = MeloType.labelSmall,
-                                letterSpacing = 1.2.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MeloColors.textMuted,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                            SidebarNavItem(
-                                label = "Canciones Favoritas",
-                                icon = Icons.Default.Favorite,
-                                isSelected = false,
-                                onClick = { onTabSelected(MainTab.LIBRARY) },
-                                collapsed = false
-                            )
-                            SidebarNavItem(
-                                label = "Historial",
-                                icon = Icons.Default.History,
-                                isSelected = false,
-                                onClick = { onTabSelected(MainTab.LIBRARY) },
-                                collapsed = false
-                            )
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
