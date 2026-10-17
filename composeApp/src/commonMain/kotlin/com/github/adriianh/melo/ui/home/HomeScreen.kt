@@ -38,6 +38,8 @@ import com.github.adriianh.melo.ui.home.components.HomeSkeletonLoading
 import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
+import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.getPlatform
 import kotlinx.coroutines.flow.flowOf
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -57,6 +59,7 @@ fun HomeScreen(
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
+    val platform = remember { getPlatform() }
     val uiState by viewModel.uiState.collectAsState()
     val currentAccent = MaterialTheme.colorScheme.primary
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
@@ -132,15 +135,7 @@ fun HomeScreen(
                 else -> HomeFeedState.Content
             }
 
-            PullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = {
-                    if (uiState.searchQuery.isBlank()) {
-                        viewModel.refresh()
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            val feedContent: @Composable () -> Unit = {
                 AnimatedContent(
                     targetState = feedState,
                     transitionSpec = {
@@ -215,6 +210,24 @@ fun HomeScreen(
                             }
                         )
                     }
+                }
+            }
+
+            if (platform.type == PlatformType.DESKTOP) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    feedContent()
+                }
+            } else {
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = {
+                        if (uiState.searchQuery.isBlank()) {
+                            viewModel.refresh()
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    feedContent()
                 }
             }
 
