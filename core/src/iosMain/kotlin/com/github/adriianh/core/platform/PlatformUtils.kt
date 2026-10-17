@@ -1,5 +1,6 @@
 package com.github.adriianh.core.platform
 
+import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -51,3 +52,5 @@ actual fun md5(str: String): String {
 
 actual fun currentUpdatePlatform(): UpdatePlatform =
     UpdatePlatform.UNKNOWN
+
+actual fun currentUpdateInstallMethod(): UpdateInstallMethod = UpdateInstallMethod.UNKNOWN
