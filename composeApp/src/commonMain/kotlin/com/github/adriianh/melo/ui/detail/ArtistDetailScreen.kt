@@ -21,13 +21,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,6 +62,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 
+private const val DOWNLOADED_PREVIEW_COUNT = 4
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtistDetailScreen(
@@ -86,6 +91,7 @@ fun ArtistDetailScreen(
         .collectAsState(Color.Transparent)
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
+    var showAllDownloads by remember { mutableStateOf(false) }
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
@@ -271,14 +277,38 @@ fun ArtistDetailScreen(
                     }
 
                     if (downloadedSongs.isNotEmpty()) {
+                        val isDownloadsCollapsed =
+                            !showAllDownloads && downloadedSongs.size > DOWNLOADED_PREVIEW_COUNT
+                        val visibleDownloadedSongs =
+                            if (isDownloadsCollapsed) {
+                                downloadedSongs.take(DOWNLOADED_PREVIEW_COUNT)
+                            } else {
+                                downloadedSongs
+                            }
                         item {
                             SectionHeader(
-                                title = "En tus descargas (${downloadedSongs.size})",
+                                title = "En tus descargas",
                                 modifier = Modifier.padding(horizontal = 16.dp),
+                                action =
+                                    if (downloadedSongs.size > DOWNLOADED_PREVIEW_COUNT) {
+                                        {
+                                            val label =
+                                                if (showAllDownloads) {
+                                                    "Ver menos"
+                                                } else {
+                                                    "Ver todas (${downloadedSongs.size})"
+                                                }
+                                            TextButton(onClick = { showAllDownloads = !showAllDownloads }) {
+                                                Text(label)
+                                            }
+                                        }
+                                    } else {
+                                        null
+                                    },
                             )
                         }
                         detailTrackItems(
-                            tracks = downloadedSongs,
+                            tracks = visibleDownloadedSongs,
                             currentTrackId = queueState.currentTrack?.id,
                             isPlaying = isPlaying,
                             isLiked = { song -> song.id in likedTrackIds },
@@ -288,7 +318,7 @@ fun ArtistDetailScreen(
                             downloadProgress = { 0f },
                             onTrackClick = { index, _ ->
                                 queueViewModel.playTracks(
-                                    downloadedSongs,
+                                    visibleDownloadedSongs,
                                     index,
                                 )
                             },
