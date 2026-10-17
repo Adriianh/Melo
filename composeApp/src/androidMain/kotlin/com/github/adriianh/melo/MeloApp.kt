@@ -4,6 +4,7 @@ import android.app.Application
 import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.platform.AndroidAppContext
 import com.github.adriianh.data.local.ContextHolder
 import com.github.adriianh.melo.di.initKoin
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,7 @@ class MeloApp : Application() {
         super.onCreate()
 
         ContextHolder.context = this
+        AndroidAppContext.application = this
 
         val koinApp =
             initKoin {
