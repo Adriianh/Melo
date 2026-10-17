@@ -974,9 +974,8 @@
         <error line="129" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SectionHeader.kt">
-        <error line="14" column="5" source="standard:function-naming" />
-        <error line="23" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="27" column="1" source="standard:final-newline" />
+        <error line="17" column="5" source="standard:function-naming" />
+        <error line="22" column="26" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SegmentedControl.kt">
         <error line="21" column="9" source="standard:function-naming" />
@@ -1213,7 +1212,7 @@
         <error line="74" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/ArtistDetailScreen.kt">
-        <error line="64" column="5" source="standard:function-naming" />
+        <error line="69" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/PlaylistDetailScreen.kt">
         <error line="74" column="5" source="standard:function-naming" />
