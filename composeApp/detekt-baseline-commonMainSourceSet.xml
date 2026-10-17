@@ -11,8 +11,6 @@
     <ID>CyclomaticComplexMethod:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
     <ID>CyclomaticComplexMethod:DownloadsTabContent.kt:@Composable fun DownloadsTabContent</ID>
     <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun loadEntity</ID>
-    <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun updateDownloadState</ID>
-    <ID>CyclomaticComplexMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
     <ID>CyclomaticComplexMethod:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
     <ID>CyclomaticComplexMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
     <ID>CyclomaticComplexMethod:HomeContent.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun HomeContent</ID>
@@ -33,7 +31,6 @@
     <ID>CyclomaticComplexMethod:TopResultHeroCard.kt:@Composable fun TopResultHeroCard</ID>
     <ID>CyclomaticComplexMethod:TrackRow.kt:@OptIn(ExperimentalFoundationApi::class) @Composable fun TrackRow</ID>
     <ID>CyclomaticComplexMethod:UpdateSettingsSection.kt:@Composable fun UpdateSettingsSection</ID>
-    <ID>ExplicitItLambdaParameter:LibraryViewModel.kt:LibraryViewModel${ it -&gt; it.copy( downloadedTracks = tracks.filter { it.downloadStatus == DownloadStatus.COMPLETED } ) }</ID>
     <ID>FunctionNaming:AdaptiveLazyRow.kt:@Composable fun &lt;T&gt; AdaptiveLazyRow</ID>
     <ID>FunctionNaming:AddToPlaylistSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun AddToPlaylistSheet</ID>
     <ID>FunctionNaming:AlbumCard.kt:@Composable fun AlbumCard</ID>
@@ -110,6 +107,10 @@
     <ID>FunctionNaming:MainLayout.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable private fun DesktopMainLayout</ID>
     <ID>FunctionNaming:MeloAsyncImage.kt:@Composable expect fun PlatformAsyncImage</ID>
     <ID>FunctionNaming:MeloAsyncImage.kt:@Composable fun MeloAsyncImage</ID>
+    <ID>FunctionNaming:MeloBanner.kt:@Composable fun MeloBanner</ID>
+    <ID>FunctionNaming:MeloBanner.kt:@Composable private fun MeloBannerAction</ID>
+    <ID>FunctionNaming:MeloBanner.kt:@Composable private fun MeloBannerDismissButton</ID>
+    <ID>FunctionNaming:MeloBanner.kt:@Composable private fun RowScope.MeloBannerText</ID>
     <ID>FunctionNaming:MeloEmptyState.kt:@Composable fun MeloEmptyState</ID>
     <ID>FunctionNaming:MeloErrorState.kt:@Composable fun MeloErrorState</ID>
     <ID>FunctionNaming:MeloSearchBar.kt:@Composable fun MeloSearchBar</ID>
@@ -185,10 +186,7 @@
     <ID>FunctionNaming:SettingsContent.kt:@Composable private fun AppearanceSettingsSection</ID>
     <ID>FunctionNaming:SettingsContent.kt:@Composable private fun DownloadsSettingsSection</ID>
     <ID>FunctionNaming:SettingsContent.kt:@Composable private fun LocalFoldersSection</ID>
-    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun MeloSettingsSwitch</ID>
     <ID>FunctionNaming:SettingsContent.kt:@Composable private fun PlaybackSettingsSection</ID>
-    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun SettingRow</ID>
-    <ID>FunctionNaming:SettingsContent.kt:@Composable private fun SettingsGroupCard</ID>
     <ID>FunctionNaming:SettingsSheet.kt:@Composable fun SettingsDialog</ID>
     <ID>FunctionNaming:SettingsSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SettingsSheet</ID>
     <ID>FunctionNaming:Sidebar.kt:@Composable internal fun MainSidebar</ID>
@@ -222,7 +220,6 @@
     <ID>LongMethod:App.kt:@Composable fun App</ID>
     <ID>LongMethod:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
     <ID>LongMethod:ArtistHeaderCard.kt:@Composable fun ArtistHeaderCard</ID>
-    <ID>LongMethod:ArtistsTabContent.kt:@Composable fun ArtistsTabContent</ID>
     <ID>LongMethod:BatchSelectionBottomBar.kt:@Composable fun BatchSelectionBottomBar</ID>
     <ID>LongMethod:CarouselScrollButtons.kt:@Composable fun CarouselScrollContainer</ID>
     <ID>LongMethod:CategoryBrowsingContent.kt:@Composable fun CategoryBrowsingContent</ID>
@@ -233,8 +230,6 @@
     <ID>LongMethod:DownloadsTabContent.kt:@Composable fun DownloadsTabContent</ID>
     <ID>LongMethod:DownloadsTabContent.kt:@Composable private fun DownloadedTrackRow</ID>
     <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun loadEntity</ID>
-    <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private fun updateDownloadState</ID>
-    <ID>LongMethod:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
     <ID>LongMethod:EntityHeaderCard.kt:@Composable fun EntityHeaderCard</ID>
     <ID>LongMethod:ExpandedSectionSheet.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ExpandedSectionSheet</ID>
     <ID>LongMethod:ExploreContent.kt:@Composable fun ExploreContent</ID>
@@ -268,7 +263,6 @@
     <ID>LongMethod:NowPlayingMobileLayout.kt:@Composable internal fun NowPlayingMobileLayout</ID>
     <ID>LongMethod:NowPlayingQueueSection.kt:@Composable fun NowPlayingQueueSection</ID>
     <ID>LongMethod:NowPlayingScreen.kt:@Composable fun NowPlayingScreen</ID>
-    <ID>LongMethod:OfflineModeBanner.kt:@Composable fun OfflineModeBanner</ID>
     <ID>LongMethod:PlayerBar.kt:@Composable internal fun DesktopPlayerBar</ID>
     <ID>LongMethod:PlayerBar.kt:@Composable internal fun MobilePlayerBar</ID>
     <ID>LongMethod:PlayerTransportControls.kt:@Composable fun PlayerTransportControls</ID>
@@ -300,17 +294,12 @@
     <ID>MatchingDeclarationName:NowPlayingScreen.kt:PanelSection</ID>
     <ID>MatchingDeclarationName:PlaylistDialogs.kt:PlaylistCoverPreset</ID>
     <ID>MatchingDeclarationName:UpdateInstaller.kt:PlatformUpdateInstaller</ID>
-    <ID>MaxLineLength:AlbumDetailScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
     <ID>MaxLineLength:App.kt:ThemeMode.SYSTEM -&gt; if (isSystemDark) ThemeMode.LIGHT else ThemeMode.DARK</ID>
     <ID>MaxLineLength:App.kt:current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })</ID>
-    <ID>MaxLineLength:App.kt:text = "Nueva versión ${currentUpdate.release.version} disponible"</ID>
     <ID>MaxLineLength:CategoryBrowsingContent.kt:swipeRightIcon = if (isLiked(item.track)) Icons.Default.HeartBroken else Icons.Default.Favorite</ID>
     <ID>MaxLineLength:DownloadsTabContent.kt:colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)</ID>
     <ID>MaxLineLength:DownloadsTabContent.kt:text = "Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos."</ID>
     <ID>MaxLineLength:DownloadsTabContent.kt:text = "Descargando ${activeDownloads.size} canción(es) en segundo plano..."</ID>
-    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$.</ID>
-    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$entity.id.startsWith("local:") || entity.id.startsWith("custom:")</ID>
-    <ID>MaxLineLength:EntityDetailViewModel.kt:EntityDetailViewModel$songs.firstOrNull { it.id in activeDownloads.keys || it.id.removePrefix("piped:") in activeDownloads.keys }?.title</ID>
     <ID>MaxLineLength:HomeContent.kt:if (section.title.isNotBlank()) "sec_${section.type}_${section.title}" else "sec_${section.type}_$index"</ID>
     <ID>MaxLineLength:HomeContent.kt:text = "Descarga canciones o añade carpetas locales en la Biblioteca para escuchar cuando no tengas internet."</ID>
     <ID>MaxLineLength:HomeScreen.kt:if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id</ID>
@@ -325,9 +314,6 @@
     <ID>MaxLineLength:LocalTabContent.kt:text = "Añade tus carpetas de música o escanea las carpetas por defecto para reproducir tus archivos MP3, FLAC, M4A y AAC."</ID>
     <ID>MaxLineLength:LoginDialog.kt:text = "Inicia sesión con tu cuenta de Google. Melo detectará tu sesión automáticamente."</ID>
     <ID>MaxLineLength:LoginViewModel.kt:LoginViewModel$error = "Las cookies no pudieron autenticar la sesión. Asegúrate de tener una sesión activa en music.youtube.com o inicia sesión con el navegador."</ID>
-    <ID>MaxLineLength:PlayerUiState.kt:PlayerUiState.Companion$(track != null &amp;&amp; !playback.isPlaying &amp;&amp; (playback.currentTrack == null || playback.currentTrack?.id != track.id))</ID>
-    <ID>MaxLineLength:PlaylistDetailScreen.kt:msg = if (selIds.size == 1) "1 canción eliminada de la playlist" else "${selIds.size} canciones eliminadas de la playlist"</ID>
-    <ID>MaxLineLength:PlaylistDetailScreen.kt:msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola"</ID>
     <ID>MaxLineLength:PlaylistDialogs.kt:color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary</ID>
     <ID>MaxLineLength:PlaylistDialogs.kt:text = "Esta lista se borrará de tu biblioteca. Las canciones guardadas o descargadas en tu dispositivo no se verán afectadas."</ID>
     <ID>MaxLineLength:PlaylistDialogs.kt:text = if (isEditing) "Cambia el nombre visible de tu lista" else "Personaliza el nombre y estilo de tu lista"</ID>
@@ -343,7 +329,6 @@
     <ID>MaxLineLength:UpdateSettingsSection.kt:colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)</ID>
     <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$fun moveLocalPlaylistTrack</ID>
     <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$fun renameLocalPlaylist</ID>
-    <ID>ReturnCount:EntityDetailViewModel.kt:EntityDetailViewModel$private suspend fun loadEntityOffline: Boolean</ID>
     <ID>ReturnCount:HomeViewModel.kt:HomeViewModel$private fun mergeSections: List&lt;HomeSection&gt;</ID>
     <ID>ReturnCount:MeloAsyncImage.kt:@OptIn(InternalCoroutinesApi::class) fun normalizeArtworkUrl: String?</ID>
     <ID>ReturnCount:PlayerViewModel.kt:PlayerViewModel$fun setTargetLanguage</ID>
