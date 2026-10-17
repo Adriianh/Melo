@@ -182,8 +182,9 @@ jobs:
           path: ${{ matrix.artifacts }}
 
   # ─── Build Android APK ────────────────────────────────────────────────────
-  # No secrets needed: the release signing config falls back to the debug
-  # keystore, and the runner uses the preinstalled Android SDK.
+  # Signed with the repository keystore (KEYSTORE_BASE64 secret). Every build
+  # must share a single signer: with a per-run keystore Android rejects the
+  # in-app update with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
   build-android:
     needs: resolve-version
     runs-on: ubuntu-latest
@@ -202,12 +203,20 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Create debug keystore if not present
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          mkdir -p ~/.android
-          if [ ! -f ~/.android/debug.keystore ]; then
-            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Signing secrets are missing (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD). Without them the APK would be signed with a throwaway key and in-app updates would fail."
+            exit 1
           fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/melo-release.keystore"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/melo-release.keystore" >> "$GITHUB_ENV"
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -220,6 +229,10 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :composeApp:assembleRelease -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }}
 
       - name: Upload APK
