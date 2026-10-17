@@ -16,6 +16,16 @@ sealed interface UpdateState {
         val targetAsset: ReleaseAsset?,
     ) : UpdateState
 
+    /**
+     * An update exists but cannot be applied in place: the install is owned by the
+     * package manager or the release ships no asset for the detected install method.
+     * The UI links the user to the release page instead.
+     */
+    data class ManualUpdate(
+        val release: AppRelease,
+        val method: UpdateInstallMethod,
+    ) : UpdateState
+
     data class Downloading(
         val release: AppRelease,
         val targetAsset: ReleaseAsset,

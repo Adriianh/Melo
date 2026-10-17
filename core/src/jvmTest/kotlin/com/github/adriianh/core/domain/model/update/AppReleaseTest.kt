@@ -181,4 +181,71 @@ class AppReleaseTest {
         val platform = currentPlatform()
         assertNotNull(platform)
     }
+
+    @Test
+    fun `appimage install selects the appimage`() {
+        val release = releaseOf(APPIMAGE, DEB, GUI_TARBALL, TUI_TARBALL)
+
+        val selected = release.getAssetForPlatform(UpdatePlatform.LINUX, UpdateInstallMethod.APPIMAGE)
+
+        assertNotNull(selected)
+        assertEquals(APPIMAGE.name, selected.name)
+    }
+
+    @Test
+    fun `tarball install selects the desktop archive and never the tui one`() {
+        val release = releaseOf(APPIMAGE, DEB, GUI_TARBALL, TUI_TARBALL)
+
+        val selected = release.getAssetForPlatform(UpdatePlatform.LINUX, UpdateInstallMethod.TARBALL)
+
+        assertNotNull(selected)
+        assertEquals(GUI_TARBALL.name, selected.name)
+    }
+
+    @Test
+    fun `tarball install returns null when the release only ships the tui archive`() {
+        val release = releaseOf(APPIMAGE, TUI_TARBALL)
+
+        assertNull(release.getAssetForPlatform(UpdatePlatform.LINUX, UpdateInstallMethod.TARBALL))
+    }
+
+    @Test
+    fun `unknown install method keeps the legacy linux priority`() {
+        val release = releaseOf(TUI_TARBALL, DEB, APPIMAGE)
+
+        val selected = release.getAssetForPlatform(UpdatePlatform.LINUX, UpdateInstallMethod.UNKNOWN)
+
+        assertNotNull(selected)
+        assertEquals(APPIMAGE.name, selected.name)
+    }
+
+    @Test
+    fun `apk install still selects the apk`() {
+        val release = releaseOf(ReleaseAsset("composeApp-release.apk", "https://example.com/melo.apk", 50_000_000L, UpdatePlatform.ANDROID))
+
+        val selected = release.getAssetForPlatform(UpdatePlatform.ANDROID, UpdateInstallMethod.APK)
+
+        assertNotNull(selected)
+        assertEquals("composeApp-release.apk", selected.name)
+    }
+
+    private fun releaseOf(vararg assets: ReleaseAsset): AppRelease =
+        AppRelease(
+            version = "2.2.1",
+            tagName = "v2.2.1",
+            name = "Melo 2.2.1",
+            releaseNotes = "Notes",
+            htmlUrl = "https://example.com",
+            publishedAt = "2026-09-27T00:00:00Z",
+            assets = assets.toList(),
+        )
+
+    private companion object {
+        val APPIMAGE = asset("Melo-2.2.1-x86_64.AppImage")
+        val DEB = asset("melo_2.2.1_amd64.deb")
+        val GUI_TARBALL = asset("melo-2.2.1-linux-x64.tar.gz")
+        val TUI_TARBALL = asset("melo-2.2.1-linux.tar.gz")
+
+        fun asset(name: String): ReleaseAsset = ReleaseAsset(name, "https://example.com/$name", 1_000L, UpdatePlatform.LINUX)
+    }
 }

@@ -9,11 +9,10 @@ import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.PlatformUpdateInstaller
+import com.github.adriianh.melo.util.UpdateInstallResult
 import io.mockk.coEvery
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,6 +51,10 @@ class UpdateViewModelTest {
             installer = installer,
         )
 
+    /**
+     * Release fixture with one asset per desktop platform, so the resolved state does
+     * not depend on the host the tests run on.
+     */
     private fun fakeRelease(version: String) =
         AppRelease(
             version = version,
@@ -63,10 +66,28 @@ class UpdateViewModelTest {
             assets =
                 listOf(
                     ReleaseAsset(
-                        name = "melo-release.apk",
-                        downloadUrl = "https://example.com/app.apk",
-                        sizeBytes = 25_000_000L,
-                        platform = UpdatePlatform.ANDROID,
+                        name = "Melo-$version-x86_64.AppImage",
+                        downloadUrl = "https://example.com/melo.AppImage",
+                        sizeBytes = 80_000_000L,
+                        platform = UpdatePlatform.LINUX,
+                    ),
+                    ReleaseAsset(
+                        name = "melo-$version-linux-x64.tar.gz",
+                        downloadUrl = "https://example.com/melo-linux-x64.tar.gz",
+                        sizeBytes = 160_000_000L,
+                        platform = UpdatePlatform.LINUX,
+                    ),
+                    ReleaseAsset(
+                        name = "Melo-$version.dmg",
+                        downloadUrl = "https://example.com/melo.dmg",
+                        sizeBytes = 70_000_000L,
+                        platform = UpdatePlatform.MACOS,
+                    ),
+                    ReleaseAsset(
+                        name = "Melo-Setup.exe",
+                        downloadUrl = "https://example.com/melo-setup.exe",
+                        sizeBytes = 75_000_000L,
+                        platform = UpdatePlatform.WINDOWS,
                     ),
                 ),
         )
@@ -128,11 +149,24 @@ class UpdateViewModelTest {
 
     @Test
     fun `installUpdate delegates to installer`() {
-        every { installer.installAndRestart(any()) } just runs
+        every { installer.installAndRestart(any()) } returns UpdateInstallResult.Started
         val viewModel = createViewModel()
 
-        viewModel.installUpdate("/path/to/installer.apk")
+        viewModel.installUpdate("/path/to/installer.AppImage")
 
-        verify { installer.installAndRestart("/path/to/installer.apk") }
+        verify { installer.installAndRestart("/path/to/installer.AppImage") }
+    }
+
+    @Test
+    fun `installUpdate surfaces installer failures as Error`() {
+        every { installer.installAndRestart(any()) } returns
+            UpdateInstallResult.Failed("Sin permisos para actualizar la instalación")
+        val viewModel = createViewModel()
+
+        viewModel.installUpdate("/path/to/installer.AppImage")
+
+        val state = viewModel.uiState.value
+        assertIs<UpdateState.Error>(state)
+        assertEquals("Sin permisos para actualizar la instalación", state.message)
     }
 }

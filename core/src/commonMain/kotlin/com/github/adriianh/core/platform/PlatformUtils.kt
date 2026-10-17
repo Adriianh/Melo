@@ -33,3 +33,9 @@ expect fun md5(str: String): String
  * Returns the current platform for auto-update targeting.
  */
 expect fun currentUpdatePlatform(): com.github.adriianh.core.domain.model.update.UpdatePlatform
+
+/**
+ * Returns how the running application was installed, so the update flow can pick
+ * the matching release asset and decide whether an in-place update is possible.
+ */
+expect fun currentUpdateInstallMethod(): com.github.adriianh.core.domain.model.update.UpdateInstallMethod

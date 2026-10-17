@@ -1,6 +1,8 @@
 package com.github.adriianh.core.platform
 
+import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
+import java.io.File
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -29,3 +31,10 @@ actual fun currentUpdatePlatform(): UpdatePlatform {
         else -> UpdatePlatform.UNKNOWN
     }
 }
+
+actual fun currentUpdateInstallMethod(): UpdateInstallMethod =
+    DesktopInstall.detect(
+        environment = currentDesktopInstallEnvironment(),
+        exists = { File(it).exists() },
+        readFile = { PlatformFileSystem.readText(it) },
+    )

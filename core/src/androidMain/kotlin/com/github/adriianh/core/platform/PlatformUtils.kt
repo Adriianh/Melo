@@ -1,5 +1,6 @@
 package com.github.adriianh.core.platform
 
+import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import java.security.MessageDigest
 import java.util.Locale
@@ -22,3 +23,5 @@ actual fun md5(str: String): String =
 
 actual fun currentUpdatePlatform(): UpdatePlatform =
     UpdatePlatform.ANDROID
+
+actual fun currentUpdateInstallMethod(): UpdateInstallMethod = UpdateInstallMethod.APK

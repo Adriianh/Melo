@@ -25,10 +25,10 @@
         <error line="126" column="116" source="standard:trailing-comma-on-call-site" />
     </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
-        <error line="8" column="18" source="standard:chain-method-continuation" />
-        <error line="19" column="18" source="standard:chain-method-continuation" />
-        <error line="23" column="53" source="standard:function-signature" />
-        <error line="24" column="26" source="standard:final-newline" />
+        <error line="9" column="18" source="standard:chain-method-continuation" />
+        <error line="20" column="18" source="standard:chain-method-continuation" />
+        <error line="24" column="53" source="standard:function-signature" />
+        <error line="27" column="86" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/cache/HomeFeedCache.kt">
         <error line="7" column="5" source="standard:blank-line-before-declaration" />
@@ -197,7 +197,7 @@
         <error line="66" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/model/update/UpdateState.kt">
-        <error line="36" column="1" source="standard:final-newline" />
+        <error line="46" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/domain/player/MediaSessionManager.kt">
         <error line="9" column="5" source="standard:blank-line-before-declaration" />
@@ -928,7 +928,7 @@
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="7" column="1" source="standard:no-consecutive-comments" />
-        <error line="35" column="95" source="standard:final-newline" />
+        <error line="41" column="105" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/core/util/LrcParser.kt">
         <error line="16" column="1" source="standard:no-empty-first-line-in-class-body" />
@@ -963,11 +963,11 @@
         <error line="102" column="23" source="standard:multiline-expression-wrapping" />
     </file>
     <file name="src/iosMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
-        <error line="31" column="42" source="standard:function-signature" />
-        <error line="34" column="42" source="standard:function-signature" />
-        <error line="37" column="40" source="standard:function-signature" />
-        <error line="52" column="53" source="standard:function-signature" />
-        <error line="53" column="26" source="standard:final-newline" />
+        <error line="32" column="42" source="standard:function-signature" />
+        <error line="35" column="42" source="standard:function-signature" />
+        <error line="38" column="40" source="standard:function-signature" />
+        <error line="53" column="53" source="standard:function-signature" />
+        <error line="56" column="90" source="standard:final-newline" />
     </file>
     <file name="src/jvmMain/kotlin/com/github/adriianh/core/domain/player/JvmMediaSessionManager.kt">
         <error line="49" column="1" source="standard:no-empty-first-line-in-class-body" />
@@ -1090,9 +1090,9 @@
         <error line="401" column="1" source="standard:final-newline" />
     </file>
     <file name="src/jvmMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
-        <error line="8" column="18" source="standard:chain-method-continuation" />
-        <error line="19" column="18" source="standard:chain-method-continuation" />
-        <error line="31" column="1" source="standard:final-newline" />
+        <error line="10" column="18" source="standard:chain-method-continuation" />
+        <error line="21" column="18" source="standard:chain-method-continuation" />
+        <error line="40" column="5" source="standard:final-newline" />
     </file>
     <file name="src/jvmTest/kotlin/com/github/adriianh/core/domain/CollectionFilterSortTest.kt">
         <error line="19" column="1" source="standard:no-empty-first-line-in-class-body" />

@@ -6,12 +6,17 @@ import com.github.adriianh.data.local.ContextHolder
 import java.io.File
 
 actual class PlatformUpdateInstaller actual constructor() {
-    actual fun installAndRestart(installerPath: String) {
-        val context = ContextHolder.context ?: return
-        try {
-            val file = File(installerPath)
-            if (!file.exists()) return
+    actual fun installAndRestart(installerPath: String): UpdateInstallResult {
+        val context =
+            ContextHolder.context
+                ?: return UpdateInstallResult.Failed("No se pudo acceder al contexto de la aplicación")
 
+        val file = File(installerPath)
+        if (!file.exists()) {
+            return UpdateInstallResult.Failed("No se encontró el paquete descargado en $installerPath")
+        }
+
+        return try {
             val apkUri =
                 FileProvider.getUriForFile(
                     context,
@@ -26,7 +31,9 @@ actual class PlatformUpdateInstaller actual constructor() {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
             context.startActivity(intent)
-        } catch (_: Exception) {
+            UpdateInstallResult.Started
+        } catch (e: Exception) {
+            UpdateInstallResult.Failed("No se pudo abrir el instalador de Android: ${e.message}")
         }
     }
 }
