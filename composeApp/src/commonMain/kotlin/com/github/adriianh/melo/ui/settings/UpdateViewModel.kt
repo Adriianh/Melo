@@ -6,13 +6,16 @@ import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.core.domain.model.update.resolveUpdateState
 import com.github.adriianh.core.domain.repository.DownloadProgress
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.core.platform.PlatformFileSystem
+import com.github.adriianh.core.platform.currentUpdateInstallMethod
 import com.github.adriianh.core.platform.currentUpdatePlatform
 import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.util.PlatformUpdateInstaller
+import com.github.adriianh.melo.util.UpdateInstallResult
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,14 +48,13 @@ class UpdateViewModel(
             val result = checkForUpdateUseCase(MeloVersion.CURRENT, channel)
             result.onSuccess { release ->
                 if (release != null) {
-                    val platform = currentUpdatePlatform()
-                    val targetAsset = release.getAssetForPlatform(platform)
-                        ?: release.assets.firstOrNull()
-                    _uiState.value = UpdateState.UpdateAvailable(
-                        currentVersion = MeloVersion.CURRENT,
-                        release = release,
-                        targetAsset = targetAsset
-                    )
+                    _uiState.value =
+                        resolveUpdateState(
+                            release = release,
+                            platform = currentUpdatePlatform(),
+                            method = currentUpdateInstallMethod(),
+                            currentVersion = MeloVersion.CURRENT,
+                        )
                 } else {
                     _uiState.value = UpdateState.UpToDate(MeloVersion.CURRENT, channel)
                 }
@@ -123,7 +125,10 @@ class UpdateViewModel(
     }
 
     fun installUpdate(installerPath: String) {
-        installer.installAndRestart(installerPath)
+        val result = installer.installAndRestart(installerPath)
+        if (result is UpdateInstallResult.Failed) {
+            _uiState.value = UpdateState.Error(message = result.message)
+        }
     }
 
     fun resetState() {

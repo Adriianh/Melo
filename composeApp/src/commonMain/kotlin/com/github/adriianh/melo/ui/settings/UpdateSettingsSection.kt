@@ -44,9 +44,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.update.UpdateChannel
+import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.util.MeloColors
@@ -384,6 +386,53 @@ fun UpdateSettingsSection(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
+                        }
+                    }
+                }
+            }
+
+            is UpdateState.ManualUpdate -> {
+                val uriHandler = LocalUriHandler.current
+                val hint =
+                    if (s.method == UpdateInstallMethod.PACKAGE_MANAGER) {
+                        "Melo se instaló desde un paquete del sistema: actualízalo con tu gestor."
+                    } else {
+                        "Esta instalación no admite actualizaciones automáticas. Usa el enlace para descargarla."
+                    }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = "¡Nueva versión disponible: v${s.release.version}!",
+                            style = MeloType.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = hint,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary,
+                        )
+                        Button(
+                            onClick = { uriHandler.openUri(s.release.htmlUrl) },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Abrir página de descarga", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
