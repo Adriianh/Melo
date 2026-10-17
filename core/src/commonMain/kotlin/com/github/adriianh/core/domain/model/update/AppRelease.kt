@@ -41,12 +41,17 @@ data class AppRelease(
     val assets: List<ReleaseAsset>,
     val channel: UpdateChannel = UpdateChannel.STABLE,
 ) {
-    fun getAssetForPlatform(platform: UpdatePlatform): ReleaseAsset? {
-        val matching = assets.filter { it.platform == platform }
-        if (matching.isEmpty()) return null
-
-        return matching.minByOrNull { asset ->
-            assetPlatformPriority(asset.name.lowercase(), platform)
+    fun getAssetForPlatform(
+        platform: UpdatePlatform,
+        method: UpdateInstallMethod = UpdateInstallMethod.UNKNOWN,
+    ): ReleaseAsset? {
+        val candidates =
+            assets.filter { asset ->
+                asset.platform == platform &&
+                    assetPlatformPriority(asset.name.lowercase(), platform, method) < NO_MATCH_PRIORITY
+            }
+        return candidates.minByOrNull { asset ->
+            assetPlatformPriority(asset.name.lowercase(), platform, method)
         }
     }
 
@@ -104,10 +109,11 @@ data class AppRelease(
     private fun assetPlatformPriority(
         name: String,
         platform: UpdatePlatform,
+        method: UpdateInstallMethod,
     ): Int =
         when (platform) {
             UpdatePlatform.WINDOWS -> windowsPriority(name)
-            UpdatePlatform.LINUX -> linuxPriority(name)
+            UpdatePlatform.LINUX -> linuxPriority(name, method)
             UpdatePlatform.MACOS -> macosPriority(name)
             UpdatePlatform.ANDROID -> if (name.endsWith(".apk")) 0 else 1
             UpdatePlatform.UNKNOWN -> 0
@@ -122,13 +128,31 @@ data class AppRelease(
             else -> 4
         }
 
-    private fun linuxPriority(name: String): Int =
-        when {
-            name.endsWith(".appimage") -> 0
-            name.endsWith(".deb") -> 1
-            name.endsWith(".rpm") -> 2
-            name.endsWith(".tar.gz") -> 3
-            else -> 4
+    private fun linuxPriority(
+        name: String,
+        method: UpdateInstallMethod,
+    ): Int =
+        when (method) {
+            UpdateInstallMethod.APPIMAGE -> if (name.endsWith(".appimage")) 0 else NO_MATCH_PRIORITY
+
+            UpdateInstallMethod.TARBALL ->
+                // Only the desktop archive carries an architecture suffix. The TUI archive
+                // (`melo-<version>-linux.tar.gz`) lives in the same release and must never
+                // be selected here, so anything without a suffix is rejected.
+                if (name.endsWith(".tar.gz") && (name.contains("x64") || name.contains("x86_64"))) {
+                    0
+                } else {
+                    NO_MATCH_PRIORITY
+                }
+
+            else ->
+                when {
+                    name.endsWith(".appimage") -> 0
+                    name.endsWith(".deb") -> 1
+                    name.endsWith(".rpm") -> 2
+                    name.endsWith(".tar.gz") -> 3
+                    else -> 4
+                }
         }
 
     private fun macosPriority(name: String): Int =
@@ -140,3 +164,6 @@ data class AppRelease(
             else -> 4
         }
 }
+
+/** Priority that excludes an asset from the selection for the current install method. */
+private const val NO_MATCH_PRIORITY = 10
