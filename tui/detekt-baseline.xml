@@ -4,15 +4,12 @@
   <CurrentIssues>
     <ID>ComplexCondition:AudioPlayer.kt:AudioPlayer$url != null &amp;&amp; (!isAlive || (pauseDuration &gt; 15_000L &amp;&amp; (url.startsWith("http://") || url.startsWith( "https://" ))))</ID>
     <ID>ComplexCondition:DetailKeysHandlers.kt:track != null &amp;&amp; state.detail.lyrics == null &amp;&amp; state.detail.syncedLyrics.isEmpty() &amp;&amp; !state.detail.isLoadingLyrics</ID>
-    <ID>ComplexCondition:EntityDetailKeysHandlers.kt:event.code() == KeyCode.ESCAPE || event.code() == KeyCode.TAB || (event.modifiers() .alt() &amp;&amp; event.code() == KeyCode.LEFT)</ID>
     <ID>ComplexCondition:LibraryScreen.kt:state.selection.isNotEmpty &amp;&amp; (actualState.libraryTab == LibraryTab.FAVORITES || actualState.libraryTab == LibraryTab.LOCAL || actualState.isInPlaylistDetail)</ID>
     <ID>ComplexCondition:LyricsCommand.kt:LyricsCommand$curTrackStr != "$title|||$artist" &amp;&amp; curTrackStr.isNotBlank() &amp;&amp; curTrackStr != "No players found"</ID>
     <ID>ComplexCondition:MeloScreenActions.kt:existing.downloadStatus == DownloadStatus.COMPLETED &amp;&amp; existing.downloadType == DownloadType.PREFETCH &amp;&amp; downloadType == DownloadType.MANUAL &amp;&amp; existing.localFilePath != null</ID>
     <ID>ComplexCondition:SettingsHandlers.kt:item == SettingsItem.SYNC_LIKES || item == SettingsItem.SYNC_HISTORY || item == SettingsItem.AUTO_DOWNLOAD || item == SettingsItem.OFFLINE_MODE || item == SettingsItem.DISCORD_RPC</ID>
-    <ID>ComplexCondition:StatusCommand.kt:StatusCommand$curTrackStr != "$title|||$artist" &amp;&amp; curTrackStr.isNotBlank() &amp;&amp; curTrackStr != "No players found"</ID>
     <ID>CyclomaticComplexMethod:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
     <ID>CyclomaticComplexMethod:AudioPlayer.kt:AudioPlayer$private suspend fun launchPlayback</ID>
-    <ID>CyclomaticComplexMethod:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
     <ID>CyclomaticComplexMethod:DetailInfoTab.kt:internal fun renderTrackMetadata: StyledElement&lt;*&gt;</ID>
     <ID>CyclomaticComplexMethod:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
     <ID>CyclomaticComplexMethod:DetailPanel.kt:fun buildDetailPanel: Element</ID>
@@ -41,7 +38,6 @@
     <ID>CyclomaticComplexMethod:LibraryPlaylists.kt:internal fun buildPlaylistDetailContent: StyledElement&lt;*&gt;</ID>
     <ID>CyclomaticComplexMethod:LibraryPlaylists.kt:internal fun buildPlaylistsContent: StyledElement&lt;*&gt;</ID>
     <ID>CyclomaticComplexMethod:LibraryScreen.kt:fun renderLibraryScreen: Element</ID>
-    <ID>CyclomaticComplexMethod:LocalIpcServer.kt:LocalIpcServer$private fun handleClient</ID>
     <ID>CyclomaticComplexMethod:LyricsCommand.kt:LyricsCommand$override fun run</ID>
     <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.cycleLyricsTranslation</ID>
     <ID>CyclomaticComplexMethod:LyricsHandlers.kt:internal fun MeloScreen.loadLyrics</ID>
@@ -53,7 +49,6 @@
     <ID>CyclomaticComplexMethod:MeloScreenFavoritesHandlers.kt:private fun MeloScreen.handleFavoriteSongsKey: EventResult</ID>
     <ID>CyclomaticComplexMethod:MeloScreenFeed.kt:internal fun MeloScreen.enrichActiveSectionTracks</ID>
     <ID>CyclomaticComplexMethod:MeloScreenFeed.kt:internal fun MeloScreen.loadHomeFeed</ID>
-    <ID>CyclomaticComplexMethod:MeloScreenHomeHandlers.kt:internal fun MeloScreen.handleHomeKey: EventResult</ID>
     <ID>CyclomaticComplexMethod:MeloScreenHomeHandlers.kt:private fun MeloScreen.handleHomeCursorTrackListKey: EventResult</ID>
     <ID>CyclomaticComplexMethod:MeloScreenKeyHandlers.kt:internal fun MeloScreen.handleGlobalShortcuts: EventResult</ID>
     <ID>CyclomaticComplexMethod:MeloScreenLibraryHandlers.kt:internal fun MeloScreen.handleTrackListSelectionActions: EventResult</ID>
@@ -98,12 +93,10 @@
     <ID>EmptyFunctionBlock:PlaylistCommand.kt:PlaylistCommand${}</ID>
     <ID>EmptyFunctionBlock:QueueCommand.kt:QueueCommand${}</ID>
     <ID>EmptyFunctionBlock:ScrobbleCommand.kt:ScrobbleCommand${}</ID>
-    <ID>ExplicitItLambdaMultipleParameters:EntityDetailArtist.kt:{ i, it -&gt; artistDashboardRow( it, entity.title, i + offset, selected, detail, state, marqueeText ) }</ID>
     <ID>ForEachOnRange:WindowsVolumeController.kt:WindowsVolumeController$0 until 10</ID>
     <ID>LargeClass:MeloStateFilterSortTest.kt:MeloStateFilterSortTest</ID>
     <ID>LongMethod:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
     <ID>LongMethod:AudioPlayer.kt:AudioPlayer$private suspend fun launchPlayback</ID>
-    <ID>LongMethod:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
     <ID>LongMethod:DetailInfoTab.kt:internal fun renderTrackMetadata: StyledElement&lt;*&gt;</ID>
     <ID>LongMethod:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailTabNavigationKey: EventResult</ID>
     <ID>LongMethod:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
@@ -176,7 +169,6 @@
     <ID>LongMethod:SettingsHandlers.kt:fun MeloScreen.handleSettingsKey: EventResult</ID>
     <ID>LongMethod:SettingsPanel.kt:SettingsOverlay$override fun render</ID>
     <ID>LongMethod:StatsScreen.kt:fun renderStatsScreen: Element</ID>
-    <ID>LongMethod:StatusCommand.kt:StatusCommand$override fun run</ID>
     <ID>LongMethod:TrackOptionsHandlers.kt:internal fun MeloScreen.executeTrackMenuAction</ID>
     <ID>LongMethod:TuiLogGuard.kt:TuiLogGuard$fun &lt;R&gt; withLogGuard: R</ID>
     <ID>LongMethod:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
@@ -190,8 +182,6 @@
     <ID>LoopWithTooManyJumpStatements:WindowsVolumeController.kt:WindowsVolumeController$for</ID>
     <ID>MatchingDeclarationName:QueuePanel.kt:QueueOverlay : Element</ID>
     <ID>MaxLineLength:AudioPlayer.kt:AudioPlayer$get() = (FfplayProcessManager.isWindows &amp;&amp; WindowsVolumeController.isAvailable) || PactlVolumeController.hasPactl</ID>
-    <ID>MaxLineLength:AuthCommand.kt:YouTubeImportAuthCommand$terminal.println(gray(" 1. Export cookies to a file and run: melo auth youtube login --file &lt;cookies.txt&gt;"))</ID>
-    <ID>MaxLineLength:DaemonCommand.kt:DaemonStartCommand$terminal.println(yellow("Try running manually with: nohup melo daemon run &gt; ${logFile.absolutePath} 2&gt;&amp;1 &amp;"))</ID>
     <ID>MaxLineLength:DetailKeysHandlers.kt:if</ID>
     <ID>MaxLineLength:DetailLyricsTab.kt:LyricsTranslationMode.TRANSLATION_ONLY</ID>
     <ID>MaxLineLength:DetailPanel.kt:(if (isNowPlaying &amp;&amp; state.player.syncedLyrics.isNotEmpty()) state.player.syncedLyrics else state.detail.syncedLyrics).isNotEmpty()</ID>
@@ -199,14 +189,11 @@
     <ID>MaxLineLength:DownloadActionHandler.kt:DownloadActionHandler$terminal.println(cyan($$"Downloading $entityTitle (${tracks.size} tracks) into ${downloadFolder.absolutePath}..."))</ID>
     <ID>MaxLineLength:DownloadActionHandler.kt:DownloadActionHandler$terminal.println(yellow($$"[!] Track is age-restricted and could not be resolved for download: ${track.title}"))</ID>
     <ID>MaxLineLength:EntityDetailKeysHandlers.kt:if (actualDetail.returnScreen.entity is SearchResult.Artist) "artist-dashboard-list" else "entity-tracks-list"</ID>
-    <ID>MaxLineLength:EntityDetailTracks.kt:!detail.description.isNullOrBlank() || (detail.entity as? SearchResult.Album)?.description?.isNotBlank() == true || (detail.entity as? SearchResult.Playlist)?.description?.isNotBlank() == true</ID>
     <ID>MaxLineLength:FfplayProcessManager.kt:FfplayProcessManager$throw IllegalStateException("ffplay not found. Please install FFmpeg (e.g., winget install Gyan.FFmpeg)")</ID>
     <ID>MaxLineLength:HomeScreen.kt:HomeFeedFocus.ITEMS -&gt; "[Tab] Focus [↑↓] Move [v] Select [←/Esc] Sections [[/]] Jump [Enter] Play [Q] Queue [F] Fav [M] Options"</ID>
     <ID>MaxLineLength:HomeScreen.kt:HomeFeedFocus.SECTIONS -&gt; "[Tab] Focus [↑↓] Sections [→/Enter] Items [[/]] Jump [1..3] Tabs [R] Refresh"</ID>
     <ID>MaxLineLength:HomeScreen.kt:else -&gt; "[1..3] Tabs [Tab] Switch Tab [↑↓] Move [v] Select [Enter] Play [Q] Queue [F] Favorite [R] Refresh"</ID>
     <ID>MaxLineLength:HomeScreen.kt:state.selection.isNotEmpty -&gt; "[Space/v] Toggle [Ctrl+A] All [m] Batch (${state.selection.count}) [Esc] Clear"</ID>
-    <ID>MaxLineLength:LibraryFavorites.kt:text(if (isCompact) " [${actualState.favoritesSortDirection.symbol}] " else " [${actualState.favoritesSortDirection.symbol} ${actualState.favoritesSortDirection.label} (O)] ")</ID>
-    <ID>MaxLineLength:LibraryFavorites.kt:text(if (isCompact) " [${actualState.favoritesSortOrder.label}] " else " [Sort: ${actualState.favoritesSortOrder.label} (o)] ")</ID>
     <ID>MaxLineLength:LibraryLocal.kt:text(if (hasPaths) " No audio files found in configured folders" else " No local folders configured").fg(TEXT_SECONDARY).centered()</ID>
     <ID>MaxLineLength:LibraryPlaylists.kt:text(" [${actualState.playlistDetailSortDirection.symbol} ${actualState.playlistDetailSortDirection.label} (O)] ")</ID>
     <ID>MaxLineLength:LibraryPlaylists.kt:text(if (isCompact) " [${actualState.playlistsSortDirection.symbol}] " else " [${actualState.playlistsSortDirection.symbol} ${actualState.playlistsSortDirection.label} (O)] ")</ID>
@@ -215,32 +202,22 @@
     <ID>MaxLineLength:LibraryScreen.kt:}</ID>
     <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""</ID>
     <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{mpris:length}}\""</ID>
-    <ID>MaxLineLength:LyricsCommand.kt:LyricsCommand$if</ID>
     <ID>MaxLineLength:LyricsHandlers.kt:if</ID>
     <ID>MaxLineLength:MeloScreenActions.kt:if</ID>
     <ID>MaxLineLength:MeloScreenDiscoveryHandlers.kt:appRunner()?.runOnRenderThread { state = state.copy(detail = state.detail.copy(isLoadingMoreSimilar = false)) }</ID>
     <ID>MaxLineLength:MeloScreenKeyHandlers.kt:if</ID>
-    <ID>MaxLineLength:MeloScreenLibraryHandlers.kt:LibraryTab.PLAYLISTS</ID>
-    <ID>MaxLineLength:MeloScreenRendering.kt:if</ID>
     <ID>MaxLineLength:MeloStateLibrary.kt:.</ID>
     <ID>MaxLineLength:MeloStateLibrary.kt:LibraryPlaylistItem.Local$override val trackCountText: String get() = "${playlist.trackCount} track${if (playlist.trackCount != 1) "s" else ""}"</ID>
-    <ID>MaxLineLength:PlayCommand.kt:PlayCommand$terminal.println(green("Added playlist tracks to active session: ") + detailedPlaylist.title)</ID>
     <ID>MaxLineLength:SearchScreen.kt:actualState.results.isEmpty() &amp;&amp; actualState.albumResults.isEmpty() &amp;&amp; actualState.artistResults.isEmpty() &amp;&amp; actualState.playlistResults.isEmpty()</ID>
     <ID>MaxLineLength:SearchSuggestionsHandlers.kt:updateScreen&lt;ScreenState.Search&gt; { it.copy(selectedSuggestionIndex = if (prevIndex == -1) null else prevIndex) }</ID>
     <ID>MaxLineLength:SettingsPanel.kt:SettingsOverlay$isAccountSection &amp;&amp; selectedItem == SettingsItem.YOUTUBE_ACCOUNT &amp;&amp; isAccountLoggedIn -&gt; "[Enter] re-import [D] log out [←] back [Esc] close"</ID>
     <ID>MaxLineLength:SettingsPanel.kt:SettingsOverlay$isAccountSection &amp;&amp; selectedItem == SettingsItem.YOUTUBE_ACCOUNT -&gt; "[Enter] import from browser [←] back [Esc] close"</ID>
-    <ID>MaxLineLength:ShareCommand.kt:ShareCommand$terminal.println(cyan("Hint: Provide a search query to share a specific track, e.g., melo share 'Never Gonna Give You Up'"))</ID>
     <ID>MaxLineLength:StatsCommand.kt:StatsCommand$terminal.println("${gray("${i + 1}.")} ${t.track.title} - ${t.track.artist} (${t.playCount} plays)")</ID>
-    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}\""</ID>
-    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$"playerctl -p $(playerctl -l | grep '^melo' | head -n 1) metadata --format \"{{title}}|||{{artist}}|||{{album}}|||{{position}}|||{{mpris:length}}\""</ID>
-    <ID>MaxLineLength:StatusCommand.kt:StatusCommand$if</ID>
     <ID>MaxLineLength:YouTubeAuthService.kt:YouTubeAuthService$IllegalStateException("The cookies did not produce a valid YouTube Music session. Make sure you are logged in to music.youtube.com.")</ID>
     <ID>NestedBlockDepth:TuiLogGuard.kt:TuiLogGuard$fun &lt;R&gt; withLogGuard: R</ID>
     <ID>NestedBlockDepth:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
     <ID>ReturnCount:ArtistDashboardKeyHandlers.kt:internal fun MeloScreen.handleArtistDashboardKey: EventResult</ID>
     <ID>ReturnCount:AudioPlayer.kt:AudioPlayer$fun resume</ID>
-    <ID>ReturnCount:CommandBarHandlers.kt:CommandBarHandlers$fun MeloScreen.handleCommandBarKey: EventResult</ID>
-    <ID>ReturnCount:CommandBarHandlers.kt:CommandBarHandlers$fun computeSuggestions: List&lt;String&gt;</ID>
     <ID>ReturnCount:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailKey: EventResult</ID>
     <ID>ReturnCount:DetailKeysHandlers.kt:internal fun MeloScreen.handleDetailTabNavigationKey: EventResult</ID>
     <ID>ReturnCount:DetailLyricsTab.kt:internal fun renderLyricsTab: StyledElement&lt;*&gt;</ID>
@@ -320,7 +297,6 @@
     <ID>ReturnCount:TrackOptionsHandlers.kt:internal fun MeloScreen.handleTrackOptionsKey: EventResult</ID>
     <ID>ReturnCount:WindowsVolumeController.kt:WindowsVolumeController$internal fun setProcessVolume: Boolean</ID>
     <ID>TooGenericExceptionCaught:AudioPlayer.kt:AudioPlayer$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:DaemonCommand.kt:DaemonStartCommand$e: Exception</ID>
     <ID>TooGenericExceptionCaught:EntityDetailsHandlers.kt:e: Exception</ID>
     <ID>TooGenericExceptionCaught:LocalIpcClient.kt:LocalIpcClient$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LocalIpcServer.kt:LocalIpcServer$e: Exception</ID>
@@ -329,7 +305,6 @@
     <ID>TooGenericExceptionCaught:PlayActionHandler.kt:PlayActionHandler$e: Exception</ID>
     <ID>TooGenericExceptionCaught:QueueCommand.kt:QueueListCommand$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SearchExecutionHandlers.kt:e: Exception</ID>
-    <ID>TooGenericExceptionCaught:StatusCommand.kt:StatusCommand$e: Exception</ID>
     <ID>TooManyFunctions:AudioPlayer.kt:AudioPlayer : MeloPlayer</ID>
     <ID>TooManyFunctions:DirectoryPickerState.kt:com.github.adriianh.cli.tui.component.DirectoryPickerState.kt</ID>
     <ID>TooManyFunctions:MeloScreenKeyHandlers.kt:com.github.adriianh.cli.tui.handler.MeloScreenKeyHandlers.kt</ID>

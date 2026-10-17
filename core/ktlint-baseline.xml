@@ -23,23 +23,6 @@
         <error line="100" column="41" source="standard:chain-method-continuation" />
         <error line="115" column="31" source="standard:multiline-expression-wrapping" />
         <error line="126" column="116" source="standard:trailing-comma-on-call-site" />
-        <error line="137" column="23" source="standard:function-signature" />
-        <error line="137" column="36" source="standard:function-signature" />
-        <error line="137" column="50" source="standard:function-signature" />
-        <error line="137" column="73" source="standard:function-signature" />
-        <error line="138" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="138" column="37" source="standard:chain-method-continuation" />
-        <error line="146" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="146" column="34" source="standard:chain-method-continuation" />
-        <error line="165" column="33" source="standard:trailing-comma-on-call-site" />
-        <error line="210" column="31" source="standard:function-signature" />
-        <error line="210" column="45" source="standard:function-signature" />
-        <error line="210" column="68" source="standard:function-signature" />
-        <error line="212" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="212" column="41" source="standard:chain-method-continuation" />
-        <error line="228" column="33" source="standard:trailing-comma-on-call-site" />
-        <error line="237" column="27" source="standard:multiline-expression-wrapping" />
-        <error line="252" column="1" source="standard:final-newline" />
     </file>
     <file name="src/androidMain/kotlin/com/github/adriianh/core/platform/PlatformUtils.kt">
         <error line="8" column="18" source="standard:chain-method-continuation" />

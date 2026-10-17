@@ -12,7 +12,6 @@
     <ID>MaxLineLength:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$artist = if (track.artist == "Artista Desconocido" || track.artist == "Unknown Artist") bestMatch.artist else track.artist</ID>
     <ID>MaxLineLength:EnrichLocalTracksUseCase.kt:EnrichLocalTracksUseCase$if</ID>
     <ID>MaxLineLength:GetEntityDetailsUseCase.kt:GetEntityDetailsUseCase$author = if (details.author == "Unknown" &amp;&amp; entity.author.isNotBlank()) entity.author else details.author</ID>
-    <ID>MaxLineLength:HistoryEntry.kt:(!remoteRawSourceId.isNullOrBlank() &amp;&amp; (remoteRawSourceId in localNormalizedIds || remoteRawSourceId in localSourceIds))</ID>
     <ID>ReturnCount:GetEntityDetailsUseCase.kt:GetEntityDetailsUseCase$suspend operator fun invoke: SearchResult</ID>
     <ID>ReturnCount:HistoryEntry.kt:fun mergeHistoryEntries: List&lt;HistoryEntry&gt;</ID>
     <ID>ReturnCount:LrcParser.kt:LrcParser$private fun parseLine: SyncedLine?</ID>

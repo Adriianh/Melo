@@ -7,7 +7,6 @@
     <ID>ClassNaming:Playlist_tracks.kt:Playlist_tracks</ID>
     <ID>ClassNaming:Search_history.kt:Search_history</ID>
     <ID>ClassNaming:Stream_cache.kt:Stream_cache</ID>
-    <ID>ComplexCondition:DownloadManagerImpl.kt:DownloadManagerImpl$existing?.downloadStatus == DownloadStatus.COMPLETED &amp;&amp; existingPath != null &amp;&amp; PlatformFileSystem.fileExists(existingPath) &amp;&amp; PlatformFileSystem.fileSize(existingPath) &gt; 64 * 1024</ID>
     <ID>ComplexCondition:PlaybackManager.kt:PlaybackManagerImpl$fromIndex &lt; 0 || fromIndex &gt;= q.tracks.size || toIndex &lt; 0 || toIndex &gt;= q.tracks.size || fromIndex == toIndex</ID>
     <ID>ComplexCondition:PlaybackManager.kt:PlaybackManagerImpl$isTrackLoaded &amp;&amp; !state.isPlaying &amp;&amp; !state.isBuffering &amp;&amp; state.currentTrack != null</ID>
     <ID>ConstructorParameterNaming:Favorite_entities.kt:Favorite_entities$public val added_at: Long</ID>
@@ -103,7 +102,6 @@
     <ID>LongMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistDetails: SearchResult.Artist?</ID>
     <ID>LongMethod:MeloDatabaseImpl.kt:MeloDatabaseImpl.Schema$override fun create: QueryResult.Value&lt;Unit&gt;</ID>
     <ID>LongMethod:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
-    <ID>LongMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun handleAutoplay</ID>
     <ID>LongMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun playCurrentQueueTrack</ID>
     <ID>LoopWithTooManyJumpStatements:CookieHeader.kt:CookieHeader$for</ID>
     <ID>LoopWithTooManyJumpStatements:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$for</ID>
@@ -156,7 +154,6 @@
     <ID>ReturnCount:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
     <ID>ReturnCount:PlaybackManager.kt:PlaybackManagerImpl$private suspend fun findNextOfflineTrackIndex: Int?</ID>
     <ID>ReturnCount:SettingsRepositoryImpl.kt:SettingsRepositoryImpl$private fun loadSettingsSync: Settings</ID>
-    <ID>ReturnCount:UpdateRepositoryImpl.kt:UpdateRepositoryImpl.Companion$fun isNewerVersion: Boolean</ID>
     <ID>SwallowedException:PipedApiClient.kt:PipedApiClient$e: Exception</ID>
     <ID>SwallowedException:SpotifyApiClient.kt:SpotifyApiClient$e: Exception</ID>
     <ID>TooGenericExceptionCaught:InnerTubeAudioProvider.kt:InnerTubeAudioProvider$e: Exception</ID>
