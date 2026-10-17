@@ -8,19 +8,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -36,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
@@ -51,6 +42,7 @@ import com.github.adriianh.melo.ui.AdaptiveScaffold
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AmbientCanvas
 import com.github.adriianh.melo.ui.components.LocalMeloSnackbar
+import com.github.adriianh.melo.ui.components.MeloBanner
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.MeloSplashScreen
@@ -250,62 +242,29 @@ fun App(
                                         )
 
                                         val currentUpdate = updateState
-                                        val isUpdateBannerVisible = currentUpdate is UpdateState.UpdateAvailable &&
-                                            currentUpdate.release.version != dismissedUpdateVersion
-                                        AnimatedVisibility(
-                                            visible = isUpdateBannerVisible,
-                                            enter = slideInVertically() + fadeIn(),
-                                            exit = slideOutVertically() + fadeOut()
-                                        ) {
-                                            if (currentUpdate is UpdateState.UpdateAvailable) {
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
+                                        val availableUpdate = currentUpdate as? UpdateState.UpdateAvailable
+                                        MeloBanner(
+                                            visible = availableUpdate != null &&
+                                                availableUpdate.release.version != dismissedUpdateVersion,
+                                            title = availableUpdate?.let { update ->
+                                                val channelTag = if (
+                                                    update.release.channel == UpdateChannel.NIGHTLY
                                                 ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(
-                                                            start = 16.dp,
-                                                            end = 8.dp,
-                                                            top = 8.dp,
-                                                            bottom = 8.dp
-                                                        ),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                    ) {
-                                                        val isNightly =
-                                                            currentUpdate.release.channel ==
-                                                                UpdateChannel.NIGHTLY
-                                                        val channelTag =
-                                                            if (isNightly) " (Nightly)" else ""
-                                                        val updateMessage =
-                                                            "Nueva versión " +
-                                                                "${currentUpdate.release.version}$channelTag disponible"
-                                                        Text(
-                                                            text = updateMessage,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                            modifier = Modifier.weight(1f)
-                                                        )
-                                                        TextButton(
-                                                            onClick = { showSettingsSheet = true }
-                                                        ) {
-                                                            Text("Actualizar")
-                                                        }
-                                                        IconButton(
-                                                            onClick = {
-                                                                dismissedUpdateVersion = currentUpdate.release.version
-                                                            }
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Close,
-                                                                contentDescription = "Descartar",
-                                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                                            )
-                                                        }
-                                                    }
+                                                    " (Nightly)"
+                                                } else {
+                                                    ""
                                                 }
-                                            }
-                                        }
+                                                "Nueva versión ${update.release.version}$channelTag disponible"
+                                            } ?: "",
+                                            icon = Icons.Default.SystemUpdate,
+                                            actionLabel = "Actualizar",
+                                            onAction = { showSettingsSheet = true },
+                                            onDismiss = {
+                                                availableUpdate?.let {
+                                                    dismissedUpdateVersion = it.release.version
+                                                }
+                                            },
+                                        )
 
                                         Box(
                                             modifier = Modifier
