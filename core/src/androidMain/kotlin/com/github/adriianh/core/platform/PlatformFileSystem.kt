@@ -150,7 +150,7 @@ actual object PlatformFileSystem {
 
     actual fun getTempDirectory(): String =
         try {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)?.absolutePath
+            AndroidAppContext.application?.cacheDir?.absolutePath
                 ?: System.getProperty("java.io.tmpdir")
                 ?: Environment.getExternalStorageDirectory().path
         } catch (_: Exception) {
