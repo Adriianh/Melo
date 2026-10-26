@@ -10,7 +10,6 @@ import com.github.adriianh.melo.ui.login.importExistingBrowserCookies
 import com.github.adriianh.melo.ui.login.launchAutomatedBrowserLogin
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.verify
@@ -147,6 +146,22 @@ class LoginViewModelTest {
 
         assertFalse(vm.uiState.value.isWaitingBrowserAuth)
         assertFalse(vm.uiState.value.isLoggedIn)
+        assertNotNull(vm.uiState.value.error)
+    }
+
+    @Test
+    fun `quick import surfaces an error when no session is found`() = runTest {
+        coEvery { importExistingBrowserCookies() } returns null
+        coEvery { launchAutomatedBrowserLogin() } returns null
+
+        val vm = createVm()
+        advanceUntilIdle()
+        vm.startQuickImport()
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.isWaitingBrowserAuth)
+        assertFalse(vm.uiState.value.isLoggedIn)
+        assertNotNull(vm.uiState.value.error)
     }
 
     @Test

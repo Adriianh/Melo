@@ -99,6 +99,9 @@ class LoginViewModel(
         }
         viewModelScope.launch {
             val captured = launchAutomatedBrowserLogin()
+            if (captured.isNullOrBlank()) {
+                _uiState.update { it.copy(error = BROWSER_LOGIN_FAILED) }
+            }
             finishBrowserAuth(captured)
         }
     }
@@ -119,6 +122,9 @@ class LoginViewModel(
             } else {
                 _uiState.update { it.copy(browserAuthStatus = "Iniciando ventana de navegador...") }
                 val autoCaptured = launchAutomatedBrowserLogin()
+                if (autoCaptured.isNullOrBlank()) {
+                    _uiState.update { it.copy(error = BROWSER_IMPORT_FAILED) }
+                }
                 finishBrowserAuth(autoCaptured)
             }
         }
@@ -141,5 +147,14 @@ class LoginViewModel(
             updateSettings { it.copy(sessionCookies = null) }
             _uiState.update { it.copy(isLoggedIn = false, accountName = null, error = null) }
         }
+    }
+
+    private companion object {
+        const val BROWSER_LOGIN_FAILED =
+            "No se pudo iniciar sesión con el navegador. Prueba a importar la sesión de un navegador local " +
+                "o a ingresar las cookies manualmente."
+        const val BROWSER_IMPORT_FAILED =
+            "No se encontró una sesión activa en tus navegadores. Inicia sesión en music.youtube.com " +
+                "o ingresa las cookies manualmente."
     }
 }
