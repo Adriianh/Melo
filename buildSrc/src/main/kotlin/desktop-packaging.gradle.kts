@@ -6,6 +6,24 @@ import java.util.zip.ZipFile
 val desktopAppVersion: String =
     project.providers.gradleProperty("melo.version").getOrElse("2.2.1")
 
+/**
+ * Whether [path] (relative to the packaged application root) must stay executable.
+ *
+ * `jspawnhelper` and `jexec` are invoked by the bundled JVM itself. When they lose
+ * their execute bit, `ProcessBuilder.start()` fails on Linux with
+ * `posix_spawn failed, error: 13 (Permission denied)` and features such as browser
+ * sign-in or the updater cannot launch any child process.
+ */
+fun requiresExecutableBit(path: String): Boolean {
+    val segments = path.split('/')
+    val fileName = segments.last()
+    return "bin" in segments ||
+        fileName.endsWith(".so") ||
+        fileName.endsWith(".sh") ||
+        fileName == "jspawnhelper" ||
+        fileName == "jexec"
+}
+
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
     description = "Downloads and bundles VLC native libraries for Windows distribution"
@@ -106,10 +124,7 @@ tasks.register<Tar>("packageLinuxTarGz") {
         from(rootProject.file("packaging/linux/uninstall.sh"))
 
         eachFile {
-            if (path.contains("/bin/") || path.endsWith(".so") || path.contains("/runtime/bin/") || path.endsWith(
-                    ".sh"
-                )
-            ) {
+            if (requiresExecutableBit(path)) {
                 permissions {
                     unix("rwxr-xr-x")
                 }
@@ -155,12 +170,7 @@ val packageAppImage = tasks.register("packageAppImage") {
             if (file.isFile) {
                 val relPath = file.relativeTo(targetAppDir).path
                 val srcFile = File(appDirFile, relPath)
-                if (srcFile.canExecute() ||
-                    file.parentFile?.name == "bin" ||
-                    file.name.endsWith(".sh") ||
-                    file.name == "jspawnhelper" ||
-                    file.name == "jexec"
-                ) {
+                if (srcFile.canExecute() || requiresExecutableBit(relPath)) {
                     file.setExecutable(true, false)
                 }
             }
