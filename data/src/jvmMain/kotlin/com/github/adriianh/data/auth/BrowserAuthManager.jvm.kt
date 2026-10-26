@@ -266,51 +266,107 @@ object BrowserAuthManager {
         }
 
     /** Finds the first installed, executable browser candidate for the current OS, if any. */
-    fun findAvailableBrowser(): BrowserCandidate? {
-        val candidates = when (HostOs.current) {
+    fun findAvailableBrowser(): BrowserCandidate? = findAvailableBrowsers().firstOrNull()
+
+    /** Finds every installed, executable browser candidate for the current OS. */
+    internal fun findAvailableBrowsers(): List<BrowserCandidate> = selectAvailableBrowsers(resolveBrowserCandidates())
+
+    /** Keeps only candidates that point to an existing executable file, preserving detection order. */
+    internal fun selectAvailableBrowsers(candidates: List<BrowserCandidate>): List<BrowserCandidate> =
+        candidates.filter { candidate ->
+            val file = File(candidate.path)
+            file.isFile && file.canExecute()
+        }
+
+    private fun resolveBrowserCandidates(): List<BrowserCandidate> =
+        when (HostOs.current) {
             HostOs.WINDOWS -> resolveWindowsCandidates()
             HostOs.MACOS -> resolveMacCandidates()
             HostOs.LINUX -> resolveLinuxCandidates()
         }
-        return candidates.firstOrNull { candidate ->
-            val file = File(candidate.path)
-            file.exists() && file.canExecute()
-        }
-    }
 
     /**
      * Launches an available browser against a throwaway profile so the user can log in, then
      * polls that profile's cookie store until a session appears (or [LAUNCH_TIMEOUT] elapses).
+     *
+     * Candidates are attempted in detection order: a browser that cannot be spawned (missing
+     * execute permission, `noexec` mount, broken wrapper, ...) does not abort the whole flow
+     * while another installed browser might still work.
      */
     suspend fun launchBrowserAuth(): BrowserAuthResult = withContext(Dispatchers.IO) {
-        val browser = findAvailableBrowser() ?: return@withContext BrowserAuthResult.NoBrowserFound
-        val tempDir = Files.createTempDirectory("melo_auth_").toFile()
+        var lastFailure: Throwable? = null
 
-        val process = runCatching { startBrowserProcess(browser, tempDir) }
-            .getOrElse {
-                tempDir.deleteRecursively()
-                return@withContext BrowserAuthResult.Failed(it)
+        for (browser in findAvailableBrowsers()) {
+            when (val result = attemptBrowserAuth(browser)) {
+                is BrowserAuthResult.Failed -> {
+                    lastFailure = result.cause
+                    logLaunchFailure(browser, result.cause)
+                }
+
+                else -> return@withContext result
             }
+        }
 
-        try {
-            val session = pollForSessionCookies(tempDir, browser, process)
-            if (session != null) return@withContext session
+        when (val cause = lastFailure) {
+            null -> BrowserAuthResult.NoBrowserFound
+            else -> BrowserAuthResult.Failed(cause)
+        }
+    }
 
-            val cookieDb = cookieDbFile(tempDir, browser.engine)
-            if (cookieDb != null) {
-                val cookies = readCookies(cookieDb, browser)
-                if (cookies != null && cookies.hasValidSession()) {
-                    log.fine("Found YouTube session on final check with ${cookies.size} cookies: ${cookies.keys}")
-                    val header = cookies.toHeaderStringOrNull()
-                    if (header != null) return@withContext BrowserAuthResult.Success(header)
+    /** Runs the disposable-profile flow for a single [browser]. */
+    private suspend fun attemptBrowserAuth(browser: BrowserCandidate): BrowserAuthResult {
+        val tempDir = Files.createTempDirectory("melo_auth_").toFile()
+        val startResult = runCatching { startBrowserProcess(browser, tempDir) }
+        val process = startResult.getOrNull()
+        if (process == null) {
+            tempDir.deleteRecursively()
+            return BrowserAuthResult.Failed(
+                startResult.exceptionOrNull() ?: IllegalStateException("Could not start ${browser.name}"),
+            )
+        }
+
+        return try {
+            val polled = pollForSessionCookies(tempDir, browser, process)
+            if (polled != null) {
+                polled
+            } else {
+                val header = finalCookieHeader(tempDir, browser)
+                when {
+                    header != null -> BrowserAuthResult.Success(header)
+                    process.isAlive -> BrowserAuthResult.TimedOut
+                    else -> BrowserAuthResult.NoBrowserFound
                 }
             }
-
-            if (process.isAlive) BrowserAuthResult.TimedOut else BrowserAuthResult.NoBrowserFound
         } finally {
             runCatching { if (process.isAlive) process.destroy() }
             runCatching { tempDir.deleteRecursively() }
         }
+    }
+
+    /** Re-reads a completed session from the throwaway profile after the poll loop ends. */
+    private fun finalCookieHeader(tempDir: File, browser: BrowserCandidate): String? =
+        cookieDbFile(tempDir, browser.engine)
+            ?.let { readCookies(it, browser) }
+            ?.takeIf { it.hasValidSession() }
+            ?.let { cookies ->
+                log.fine("Found YouTube session on final check with ${cookies.size} cookies: ${cookies.keys}")
+                cookies.toHeaderStringOrNull()
+            }
+
+    /**
+     * Logs why a candidate could not be spawned. `posix_spawn` failing with EACCES is almost
+     * always a missing execute bit on the browser binary or on the bundled JVM helper.
+     */
+    private fun logLaunchFailure(browser: BrowserCandidate, cause: Throwable?) {
+        val reason = cause?.message?.trim().orEmpty().ifBlank { "unknown error" }
+        val isPermissionFailure = reason.contains("Permission denied", ignoreCase = true) ||
+            reason.contains("posix_spawn", ignoreCase = true)
+        val permissionHint = if (isPermissionFailure) {
+            " The browser executable or the bundled JVM spawn helper (jspawnhelper) is not executable."
+        } else {
+            ""
+        }
+        log.warning("Could not launch ${browser.name} (${browser.path}): $reason.$permissionHint")
     }
 
     private fun startBrowserProcess(browser: BrowserCandidate, tempDir: File): Process =

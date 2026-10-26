@@ -38,6 +38,9 @@ package() {
     if [ -f "${pkgdir}/opt/${_pkgname}-gui/melo.sh" ]; then
         chmod 755 "${pkgdir}/opt/${_pkgname}-gui/melo.sh"
     fi
+    # JVM process-spawning helpers must stay executable, otherwise ProcessBuilder
+    # fails with "posix_spawn failed, error: 13 (Permission denied)".
+    find "${pkgdir}/opt/${_pkgname}-gui/lib" -type f \( -name jspawnhelper -o -name jexec \) -exec chmod 755 {} +
 
     install -dm755 "${pkgdir}/usr/bin"
 

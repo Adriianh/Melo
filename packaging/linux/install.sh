@@ -123,6 +123,15 @@ if [ -f "$INSTALL_DIR/melo.sh" ]; then
     chmod +x "$INSTALL_DIR/melo.sh"
 fi
 
+# The bundled JVM spawns every child process (browser sign-in, yt-dlp, updater)
+# through jspawnhelper. Release archives used to ship it without the execute bit,
+# which makes ProcessBuilder fail with EACCES, so keep the bit enforced here too.
+for helper in "$INSTALL_DIR/lib/runtime/lib/jspawnhelper" "$INSTALL_DIR/lib/runtime/lib/jexec"; do
+    if [ -f "$helper" ]; then
+        chmod +x "$helper"
+    fi
+done
+
 echo "Creating dedicated GUI launcher at $BIN_DIR/melo-gui..."
 cat << 'EOF' > "$BIN_DIR/melo-gui"
 #!/bin/sh

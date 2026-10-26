@@ -1,5 +1,43 @@
 # Known Issues
 
+## Desktop (Linux) — Sign-In Failures
+
+### YouTube Music sign-in fails with `posix_spawn` permission error
+
+**Status:** Resolved (next release)  
+**Affects:** Desktop builds installed from the Linux `tar.gz` bundle (including the Arch package)
+
+#### Description
+
+Signing in to YouTube Music through the system browser failed on some Linux devices with:
+
+```
+java.io.IOException: Cannot run program "/usr/bin/firefox": posix_spawn failed, error: 13 (Permission denied)
+```
+
+#### Root cause
+
+The Linux `tar.gz` is assembled with Gradle's `Tar` task, which packs files as `0644`
+unless a spec inside `eachFile` marks them executable. The bundled JVM runtime's
+`lib/runtime/lib/jspawnhelper` and `jexec` were not part of that allowlist, so they lost
+their execute bit. The JVM implements `ProcessBuilder` on Linux with `posix_spawn`,
+which it performs through `jspawnhelper`; without the bit every child process —
+including the browser opened for sign-in — fails with `EACCES`. The `.deb` and AppImage
+bundles were unaffected because they inherit the permissions of the jpackage app image.
+
+#### Fix applied
+
+1. **Packaging allowlist:** `packageLinuxTarGz` and the AppImage task now share a single
+   predicate that marks `bin/`, native libraries, scripts, `jspawnhelper`, and `jexec`
+   as executable.
+2. **Installer hardening:** the Linux installer and Arch `PKGBUILD` re-apply the execute
+   bit to the JVM spawn helpers after copying, so a stale archive cannot regress.
+3. **Browser fallback:** when a detected browser cannot be spawned, the auth flow now
+   tries the remaining installed browsers and logs an actionable permission hint instead
+   of aborting on the first candidate.
+
+---
+
 ## TUI — Focus & Key Event Handling
 
 ### Unfocused panels respond to key events
