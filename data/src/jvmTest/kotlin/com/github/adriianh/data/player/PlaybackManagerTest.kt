@@ -991,4 +991,36 @@ class PlaybackManagerTest {
 
             verify(atLeast = 1) { meloPlayer.load("https://example.com/audio.mp3", track, any()) }
         }
+
+    @Test
+    fun `starting playback cancels the in-flight prefetch of the same track`() =
+        runTest {
+            val prefetchGate = kotlinx.coroutines.CompletableDeferred<Unit>()
+            var prefetchCancelled = false
+            var secondTrackCalls = 0
+            coEvery { getStreamUseCase(match { it.id == "1" }) } returns "http://stream.url"
+            coEvery { getStreamUseCase(match { it.id == "2" }) } coAnswers {
+                secondTrackCalls++
+                if (secondTrackCalls == 1) {
+                    try {
+                        prefetchGate.await()
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        prefetchCancelled = true
+                        throw e
+                    }
+                }
+                "http://stream.url"
+            }
+            val scope = managerScope()
+            val manager = createManager(scope)
+
+            manager.setQueue(listOf(fakeTrack("1"), fakeTrack("2")))
+            scope.advanceUntilIdle()
+
+            manager.playTrackInQueue(fakeTrack("2"))
+            scope.advanceUntilIdle()
+
+            assertTrue(prefetchCancelled, "prefetch must be cancelled when the track starts playing")
+            assertEquals(1, manager.queueState.value.currentIndex)
+        }
 }
