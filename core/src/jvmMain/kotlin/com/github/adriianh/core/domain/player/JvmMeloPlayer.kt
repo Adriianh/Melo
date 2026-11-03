@@ -295,8 +295,7 @@ class JvmMeloPlayer : MeloPlayer {
         val userAgent = youTubeUserAgent(client)
         val origin =
             if (client == "ANDROID_MUSIC") "https://music.youtube.com" else "https://www.youtube.com"
-        val avformatOptions = avformatOptionsForUrl(url)
-        return baseOptions + avformatOptions + arrayOf(
+        return baseOptions + arrayOf(
             ":http-user-agent=$userAgent",
             ":user-agent=$userAgent",
             ":http-referrer=$origin/",
@@ -309,20 +308,6 @@ class JvmMeloPlayer : MeloPlayer {
             .map { it.split("=", limit = 2) }
             .firstOrNull { it.size == 2 && it[0] == param }
             ?.get(1)
-    }
-
-    private fun avformatOptionsForUrl(url: String): Array<String> {
-        val itag = extractQueryParam(url, "itag")?.toIntOrNull()
-        val format = when (itag) {
-            249, 250, 251 -> "webm"
-            139, 140, 141 -> "mp4"
-            else -> null
-        }
-        return if (format != null) {
-            arrayOf(":demux=avformat", ":avformat-format=$format")
-        } else {
-            arrayOf(":demux=avformat")
-        }
     }
 
     private fun youTubeUserAgent(client: String): String = when (client) {
