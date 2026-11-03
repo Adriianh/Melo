@@ -14,6 +14,7 @@ import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
 import com.github.adriianh.innertube.pages.getNewPipeStreamUrls
 import com.github.adriianh.innertube.utils.YouTubeStreamUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -100,6 +101,7 @@ class InnerTubeAudioProvider(
 
         var resolvedUrl: String? = null
         var ageRestricted = false
+        var loginGated = false
         var ageGateDeferred: Deferred<String?>? = null
         val clientsToTry = CLIENTS_TO_TRY + if (YouTube.cookie != null) {
             listOf(
@@ -122,20 +124,22 @@ class InnerTubeAudioProvider(
                     YouTube.player(sourceId, null, client, sts).getOrNull()
                 }
                 val playability = resp?.playabilityStatus
-                val isAgeGated = playability != null &&
-                    (playability.status == "AGE_CHECK_REQUIRED" ||
-                        (playability.status == "LOGIN_REQUIRED" &&
-                            playability.reason?.contains(
-                                "age",
-                                ignoreCase = true
-                            ) == true))
-                if (isAgeGated) {
-                    ageRestricted = true
-                    if (ageGateDeferred == null && ageGateProvider != null) {
-                        ageGateDeferred = async {
-                            ageGateProvider.getAgeRestrictedStreamUrl(sourceId)
+                // AGE_CHECK_REQUIRED is unambiguous, so its yt-dlp fallback can
+                // start in parallel with the remaining clients. LOGIN_REQUIRED is
+                // also what YouTube returns for bot checks ("Please sign in"),
+                // but it is common on playable tracks, so it is only resolved
+                // through the age-gate provider after the cheap clients fail.
+                when (playability?.status) {
+                    "AGE_CHECK_REQUIRED" -> {
+                        ageRestricted = true
+                        if (ageGateDeferred == null && ageGateProvider != null) {
+                            ageGateDeferred = async {
+                                ageGateProvider.getAgeRestrictedStreamUrl(sourceId)
+                            }
                         }
                     }
+
+                    "LOGIN_REQUIRED" -> loginGated = true
                 }
                 if (playability?.status != "OK") {
                     continue
@@ -151,6 +155,8 @@ class InnerTubeAudioProvider(
                 }
                 val url = urlResult.getOrNull()
                 if (url.isNullOrEmpty()) continue
+                // These URLs are missing a PO token and googlevideo rejects them
+                // with HTTP 403. Skip them so yt-dlp can mint a playable URL.
                 if (url.contains("rqh=1")) continue
                 resolvedUrl = url
                 ageGateDeferred?.cancel()
@@ -184,7 +190,7 @@ class InnerTubeAudioProvider(
                 ageGateDeferred?.cancel()
             }
         }
-        if (resolvedUrl.isNullOrEmpty() && (ageRestricted || ageGateDeferred != null)) {
+        if (resolvedUrl.isNullOrEmpty() && (ageRestricted || loginGated)) {
             val ageGateUrl = try {
                 ageGateDeferred?.await()
                     ?: ageGateProvider?.getAgeRestrictedStreamUrl(sourceId)
@@ -199,12 +205,24 @@ class InnerTubeAudioProvider(
                 }
                 return ageGateUrl
             }
-            ageGateDeferred?.cancel()
-            throw AgeRestrictedException(sourceId)
         }
         if (resolvedUrl.isNullOrEmpty()) {
             ageGateDeferred?.cancel()
-            return fallback?.getStreamUrl(sourceId)
+            resolvedUrl = try {
+                fallback?.getStreamUrl(sourceId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (resolvedUrl.isNullOrEmpty()) {
+            // Only surface the sign-in gate when there are credentials to try;
+            // otherwise a logged-out bot check should stay retryable.
+            if (ageRestricted || (loginGated && YouTube.cookie != null)) {
+                throw AgeRestrictedException(sourceId)
+            }
+            return null
         }
         val expiry = extractExpiry(resolvedUrl) ?: (Clock.System.now()
             .toEpochMilliseconds() + 5 * 60 * 1000L)

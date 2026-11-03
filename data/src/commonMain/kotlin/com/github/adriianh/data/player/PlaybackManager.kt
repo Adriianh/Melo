@@ -590,6 +590,11 @@ class PlaybackManagerImpl(
 
     private fun playCurrentQueueTrack(initialSeekMs: Long? = null) {
         val track = _queueState.value.currentTrack ?: return
+        // The prefetcher may still be resolving this track (it was queued as the
+        // next item). Cancel it so the same stream is not resolved twice at once:
+        // concurrent yt-dlp/Piped requests are rate-limited and end up failing.
+        prefetchJob?.cancel()
+        prefetchJob = null
         val targetSeek =
             initialSeekMs
                 ?: if (!isTrackLoaded && pendingRestoreTrackId == track.id && pendingRestorePositionMs > 0) {
