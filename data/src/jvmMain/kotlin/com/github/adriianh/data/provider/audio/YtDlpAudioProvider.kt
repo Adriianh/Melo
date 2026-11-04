@@ -30,9 +30,11 @@ import java.util.concurrent.TimeUnit
  *
  * The session cookies are passed to every resolution so login-gated and
  * age-restricted tracks behave like they do on Android (where the embedded
- * yt-dlp always receives the cookie file). Stream resolutions are serialized
- * and bounded by a timeout so concurrent or hung processes cannot stall
- * playback or leave a stray yt-dlp behind.
+ * yt-dlp always receives the cookie file). yt-dlp also needs a JavaScript
+ * runtime to solve YouTube's JS challenges; [QuickJsBootstrap] provides one on
+ * Desktop, matching the QuickJS runtime bundled on Android. Stream resolutions
+ * are serialized and bounded by a timeout so concurrent or hung processes
+ * cannot stall playback or leave a stray yt-dlp behind.
  */
 class YtDlpAudioProvider(
     private val pipedApiClient: PipedApiClient,
@@ -45,6 +47,7 @@ class YtDlpAudioProvider(
     }
 
     private val ytDlpBin: String by lazy { YtDlpBootstrap.resolve() }
+    private val quickJsPath: String? by lazy { QuickJsBootstrap.resolve() }
     private val streamUrlCache = ConcurrentHashMap<String, String>()
     private val sourceIdCache = ConcurrentHashMap<String, String>()
     private val processMutex = Mutex()
@@ -103,9 +106,10 @@ class YtDlpAudioProvider(
 
     /**
      * Resolves an age-restricted stream using the logged-in session: copies the
-     * current cookies to a Netscape file and lets yt-dlp generate the BotGuard
-     * PO token via its JS runtime (deno). This is the only path that clears the
-     * "Sign in to confirm your age" gate as of 2026.
+     * current cookies to a Netscape file and enables yt-dlp's EJS challenge
+     * solver through the QuickJS runtime. Both pieces are required: the JS
+     * runtime clears the BotGuard challenge and the cookies prove the account
+     * is old enough to watch the video.
      */
     override suspend fun getAgeRestrictedStreamUrl(sourceId: String): String? =
         withContext(Dispatchers.IO) {
@@ -132,7 +136,10 @@ class YtDlpAudioProvider(
                 args += listOf("--cookies", cookieFile.absolutePath)
             }
             if (ageRestricted) {
-                args += listOf("--extractor-args", "youtube:js_use_po_token=true")
+                // Age-gated videos need yt-dlp's EJS challenge solver, which only
+                // works with a JavaScript runtime. Enabling it for regular tracks
+                // is not needed and makes resolutions significantly slower.
+                quickJsPath?.let { args += listOf("--js-runtimes", "quickjs:$it") }
             } else {
                 args += listOf("--extractor-args", "youtube:player-client=ios,web,android")
             }
@@ -226,6 +233,7 @@ class YtDlpAudioProvider(
                     if (cookieFile != null) {
                         args.addAll(0, listOf("--cookies", cookieFile.absolutePath))
                     }
+                    quickJsPath?.let { args.addAll(0, listOf("--js-runtimes", "quickjs:$it")) }
                     runYtDlp(DOWNLOAD_TIMEOUT_MS, args)
                 } finally {
                     cookieFile?.delete()
@@ -293,8 +301,29 @@ class YtDlpAudioProvider(
      * Runs yt-dlp and returns its combined output, or null when the process does
      * not finish within [timeoutMs]. The process is killed on timeout so a stuck
      * network request cannot block playback indefinitely.
+     *
+     * Older yt-dlp releases do not know `--js-runtimes`; in that case the command
+     * is retried without it so playback and downloads keep working.
      */
     private fun runYtDlp(
+        timeoutMs: Long,
+        args: List<String>,
+    ): String? {
+        val output = runYtDlpOnce(timeoutMs, args) ?: return null
+        return if ("--js-runtimes" in args && output.contains("no such option: --js-runtimes")) {
+            runYtDlpOnce(timeoutMs, args.withoutJsRuntime())
+        } else {
+            output
+        }
+    }
+
+    private fun List<String>.withoutJsRuntime(): List<String> {
+        val index = indexOf("--js-runtimes")
+        if (index < 0 || index + 1 >= size) return this
+        return filterIndexed { i, _ -> i != index && i != index + 1 }
+    }
+
+    private fun runYtDlpOnce(
         timeoutMs: Long,
         args: List<String>,
     ): String? {
