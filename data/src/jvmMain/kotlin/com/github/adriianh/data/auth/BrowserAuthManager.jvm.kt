@@ -12,6 +12,7 @@ import java.io.File
 import java.nio.file.Files
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -328,7 +329,14 @@ object BrowserAuthManager {
         return try {
             val polled = pollForSessionCookies(tempDir, browser, process)
             if (polled != null) {
-                polled
+                // Chromium keeps the live cookie jar in memory and only flushes
+                // it to disk on exit. Reading the DB while the browser is still
+                // running captures a stale/rotated snapshot, which YouTube then
+                // rejects as "cookies are no longer valid". Stop the browser
+                // first and re-read the final, flushed cookie store.
+                stopBrowser(process)
+                val finalHeader = finalCookieHeader(tempDir, browser)
+                BrowserAuthResult.Success(finalHeader ?: polled.cookieHeader)
             } else {
                 val header = finalCookieHeader(tempDir, browser)
                 when {
@@ -338,7 +346,7 @@ object BrowserAuthManager {
                 }
             }
         } finally {
-            runCatching { if (process.isAlive) process.destroy() }
+            stopBrowser(process)
             runCatching { tempDir.deleteRecursively() }
         }
     }
@@ -391,7 +399,7 @@ object BrowserAuthManager {
         tempDir: File,
         browser: BrowserCandidate,
         process: Process,
-    ): BrowserAuthResult? {
+    ): BrowserAuthResult.Success? {
         return withTimeoutOrNull(LAUNCH_TIMEOUT) {
             var postExitChecks = 0
             while (isActive) {
@@ -737,4 +745,19 @@ object BrowserAuthManager {
         val url = "jdbc:sqlite:${dbFile.absolutePath.replace('\\', '/')}"
         return DriverManager.getConnection(url, props)
     }
+}
+
+/**
+ * Gracefully stops the disposable browser so Chromium flushes its in-memory
+ * cookie jar to the profile database before it is read.
+ */
+private suspend fun stopBrowser(process: Process) {
+    if (!process.isAlive) return
+    runCatching { process.destroy() }
+    val exited = runCatching { process.waitFor(5, TimeUnit.SECONDS) }.getOrDefault(false)
+    if (!exited) {
+        runCatching { process.destroyForcibly() }
+        runCatching { process.waitFor(5, TimeUnit.SECONDS) }
+    }
+    delay(1.seconds)
 }
