@@ -48,6 +48,7 @@ object BrowserAuthManager {
 
     private val LAUNCH_TIMEOUT = 5.minutes
     private val POLL_INTERVAL = 1.seconds
+    private val LOGIN_SETTLE_DELAY = 2.seconds
     private val log = Logger.getLogger("Melo.BrowserAuthManager")
 
     private const val FIREFOX_COOKIE_QUERY =
@@ -329,11 +330,12 @@ object BrowserAuthManager {
         return try {
             val polled = pollForSessionCookies(tempDir, browser, process)
             if (polled != null) {
-                // Chromium keeps the live cookie jar in memory and only flushes
-                // it to disk on exit. Reading the DB while the browser is still
-                // running captures a stale/rotated snapshot, which YouTube then
-                // rejects as "cookies are no longer valid". Stop the browser
-                // first and re-read the final, flushed cookie store.
+                // Browsers keep the live cookie jar in memory and flush it to
+                // disk on shutdown. Reading the DB while the browser is still
+                // running captures a stale snapshot, which YouTube then rejects
+                // as "cookies are no longer valid". Let the login page settle,
+                // stop the browser so it flushes, then re-read the final store.
+                delay(LOGIN_SETTLE_DELAY)
                 stopBrowser(process)
                 val finalHeader = finalCookieHeader(tempDir, browser)
                 BrowserAuthResult.Success(finalHeader ?: polled.cookieHeader)
@@ -748,16 +750,16 @@ object BrowserAuthManager {
 }
 
 /**
- * Gracefully stops the disposable browser so Chromium flushes its in-memory
- * cookie jar to the profile database before it is read.
+ * Gracefully stops the disposable browser so it flushes its in-memory cookie
+ * jar (Chromium) or checkpoints its WAL (Firefox) before the store is read.
  */
 private suspend fun stopBrowser(process: Process) {
     if (!process.isAlive) return
     runCatching { process.destroy() }
-    val exited = runCatching { process.waitFor(5, TimeUnit.SECONDS) }.getOrDefault(false)
+    val exited = runCatching { process.waitFor(10, TimeUnit.SECONDS) }.getOrDefault(false)
     if (!exited) {
         runCatching { process.destroyForcibly() }
         runCatching { process.waitFor(5, TimeUnit.SECONDS) }
     }
-    delay(1.seconds)
+    delay(2.seconds)
 }
