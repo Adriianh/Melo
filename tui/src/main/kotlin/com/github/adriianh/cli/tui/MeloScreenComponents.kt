@@ -14,13 +14,15 @@ import kotlinx.coroutines.CoroutineDispatcher
  * Builders for the shared media/playback components owned by [MeloScreen].
  */
 
-internal fun MeloScreen.buildMediaSession(): JvmMediaSessionManager = JvmMediaSessionManager(
-    httpClient = httpClient,
-    onPlayPause = ::handleMediaSessionPlayPause,
-    onNext = ::handleMediaSessionNext,
-    onPrevious = ::handleMediaSessionPrevious,
-    onStop = ::handleMediaSessionStop,
-)
+internal fun MeloScreen.buildMediaSession(): JvmMediaSessionManager =
+    JvmMediaSessionManager(
+        httpClient = httpClient,
+        onPlayPause = ::handleMediaSessionPlayPause,
+        onNext = ::handleMediaSessionNext,
+        onPrevious = ::handleMediaSessionPrevious,
+        onStop = ::handleMediaSessionStop,
+        sessionName = "Melo.tui",
+    )
 
 internal fun MeloScreen.buildPlaybackManager(dispatcher: CoroutineDispatcher): PlaybackManager =
     PlaybackManagerImpl(
@@ -38,16 +40,19 @@ internal fun MeloScreen.buildPlaybackManager(dispatcher: CoroutineDispatcher): P
         ioDispatcher = dispatcher,
     )
 
-internal fun MeloScreen.buildAudioPlayer(): AudioPlayer = AudioPlayer(
-    scope = scope,
-    onError = { err ->
-        appRunner()?.runOnRenderThread {
-            state = state.copy(
-                player = state.player.copy(
-                    audioError = err.message ?: "Playback error",
-                    isLoadingAudio = false,
-                )
-            )
-        }
-    },
-)
+internal fun MeloScreen.buildAudioPlayer(): AudioPlayer =
+    AudioPlayer(
+        scope = scope,
+        onError = { err ->
+            appRunner()?.runOnRenderThread {
+                state =
+                    state.copy(
+                        player =
+                            state.player.copy(
+                                audioError = err.message ?: "Playback error",
+                                isLoadingAudio = false,
+                            ),
+                    )
+            }
+        },
+    )
