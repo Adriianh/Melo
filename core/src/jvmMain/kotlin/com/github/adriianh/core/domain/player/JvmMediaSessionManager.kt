@@ -95,7 +95,7 @@ class JvmMediaSessionManager(
                 }
 
                 val sessionId = "melo-${UUID.randomUUID()}"
-                val instance = JMTC.getInstance(JMTCSettings(sessionId, "Melo"))
+                val instance = JMTC.getInstance(JMTCSettings(sessionId, "melo"))
                 jmtc = instance
 
                 val callbacks = JMTCCallbacks()
