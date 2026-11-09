@@ -138,6 +138,7 @@ object PlayActionHandler : KoinComponent {
                 onNext = { nextAction?.invoke() },
                 onPrevious = { prevAction?.invoke() },
                 onStop = { stopAction?.invoke() },
+                sessionName = "Melo.tui",
             )
 
         val player =

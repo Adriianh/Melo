@@ -17,7 +17,6 @@ import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.network.NetworkMonitor
-import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -171,7 +170,6 @@ val appModule =
                 ageGateProvider = ytDlp,
             )
         }
-        single { JvmMediaSessionManager(httpClient = get()) }
         single { DiscordRpcManager() }
 
         single<MeloDatabase> { DatabaseFactory.create() }
