@@ -12,6 +12,7 @@ import java.io.File
 import java.nio.file.Files
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -47,6 +48,7 @@ object BrowserAuthManager {
 
     private val LAUNCH_TIMEOUT = 5.minutes
     private val POLL_INTERVAL = 1.seconds
+    private val LOGIN_SETTLE_DELAY = 2.seconds
     private val log = Logger.getLogger("Melo.BrowserAuthManager")
 
     private const val FIREFOX_COOKIE_QUERY =
@@ -328,7 +330,15 @@ object BrowserAuthManager {
         return try {
             val polled = pollForSessionCookies(tempDir, browser, process)
             if (polled != null) {
-                polled
+                // Browsers keep the live cookie jar in memory and flush it to
+                // disk on shutdown. Reading the DB while the browser is still
+                // running captures a stale snapshot, which YouTube then rejects
+                // as "cookies are no longer valid". Let the login page settle,
+                // stop the browser so it flushes, then re-read the final store.
+                delay(LOGIN_SETTLE_DELAY)
+                stopBrowser(process)
+                val finalHeader = finalCookieHeader(tempDir, browser)
+                BrowserAuthResult.Success(finalHeader ?: polled.cookieHeader)
             } else {
                 val header = finalCookieHeader(tempDir, browser)
                 when {
@@ -338,7 +348,7 @@ object BrowserAuthManager {
                 }
             }
         } finally {
-            runCatching { if (process.isAlive) process.destroy() }
+            stopBrowser(process)
             runCatching { tempDir.deleteRecursively() }
         }
     }
@@ -391,7 +401,7 @@ object BrowserAuthManager {
         tempDir: File,
         browser: BrowserCandidate,
         process: Process,
-    ): BrowserAuthResult? {
+    ): BrowserAuthResult.Success? {
         return withTimeoutOrNull(LAUNCH_TIMEOUT) {
             var postExitChecks = 0
             while (isActive) {
@@ -737,4 +747,19 @@ object BrowserAuthManager {
         val url = "jdbc:sqlite:${dbFile.absolutePath.replace('\\', '/')}"
         return DriverManager.getConnection(url, props)
     }
+}
+
+/**
+ * Gracefully stops the disposable browser so it flushes its in-memory cookie
+ * jar (Chromium) or checkpoints its WAL (Firefox) before the store is read.
+ */
+private suspend fun stopBrowser(process: Process) {
+    if (!process.isAlive) return
+    runCatching { process.destroy() }
+    val exited = runCatching { process.waitFor(10, TimeUnit.SECONDS) }.getOrDefault(false)
+    if (!exited) {
+        runCatching { process.destroyForcibly() }
+        runCatching { process.waitFor(5, TimeUnit.SECONDS) }
+    }
+    delay(2.seconds)
 }
