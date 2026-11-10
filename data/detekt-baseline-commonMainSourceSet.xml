@@ -45,10 +45,12 @@
     <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val total_plays: Long</ID>
     <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val unique_artists: Long</ID>
     <ID>ConstructorParameterNaming:SelectTotalListeningMs.kt:SelectTotalListeningMs$public val unique_tracks: Long</ID>
+    <ID>ConstructorParameterNaming:Session.kt:Session$public val instance_key: String</ID>
     <ID>ConstructorParameterNaming:Session.kt:Session$public val position_ms: Long</ID>
     <ID>ConstructorParameterNaming:Session.kt:Session$public val queue_index: Long</ID>
     <ID>ConstructorParameterNaming:Session.kt:Session$public val queue_json: String</ID>
     <ID>ConstructorParameterNaming:Session.kt:Session$public val saved_at: Long</ID>
+    <ID>ConstructorParameterNaming:SessionQueries.kt:SessionQueries.SelectSessionQuery$public val instance_key: String</ID>
     <ID>ConstructorParameterNaming:StreamCacheQueries.kt:StreamCacheQueries.SelectStreamQuery$public val track_id: String</ID>
     <ID>ConstructorParameterNaming:Stream_cache.kt:Stream_cache$public val resolved_at: Long</ID>
     <ID>ConstructorParameterNaming:Stream_cache.kt:Stream_cache$public val stream_url: String</ID>
@@ -86,6 +88,7 @@
     <ID>FunctionParameterNaming:PlaylistTracksQueries.kt:PlaylistTracksQueries$track_id: String</ID>
     <ID>FunctionParameterNaming:PlaylistsQueries.kt:PlaylistsQueries$created_at: Long</ID>
     <ID>FunctionParameterNaming:SearchHistoryQueries.kt:SearchHistoryQueries$searched_at: Long</ID>
+    <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$instance_key: String</ID>
     <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$position_ms: Long</ID>
     <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$queue_index: Long</ID>
     <ID>FunctionParameterNaming:SessionQueries.kt:SessionQueries$queue_json: String</ID>
@@ -101,6 +104,7 @@
     <ID>LongMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getAlbumDetails: SearchResult.Album?</ID>
     <ID>LongMethod:InnerTubeMusicProvider.kt:InnerTubeMusicProvider$override suspend fun getArtistDetails: SearchResult.Artist?</ID>
     <ID>LongMethod:MeloDatabaseImpl.kt:MeloDatabaseImpl.Schema$override fun create: QueryResult.Value&lt;Unit&gt;</ID>
+    <ID>LongMethod:MeloDatabaseImpl.kt:MeloDatabaseImpl.Schema$private fun migrateInternal: QueryResult.Value&lt;Unit&gt;</ID>
     <ID>LongMethod:PipedApiClient.kt:PipedApiClient$suspend fun getRelatedTracks: List&lt;Track&gt;</ID>
     <ID>LongMethod:PlaybackManager.kt:PlaybackManagerImpl$private fun playCurrentQueueTrack</ID>
     <ID>LoopWithTooManyJumpStatements:CookieHeader.kt:CookieHeader$for</ID>
@@ -133,7 +137,7 @@
     <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectTracksForPlaylistQuery$override</ID>
     <ID>MaxLineLength:PlaylistsQueries.kt:PlaylistsQueries$public</ID>
     <ID>MaxLineLength:SearchHistoryQueries.kt:SearchHistoryQueries$public</ID>
-    <ID>MaxLineLength:SessionQueries.kt:SessionQueries$)</ID>
+    <ID>MaxLineLength:SessionQueries.kt:SessionQueries.SelectSessionQuery$override</ID>
     <ID>MaxLineLength:StreamCacheQueries.kt:StreamCacheQueries.SelectStreamQuery$override</ID>
     <ID>ReturnCount:DeezerApiClient.kt:DeezerApiClient$suspend fun getSimilarTracks: List&lt;SimilarTrack&gt;</ID>
     <ID>ReturnCount:HomeFeedCacheImpl.kt:HomeFeedCacheImpl$private fun loadSync: HomeFeed?</ID>
