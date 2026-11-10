@@ -17,6 +17,7 @@ import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
 import com.github.adriianh.core.domain.provider.MusicProvider
@@ -173,6 +174,8 @@ val appModule =
         single { DiscordRpcManager() }
 
         single<MeloDatabase> { DatabaseFactory.create() }
+        single { InstanceIdentity.resolve(role = "tui", mprisName = "Melo.tui") }
+        single(named("instanceKey")) { get<InstanceIdentity>().instanceKey }
         single<HistoryRepository> {
             HistoryRepositoryImpl(
                 database = get(),

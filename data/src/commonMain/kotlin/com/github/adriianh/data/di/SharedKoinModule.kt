@@ -192,7 +192,12 @@ val sharedModule: Module =
         singleOf(::FavoritesRepositoryImpl) { bind<FavoritesRepository>() }
         singleOf(::SearchHistoryRepositoryImpl) { bind<SearchHistoryRepository>() }
         singleOf(::StreamCacheRepositoryImpl) { bind<StreamCacheRepository>() }
-        single<SessionRepository> { SessionRepositoryImpl(database = get()) }
+        single<SessionRepository> {
+            SessionRepositoryImpl(
+                database = get(),
+                instanceKey = getOrNull<String>(named("instanceKey")) ?: SessionRepositoryImpl.DEFAULT_INSTANCE_KEY,
+            )
+        }
         singleOf(::RemoteLibraryRepositoryImpl) { bind<RemoteLibraryRepository>() }
 
         single<SettingsRepository> {

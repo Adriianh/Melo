@@ -45,6 +45,7 @@ import com.github.adriianh.core.domain.interactor.SessionInteractors
 import com.github.adriianh.core.domain.interactor.SettingsInteractors
 import com.github.adriianh.core.domain.interactor.StatsInteractors
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -153,6 +154,7 @@ class MeloCommand :
             val pipedApiClient: PipedApiClient by inject()
             val offlineRepository: OfflineRepository by inject()
             val httpClient: HttpClient by inject()
+            val instanceIdentity: InstanceIdentity by inject()
             val dispatcher: CoroutineDispatcher by inject()
             val audioProvider: AudioProvider by inject()
             val discordRpcManager: DiscordRpcManager by inject()
@@ -167,6 +169,7 @@ class MeloCommand :
                 MeloScreen(
                     httpClient = httpClient,
                     pipedApiClient = pipedApiClient,
+                    instanceIdentity = instanceIdentity,
                     searchInteractors = searchInteractors,
                     discoveryInteractors = discoveryInteractors,
                     libraryInteractors = libraryInteractors,
