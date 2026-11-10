@@ -2,6 +2,7 @@ package com.github.adriianh.melo.di
 
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.player.DiscordRpcManager
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.player.JvmMeloPlayer
 import com.github.adriianh.core.domain.player.MediaSessionManager
@@ -34,10 +35,14 @@ actual val platformModule: Module =
         single<MeloDatabase> { DatabaseFactory.create() }
         single<MeloPlayer> { JvmMeloPlayer() }
 
+        single { InstanceIdentity.resolve(role = "gui", mprisName = "Melo") }
+        single(named("instanceKey")) { get<InstanceIdentity>().instanceKey }
+
         single<MediaSessionManager> {
             JvmMediaSessionManager(
                 playbackManager = get(),
                 httpClient = get(),
+                instanceIdentity = get(),
             ).also { it.init() }
         }
 

@@ -28,6 +28,7 @@ import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.MetadataProvider
 import com.github.adriianh.core.domain.repository.OfflineRepository
@@ -53,6 +54,7 @@ class MeloScreen(
     // Shared infrastructure
     internal val httpClient: HttpClient,
     internal val pipedApiClient: PipedApiClient,
+    internal val instanceIdentity: InstanceIdentity,
     // Interactors
     internal val searchInteractors: SearchInteractors,
     internal val discoveryInteractors: DiscoveryInteractors,

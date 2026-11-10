@@ -5,6 +5,7 @@ import com.github.adriianh.cli.tui.player.FfplayProcessManager
 import com.github.adriianh.cli.tui.player.ipc.LocalIpcServer
 import com.github.adriianh.cli.tui.service.DiscordRpcManager
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.player.JvmMediaSessionManager
 import com.github.adriianh.core.domain.player.PlaybackStatusDto
 import com.github.adriianh.core.domain.provider.AgeRestrictedException
@@ -49,6 +50,7 @@ object PlayActionHandler : KoinComponent {
     private val discordRpc: DiscordRpcManager by inject()
     private val getSettings: GetSettingsUseCase by inject()
     private val updateSettings: UpdateSettingsUseCase by inject()
+    private val instanceIdentity: InstanceIdentity by inject()
 
     private var rpcEnabled = true
 
@@ -138,7 +140,7 @@ object PlayActionHandler : KoinComponent {
                 onNext = { nextAction?.invoke() },
                 onPrevious = { prevAction?.invoke() },
                 onStop = { stopAction?.invoke() },
-                sessionName = "Melo.tui",
+                instanceIdentity = instanceIdentity,
             )
 
         val player =

@@ -21,7 +21,7 @@ internal fun MeloScreen.buildMediaSession(): JvmMediaSessionManager =
         onNext = ::handleMediaSessionNext,
         onPrevious = ::handleMediaSessionPrevious,
         onStop = ::handleMediaSessionStop,
-        sessionName = "Melo.tui",
+        instanceIdentity = instanceIdentity,
     )
 
 internal fun MeloScreen.buildPlaybackManager(dispatcher: CoroutineDispatcher): PlaybackManager =
