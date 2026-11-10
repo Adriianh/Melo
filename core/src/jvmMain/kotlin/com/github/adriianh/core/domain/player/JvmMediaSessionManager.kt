@@ -1,7 +1,6 @@
 package com.github.adriianh.core.domain.player
 
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.core.platform.MeloDataDirectory
 import io.github.selemba1000.JMTC
 import io.github.selemba1000.JMTCButtonCallback
 import io.github.selemba1000.JMTCCallbacks
@@ -21,9 +20,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.RandomAccessFile
-import java.nio.channels.FileLock
-import java.nio.channels.OverlappingFileLockException
 import java.nio.file.Files
 
 /**
@@ -49,17 +45,13 @@ class JvmMediaSessionManager(
     private val playbackManager: PlaybackManager? = null,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
     /**
-     * Stable MPRIS identity for this instance, e.g. `"Melo"` for the GUI or `"Melo.tui"`
-     * for the TUI. Only used on Linux; Windows (SMTC) and macOS ignore it.
+     * Process identity shared with the playback-session repository. It owns the MPRIS
+     * bus name (`Melo`, `Melo.tui`, `Melo.instance<PID>`) and the matching instance key.
      */
-    private val sessionName: String = "Melo",
+    private val instanceIdentity: InstanceIdentity,
 ) : MediaSessionManager {
 
     private var jmtc: JMTC? = null
-
-    /** Held while this process owns the MPRIS bus name for [sessionName]. Linux only. */
-    private var sessionLockFile: RandomAccessFile? = null
-    private var sessionLock: FileLock? = null
 
     @Volatile
     private var initialized = false
@@ -110,7 +102,7 @@ class JvmMediaSessionManager(
                 // constructor, and JMTC.getInstance is a process-wide singleton, so the
                 // name is decided once per JVM. Instances that cannot take the canonical
                 // name fall back to the MPRIS "<name>.instance<PID>" convention.
-                val playerName = resolvePlayerName()
+                val playerName = instanceIdentity.mprisName
                 val instance = JMTC.getInstance(JMTCSettings(playerName, "melo"))
                 jmtc = instance
 
@@ -174,73 +166,14 @@ class JvmMediaSessionManager(
                 }
                 initialized = true
             } catch (e: Throwable) {
-                // A failed init must not keep the bus name reserved for the process lifetime.
-                releaseSessionLock()
+                // The identity (and its lock) stays owned by the process even if the OS
+                // media session fails to come up; it still scopes the playback session.
                 if (System.getProperty("melo.debug") == "true" || System.getenv("MELO_DEBUG") == "1") {
                     System.err.println("[Melo] Failed to initialize MediaSession (SMTC/MPRIS): ${e.message}")
                     e.printStackTrace()
                 }
             }
         }
-    }
-
-    /**
-     * Resolves the MPRIS player name for this process and takes the matching lock.
-     *
-     * The first instance of a given [sessionName] (GUI vs TUI) owns the clean name; any
-     * further instance of the same role gets the MPRIS `"<name>.instance<PID>"` suffix so
-     * it stays individually controllable instead of orphaning the previous one.
-     *
-     * Non-Linux platforms have no bus name to contend for, so [sessionName] is returned
-     * untouched and no lock file is created.
-     */
-    private fun resolvePlayerName(): String {
-        if (!isLinux) return sessionName
-        return try {
-            val lockDir = File(MeloDataDirectory.resolve(), "locks")
-            if (!lockDir.exists()) lockDir.mkdirs()
-            val lockFile = File(lockDir, "$sessionName.lock")
-            val raf = RandomAccessFile(lockFile, "rw")
-            val lock =
-                try {
-                    raf.channel.tryLock()
-                } catch (_: OverlappingFileLockException) {
-                    // Another manager in this same JVM already holds it.
-                    null
-                }
-            if (lock == null) {
-                raf.close()
-                "$sessionName.instance${ProcessHandle.current().pid()}"
-            } else {
-                sessionLockFile = raf
-                sessionLock = lock
-                sessionName
-            }
-        } catch (_: Throwable) {
-            // Never let lock trouble stop the media session from coming up.
-            "$sessionName.instance${ProcessHandle.current().pid()}"
-        }
-    }
-
-    /**
-     * Releases the MPRIS bus name lock. Must run *after* `enabled = false`, because JMTC
-     * requests the bus name with REPLACE_EXISTING and a successor would otherwise steal
-     * the name from a still-live owner.
-     *
-     * The lock file itself is intentionally left in place: unlinking it would let a second
-     * process lock an orphaned inode while a third locks the fresh file.
-     */
-    private fun releaseSessionLock() {
-        try {
-            sessionLock?.release()
-        } catch (_: Throwable) {
-        }
-        try {
-            sessionLockFile?.close()
-        } catch (_: Throwable) {
-        }
-        sessionLock = null
-        sessionLockFile = null
     }
 
     private fun startObservers() {
@@ -439,7 +372,7 @@ class JvmMediaSessionManager(
         } catch (_: Throwable) {
         }
         // Only after the bus name is released, so the next instance can take it cleanly.
-        releaseSessionLock()
+        instanceIdentity.release()
         jmtc = null
         initialized = false
         currentTrackId = null
