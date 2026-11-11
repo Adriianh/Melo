@@ -20,6 +20,16 @@ import dev.tamboui.tui.event.KeyEvent
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 
+private val toggleSettingsItems =
+    setOf(
+        SettingsItem.SYNC_LIKES,
+        SettingsItem.SYNC_HISTORY,
+        SettingsItem.AUTO_DOWNLOAD,
+        SettingsItem.RESUME_SESSION,
+        SettingsItem.OFFLINE_MODE,
+        SettingsItem.DISCORD_RPC,
+    )
+
 fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
     if (!state.isSettingsVisible) return EventResult.UNHANDLED
     if (state.languagePicker.isVisible) return handleLanguagePickerKey(event)
@@ -188,12 +198,7 @@ fun MeloScreen.handleSettingsKey(event: KeyEvent): EventResult {
                 importYouTubeAuth()
                 return EventResult.HANDLED
             }
-            if (item == SettingsItem.SYNC_LIKES ||
-                item == SettingsItem.SYNC_HISTORY ||
-                item == SettingsItem.AUTO_DOWNLOAD ||
-                item == SettingsItem.OFFLINE_MODE ||
-                item == SettingsItem.DISCORD_RPC
-            ) {
+            if (item in toggleSettingsItems) {
                 adjustSetting(item, 1)
                 return EventResult.HANDLED
             }

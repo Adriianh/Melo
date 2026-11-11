@@ -567,6 +567,13 @@ fun App(
                                         }
                                     }
                                 },
+                                onResumeLastActiveSessionToggle = { resume ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(resumeLastActiveSession = resume)
+                                        }
+                                    }
+                                },
                                 onDiscordRpcToggle = { rpc ->
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->

@@ -137,6 +137,7 @@
     <ID>MaxLineLength:PlaylistTracksQueries.kt:PlaylistTracksQueries.SelectTracksForPlaylistQuery$override</ID>
     <ID>MaxLineLength:PlaylistsQueries.kt:PlaylistsQueries$public</ID>
     <ID>MaxLineLength:SearchHistoryQueries.kt:SearchHistoryQueries$public</ID>
+    <ID>MaxLineLength:SessionQueries.kt:SessionQueries$)</ID>
     <ID>MaxLineLength:SessionQueries.kt:SessionQueries.SelectSessionQuery$override</ID>
     <ID>MaxLineLength:StreamCacheQueries.kt:StreamCacheQueries.SelectStreamQuery$override</ID>
     <ID>ReturnCount:DeezerApiClient.kt:DeezerApiClient$suspend fun getSimilarTracks: List&lt;SimilarTrack&gt;</ID>

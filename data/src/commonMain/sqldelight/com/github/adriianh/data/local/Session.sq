@@ -16,5 +16,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 selectSession:
 SELECT * FROM session WHERE instance_key = ?;
 
+selectMostRecentSession:
+SELECT * FROM session ORDER BY saved_at DESC LIMIT 1;
+
 deleteSession:
 DELETE FROM session WHERE instance_key = ?;
+
+deleteStaleSessions:
+DELETE FROM session WHERE instance_key != ? AND saved_at < ?;

@@ -134,6 +134,7 @@ data class Settings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val autoplay: Boolean = true,
+    val resumeLastActiveSession: Boolean = false,
     val dataSaver: Boolean = false,
     val audioQuality: AudioQuality = AudioQuality.AUTO,
     val syncHistoryToYouTube: Boolean = true,

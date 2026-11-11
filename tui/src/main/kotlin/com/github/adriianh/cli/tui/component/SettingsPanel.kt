@@ -40,6 +40,7 @@ enum class SettingsItem(val label: String) {
     SYNC_HISTORY("Sync Playback History"),
     THEME("Theme Preset"),
     VOLUME("Default Volume"),
+    RESUME_SESSION("Resume Last Active Session"),
     LANGUAGE("Search Language"),
     ARTWORK_RES("Artwork Resolution"),
     AUTO_DOWNLOAD("Auto-Download Next"),
@@ -66,6 +67,7 @@ val sectionItems = mapOf(
     SettingsSection.PERSONALIZATION to listOf(
         SettingsItem.THEME,
         SettingsItem.VOLUME,
+        SettingsItem.RESUME_SESSION,
         SettingsItem.ARTWORK_RES,
         SettingsItem.DISCORD_RPC,
         SettingsItem.KEYBINDINGS
@@ -219,6 +221,8 @@ class SettingsOverlay(
                     }
                     SettingsItem.THEME -> viewState.currentSettings.theme.displayName
                     SettingsItem.VOLUME -> "${viewState.currentSettings.volume}%"
+                    SettingsItem.RESUME_SESSION ->
+                        if (viewState.currentSettings.resumeLastActiveSession) "On" else "Off"
                     SettingsItem.LANGUAGE -> viewState.currentSettings.searchLanguage
                     SettingsItem.ARTWORK_RES -> "${viewState.currentSettings.artworkResolution}px"
                     SettingsItem.AUTO_DOWNLOAD -> if (viewState.currentSettings.autoDownload) "On" else "Off"

@@ -10,6 +10,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.github.adriianh.core.domain.player.DiscordRpcManager
+import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.melo.di.initKoin
@@ -25,6 +26,12 @@ import java.awt.Toolkit
 
 fun main() {
     val koinApp = initKoin()
+    val instanceIdentity = koinApp.koin.getOrNull<InstanceIdentity>()
+    val windowTitle =
+        instanceIdentity
+            ?.takeUnless { it.isPrimary }
+            ?.let { "Melo — ${it.instanceKey}" }
+            ?: "Melo"
 
     CoroutineScope(Dispatchers.IO).launch {
         koinApp.koin.getOrNull<MeloPlayer>()
@@ -81,7 +88,7 @@ fun main() {
                 exitApplication()
             },
             state = windowState,
-            title = "Melo",
+            title = windowTitle,
             undecorated = true,
         ) {
             val windowManager = remember(window) { DesktopWindowManager(window) }

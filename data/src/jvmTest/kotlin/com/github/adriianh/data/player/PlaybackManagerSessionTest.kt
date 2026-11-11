@@ -1,12 +1,16 @@
 package com.github.adriianh.data.player
 
+import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.repository.SavedSession
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import com.github.adriianh.core.domain.usecase.playback.GetStreamUseCase
 import com.github.adriianh.core.domain.usecase.session.RestoreSessionUseCase
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -48,7 +52,7 @@ class PlaybackManagerSessionTest {
     fun `session restoration sets idle track at restored position`() =
         runTest {
             val restoreSession = mockk<RestoreSessionUseCase>()
-            coEvery { restoreSession.invoke() } returns
+            coEvery { restoreSession.invoke(false) } returns
                 SavedSession(
                     queue = listOf(fakeTrack("1"), fakeTrack("2")),
                     queueIndex = 0,
@@ -78,7 +82,7 @@ class PlaybackManagerSessionTest {
         runTest {
             coEvery { getStreamUseCase(any()) } returns "http://stream.url"
             val restoreSession = mockk<RestoreSessionUseCase>()
-            coEvery { restoreSession.invoke() } returns
+            coEvery { restoreSession.invoke(false) } returns
                 SavedSession(
                     queue = listOf(fakeTrack("1"), fakeTrack("2")),
                     queueIndex = 0,
@@ -106,7 +110,7 @@ class PlaybackManagerSessionTest {
         runTest {
             coEvery { getStreamUseCase(any()) } returns "http://stream.url"
             val restoreSession = mockk<RestoreSessionUseCase>()
-            coEvery { restoreSession.invoke() } returns
+            coEvery { restoreSession.invoke(false) } returns
                 SavedSession(
                     queue = listOf(fakeTrack("1"), fakeTrack("2")),
                     queueIndex = 0,
@@ -134,7 +138,7 @@ class PlaybackManagerSessionTest {
         runTest {
             coEvery { getStreamUseCase(any()) } returns "http://stream.url"
             val restoreSession = mockk<RestoreSessionUseCase>()
-            coEvery { restoreSession.invoke() } returns
+            coEvery { restoreSession.invoke(false) } returns
                 SavedSession(
                     queue = listOf(fakeTrack("1"), fakeTrack("2")),
                     queueIndex = 0,
@@ -162,7 +166,7 @@ class PlaybackManagerSessionTest {
         runTest {
             coEvery { getStreamUseCase(any()) } returns "http://stream.url"
             val restoreSession = mockk<RestoreSessionUseCase>()
-            coEvery { restoreSession.invoke() } returns
+            coEvery { restoreSession.invoke(false) } returns
                 SavedSession(
                     queue = listOf(fakeTrack("1"), fakeTrack("2")),
                     queueIndex = 0,
@@ -183,5 +187,37 @@ class PlaybackManagerSessionTest {
             scope.advanceUntilIdle()
 
             verify { meloPlayer.load("http://stream.url", fakeTrack("2"), 0L) }
+        }
+
+    @Test
+    fun `resume last active setting restores the most recent session`() =
+        runTest {
+            val restoreSession = mockk<RestoreSessionUseCase>()
+            coEvery { restoreSession.invoke(true) } returns
+                SavedSession(
+                    queue = listOf(fakeTrack("other")),
+                    queueIndex = 0,
+                    positionMs = 12_000L,
+                )
+            val settingsRepository = mockk<SettingsRepository>()
+            val settings = Settings(resumeLastActiveSession = true)
+            every { settingsRepository.getSettingsSync() } returns settings
+            every { settingsRepository.getSettingsFlow() } returns MutableStateFlow(settings)
+            val getSettings = GetSettingsUseCase(settingsRepository)
+
+            val scope = managerScope()
+            val manager =
+                PlaybackManagerImpl(
+                    meloPlayer = meloPlayer,
+                    getStreamUseCase = getStreamUseCase,
+                    scope = scope,
+                    getSettingsUseCase = getSettings,
+                    restoreSessionUseCase = restoreSession,
+                )
+            scope.advanceUntilIdle()
+
+            coVerify { restoreSession.invoke(true) }
+            val restoredTrack = manager.queueState.value.currentTrack
+            assertEquals("other", restoredTrack?.id)
         }
 }
