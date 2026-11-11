@@ -141,7 +141,8 @@ class PlaybackManagerImpl(
             }
         }
         scope.launch(dispatcher) {
-            val session = restoreSessionUseCase?.invoke()
+            val resumeMostRecent = getSettingsUseCase?.getInitial()?.resumeLastActiveSession == true
+            val session = restoreSessionUseCase?.invoke(resumeMostRecent)
             if (session != null && session.queue.isNotEmpty()) {
                 val validIndex = session.queueIndex.coerceIn(0, session.queue.lastIndex)
                 _queueState.update {

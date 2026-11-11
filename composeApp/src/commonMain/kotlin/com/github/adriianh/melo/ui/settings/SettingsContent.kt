@@ -186,6 +186,16 @@ private fun PlaybackSettingsSection(
                 onCheckedChange = actions.onAutoplayToggle
             )
         }
+
+        SettingRow(
+            title = "Reanudar la última sesión activa",
+            subtitle = "Al arrancar, recupera la cola más reciente aunque pertenezca a otra instancia de Melo.",
+        ) {
+            MeloSettingsSwitch(
+                checked = settings.resumeLastActiveSession,
+                onCheckedChange = actions.onResumeLastActiveSessionToggle,
+            )
+        }
     }
 }
 

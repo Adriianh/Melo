@@ -20,6 +20,7 @@ data class SettingsActions(
     val onOfflineModeToggle: (Boolean) -> Unit = {},
     val onClearCache: () -> Unit = {},
     val onAutoplayToggle: (Boolean) -> Unit = {},
+    val onResumeLastActiveSessionToggle: (Boolean) -> Unit = {},
     val onDiscordRpcToggle: (Boolean) -> Unit = {},
     val onDiscordTokenChanged: (String?) -> Unit = {},
     val onAddLocalPath: (String) -> Unit = {},

@@ -50,6 +50,8 @@ internal fun MeloScreen.adjustSetting(item: SettingsItem, direction: Int) {
         }
 
         SettingsItem.AUTO_DOWNLOAD -> current.copy(autoDownload = !current.autoDownload)
+        SettingsItem.RESUME_SESSION ->
+            current.copy(resumeLastActiveSession = !current.resumeLastActiveSession)
         SettingsItem.MAX_OFFLINE_SIZE -> {
             val steps = listOf(250, 500, 1000, 2000, 5000)
             val currentIndex = steps.indexOf(current.maxOfflineSizeMb).takeIf { it >= 0 } ?: 1
