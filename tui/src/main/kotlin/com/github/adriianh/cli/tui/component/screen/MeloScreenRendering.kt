@@ -177,6 +177,7 @@ internal fun MeloScreen.renderRoot(): Element {
                     state.isOfflineMode,
                     isPanelFocusable,
                     ::handleSidebarKey,
+                    instanceLabel = instanceIdentity.takeUnless { it.isPrimary }?.instanceKey,
                 ),
                 Constraint.length(22),
             )

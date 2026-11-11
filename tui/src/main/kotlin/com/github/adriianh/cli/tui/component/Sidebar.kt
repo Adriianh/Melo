@@ -28,6 +28,7 @@ fun buildSidebar(
     isOffline: Boolean = false,
     isFocusable: Boolean = true,
     onKeyEvent: (KeyEvent) -> EventResult,
+    instanceLabel: String? = null,
 ): Element {
     val homeTitle = if (isOffline) "${MeloTheme.ICON_HOME} Home [Offline]" else "${MeloTheme.ICON_HOME} Home"
     val searchTitle = if (isOffline) "${MeloTheme.ICON_SEARCH} Search [Offline]" else "${MeloTheme.ICON_SEARCH} Search"
@@ -50,15 +51,21 @@ fun buildSidebar(
         utilList.highlightStyle(Style.EMPTY).highlightSymbol("  ")
     }
 
+    val brand =
+        if (instanceLabel != null) {
+            " ${MeloTheme.ICON_NOTE} Melo · $instanceLabel "
+        } else {
+            " ${MeloTheme.ICON_NOTE} Melo "
+        }
     val title =
         if (isOffline) {
             Line.from(
-                Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
+                Span.styled(brand, Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
                 Span.styled("[Offline] ", Style.EMPTY.fg(MeloTheme.TEXT_DIM)),
             )
         } else {
             Line.from(
-                Span.styled(" ${MeloTheme.ICON_NOTE} Melo ", Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
+                Span.styled(brand, Style.EMPTY.fg(MeloTheme.PRIMARY_COLOR).bold()),
             )
         }
 
