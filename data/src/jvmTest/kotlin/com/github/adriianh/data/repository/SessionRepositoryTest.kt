@@ -3,6 +3,7 @@ package com.github.adriianh.data.repository
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.repository.SavedSession
+import com.github.adriianh.core.platform.currentTimeSeconds
 import com.github.adriianh.data.local.MeloDatabase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -32,6 +33,9 @@ class SessionRepositoryTest {
         queueIndex = queueIndex,
         positionMs = positionMs,
     )
+
+    private fun queueJson(trackId: String) =
+        """[{"id":"$trackId","title":"Track $trackId","artist":"Artist","album":"Album","durationMs":180000,"genres":[]}]"""
 
     @Test
     fun `save and restore round-trips the queue for an instance`() =
@@ -111,6 +115,80 @@ class SessionRepositoryTest {
 
             val row = db.sessionQueries.selectSession("gui.instance123").executeAsOne()
             assertEquals("gui", row.role)
+        }
+
+    @Test
+    fun `restoreMostRecentSession returns the latest row across instances`() =
+        runTest {
+            val db = createInMemoryDatabase()
+            val gui = SessionRepositoryImpl(db, instanceKey = "gui")
+            val now = currentTimeSeconds() * 1000L
+            db.sessionQueries.upsertSession(
+                instance_key = "gui",
+                role = "gui",
+                queue_json = queueJson("gui-track"),
+                queue_index = 0,
+                position_ms = 0,
+                saved_at = now - 1_000L,
+                pid = null,
+                host = null,
+            )
+            db.sessionQueries.upsertSession(
+                instance_key = "tui",
+                role = "tui",
+                queue_json = queueJson("tui-track"),
+                queue_index = 0,
+                position_ms = 0,
+                saved_at = now - 500L,
+                pid = null,
+                host = null,
+            )
+
+            val restored = assertNotNull(gui.restoreMostRecentSession())
+            assertEquals("tui-track", restored.queue.single().id)
+        }
+
+    @Test
+    fun `stale sessions from other instances are garbage-collected`() =
+        runTest {
+            val db = createInMemoryDatabase()
+            val gui = SessionRepositoryImpl(db, instanceKey = "gui")
+            val now = currentTimeSeconds() * 1000L
+            db.sessionQueries.upsertSession(
+                instance_key = "gui.instance1",
+                role = "gui",
+                queue_json = queueJson("stale"),
+                queue_index = 0,
+                position_ms = 0,
+                saved_at = now - SessionRepositoryImpl.STALE_SESSION_TTL_MS - 1_000L,
+                pid = null,
+                host = null,
+            )
+            db.sessionQueries.upsertSession(
+                instance_key = "tui",
+                role = "tui",
+                queue_json = queueJson("recent"),
+                queue_index = 0,
+                position_ms = 0,
+                saved_at = now,
+                pid = null,
+                host = null,
+            )
+            db.sessionQueries.upsertSession(
+                instance_key = "gui",
+                role = "gui",
+                queue_json = queueJson("own-old"),
+                queue_index = 0,
+                position_ms = 0,
+                saved_at = 0L,
+                pid = null,
+                host = null,
+            )
+
+            val restored = assertNotNull(gui.restoreSession())
+            assertEquals("own-old", restored.queue.single().id)
+            assertNull(db.sessionQueries.selectSession("gui.instance1").executeAsOneOrNull())
+            assertNotNull(db.sessionQueries.selectSession("tui").executeAsOneOrNull())
         }
 
     @Test

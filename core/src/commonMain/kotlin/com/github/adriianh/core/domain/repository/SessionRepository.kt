@@ -10,6 +10,12 @@ data class SavedSession(
 
 interface SessionRepository {
     suspend fun saveSession(session: SavedSession)
+
+    /** Restores the row owned by this instance, if any. */
     suspend fun restoreSession(): SavedSession?
+
+    /** Restores the most recently saved row across all instances (opt-in multi-instance resume). */
+    suspend fun restoreMostRecentSession(): SavedSession?
+
     suspend fun clearSession()
 }

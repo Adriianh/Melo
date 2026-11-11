@@ -6,6 +6,7 @@ import com.github.adriianh.core.domain.repository.SessionRepository
 import com.github.adriianh.core.platform.currentTimeSeconds
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.local.MeloDatabase
+import com.github.adriianh.data.local.Session
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -46,17 +47,14 @@ class SessionRepositoryImpl(
 
     override suspend fun restoreSession(): SavedSession? =
         withContext(MeloDispatchers.IO) {
-            val row = queries.selectSession(instanceKey).executeAsOneOrNull() ?: return@withContext null
-            val queue =
-                runCatching {
-                    json.decodeFromString<List<TrackDto>>(row.queue_json).map { it.toTrack() }
-                }.getOrDefault(emptyList())
-            if (queue.isEmpty()) return@withContext null
-            SavedSession(
-                queue = queue,
-                queueIndex = row.queue_index.toInt(),
-                positionMs = row.position_ms,
-            )
+            cleanupStaleSessions()
+            queries.selectSession(instanceKey).executeAsOneOrNull()?.toSavedSession()
+        }
+
+    override suspend fun restoreMostRecentSession(): SavedSession? =
+        withContext(MeloDispatchers.IO) {
+            cleanupStaleSessions()
+            queries.selectMostRecentSession().executeAsOneOrNull()?.toSavedSession()
         }
 
     override suspend fun clearSession() {
@@ -65,8 +63,36 @@ class SessionRepositoryImpl(
         }
     }
 
+    /**
+     * Drops rows from other instances that have not been saved for [STALE_SESSION_TTL_MS].
+     *
+     * Secondary instances are keyed by PID, so every extra process leaves a row behind.
+     * The current row is never touched, and a long TTL keeps a paused-but-alive instance
+     * from losing its session.
+     */
+    private fun cleanupStaleSessions() {
+        val threshold = currentTimeSeconds() * 1000L - STALE_SESSION_TTL_MS
+        queries.deleteStaleSessions(instanceKey, threshold)
+    }
+
+    private fun Session.toSavedSession(): SavedSession? {
+        val queue =
+            runCatching {
+                json.decodeFromString<List<TrackDto>>(queue_json).map { it.toTrack() }
+            }.getOrDefault(emptyList())
+        if (queue.isEmpty()) return null
+        return SavedSession(
+            queue = queue,
+            queueIndex = queue_index.toInt(),
+            positionMs = position_ms,
+        )
+    }
+
     companion object {
         const val DEFAULT_INSTANCE_KEY: String = "gui"
+
+        /** Rows from other instances older than 30 days are garbage-collected on startup. */
+        internal const val STALE_SESSION_TTL_MS: Long = 30L * 24 * 60 * 60 * 1000
     }
 
     @Serializable
