@@ -135,6 +135,7 @@ class AccountProfilesTest {
             val primary = channels[0]
             assertEquals("Primary", primary.name)
             assertNull(primary.handle)
+            assertEquals("No subscribers", primary.byline)
             assertEquals("https://example.com/primary.jpg", primary.avatarUrl)
             assertNull(primary.pageId)
             assertEquals("100000000000000000001", primary.obfuscatedGaiaId)
@@ -142,6 +143,7 @@ class AccountProfilesTest {
             val brand = channels[1]
             assertEquals("Brand", brand.name)
             assertNull(brand.handle)
+            assertEquals("No subscribers", brand.byline)
             assertEquals("https://example.com/brand.jpg", brand.avatarUrl)
             assertEquals("200000000000000000002", brand.pageId)
             assertEquals("200000000000000000002", brand.obfuscatedGaiaId)

@@ -23,6 +23,7 @@ class InnerTubeLoginRepository : LoginRepository {
                 AccountProfile(
                     name = channel.name,
                     channelHandle = channel.handle,
+                    byline = channel.byline,
                     avatarUrl = channel.avatarUrl,
                     pageId = channel.pageId,
                 )

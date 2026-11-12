@@ -123,6 +123,7 @@ private fun AccountProfileRow(
     val subtitle =
         profile.channelHandle?.takeIf { it.isNotBlank() }
             ?: profile.email?.takeIf { it.isNotBlank() }
+            ?: profile.byline?.takeIf { it.isNotBlank() }
 
     val rowShape = RoundedCornerShape(10.dp)
     val accent = MaterialTheme.colorScheme.primary

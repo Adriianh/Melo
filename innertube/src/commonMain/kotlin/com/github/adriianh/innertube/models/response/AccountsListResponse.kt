@@ -54,6 +54,7 @@ data class AccountsListResponse(
         val accountPhoto: Thumbnails? = null,
         val serviceEndpoint: ServiceEndpoint? = null,
         val channelHandle: SimpleText? = null,
+        val accountByline: SimpleText? = null,
         val isSelected: Boolean = false,
     ) {
         fun toAccountChannel(): AccountChannel? {
@@ -69,6 +70,7 @@ data class AccountsListResponse(
             return AccountChannel(
                 name = displayName,
                 handle = channelHandle?.simpleText,
+                byline = accountByline?.simpleText,
                 avatarUrl = accountPhoto?.thumbnails?.lastOrNull()?.url,
                 pageId = tokens.firstNotNullOfOrNull { it.pageIdToken?.pageId },
                 obfuscatedGaiaId =
