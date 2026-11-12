@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,8 +36,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowScope
+import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.util.LocalMeloColors
 
 @Composable
@@ -46,6 +50,7 @@ fun WindowScope.MeloTitleBar(
 ) {
     val isMaximized = windowManager.isMaximized
     val meloColors = LocalMeloColors.current
+    val instanceLabel = LocalInstanceLabel.current
 
     Row(
         modifier = modifier
@@ -54,6 +59,17 @@ fun WindowScope.MeloTitleBar(
             .background(Color.Transparent),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (instanceLabel != null) {
+            Text(
+                text = "Melo · $instanceLabel",
+                modifier = Modifier.padding(start = 12.dp, end = 8.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = meloColors.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
         WindowDraggableArea(
             modifier = Modifier
                 .weight(1f)

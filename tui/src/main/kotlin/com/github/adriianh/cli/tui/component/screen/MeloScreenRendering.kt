@@ -89,6 +89,7 @@ internal fun MeloScreen.renderRoot(): Element {
             ::cycleRepeat,
             ::toggleQueue,
             ::toggleDetailPanel,
+            instanceLabel = instanceIdentity.instanceKey,
         )
 
     val bottomContent =
@@ -177,7 +178,7 @@ internal fun MeloScreen.renderRoot(): Element {
                     state.isOfflineMode,
                     isPanelFocusable,
                     ::handleSidebarKey,
-                    instanceLabel = instanceIdentity.takeUnless { it.isPrimary }?.instanceKey,
+                    instanceLabel = instanceIdentity.instanceKey,
                 ),
                 Constraint.length(22),
             )

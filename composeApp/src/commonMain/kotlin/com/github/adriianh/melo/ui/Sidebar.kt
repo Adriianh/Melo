@@ -76,6 +76,7 @@ internal fun MainSidebar(
 ) {
     val state by viewModel.uiState.collectAsState()
     val meloColors = LocalMeloColors.current
+    val instanceLabel = LocalInstanceLabel.current
     val sidebarWidthState = animateDpAsState(
         targetValue = if (collapsed) 72.dp else 240.dp,
         animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
@@ -146,6 +147,15 @@ internal fun MainSidebar(
                             fontWeight = FontWeight.Bold,
                             color = MeloColors.textPrimary
                         )
+                        if (instanceLabel != null) {
+                            Text(
+                                text = "· $instanceLabel",
+                                style = MeloType.labelSmall,
+                                color = MeloColors.textMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }

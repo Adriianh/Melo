@@ -21,6 +21,9 @@ import dev.tamboui.tui.event.KeyEvent
 private const val NAV_ITEMS = 4
 private const val UTIL_ITEMS = 3
 
+/** Keeps the sidebar title short: `gui.instance123` becomes `gui.123`. */
+private fun compactInstanceLabel(label: String): String = label.replace(".instance", ".")
+
 fun buildSidebar(
     navList: ListElement<*>,
     utilList: ListElement<*>,
@@ -53,7 +56,7 @@ fun buildSidebar(
 
     val brand =
         if (instanceLabel != null) {
-            " ${MeloTheme.ICON_NOTE} Melo · $instanceLabel "
+            " ${MeloTheme.ICON_NOTE} Melo · ${compactInstanceLabel(instanceLabel)} "
         } else {
             " ${MeloTheme.ICON_NOTE} Melo "
         }

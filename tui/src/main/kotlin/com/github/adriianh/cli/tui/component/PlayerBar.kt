@@ -52,6 +52,7 @@ fun buildPlayerBar(
     onCycleRepeat: () -> Unit = {},
     onToggleQueue: () -> Unit = {},
     onToggleDetail: () -> Unit = {},
+    instanceLabel: String? = null,
 ): Element {
     val nowPlaying = state.player.nowPlaying
 
@@ -60,9 +61,16 @@ fun buildPlayerBar(
     } else {
         Span.styled("", Style.EMPTY)
     }
+    val instanceBadge =
+        if (instanceLabel != null) {
+            Span.styled(" · $instanceLabel ", Style.EMPTY.fg(TEXT_DIM))
+        } else {
+            Span.styled("", Style.EMPTY)
+        }
     val panelTitle = Line.from(
         Span.styled(" Melo ", Style.EMPTY.fg(PRIMARY_COLOR).bold()),
-        offlineBadge
+        instanceBadge,
+        offlineBadge,
     )
 
     val playingIndicator = when {
