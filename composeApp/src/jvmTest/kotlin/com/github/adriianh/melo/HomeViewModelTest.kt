@@ -385,6 +385,40 @@ class HomeViewModelTest {
         }
 
     @Test
+    fun `when accountPageId changes, ViewModel clears cache and reloads feed`() =
+        runTest {
+            val initial = Settings(sessionCookies = "SAPISID=auth_token", accountPageId = null)
+            settingsFlow.value = initial
+            coEvery { getSettingsUseCase.getSnapshot() } returns initial
+            coEvery { homeFeedCache.get() } returns sampleCachedFeed
+            coEvery { getHomeUseCase(any(), any()) } returns sampleCachedFeed
+
+            val viewModel =
+                HomeViewModel(
+                    getHomeUseCase = getHomeUseCase,
+                    getExploreUseCase = getExploreUseCase,
+                    getChartsUseCase = getChartsUseCase,
+                    getTrendingUseCase = getTrendingUseCase,
+                    searchTracksUseCase = searchTracksUseCase,
+                    getSettingsUseCase = getSettingsUseCase,
+                    getOfflineTracksUseCase = getOfflineTracksUseCase,
+                    scanLocalTracksUseCase = scanLocalTracksUseCase,
+                    getRecentTracksUseCase = getRecentTracksUseCase,
+                    homeFeedCache = homeFeedCache,
+                    ioDispatcher = testDispatcher,
+                )
+
+            advanceUntilIdle()
+
+            settingsFlow.value = initial.copy(accountPageId = "105106169749000055584")
+            advanceUntilIdle()
+
+            coVerify { homeFeedCache.clear() }
+            coVerify(atLeast = 2) { getHomeUseCase(any(), any()) }
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
     fun `when refresh is invoked, ViewModel reloads feed and resets isRefreshing`() =
         runTest {
             coEvery { homeFeedCache.get() } returns sampleCachedFeed

@@ -1381,10 +1381,10 @@
         <error line="117" column="34" source="standard:multiline-expression-wrapping" />
         <error line="117" column="52" source="standard:chain-method-continuation" />
         <error line="117" column="66" source="standard:chain-method-continuation" />
-        <error line="303" column="52" source="standard:trailing-comma-on-call-site" />
-        <error line="326" column="60" source="standard:trailing-comma-on-call-site" />
-        <error line="332" column="60" source="standard:trailing-comma-on-call-site" />
-        <error line="338" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="306" column="52" source="standard:trailing-comma-on-call-site" />
+        <error line="329" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="335" column="60" source="standard:trailing-comma-on-call-site" />
+        <error line="341" column="60" source="standard:trailing-comma-on-call-site" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/components/HomeContent.kt">
         <error line="58" column="5" source="standard:function-naming" />
