@@ -19,67 +19,94 @@ import kotlin.test.assertTrue
 class AccountProfilesTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
+    // Anonymized capture of a real accounts_list response (www.youtube.com, WEB client):
+    // one primary channel without a pageId and one brand channel with a pageId.
     private val channelSwitcherResponse =
         """
         {
           "actions": [
             {
-              "updateChannelSwitcherPageAction": {
-                "page": {
-                  "channelSwitcherPageRenderer": {
-                    "contents": [
+              "openPopupAction": {
+                "popup": {
+                  "channelSwitcherRenderer": {
+                    "sections": [
                       {
-                        "accountItemRenderer": {
-                          "accountName": { "simpleText": "SEG" },
-                          "accountPhoto": {
-                            "thumbnails": [
-                              { "url": "https://example.com/primary.jpg" }
-                            ]
-                          },
-                          "serviceEndpoint": {
-                            "selectActiveIdentityEndpoint": {
-                              "supportedTokens": [
-                                {
-                                  "accountStateToken": {
-                                    "obfuscatedGaiaId": "105919436917282079228"
-                                  }
-                                }
-                              ]
-                            }
-                          },
-                          "channelHandle": { "simpleText": "@xxsegxxyt7653" }
-                        }
-                      },
-                      {
-                        "accountItemRenderer": {
-                          "accountName": { "simpleText": "SEGm" },
-                          "accountPhoto": {
-                            "thumbnails": [
-                              { "url": "https://example.com/brand.jpg" }
-                            ]
-                          },
-                          "serviceEndpoint": {
-                            "selectActiveIdentityEndpoint": {
-                              "supportedTokens": [
-                                {
-                                  "pageIdToken": {
-                                    "pageId": "112761172095825284049"
+                        "accountItemSectionRenderer": {
+                          "contents": [
+                            {
+                              "accountItem": {
+                                "accountName": { "simpleText": "Primary" },
+                                "accountPhoto": {
+                                  "thumbnails": [
+                                    { "url": "https://example.com/primary.jpg", "width": 40, "height": 40 }
+                                  ]
+                                },
+                                "isSelected": false,
+                                "isDisabled": false,
+                                "hasChannel": true,
+                                "serviceEndpoint": {
+                                  "selectActiveIdentityEndpoint": {
+                                    "supportedTokens": [
+                                      {
+                                        "accountStateToken": {
+                                          "hasChannel": true,
+                                          "isMerged": true,
+                                          "obfuscatedGaiaId": "100000000000000000001"
+                                        }
+                                      },
+                                      { "offlineCacheKeyToken": { "clientCacheKey": "primary-cache-key" } },
+                                      { "datasyncIdToken": { "datasyncIdToken": "100000000000000000001||" } }
+                                    ]
                                   }
                                 },
-                                {
-                                  "accountStateToken": {
-                                    "obfuscatedGaiaId": "112761172095825284049"
+                                "accountByline": { "simpleText": "No subscribers" }
+                              }
+                            },
+                            {
+                              "accountItem": {
+                                "accountName": { "simpleText": "Brand" },
+                                "accountPhoto": {
+                                  "thumbnails": [
+                                    { "url": "https://example.com/brand.jpg", "width": 40, "height": 40 }
+                                  ]
+                                },
+                                "isSelected": false,
+                                "isDisabled": false,
+                                "hasChannel": true,
+                                "serviceEndpoint": {
+                                  "selectActiveIdentityEndpoint": {
+                                    "supportedTokens": [
+                                      { "pageIdToken": { "pageId": "200000000000000000002" } },
+                                      {
+                                        "accountStateToken": {
+                                          "hasChannel": true,
+                                          "isMerged": true,
+                                          "obfuscatedGaiaId": "200000000000000000002"
+                                        }
+                                      },
+                                      {
+                                        "datasyncIdToken": {
+                                          "datasyncIdToken": "200000000000000000002||100000000000000000001"
+                                        }
+                                      }
+                                    ]
                                   }
-                                }
-                              ]
+                                },
+                                "accountByline": { "simpleText": "No subscribers" }
+                              }
                             }
-                          },
-                          "channelHandle": { "simpleText": "@SEGm-f3e" }
+                          ]
                         }
                       }
-                    ]
+                    ],
+                    "header": {
+                      "simpleMenuHeaderRenderer": {
+                        "title": { "runs": [{ "text": "Choose a channel" }] }
+                      }
+                    }
                   }
-                }
+                },
+                "popupType": "MODAL"
               }
             }
           ]
@@ -95,7 +122,7 @@ class AccountProfilesTest {
                 }
             val innerTube = InnerTube(engine)
             innerTube.cookie = "SAPISID=some-sapisid-value"
-            innerTube.pageId = "112761172095825284049"
+            innerTube.pageId = "200000000000000000002"
 
             val channels =
                 innerTube
@@ -106,18 +133,18 @@ class AccountProfilesTest {
             assertEquals(2, channels.size)
 
             val primary = channels[0]
-            assertEquals("SEG", primary.name)
-            assertEquals("@xxsegxxyt7653", primary.handle)
+            assertEquals("Primary", primary.name)
+            assertNull(primary.handle)
             assertEquals("https://example.com/primary.jpg", primary.avatarUrl)
             assertNull(primary.pageId)
-            assertEquals("105919436917282079228", primary.obfuscatedGaiaId)
+            assertEquals("100000000000000000001", primary.obfuscatedGaiaId)
 
             val brand = channels[1]
-            assertEquals("SEGm", brand.name)
-            assertEquals("@SEGm-f3e", brand.handle)
+            assertEquals("Brand", brand.name)
+            assertNull(brand.handle)
             assertEquals("https://example.com/brand.jpg", brand.avatarUrl)
-            assertEquals("112761172095825284049", brand.pageId)
-            assertEquals("112761172095825284049", brand.obfuscatedGaiaId)
+            assertEquals("200000000000000000002", brand.pageId)
+            assertEquals("200000000000000000002", brand.obfuscatedGaiaId)
         }
 
     @Test
@@ -135,12 +162,12 @@ class AccountProfilesTest {
                 }
             val innerTube = InnerTube(engine)
             innerTube.cookie = "SAPISID=some-sapisid-value"
-            innerTube.pageId = "112761172095825284049"
+            innerTube.pageId = "200000000000000000002"
 
             innerTube.accountsList(WEB_REMIX)
 
             assertEquals("/youtubei/v1/account/accounts_list", path)
-            assertEquals("112761172095825284049", pageIdHeader)
+            assertEquals("200000000000000000002", pageIdHeader)
             assertTrue(
                 bodyText?.contains(AccountsListBody.REQUEST_TYPE_CHANNEL_SWITCHER) == true,
                 "body must request the channel switcher",
