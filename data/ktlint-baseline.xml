@@ -2559,8 +2559,8 @@
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/data/repository/InnerTubeLoginRepository.kt">
         <error line="7" column="1" source="standard:no-empty-first-line-in-class-body" />
-        <error line="13" column="52" source="standard:function-signature" />
-        <error line="15" column="1" source="standard:final-newline" />
+        <error line="14" column="52" source="standard:function-signature" />
+        <error line="16" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/data/repository/MusicRepositoryImpl.kt">
         <error line="26" column="59" source="standard:trailing-comma-on-declaration-site" />
@@ -2723,7 +2723,7 @@
         <error line="16" column="48" source="standard:trailing-comma-on-declaration-site" />
         <error line="18" column="1" source="standard:no-empty-first-line-in-class-body" />
         <error line="20" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="73" column="1" source="standard:final-newline" />
+        <error line="84" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/data/repository/StatsRepositoryImpl.kt">
         <error line="3" column="1" source="standard:import-ordering" />
