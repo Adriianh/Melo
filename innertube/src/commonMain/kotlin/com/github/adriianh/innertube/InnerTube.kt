@@ -8,6 +8,7 @@ import com.github.adriianh.innertube.models.Context
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.YouTubeLocale
 import com.github.adriianh.innertube.models.body.AccountMenuBody
+import com.github.adriianh.innertube.models.body.AccountsListBody
 import com.github.adriianh.innertube.models.body.Action
 import com.github.adriianh.innertube.models.body.BrowseBody
 import com.github.adriianh.innertube.models.body.CreatePlaylistBody
@@ -56,6 +57,7 @@ class InnerTube(
     )
     var visitorData: String? = null
     var dataSyncId: String? = null
+    var pageId: String? = null
     var cookie: String? = null
         set(value) {
             field = value
@@ -119,6 +121,9 @@ class InnerTube(
                 cookie?.let { cookie ->
                     append("cookie", cookie)
                     append("X-Goog-AuthUser", "0")
+                    pageId?.takeIf { it.isNotBlank() }?.let { activePageId ->
+                        append("X-Goog-PageId", activePageId)
+                    }
                     val sapisid = cookieMap["SAPISID"]
                         ?: cookieMap["__Secure-3PAPISID"]
                         ?: cookieMap["__Secure-1PAPISID"]
@@ -558,4 +563,10 @@ class InnerTube(
         ytClient(client, setLogin = true)
         setBody(AccountMenuBody(client.toContext(locale, visitorData, dataSyncId)))
     }
+
+    suspend fun accountsList(client: YouTubeClient) =
+        httpClient.post("account/accounts_list") {
+            ytClient(client, setLogin = true)
+            setBody(AccountsListBody(client.toContext(locale, visitorData, dataSyncId)))
+        }
 }

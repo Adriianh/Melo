@@ -8,4 +8,5 @@ data class AccountProfile(
     val email: String? = null,
     val channelHandle: String? = null,
     val avatarUrl: String? = null,
+    val pageId: String? = null,
 )

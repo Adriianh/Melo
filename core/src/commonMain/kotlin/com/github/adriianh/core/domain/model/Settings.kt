@@ -131,6 +131,7 @@ data class Settings(
     val cachePath: String? = null,
     val localLibraryPaths: List<String> = emptyList(),
     val sessionCookies: String? = null,
+    val accountPageId: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val autoplay: Boolean = true,

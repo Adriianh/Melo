@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
@@ -60,6 +61,11 @@ import com.github.adriianh.melo.util.getPlatform
 internal fun SettingsContent(
     settings: Settings,
     isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
 ) {
@@ -79,7 +85,16 @@ internal fun SettingsContent(
         }
         DownloadsSettingsSection(settings, actions)
         LocalFoldersSection(settings, actions)
-        AccountSettingsSection(settings, isLoggedIn, actions)
+        AccountSettingsSection(
+            settings = settings,
+            isLoggedIn = isLoggedIn,
+            profiles = profiles,
+            activePageId = activePageId,
+            isLoadingProfiles = isLoadingProfiles,
+            isSwitchingProfile = isSwitchingProfile,
+            profilesError = profilesError,
+            actions = actions,
+        )
         UpdateSettingsSection(
             autoCheckUpdates = settings.autoCheckUpdates,
             onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates,
@@ -320,53 +335,34 @@ private fun LocalFoldersSection(
 private fun AccountSettingsSection(
     settings: Settings,
     isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
     actions: SettingsActions,
 ) {
     SettingsGroupCard(
         title = "Cuenta y sesión",
         icon = Icons.Default.Person
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (isLoggedIn) "Sesión iniciada con YouTube Music" else "Sin conexión de cuenta",
-                    style = MeloType.body,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MeloColors.textPrimary
-                )
-                Text(
-                    text = if (isLoggedIn) "Tus playlists, likes y biblioteca están sincronizados." else "Inicia sesión para sincronizar tus playlists y favoritos.",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            if (isLoggedIn) {
-                OutlinedButton(
-                    onClick = actions.onLogout,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Cerrar sesión")
-                }
-            } else {
-                Button(
-                    onClick = actions.onOpenLogin,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Iniciar sesión")
-                }
-            }
-        }
+        AccountSessionHeader(
+            isLoggedIn = isLoggedIn,
+            onLogout = actions.onLogout,
+            onOpenLogin = actions.onOpenLogin,
+        )
 
         if (isLoggedIn) {
-            Spacer(modifier = Modifier.height(12.dp))
+            AccountProfilesList(
+                profiles = profiles,
+                activePageId = activePageId,
+                isLoading = isLoadingProfiles,
+                isSwitching = isSwitchingProfile,
+                error = profilesError,
+                onSelect = actions.onSelectAccountProfile,
+                onRefresh = actions.onRefreshAccountProfiles,
+            )
+
             SettingRow(
                 title = "Registrar reproducciones en YouTube",
                 subtitle = "Sincroniza automáticamente las pistas que escuchas con tu historial de YouTube Music."
@@ -375,6 +371,58 @@ private fun AccountSettingsSection(
                     checked = settings.syncHistoryToYouTube,
                     onCheckedChange = actions.onSyncHistoryToYouTubeChanged
                 )
+            }
+        }
+    }
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun AccountSessionHeader(
+    isLoggedIn: Boolean,
+    onLogout: () -> Unit,
+    onOpenLogin: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (isLoggedIn) "Sesión iniciada con YouTube Music" else "Sin conexión de cuenta",
+                style = MeloType.body,
+                fontWeight = FontWeight.SemiBold,
+                color = MeloColors.textPrimary,
+            )
+            Text(
+                text =
+                    if (isLoggedIn) {
+                        "Tus playlists, likes y biblioteca están sincronizados."
+                    } else {
+                        "Inicia sesión para sincronizar tus playlists y favoritos."
+                    },
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        if (isLoggedIn) {
+            OutlinedButton(
+                onClick = onLogout,
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("Cerrar sesión")
+            }
+        } else {
+            Button(
+                onClick = onOpenLogin,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("Iniciar sesión")
             }
         }
     }

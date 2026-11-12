@@ -26,7 +26,10 @@ class SettingsRepositoryImpl(
     private val _settingsFlow = MutableStateFlow(loadSettingsSync())
 
     init {
-        syncYouTubeSession(_settingsFlow.value.sessionCookies)
+        syncYouTubeSession(
+            cookies = _settingsFlow.value.sessionCookies,
+            pageId = _settingsFlow.value.accountPageId,
+        )
     }
 
     override fun getSettingsFlow(): StateFlow<Settings> = _settingsFlow.asStateFlow()
@@ -37,16 +40,24 @@ class SettingsRepositoryImpl(
 
     override suspend fun updateSettings(settings: Settings) {
         _settingsFlow.value = settings
-        syncYouTubeSession(settings.sessionCookies)
+        syncYouTubeSession(
+            cookies = settings.sessionCookies,
+            pageId = settings.accountPageId,
+        )
         saveSettingsToDisk(settings)
     }
 
-    private fun syncYouTubeSession(cookies: String?) {
+    private fun syncYouTubeSession(
+        cookies: String?,
+        pageId: String?,
+    ) {
         if (!cookies.isNullOrBlank()) {
             YouTube.cookie = cookies
+            YouTube.pageId = pageId
             YouTube.useLoginForBrowse = true
         } else {
             YouTube.cookie = null
+            YouTube.pageId = null
             YouTube.useLoginForBrowse = false
         }
     }

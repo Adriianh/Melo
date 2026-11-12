@@ -28,6 +28,8 @@ data class SettingsActions(
     val onSyncHistoryToYouTubeChanged: (Boolean) -> Unit = {},
     val onToggleAutoCheckUpdates: (Boolean) -> Unit = {},
     val onUpdateChannelSelected: (UpdateChannel) -> Unit = {},
+    val onSelectAccountProfile: (String?) -> Unit = {},
+    val onRefreshAccountProfiles: () -> Unit = {},
     val onOpenLogin: () -> Unit,
     val onLogout: () -> Unit,
 )

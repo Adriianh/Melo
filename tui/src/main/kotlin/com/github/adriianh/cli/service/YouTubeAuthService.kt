@@ -109,7 +109,7 @@ class YouTubeAuthService(
     suspend fun logout(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             setSessionCookies(null)
-            updateSettings { it.copy(sessionCookies = null) }
+            updateSettings { it.copy(sessionCookies = null, accountPageId = null) }
         }
     }
 
@@ -133,7 +133,7 @@ class YouTubeAuthService(
         setSessionCookies(cookies)
         val accountName = runCatching { verifySession() }.getOrNull()
         return if (accountName != null) {
-            updateSettings { it.copy(sessionCookies = cookies) }
+            updateSettings { it.copy(sessionCookies = cookies, accountPageId = null) }
             Result.success(accountName)
         } else {
             val previous = getSettings.getSnapshot().sessionCookies

@@ -240,20 +240,20 @@ class LibraryViewModel(
             }
         }
         viewModelScope.launch(ioDispatcher) {
-            val initialCookies =
-                getSettingsUseCase
-                    .getSnapshot()
-                    .sessionCookies
-                    ?.takeIf { it.isNotBlank() }
+            val initialSettings = getSettingsUseCase.getSnapshot()
+            val initialSession =
+                initialSettings.sessionCookies
+                    ?.takeIf { it.isNotBlank() } to initialSettings.accountPageId
 
-            val initiallyLoggedIn = initialCookies != null
+            val initiallyLoggedIn = initialSession.first != null
             _uiState.update { it.copy(isLoggedIn = initiallyLoggedIn) }
 
             getSettingsUseCase()
-                .map { it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } }
-                .dropWhile { it == initialCookies }
+                .map {
+                    it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } to it.accountPageId
+                }.dropWhile { it == initialSession }
                 .distinctUntilChanged()
-                .collectLatest { cookies ->
+                .collectLatest { (cookies, _) ->
                     val loggedIn = cookies != null
                     _uiState.update { it.copy(isLoggedIn = loggedIn) }
                     if (loggedIn) {

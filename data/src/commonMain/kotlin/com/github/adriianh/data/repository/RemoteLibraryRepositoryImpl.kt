@@ -25,7 +25,7 @@ class RemoteLibraryRepositoryImpl : RemoteLibraryRepository {
             name = info.name,
             email = info.email,
             channelHandle = info.channelHandle,
-            avatarUrl = null,
+            avatarUrl = info.thumbnailUrl,
         )
     }
 
