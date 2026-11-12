@@ -1,5 +1,6 @@
 package com.github.adriianh.melo
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -14,6 +15,7 @@ import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.melo.di.initKoin
+import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
@@ -27,6 +29,7 @@ import java.awt.Toolkit
 fun main() {
     val koinApp = initKoin()
     val instanceIdentity = koinApp.koin.getOrNull<InstanceIdentity>()
+    val instanceKey = instanceIdentity?.instanceKey
     val windowTitle =
         instanceIdentity
             ?.takeUnless { it.isPrimary }
@@ -104,18 +107,20 @@ fun main() {
                 }
             }
 
-            App(
-                titleBar = {
-                    MeloTitleBar(
-                        windowManager = windowManager,
-                        onClose = {
-                            koinApp.koin.getOrNull<MediaSessionManager>()?.release()
-                            koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
-                            exitApplication()
-                        },
-                    )
-                },
-            )
+            CompositionLocalProvider(LocalInstanceLabel provides instanceKey) {
+                App(
+                    titleBar = {
+                        MeloTitleBar(
+                            windowManager = windowManager,
+                            onClose = {
+                                koinApp.koin.getOrNull<MediaSessionManager>()?.release()
+                                koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
+                                exitApplication()
+                            },
+                        )
+                    },
+                )
+            }
         }
     }
 }
