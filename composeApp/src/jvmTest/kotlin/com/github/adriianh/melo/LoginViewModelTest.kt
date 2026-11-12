@@ -1,6 +1,9 @@
 package com.github.adriianh.melo
 
+import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
+import com.github.adriianh.core.domain.usecase.login.GetAccountProfilesUseCase
+import com.github.adriianh.core.domain.usecase.login.SetActiveAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -37,11 +40,14 @@ class LoginViewModelTest {
     private val updateSettings = mockk<UpdateSettingsUseCase>(relaxed = true)
     private val setSessionCookies = mockk<SetSessionCookiesUseCase>(relaxed = true)
     private val verifySession = mockk<VerifySessionUseCase>(relaxed = true)
+    private val getAccountProfiles = mockk<GetAccountProfilesUseCase>(relaxed = true)
+    private val setActiveAccountProfile = mockk<SetActiveAccountProfileUseCase>(relaxed = true)
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         coEvery { getSettings.getSnapshot() } returns Settings()
+        coEvery { getAccountProfiles() } returns Result.success(emptyList())
         mockkStatic("com.github.adriianh.melo.ui.login.InAppSignIn_jvmKt")
         coEvery { launchAutomatedBrowserLogin() } returns null
         coEvery { importExistingBrowserCookies() } returns null
@@ -56,7 +62,9 @@ class LoginViewModelTest {
         getSettings,
         updateSettings,
         setSessionCookies,
-        verifySession
+        verifySession,
+        getAccountProfiles,
+        setActiveAccountProfile,
     )
 
     @Test
@@ -208,4 +216,58 @@ class LoginViewModelTest {
         assertFalse(vm.uiState.value.isLoggedIn)
         assertNull(vm.uiState.value.accountName)
     }
+
+    @Test
+    fun `init restores the persisted active profile`() =
+        runTest {
+            coEvery { getSettings.getSnapshot() } returns
+                Settings(
+                    sessionCookies = "SAPISID=x",
+                    accountPageId = "page-123",
+                )
+
+            val vm = createVm()
+            advanceUntilIdle()
+
+            assertEquals("page-123", vm.uiState.value.activePageId)
+            coVerify { setActiveAccountProfile("page-123") }
+        }
+
+    @Test
+    fun `loadProfiles stores the channels returned by the repository`() =
+        runTest {
+            coEvery { getSettings.getSnapshot() } returns Settings(sessionCookies = "SAPISID=x")
+            val profiles =
+                listOf(
+                    AccountProfile(name = "Primary"),
+                    AccountProfile(name = "Brand", pageId = "page-123"),
+                )
+            coEvery { getAccountProfiles() } returns Result.success(profiles)
+
+            val vm = createVm()
+            advanceUntilIdle()
+            vm.loadProfiles()
+            advanceUntilIdle()
+
+            assertEquals(profiles, vm.uiState.value.profiles)
+            assertFalse(vm.uiState.value.isLoadingProfiles)
+            assertNull(vm.uiState.value.profilesError)
+        }
+
+    @Test
+    fun `selectProfile switches the active channel and refreshes the account name`() =
+        runTest {
+            coEvery { getSettings.getSnapshot() } returns Settings(sessionCookies = "SAPISID=x")
+            coEvery { verifySession() } returns "Brand channel"
+
+            val vm = createVm()
+            advanceUntilIdle()
+            vm.selectProfile("page-123")
+            advanceUntilIdle()
+
+            coVerify { setActiveAccountProfile("page-123") }
+            assertEquals("page-123", vm.uiState.value.activePageId)
+            assertEquals("Brand channel", vm.uiState.value.accountName)
+            assertFalse(vm.uiState.value.isSwitchingProfile)
+        }
 }

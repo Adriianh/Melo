@@ -1,5 +1,6 @@
 package com.github.adriianh.innertube
 
+import com.github.adriianh.innertube.models.AccountChannel
 import com.github.adriianh.innertube.models.AccountInfo
 import com.github.adriianh.innertube.models.AlbumItem
 import com.github.adriianh.innertube.models.Artist
@@ -23,6 +24,7 @@ import com.github.adriianh.innertube.models.getContinuation
 import com.github.adriianh.innertube.models.getItems
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.models.response.AccountMenuResponse
+import com.github.adriianh.innertube.models.response.AccountSwitcherResponse
 import com.github.adriianh.innertube.models.response.AddItemYouTubePlaylistResponse
 import com.github.adriianh.innertube.models.response.BrowseResponse
 import com.github.adriianh.innertube.models.response.BrowseResponse.Companion.extractItems
@@ -90,6 +92,11 @@ object YouTube {
         get() = innerTube.cookie
         set(value) {
             innerTube.cookie = value
+        }
+    var pageId: String?
+        get() = innerTube.pageId
+        set(value) {
+            innerTube.pageId = value
         }
     var proxyConfig: ProxyConfig?
         get() = innerTube.proxyConfig
@@ -1386,6 +1393,12 @@ object YouTube {
             ?.toAccountInfo()!!
     }
 
+    suspend fun accountChannels(): Result<List<AccountChannel>> =
+        runCatching {
+            AccountSwitcherResponse
+                .parse(innerTube.accountSwitcher(WEB_REMIX).bodyAsText())
+                .toAccountChannels()
+        }
 
     suspend fun addToPlaylist(playlistId: String, videoId: String) = runCatching {
         innerTube.addToPlaylist(WEB_REMIX, playlistId, videoId)

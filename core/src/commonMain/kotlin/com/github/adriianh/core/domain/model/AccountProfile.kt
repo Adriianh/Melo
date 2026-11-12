@@ -7,5 +7,7 @@ data class AccountProfile(
     val name: String,
     val email: String? = null,
     val channelHandle: String? = null,
+    val byline: String? = null,
     val avatarUrl: String? = null,
+    val pageId: String? = null,
 )

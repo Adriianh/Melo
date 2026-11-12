@@ -2,6 +2,9 @@ package com.github.adriianh.melo.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.core.domain.usecase.login.GetAccountProfilesUseCase
+import com.github.adriianh.core.domain.usecase.login.SetActiveAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -19,6 +22,11 @@ data class LoginUiState(
     val isWaitingBrowserAuth: Boolean = false,
     val browserAuthStatus: String? = null,
     val accountName: String? = null,
+    val profiles: List<AccountProfile> = emptyList(),
+    val activePageId: String? = null,
+    val isLoadingProfiles: Boolean = false,
+    val isSwitchingProfile: Boolean = false,
+    val profilesError: String? = null,
     val error: String? = null,
 )
 
@@ -27,6 +35,8 @@ class LoginViewModel(
     private val updateSettings: UpdateSettingsUseCase,
     private val setSessionCookies: SetSessionCookiesUseCase,
     private val verifySession: VerifySessionUseCase,
+    private val getAccountProfiles: GetAccountProfilesUseCase,
+    private val setActiveAccountProfile: SetActiveAccountProfileUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -34,10 +44,13 @@ class LoginViewModel(
 
     init {
         viewModelScope.launch {
-            val cookies = getSettings.getSnapshot().sessionCookies
+            val settings = getSettings.getSnapshot()
+            val cookies = settings.sessionCookies
             val loggedIn = !cookies.isNullOrBlank()
+            _uiState.update { it.copy(activePageId = settings.accountPageId) }
             if (loggedIn) {
                 setSessionCookies(cookies)
+                setActiveAccountProfile(settings.accountPageId)
                 _uiState.update { it.copy(isLoggedIn = true) }
             }
         }
@@ -63,16 +76,23 @@ class LoginViewModel(
                     }
                 } else {
                     updateSettings { settings ->
-                        settings.copy(sessionCookies = trimmed)
+                        settings.copy(
+                            sessionCookies = trimmed,
+                            accountPageId = null,
+                        )
                     }
                     _uiState.update {
                         it.copy(
                             isVerifying = false,
                             isLoggedIn = true,
                             accountName = accountName,
+                            activePageId = null,
+                            profiles = emptyList(),
+                            profilesError = null,
                             error = null,
                         )
                     }
+                    loadProfiles()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -141,11 +161,85 @@ class LoginViewModel(
         }
     }
 
+    fun loadProfiles() {
+        val state = _uiState.value
+        if (!state.isLoggedIn || state.isLoadingProfiles) return
+
+        _uiState.update { it.copy(isLoadingProfiles = true, profilesError = null) }
+        viewModelScope.launch {
+            getAccountProfiles()
+                .onSuccess { profiles ->
+                    _uiState.update {
+                        it.copy(
+                            profiles = profiles,
+                            isLoadingProfiles = false,
+                            profilesError = null,
+                        )
+                    }
+                }.onFailure { throwable ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingProfiles = false,
+                            profilesError =
+                                throwable.message
+                                    ?: "No se pudieron cargar los canales de la cuenta.",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun selectProfile(pageId: String?) {
+        val state = _uiState.value
+        if (!state.isLoggedIn || state.isSwitchingProfile || state.activePageId == pageId) return
+
+        _uiState.update { it.copy(isSwitchingProfile = true, profilesError = null) }
+        viewModelScope.launch {
+            try {
+                setActiveAccountProfile(pageId)
+                val accountName = verifySession()
+                _uiState.update {
+                    it.copy(
+                        activePageId = pageId,
+                        accountName = accountName ?: it.accountName,
+                        isSwitchingProfile = false,
+                        profilesError =
+                            if (accountName == null) {
+                                "No se pudo activar el canal seleccionado."
+                            } else {
+                                null
+                            },
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSwitchingProfile = false,
+                        profilesError = e.message ?: "No se pudo cambiar de canal.",
+                    )
+                }
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             setSessionCookies(null)
-            updateSettings { it.copy(sessionCookies = null) }
-            _uiState.update { it.copy(isLoggedIn = false, accountName = null, error = null) }
+            updateSettings { it.copy(sessionCookies = null, accountPageId = null) }
+            _uiState.update {
+                it.copy(
+                    isLoggedIn = false,
+                    accountName = null,
+                    profiles = emptyList(),
+                    activePageId = null,
+                    isLoadingProfiles = false,
+                    isSwitchingProfile = false,
+                    profilesError = null,
+                    error = null,
+                )
+            }
         }
     }
 

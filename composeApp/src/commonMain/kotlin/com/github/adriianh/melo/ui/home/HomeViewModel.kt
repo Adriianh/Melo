@@ -114,12 +114,15 @@ class HomeViewModel(
         }
 
         viewModelScope.launch(ioDispatcher) {
-            val initialCookies = getSettingsUseCase.getSnapshot().sessionCookies
-                ?.takeIf { it.isNotBlank() }
+            val initialSettings = getSettingsUseCase.getSnapshot()
+            val initialSession =
+                initialSettings.sessionCookies
+                    ?.takeIf { it.isNotBlank() } to initialSettings.accountPageId
 
             getSettingsUseCase()
-                .map { it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } }
-                .dropWhile { it == initialCookies }
+                .map {
+                    it.sessionCookies?.takeIf { cookies -> cookies.isNotBlank() } to it.accountPageId
+                }.dropWhile { it == initialSession }
                 .distinctUntilChanged()
                 .collectLatest { _ ->
                     homeFeedCache.clear()

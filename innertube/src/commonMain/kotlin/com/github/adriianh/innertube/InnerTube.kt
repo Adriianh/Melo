@@ -56,6 +56,7 @@ class InnerTube(
     )
     var visitorData: String? = null
     var dataSyncId: String? = null
+    var pageId: String? = null
     var cookie: String? = null
         set(value) {
             field = value
@@ -119,6 +120,9 @@ class InnerTube(
                 cookie?.let { cookie ->
                     append("cookie", cookie)
                     append("X-Goog-AuthUser", "0")
+                    pageId?.takeIf { it.isNotBlank() }?.let { activePageId ->
+                        append("X-Goog-PageId", activePageId)
+                    }
                     val sapisid = cookieMap["SAPISID"]
                         ?: cookieMap["__Secure-3PAPISID"]
                         ?: cookieMap["__Secure-1PAPISID"]
@@ -558,4 +562,10 @@ class InnerTube(
         ytClient(client, setLogin = true)
         setBody(AccountMenuBody(client.toContext(locale, visitorData, dataSyncId)))
     }
+
+    /** Account switcher page; the body starts with `)]}'` and is not plain JSON. */
+    suspend fun accountSwitcher(client: YouTubeClient) =
+        httpClient.get("${client.origin}/getAccountSwitcherEndpoint") {
+            ytClient(client, setLogin = true)
+        }
 }

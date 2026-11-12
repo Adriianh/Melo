@@ -93,6 +93,7 @@ fun App(
     val accentPalette by playerViewModel.accentPalette.collectAsState()
     val playbackState by playerViewModel.playbackState.collectAsState()
     val settings by getSettingsUseCase().collectAsState()
+    val loginState by loginViewModel.uiState.collectAsState()
     val isOfflineMode = settings.offlineMode || !isOnline
     val updateState by updateViewModel.uiState.collectAsState()
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
@@ -118,6 +119,12 @@ fun App(
     }
     var showSettingsSheet by remember { mutableStateOf(false) }
     val snackbarState = remember { MeloSnackbarState() }
+
+    LaunchedEffect(showSettingsSheet) {
+        if (showSettingsSheet) {
+            loginViewModel.loadProfiles()
+        }
+    }
 
     MeloTheme(
         accentColor = finalAccent,
@@ -625,6 +632,12 @@ fun App(
                                         }
                                     }
                                 },
+                                onSelectAccountProfile = { pageId ->
+                                    loginViewModel.selectProfile(pageId)
+                                },
+                                onRefreshAccountProfiles = {
+                                    loginViewModel.loadProfiles()
+                                },
                                 onOpenLogin = {
                                     showSettingsSheet = false
                                     showLoginDialog = true
@@ -639,6 +652,11 @@ fun App(
                                 SettingsDialog(
                                     settings = settings,
                                     isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
+                                    profiles = loginState.profiles,
+                                    activePageId = loginState.activePageId,
+                                    isLoadingProfiles = loginState.isLoadingProfiles,
+                                    isSwitchingProfile = loginState.isSwitchingProfile,
+                                    profilesError = loginState.profilesError,
                                     actions = settingsActions,
                                     onDismiss = { showSettingsSheet = false }
                                 )
@@ -646,6 +664,11 @@ fun App(
                                 SettingsSheet(
                                     settings = settings,
                                     isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
+                                    profiles = loginState.profiles,
+                                    activePageId = loginState.activePageId,
+                                    isLoadingProfiles = loginState.isLoadingProfiles,
+                                    isSwitchingProfile = loginState.isSwitchingProfile,
+                                    profilesError = loginState.profilesError,
                                     actions = settingsActions,
                                     onDismiss = { showSettingsSheet = false }
                                 )

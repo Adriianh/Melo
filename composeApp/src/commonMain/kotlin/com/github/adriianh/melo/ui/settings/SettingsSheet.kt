@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -42,6 +43,11 @@ import com.github.adriianh.melo.util.MeloType
 fun SettingsSheet(
     settings: Settings,
     isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
 ) {
@@ -66,6 +72,11 @@ fun SettingsSheet(
         SettingsContent(
             settings = settings,
             isLoggedIn = isLoggedIn,
+            profiles = profiles,
+            activePageId = activePageId,
+            isLoadingProfiles = isLoadingProfiles,
+            isSwitchingProfile = isSwitchingProfile,
+            profilesError = profilesError,
             actions = actions,
             modifier = Modifier
                 .navigationBarsPadding()
@@ -78,6 +89,11 @@ fun SettingsSheet(
 fun SettingsDialog(
     settings: Settings,
     isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
 ) {
@@ -127,6 +143,11 @@ fun SettingsDialog(
                 SettingsContent(
                     settings = settings,
                     isLoggedIn = isLoggedIn,
+                    profiles = profiles,
+                    activePageId = activePageId,
+                    isLoadingProfiles = isLoadingProfiles,
+                    isSwitchingProfile = isSwitchingProfile,
+                    profilesError = profilesError,
                     actions = actions,
                     modifier = Modifier.weight(1f)
                 )

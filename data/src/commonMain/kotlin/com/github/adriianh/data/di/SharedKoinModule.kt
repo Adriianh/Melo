@@ -46,6 +46,8 @@ import com.github.adriianh.core.domain.usecase.library.ToggleFavoriteEntityUseCa
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
 import com.github.adriianh.core.domain.usecase.library.ToggleLikeTrackUseCase
+import com.github.adriianh.core.domain.usecase.login.GetAccountProfilesUseCase
+import com.github.adriianh.core.domain.usecase.login.SetActiveAccountProfileUseCase
 import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.lyrics.GetTrackLyricsUseCase
@@ -273,6 +275,8 @@ val sharedModule: Module =
         singleOf(::UpdateSettingsUseCase)
         singleOf(::SetSessionCookiesUseCase)
         singleOf(::VerifySessionUseCase)
+        singleOf(::GetAccountProfilesUseCase)
+        singleOf(::SetActiveAccountProfileUseCase)
         singleOf(::GetAccountProfileUseCase)
         singleOf(::GetUserPlaylistsUseCase)
         singleOf(::GetPlaylistsUseCase)
