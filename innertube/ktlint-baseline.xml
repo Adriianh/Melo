@@ -1067,34 +1067,34 @@
         <error line="1390" column="41" source="standard:chain-method-continuation" />
         <error line="1391" column="24" source="standard:chain-method-continuation" />
         <error line="1392" column="20" source="standard:chain-method-continuation" />
-        <error line="1400" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="1401" column="31" source="standard:function-signature" />
-        <error line="1401" column="51" source="standard:function-signature" />
-        <error line="1401" column="66" source="standard:function-signature" />
-        <error line="1401" column="70" source="standard:multiline-expression-wrapping" />
-        <error line="1401" column="70" source="standard:function-signature" />
-        <error line="1402" column="18" source="standard:chain-method-continuation" />
-        <error line="1406" column="36" source="standard:function-signature" />
-        <error line="1406" column="56" source="standard:function-signature" />
-        <error line="1406" column="73" source="standard:function-signature" />
-        <error line="1406" column="91" source="standard:function-signature" />
-        <error line="1411" column="55" source="standard:function-signature" />
-        <error line="1416" column="53" source="standard:function-signature" />
-        <error line="1421" column="67" source="standard:multiline-expression-wrapping" />
-        <error line="1421" column="67" source="standard:function-signature" />
-        <error line="1422" column="18" source="standard:chain-method-continuation" />
-        <error line="1423" column="38" source="standard:chain-method-continuation" />
-        <error line="1423" column="56" source="standard:chain-method-continuation" />
-        <error line="1427" column="30" source="standard:class-signature" />
-        <error line="1427" column="47" source="standard:class-signature" />
-        <error line="1442" column="23" source="standard:multiline-expression-wrapping" />
-        <error line="1457" column="26" source="standard:trailing-comma-on-call-site" />
-        <error line="1460" column="27" source="standard:argument-list-wrapping" />
-        <error line="1460" column="33" source="standard:argument-list-wrapping" />
-        <error line="1460" column="138" source="standard:argument-list-wrapping" />
-        <error line="1460" column="139" source="standard:argument-list-wrapping" />
-        <error line="1460" column="141" source="standard:max-line-length" />
-        <error line="1469" column="1" source="standard:final-newline" />
+        <error line="1402" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="1403" column="31" source="standard:function-signature" />
+        <error line="1403" column="51" source="standard:function-signature" />
+        <error line="1403" column="66" source="standard:function-signature" />
+        <error line="1403" column="70" source="standard:multiline-expression-wrapping" />
+        <error line="1403" column="70" source="standard:function-signature" />
+        <error line="1404" column="18" source="standard:chain-method-continuation" />
+        <error line="1408" column="36" source="standard:function-signature" />
+        <error line="1408" column="56" source="standard:function-signature" />
+        <error line="1408" column="73" source="standard:function-signature" />
+        <error line="1408" column="91" source="standard:function-signature" />
+        <error line="1413" column="55" source="standard:function-signature" />
+        <error line="1418" column="53" source="standard:function-signature" />
+        <error line="1423" column="67" source="standard:multiline-expression-wrapping" />
+        <error line="1423" column="67" source="standard:function-signature" />
+        <error line="1424" column="18" source="standard:chain-method-continuation" />
+        <error line="1425" column="38" source="standard:chain-method-continuation" />
+        <error line="1425" column="56" source="standard:chain-method-continuation" />
+        <error line="1429" column="30" source="standard:class-signature" />
+        <error line="1429" column="47" source="standard:class-signature" />
+        <error line="1444" column="23" source="standard:multiline-expression-wrapping" />
+        <error line="1459" column="26" source="standard:trailing-comma-on-call-site" />
+        <error line="1462" column="27" source="standard:argument-list-wrapping" />
+        <error line="1462" column="33" source="standard:argument-list-wrapping" />
+        <error line="1462" column="138" source="standard:argument-list-wrapping" />
+        <error line="1462" column="139" source="standard:argument-list-wrapping" />
+        <error line="1462" column="141" source="standard:max-line-length" />
+        <error line="1471" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/innertube/models/Button.kt">
         <error line="16" column="1" source="standard:final-newline" />

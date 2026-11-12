@@ -24,7 +24,7 @@ import com.github.adriianh.innertube.models.getContinuation
 import com.github.adriianh.innertube.models.getItems
 import com.github.adriianh.innertube.models.oddElements
 import com.github.adriianh.innertube.models.response.AccountMenuResponse
-import com.github.adriianh.innertube.models.response.AccountsListResponse
+import com.github.adriianh.innertube.models.response.AccountSwitcherResponse
 import com.github.adriianh.innertube.models.response.AddItemYouTubePlaylistResponse
 import com.github.adriianh.innertube.models.response.BrowseResponse
 import com.github.adriianh.innertube.models.response.BrowseResponse.Companion.extractItems
@@ -1395,7 +1395,9 @@ object YouTube {
 
     suspend fun accountChannels(): Result<List<AccountChannel>> =
         runCatching {
-            innerTube.accountsList(WEB_REMIX).body<AccountsListResponse>().toAccountChannels()
+            AccountSwitcherResponse
+                .parse(innerTube.accountSwitcher(WEB_REMIX).bodyAsText())
+                .toAccountChannels()
         }
 
     suspend fun addToPlaylist(playlistId: String, videoId: String) = runCatching {
