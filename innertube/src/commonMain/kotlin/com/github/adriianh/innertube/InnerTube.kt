@@ -569,4 +569,10 @@ class InnerTube(
             ytClient(client, setLogin = true)
             setBody(AccountsListBody(client.toContext(locale, visitorData, dataSyncId)))
         }
+
+    /** Account switcher page; the body starts with `)]}'` and is not plain JSON. */
+    suspend fun accountSwitcher(client: YouTubeClient) =
+        httpClient.get("${client.origin}/getAccountSwitcherEndpoint") {
+            ytClient(client, setLogin = true)
+        }
 }
