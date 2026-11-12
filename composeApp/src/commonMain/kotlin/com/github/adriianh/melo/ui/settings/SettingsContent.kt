@@ -353,17 +353,15 @@ private fun AccountSettingsSection(
         )
 
         if (isLoggedIn) {
-            if (profiles.size > 1) {
-                AccountProfilesList(
-                    profiles = profiles,
-                    activePageId = activePageId,
-                    isLoading = isLoadingProfiles,
-                    isSwitching = isSwitchingProfile,
-                    error = profilesError,
-                    onSelect = actions.onSelectAccountProfile,
-                    onRefresh = actions.onRefreshAccountProfiles,
-                )
-            }
+            AccountProfilesList(
+                profiles = profiles,
+                activePageId = activePageId,
+                isLoading = isLoadingProfiles,
+                isSwitching = isSwitchingProfile,
+                error = profilesError,
+                onSelect = actions.onSelectAccountProfile,
+                onRefresh = actions.onRefreshAccountProfiles,
+            )
 
             SettingRow(
                 title = "Registrar reproducciones en YouTube",

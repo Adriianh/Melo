@@ -99,13 +99,15 @@ internal fun AccountProfilesList(
             )
         }
 
-        profiles.forEach { profile ->
-            AccountProfileRow(
-                profile = profile,
-                isSelected = profile.pageId == activePageId,
-                enabled = !isSwitching,
-                onClick = { onSelect(profile.pageId) },
-            )
+        if (profiles.size > 1) {
+            profiles.forEach { profile ->
+                AccountProfileRow(
+                    profile = profile,
+                    isSelected = profile.pageId == activePageId,
+                    enabled = !isSwitching,
+                    onClick = { onSelect(profile.pageId) },
+                )
+            }
         }
     }
 }
