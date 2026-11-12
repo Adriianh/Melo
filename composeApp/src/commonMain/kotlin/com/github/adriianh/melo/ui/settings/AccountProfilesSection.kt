@@ -1,8 +1,10 @@
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -25,8 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.melo.util.MeloAsyncImage
@@ -117,27 +122,32 @@ private fun AccountProfileRow(
         profile.channelHandle?.takeIf { it.isNotBlank() }
             ?: profile.email?.takeIf { it.isNotBlank() }
 
+    val rowShape = RoundedCornerShape(10.dp)
+    val accent = MaterialTheme.colorScheme.primary
+
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
+                .clip(rowShape)
                 .background(
                     if (isSelected) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        accent.copy(alpha = 0.12f)
                     } else {
                         MeloColors.surface2.copy(alpha = 0.35f)
                     },
+                ).border(
+                    width = 1.5.dp,
+                    color = if (isSelected) accent else Color.Transparent,
+                    shape = rowShape,
                 ).clickable(enabled = enabled && !isSelected, onClick = onClick)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        MeloAsyncImage(
-            url = profile.avatarUrl,
-            contentDescription = profile.name,
+        AccountProfileAvatar(
+            profile = profile,
             size = 32.dp,
-            shape = CircleShape,
         )
 
         Column(modifier = Modifier.weight(1f)) {
@@ -160,12 +170,50 @@ private fun AccountProfileRow(
             }
         }
 
+        // Selection marker sits on the opposite side of the avatar and name.
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Canal activo",
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accent,
                 modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Profile picture for an account row, falling back to a person glyph when the
+ * channel has no avatar URL (or the thumbnail failed to resolve).
+ */
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun AccountProfileAvatar(
+    profile: AccountProfile,
+    size: Dp,
+) {
+    val avatarUrl = profile.avatarUrl
+    if (!avatarUrl.isNullOrBlank()) {
+        MeloAsyncImage(
+            url = avatarUrl,
+            contentDescription = profile.name,
+            size = size,
+            shape = CircleShape,
+        )
+    } else {
+        Box(
+            modifier =
+                Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(MeloColors.surface1),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = profile.name,
+                tint = MeloColors.textSecondary,
+                modifier = Modifier.size(size * 0.6f),
             )
         }
     }
