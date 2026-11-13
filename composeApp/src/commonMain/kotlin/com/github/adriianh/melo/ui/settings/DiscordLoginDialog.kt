@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -38,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.login.InAppDiscordLogin
 import com.github.adriianh.melo.ui.login.isDiscordInAppLoginSupported
@@ -45,8 +45,8 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 private const val DISCLAIMER_TEXT =
-    "Aviso importante: En Android, Discord no admite Rich Presence local. " +
-        "Esta integración conecta con el Gateway usando tu token de sesión (KizzyRPC). " +
+    "Discord no admite Rich Presence local en Android. " +
+        "Esta integración conecta con el Gateway usando tu token de sesión. " +
         "El uso de clientes no oficiales va contra los Términos de Servicio de Discord. " +
         "Se ofrece exclusivamente con fines educativos y bajo tu propia responsabilidad."
 
@@ -243,19 +243,16 @@ private fun DiscordAutoLoginOptions(
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Icon(
-            Icons.Default.Language,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(8.dp))
         Text("Iniciar sesión en Discord")
     }
 
-    TextButton(
+    Button(
         onClick = onShowManualInput,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+        shape = RoundedCornerShape(12.dp),
     ) {
-        Text("O ingresar token manualmente")
+        Text("Ingresar token manualmente")
     }
 }
 
@@ -268,7 +265,7 @@ private fun DiscordManualInputContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Pega tu token de usuario de Discord:",
+            text = "Pega tu token:",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -287,7 +284,7 @@ private fun DiscordManualInputContent(
             TextButton(
                 onClick = onBackToAuto,
             ) {
-                Text("Volver a inicio de sesión automático")
+                Text("Volver")
             }
         }
     }
@@ -324,6 +321,107 @@ private fun DiscordLoginConfirmButtons(
     } else {
         TextButton(onClick = onDismiss) {
             Text("Cerrar")
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewDiscordLoginDialog() {
+    MaterialTheme {
+        DiscordLoginDialog(
+            onDismiss = {},
+            onTokenSaved = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_AutoLogin() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = true,
+                showManualInput = false,
+                manualToken = "",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {}
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_ManualInput() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = true,
+                showManualInput = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {}
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_FallbackManualOnly() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = false,
+                showManualInput = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {}
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginConfirmButtons() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            DiscordLoginConfirmButtons(
+                isShowingInAppBrowser = false,
+                showManualInput = true,
+                inAppBrowserAvailable = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onDismiss = {},
+                onTokenSaved = {},
+                onCancelInAppBrowser = {}
+            )
         }
     }
 }
