@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "LongParameterList", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
@@ -5,8 +7,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,16 +25,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,20 +41,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.update.AppRelease
+import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
+import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.util.MeloVersion
+import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun UpdateSettingsSection(
+    modifier: Modifier = Modifier,
     autoCheckUpdates: Boolean,
     onToggleAutoCheckUpdates: (Boolean) -> Unit,
     updateChannel: UpdateChannel =
@@ -66,512 +70,455 @@ fun UpdateSettingsSection(
             UpdateChannel.STABLE
         },
     onUpdateChannelSelected: (UpdateChannel) -> Unit = {},
-    modifier: Modifier = Modifier,
-    viewModel: UpdateViewModel = koinViewModel()
+    viewModel: UpdateViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showChangelog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MeloColors.surface2.copy(alpha = 0.6f))
-            .padding(16.dp)
-            .animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+    UpdateSettingsSectionContent(
+        modifier = modifier,
+        state = state,
+        autoCheckUpdates = autoCheckUpdates,
+        updateChannel = updateChannel,
+        onToggleAutoCheckUpdates = onToggleAutoCheckUpdates,
+        onUpdateChannelSelected = { channel ->
+            onUpdateChannelSelected(channel)
+            viewModel.checkForUpdates(channel)
+        },
+        onCheckForUpdates = { viewModel.checkForUpdates(it) },
+        onStartDownload = { release, asset -> viewModel.startDownload(release, asset) },
+        onCancelDownload = { viewModel.cancelDownload() },
+        onInstallUpdate = { path -> viewModel.installUpdate(path) },
+        currentVersion = MeloVersion.CURRENT,
+    )
+}
+
+@Composable
+fun UpdateSettingsSectionContent(
+    modifier: Modifier = Modifier,
+    state: UpdateState,
+    autoCheckUpdates: Boolean,
+    updateChannel: UpdateChannel,
+    onToggleAutoCheckUpdates: (Boolean) -> Unit,
+    onUpdateChannelSelected: (UpdateChannel) -> Unit,
+    onCheckForUpdates: (UpdateChannel) -> Unit,
+    onStartDownload: (AppRelease, ReleaseAsset) -> Unit,
+    onCancelDownload: () -> Unit,
+    onInstallUpdate: (String) -> Unit,
+    currentVersion: String = MeloVersion.CURRENT,
+) {
+    Surface(
+        color = MeloColors.surface2.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MeloColors.border),
+        modifier = modifier.fillMaxWidth().animateContentSize(),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            UpdateVersionHeaderRow(
+                currentVersion = currentVersion,
+                canCheck = state !is UpdateState.Checking && state !is UpdateState.Downloading,
+                onCheckForUpdates = { onCheckForUpdates(updateChannel) },
+            )
+
+            SettingToggleRow(
+                title = "Buscar automáticamente",
+                subtitle = "Comprueba si hay nuevas versiones al abrir la app.",
+                checked = autoCheckUpdates,
+                onCheckedChange = onToggleAutoCheckUpdates,
+            )
+
+            SettingChoiceRow(
+                title = "Canal de actualización",
+                subtitle =
+                    if (updateChannel == UpdateChannel.NIGHTLY) {
+                        "Novedades continuas y correcciones automáticas de desarrollo."
+                    } else {
+                        "Versiones oficiales recomendadas y probadas."
+                    },
+            ) {
+                SegmentedControl(
+                    options = UpdateChannel.entries,
+                    selected = updateChannel,
+                    onSelect = { channel ->
+                        if (channel != updateChannel) {
+                            onUpdateChannelSelected(channel)
+                        }
+                    },
+                    label = { it.displayName },
+                )
+            }
+
+            UpdateStatusContent(
+                state = state,
+                updateChannel = updateChannel,
+                onCheckForUpdates = onCheckForUpdates,
+                onStartDownload = onStartDownload,
+                onCancelDownload = onCancelDownload,
+                onInstallUpdate = onInstallUpdate,
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpdateVersionHeaderRow(
+    currentVersion: String,
+    canCheck: Boolean,
+    onCheckForUpdates: () -> Unit,
+) {
+    val isCurrentNightly = currentVersion.contains("nightly", ignoreCase = true)
+    val tagColor =
+        if (isCurrentNightly) {
+            MaterialTheme.colorScheme.tertiary
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.SystemUpdate,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Column {
-                    Text(
-                        text = "Actualizaciones",
-                        style = MeloType.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MeloColors.textPrimary
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = "Versión instalada: v${MeloVersion.CURRENT}",
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.SystemUpdate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
                         )
-                        val isCurrentNightly =
-                            MeloVersion.CURRENT.contains("nightly", ignoreCase = true)
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = if (isCurrentNightly) {
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                            } else {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            }
-                        ) {
-                            Text(
-                                text = if (isCurrentNightly) "Nightly" else "Estable",
-                                style = MeloType.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                color = if (isCurrentNightly) {
-                                    MaterialTheme.colorScheme.tertiary
-                                } else {
-                                    MaterialTheme.colorScheme.primary
-                                },
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
                     }
                 }
-            }
-
-            if (state !is UpdateState.Checking && state !is UpdateState.Downloading) {
-                OutlinedButton(
-                    onClick = { viewModel.checkForUpdates(updateChannel) },
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, MeloColors.border),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                Text(
+                    text = "Actualizaciones",
+                    style = MeloType.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = tagColor.copy(alpha = 0.15f),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MeloColors.textPrimary
+                    Text(
+                        text = if (isCurrentNightly) "Nightly" else "Estable",
+                        style = MeloType.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = tagColor,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
-                    Spacer(Modifier.width(6.dp))
-                    Text("Buscar", style = MeloType.labelMedium, color = MeloColors.textPrimary)
                 }
             }
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Buscar automáticamente",
-                    style = MeloType.body,
-                    color = MeloColors.textPrimary
-                )
-                Text(
-                    text = "Comprueba si hay nuevas versiones al abrir la app",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
-                )
-            }
-            Switch(
-                checked = autoCheckUpdates,
-                onCheckedChange = onToggleAutoCheckUpdates,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                )
+            Text(
+                text = "Versión instalada: v$currentVersion",
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Canal de actualización",
-                    style = MeloType.body,
-                    color = MeloColors.textPrimary
+        if (canCheck) {
+            IconButton(
+                onClick = onCheckForUpdates,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Buscar actualizaciones",
+                    tint = MeloColors.textPrimary,
+                    modifier = Modifier.size(20.dp),
                 )
-                Text(
-                    text = if (updateChannel == UpdateChannel.NIGHTLY) {
-                        "Novedades continuas y correcciones automáticas de desarrollo"
-                    } else {
-                        "Versiones oficiales recomendadas y probadas"
-                    },
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                UpdateChannel.entries.forEach { channel ->
-                    val selected = channel == updateChannel
-                    FilterChip(
-                        selected = selected,
-                        onClick = {
-                            if (!selected) {
-                                onUpdateChannelSelected(channel)
-                                viewModel.checkForUpdates(channel)
-                            }
-                        },
-                        label = {
-                            Text(channel.displayName, style = MeloType.labelMedium)
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MeloColors.surface2,
-                            labelColor = MeloColors.textSecondary,
-                            selectedContainerColor =
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            selectedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = selected,
-                            borderColor = MeloColors.border,
-                            selectedBorderColor = MaterialTheme.colorScheme.primary,
-                            borderWidth = 0.5.dp,
-                            selectedBorderWidth = 1.dp
-                        )
-                    )
-                }
             }
         }
+    }
+}
 
-        when (val s = state) {
-            is UpdateState.Idle -> {
-                // Keep minimal
-            }
+@Composable
+private fun UpdateStatusContent(
+    state: UpdateState,
+    updateChannel: UpdateChannel,
+    onCheckForUpdates: (UpdateChannel) -> Unit,
+    onStartDownload: (AppRelease, ReleaseAsset) -> Unit,
+    onCancelDownload: () -> Unit,
+    onInstallUpdate: (String) -> Unit,
+) {
+    var showChangelog by remember { mutableStateOf(false) }
 
-            is UpdateState.Checking -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MeloColors.surface1,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Comprobando nuevas versiones...",
-                            style = MeloType.labelMedium,
-                            color = MeloColors.textSecondary
-                        )
-                    }
+    when (state) {
+        is UpdateState.Idle -> Unit
+
+        is UpdateState.Checking -> {
+            SettingsStatusBanner(
+                title = "Comprobando nuevas versiones...",
+                isLoading = true,
+                tone = StatusTone.NEUTRAL,
+            )
+        }
+
+        is UpdateState.UpToDate -> {
+            SettingsStatusBanner(
+                icon = Icons.Default.CheckCircle,
+                title = "¡Melo está actualizado!",
+                body = "v${state.currentVersion} • ${state.channel.displayName}",
+                tone = StatusTone.SUCCESS,
+            )
+        }
+
+        is UpdateState.UpdateAvailable -> {
+            UpdateAvailableBanner(
+                state = state,
+                showChangelog = showChangelog,
+                onToggleChangelog = { showChangelog = !showChangelog },
+                onStartDownload = onStartDownload,
+            )
+        }
+
+        is UpdateState.ManualUpdate -> {
+            val uriHandler = LocalUriHandler.current
+            val hint =
+                if (state.method == UpdateInstallMethod.PACKAGE_MANAGER) {
+                    "Melo se instaló desde un paquete del sistema: actualízalo con tu gestor."
+                } else {
+                    "Esta instalación no admite actualizaciones automáticas. Usa el enlace para descargarla."
                 }
-            }
-
-            is UpdateState.UpToDate -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MeloColors.surface1,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+            SettingsStatusBanner(
+                icon = Icons.Default.CloudDownload,
+                title = "¡Nueva versión disponible: v${state.release.version}!",
+                body = hint,
+                tone = StatusTone.PRIMARY,
+                actions = {
+                    Button(
+                        onClick = { uriHandler.openUri(state.release.htmlUrl) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                            imageVector = Icons.Default.CloudDownload,
                             contentDescription = null,
-                            tint = Color(0xFF34C759),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
-                        Text(
-                            text = "¡Melo está actualizado! (v${s.currentVersion} • ${s.channel.displayName})",
-                            style = MeloType.labelMedium,
-                            color = MeloColors.textPrimary
-                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Abrir página de descarga", fontWeight = FontWeight.SemiBold)
                     }
-                }
-            }
+                },
+            )
+        }
 
-            is UpdateState.UpdateAvailable -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                    border = BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                val releaseTitle = if (s.release.channel == UpdateChannel.NIGHTLY) {
-                                    "¡Nueva versión Nightly disponible: v${s.release.version}!"
-                                } else {
-                                    "¡Nueva versión disponible: v${s.release.version}!"
-                                }
-                                Text(
-                                    text = releaseTitle,
-                                    style = MeloType.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = s.targetAsset?.name ?: "Instalador de actualización",
-                                    style = MeloType.labelSmall,
-                                    color = MeloColors.textSecondary
-                                )
-                            }
-                        }
-
-                        if (s.release.releaseNotes.isNotBlank()) {
-                            OutlinedButton(
-                                onClick = { showChangelog = !showChangelog },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    if (showChangelog) "Ocultar novedades" else "Ver novedades",
-                                    style = MeloType.labelSmall
-                                )
-                            }
-
-                            AnimatedVisibility(visible = showChangelog) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MeloColors.surface1,
-                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
-                                ) {
-                                    Text(
-                                        text = s.release.releaseNotes,
-                                        style = MeloType.labelSmall,
-                                        color = MeloColors.textSecondary,
-                                        modifier = Modifier.padding(10.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        val targetAsset = s.targetAsset
-                        if (targetAsset != null) {
-                            Button(
-                                onClick = { viewModel.startDownload(s.release, targetAsset) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    Icons.Default.CloudDownload,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "Descargar e instalar actualización",
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            is UpdateState.ManualUpdate -> {
-                val uriHandler = LocalUriHandler.current
-                val hint =
-                    if (s.method == UpdateInstallMethod.PACKAGE_MANAGER) {
-                        "Melo se instaló desde un paquete del sistema: actualízalo con tu gestor."
-                    } else {
-                        "Esta instalación no admite actualizaciones automáticas. Usa el enlace para descargarla."
-                    }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            text = "¡Nueva versión disponible: v${s.release.version}!",
-                            style = MeloType.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = hint,
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary,
-                        )
-                        Button(
-                            onClick = { uriHandler.openUri(s.release.htmlUrl) },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(
-                                Icons.Default.CloudDownload,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Abrir página de descarga", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
-            }
-
-            is UpdateState.Downloading -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MeloColors.surface1,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Descargando actualización (v${s.release.version})...",
-                                style = MeloType.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MeloColors.textPrimary
-                            )
-                            Text(
-                                text = "${(s.progressFraction * 100).toInt()}%",
-                                style = MeloType.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        LinearProgressIndicator(
-                            progress = { s.progressFraction },
-                            modifier = Modifier.fillMaxWidth().height(6.dp)
+        is UpdateState.Downloading -> {
+            val percent = (state.progressFraction * 100).toInt()
+            SettingsStatusBanner(
+                isLoading = true,
+                title = "Descargando actualización v${state.release.version} ($percent%)",
+                body = "${formatMegabytes(state.bytesDownloaded)} / ${formatMegabytes(state.totalBytes)}",
+                tone = StatusTone.NEUTRAL,
+                extraContent = {
+                    LinearProgressIndicator(
+                        progress = { state.progressFraction },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
                                 .clip(RoundedCornerShape(3.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MeloColors.surface2
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${formatMegabytes(s.bytesDownloaded)} / ${formatMegabytes(s.totalBytes)}",
-                                style = MeloType.labelSmall,
-                                color = MeloColors.textSecondary
-                            )
-                            OutlinedButton(
-                                onClick = { viewModel.cancelDownload() },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    "Cancelar",
-                                    style = MeloType.labelSmall,
-                                    color = MeloColors.textMuted
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            is UpdateState.ReadyToInstall -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MeloColors.surface2,
+                    )
+                },
+                actions = {
+                    OutlinedButton(
+                        onClick = onCancelDownload,
+                        shape = RoundedCornerShape(10.dp),
                     ) {
                         Text(
-                            text = "¡Descarga completa!",
-                            style = MeloType.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = "Cancelar",
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textMuted,
                         )
-                        Text(
-                            text = "La nueva versión de Melo está lista para instalarse.",
-                            style = MeloType.body,
-                            color = MeloColors.textSecondary
-                        )
-                        Button(
-                            onClick = { viewModel.installUpdate(s.installerPath) },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Reiniciar y actualizar ahora", fontWeight = FontWeight.Bold)
-                        }
                     }
-                }
-            }
+                },
+            )
+        }
 
-            is UpdateState.Error -> {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFF453A).copy(alpha = 0.1f),
-                    border = BorderStroke(1.dp, Color(0xFFFF453A).copy(alpha = 0.3f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+        is UpdateState.ReadyToInstall -> {
+            SettingsStatusBanner(
+                icon = Icons.Default.CheckCircle,
+                title = "¡Descarga completa!",
+                body = "La nueva versión de Melo está lista para instalarse.",
+                tone = StatusTone.PRIMARY,
+                actions = {
+                    Button(
+                        onClick = { onInstallUpdate(state.installerPath) },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Error de actualización",
-                                style = MeloType.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFFF453A)
-                            )
-                            Text(
-                                text = s.message,
-                                style = MeloType.labelSmall,
-                                color = MeloColors.textSecondary
-                            )
-                        }
-                        if (s.canRetry) {
+                        Text("Reiniciar y actualizar ahora", fontWeight = FontWeight.Bold)
+                    }
+                },
+            )
+        }
+
+        is UpdateState.Error -> {
+            SettingsStatusBanner(
+                icon = Icons.Default.Info,
+                title = "Error de actualización",
+                body = state.message,
+                tone = StatusTone.ERROR,
+                actions =
+                    if (state.canRetry) {
+                        {
                             OutlinedButton(
-                                onClick = { viewModel.checkForUpdates(updateChannel) },
-                                shape = RoundedCornerShape(8.dp)
+                                onClick = { onCheckForUpdates(updateChannel) },
+                                shape = RoundedCornerShape(10.dp),
                             ) {
                                 Text("Reintentar", style = MeloType.labelSmall)
                             }
                         }
+                    } else {
+                        null
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpdateAvailableBanner(
+    state: UpdateState.UpdateAvailable,
+    showChangelog: Boolean,
+    onToggleChangelog: () -> Unit,
+    onStartDownload: (AppRelease, ReleaseAsset) -> Unit,
+) {
+    val releaseTitle =
+        if (state.release.channel == UpdateChannel.NIGHTLY) {
+            "¡Nueva versión Nightly disponible: v${state.release.version}!"
+        } else {
+            "¡Nueva versión disponible: v${state.release.version}!"
+        }
+    val hasNotes = state.release.releaseNotes.isNotBlank()
+
+    SettingsStatusBanner(
+        icon = Icons.Default.SystemUpdate,
+        title = releaseTitle,
+        body = state.targetAsset?.name ?: "Instalador de actualización",
+        tone = StatusTone.PRIMARY,
+        extraContent =
+            if (hasNotes) {
+                {
+                    AnimatedVisibility(visible = showChangelog) {
+                        Text(
+                            text = state.release.releaseNotes,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textSecondary,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MeloColors.surface1)
+                                    .padding(10.dp),
+                        )
                     }
                 }
+            } else {
+                null
+            },
+        actions = {
+            if (hasNotes) {
+                OutlinedButton(
+                    onClick = onToggleChangelog,
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = if (showChangelog) "Ocultar novedades" else "Ver novedades",
+                        style = MeloType.labelSmall,
+                    )
+                }
             }
-        }
+            val targetAsset = state.targetAsset
+            if (targetAsset != null) {
+                Button(
+                    onClick = { onStartDownload(state.release, targetAsset) },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudDownload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Descargar e instalar",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        },
+    )
+}
+
+@Preview(widthDp = 320, fontScale = 1.3f)
+@Composable
+fun PreviewUpdateSettings() {
+    MaterialTheme {
+        UpdateSettingsSectionContent(
+            currentVersion = "2.3.0-nightly.20261113.a1b2c3d4e5f6-universal",
+            state =
+                UpdateState.Downloading(
+                    release =
+                        AppRelease(
+                            version = "2.3.0-nightly.20261114.f6e5d4c3b2a1",
+                            tagName = "v2.3.0-nightly",
+                            name = "Melo Nightly",
+                            channel = UpdateChannel.NIGHTLY,
+                            htmlUrl = "https://github.com/adriianh/melo",
+                            releaseNotes = "",
+                            publishedAt = "2026-11-13",
+                            assets = emptyList(),
+                        ),
+                    targetAsset =
+                        ReleaseAsset(
+                            name = "melo-2.3.0-nightly.apk",
+                            downloadUrl = "https://github.com/adriianh/melo",
+                            sizeBytes = 20_000_000,
+                            platform = UpdatePlatform.ANDROID,
+                        ),
+                    bytesDownloaded = 12_000_000,
+                    totalBytes = 20_000_000,
+                    progressFraction = 0.6f,
+                ),
+            autoCheckUpdates = true,
+            updateChannel = UpdateChannel.NIGHTLY,
+            onToggleAutoCheckUpdates = {},
+            onUpdateChannelSelected = {},
+            onCheckForUpdates = {},
+            onStartDownload = { _, _ -> },
+            onCancelDownload = {},
+            onInstallUpdate = {},
+        )
     }
 }
 
