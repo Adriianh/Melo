@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -61,7 +62,7 @@ internal fun DiscordRpcSettingsSection(
     }
 }
 
-@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
 @Composable
 private fun DiscordRpcAccountRow(
     token: String?,
@@ -70,6 +71,24 @@ private fun DiscordRpcAccountRow(
     onOpenLogin: () -> Unit,
 ) {
     val isLinked = !token.isNullOrBlank()
+    var showUnlinkConfirm by rememberSaveable { mutableStateOf(false) }
+
+    if (showUnlinkConfirm) {
+        SettingsConfirmDialog(
+            title = "Desvincular cuenta de Discord",
+            message =
+                "¿Estás seguro de que deseas desvincular tu cuenta de Discord? " +
+                    "Se eliminará el token de sesión guardado y dejará de mostrarse tu actividad.",
+            confirmText = "Desvincular",
+            icon = Icons.Default.LinkOff,
+            onConfirm = {
+                showUnlinkConfirm = false
+                onUnlink()
+            },
+            onDismiss = { showUnlinkConfirm = false },
+        )
+    }
+
     SettingActionRow(
         title = "Estado de la cuenta",
         subtitle =
@@ -92,7 +111,7 @@ private fun DiscordRpcAccountRow(
             )
             SettingActionButton(
                 text = "Desvincular",
-                onClick = onUnlink,
+                onClick = { showUnlinkConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.LinkOff,
                 enabled = enabled,

@@ -9,6 +9,7 @@
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -718,5 +720,82 @@ internal fun MeloSettingsSwitch(
                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                 checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
             ),
+    )
+}
+
+@Composable
+internal fun SettingsConfirmDialog(
+    title: String,
+    message: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    icon: ImageVector = Icons.Default.DeleteOutline,
+    dismissText: String = "Cancelar",
+) {
+    val errorColor = MaterialTheme.colorScheme.error
+    val dialogShape = RoundedCornerShape(24.dp)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = dialogShape,
+        containerColor = MeloColors.surface1,
+        titleContentColor = MeloColors.textPrimary,
+        textContentColor = MeloColors.textSecondary,
+        modifier =
+            Modifier.border(
+                BorderStroke(1.dp, MeloColors.borderStrong),
+                dialogShape,
+            ),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(
+                    color = errorColor.copy(alpha = 0.14f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, errorColor.copy(alpha = 0.35f)),
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = errorColor,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = title,
+                    style = MeloType.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MeloColors.textPrimary,
+                )
+            }
+        },
+        text = {
+            Text(
+                text = message,
+                style = MeloType.body,
+                color = MeloColors.textSecondary,
+            )
+        },
+        confirmButton = {
+            SettingActionButton(
+                text = confirmText,
+                onClick = onConfirm,
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = icon,
+            )
+        },
+        dismissButton = {
+            SettingActionButton(
+                text = dismissText,
+                onClick = onDismiss,
+                emphasis = SettingActionEmphasis.SECONDARY,
+            )
+        },
     )
 }

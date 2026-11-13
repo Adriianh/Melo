@@ -452,13 +452,31 @@ internal fun DownloadsSettingsSection(
             )
         }
 
+        var showClearCacheConfirm by rememberSaveable { mutableStateOf(false) }
+
+        if (showClearCacheConfirm) {
+            SettingsConfirmDialog(
+                title = "Limpiar caché de audio",
+                message =
+                    "¿Estás seguro de que deseas eliminar las pistas almacenadas temporalmente en caché? " +
+                        "Tus canciones descargadas y archivos locales no se verán afectados.",
+                confirmText = "Limpiar caché",
+                icon = Icons.Default.DeleteSweep,
+                onConfirm = {
+                    showClearCacheConfirm = false
+                    actions.onClearCache()
+                },
+                onDismiss = { showClearCacheConfirm = false },
+            )
+        }
+
         SettingActionRow(
             title = "Limpiar caché de audio",
             subtitle = "Libera espacio eliminando las pistas cacheadas temporalmente.",
         ) {
             SettingActionButton(
                 text = "Limpiar",
-                onClick = actions.onClearCache,
+                onClick = { showClearCacheConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.DeleteSweep,
                 modifier = Modifier.actionWidth(),
@@ -542,6 +560,25 @@ private fun AccountSessionHeader(
     onLogout: () -> Unit,
     onOpenLogin: () -> Unit,
 ) {
+    var showLogoutConfirm by rememberSaveable { mutableStateOf(false) }
+
+    if (showLogoutConfirm) {
+        SettingsConfirmDialog(
+            title = "Cerrar sesión",
+            message =
+                "¿Estás seguro de que deseas cerrar tu sesión de YouTube Music? " +
+                    "Dejarás de sincronizar tu biblioteca, listas y recomendaciones " +
+                    "hasta que vuelvas a iniciar sesión.",
+            confirmText = "Cerrar sesión",
+            icon = Icons.AutoMirrored.Filled.Logout,
+            onConfirm = {
+                showLogoutConfirm = false
+                onLogout()
+            },
+            onDismiss = { showLogoutConfirm = false },
+        )
+    }
+
     SettingActionRow(
         title = if (isLoggedIn) "Sesión iniciada con YouTube Music" else "Sin conexión de cuenta",
         subtitle =
@@ -554,7 +591,7 @@ private fun AccountSessionHeader(
         if (isLoggedIn) {
             SettingActionButton(
                 text = "Cerrar sesión",
-                onClick = onLogout,
+                onClick = { showLogoutConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.AutoMirrored.Filled.Logout,
                 modifier = Modifier.actionWidth(),

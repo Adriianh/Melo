@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -201,5 +203,22 @@ internal fun PreviewSettingsExpandedDialog() {
                 updateState = previewUpdateAvailableState(),
             )
         }
+    }
+}
+
+@Preview(widthDp = 360)
+@Composable
+internal fun PreviewSettingsConfirmDialog() {
+    MaterialTheme {
+        SettingsConfirmDialog(
+            title = "Limpiar caché de audio",
+            message =
+                "¿Estás seguro de que deseas eliminar las pistas almacenadas temporalmente en caché? " +
+                    "Tus canciones descargadas y archivos locales no se verán afectados.",
+            confirmText = "Limpiar caché",
+            icon = Icons.Default.DeleteSweep,
+            onConfirm = {},
+            onDismiss = {},
+        )
     }
 }
