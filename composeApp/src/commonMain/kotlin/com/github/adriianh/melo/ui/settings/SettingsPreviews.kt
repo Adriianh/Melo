@@ -1,4 +1,4 @@
-@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@file:Suppress("FunctionNaming", "TooManyFunctions", "ktlint:standard:function-naming")
 
 package com.github.adriianh.melo.ui.settings
 
@@ -11,12 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
+import com.github.adriianh.core.domain.model.ThemePreset
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
@@ -37,21 +38,21 @@ private fun previewSettingsActions() =
 
 private fun previewUpdateAvailableState() =
     UpdateState.UpdateAvailable(
-        currentVersion = "2.2.1",
+        currentVersion = "2.2.1-nightly.20261110.1a2b3c4d5e6f",
         release =
             AppRelease(
-                version = "2.3.0-nightly.20261113.9f8e7d6c",
+                version = "2.3.0-nightly.20261113.9f8e7d6c5b4a-universal",
                 tagName = "v2.3.0-nightly",
                 name = "Melo 2.3.0 Nightly",
                 channel = UpdateChannel.NIGHTLY,
                 htmlUrl = "https://github.com/adriianh/melo",
-                releaseNotes = "Mejoras de diseño adaptativo en Ajustes.",
+                releaseNotes = "Mejoras de diseño adaptativo y accesibilidad en Ajustes.",
                 publishedAt = "2026-11-13",
                 assets = emptyList(),
             ),
         targetAsset =
             ReleaseAsset(
-                name = "melo-2.3.0-nightly-android.apk",
+                name = "melo-2.3.0-nightly-android-universal.apk",
                 downloadUrl = "https://github.com/adriianh/melo",
                 sizeBytes = 24_500_000,
                 platform = UpdatePlatform.ANDROID,
@@ -60,7 +61,7 @@ private fun previewUpdateAvailableState() =
 
 @Preview(widthDp = 320, fontScale = 1.3f)
 @Composable
-internal fun PreviewSettingsCategoryListCompact() {
+internal fun PreviewAppearanceDynamicColorOff() {
     MaterialTheme {
         Box(
             modifier =
@@ -69,12 +70,39 @@ internal fun PreviewSettingsCategoryListCompact() {
                     .background(MeloColors.surface1)
                     .padding(16.dp),
         ) {
-            SettingsCategoryList(
-                categories = SettingsCategory.entries,
-                settings = Settings(themeMode = ThemeMode.DARK, dynamicColor = true),
-                isLoggedIn = true,
-                updateState = previewUpdateAvailableState(),
-                onSelectCategory = {},
+            AppearanceSettingsSection(
+                settings =
+                    Settings(
+                        themeMode = ThemeMode.DARK,
+                        dynamicColor = false,
+                        theme = ThemePreset.CATPPUCCIN_MOCHA,
+                    ),
+                actions = previewSettingsActions(),
+            )
+        }
+    }
+}
+
+@Preview(widthDp = 320, fontScale = 1.3f)
+@Composable
+internal fun PreviewAccountLoggedOut() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            AccountSettingsSection(
+                settings = Settings(syncHistoryToYouTube = true),
+                isLoggedIn = false,
+                profiles = emptyList(),
+                activePageId = null,
+                isLoadingProfiles = false,
+                isSwitchingProfile = false,
+                profilesError = null,
+                actions = previewSettingsActions(),
             )
         }
     }
@@ -92,7 +120,7 @@ internal fun PreviewSettingsUpdatesLongNightly() {
                     .padding(16.dp),
         ) {
             UpdateSettingsSectionContent(
-                currentVersion = "2.3.0-nightly.20261113.a1b2c3d4e5f6g7h8-linux-x86_64",
+                currentVersion = "2.2.1-nightly.20261110.1a2b3c4d5e6f-linux-x86_64",
                 state = previewUpdateAvailableState(),
                 autoCheckUpdates = true,
                 updateChannel = UpdateChannel.NIGHTLY,
@@ -109,8 +137,13 @@ internal fun PreviewSettingsUpdatesLongNightly() {
 
 @Preview(widthDp = 320, fontScale = 1.3f)
 @Composable
-internal fun PreviewSettingsDownloadsAndOptionGrids() {
-    val threeOptions = listOf("MP3", "OPUS", "FLAC")
+internal fun PreviewLocalFoldersStates() {
+    val samplePaths =
+        listOf(
+            "/storage/emulated/0/Music/Colección FLAC sin pérdida",
+            "/storage/emulated/0/Download/Melo Offline Tracks",
+            "/mnt/media_rw/sdcard1/Audio/Álbumes Completos 2026",
+        )
     MaterialTheme {
         Column(
             modifier =
@@ -120,41 +153,42 @@ internal fun PreviewSettingsDownloadsAndOptionGrids() {
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SettingOptionGrid(
-                options = threeOptions,
-                isSelected = { it == "OPUS" },
-                onSelect = {},
-                title = { it },
-                hint = { ".${it.lowercase()}" },
-            )
-            SettingOptionGrid(
-                options = AudioQuality.entries,
-                isSelected = { it == AudioQuality.HIGH },
-                onSelect = {},
-                title = { it.uiTitle() },
-                hint = { it.uiHint() },
-            )
-            DownloadsSettingsSection(
-                settings = Settings(),
+            LocalFoldersSection(
+                settings = Settings(localLibraryPaths = emptyList()),
                 actions = previewSettingsActions(),
+            )
+            LocalFoldersSection(
+                settings = Settings(localLibraryPaths = samplePaths),
+                actions = previewSettingsActions(),
+            )
+            LocalFoldersSection(
+                settings = Settings(localLibraryPaths = samplePaths.take(1)),
+                actions = previewSettingsActions(),
+                initialManualExpanded = true,
             )
         }
     }
 }
 
-@Preview(widthDp = 840, heightDp = 680)
+@Preview(widthDp = 880, heightDp = 720)
 @Composable
-internal fun PreviewSettingsExpanded() {
+internal fun PreviewSettingsExpandedDialog() {
     MaterialTheme {
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(MeloColors.surface1)
-                    .padding(24.dp),
+                    .background(MeloColors.surface0)
+                    .padding(16.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            SettingsContent(
-                settings = Settings(themeMode = ThemeMode.DARK, dynamicColor = false),
+            SettingsDialogSurface(
+                settings =
+                    Settings(
+                        themeMode = ThemeMode.DARK,
+                        dynamicColor = false,
+                        theme = ThemePreset.CATPPUCCIN_MOCHA,
+                    ),
                 isLoggedIn = true,
                 profiles = emptyList(),
                 activePageId = null,
@@ -162,6 +196,7 @@ internal fun PreviewSettingsExpanded() {
                 isSwitchingProfile = false,
                 profilesError = null,
                 actions = previewSettingsActions(),
+                onDismiss = {},
                 initialCategory = SettingsCategory.APPEARANCE,
                 updateState = previewUpdateAvailableState(),
             )
