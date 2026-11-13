@@ -1,17 +1,16 @@
 package com.github.adriianh.melo.ui.settings
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.melo.util.PlatformType
@@ -83,27 +82,31 @@ private fun DiscordRpcAccountRow(
         disabledNote = "Activa Discord Rich Presence para vincular",
     ) {
         if (isLinked) {
-            TextButton(
+            SettingActionButton(
+                text = "Cambiar",
                 onClick = onOpenLogin,
+                emphasis = SettingActionEmphasis.SECONDARY,
+                icon = Icons.Default.SwapHoriz,
                 enabled = enabled,
-            ) {
-                Text("Cambiar")
-            }
-            OutlinedButton(
+                modifier = Modifier.actionWidth(minInlineWidth = 128.dp),
+            )
+            SettingActionButton(
+                text = "Desvincular",
                 onClick = onUnlink,
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = Icons.Default.LinkOff,
                 enabled = enabled,
-                shape = RoundedCornerShape(10.dp),
-            ) {
-                Text("Desvincular")
-            }
+                modifier = Modifier.actionWidth(minInlineWidth = 140.dp),
+            )
         } else {
-            Button(
+            SettingActionButton(
+                text = "Vincular",
                 onClick = onOpenLogin,
+                emphasis = SettingActionEmphasis.PRIMARY,
+                icon = Icons.Default.Link,
                 enabled = enabled,
-                shape = RoundedCornerShape(10.dp),
-            ) {
-                Text("Vincular")
-            }
+                modifier = Modifier.actionWidth(),
+            )
         }
     }
 }

@@ -1,4 +1,10 @@
-@file:Suppress("FunctionNaming", "LongParameterList", "TooManyFunctions", "ktlint:standard:function-naming")
+@file:Suppress(
+    "FunctionNaming",
+    "LongMethod",
+    "LongParameterList",
+    "TooManyFunctions",
+    "ktlint:standard:function-naming",
+)
 
 package com.github.adriianh.melo.ui.settings
 
@@ -8,22 +14,34 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -37,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -44,13 +63,135 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 private const val DISABLED_ALPHA = 0.4f
-private val ACTION_ROW_INLINE_BREAKPOINT = 360.dp
+private val ACTION_ROW_INLINE_BREAKPOINT = 480.dp
 
 internal enum class StatusTone {
     NEUTRAL,
     PRIMARY,
     SUCCESS,
     ERROR,
+}
+
+internal enum class SettingActionEmphasis {
+    PRIMARY,
+    DESTRUCTIVE,
+    SECONDARY,
+}
+
+internal interface SettingActionRowScope : RowScope {
+    val isStacked: Boolean
+
+    fun Modifier.actionWidth(minInlineWidth: Dp = 160.dp): Modifier
+}
+
+private class SettingActionRowScopeImpl(
+    private val rowScope: RowScope,
+    override val isStacked: Boolean,
+) : SettingActionRowScope,
+    RowScope by rowScope {
+    override fun Modifier.actionWidth(minInlineWidth: Dp): Modifier =
+        if (isStacked) {
+            with(rowScope) { this@actionWidth.weight(1f) }
+        } else {
+            this.widthIn(min = minInlineWidth)
+        }
+}
+
+@Composable
+internal fun SettingActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    emphasis: SettingActionEmphasis = SettingActionEmphasis.PRIMARY,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+) {
+    val shape = RoundedCornerShape(12.dp)
+    val buttonModifier = modifier.heightIn(min = 48.dp)
+    val contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+
+    when (emphasis) {
+        SettingActionEmphasis.PRIMARY -> {
+            Button(
+                onClick = onClick,
+                enabled = enabled,
+                shape = shape,
+                contentPadding = contentPadding,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                modifier = buttonModifier,
+            ) {
+                SettingActionButtonContent(text = text, icon = icon, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        SettingActionEmphasis.DESTRUCTIVE -> {
+            val errorColor = MaterialTheme.colorScheme.error
+            OutlinedButton(
+                onClick = onClick,
+                enabled = enabled,
+                shape = shape,
+                contentPadding = contentPadding,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = errorColor.copy(alpha = 0.12f),
+                        contentColor = errorColor,
+                    ),
+                border = BorderStroke(1.dp, errorColor.copy(alpha = 0.55f)),
+                modifier = buttonModifier,
+            ) {
+                SettingActionButtonContent(
+                    text = text,
+                    icon = icon ?: Icons.Default.DeleteOutline,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+
+        SettingActionEmphasis.SECONDARY -> {
+            OutlinedButton(
+                onClick = onClick,
+                enabled = enabled,
+                shape = shape,
+                contentPadding = contentPadding,
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MeloColors.surface2.copy(alpha = 0.5f),
+                        contentColor = MeloColors.textPrimary,
+                    ),
+                border = BorderStroke(1.dp, MeloColors.borderStrong),
+                modifier = buttonModifier,
+            ) {
+                SettingActionButtonContent(text = text, icon = icon, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingActionButtonContent(
+    text: String,
+    icon: ImageVector?,
+    fontWeight: FontWeight,
+) {
+    if (icon != null) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+    }
+    Text(
+        text = text,
+        style = MeloType.labelMedium,
+        fontWeight = fontWeight,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -177,7 +318,7 @@ internal fun SettingActionRow(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     disabledNote: String? = null,
-    actions: @Composable RowScope.() -> Unit,
+    actions: @Composable SettingActionRowScope.() -> Unit,
 ) {
     BoxWithConstraints(
         modifier =
@@ -185,7 +326,8 @@ internal fun SettingActionRow(
                 .fillMaxWidth()
                 .alpha(if (enabled) 1f else DISABLED_ALPHA),
     ) {
-        if (maxWidth >= ACTION_ROW_INLINE_BREAKPOINT) {
+        val isStacked = maxWidth < ACTION_ROW_INLINE_BREAKPOINT
+        if (!isStacked) {
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -200,13 +342,14 @@ internal fun SettingActionRow(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    content = actions,
-                )
+                ) {
+                    SettingActionRowScopeImpl(this, isStacked = false).actions()
+                }
             }
         } else {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(modifier = Modifier.fillMaxWidth()) {
                     SettingRowText(
@@ -218,10 +361,11 @@ internal fun SettingActionRow(
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    content = actions,
-                )
+                ) {
+                    SettingActionRowScopeImpl(this, isStacked = true).actions()
+                }
             }
         }
     }
@@ -250,12 +394,24 @@ private fun SettingRowText(
             color = MeloColors.textSecondary,
         )
         if (!disabledNote.isNullOrBlank()) {
-            Text(
-                text = disabledNote,
-                style = MeloType.labelSmall,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(top = 2.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = MeloColors.textSecondary,
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    text = disabledNote,
+                    style = MeloType.labelSmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MeloColors.textSecondary,
+                )
+            }
         }
     }
 }
@@ -268,7 +424,7 @@ internal fun <T> SettingOptionGrid(
     title: (T) -> String,
     modifier: Modifier = Modifier,
     hint: (T) -> String? = { null },
-    minCellWidth: Dp = 96.dp,
+    minCellWidth: Dp = 104.dp,
     enabled: Boolean = true,
 ) {
     if (options.isEmpty()) return
@@ -291,7 +447,10 @@ internal fun <T> SettingOptionGrid(
         ) {
             options.chunked(cols).forEach { rowOptions ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(gap),
                 ) {
                     rowOptions.forEach { option ->
@@ -302,11 +461,11 @@ internal fun <T> SettingOptionGrid(
                             selected = selected,
                             enabled = enabled,
                             onClick = { onSelect(option) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                         )
                     }
                     repeat(cols - rowOptions.size) {
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
@@ -338,8 +497,8 @@ private fun SettingOptionCell(
         modifier = cellModifier,
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-            contentAlignment = Alignment.CenterStart,
+            modifier = Modifier.fillMaxSize().heightIn(min = 56.dp),
+            contentAlignment = Alignment.Center,
         ) {
             SettingOptionCellText(
                 title = title,
@@ -373,15 +532,17 @@ private fun SettingOptionCellText(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 22.dp, top = 8.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
     ) {
         Text(
             text = title,
             style = MeloType.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             color = if (selected) accent else MeloColors.textPrimary,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         if (!hint.isNullOrBlank()) {
@@ -389,6 +550,7 @@ private fun SettingOptionCellText(
                 text = hint,
                 style = MeloType.labelSmall,
                 color = if (selected) accent.copy(alpha = 0.85f) else MeloColors.textSecondary,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -448,6 +610,7 @@ internal fun SettingsStatusBanner(
     isLoading: Boolean = false,
     body: String? = null,
     tone: StatusTone = StatusTone.NEUTRAL,
+    titleBadge: (@Composable () -> Unit)? = null,
     extraContent: (@Composable ColumnScope.() -> Unit)? = null,
     actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
@@ -469,6 +632,7 @@ internal fun SettingsStatusBanner(
                 icon = icon,
                 isLoading = isLoading,
                 palette = palette,
+                titleBadge = titleBadge,
             )
             extraContent?.invoke(this)
             if (actions != null) {
@@ -490,6 +654,7 @@ private fun SettingsStatusBannerHeader(
     icon: ImageVector?,
     isLoading: Boolean,
     palette: StatusBannerPalette,
+    titleBadge: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -514,12 +679,19 @@ private fun SettingsStatusBannerHeader(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Text(
-                text = title,
-                style = MeloType.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = palette.titleColor,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MeloType.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.titleColor,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                titleBadge?.invoke()
+            }
             if (!body.isNullOrBlank()) {
                 Text(
                     text = body,
