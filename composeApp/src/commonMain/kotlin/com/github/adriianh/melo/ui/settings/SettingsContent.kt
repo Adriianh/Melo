@@ -128,7 +128,10 @@ internal fun SettingsContent(
                         Modifier
                             .weight(1f)
                             .fillMaxHeight()
-                            .verticalScroll(detailScrollState),
+                            .verticalScroll(
+                                state = detailScrollState,
+                                enabled = detailScrollState.maxValue > 0,
+                            ),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     SettingsCategoryDetailPane(
@@ -182,7 +185,10 @@ internal fun SettingsContent(
                                 Modifier
                                     .weight(1f)
                                     .fillMaxWidth()
-                                    .verticalScroll(detailScrollState),
+                                    .verticalScroll(
+                                        state = detailScrollState,
+                                        enabled = detailScrollState.maxValue > 0,
+                                    ),
                             verticalArrangement = Arrangement.spacedBy(20.dp),
                         ) {
                             SettingsCategoryDetailPane(

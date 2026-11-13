@@ -176,7 +176,10 @@ internal fun SettingsCategoryList(
         modifier =
             modifier
                 .fillMaxWidth()
-                .verticalScroll(scrollState),
+                .verticalScroll(
+                    state = scrollState,
+                    enabled = scrollState.maxValue > 0,
+                ),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         categories.forEach { category ->
@@ -301,7 +304,10 @@ internal fun SettingsSidebar(
                 .width(216.dp)
                 .fillMaxHeight()
                 .selectableGroup()
-                .verticalScroll(scrollState),
+                .verticalScroll(
+                    state = scrollState,
+                    enabled = scrollState.maxValue > 0,
+                ),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         categories.forEach { category ->

@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -32,11 +33,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -49,6 +55,30 @@ import com.github.adriianh.melo.util.MeloType
 private val MODAL_DIALOG_MIN_WIDTH = 600.dp
 private val MODAL_DIALOG_MIN_HEIGHT = 480.dp
 private val MODAL_DIALOG_MAX_HEIGHT = 680.dp
+
+private val SheetContentNestedScrollConnection =
+    object : NestedScrollConnection {
+        override fun onPostScroll(
+            consumed: Offset,
+            available: Offset,
+            source: NestedScrollSource,
+        ): Offset =
+            if (source == NestedScrollSource.UserInput && available.y < 0f) {
+                Offset(0f, available.y)
+            } else {
+                Offset.Zero
+            }
+
+        override suspend fun onPostFling(
+            consumed: Velocity,
+            available: Velocity,
+        ): Velocity =
+            if (available.y < 0f) {
+                Velocity(0f, available.y)
+            } else {
+                Velocity.Zero
+            }
+    }
 
 @Composable
 fun SettingsModal(
@@ -116,6 +146,7 @@ fun SettingsSheet(
         sheetState = sheetState,
         containerColor = MeloColors.surface1,
         scrimColor = Color.Black.copy(alpha = 0.5f),
+        contentWindowInsets = { WindowInsets.navigationBars },
         dragHandle = {
             Box(
                 Modifier
@@ -140,7 +171,7 @@ fun SettingsSheet(
                 Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.9f)
-                    .navigationBarsPadding()
+                    .nestedScroll(SheetContentNestedScrollConnection)
                     .padding(horizontal = 20.dp, vertical = 8.dp),
         )
     }
