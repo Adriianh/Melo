@@ -33,14 +33,68 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
+import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+
+private val MODAL_DIALOG_MIN_WIDTH = 600.dp
+private val MODAL_DIALOG_MIN_HEIGHT = 480.dp
+private val MODAL_DIALOG_MAX_HEIGHT = 680.dp
+
+@Composable
+fun SettingsModal(
+    settings: Settings,
+    isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
+    actions: SettingsActions,
+    onDismiss: () -> Unit,
+) {
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val windowWidth = with(density) { windowInfo.containerSize.width.toDp() }
+    val windowHeight = with(density) { windowInfo.containerSize.height.toDp() }
+
+    if (windowWidth >= MODAL_DIALOG_MIN_WIDTH && windowHeight >= MODAL_DIALOG_MIN_HEIGHT) {
+        val dialogHeight = minOf(windowHeight * 0.85f, MODAL_DIALOG_MAX_HEIGHT)
+        SettingsDialog(
+            settings = settings,
+            isLoggedIn = isLoggedIn,
+            profiles = profiles,
+            activePageId = activePageId,
+            isLoadingProfiles = isLoadingProfiles,
+            isSwitchingProfile = isSwitchingProfile,
+            profilesError = profilesError,
+            actions = actions,
+            onDismiss = onDismiss,
+            dialogHeight = dialogHeight,
+        )
+    } else {
+        SettingsSheet(
+            settings = settings,
+            isLoggedIn = isLoggedIn,
+            profiles = profiles,
+            activePageId = activePageId,
+            isLoadingProfiles = isLoadingProfiles,
+            isSwitchingProfile = isSwitchingProfile,
+            profilesError = profilesError,
+            actions = actions,
+            onDismiss = onDismiss,
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,38 +157,70 @@ fun SettingsDialog(
     profilesError: String?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
+    dialogHeight: Dp = MODAL_DIALOG_MAX_HEIGHT,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier =
-                Modifier
-                    .fillMaxWidth(0.9f)
-                    .widthIn(max = 860.dp)
-                    .height(680.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MeloColors.surface1,
-            border = BorderStroke(1.dp, MeloColors.border),
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                SettingsDialogHeader(onDismiss = onDismiss)
+        SettingsDialogSurface(
+            settings = settings,
+            isLoggedIn = isLoggedIn,
+            profiles = profiles,
+            activePageId = activePageId,
+            isLoadingProfiles = isLoadingProfiles,
+            isSwitchingProfile = isSwitchingProfile,
+            profilesError = profilesError,
+            actions = actions,
+            onDismiss = onDismiss,
+            dialogHeight = dialogHeight,
+        )
+    }
+}
 
-                Spacer(modifier = Modifier.height(16.dp))
+@Composable
+internal fun SettingsDialogSurface(
+    settings: Settings,
+    isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
+    actions: SettingsActions,
+    onDismiss: () -> Unit,
+    dialogHeight: Dp = MODAL_DIALOG_MAX_HEIGHT,
+    initialCategory: SettingsCategory? = null,
+    updateState: UpdateState? = null,
+) {
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth(0.9f)
+                .widthIn(max = 860.dp)
+                .height(dialogHeight),
+        shape = RoundedCornerShape(24.dp),
+        color = MeloColors.surface1,
+        border = BorderStroke(1.dp, MeloColors.border),
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            SettingsDialogHeader(onDismiss = onDismiss)
 
-                SettingsContent(
-                    settings = settings,
-                    isLoggedIn = isLoggedIn,
-                    profiles = profiles,
-                    activePageId = activePageId,
-                    isLoadingProfiles = isLoadingProfiles,
-                    isSwitchingProfile = isSwitchingProfile,
-                    profilesError = profilesError,
-                    actions = actions,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsContent(
+                settings = settings,
+                isLoggedIn = isLoggedIn,
+                profiles = profiles,
+                activePageId = activePageId,
+                isLoadingProfiles = isLoadingProfiles,
+                isSwitchingProfile = isSwitchingProfile,
+                profilesError = profilesError,
+                actions = actions,
+                modifier = Modifier.weight(1f),
+                initialCategory = initialCategory,
+                updateState = updateState,
+            )
         }
     }
 }
