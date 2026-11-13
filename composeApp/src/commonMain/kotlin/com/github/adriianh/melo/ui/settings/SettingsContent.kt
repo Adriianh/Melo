@@ -9,7 +9,6 @@
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,22 +23,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -460,20 +456,13 @@ internal fun DownloadsSettingsSection(
             title = "Limpiar caché de audio",
             subtitle = "Libera espacio eliminando las pistas cacheadas temporalmente.",
         ) {
-            OutlinedButton(
+            SettingActionButton(
+                text = "Limpiar",
                 onClick = actions.onClearCache,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteSweep,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Limpiar", style = MeloType.labelMedium)
-            }
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = Icons.Default.DeleteSweep,
+                modifier = Modifier.actionWidth(),
+            )
         }
     }
 }
@@ -482,6 +471,7 @@ internal fun DownloadsSettingsSection(
 internal fun LocalFoldersSection(
     settings: Settings,
     actions: SettingsActions,
+    initialManualExpanded: Boolean = false,
 ) {
     SettingsGroupCard(
         title = "Carpetas de música local",
@@ -497,6 +487,7 @@ internal fun LocalFoldersSection(
             configuredPaths = settings.localLibraryPaths,
             onAddPath = actions.onAddLocalPath,
             onRemovePath = actions.onRemoveLocalPath,
+            initialManualExpanded = initialManualExpanded,
         )
     }
 }
@@ -561,20 +552,21 @@ private fun AccountSessionHeader(
             },
     ) {
         if (isLoggedIn) {
-            OutlinedButton(
+            SettingActionButton(
+                text = "Cerrar sesión",
                 onClick = onLogout,
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Cerrar sesión")
-            }
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = Icons.AutoMirrored.Filled.Logout,
+                modifier = Modifier.actionWidth(),
+            )
         } else {
-            Button(
+            SettingActionButton(
+                text = "Iniciar sesión",
                 onClick = onOpenLogin,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Iniciar sesión")
-            }
+                emphasis = SettingActionEmphasis.PRIMARY,
+                icon = Icons.AutoMirrored.Filled.Login,
+                modifier = Modifier.actionWidth(),
+            )
         }
     }
 }
