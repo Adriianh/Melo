@@ -39,6 +39,16 @@ internal fun DiscordRpcSettingsSection(
         title = "Discord Rich Presence",
         icon = Icons.Default.Share,
     ) {
+        val isLinked = !settings.discordRpcToken.isNullOrBlank()
+
+        if (platformType == PlatformType.ANDROID) {
+            DiscordRpcAccountRow(
+                token = settings.discordRpcToken,
+                onUnlink = { actions.onDiscordTokenChanged(null) },
+                onOpenLogin = { showDiscordLoginDialog = true },
+            )
+        }
+
         SettingToggleRow(
             title = "Mostrar actividad en Discord",
             subtitle =
@@ -49,16 +59,9 @@ internal fun DiscordRpcSettingsSection(
                 },
             checked = settings.discordRpcEnabled,
             onCheckedChange = actions.onDiscordRpcToggle,
+            enabled = platformType != PlatformType.ANDROID || isLinked,
+            disabledNote = "Vincula tu cuenta para activarlo",
         )
-
-        if (platformType == PlatformType.ANDROID) {
-            DiscordRpcAccountRow(
-                token = settings.discordRpcToken,
-                enabled = settings.discordRpcEnabled,
-                onUnlink = { actions.onDiscordTokenChanged(null) },
-                onOpenLogin = { showDiscordLoginDialog = true },
-            )
-        }
     }
 }
 
@@ -66,7 +69,6 @@ internal fun DiscordRpcSettingsSection(
 @Composable
 private fun DiscordRpcAccountRow(
     token: String?,
-    enabled: Boolean,
     onUnlink: () -> Unit,
     onOpenLogin: () -> Unit,
 ) {
@@ -97,8 +99,6 @@ private fun DiscordRpcAccountRow(
             } else {
                 "Requiere inicio de sesión para conectar con el Gateway de Discord."
             },
-        enabled = enabled,
-        disabledNote = "Activa Discord Rich Presence para vincular",
     ) {
         if (isLinked) {
             SettingActionButton(
@@ -106,7 +106,6 @@ private fun DiscordRpcAccountRow(
                 onClick = onOpenLogin,
                 emphasis = SettingActionEmphasis.SECONDARY,
                 icon = Icons.Default.SwapHoriz,
-                enabled = enabled,
                 modifier = Modifier.actionWidth(minInlineWidth = 128.dp),
             )
             SettingActionButton(
@@ -114,7 +113,6 @@ private fun DiscordRpcAccountRow(
                 onClick = { showUnlinkConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.LinkOff,
-                enabled = enabled,
                 modifier = Modifier.actionWidth(minInlineWidth = 140.dp),
             )
         } else {
@@ -123,7 +121,6 @@ private fun DiscordRpcAccountRow(
                 onClick = onOpenLogin,
                 emphasis = SettingActionEmphasis.PRIMARY,
                 icon = Icons.Default.Link,
-                enabled = enabled,
                 modifier = Modifier.actionWidth(),
             )
         }
