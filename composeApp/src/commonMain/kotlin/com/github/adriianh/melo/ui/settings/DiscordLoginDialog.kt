@@ -154,7 +154,7 @@ private fun DiscordLoginDialogTitle(
         if (isShowingInAppBrowser) {
             IconButton(
                 onClick = onBackClick,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,

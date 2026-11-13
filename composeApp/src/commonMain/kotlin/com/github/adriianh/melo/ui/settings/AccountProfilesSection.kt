@@ -2,7 +2,6 @@ package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,9 +9,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,7 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -50,42 +52,33 @@ internal fun AccountProfilesList(
     onRefresh: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        SettingActionRow(
+            title = "Canales de la cuenta",
+            subtitle = "Cambia el canal activo para sincronizar su biblioteca, likes y playlists.",
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Canales de la cuenta",
-                    style = MeloType.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MeloColors.textPrimary,
-                )
-                Text(
-                    text = "Cambia el canal activo para sincronizar su biblioteca, likes y playlists.",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary,
-                )
-            }
-
             if (isLoading || isSwitching) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             } else {
                 TextButton(
                     onClick = onRefresh,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text("Actualizar", style = MeloType.labelSmall)
                 }
             }
@@ -100,13 +93,18 @@ internal fun AccountProfilesList(
         }
 
         if (profiles.size > 1) {
-            profiles.forEach { profile ->
-                AccountProfileRow(
-                    profile = profile,
-                    isSelected = profile.pageId == activePageId,
-                    enabled = !isSwitching,
-                    onClick = { onSelect(profile.pageId) },
-                )
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                profiles.forEach { profile ->
+                    AccountProfileRow(
+                        profile = profile,
+                        isSelected = profile.pageId == activePageId,
+                        enabled = !isSwitching,
+                        onClick = { onSelect(profile.pageId) },
+                    )
+                }
             }
         }
     }
@@ -124,41 +122,34 @@ private fun AccountProfileRow(
         profile.channelHandle?.takeIf { it.isNotBlank() }
             ?: profile.email?.takeIf { it.isNotBlank() }
             ?: profile.byline?.takeIf { it.isNotBlank() }
-
-    val rowShape = RoundedCornerShape(10.dp)
+    val rowShape = RoundedCornerShape(12.dp)
     val accent = MaterialTheme.colorScheme.primary
+    val fill = if (isSelected) accent.copy(alpha = 0.2f) else MeloColors.surface2.copy(alpha = 0.35f)
 
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .heightIn(min = 56.dp)
                 .clip(rowShape)
-                .background(
-                    if (isSelected) {
-                        accent.copy(alpha = 0.12f)
-                    } else {
-                        MeloColors.surface2.copy(alpha = 0.35f)
-                    },
-                ).border(
-                    width = 1.5.dp,
-                    color = if (isSelected) accent else Color.Transparent,
-                    shape = rowShape,
-                ).clickable(enabled = enabled && !isSelected, onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .background(fill)
+                .border(width = 1.dp, color = if (isSelected) accent else MeloColors.border, shape = rowShape)
+                .selectable(
+                    selected = isSelected,
+                    enabled = enabled,
+                    role = Role.RadioButton,
+                    onClick = { if (!isSelected) onClick() },
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        AccountProfileAvatar(
-            profile = profile,
-            size = 32.dp,
-        )
-
+        AccountProfileAvatar(profile = profile, size = 32.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = profile.name,
                 style = MeloType.body,
-                fontWeight = FontWeight.Medium,
-                color = MeloColors.textPrimary,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (isSelected) accent else MeloColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -172,8 +163,6 @@ private fun AccountProfileRow(
                 )
             }
         }
-
-        // Selection marker sits on the opposite side of the avatar and name.
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
