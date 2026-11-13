@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongParameterList", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.BorderStroke
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -33,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.melo.util.MeloColors
@@ -64,10 +68,10 @@ fun SettingsSheet(
                     .padding(vertical = 12.dp)
                     .size(36.dp, 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(MeloColors.textMuted.copy(alpha = 0.4f))
+                    .background(MeloColors.textMuted.copy(alpha = 0.4f)),
             )
         },
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
     ) {
         SettingsContent(
             settings = settings,
@@ -78,9 +82,12 @@ fun SettingsSheet(
             isSwitchingProfile = isSwitchingProfile,
             profilesError = profilesError,
             actions = actions,
-            modifier = Modifier
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.9f)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
         )
     }
 }
@@ -97,46 +104,22 @@ fun SettingsDialog(
     actions: SettingsActions,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
         Surface(
-            modifier = Modifier
-                .widthIn(min = 450.dp, max = 560.dp)
-                .height(680.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth(0.9f)
+                    .widthIn(max = 860.dp)
+                    .height(680.dp),
             shape = RoundedCornerShape(24.dp),
             color = MeloColors.surface1,
-            border = BorderStroke(1.dp, MeloColors.border)
+            border = BorderStroke(1.dp, MeloColors.border),
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Ajustes",
-                            style = MeloType.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cerrar",
-                            tint = MeloColors.textSecondary
-                        )
-                    }
-                }
+                SettingsDialogHeader(onDismiss = onDismiss)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -149,9 +132,48 @@ fun SettingsDialog(
                     isSwitchingProfile = isSwitchingProfile,
                     profilesError = profilesError,
                     actions = actions,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
+        }
+    }
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun SettingsDialogHeader(onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = "Ajustes",
+                style = MeloType.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MeloColors.textPrimary,
+            )
+        }
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Cerrar",
+                tint = MeloColors.textSecondary,
+            )
         }
     }
 }
