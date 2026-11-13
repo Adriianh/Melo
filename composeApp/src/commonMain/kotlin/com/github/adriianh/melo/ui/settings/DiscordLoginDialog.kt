@@ -331,7 +331,7 @@ fun PreviewDiscordLoginDialog() {
     MaterialTheme {
         DiscordLoginDialog(
             onDismiss = {},
-            onTokenSaved = {}
+            onTokenSaved = {},
         )
     }
 }
@@ -342,7 +342,7 @@ private fun PreviewDiscordLoginDialogBody_AutoLogin() {
     MaterialTheme {
         Surface(
             color = MeloColors.surface1,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             DiscordLoginDialogBody(
                 isShowingInAppBrowser = false,
@@ -353,7 +353,7 @@ private fun PreviewDiscordLoginDialogBody_AutoLogin() {
                 onTokenCaptured = {},
                 onShowInAppBrowser = {},
                 onShowManualInput = {},
-                onBackToAuto = {}
+                onBackToAuto = {},
             )
         }
     }
@@ -365,7 +365,7 @@ private fun PreviewDiscordLoginDialogBody_ManualInput() {
     MaterialTheme {
         Surface(
             color = MeloColors.surface1,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             DiscordLoginDialogBody(
                 isShowingInAppBrowser = false,
@@ -376,7 +376,7 @@ private fun PreviewDiscordLoginDialogBody_ManualInput() {
                 onTokenCaptured = {},
                 onShowInAppBrowser = {},
                 onShowManualInput = {},
-                onBackToAuto = {}
+                onBackToAuto = {},
             )
         }
     }
@@ -388,7 +388,7 @@ private fun PreviewDiscordLoginDialogBody_FallbackManualOnly() {
     MaterialTheme {
         Surface(
             color = MeloColors.surface1,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             DiscordLoginDialogBody(
                 isShowingInAppBrowser = false,
@@ -399,7 +399,7 @@ private fun PreviewDiscordLoginDialogBody_FallbackManualOnly() {
                 onTokenCaptured = {},
                 onShowInAppBrowser = {},
                 onShowManualInput = {},
-                onBackToAuto = {}
+                onBackToAuto = {},
             )
         }
     }
@@ -411,7 +411,7 @@ private fun PreviewDiscordLoginConfirmButtons() {
     MaterialTheme {
         Surface(
             color = MeloColors.surface1,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             DiscordLoginConfirmButtons(
                 isShowingInAppBrowser = false,
@@ -420,7 +420,7 @@ private fun PreviewDiscordLoginConfirmButtons() {
                 manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
                 onDismiss = {},
                 onTokenSaved = {},
-                onCancelInAppBrowser = {}
+                onCancelInAppBrowser = {},
             )
         }
     }
