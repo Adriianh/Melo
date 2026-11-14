@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -28,12 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -49,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
@@ -235,7 +232,8 @@ private fun SettingsCompactDetailHeader(
         }
         Text(
             text = category.title,
-            style = MeloType.titleMedium,
+            fontSize = 20.sp,
+            lineHeight = 26.sp,
             fontWeight = FontWeight.Bold,
             color = MeloColors.textPrimary,
             maxLines = 1,
@@ -313,21 +311,21 @@ internal fun AppearanceSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Apariencia y tema",
-        icon = Icons.Default.ColorLens,
-    ) {
-        SettingChoiceRow(
+    SettingsSection(caption = "Apariencia y tema") {
+        SettingInlineChoiceRow(
             title = "Modo de tema",
             subtitle = "Sigue la configuración del sistema o fuerza claro/oscuro.",
-        ) {
+        ) { isInline ->
             SegmentedControl(
                 options = ThemeMode.entries,
                 selected = settings.themeMode,
                 onSelect = actions.onThemeModeSelected,
                 label = { it.uiLabel() },
+                fillMaxWidth = !isInline,
             )
         }
+
+        SettingsRowDivider()
 
         SettingToggleRow(
             title = "Color dinámico",
@@ -335,6 +333,8 @@ internal fun AppearanceSettingsSection(
             checked = settings.dynamicColor,
             onCheckedChange = actions.onDynamicColorToggle,
         )
+
+        SettingsRowDivider()
 
         val paletteEnabled = !settings.dynamicColor
         SettingChoiceRow(
@@ -359,16 +359,15 @@ internal fun PlaybackSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Reproducción y streaming",
-        icon = Icons.Default.Headphones,
-    ) {
+    SettingsSection(caption = "Reproducción y streaming") {
         SettingToggleRow(
             title = "Ahorro de datos",
             subtitle = "Prioriza bitrates más bajos para minimizar el consumo móvil.",
             checked = settings.dataSaver,
             onCheckedChange = actions.onDataSaverToggle,
         )
+
+        SettingsRowDivider()
 
         val streamingQualityEnabled = !settings.dataSaver
         SettingChoiceRow(
@@ -387,12 +386,16 @@ internal fun PlaybackSettingsSection(
             )
         }
 
+        SettingsRowDivider()
+
         SettingToggleRow(
             title = "Reproducción continua",
             subtitle = "Añade canciones similares al finalizar la cola.",
             checked = settings.autoplay,
             onCheckedChange = actions.onAutoplayToggle,
         )
+
+        SettingsRowDivider()
 
         SettingToggleRow(
             title = "Reanudar la última sesión activa",
@@ -408,16 +411,15 @@ internal fun DownloadsSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Descargas y caché offline",
-        icon = Icons.Default.Download,
-    ) {
+    SettingsSection(caption = "Descargas y caché offline") {
         SettingToggleRow(
             title = "Modo sin conexión",
             subtitle = "Bloquea peticiones de red y prioriza únicamente contenido descargado y local.",
             checked = settings.offlineMode,
             onCheckedChange = actions.onOfflineModeToggle,
         )
+
+        SettingsRowDivider()
 
         SettingChoiceRow(
             title = "Límite de tamaño de caché",
@@ -432,6 +434,8 @@ internal fun DownloadsSettingsSection(
             )
         }
 
+        SettingsRowDivider()
+
         SettingChoiceRow(
             title = "Formato de descarga",
             subtitle = "Extensión y contenedor preferido para guardar pistas.",
@@ -445,6 +449,8 @@ internal fun DownloadsSettingsSection(
             )
         }
 
+        SettingsRowDivider()
+
         SettingChoiceRow(
             title = "Calidad de descarga",
             subtitle = "Tasa de bits máxima al descargar.",
@@ -457,6 +463,8 @@ internal fun DownloadsSettingsSection(
                 hint = { it.displayName },
             )
         }
+
+        SettingsRowDivider()
 
         var showClearCacheConfirm by rememberSaveable { mutableStateOf(false) }
 
@@ -497,22 +505,24 @@ internal fun LocalFoldersSection(
     actions: SettingsActions,
     initialManualExpanded: Boolean = false,
 ) {
-    SettingsGroupCard(
-        title = "Carpetas de música local",
-        icon = Icons.Default.Folder,
-    ) {
-        Text(
-            text = "Configura carpetas de tu dispositivo para indexar canciones locales.",
-            style = MeloType.labelSmall,
-            color = MeloColors.textSecondary,
-        )
+    SettingsSection(caption = "Carpetas de música local") {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Configura carpetas de tu dispositivo para indexar canciones locales.",
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+            )
 
-        LocalFolderPathsEditor(
-            configuredPaths = settings.localLibraryPaths,
-            onAddPath = actions.onAddLocalPath,
-            onRemovePath = actions.onRemoveLocalPath,
-            initialManualExpanded = initialManualExpanded,
-        )
+            LocalFolderPathsEditor(
+                configuredPaths = settings.localLibraryPaths,
+                onAddPath = actions.onAddLocalPath,
+                onRemovePath = actions.onRemoveLocalPath,
+                initialManualExpanded = initialManualExpanded,
+            )
+        }
     }
 }
 
@@ -527,10 +537,7 @@ internal fun AccountSettingsSection(
     profilesError: String?,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Cuenta y sesión",
-        icon = Icons.Default.Person,
-    ) {
+    SettingsSection(caption = "Cuenta y sesión") {
         AccountSessionHeader(
             isLoggedIn = isLoggedIn,
             onLogout = actions.onLogout,
@@ -538,6 +545,7 @@ internal fun AccountSettingsSection(
         )
 
         if (isLoggedIn) {
+            SettingsRowDivider()
             AccountProfilesList(
                 profiles = profiles,
                 activePageId = activePageId,
@@ -548,6 +556,8 @@ internal fun AccountSettingsSection(
                 onRefresh = actions.onRefreshAccountProfiles,
             )
         }
+
+        SettingsRowDivider()
 
         SettingToggleRow(
             title = "Registrar reproducciones en YouTube",

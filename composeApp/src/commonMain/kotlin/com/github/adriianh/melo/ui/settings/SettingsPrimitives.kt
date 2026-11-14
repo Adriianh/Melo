@@ -41,6 +41,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -55,17 +56,26 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 private const val DISABLED_ALPHA = 0.4f
 private val ACTION_ROW_INLINE_BREAKPOINT = 480.dp
+private val CHOICE_ROW_INLINE_BREAKPOINT = 520.dp
+private const val CHOICE_ROW_INLINE_MAX_FRACTION = 0.40f
+private val SECTION_ROW_MIN_HEIGHT = 64.dp
+private val SECTION_ROW_HORIZONTAL_PADDING = 18.dp
+private val SECTION_ROW_VERTICAL_PADDING = 14.dp
 
 internal enum class StatusTone {
     NEUTRAL,
@@ -197,50 +207,51 @@ private fun SettingActionButtonContent(
 }
 
 @Composable
-internal fun SettingsGroupCard(
-    title: String,
-    icon: ImageVector,
+internal fun SettingsSectionCaption(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text.uppercase(),
+        fontSize = 11.5.sp,
+        letterSpacing = 0.08.em,
+        fontWeight = FontWeight.SemiBold,
+        color = MeloColors.textSecondary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.padding(start = 6.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+internal fun SettingsRowDivider(modifier: Modifier = Modifier) {
+    HorizontalDivider(
+        modifier = modifier.padding(horizontal = SECTION_ROW_HORIZONTAL_PADDING),
+        thickness = 1.dp,
+        color = MeloColors.border,
+    )
+}
+
+@Composable
+internal fun SettingsSection(
+    caption: String?,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
-        color = MeloColors.surface2.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MeloColors.border),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (!caption.isNullOrBlank()) {
+            SettingsSectionCaption(text = caption)
+        }
+        Surface(
+            color = MeloColors.surface2.copy(alpha = 0.45f),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MeloColors.border),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
-                Text(
-                    text = title,
-                    style = MeloType.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MeloColors.textPrimary,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            content()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                content = content,
+            )
         }
     }
 }
@@ -259,15 +270,17 @@ internal fun SettingToggleRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .heightIn(min = SECTION_ROW_MIN_HEIGHT)
                 .alpha(if (enabled) 1f else DISABLED_ALPHA)
                 .toggleable(
                     value = checked,
                     enabled = enabled,
                     role = Role.Switch,
                     onValueChange = onCheckedChange,
-                ).padding(vertical = 4.dp),
+                ).padding(
+                    horizontal = SECTION_ROW_HORIZONTAL_PADDING,
+                    vertical = SECTION_ROW_VERTICAL_PADDING,
+                ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -294,21 +307,119 @@ internal fun SettingChoiceRow(
     disabledNote: String? = null,
     content: @Composable () -> Unit,
 ) {
+    SettingStackedChoiceRow(
+        title = title,
+        subtitle = subtitle,
+        modifier = modifier,
+        enabled = enabled,
+        disabledNote = disabledNote,
+        content = content,
+    )
+}
+
+@Composable
+internal fun SettingInlineChoiceRow(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    disabledNote: String? = null,
+    content: @Composable (isInline: Boolean) -> Unit,
+) {
+    val resolvedNote = if (!enabled) disabledNote else null
+    val baseModifier =
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = SECTION_ROW_MIN_HEIGHT)
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+
+    SubcomposeLayout(modifier = baseModifier) { constraints ->
+        val rowWidth = constraints.maxWidth
+        val hPadPx = SECTION_ROW_HORIZONTAL_PADDING.roundToPx()
+        val vPadPx = SECTION_ROW_VERTICAL_PADDING.roundToPx()
+        val minHeightPx = SECTION_ROW_MIN_HEIGHT.roundToPx()
+        val innerWidth = (rowWidth - hPadPx * 2).coerceAtLeast(0)
+        val gapPx = 16.dp.roundToPx()
+        val breakpointPx = CHOICE_ROW_INLINE_BREAKPOINT.roundToPx()
+        val maxInlineControlPx = (rowWidth * CHOICE_ROW_INLINE_MAX_FRACTION).toInt()
+
+        if (rowWidth >= breakpointPx) {
+            val inlineControlPlaceable =
+                subcompose("inline_control") { content(true) }
+                    .firstOrNull()
+                    ?.measure(Constraints(minWidth = 0, maxWidth = innerWidth))
+
+            if (inlineControlPlaceable != null && inlineControlPlaceable.width <= maxInlineControlPx) {
+                val textMaxWidth = (innerWidth - inlineControlPlaceable.width - gapPx).coerceAtLeast(0)
+                val textPlaceable =
+                    subcompose("inline_text") {
+                        SettingRowText(
+                            title = title,
+                            subtitle = subtitle,
+                            disabledNote = resolvedNote,
+                        )
+                    }.first().measure(Constraints(minWidth = 0, maxWidth = textMaxWidth))
+
+                val contentHeight = maxOf(textPlaceable.height, inlineControlPlaceable.height)
+                val totalHeight = maxOf(minHeightPx, contentHeight + vPadPx * 2)
+                return@SubcomposeLayout layout(rowWidth, totalHeight) {
+                    textPlaceable.placeRelative(
+                        x = hPadPx,
+                        y = (totalHeight - textPlaceable.height) / 2,
+                    )
+                    inlineControlPlaceable.placeRelative(
+                        x = rowWidth - hPadPx - inlineControlPlaceable.width,
+                        y = (totalHeight - inlineControlPlaceable.height) / 2,
+                    )
+                }
+            }
+        }
+
+        val stackedPlaceable =
+            subcompose("stacked") {
+                SettingStackedChoiceRow(
+                    title = title,
+                    subtitle = subtitle,
+                    enabled = true,
+                    disabledNote = resolvedNote,
+                    content = { content(false) },
+                )
+            }.first().measure(Constraints(minWidth = rowWidth, maxWidth = rowWidth))
+
+        val totalHeight = maxOf(minHeightPx, stackedPlaceable.height)
+        layout(rowWidth, totalHeight) {
+            stackedPlaceable.placeRelative(0, (totalHeight - stackedPlaceable.height) / 2)
+        }
+    }
+}
+
+@Composable
+private fun SettingStackedChoiceRow(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    disabledNote: String? = null,
+    content: @Composable () -> Unit,
+) {
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .alpha(if (enabled) 1f else DISABLED_ALPHA),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+                .heightIn(min = SECTION_ROW_MIN_HEIGHT)
+                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                .padding(
+                    horizontal = SECTION_ROW_HORIZONTAL_PADDING,
+                    vertical = SECTION_ROW_VERTICAL_PADDING,
+                ),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            SettingRowText(
-                title = title,
-                subtitle = subtitle,
-                disabledNote = if (!enabled) disabledNote else null,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        SettingRowText(
+            title = title,
+            subtitle = subtitle,
+            disabledNote = if (!enabled) disabledNote else null,
+            modifier = Modifier.fillMaxWidth(),
+        )
         content()
     }
 }
@@ -326,12 +437,17 @@ internal fun SettingActionRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .alpha(if (enabled) 1f else DISABLED_ALPHA),
+                .heightIn(min = SECTION_ROW_MIN_HEIGHT)
+                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                .padding(
+                    horizontal = SECTION_ROW_HORIZONTAL_PADDING,
+                    vertical = SECTION_ROW_VERTICAL_PADDING,
+                ),
     ) {
         val isStacked = maxWidth < ACTION_ROW_INLINE_BREAKPOINT
         if (!isStacked) {
             Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

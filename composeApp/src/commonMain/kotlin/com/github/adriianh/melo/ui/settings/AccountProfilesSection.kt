@@ -47,7 +47,7 @@ internal fun AccountProfilesList(
     onSelect: (String?) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         SettingActionRow(
             title = "Canales de la cuenta",
             subtitle = "Cambia el canal activo para sincronizar su biblioteca, likes y playlists.",
@@ -79,12 +79,17 @@ internal fun AccountProfilesList(
                 text = error,
                 style = MeloType.labelSmall,
                 color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 10.dp),
             )
         }
 
         if (profiles.size > 1) {
             Column(
-                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 18.dp, end = 18.dp, bottom = 14.dp)
+                        .selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 profiles.forEach { profile ->

@@ -3,7 +3,6 @@ package com.github.adriianh.melo.ui.settings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LinkOff
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,10 +34,7 @@ internal fun DiscordRpcSettingsSection(
         )
     }
 
-    SettingsGroupCard(
-        title = "Discord Rich Presence",
-        icon = Icons.Default.Share,
-    ) {
+    SettingsSection(caption = "Discord Rich Presence") {
         val isLinked = !settings.discordRpcToken.isNullOrBlank()
 
         if (platformType == PlatformType.ANDROID) {
@@ -47,6 +43,7 @@ internal fun DiscordRpcSettingsSection(
                 onUnlink = { actions.onDiscordTokenChanged(null) },
                 onOpenLogin = { showDiscordLoginDialog = true },
             )
+            SettingsRowDivider()
         }
 
         SettingToggleRow(
