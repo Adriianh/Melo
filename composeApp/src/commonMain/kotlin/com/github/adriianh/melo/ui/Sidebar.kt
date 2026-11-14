@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.melo.ui.navigation.MainTab
+import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
+import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
 import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -269,6 +271,9 @@ private fun SidebarUtils(
     onOpenSettings: () -> Unit,
     collapsed: Boolean
 ) {
+    val hasAvailableUpdate = LocalHasAvailableUpdate.current
+    val settingsDescription =
+        if (hasAvailableUpdate) "Ajustes (actualización disponible)" else "Ajustes"
     Column(modifier = Modifier.fillMaxWidth()) {
         if (collapsed) {
             Column(
@@ -281,7 +286,8 @@ private fun SidebarUtils(
                 UtilIconButton(
                     icon = Icons.Default.Settings,
                     onClick = onOpenSettings,
-                    contentDescription = "Ajustes"
+                    contentDescription = settingsDescription,
+                    showBadge = hasAvailableUpdate,
                 )
                 UtilIconButton(
                     icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
@@ -300,7 +306,8 @@ private fun SidebarUtils(
                 UtilIconButton(
                     icon = Icons.Default.Settings,
                     onClick = onOpenSettings,
-                    contentDescription = "Ajustes"
+                    contentDescription = settingsDescription,
+                    showBadge = hasAvailableUpdate,
                 )
                 UtilIconButton(
                     icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
@@ -317,7 +324,8 @@ private fun UtilIconButton(
     icon: ImageVector,
     onClick: () -> Unit,
     contentDescription: String? = null,
-    size: Dp = 36.dp
+    size: Dp = 36.dp,
+    showBadge: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -345,12 +353,14 @@ private fun UtilIconButton(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (isHovered) meloColors.textPrimary else meloColors.textSecondary,
-            modifier = Modifier.size(19.dp)
-        )
+        SettingsEntryUpdateBadge(showDot = showBadge, dotSize = 7.dp) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = if (isHovered) meloColors.textPrimary else meloColors.textSecondary,
+                modifier = Modifier.size(19.dp)
+            )
+        }
     }
 }
 

@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -63,6 +64,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AudioQuality
@@ -164,6 +166,31 @@ internal fun UpdateState?.hasAvailableUpdate(): Boolean =
     this is UpdateState.UpdateAvailable ||
         this is UpdateState.ManualUpdate ||
         this is UpdateState.ReadyToInstall
+
+internal val LocalHasAvailableUpdate = compositionLocalOf { false }
+
+@Composable
+internal fun SettingsEntryUpdateBadge(
+    modifier: Modifier = Modifier,
+    showDot: Boolean = LocalHasAvailableUpdate.current,
+    dotSize: Dp = 8.dp,
+    content: @Composable () -> Unit,
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    Box(modifier = modifier) {
+        content()
+        if (showDot) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(dotSize)
+                        .align(Alignment.TopEnd)
+                        .clip(CircleShape)
+                        .background(primary),
+            )
+        }
+    }
+}
 
 internal fun ThemeMode.uiLabel(): String =
     when (this) {

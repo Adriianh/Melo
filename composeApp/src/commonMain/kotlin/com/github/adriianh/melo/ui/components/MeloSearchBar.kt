@@ -29,6 +29,8 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
+import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
@@ -77,13 +79,21 @@ fun MeloSearchBar(
                             )
                         }
                     }
+                    val hasAvailableUpdate = LocalHasAvailableUpdate.current
                     IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Cuenta",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        SettingsEntryUpdateBadge(showDot = hasAvailableUpdate, dotSize = 8.dp) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription =
+                                    if (hasAvailableUpdate) {
+                                        "Cuenta (actualización disponible)"
+                                    } else {
+                                        "Cuenta"
+                                    },
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
                     }
                 }
             },
