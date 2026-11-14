@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -89,6 +89,38 @@ internal fun PreviewSettingsCategoryList() {
     }
 }
 
+@Composable
+private fun PreviewCategoryPane(
+    category: SettingsCategory,
+    settings: Settings = Settings(),
+    isLoggedIn: Boolean = false,
+    updateState: UpdateState = UpdateState.Idle,
+    currentVersion: String = "2.3.0-preview",
+    initialManualFolderExpanded: Boolean = false,
+) {
+    val entries =
+        rememberSettingEntries(
+            settings = settings,
+            isLoggedIn = isLoggedIn,
+            profiles = emptyList(),
+            activePageId = null,
+            isLoadingProfiles = false,
+            isSwitchingProfile = false,
+            profilesError = null,
+            actions = previewSettingsActions(),
+            platformType = PlatformType.ANDROID,
+            updateState = updateState,
+            onCheckForUpdates = {},
+            onUpdateChannelSelected = {},
+            onStartUpdateDownload = { _, _ -> },
+            onCancelUpdateDownload = {},
+            onInstallUpdate = {},
+            currentVersion = currentVersion,
+            initialManualFolderExpanded = initialManualFolderExpanded,
+        )
+    SettingsCategoryEntriesPane(entries = entries, category = category)
+}
+
 @Preview(widthDp = 320, fontScale = 1.3f)
 @Composable
 internal fun PreviewAppearanceDynamicColorOn() {
@@ -100,14 +132,14 @@ internal fun PreviewAppearanceDynamicColorOn() {
                     .background(MeloColors.surface1)
                     .padding(16.dp),
         ) {
-            AppearanceSettingsSection(
+            PreviewCategoryPane(
+                category = SettingsCategory.APPEARANCE,
                 settings =
                     Settings(
                         themeMode = ThemeMode.DARK,
                         dynamicColor = true,
                         theme = ThemePreset.CATPPUCCIN_MOCHA,
                     ),
-                actions = previewSettingsActions(),
             )
         }
     }
@@ -124,14 +156,14 @@ internal fun PreviewAppearanceDynamicColorOff() {
                     .background(MeloColors.surface1)
                     .padding(16.dp),
         ) {
-            AppearanceSettingsSection(
+            PreviewCategoryPane(
+                category = SettingsCategory.APPEARANCE,
                 settings =
                     Settings(
                         themeMode = ThemeMode.DARK,
                         dynamicColor = false,
                         theme = ThemePreset.CATPPUCCIN_MOCHA,
                     ),
-                actions = previewSettingsActions(),
             )
         }
     }
@@ -148,15 +180,10 @@ internal fun PreviewAccountLoggedOut() {
                     .background(MeloColors.surface1)
                     .padding(16.dp),
         ) {
-            AccountSettingsSection(
+            PreviewCategoryPane(
+                category = SettingsCategory.ACCOUNT,
                 settings = Settings(syncHistoryToYouTube = true),
                 isLoggedIn = false,
-                profiles = emptyList(),
-                activePageId = null,
-                isLoadingProfiles = false,
-                isSwitchingProfile = false,
-                profilesError = null,
-                actions = previewSettingsActions(),
             )
         }
     }
@@ -173,17 +200,11 @@ internal fun PreviewSettingsUpdatesLongNightly() {
                     .background(MeloColors.surface1)
                     .padding(16.dp),
         ) {
-            UpdateSettingsSectionContent(
+            PreviewCategoryPane(
+                category = SettingsCategory.UPDATES,
+                settings = Settings(autoCheckUpdates = true, updateChannel = UpdateChannel.NIGHTLY),
+                updateState = previewUpdateAvailableState(),
                 currentVersion = "2.2.1-nightly.20261110.1a2b3c4d5e6f-linux-x86_64",
-                state = previewUpdateAvailableState(),
-                autoCheckUpdates = true,
-                updateChannel = UpdateChannel.NIGHTLY,
-                onToggleAutoCheckUpdates = {},
-                onUpdateChannelSelected = {},
-                onCheckForUpdates = {},
-                onStartDownload = { _, _ -> },
-                onCancelDownload = {},
-                onInstallUpdate = {},
             )
         }
     }
@@ -207,21 +228,41 @@ internal fun PreviewLocalFoldersStates() {
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            LocalFoldersSection(
-                settings = Settings(localLibraryPaths = emptyList()),
-                actions = previewSettingsActions(),
-            )
-            LocalFoldersSection(
-                settings = Settings(localLibraryPaths = samplePaths),
-                actions = previewSettingsActions(),
-            )
-            LocalFoldersSection(
-                settings = Settings(localLibraryPaths = samplePaths.take(1)),
-                actions = previewSettingsActions(),
+            PreviewLocalFoldersEntry(paths = emptyList())
+            PreviewLocalFoldersEntry(paths = samplePaths)
+            PreviewLocalFoldersEntry(
+                paths = samplePaths.take(1),
                 initialManualExpanded = true,
             )
         }
     }
+}
+
+@Composable
+private fun PreviewLocalFoldersEntry(
+    paths: List<String>,
+    initialManualExpanded: Boolean = false,
+) {
+    val entries =
+        rememberSettingEntries(
+            settings = Settings(localLibraryPaths = paths),
+            isLoggedIn = false,
+            profiles = emptyList(),
+            activePageId = null,
+            isLoadingProfiles = false,
+            isSwitchingProfile = false,
+            profilesError = null,
+            actions = previewSettingsActions(),
+            platformType = PlatformType.ANDROID,
+            updateState = UpdateState.Idle,
+            onCheckForUpdates = {},
+            onUpdateChannelSelected = {},
+            onStartUpdateDownload = { _, _ -> },
+            onCancelUpdateDownload = {},
+            onInstallUpdate = {},
+            initialManualFolderExpanded = initialManualExpanded,
+        ).filter { it.id == "library_local_folders" }
+    SettingsEntriesSections(entries = entries)
 }
 
 @Preview(widthDp = 880, heightDp = 720)
@@ -263,12 +304,13 @@ internal fun PreviewSettingsExpandedDialog() {
 internal fun PreviewSettingsConfirmDialog() {
     MaterialTheme {
         SettingsConfirmDialog(
-            title = "Limpiar caché de audio",
+            title = "Cerrar sesión",
             message =
-                "¿Estás seguro de que deseas eliminar las pistas almacenadas temporalmente en caché? " +
-                    "Tus canciones descargadas y archivos locales no se verán afectados.",
-            confirmText = "Limpiar caché",
-            icon = Icons.Default.DeleteSweep,
+                "¿Estás seguro de que deseas cerrar tu sesión de YouTube Music? " +
+                    "Dejarás de sincronizar tu biblioteca, listas y recomendaciones " +
+                    "hasta que vuelvas a iniciar sesión.",
+            confirmText = "Cerrar sesión",
+            icon = Icons.AutoMirrored.Filled.Logout,
             onConfirm = {},
             onDismiss = {},
         )
