@@ -1,40 +1,38 @@
-@file:Suppress("FunctionNaming", "LongParameterList", "ktlint:standard:function-naming")
+@file:Suppress("FunctionNaming", "LongParameterList", "MagicNumber", "ktlint:standard:function-naming")
 
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -42,37 +40,14 @@ import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.util.getPlatform
 
 private val MODAL_DIALOG_MIN_WIDTH = 600.dp
 private val MODAL_DIALOG_MIN_HEIGHT = 480.dp
 private val MODAL_DIALOG_MAX_HEIGHT = 680.dp
 
-private val SheetContentNestedScrollConnection =
-    object : NestedScrollConnection {
-        override fun onPostScroll(
-            consumed: Offset,
-            available: Offset,
-            source: NestedScrollSource,
-        ): Offset =
-            if (source == NestedScrollSource.UserInput && available.y < 0f) {
-                Offset(0f, available.y)
-            } else {
-                Offset.Zero
-            }
-
-        override suspend fun onPostFling(
-            consumed: Velocity,
-            available: Velocity,
-        ): Velocity =
-            if (available.y < 0f) {
-                Velocity(0f, available.y)
-            } else {
-                Velocity.Zero
-            }
-    }
-
 @Composable
-fun SettingsModal(
+internal fun SettingsModal(
     settings: Settings,
     isLoggedIn: Boolean,
     profiles: List<AccountProfile>,
@@ -82,14 +57,25 @@ fun SettingsModal(
     profilesError: String?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
+    initialCategory: SettingsCategory? = null,
 ) {
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
     val windowWidth = with(density) { windowInfo.containerSize.width.toDp() }
     val windowHeight = with(density) { windowInfo.containerSize.height.toDp() }
-    var selectedCategoryName by rememberSaveable { mutableStateOf<String?>(null) }
+    val isExpandedDialog = windowWidth >= MODAL_DIALOG_MIN_WIDTH && windowHeight >= MODAL_DIALOG_MIN_HEIGHT
+    val platform = remember { getPlatform() }
+    val firstCategory = remember(platform.type) { SettingsCategory.visibleFor(platform.type).firstOrNull() }
 
-    if (windowWidth >= MODAL_DIALOG_MIN_WIDTH && windowHeight >= MODAL_DIALOG_MIN_HEIGHT) {
+    var selectedCategoryName by rememberSaveable {
+        mutableStateOf(
+            initialCategory?.name ?: if (isExpandedDialog) firstCategory?.name else null,
+        )
+    }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var isCompactSearchOpen by rememberSaveable { mutableStateOf(false) }
+
+    if (isExpandedDialog) {
         val dialogHeight = minOf(windowHeight * 0.85f, MODAL_DIALOG_MAX_HEIGHT)
         SettingsDialog(
             settings = settings,
@@ -102,11 +88,16 @@ fun SettingsModal(
             actions = actions,
             onDismiss = onDismiss,
             dialogHeight = dialogHeight,
+            initialCategory = initialCategory,
             selectedCategoryName = selectedCategoryName,
             onSelectedCategoryChange = { selectedCategoryName = it },
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            isCompactSearchOpen = isCompactSearchOpen,
+            onCompactSearchOpenChange = { isCompactSearchOpen = it },
         )
     } else {
-        SettingsSheet(
+        SettingsFullScreenSurface(
             settings = settings,
             isLoggedIn = isLoggedIn,
             profiles = profiles,
@@ -116,15 +107,19 @@ fun SettingsModal(
             profilesError = profilesError,
             actions = actions,
             onDismiss = onDismiss,
+            initialCategory = initialCategory,
             selectedCategoryName = selectedCategoryName,
             onSelectedCategoryChange = { selectedCategoryName = it },
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            isCompactSearchOpen = isCompactSearchOpen,
+            onCompactSearchOpenChange = { isCompactSearchOpen = it },
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsSheet(
+internal fun SettingsFullScreenSurface(
     settings: Settings,
     isLoggedIn: Boolean,
     profiles: List<AccountProfile>,
@@ -134,50 +129,58 @@ fun SettingsSheet(
     profilesError: String?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
+    initialCategory: SettingsCategory? = null,
     selectedCategoryName: String? = null,
     onSelectedCategoryChange: ((String?) -> Unit)? = null,
+    searchQuery: String? = null,
+    onSearchQueryChange: ((String) -> Unit)? = null,
+    isCompactSearchOpen: Boolean? = null,
+    onCompactSearchOpenChange: ((Boolean) -> Unit)? = null,
+    updateState: UpdateState? = null,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MeloColors.surface1,
-        scrimColor = Color.Black.copy(alpha = 0.5f),
-        contentWindowInsets = { WindowInsets.navigationBars },
-        dragHandle = {
-            Box(
-                Modifier
-                    .padding(vertical = 12.dp)
-                    .size(36.dp, 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(MeloColors.textMuted.copy(alpha = 0.4f)),
-            )
-        },
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MeloColors.surface1)
+                .pointerInput(Unit) {}
+                .semantics { paneTitle = "Ajustes" },
+        color = MeloColors.surface1,
     ) {
-        SettingsContent(
-            settings = settings,
-            isLoggedIn = isLoggedIn,
-            profiles = profiles,
-            activePageId = activePageId,
-            isLoadingProfiles = isLoadingProfiles,
-            isSwitchingProfile = isSwitchingProfile,
-            profilesError = profilesError,
-            actions = actions,
-            selectedCategoryName = selectedCategoryName,
-            onSelectedCategoryChange = onSelectedCategoryChange,
+        Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.9f)
-                    .nestedScroll(SheetContentNestedScrollConnection),
-        )
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .imePadding(),
+        ) {
+            SettingsContent(
+                settings = settings,
+                isLoggedIn = isLoggedIn,
+                profiles = profiles,
+                activePageId = activePageId,
+                isLoadingProfiles = isLoadingProfiles,
+                isSwitchingProfile = isSwitchingProfile,
+                profilesError = profilesError,
+                actions = actions,
+                modifier = Modifier.fillMaxSize(),
+                initialCategory = initialCategory,
+                selectedCategoryName = selectedCategoryName,
+                onSelectedCategoryChange = onSelectedCategoryChange,
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                isCompactSearchOpen = isCompactSearchOpen,
+                onCompactSearchOpenChange = onCompactSearchOpenChange,
+                onClose = onDismiss,
+                updateState = updateState,
+            )
+        }
     }
 }
 
 @Composable
-fun SettingsDialog(
+internal fun SettingsDialog(
     settings: Settings,
     isLoggedIn: Boolean,
     profiles: List<AccountProfile>,
@@ -188,11 +191,22 @@ fun SettingsDialog(
     actions: SettingsActions,
     onDismiss: () -> Unit,
     dialogHeight: Dp = MODAL_DIALOG_MAX_HEIGHT,
+    initialCategory: SettingsCategory? = null,
     selectedCategoryName: String? = null,
     onSelectedCategoryChange: ((String?) -> Unit)? = null,
+    searchQuery: String? = null,
+    onSearchQueryChange: ((String) -> Unit)? = null,
+    isCompactSearchOpen: Boolean? = null,
+    onCompactSearchOpenChange: ((Boolean) -> Unit)? = null,
 ) {
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (!searchQuery.isNullOrEmpty() && onSearchQueryChange != null) {
+                onSearchQueryChange("")
+            } else {
+                onDismiss()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         SettingsDialogSurface(
@@ -206,8 +220,13 @@ fun SettingsDialog(
             actions = actions,
             onDismiss = onDismiss,
             dialogHeight = dialogHeight,
+            initialCategory = initialCategory,
             selectedCategoryName = selectedCategoryName,
             onSelectedCategoryChange = onSelectedCategoryChange,
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange,
+            isCompactSearchOpen = isCompactSearchOpen,
+            onCompactSearchOpenChange = onCompactSearchOpenChange,
         )
     }
 }
@@ -227,6 +246,10 @@ internal fun SettingsDialogSurface(
     initialCategory: SettingsCategory? = null,
     selectedCategoryName: String? = null,
     onSelectedCategoryChange: ((String?) -> Unit)? = null,
+    searchQuery: String? = null,
+    onSearchQueryChange: ((String) -> Unit)? = null,
+    isCompactSearchOpen: Boolean? = null,
+    onCompactSearchOpenChange: ((Boolean) -> Unit)? = null,
     updateState: UpdateState? = null,
 ) {
     val dialogShape = RoundedCornerShape(24.dp)
@@ -236,7 +259,21 @@ internal fun SettingsDialogSurface(
                 .fillMaxWidth(0.9f)
                 .widthIn(max = 860.dp)
                 .height(dialogHeight)
-                .clip(dialogShape),
+                .clip(dialogShape)
+                .semantics { paneTitle = "Ajustes" }
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                        if (!searchQuery.isNullOrEmpty() && onSearchQueryChange != null) {
+                            onSearchQueryChange("")
+                            true
+                        } else {
+                            onDismiss()
+                            true
+                        }
+                    } else {
+                        false
+                    }
+                },
         shape = dialogShape,
         color = MeloColors.surface1,
         border = BorderStroke(1.dp, MeloColors.border),
@@ -254,6 +291,10 @@ internal fun SettingsDialogSurface(
             initialCategory = initialCategory,
             selectedCategoryName = selectedCategoryName,
             onSelectedCategoryChange = onSelectedCategoryChange,
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange,
+            isCompactSearchOpen = isCompactSearchOpen,
+            onCompactSearchOpenChange = onCompactSearchOpenChange,
             onClose = onDismiss,
             updateState = updateState,
         )

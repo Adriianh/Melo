@@ -5,7 +5,8 @@ package com.github.adriianh.melo.ui.settings
 import androidx.compose.runtime.Composable
 
 @Composable
-internal actual fun SettingsBackHandler(
+internal actual fun SettingsPredictiveBackHandler(
     enabled: Boolean,
+    onProgress: (Float?) -> Unit,
     onBack: () -> Unit,
 ) = Unit

@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
@@ -56,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -355,14 +355,18 @@ private fun CategoryBadgeIcon(
 @Composable
 internal fun SettingsSidebar(
     categories: List<SettingsCategory>,
-    selectedCategory: SettingsCategory,
+    selectedCategory: SettingsCategory?,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     updateState: UpdateState?,
     onSelectCategory: (SettingsCategory) -> Unit,
+    onEscapeClose: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val grouped = remember(categories) { SettingsCategory.grouped(categories) }
     val showCaptions = grouped.size > 1
+    val isSearching = searchQuery.isNotBlank()
     val focusRequesters = remember(categories) { categories.associateWith { FocusRequester() } }
 
     Column(
@@ -372,22 +376,17 @@ internal fun SettingsSidebar(
                 .fillMaxHeight()
                 .background(MeloColors.surface0),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 20.dp, bottom = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
         ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = "Ajustes",
-                style = MeloType.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MeloColors.textPrimary,
+            SettingsSearchField(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                onClearOrEscape = onEscapeClose,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -399,22 +398,13 @@ internal fun SettingsSidebar(
                     .padding(horizontal = 12.dp)
                     .selectableGroup()
                     .onPreviewKeyEvent { event ->
-                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                        val delta =
-                            when (event.key) {
-                                Key.DirectionUp -> -1
-                                Key.DirectionDown -> 1
-                                else -> return@onPreviewKeyEvent false
-                            }
-                        if (categories.isEmpty()) return@onPreviewKeyEvent false
-                        val currentIndex = categories.indexOf(selectedCategory).coerceAtLeast(0)
-                        val nextIndex = (currentIndex + delta).coerceIn(0, categories.lastIndex)
-                        val nextCategory = categories[nextIndex]
-                        if (nextCategory != selectedCategory) {
-                            onSelectCategory(nextCategory)
-                        }
-                        focusRequesters[nextCategory]?.requestFocus()
-                        true
+                        handleSidebarKeyNavigation(
+                            event = event,
+                            categories = categories,
+                            selectedCategory = selectedCategory,
+                            focusRequesters = focusRequesters,
+                            onSelectCategory = onSelectCategory,
+                        )
                     }.verticalScroll(
                         state = scrollState,
                         enabled = scrollState.maxValue > 0,
@@ -431,7 +421,7 @@ internal fun SettingsSidebar(
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         groupCategories.forEach { category ->
-                            val selected = category == selectedCategory
+                            val selected = !isSearching && category == selectedCategory
                             val showDot =
                                 category == SettingsCategory.UPDATES && updateState.hasAvailableUpdate()
                             SettingsSidebarItem(
@@ -521,4 +511,34 @@ private fun SettingsSidebarItem(
             )
         }
     }
+}
+
+private fun handleSidebarKeyNavigation(
+    event: KeyEvent,
+    categories: List<SettingsCategory>,
+    selectedCategory: SettingsCategory?,
+    focusRequesters: Map<SettingsCategory, FocusRequester>,
+    onSelectCategory: (SettingsCategory) -> Unit,
+): Boolean {
+    val delta =
+        when {
+            event.type != KeyEventType.KeyDown || categories.isEmpty() -> null
+            event.key == Key.DirectionUp -> -1
+            event.key == Key.DirectionDown -> 1
+            else -> null
+        } ?: return false
+
+    val currentIndex = selectedCategory?.let { categories.indexOf(it) } ?: -1
+    val nextIndex =
+        if (currentIndex < 0) {
+            if (delta > 0) 0 else categories.lastIndex
+        } else {
+            (currentIndex + delta).coerceIn(0, categories.lastIndex)
+        }
+    val nextCategory = categories[nextIndex]
+    if (nextCategory != selectedCategory) {
+        onSelectCategory(nextCategory)
+    }
+    focusRequesters[nextCategory]?.requestFocus()
+    return true
 }
