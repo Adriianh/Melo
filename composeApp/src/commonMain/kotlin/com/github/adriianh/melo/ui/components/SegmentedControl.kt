@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components
 
 import androidx.compose.foundation.background
@@ -35,23 +37,25 @@ fun <T> SegmentedControl(
             modifier.width(IntrinsicSize.Max)
         }
     Row(
-        modifier = widthModifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(MeloColors.chromePillFill)
-            .padding(3.dp),
+        modifier =
+            widthModifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(MeloColors.chromePillFill)
+                .padding(3.dp),
     ) {
         options.forEach { option ->
             val isSelected = option == selected
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(if (isSelected) MeloColors.surface1 else Color.Transparent)
-                    .clickable { onSelect(option) }
-                    .padding(
-                        horizontal = if (fillMaxWidth) 6.dp else 12.dp,
-                        vertical = 7.dp,
-                    ),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(if (isSelected) MeloColors.surface1 else Color.Transparent)
+                        .clickable { onSelect(option) }
+                        .padding(
+                            horizontal = if (fillMaxWidth) 6.dp else 12.dp,
+                            vertical = 7.dp,
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
