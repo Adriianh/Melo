@@ -60,7 +60,6 @@ import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.util.MeloVersion
-import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.koin.compose.viewmodel.koinViewModel
@@ -113,64 +112,29 @@ fun UpdateSettingsSectionContent(
     onInstallUpdate: (String) -> Unit,
     currentVersion: String = MeloVersion.CURRENT,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth().animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        SettingsSection(caption = "Versión") {
-            UpdateVersionHeaderRow(
-                currentVersion = currentVersion,
-                canCheck = state !is UpdateState.Checking && state !is UpdateState.Downloading,
-                onCheckForUpdates = { onCheckForUpdates(updateChannel) },
-            )
-
-            SettingsRowDivider()
-
-            SettingToggleRow(
-                title = "Buscar automáticamente",
-                subtitle = "Comprueba si hay nuevas versiones al abrir la app.",
-                checked = autoCheckUpdates,
-                onCheckedChange = onToggleAutoCheckUpdates,
-            )
-        }
-
-        SettingsSection(caption = "Canal") {
-            SettingChoiceRow(
-                title = "Canal de actualización",
-                subtitle =
-                    if (updateChannel == UpdateChannel.NIGHTLY) {
-                        "Novedades continuas y correcciones automáticas de desarrollo."
-                    } else {
-                        "Versiones oficiales recomendadas y probadas."
-                    },
-            ) {
-                SegmentedControl(
-                    options = UpdateChannel.entries,
-                    selected = updateChannel,
-                    onSelect = { channel ->
-                        if (channel != updateChannel) {
-                            onUpdateChannelSelected(channel)
-                        }
-                    },
-                    label = { it.displayName },
-                )
-            }
-        }
-
-        UpdateStatusContent(
-            state = state,
-            currentVersion = currentVersion,
+    val entries =
+        rememberUpdateSettingEntries(
+            autoCheckUpdates = autoCheckUpdates,
             updateChannel = updateChannel,
+            updateState = state,
+            onToggleAutoCheckUpdates = onToggleAutoCheckUpdates,
+            onUpdateChannelSelected = onUpdateChannelSelected,
             onCheckForUpdates = onCheckForUpdates,
             onStartDownload = onStartDownload,
             onCancelDownload = onCancelDownload,
             onInstallUpdate = onInstallUpdate,
+            currentVersion = currentVersion,
         )
-    }
+
+    SettingsCategoryEntriesPane(
+        entries = entries,
+        category = SettingsCategory.UPDATES,
+        modifier = modifier.fillMaxWidth().animateContentSize(),
+    )
 }
 
 @Composable
-private fun UpdateVersionHeaderRow(
+internal fun UpdateVersionHeaderRow(
     currentVersion: String,
     canCheck: Boolean,
     onCheckForUpdates: () -> Unit,
@@ -270,7 +234,7 @@ private fun UpdateChannelChip(isNightly: Boolean) {
 }
 
 @Composable
-private fun UpdateStatusContent(
+internal fun UpdateStatusContent(
     state: UpdateState,
     currentVersion: String,
     updateChannel: UpdateChannel,

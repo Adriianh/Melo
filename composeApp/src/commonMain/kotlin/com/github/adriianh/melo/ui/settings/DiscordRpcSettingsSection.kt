@@ -11,54 +11,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.github.adriianh.core.domain.model.Settings
-import com.github.adriianh.melo.util.PlatformType
 
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
-internal fun DiscordRpcSettingsSection(
-    settings: Settings,
-    actions: SettingsActions,
-    platformType: PlatformType,
+internal fun DiscordRpcAccountEntry(
+    token: String?,
+    onTokenChanged: (String?) -> Unit,
 ) {
     var showDiscordLoginDialog by remember { mutableStateOf(false) }
 
     if (showDiscordLoginDialog) {
         DiscordLoginDialog(
             onDismiss = { showDiscordLoginDialog = false },
-            onTokenSaved = { token ->
-                actions.onDiscordTokenChanged(token)
+            onTokenSaved = { savedToken ->
+                onTokenChanged(savedToken)
                 showDiscordLoginDialog = false
             },
         )
     }
 
-    SettingsSection(caption = "Discord Rich Presence") {
-        val isLinked = !settings.discordRpcToken.isNullOrBlank()
-
-        if (platformType == PlatformType.ANDROID) {
-            DiscordRpcAccountRow(
-                token = settings.discordRpcToken,
-                onUnlink = { actions.onDiscordTokenChanged(null) },
-                onOpenLogin = { showDiscordLoginDialog = true },
-            )
-            SettingsRowDivider()
-        }
-
-        SettingToggleRow(
-            title = "Mostrar actividad en Discord",
-            subtitle =
-                if (platformType == PlatformType.ANDROID) {
-                    "Muestra en tiempo real tu música en reproducción usando la API de Discord."
-                } else {
-                    "Muestra en tiempo real tu música en reproducción en tu estado de Discord Desktop."
-                },
-            checked = settings.discordRpcEnabled,
-            onCheckedChange = actions.onDiscordRpcToggle,
-            enabled = platformType != PlatformType.ANDROID || isLinked,
-            disabledNote = "Vincula tu cuenta para activarlo",
-        )
-    }
+    DiscordRpcAccountRow(
+        token = token,
+        onUnlink = { onTokenChanged(null) },
+        onOpenLogin = { showDiscordLoginDialog = true },
+    )
 }
 
 @Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
