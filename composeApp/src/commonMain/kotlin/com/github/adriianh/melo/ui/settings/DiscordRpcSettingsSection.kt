@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.melo.util.PlatformType
 
@@ -103,14 +102,14 @@ private fun DiscordRpcAccountRow(
                 onClick = onOpenLogin,
                 emphasis = SettingActionEmphasis.SECONDARY,
                 icon = Icons.Default.SwapHoriz,
-                modifier = Modifier.actionWidth(minInlineWidth = 128.dp),
+                modifier = Modifier.actionWidth(),
             )
             SettingActionButton(
                 text = "Desvincular",
                 onClick = { showUnlinkConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.LinkOff,
-                modifier = Modifier.actionWidth(minInlineWidth = 140.dp),
+                modifier = Modifier.actionWidth(),
             )
         } else {
             SettingActionButton(

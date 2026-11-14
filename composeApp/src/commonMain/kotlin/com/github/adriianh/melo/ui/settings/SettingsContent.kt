@@ -520,31 +520,13 @@ internal fun DownloadsSettingsSection(
 
         SettingsRowDivider()
 
-        var showClearCacheConfirm by rememberSaveable { mutableStateOf(false) }
-
-        if (showClearCacheConfirm) {
-            SettingsConfirmDialog(
-                title = "Limpiar caché de audio",
-                message =
-                    "¿Estás seguro de que deseas eliminar las pistas almacenadas temporalmente en caché? " +
-                        "Tus canciones descargadas y archivos locales no se verán afectados.",
-                confirmText = "Limpiar caché",
-                icon = Icons.Default.DeleteSweep,
-                onConfirm = {
-                    showClearCacheConfirm = false
-                    actions.onClearCache()
-                },
-                onDismiss = { showClearCacheConfirm = false },
-            )
-        }
-
         SettingActionRow(
             title = "Limpiar caché de audio",
             subtitle = "Libera espacio eliminando las pistas cacheadas temporalmente.",
         ) {
             SettingActionButton(
                 text = "Limpiar caché",
-                onClick = { showClearCacheConfirm = true },
+                onClick = actions.onClearCache,
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.DeleteSweep,
                 modifier = Modifier.actionWidth(),
