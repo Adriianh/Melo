@@ -14,7 +14,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,9 +32,10 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -113,21 +113,18 @@ fun UpdateSettingsSectionContent(
     onInstallUpdate: (String) -> Unit,
     currentVersion: String = MeloVersion.CURRENT,
 ) {
-    Surface(
-        color = MeloColors.surface2.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MeloColors.border),
+    Column(
         modifier = modifier.fillMaxWidth().animateContentSize(),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+        SettingsSection(caption = "Versión") {
             UpdateVersionHeaderRow(
                 currentVersion = currentVersion,
                 canCheck = state !is UpdateState.Checking && state !is UpdateState.Downloading,
                 onCheckForUpdates = { onCheckForUpdates(updateChannel) },
             )
+
+            SettingsRowDivider()
 
             SettingToggleRow(
                 title = "Buscar automáticamente",
@@ -135,7 +132,9 @@ fun UpdateSettingsSectionContent(
                 checked = autoCheckUpdates,
                 onCheckedChange = onToggleAutoCheckUpdates,
             )
+        }
 
+        SettingsSection(caption = "Canal") {
             SettingChoiceRow(
                 title = "Canal de actualización",
                 subtitle =
@@ -156,17 +155,17 @@ fun UpdateSettingsSectionContent(
                     label = { it.displayName },
                 )
             }
-
-            UpdateStatusContent(
-                state = state,
-                currentVersion = currentVersion,
-                updateChannel = updateChannel,
-                onCheckForUpdates = onCheckForUpdates,
-                onStartDownload = onStartDownload,
-                onCancelDownload = onCancelDownload,
-                onInstallUpdate = onInstallUpdate,
-            )
         }
+
+        UpdateStatusContent(
+            state = state,
+            currentVersion = currentVersion,
+            updateChannel = updateChannel,
+            onCheckForUpdates = onCheckForUpdates,
+            onStartDownload = onStartDownload,
+            onCancelDownload = onCancelDownload,
+            onInstallUpdate = onInstallUpdate,
+        )
     }
 }
 
@@ -179,36 +178,26 @@ private fun UpdateVersionHeaderRow(
     val isCurrentNightly = currentVersion.contains("nightly", ignoreCase = true)
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.SystemUpdate,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
                 Text(
-                    text = "Actualizaciones",
-                    style = MeloType.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    text = "Versión instalada",
+                    style = MeloType.body,
+                    fontWeight = FontWeight.Medium,
                     color = MeloColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -218,7 +207,7 @@ private fun UpdateVersionHeaderRow(
             }
 
             Text(
-                text = "Versión instalada: v$currentVersion",
+                text = "v$currentVersion",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 2,
@@ -226,22 +215,26 @@ private fun UpdateVersionHeaderRow(
             )
         }
 
-        Box(
+        OutlinedIconButton(
+            onClick = onCheckForUpdates,
+            enabled = canCheck,
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MeloColors.borderStrong),
+            colors =
+                IconButtonDefaults.outlinedIconButtonColors(
+                    containerColor = MeloColors.surface2.copy(alpha = 0.5f),
+                    contentColor = MeloColors.textPrimary,
+                    disabledContainerColor = MeloColors.surface2.copy(alpha = 0.35f),
+                    disabledContentColor = MaterialTheme.colorScheme.primary,
+                ),
             modifier = Modifier.size(48.dp),
-            contentAlignment = Alignment.Center,
         ) {
             if (canCheck) {
-                IconButton(
-                    onClick = onCheckForUpdates,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Buscar actualizaciones",
-                        tint = MeloColors.textPrimary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Buscar actualizaciones",
+                    modifier = Modifier.size(20.dp),
+                )
             } else {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
