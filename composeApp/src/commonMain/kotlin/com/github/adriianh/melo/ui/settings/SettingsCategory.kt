@@ -342,9 +342,9 @@ private fun SettingsSidebarItem(
             .selectable(selected = selected, role = Role.Tab, onClick = onClick)
 
     Surface(
-        color = if (selected) primary.copy(alpha = 0.16f) else MeloColors.surface2.copy(alpha = 0.25f),
+        color = if (selected) primary.copy(alpha = 0.16f) else MeloColors.surface2.copy(alpha = 0.45f),
         shape = shape,
-        border = BorderStroke(1.dp, if (selected) primary else MeloColors.border.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MeloColors.border),
         modifier = itemModifier,
     ) {
         Row(
