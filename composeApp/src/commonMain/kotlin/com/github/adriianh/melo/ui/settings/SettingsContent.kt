@@ -481,7 +481,7 @@ internal fun DownloadsSettingsSection(
             subtitle = "Libera espacio eliminando las pistas cacheadas temporalmente.",
         ) {
             SettingActionButton(
-                text = "Limpiar",
+                text = "Limpiar caché",
                 onClick = { showClearCacheConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.DeleteSweep,

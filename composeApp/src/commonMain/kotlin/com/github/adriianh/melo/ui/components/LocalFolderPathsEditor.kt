@@ -110,6 +110,8 @@ fun LocalFolderPathsEditor(
                     text = "Elegir carpeta",
                     style = MeloType.labelMedium,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -129,6 +131,8 @@ fun LocalFolderPathsEditor(
                     text = "Escribir ruta manualmente",
                     style = MeloType.labelMedium,
                     color = MeloColors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Icon(

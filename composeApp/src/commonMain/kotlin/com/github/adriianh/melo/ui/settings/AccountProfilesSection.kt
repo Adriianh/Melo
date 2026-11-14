@@ -69,7 +69,7 @@ internal fun AccountProfilesList(
                     onClick = onRefresh,
                     emphasis = SettingActionEmphasis.SECONDARY,
                     icon = Icons.Default.Refresh,
-                    modifier = Modifier.actionWidth(minInlineWidth = 140.dp),
+                    modifier = Modifier.actionWidth(),
                 )
             }
         }
