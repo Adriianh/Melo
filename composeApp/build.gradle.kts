@@ -240,3 +240,7 @@ compose.desktop {
         }
     }
 }
+
+dependencies {
+    debugImplementation(libs.ui.tooling)
+}

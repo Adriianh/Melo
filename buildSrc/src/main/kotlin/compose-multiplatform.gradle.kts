@@ -37,7 +37,7 @@ extensions.configure<KotlinMultiplatformExtension> {
                 implementation(libs.findLibrary("material3").get())
                 implementation(libs.findLibrary("ui").get())
                 implementation(libs.findLibrary("composeResources").get())
-                implementation(libs.findLibrary("composeUiToolingPreview").get())
+                implementation(libs.findLibrary("ui-tooling-preview").get())
             }
         }
         val androidMain by getting {

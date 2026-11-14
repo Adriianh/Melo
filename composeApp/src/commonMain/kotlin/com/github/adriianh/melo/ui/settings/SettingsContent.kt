@@ -1,47 +1,52 @@
+@file:Suppress(
+    "FunctionNaming",
+    "LongMethod",
+    "LongParameterList",
+    "TooManyFunctions",
+    "ktlint:standard:function-naming",
+)
+
 package com.github.adriianh.melo.ui.settings
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
@@ -50,12 +55,16 @@ import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
+import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
+import org.koin.compose.viewmodel.koinViewModel
+
+private val EXPANDED_SETTINGS_BREAKPOINT = 540.dp
 
 @Composable
 internal fun SettingsContent(
@@ -68,271 +77,511 @@ internal fun SettingsContent(
     profilesError: String?,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
+    initialCategory: SettingsCategory? = null,
+    selectedCategoryName: String? = null,
+    onSelectedCategoryChange: ((String?) -> Unit)? = null,
+    onClose: (() -> Unit)? = null,
+    updateState: UpdateState? = null,
 ) {
-    val scrollState = rememberScrollState()
     val platform = remember { getPlatform() }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        AppearanceSettingsSection(settings, actions)
-        PlaybackSettingsSection(settings, actions)
-        if (platform.type != PlatformType.IOS) {
-            DiscordRpcSettingsSection(settings, actions, platform.type)
+    val categories = remember(platform.type) { SettingsCategory.visibleFor(platform.type) }
+    var internalSelectedCategoryName by rememberSaveable { mutableStateOf(initialCategory?.name) }
+    val activeCategoryName =
+        if (onSelectedCategoryChange != null) {
+            selectedCategoryName ?: initialCategory?.name
+        } else {
+            internalSelectedCategoryName
         }
-        DownloadsSettingsSection(settings, actions)
-        LocalFoldersSection(settings, actions)
-        AccountSettingsSection(
-            settings = settings,
-            isLoggedIn = isLoggedIn,
-            profiles = profiles,
-            activePageId = activePageId,
-            isLoadingProfiles = isLoadingProfiles,
-            isSwitchingProfile = isSwitchingProfile,
-            profilesError = profilesError,
-            actions = actions,
-        )
-        UpdateSettingsSection(
-            autoCheckUpdates = settings.autoCheckUpdates,
-            onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates,
-            updateChannel = settings.updateChannel,
-            onUpdateChannelSelected = actions.onUpdateChannelSelected,
-        )
+    val setSelectedCategoryName: (String?) -> Unit = { nextName ->
+        if (onSelectedCategoryChange != null) {
+            onSelectedCategoryChange(nextName)
+        } else {
+            internalSelectedCategoryName = nextName
+        }
+    }
+    val selectedCategory = categories.find { it.name == activeCategoryName }
 
-        Spacer(modifier = Modifier.height(24.dp))
+    val resolvedUpdateState: UpdateState? =
+        if (updateState != null) {
+            updateState
+        } else {
+            val viewModel: UpdateViewModel = koinViewModel()
+            val vmState by viewModel.uiState.collectAsState()
+            vmState
+        }
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isExpanded = maxWidth >= EXPANDED_SETTINGS_BREAKPOINT
+
+        if (isExpanded) {
+            val activeCategory = selectedCategory ?: categories.first()
+            Row(modifier = Modifier.fillMaxSize()) {
+                SettingsSidebar(
+                    categories = categories,
+                    selectedCategory = activeCategory,
+                    updateState = resolvedUpdateState,
+                    onSelectCategory = { setSelectedCategoryName(it.name) },
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .width(1.dp)
+                            .fillMaxHeight()
+                            .background(MeloColors.border),
+                )
+
+                Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    SettingsExpandedDetailHeader(
+                        category = activeCategory,
+                        onClose = onClose,
+                    )
+
+                    val detailScrollState = rememberScrollState()
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(
+                                    state = detailScrollState,
+                                    enabled = detailScrollState.maxValue > 0,
+                                ).padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        SettingsCategoryDetailPane(
+                            category = activeCategory,
+                            settings = settings,
+                            isLoggedIn = isLoggedIn,
+                            profiles = profiles,
+                            activePageId = activePageId,
+                            isLoadingProfiles = isLoadingProfiles,
+                            isSwitchingProfile = isSwitchingProfile,
+                            profilesError = profilesError,
+                            actions = actions,
+                            platformType = platform.type,
+                            previewUpdateState = updateState,
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                }
+            }
+        } else {
+            SettingsBackHandler(enabled = selectedCategory != null) {
+                setSelectedCategoryName(null)
+            }
+
+            AnimatedContent(
+                targetState = selectedCategory,
+                label = "SettingsCategoryTransition",
+                modifier = Modifier.fillMaxSize(),
+            ) { currentCategory ->
+                if (currentCategory == null) {
+                    SettingsCategoryList(
+                        categories = categories,
+                        settings = settings,
+                        isLoggedIn = isLoggedIn,
+                        updateState = resolvedUpdateState,
+                        onSelectCategory = { setSelectedCategoryName(it.name) },
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp),
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SettingsCompactDetailHeader(
+                            category = currentCategory,
+                            onBack = { setSelectedCategoryName(null) },
+                        )
+
+                        val detailScrollState = rememberScrollState()
+                        Column(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .verticalScroll(
+                                        state = detailScrollState,
+                                        enabled = detailScrollState.maxValue > 0,
+                                    ),
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                        ) {
+                            SettingsCategoryDetailPane(
+                                category = currentCategory,
+                                settings = settings,
+                                isLoggedIn = isLoggedIn,
+                                profiles = profiles,
+                                activePageId = activePageId,
+                                isLoadingProfiles = isLoadingProfiles,
+                                isSwitchingProfile = isSwitchingProfile,
+                                profilesError = profilesError,
+                                actions = actions,
+                                platformType = platform.type,
+                                previewUpdateState = updateState,
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun AppearanceSettingsSection(
+private fun SettingsExpandedDetailHeader(
+    category: SettingsCategory,
+    onClose: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 14.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = category.title,
+            fontSize = 20.sp,
+            lineHeight = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = MeloColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (onClose != null) {
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar",
+                    tint = MeloColors.textSecondary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsCompactDetailHeader(
+    category: SettingsCategory,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver a categorías",
+                tint = MeloColors.textPrimary,
+            )
+        }
+        Text(
+            text = category.title,
+            fontSize = 20.sp,
+            lineHeight = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = MeloColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun SettingsCategoryDetailPane(
+    category: SettingsCategory,
+    settings: Settings,
+    isLoggedIn: Boolean,
+    profiles: List<AccountProfile>,
+    activePageId: String?,
+    isLoadingProfiles: Boolean,
+    isSwitchingProfile: Boolean,
+    profilesError: String?,
+    actions: SettingsActions,
+    platformType: PlatformType,
+    previewUpdateState: UpdateState?,
+) {
+    when (category) {
+        SettingsCategory.APPEARANCE -> AppearanceSettingsSection(settings, actions)
+        SettingsCategory.PLAYBACK -> PlaybackSettingsSection(settings, actions)
+        SettingsCategory.LIBRARY -> {
+            DownloadsSettingsSection(settings, actions)
+            LocalFoldersSection(settings, actions)
+        }
+        SettingsCategory.ACCOUNT -> {
+            AccountSettingsSection(
+                settings = settings,
+                isLoggedIn = isLoggedIn,
+                profiles = profiles,
+                activePageId = activePageId,
+                isLoadingProfiles = isLoadingProfiles,
+                isSwitchingProfile = isSwitchingProfile,
+                profilesError = profilesError,
+                actions = actions,
+            )
+        }
+        SettingsCategory.INTEGRATIONS -> {
+            if (platformType != PlatformType.IOS) {
+                DiscordRpcSettingsSection(settings, actions, platformType)
+            }
+        }
+        SettingsCategory.UPDATES -> {
+            if (previewUpdateState != null) {
+                UpdateSettingsSectionContent(
+                    state = previewUpdateState,
+                    autoCheckUpdates = settings.autoCheckUpdates,
+                    updateChannel = settings.updateChannel,
+                    onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates,
+                    onUpdateChannelSelected = actions.onUpdateChannelSelected,
+                    onCheckForUpdates = {},
+                    onStartDownload = { _, _ -> },
+                    onCancelDownload = {},
+                    onInstallUpdate = {},
+                )
+            } else {
+                UpdateSettingsSection(
+                    autoCheckUpdates = settings.autoCheckUpdates,
+                    onToggleAutoCheckUpdates = actions.onToggleAutoCheckUpdates,
+                    updateChannel = settings.updateChannel,
+                    onUpdateChannelSelected = actions.onUpdateChannelSelected,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun AppearanceSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Apariencia y tema",
-        icon = Icons.Default.ColorLens
-    ) {
-        SettingRow(
+    SettingsSection(caption = "Apariencia y tema") {
+        SettingInlineChoiceRow(
             title = "Modo de tema",
-            subtitle = "Sigue la configuración del sistema o fuerza claro/oscuro."
-        ) {
+            subtitle = "Sigue la configuración del sistema o fuerza claro/oscuro.",
+        ) { isInline ->
             SegmentedControl(
                 options = ThemeMode.entries,
                 selected = settings.themeMode,
                 onSelect = actions.onThemeModeSelected,
-                label = {
-                    when (it) {
-                        ThemeMode.SYSTEM -> "Sistema"
-                        ThemeMode.LIGHT -> "Claro"
-                        ThemeMode.DARK -> "Oscuro"
-                    }
-                }
+                label = { it.uiLabel() },
+                fillMaxWidth = !isInline,
             )
         }
 
-        SettingRow(
+        SettingsRowDivider()
+
+        SettingToggleRow(
             title = "Color dinámico",
-            subtitle = "Armoniza la interfaz con los colores de la carátula actual."
-        ) {
-            MeloSettingsSwitch(
-                checked = settings.dynamicColor,
-                onCheckedChange = actions.onDynamicColorToggle
-            )
-        }
+            subtitle = "Armoniza la interfaz con los colores de la carátula actual.",
+            checked = settings.dynamicColor,
+            onCheckedChange = actions.onDynamicColorToggle,
+        )
 
-        if (!settings.dynamicColor) {
-            SettingRow(
-                title = "Paleta de color",
-                subtitle = "Selecciona una paleta de acento fija para la interfaz."
-            ) {
-                SettingOptionChips(
-                    options = ThemePreset.entries,
-                    isSelected = { it == settings.theme },
-                    onSelect = actions.onThemePresetSelected,
-                    label = { it.displayName }
-                )
-            }
+        SettingsRowDivider()
+
+        val paletteEnabled = !settings.dynamicColor
+        SettingChoiceRow(
+            title = "Paleta de color",
+            subtitle = "Selecciona una paleta de acento fija para la interfaz.",
+            enabled = paletteEnabled,
+            disabledNote = "Controlado por Color dinámico",
+        ) {
+            SettingOptionGrid(
+                options = ThemePreset.entries,
+                isSelected = { it == settings.theme },
+                onSelect = actions.onThemePresetSelected,
+                title = { it.displayName },
+                enabled = paletteEnabled,
+            )
         }
     }
 }
 
 @Composable
-private fun PlaybackSettingsSection(
+internal fun PlaybackSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Reproducción y streaming",
-        icon = Icons.Default.Headphones
-    ) {
-        SettingRow(
+    SettingsSection(caption = "Reproducción y streaming") {
+        SettingToggleRow(
             title = "Ahorro de datos",
-            subtitle = "Prioriza bitrates más bajos para minimizar el consumo móvil."
+            subtitle = "Prioriza bitrates más bajos para minimizar el consumo móvil.",
+            checked = settings.dataSaver,
+            onCheckedChange = actions.onDataSaverToggle,
+        )
+
+        SettingsRowDivider()
+
+        val streamingQualityEnabled = !settings.dataSaver
+        SettingChoiceRow(
+            title = "Calidad de streaming",
+            subtitle = "Tasa de bits para la reproducción online.",
+            enabled = streamingQualityEnabled,
+            disabledNote = "Controlado por Ahorro de datos",
         ) {
-            MeloSettingsSwitch(
-                checked = settings.dataSaver,
-                onCheckedChange = actions.onDataSaverToggle
+            SettingOptionGrid(
+                options = AudioQuality.entries,
+                isSelected = { it == settings.audioQuality },
+                onSelect = actions.onAudioQualitySelected,
+                title = { it.uiTitle() },
+                hint = { it.uiHint() },
+                enabled = streamingQualityEnabled,
             )
         }
 
-        if (!settings.dataSaver) {
-            SettingRow(
-                title = "Calidad de streaming",
-                subtitle = "Tasa de bits para la reproducción online."
-            ) {
-                SettingOptionChips(
-                    options = AudioQuality.entries,
-                    isSelected = { it == settings.audioQuality },
-                    onSelect = actions.onAudioQualitySelected,
-                    label = { it.displayName }
-                )
-            }
-        }
+        SettingsRowDivider()
 
-        SettingRow(
+        SettingToggleRow(
             title = "Reproducción continua",
-            subtitle = "Añade canciones similares al finalizar la cola."
-        ) {
-            MeloSettingsSwitch(
-                checked = settings.autoplay,
-                onCheckedChange = actions.onAutoplayToggle
-            )
-        }
+            subtitle = "Añade canciones similares al finalizar la cola.",
+            checked = settings.autoplay,
+            onCheckedChange = actions.onAutoplayToggle,
+        )
 
-        SettingRow(
+        SettingsRowDivider()
+
+        SettingToggleRow(
             title = "Reanudar la última sesión activa",
             subtitle = "Al arrancar, recupera la cola más reciente aunque pertenezca a otra instancia de Melo.",
-        ) {
-            MeloSettingsSwitch(
-                checked = settings.resumeLastActiveSession,
-                onCheckedChange = actions.onResumeLastActiveSessionToggle,
-            )
-        }
+            checked = settings.resumeLastActiveSession,
+            onCheckedChange = actions.onResumeLastActiveSessionToggle,
+        )
     }
 }
 
 @Composable
-private fun DownloadsSettingsSection(
+internal fun DownloadsSettingsSection(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Descargas y caché offline",
-        icon = Icons.Default.Download
-    ) {
-        SettingRow(
+    SettingsSection(caption = "Descargas y caché offline") {
+        SettingToggleRow(
             title = "Modo sin conexión",
-            subtitle = "Bloquea peticiones de red y prioriza únicamente contenido descargado y local."
-        ) {
-            MeloSettingsSwitch(
-                checked = settings.offlineMode,
-                onCheckedChange = actions.onOfflineModeToggle
-            )
-        }
+            subtitle = "Bloquea peticiones de red y prioriza únicamente contenido descargado y local.",
+            checked = settings.offlineMode,
+            onCheckedChange = actions.onOfflineModeToggle,
+        )
 
-        SettingRow(
+        SettingsRowDivider()
+
+        SettingChoiceRow(
             title = "Límite de tamaño de caché",
-            subtitle = "Espacio máximo para canciones escuchadas recientemente (limpieza LRU automática)."
+            subtitle = "Espacio máximo para canciones escuchadas recientemente (limpieza LRU automática).",
         ) {
-            SettingOptionChips(
+            SettingOptionGrid(
                 options = CacheSizeLimit.entries,
                 isSelected = { it.sizeMb == settings.maxOfflineSizeMb },
                 onSelect = actions.onCacheSizeLimitSelected,
-                label = { it.displayName }
+                title = { it.displayName },
+                hint = { it.uiHint() },
             )
         }
 
-        SettingRow(
+        SettingsRowDivider()
+
+        SettingChoiceRow(
             title = "Formato de descarga",
-            subtitle = "Extensión y contenedor preferido para guardar pistas."
+            subtitle = "Extensión y contenedor preferido para guardar pistas.",
         ) {
-            SettingOptionChips(
+            SettingOptionGrid(
                 options = DownloadFormat.entries,
                 isSelected = { it == settings.downloadFormat },
                 onSelect = actions.onDownloadFormatSelected,
-                label = { it.name }
+                title = { it.name },
+                hint = { ".${it.displayName}" },
             )
         }
 
-        SettingRow(
+        SettingsRowDivider()
+
+        SettingChoiceRow(
             title = "Calidad de descarga",
-            subtitle = "Tasa de bits máxima al descargar."
+            subtitle = "Tasa de bits máxima al descargar.",
         ) {
-            SettingOptionChips(
+            SettingOptionGrid(
                 options = DownloadQuality.entries,
                 isSelected = { it == settings.downloadQuality },
                 onSelect = actions.onDownloadQualitySelected,
-                label = { "${it.name} (${it.displayName})" }
+                title = { it.name },
+                hint = { it.displayName },
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        SettingsRowDivider()
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        var showClearCacheConfirm by rememberSaveable { mutableStateOf(false) }
+
+        if (showClearCacheConfirm) {
+            SettingsConfirmDialog(
+                title = "Limpiar caché de audio",
+                message =
+                    "¿Estás seguro de que deseas eliminar las pistas almacenadas temporalmente en caché? " +
+                        "Tus canciones descargadas y archivos locales no se verán afectados.",
+                confirmText = "Limpiar caché",
+                icon = Icons.Default.DeleteSweep,
+                onConfirm = {
+                    showClearCacheConfirm = false
+                    actions.onClearCache()
+                },
+                onDismiss = { showClearCacheConfirm = false },
+            )
+        }
+
+        SettingActionRow(
+            title = "Limpiar caché de audio",
+            subtitle = "Libera espacio eliminando las pistas cacheadas temporalmente.",
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Limpiar caché de audio",
-                    style = MeloType.body,
-                    fontWeight = FontWeight.Medium,
-                    color = MeloColors.textPrimary
-                )
-                Text(
-                    text = "Libera espacio eliminando las pistas cacheadas temporalmente.",
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            OutlinedButton(
-                onClick = actions.onClearCache,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteSweep,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Limpiar", style = MeloType.labelMedium)
-            }
+            SettingActionButton(
+                text = "Limpiar caché",
+                onClick = { showClearCacheConfirm = true },
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = Icons.Default.DeleteSweep,
+                modifier = Modifier.actionWidth(),
+            )
         }
     }
 }
 
 @Composable
-private fun LocalFoldersSection(
+internal fun LocalFoldersSection(
     settings: Settings,
     actions: SettingsActions,
+    initialManualExpanded: Boolean = false,
 ) {
-    SettingsGroupCard(
-        title = "Carpetas de música local",
-        icon = Icons.Default.Folder
-    ) {
-        Text(
-            text = "Configura carpetas de tu dispositivo para indexar canciones locales.",
-            style = MeloType.labelSmall,
-            color = MeloColors.textSecondary
-        )
+    SettingsSection(caption = "Carpetas de música local") {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Configura carpetas de tu dispositivo para indexar canciones locales.",
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+            )
 
-        LocalFolderPathsEditor(
-            configuredPaths = settings.localLibraryPaths,
-            onAddPath = actions.onAddLocalPath,
-            onRemovePath = actions.onRemoveLocalPath
-        )
+            LocalFolderPathsEditor(
+                configuredPaths = settings.localLibraryPaths,
+                onAddPath = actions.onAddLocalPath,
+                onRemovePath = actions.onRemoveLocalPath,
+                initialManualExpanded = initialManualExpanded,
+            )
+        }
     }
 }
 
 @Composable
-private fun AccountSettingsSection(
+internal fun AccountSettingsSection(
     settings: Settings,
     isLoggedIn: Boolean,
     profiles: List<AccountProfile>,
@@ -342,10 +591,7 @@ private fun AccountSettingsSection(
     profilesError: String?,
     actions: SettingsActions,
 ) {
-    SettingsGroupCard(
-        title = "Cuenta y sesión",
-        icon = Icons.Default.Person
-    ) {
+    SettingsSection(caption = "Cuenta y sesión") {
         AccountSessionHeader(
             isLoggedIn = isLoggedIn,
             onLogout = actions.onLogout,
@@ -353,6 +599,7 @@ private fun AccountSettingsSection(
         )
 
         if (isLoggedIn) {
+            SettingsRowDivider()
             AccountProfilesList(
                 profiles = profiles,
                 activePageId = activePageId,
@@ -362,198 +609,71 @@ private fun AccountSettingsSection(
                 onSelect = actions.onSelectAccountProfile,
                 onRefresh = actions.onRefreshAccountProfiles,
             )
-
-            SettingRow(
-                title = "Registrar reproducciones en YouTube",
-                subtitle = "Sincroniza automáticamente las pistas que escuchas con tu historial de YouTube Music."
-            ) {
-                MeloSettingsSwitch(
-                    checked = settings.syncHistoryToYouTube,
-                    onCheckedChange = actions.onSyncHistoryToYouTubeChanged
-                )
-            }
         }
+
+        SettingsRowDivider()
+
+        SettingToggleRow(
+            title = "Registrar reproducciones en YouTube",
+            subtitle = "Sincroniza automáticamente las pistas que escuchas con tu historial de YouTube Music.",
+            checked = settings.syncHistoryToYouTube,
+            onCheckedChange = actions.onSyncHistoryToYouTubeChanged,
+            enabled = isLoggedIn,
+            disabledNote = "Inicia sesión para activarlo",
+        )
     }
 }
 
-@Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
 private fun AccountSessionHeader(
     isLoggedIn: Boolean,
     onLogout: () -> Unit,
     onOpenLogin: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = if (isLoggedIn) "Sesión iniciada con YouTube Music" else "Sin conexión de cuenta",
-                style = MeloType.body,
-                fontWeight = FontWeight.SemiBold,
-                color = MeloColors.textPrimary,
-            )
-            Text(
-                text =
-                    if (isLoggedIn) {
-                        "Tus playlists, likes y biblioteca están sincronizados."
-                    } else {
-                        "Inicia sesión para sincronizar tus playlists y favoritos."
-                    },
-                style = MeloType.labelSmall,
-                color = MeloColors.textSecondary,
-            )
-        }
+    var showLogoutConfirm by rememberSaveable { mutableStateOf(false) }
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        if (isLoggedIn) {
-            OutlinedButton(
-                onClick = onLogout,
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Cerrar sesión")
-            }
-        } else {
-            Button(
-                onClick = onOpenLogin,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text("Iniciar sesión")
-            }
-        }
-    }
-}
-
-@Suppress("FunctionNaming")
-@Composable
-internal fun SettingsGroupCard(
-    title: String,
-    icon: ImageVector,
-    content: @Composable () -> Unit
-) {
-    Surface(
-        color = MeloColors.surface2.copy(alpha = 0.45f),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MeloColors.border),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                Text(
-                    text = title,
-                    style = MeloType.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MeloColors.textPrimary
-                )
-            }
-
-            content()
-        }
-    }
-}
-
-@Suppress("FunctionNaming")
-@Composable
-internal fun SettingRow(
-    title: String,
-    subtitle: String,
-    content: @Composable () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = title,
-                style = MeloType.body,
-                fontWeight = FontWeight.Medium,
-                color = MeloColors.textPrimary
-            )
-            Text(
-                text = subtitle,
-                style = MeloType.labelSmall,
-                color = MeloColors.textSecondary
-            )
-        }
-        content()
-    }
-}
-
-@Composable
-private fun <T> SettingOptionChips(
-    options: List<T>,
-    isSelected: (T) -> Boolean,
-    onSelect: (T) -> Unit,
-    label: (T) -> String,
-) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp)
-    ) {
-        items(options) { option ->
-            val selected = isSelected(option)
-            FilterChip(
-                selected = selected,
-                onClick = { onSelect(option) },
-                label = { Text(label(option), style = MeloType.labelMedium) },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MeloColors.surface2,
-                    labelColor = MeloColors.textSecondary,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = 0.2f
-                    ),
-                    selectedLabelColor = MaterialTheme.colorScheme.primary,
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = selected,
-                    borderColor = MeloColors.border,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary,
-                    borderWidth = 0.5.dp,
-                    selectedBorderWidth = 1.dp
-                )
-            )
-        }
-    }
-}
-
-@Suppress("FunctionNaming")
-@Composable
-internal fun MeloSettingsSwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colorScheme.primary,
-            checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+    if (showLogoutConfirm) {
+        SettingsConfirmDialog(
+            title = "Cerrar sesión",
+            message =
+                "¿Estás seguro de que deseas cerrar tu sesión de YouTube Music? " +
+                    "Dejarás de sincronizar tu biblioteca, listas y recomendaciones " +
+                    "hasta que vuelvas a iniciar sesión.",
+            confirmText = "Cerrar sesión",
+            icon = Icons.AutoMirrored.Filled.Logout,
+            onConfirm = {
+                showLogoutConfirm = false
+                onLogout()
+            },
+            onDismiss = { showLogoutConfirm = false },
         )
-    )
+    }
+
+    SettingActionRow(
+        title = if (isLoggedIn) "Sesión iniciada con YouTube Music" else "Sin conexión de cuenta",
+        subtitle =
+            if (isLoggedIn) {
+                "Tus playlists, likes y biblioteca están sincronizados."
+            } else {
+                "Inicia sesión para sincronizar tus playlists y favoritos."
+            },
+    ) {
+        if (isLoggedIn) {
+            SettingActionButton(
+                text = "Cerrar sesión",
+                onClick = { showLogoutConfirm = true },
+                emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                icon = Icons.AutoMirrored.Filled.Logout,
+                modifier = Modifier.actionWidth(),
+            )
+        } else {
+            SettingActionButton(
+                text = "Iniciar sesión",
+                onClick = onOpenLogin,
+                emphasis = SettingActionEmphasis.PRIMARY,
+                icon = Icons.AutoMirrored.Filled.Login,
+                modifier = Modifier.actionWidth(),
+            )
+        }
+    }
 }
