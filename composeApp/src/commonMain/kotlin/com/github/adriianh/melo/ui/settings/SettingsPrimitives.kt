@@ -499,7 +499,7 @@ private fun SettingOptionCell(
         modifier = cellModifier,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().heightIn(min = 56.dp),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             SettingOptionCellText(
