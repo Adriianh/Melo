@@ -265,9 +265,66 @@ private fun PreviewLocalFoldersEntry(
     SettingsEntriesSections(entries = entries)
 }
 
+@Preview(widthDp = 320, heightDp = 640, fontScale = 1.3f)
+@Composable
+internal fun PreviewSettingsCompactSearchResults() {
+    MaterialTheme {
+        SettingsFullScreenSurface(
+            settings =
+                Settings(
+                    themeMode = ThemeMode.DARK,
+                    dynamicColor = false,
+                    theme = ThemePreset.CATPPUCCIN_MOCHA,
+                ),
+            isLoggedIn = false,
+            profiles = emptyList(),
+            activePageId = null,
+            isLoadingProfiles = false,
+            isSwitchingProfile = false,
+            profilesError = null,
+            actions = previewSettingsActions(),
+            onDismiss = {},
+            searchQuery = "caché",
+            onSearchQueryChange = {},
+            isCompactSearchOpen = true,
+            onCompactSearchOpenChange = {},
+            updateState = previewUpdateAvailableState(),
+        )
+    }
+}
+
 @Preview(widthDp = 880, heightDp = 720)
 @Composable
 internal fun PreviewSettingsExpandedDialog() {
+    PreviewExpandedDialogHost(
+        initialCategory = SettingsCategory.APPEARANCE,
+        searchQuery = "",
+    )
+}
+
+@Preview(widthDp = 880, heightDp = 720)
+@Composable
+internal fun PreviewSettingsExpandedSearchResults() {
+    PreviewExpandedDialogHost(
+        initialCategory = SettingsCategory.APPEARANCE,
+        searchQuery = "tema",
+    )
+}
+
+@Preview(widthDp = 880, heightDp = 720)
+@Composable
+internal fun PreviewSettingsExpandedEmptyPane() {
+    PreviewExpandedDialogHost(
+        initialCategory = null,
+        searchQuery = "",
+    )
+}
+
+@Composable
+private fun PreviewExpandedDialogHost(
+    initialCategory: SettingsCategory?,
+    searchQuery: String,
+) {
     MaterialTheme {
         Box(
             modifier =
@@ -292,7 +349,11 @@ internal fun PreviewSettingsExpandedDialog() {
                 profilesError = null,
                 actions = previewSettingsActions(),
                 onDismiss = {},
-                initialCategory = SettingsCategory.APPEARANCE,
+                initialCategory = initialCategory,
+                selectedCategoryName = initialCategory?.name,
+                onSelectedCategoryChange = {},
+                searchQuery = searchQuery,
+                onSearchQueryChange = {},
                 updateState = previewUpdateAvailableState(),
             )
         }
