@@ -1,10 +1,20 @@
-@file:Suppress("FunctionNaming", "LongParameterList", "TooManyFunctions", "ktlint:standard:function-naming")
+@file:Suppress(
+    "FunctionNaming",
+    "LongMethod",
+    "LongParameterList",
+    "TooManyFunctions",
+    "ktlint:standard:function-naming",
+)
 
 package com.github.adriianh.melo.ui.settings
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +37,7 @@ import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
@@ -34,14 +45,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.Settings
@@ -51,16 +74,24 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 
+internal enum class SettingsCategoryGroup(
+    val caption: String,
+) {
+    EXPERIENCE("Experiencia"),
+    ACCOUNT_AND_APP("Cuenta y app"),
+}
+
 internal enum class SettingsCategory(
     val title: String,
     val icon: ImageVector,
+    val group: SettingsCategoryGroup,
 ) {
-    APPEARANCE("Apariencia", Icons.Default.ColorLens),
-    PLAYBACK("Reproducción", Icons.Default.Headphones),
-    LIBRARY("Biblioteca", Icons.Default.Download),
-    ACCOUNT("Cuenta", Icons.Default.Person),
-    INTEGRATIONS("Integraciones", Icons.Default.Share),
-    UPDATES("Actualizaciones", Icons.Default.SystemUpdate),
+    APPEARANCE("Apariencia", Icons.Default.ColorLens, SettingsCategoryGroup.EXPERIENCE),
+    PLAYBACK("Reproducción", Icons.Default.Headphones, SettingsCategoryGroup.EXPERIENCE),
+    LIBRARY("Biblioteca", Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
+    ACCOUNT("Cuenta", Icons.Default.Person, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    INTEGRATIONS("Integraciones", Icons.Default.Share, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    UPDATES("Actualizaciones", Icons.Default.SystemUpdate, SettingsCategoryGroup.ACCOUNT_AND_APP),
     ;
 
     companion object {
@@ -69,6 +100,12 @@ internal enum class SettingsCategory(
                 entries.filterNot { it == INTEGRATIONS }
             } else {
                 entries
+            }
+
+        fun grouped(categories: List<SettingsCategory>): List<Pair<SettingsCategoryGroup, List<SettingsCategory>>> =
+            SettingsCategoryGroup.entries.mapNotNull { group ->
+                val items = categories.filter { it.group == group }
+                if (items.isEmpty()) null else group to items
             }
     }
 }
@@ -171,6 +208,8 @@ internal fun SettingsCategoryList(
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val grouped = remember(categories) { SettingsCategory.grouped(categories) }
+    val showCaptions = grouped.size > 1
 
     Column(
         modifier =
@@ -180,33 +219,59 @@ internal fun SettingsCategoryList(
                     state = scrollState,
                     enabled = scrollState.maxValue > 0,
                 ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
-        categories.forEach { category ->
-            val showDot = category == SettingsCategory.UPDATES && updateState.hasAvailableUpdate()
-            SettingsCategoryListRow(
-                category = category,
-                summary = category.summary(settings, isLoggedIn, updateState),
-                showUpdateDot = showDot,
-                onClick = { onSelectCategory(category) },
-            )
+        grouped.forEach { (group, groupCategories) ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (showCaptions) {
+                    SettingsSectionCaption(text = group.caption)
+                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    groupCategories.forEachIndexed { index, category ->
+                        val showUpdateHighlight =
+                            category == SettingsCategory.UPDATES && updateState.hasAvailableUpdate()
+                        SettingsCategoryListRow(
+                            category = category,
+                            summary = category.summary(settings, isLoggedIn, updateState),
+                            highlightSummary = showUpdateHighlight,
+                            showUpdateDot = showUpdateHighlight,
+                            shape = tileShapeForPosition(index, groupCategories.size),
+                            onClick = { onSelectCategory(category) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
+
+private fun tileShapeForPosition(
+    index: Int,
+    count: Int,
+): Shape =
+    when {
+        count <= 1 -> RoundedCornerShape(18.dp)
+        index == 0 -> RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomEnd = 6.dp, bottomStart = 6.dp)
+        index == count - 1 ->
+            RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomEnd = 18.dp, bottomStart = 18.dp)
+        else -> RoundedCornerShape(6.dp)
+    }
 
 @Composable
 private fun SettingsCategoryListRow(
     category: SettingsCategory,
     summary: String,
+    highlightSummary: Boolean,
     showUpdateDot: Boolean,
+    shape: Shape,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(16.dp)
-
     Surface(
-        color = MeloColors.surface2.copy(alpha = 0.45f),
+        color = MeloColors.surface2.copy(alpha = 0.5f),
         shape = shape,
-        border = BorderStroke(1.dp, MeloColors.border),
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -227,8 +292,9 @@ private fun SettingsCategoryListRow(
             ) {
                 Text(
                     text = category.title,
-                    style = MeloType.body,
-                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.Medium,
                     color = MeloColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -236,7 +302,7 @@ private fun SettingsCategoryListRow(
                 Text(
                     text = summary,
                     style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary,
+                    color = if (highlightSummary) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -261,8 +327,8 @@ private fun CategoryBadgeIcon(
     Box {
         Surface(
             color = primary.copy(alpha = 0.12f),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier.size(38.dp),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.size(40.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -277,7 +343,7 @@ private fun CategoryBadgeIcon(
             Box(
                 modifier =
                     Modifier
-                        .size(9.dp)
+                        .size(10.dp)
                         .align(Alignment.TopEnd)
                         .clip(CircleShape)
                         .background(primary),
@@ -290,36 +356,95 @@ private fun CategoryBadgeIcon(
 internal fun SettingsSidebar(
     categories: List<SettingsCategory>,
     selectedCategory: SettingsCategory,
-    settings: Settings,
-    isLoggedIn: Boolean,
     updateState: UpdateState?,
     onSelectCategory: (SettingsCategory) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
+    val grouped = remember(categories) { SettingsCategory.grouped(categories) }
+    val showCaptions = grouped.size > 1
+    val focusRequesters = remember(categories) { categories.associateWith { FocusRequester() } }
 
     Column(
         modifier =
             modifier
-                .width(216.dp)
+                .width(240.dp)
                 .fillMaxHeight()
-                .selectableGroup()
-                .verticalScroll(
-                    state = scrollState,
-                    enabled = scrollState.maxValue > 0,
-                ),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+                .background(MeloColors.surface0),
     ) {
-        categories.forEach { category ->
-            val selected = category == selectedCategory
-            val showDot = category == SettingsCategory.UPDATES && updateState.hasAvailableUpdate()
-            SettingsSidebarItem(
-                category = category,
-                summary = category.summary(settings, isLoggedIn, updateState),
-                selected = selected,
-                showUpdateDot = showDot,
-                onClick = { onSelectCategory(category) },
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 20.dp, bottom = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
             )
+            Text(
+                text = "Ajustes",
+                style = MeloType.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MeloColors.textPrimary,
+            )
+        }
+
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .selectableGroup()
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        val delta =
+                            when (event.key) {
+                                Key.DirectionUp -> -1
+                                Key.DirectionDown -> 1
+                                else -> return@onPreviewKeyEvent false
+                            }
+                        if (categories.isEmpty()) return@onPreviewKeyEvent false
+                        val currentIndex = categories.indexOf(selectedCategory).coerceAtLeast(0)
+                        val nextIndex = (currentIndex + delta).coerceIn(0, categories.lastIndex)
+                        val nextCategory = categories[nextIndex]
+                        if (nextCategory != selectedCategory) {
+                            onSelectCategory(nextCategory)
+                        }
+                        focusRequesters[nextCategory]?.requestFocus()
+                        true
+                    }.verticalScroll(
+                        state = scrollState,
+                        enabled = scrollState.maxValue > 0,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            grouped.forEach { (group, groupCategories) ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (showCaptions) {
+                        SettingsSectionCaption(text = group.caption)
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        groupCategories.forEach { category ->
+                            val selected = category == selectedCategory
+                            val showDot =
+                                category == SettingsCategory.UPDATES && updateState.hasAvailableUpdate()
+                            SettingsSidebarItem(
+                                category = category,
+                                selected = selected,
+                                showUpdateDot = showDot,
+                                focusRequester = focusRequesters.getValue(category),
+                                onClick = { onSelectCategory(category) },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -327,80 +452,70 @@ internal fun SettingsSidebar(
 @Composable
 private fun SettingsSidebarItem(
     category: SettingsCategory,
-    summary: String,
     selected: Boolean,
     showUpdateDot: Boolean,
+    focusRequester: FocusRequester,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(10.dp)
     val primary = MaterialTheme.colorScheme.primary
-    val itemModifier =
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clip(shape)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
-    Surface(
-        color = if (selected) primary.copy(alpha = 0.16f) else MeloColors.surface2.copy(alpha = 0.45f),
-        shape = shape,
-        border = BorderStroke(1.dp, MeloColors.border),
-        modifier = itemModifier,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            SidebarIconWithDot(
-                icon = category.icon,
-                selected = selected,
-                showUpdateDot = showUpdateDot,
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = category.title,
-                    style = MeloType.labelMedium,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (selected) primary else MeloColors.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = summary,
-                    style = MeloType.labelSmall,
-                    color = if (selected) primary.copy(alpha = 0.85f) else MeloColors.textMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+    val backgroundColor =
+        when {
+            selected -> primary.copy(alpha = 0.14f)
+            isHovered -> Color.White.copy(alpha = 0.06f)
+            else -> Color.Transparent
         }
-    }
-}
+    val focusModifier =
+        if (isFocused) {
+            Modifier.border(width = 2.dp, color = primary, shape = shape)
+        } else {
+            Modifier
+        }
 
-@Composable
-private fun SidebarIconWithDot(
-    icon: ImageVector,
-    selected: Boolean,
-    showUpdateDot: Boolean,
-) {
-    val primary = MaterialTheme.colorScheme.primary
-    Box {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(shape)
+                .background(backgroundColor)
+                .then(focusModifier)
+                .focusRequester(focusRequester)
+                .selectable(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                    role = Role.Tab,
+                    onClick = onClick,
+                ).padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         Icon(
-            imageVector = icon,
+            imageVector = category.icon,
             contentDescription = null,
             tint = if (selected) primary else MeloColors.textSecondary,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = category.title,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) primary else MeloColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
         if (showUpdateDot) {
             Box(
                 modifier =
                     Modifier
-                        .size(7.dp)
-                        .align(Alignment.TopEnd)
+                        .size(8.dp)
                         .clip(CircleShape)
                         .background(primary),
             )

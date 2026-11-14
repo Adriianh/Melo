@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,7 +64,7 @@ import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
 import org.koin.compose.viewmodel.koinViewModel
 
-private val EXPANDED_SETTINGS_BREAKPOINT = 600.dp
+private val EXPANDED_SETTINGS_BREAKPOINT = 540.dp
 
 @Composable
 internal fun SettingsContent(
@@ -77,12 +78,28 @@ internal fun SettingsContent(
     actions: SettingsActions,
     modifier: Modifier = Modifier,
     initialCategory: SettingsCategory? = null,
+    selectedCategoryName: String? = null,
+    onSelectedCategoryChange: ((String?) -> Unit)? = null,
+    onClose: (() -> Unit)? = null,
     updateState: UpdateState? = null,
 ) {
     val platform = remember { getPlatform() }
     val categories = remember(platform.type) { SettingsCategory.visibleFor(platform.type) }
-    var selectedCategoryName by rememberSaveable { mutableStateOf(initialCategory?.name) }
-    val selectedCategory = categories.find { it.name == selectedCategoryName }
+    var internalSelectedCategoryName by rememberSaveable { mutableStateOf(initialCategory?.name) }
+    val activeCategoryName =
+        if (onSelectedCategoryChange != null) {
+            selectedCategoryName ?: initialCategory?.name
+        } else {
+            internalSelectedCategoryName
+        }
+    val setSelectedCategoryName: (String?) -> Unit = { nextName ->
+        if (onSelectedCategoryChange != null) {
+            onSelectedCategoryChange(nextName)
+        } else {
+            internalSelectedCategoryName = nextName
+        }
+    }
+    val selectedCategory = categories.find { it.name == activeCategoryName }
 
     val resolvedUpdateState: UpdateState? =
         if (updateState != null) {
@@ -98,17 +115,12 @@ internal fun SettingsContent(
 
         if (isExpanded) {
             val activeCategory = selectedCategory ?: categories.first()
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
+            Row(modifier = Modifier.fillMaxSize()) {
                 SettingsSidebar(
                     categories = categories,
                     selectedCategory = activeCategory,
-                    settings = settings,
-                    isLoggedIn = isLoggedIn,
                     updateState = resolvedUpdateState,
-                    onSelectCategory = { selectedCategoryName = it.name },
+                    onSelectCategory = { setSelectedCategoryName(it.name) },
                 )
 
                 Box(
@@ -119,37 +131,44 @@ internal fun SettingsContent(
                             .background(MeloColors.border),
                 )
 
-                val detailScrollState = rememberScrollState()
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .verticalScroll(
-                                state = detailScrollState,
-                                enabled = detailScrollState.maxValue > 0,
-                            ),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    SettingsCategoryDetailPane(
+                Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    SettingsExpandedDetailHeader(
                         category = activeCategory,
-                        settings = settings,
-                        isLoggedIn = isLoggedIn,
-                        profiles = profiles,
-                        activePageId = activePageId,
-                        isLoadingProfiles = isLoadingProfiles,
-                        isSwitchingProfile = isSwitchingProfile,
-                        profilesError = profilesError,
-                        actions = actions,
-                        platformType = platform.type,
-                        previewUpdateState = updateState,
+                        onClose = onClose,
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+
+                    val detailScrollState = rememberScrollState()
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(
+                                    state = detailScrollState,
+                                    enabled = detailScrollState.maxValue > 0,
+                                ).padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        SettingsCategoryDetailPane(
+                            category = activeCategory,
+                            settings = settings,
+                            isLoggedIn = isLoggedIn,
+                            profiles = profiles,
+                            activePageId = activePageId,
+                            isLoadingProfiles = isLoadingProfiles,
+                            isSwitchingProfile = isSwitchingProfile,
+                            profilesError = profilesError,
+                            actions = actions,
+                            platformType = platform.type,
+                            previewUpdateState = updateState,
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
         } else {
             SettingsBackHandler(enabled = selectedCategory != null) {
-                selectedCategoryName = null
+                setSelectedCategoryName(null)
             }
 
             AnimatedContent(
@@ -163,17 +182,17 @@ internal fun SettingsContent(
                         settings = settings,
                         isLoggedIn = isLoggedIn,
                         updateState = resolvedUpdateState,
-                        onSelectCategory = { selectedCategoryName = it.name },
-                        modifier = Modifier.fillMaxSize(),
+                        onSelectCategory = { setSelectedCategoryName(it.name) },
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp),
                     )
                 } else {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         SettingsCompactDetailHeader(
                             category = currentCategory,
-                            onBack = { selectedCategoryName = null },
+                            onBack = { setSelectedCategoryName(null) },
                         )
 
                         val detailScrollState = rememberScrollState()
@@ -205,6 +224,41 @@ internal fun SettingsContent(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsExpandedDetailHeader(
+    category: SettingsCategory,
+    onClose: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 14.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = category.title,
+            fontSize = 20.sp,
+            lineHeight = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = MeloColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (onClose != null) {
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar",
+                    tint = MeloColors.textSecondary,
+                )
             }
         }
     }
