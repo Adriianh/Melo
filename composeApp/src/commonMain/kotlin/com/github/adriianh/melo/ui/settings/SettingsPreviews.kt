@@ -26,6 +26,7 @@ import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.util.PlatformType
 
 private fun previewSettingsActions() =
     SettingsActions(
@@ -60,6 +61,57 @@ private fun previewUpdateAvailableState() =
                 platform = UpdatePlatform.ANDROID,
             ),
     )
+
+@Preview(widthDp = 320, fontScale = 1.3f)
+@Composable
+internal fun PreviewSettingsCategoryList() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            SettingsCategoryList(
+                categories = SettingsCategory.visibleFor(PlatformType.ANDROID),
+                settings =
+                    Settings(
+                        themeMode = ThemeMode.DARK,
+                        dynamicColor = false,
+                        theme = ThemePreset.CATPPUCCIN_MOCHA,
+                    ),
+                isLoggedIn = false,
+                updateState = previewUpdateAvailableState(),
+                onSelectCategory = {},
+            )
+        }
+    }
+}
+
+@Preview(widthDp = 320, fontScale = 1.3f)
+@Composable
+internal fun PreviewAppearanceDynamicColorOn() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            AppearanceSettingsSection(
+                settings =
+                    Settings(
+                        themeMode = ThemeMode.DARK,
+                        dynamicColor = true,
+                        theme = ThemePreset.CATPPUCCIN_MOCHA,
+                    ),
+                actions = previewSettingsActions(),
+            )
+        }
+    }
+}
 
 @Preview(widthDp = 320, fontScale = 1.3f)
 @Composable
