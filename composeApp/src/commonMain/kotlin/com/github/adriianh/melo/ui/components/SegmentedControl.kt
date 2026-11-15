@@ -1,11 +1,15 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,29 +28,42 @@ fun <T> SegmentedControl(
     onSelect: (T) -> Unit,
     label: (T) -> String,
     modifier: Modifier = Modifier,
+    fillMaxWidth: Boolean = true,
 ) {
+    val widthModifier =
+        if (fillMaxWidth) {
+            modifier.fillMaxWidth()
+        } else {
+            modifier.width(IntrinsicSize.Max)
+        }
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MeloColors.chromePillFill)
-            .padding(3.dp),
+        modifier =
+            widthModifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(MeloColors.chromePillFill)
+                .padding(3.dp),
     ) {
         options.forEach { option ->
             val isSelected = option == selected
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(if (isSelected) MeloColors.surface1 else Color.Transparent)
-                    .clickable { onSelect(option) }
-                    .padding(vertical = 7.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(if (isSelected) MeloColors.surface1 else Color.Transparent)
+                        .clickable { onSelect(option) }
+                        .padding(
+                            horizontal = if (fillMaxWidth) 6.dp else 12.dp,
+                            vertical = 7.dp,
+                        ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label(option),
                     style = MeloType.labelSmall,
                     color = if (isSelected) MeloColors.textPrimary else MeloColors.textMuted,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
         }

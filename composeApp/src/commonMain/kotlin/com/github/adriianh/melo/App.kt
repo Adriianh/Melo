@@ -60,12 +60,9 @@ import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.settings.SettingsActions
-import com.github.adriianh.melo.ui.settings.SettingsDialog
-import com.github.adriianh.melo.ui.settings.SettingsSheet
+import com.github.adriianh.melo.ui.settings.SettingsModal
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.MeloMotion
-import com.github.adriianh.melo.util.PlatformType
-import com.github.adriianh.melo.util.getPlatform
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -105,7 +102,6 @@ fun App(
         }
     }
     val isSystemDark = isSystemInDarkTheme()
-    val platform = remember { getPlatform() }
     val isDarkTheme = settings.themeMode.resolveDarkTheme(isSystemDark)
     val themeAccent = remember(settings.theme) { settings.theme.toAccentColor() }
     val savedAccent: Color? = remember(settings.lastAccentColor) {
@@ -648,31 +644,17 @@ fun App(
                                 }
                             )
 
-                            if (platform.type == PlatformType.DESKTOP) {
-                                SettingsDialog(
-                                    settings = settings,
-                                    isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
-                                    profiles = loginState.profiles,
-                                    activePageId = loginState.activePageId,
-                                    isLoadingProfiles = loginState.isLoadingProfiles,
-                                    isSwitchingProfile = loginState.isSwitchingProfile,
-                                    profilesError = loginState.profilesError,
-                                    actions = settingsActions,
-                                    onDismiss = { showSettingsSheet = false }
-                                )
-                            } else {
-                                SettingsSheet(
-                                    settings = settings,
-                                    isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
-                                    profiles = loginState.profiles,
-                                    activePageId = loginState.activePageId,
-                                    isLoadingProfiles = loginState.isLoadingProfiles,
-                                    isSwitchingProfile = loginState.isSwitchingProfile,
-                                    profilesError = loginState.profilesError,
-                                    actions = settingsActions,
-                                    onDismiss = { showSettingsSheet = false }
-                                )
-                            }
+                            SettingsModal(
+                                settings = settings,
+                                isLoggedIn = !settings.sessionCookies.isNullOrBlank(),
+                                profiles = loginState.profiles,
+                                activePageId = loginState.activePageId,
+                                isLoadingProfiles = loginState.isLoadingProfiles,
+                                isSwitchingProfile = loginState.isSwitchingProfile,
+                                profilesError = loginState.profilesError,
+                                actions = settingsActions,
+                                onDismiss = { showSettingsSheet = false },
+                            )
                         }
 
                         Box(

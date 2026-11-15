@@ -1,0 +1,351 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
+package com.github.adriianh.melo.ui.settings
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.ui.login.InAppDiscordLogin
+import com.github.adriianh.melo.util.MeloColors
+import com.github.adriianh.melo.util.MeloType
+
+private const val DISCLAIMER_TEXT =
+    "Discord no admite Rich Presence local en Android. " +
+        "Esta integración conecta con el Gateway usando tu token de sesión. " +
+        "El uso de clientes no oficiales va contra los Términos de Servicio de Discord. " +
+        "Se ofrece exclusivamente con fines educativos y bajo tu propia responsabilidad."
+
+@Composable
+internal fun DiscordLoginDialogBody(
+    isShowingInAppBrowser: Boolean,
+    inAppBrowserAvailable: Boolean,
+    showManualInput: Boolean,
+    manualToken: String,
+    onTokenChange: (String) -> Unit,
+    onTokenCaptured: (String) -> Unit,
+    onShowInAppBrowser: () -> Unit,
+    onShowManualInput: () -> Unit,
+    onBackToAuto: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (isShowingInAppBrowser) {
+            DiscordInAppBrowserContent(onTokenCaptured = onTokenCaptured)
+        } else {
+            DiscordDisclaimerBanner()
+            if (inAppBrowserAvailable && !showManualInput) {
+                DiscordAutoLoginOptions(
+                    onShowInAppBrowser = onShowInAppBrowser,
+                    onShowManualInput = onShowManualInput,
+                )
+            } else {
+                DiscordManualInputContent(
+                    manualToken = manualToken,
+                    onTokenChange = onTokenChange,
+                    inAppBrowserAvailable = inAppBrowserAvailable,
+                    onBackToAuto = onBackToAuto,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DiscordLoginDialogTitle(
+    isShowingInAppBrowser: Boolean,
+    onBackClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (isShowingInAppBrowser) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Atrás",
+                    tint = MeloColors.textPrimary,
+                )
+            }
+        } else {
+            Icon(
+                Icons.Default.Security,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Text(
+            text = if (isShowingInAppBrowser) "Acceso a Discord" else "Vincular Discord en Android",
+            style = MeloType.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun DiscordDisclaimerBanner() {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = DISCLAIMER_TEXT,
+                style = MeloType.labelSmall,
+                color = MeloColors.textSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiscordInAppBrowserContent(onTokenCaptured: (String) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Inicia sesión con tu cuenta de Discord. Tu token de sesión será capturado automáticamente.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+            color = MeloColors.surface1,
+        ) {
+            InAppDiscordLogin(
+                modifier = Modifier.fillMaxWidth().height(400.dp),
+                onTokenCaptured = onTokenCaptured,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DiscordAutoLoginOptions(
+    onShowInAppBrowser: () -> Unit,
+    onShowManualInput: () -> Unit,
+) {
+    Button(
+        onClick = onShowInAppBrowser,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Text("Iniciar sesión en Discord")
+    }
+
+    Button(
+        onClick = onShowManualInput,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Text("Ingresar token manualmente")
+    }
+}
+
+@Composable
+private fun DiscordManualInputContent(
+    manualToken: String,
+    onTokenChange: (String) -> Unit,
+    inAppBrowserAvailable: Boolean,
+    onBackToAuto: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Pega tu token:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        OutlinedTextField(
+            value = manualToken,
+            onValueChange = onTokenChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Token de Discord") },
+            placeholder = { Text("OTQ... o mfa....") },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+        )
+
+        if (inAppBrowserAvailable) {
+            TextButton(
+                onClick = onBackToAuto,
+            ) {
+                Text("Volver")
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DiscordLoginConfirmButtons(
+    isShowingInAppBrowser: Boolean,
+    showManualInput: Boolean,
+    inAppBrowserAvailable: Boolean,
+    manualToken: String,
+    onDismiss: () -> Unit,
+    onTokenSaved: (String) -> Unit,
+    onCancelInAppBrowser: () -> Unit,
+) {
+    if (isShowingInAppBrowser) {
+        TextButton(onClick = onCancelInAppBrowser) {
+            Text("Cancelar")
+        }
+    } else if (showManualInput || !inAppBrowserAvailable) {
+        Row {
+            Button(
+                enabled = manualToken.isNotBlank(),
+                onClick = { onTokenSaved(manualToken.trim()) },
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text("Guardar token")
+            }
+            Spacer(Modifier.width(8.dp))
+            TextButton(onClick = onDismiss) {
+                Text("Cerrar")
+            }
+        }
+    } else {
+        TextButton(onClick = onDismiss) {
+            Text("Cerrar")
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_AutoLogin() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = true,
+                showManualInput = false,
+                manualToken = "",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_ManualInput() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = true,
+                showManualInput = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginDialogBody_FallbackManualOnly() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            DiscordLoginDialogBody(
+                isShowingInAppBrowser = false,
+                inAppBrowserAvailable = false,
+                showManualInput = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onTokenChange = {},
+                onTokenCaptured = {},
+                onShowInAppBrowser = {},
+                onShowManualInput = {},
+                onBackToAuto = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDiscordLoginConfirmButtons() {
+    MaterialTheme {
+        Surface(
+            color = MeloColors.surface1,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            DiscordLoginConfirmButtons(
+                isShowingInAppBrowser = false,
+                showManualInput = true,
+                inAppBrowserAvailable = true,
+                manualToken = "OTQxMjM0NTY3ODkw.G12345.abcdefghijklmnopqrstuvwxyz",
+                onDismiss = {},
+                onTokenSaved = {},
+                onCancelInAppBrowser = {},
+            )
+        }
+    }
+}

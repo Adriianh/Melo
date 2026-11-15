@@ -107,6 +107,7 @@ coilNetworkKtor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref 
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
 jnaPlatform = { module = "net.java.dev.jna:jna-platform", version = "5.14.0" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeGradlePlugin" }
+ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeGradlePlugin" }
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeGradlePlugin" }
 composeRuntime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeGradlePlugin" }
 composeFoundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeGradlePlugin" }
