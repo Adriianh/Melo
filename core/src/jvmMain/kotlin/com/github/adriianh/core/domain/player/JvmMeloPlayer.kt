@@ -5,6 +5,7 @@ import com.sun.jna.NativeLibrary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -30,6 +32,7 @@ class JvmMeloPlayer : MeloPlayer {
     private val loadStartTimes = ConcurrentHashMap<String, Long>()
     private var lastLoadedTrackId: String? = null
     private var currentVolume = 75
+    private val released = AtomicBoolean(false)
 
     private val initJob: Job = scope.launch(Dispatchers.IO) {
         initializePlayer()
@@ -255,11 +258,20 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun release() {
+        if (!released.compareAndSet(false, true)) return
         stopProgressUpdate()
+        loadStartTimes.clear()
         scope.launch(Dispatchers.IO) {
-            initJob.join()
-            mediaPlayer?.release()
-            factory?.release()
+            try {
+                initJob.join()
+                runCatching { mediaPlayer?.controls()?.stop() }
+                runCatching { mediaPlayer?.release() }
+                runCatching { factory?.release() }
+                mediaPlayer = null
+                factory = null
+            } finally {
+                scope.cancel()
+            }
         }
     }
 

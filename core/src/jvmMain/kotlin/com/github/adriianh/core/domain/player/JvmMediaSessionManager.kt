@@ -17,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -366,6 +367,8 @@ class JvmMediaSessionManager(
         observerJob?.cancel()
         observerJob = null
         artworkJob?.cancel()
+        artworkJob = null
+        scope.coroutineContext[Job]?.cancelChildren()
         cleanupCurrentArt()
         try {
             jmtc?.enabled = false

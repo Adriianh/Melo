@@ -21,6 +21,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -35,6 +37,7 @@ class DesktopDiscordRpcManager(
     private var ipc: KDiscordIPC? = null
     private var isConnected: Boolean = false
 
+    private val ownsScope = providedScope == null
     private val scope: CoroutineScope =
         providedScope ?: CoroutineScope(
             Dispatchers.IO + SupervisorJob() + CoroutineExceptionHandler { _, _ -> },
@@ -51,7 +54,12 @@ class DesktopDiscordRpcManager(
     private val maxReconnectAttempts = 6
     private val initialReconnectDelayMs = 1_000L
     private val maxReconnectDelayMs = 30_000L
+
+    @Volatile
     private var manuallyDisconnected = false
+
+    @Volatile
+    private var released = false
     private var currentPositionMs: Long? = null
 
     init {
@@ -92,8 +100,10 @@ class DesktopDiscordRpcManager(
     }
 
     override fun connect() {
+        if (released) return
         scope.launch {
             try {
+                if (released) return@launch
                 manuallyDisconnected = false
                 if (isConnected || ipc != null) return@launch
 
@@ -103,6 +113,10 @@ class DesktopDiscordRpcManager(
                 val newIpc = KDiscordIPC(clientId).also { ipc = it }
 
                 newIpc.on<ReadyEvent> {
+                    if (released) {
+                        disconnectIpcAsync(newIpc)
+                        return@on
+                    }
                     isConnected = true
                     reconnectAttempts = 0
                     reconnectJob?.cancel()
@@ -112,14 +126,20 @@ class DesktopDiscordRpcManager(
 
                 newIpc.on<DisconnectedEvent> {
                     isConnected = false
-                    ipc = null
+                    if (ipc === newIpc) ipc = null
                     scheduleReconnect()
                 }
 
                 newIpc.on<ErrorEvent> {
                     isConnected = false
-                    ipc = null
+                    if (ipc === newIpc) ipc = null
                     scheduleReconnect()
+                }
+
+                if (released) {
+                    if (ipc === newIpc) ipc = null
+                    disconnectIpcAsync(newIpc)
+                    return@launch
                 }
 
                 newIpc.connect()
@@ -212,7 +232,7 @@ class DesktopDiscordRpcManager(
         }
 
     private val canReconnect: Boolean
-        get() = !manuallyDisconnected && !isConnected && ipc == null
+        get() = !released && !manuallyDisconnected && !isConnected && ipc == null
 
     private fun scheduleReconnect() {
         if (!canReconnect) return
@@ -252,17 +272,37 @@ class DesktopDiscordRpcManager(
         reconnectJob = null
         activityJob?.cancel()
         activityJob = null
-        try {
-            ipc?.disconnect()
-        } catch (_: Exception) {
-        }
+        val activeIpc = ipc
         ipc = null
         isConnected = false
+        disconnectIpcAsync(activeIpc)
     }
 
     override fun release() {
+        released = true
         observerJob?.cancel()
         observerJob = null
         disconnect()
+        if (ownsScope) {
+            scope.cancel()
+        } else {
+            scope.coroutineContext[Job]?.cancelChildren()
+        }
+    }
+
+    private fun disconnectIpcAsync(targetIpc: KDiscordIPC?) {
+        if (targetIpc == null) return
+        targetIpc.scope.cancel()
+        // KDiscordIPC's WindowsSocket.close() calls RandomAccessFile.close() on a named pipe that may be
+        // blocked in ReadFile(); run off-thread on a daemon so callers (e.g. AWT EDT) never hang.
+        Thread(
+            {
+                runCatching { targetIpc.disconnect() }
+            },
+            "Melo-DiscordIPC-Disconnect",
+        ).apply {
+            isDaemon = true
+            start()
+        }
     }
 }
