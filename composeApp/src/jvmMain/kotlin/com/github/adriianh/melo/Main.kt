@@ -14,17 +14,23 @@ import com.github.adriianh.core.domain.player.DiscordRpcManager
 import com.github.adriianh.core.domain.player.InstanceIdentity
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.player.MeloPlayer
+import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.melo.di.initKoin
 import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.awt.Dimension
 import java.awt.GraphicsEnvironment
 import java.awt.Toolkit
+import java.util.concurrent.atomic.AtomicReference
+import java.awt.Window as AwtWindow
 
 fun main() {
     val koinApp = initKoin()
@@ -36,13 +42,35 @@ fun main() {
             ?.let { "Melo — ${it.instanceKey}" }
             ?: "Melo"
 
-    CoroutineScope(Dispatchers.IO).launch {
+    val warmupScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    warmupScope.launch {
         koinApp.koin.getOrNull<MeloPlayer>()
         koinApp.koin.getOrNull<MediaSessionManager>()
         koinApp.koin.getOrNull<DiscordRpcManager>()
     }
 
     application {
+        val activeWindowRef = remember { AtomicReference<AwtWindow?>(null) }
+        val shutdownCoordinator =
+            remember {
+                DesktopShutdownCoordinator(
+                    cleanupTasks =
+                        listOf(
+                            { warmupScope.cancel() },
+                            { koinApp.koin.getOrNull<PlaybackManager>()?.release() },
+                            { koinApp.koin.getOrNull<MediaSessionManager>()?.release() },
+                            { koinApp.koin.getOrNull<DiscordRpcManager>()?.release() },
+                            { koinApp.koin.getOrNull<HttpClient>()?.close() },
+                        ),
+                    onAfterWait = { koinApp.close() },
+                    onExit = ::exitApplication,
+                )
+            }
+        val requestClose: () -> Unit = {
+            shutdownCoordinator.requestClose {
+                activeWindowRef.get()?.isVisible = false
+            }
+        }
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
         val defaultDevice = ge.defaultScreenDevice
         val gc =
@@ -85,11 +113,7 @@ fun main() {
             )
 
         Window(
-            onCloseRequest = {
-                koinApp.koin.getOrNull<MediaSessionManager>()?.release()
-                koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
-                exitApplication()
-            },
+            onCloseRequest = requestClose,
             state = windowState,
             title = windowTitle,
             undecorated = true,
@@ -97,11 +121,13 @@ fun main() {
             val windowManager = remember(window) { DesktopWindowManager(window) }
 
             DisposableEffect(window) {
+                activeWindowRef.set(window)
                 window.minimumSize = Dimension(800, 540)
                 val resizer = WindowResizer(window, isMaximized = { windowManager.isMaximized })
                 window.addMouseListener(resizer)
                 window.addMouseMotionListener(resizer)
                 onDispose {
+                    activeWindowRef.compareAndSet(window, null)
                     window.removeMouseListener(resizer)
                     window.removeMouseMotionListener(resizer)
                 }
@@ -112,11 +138,7 @@ fun main() {
                     titleBar = {
                         MeloTitleBar(
                             windowManager = windowManager,
-                            onClose = {
-                                koinApp.koin.getOrNull<MediaSessionManager>()?.release()
-                                koinApp.koin.getOrNull<DiscordRpcManager>()?.release()
-                                exitApplication()
-                            },
+                            onClose = requestClose,
                         )
                     },
                 )
