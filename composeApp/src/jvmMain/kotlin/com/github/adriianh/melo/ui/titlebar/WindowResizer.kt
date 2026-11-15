@@ -50,8 +50,15 @@ class WindowResizer(
     }
 
     override fun mouseDragged(e: MouseEvent) {
-        val startScreen = dragStartScreen ?: return
-        val startBounds = dragStartBounds ?: return
+        if (isMaximized()) {
+            dragStartScreen = null
+            dragStartBounds = null
+            activeCursor = Cursor.DEFAULT_CURSOR
+            return
+        }
+        val startScreen = dragStartScreen
+        val startBounds = dragStartBounds
+        if (startScreen == null || startBounds == null) return
 
         val dx = e.locationOnScreen.x - startScreen.x
         val dy = e.locationOnScreen.y - startScreen.y
@@ -144,7 +151,12 @@ class WindowResizer(
         activeCursor = Cursor.DEFAULT_CURSOR
     }
 
-    private fun getCursorForPosition(x: Int, y: Int, w: Int, h: Int): Int {
+    private fun getCursorForPosition(
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): Int {
         val onLeft = x in 0..borderThickness
         val onRight = x in (w - borderThickness)..w
         val onTop = y in 0..borderThickness

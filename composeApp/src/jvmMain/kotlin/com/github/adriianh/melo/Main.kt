@@ -123,6 +123,7 @@ fun main() {
             DisposableEffect(window) {
                 activeWindowRef.set(window)
                 window.minimumSize = Dimension(800, 540)
+                windowManager.attach()
                 val resizer = WindowResizer(window, isMaximized = { windowManager.isMaximized })
                 window.addMouseListener(resizer)
                 window.addMouseMotionListener(resizer)
@@ -130,6 +131,7 @@ fun main() {
                     activeWindowRef.compareAndSet(window, null)
                     window.removeMouseListener(resizer)
                     window.removeMouseMotionListener(resizer)
+                    windowManager.detach()
                 }
             }
 
