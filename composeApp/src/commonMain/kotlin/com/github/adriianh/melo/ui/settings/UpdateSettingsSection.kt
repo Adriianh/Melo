@@ -158,8 +158,18 @@ internal fun UpdateVersionHeaderRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                val searchQuery = LocalSettingsSearchQuery.current
+                val primary = MaterialTheme.colorScheme.primary
+                val titleText =
+                    remember(searchQuery, primary) {
+                        buildHighlightedTitle(
+                            title = "Versión instalada",
+                            query = searchQuery,
+                            highlightColor = primary,
+                        )
+                    }
                 Text(
-                    text = "Versión instalada",
+                    text = titleText,
                     style = MeloType.body,
                     fontWeight = FontWeight.Medium,
                     color = MeloColors.textPrimary,

@@ -59,9 +59,11 @@ import com.github.adriianh.melo.ui.navigation.ScreenRoute
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
+import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
 import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsModal
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
+import com.github.adriianh.melo.ui.settings.hasAvailableUpdate
 import com.github.adriianh.melo.util.MeloMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -169,7 +171,8 @@ fun App(
 
             CompositionLocalProvider(
                 LocalMeloSnackbar provides snackbarState,
-                LocalSelectionMode provides isSelectionMode
+                LocalSelectionMode provides isSelectionMode,
+                LocalHasAvailableUpdate provides updateState.hasAvailableUpdate(),
             ) {
                 AmbientCanvas(
                     accentColor = finalAccent,

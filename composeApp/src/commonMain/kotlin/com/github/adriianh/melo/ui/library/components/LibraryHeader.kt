@@ -57,6 +57,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,6 +67,8 @@ import com.github.adriianh.melo.ui.library.LibraryCategory
 import com.github.adriianh.melo.ui.library.LibrarySortOrder
 import com.github.adriianh.melo.ui.library.LibraryTab
 import com.github.adriianh.melo.ui.library.LibraryViewMode
+import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
+import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
@@ -106,20 +110,31 @@ fun LibraryHeader(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MeloColors.surface2,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clickable(onClick = onOpenSettings)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = profile?.name?.take(1)?.uppercase() ?: "M",
-                            style = MeloType.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
-                        )
+                val hasAvailableUpdate = LocalHasAvailableUpdate.current
+                SettingsEntryUpdateBadge(showDot = hasAvailableUpdate, dotSize = 10.dp) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MeloColors.surface2,
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .semantics {
+                                    contentDescription =
+                                        if (hasAvailableUpdate) {
+                                            "Ajustes (actualización disponible)"
+                                        } else {
+                                            "Ajustes"
+                                        }
+                                }.clickable(onClick = onOpenSettings),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = profile?.name?.take(1)?.uppercase() ?: "M",
+                                style = MeloType.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MeloColors.textPrimary,
+                            )
+                        }
                     }
                 }
                 Column {
