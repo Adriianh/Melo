@@ -1,106 +1,69 @@
 package com.github.adriianh.melo.ui.titlebar
 
-import com.sun.jna.platform.win32.ShellAPI
 import java.awt.Insets
 import java.awt.Rectangle
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class DesktopWindowManagerTest {
     @Test
-    fun `computeMaximizedBounds subtracts standard screen insets when no auto-hide edges exist`() {
+    fun `computeMaxTrackBounds expands maximized bounds by frame border metrics around work area`() {
+        val frameBorder = FrameBorderInsets(horizontal = 8, vertical = 8)
+        val primary =
+            computeMaxTrackBounds(
+                monitorRect = Win32Rect(0, 0, 1920, 1080),
+                workRect = Win32Rect(0, 0, 1920, 1032),
+                frameBorder = frameBorder,
+            )
+        val autoHide =
+            computeMaxTrackBounds(
+                monitorRect = Win32Rect(1920, 100, 3840, 1180),
+                workRect = Win32Rect(1920, 100, 3840, 1180),
+                frameBorder = frameBorder,
+            )
+
+        assertEquals(MaxTrackBounds(x = -8, y = -8, width = 1936, height = 1048), primary)
+        assertEquals(MaxTrackBounds(x = -8, y = -8, width = 1936, height = 1096), autoHide)
+    }
+
+    @Test
+    fun `computeMaximizedClientRect insets maximized window rect to align flush with monitor work area`() {
+        val frameBorder = FrameBorderInsets(horizontal = 8, vertical = 8)
+        val fixedTaskbar =
+            computeMaximizedClientRect(
+                windowRect = Win32Rect(-8, -8, 1928, 1040),
+                frameBorder = frameBorder,
+            )
+        val autoHideTaskbar =
+            computeMaximizedClientRect(
+                windowRect = Win32Rect(-8, -8, 1928, 1088),
+                frameBorder = frameBorder,
+            )
+
+        assertEquals(Win32Rect(0, 0, 1920, 1032), fixedTaskbar)
+        assertEquals(Win32Rect(0, 0, 1920, 1080), autoHideTaskbar)
+    }
+
+    @Test
+    fun `computeMaximizedClientRect scales cleanly with HiDPI frame border insets`() {
+        val hidpiBorder = FrameBorderInsets(horizontal = 12, vertical = 12)
         val result =
-            computeMaximizedBounds(
+            computeMaximizedClientRect(
+                windowRect = Win32Rect(1908, -12, 3852, 1092),
+                frameBorder = hidpiBorder,
+            )
+
+        assertEquals(Win32Rect(1920, 0, 3840, 1080), result)
+    }
+
+    @Test
+    fun `computeFallbackMaximizedBounds fills usable screen bounds without extra margin`() {
+        val result =
+            computeFallbackMaximizedBounds(
                 screenBounds = Rectangle(0, 0, 1920, 1080),
                 screenInsets = Insets(0, 0, 48, 0),
-                autoHideEdges = emptySet(),
             )
 
         assertEquals(Rectangle(0, 0, 1920, 1032), result)
-    }
-
-    @Test
-    fun `computeMaximizedBounds leaves 2px gap on bottom edge for auto-hide taskbar at 100 percent scale`() {
-        val result =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(0, 0, 1920, 1080),
-                screenInsets = Insets(0, 0, 0, 0),
-                scaleX = 1.0,
-                scaleY = 1.0,
-                autoHideEdges = setOf(TaskbarEdge.BOTTOM),
-            )
-
-        assertEquals(Rectangle(0, 0, 1920, 1078), result)
-    }
-
-    @Test
-    fun `computeMaximizedBounds scales auto-hide gap cleanly across HiDPI factors`() {
-        val at150 =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(0, 0, 1280, 720),
-                screenInsets = Insets(0, 0, 0, 0),
-                scaleX = 1.5,
-                scaleY = 1.5,
-                autoHideEdges = setOf(TaskbarEdge.BOTTOM),
-            )
-        val at200 =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(0, 0, 1920, 1080),
-                screenInsets = Insets(0, 0, 0, 0),
-                scaleX = 2.0,
-                scaleY = 2.0,
-                autoHideEdges = setOf(TaskbarEdge.BOTTOM),
-            )
-
-        assertEquals(Rectangle(0, 0, 1280, 718), at150)
-        assertEquals(Rectangle(0, 0, 1920, 1079), at200)
-    }
-
-    @Test
-    fun `computeMaximizedBounds handles top left and right auto-hide edges`() {
-        val top =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(100, 50, 1920, 1080),
-                screenInsets = Insets(0, 0, 0, 0),
-                autoHideEdges = setOf(TaskbarEdge.TOP),
-            )
-        val left =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(100, 50, 1920, 1080),
-                screenInsets = Insets(0, 0, 0, 0),
-                autoHideEdges = setOf(TaskbarEdge.LEFT),
-            )
-        val right =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(100, 50, 1920, 1080),
-                screenInsets = Insets(0, 0, 0, 0),
-                autoHideEdges = setOf(TaskbarEdge.RIGHT),
-            )
-
-        assertEquals(Rectangle(100, 52, 1920, 1078), top)
-        assertEquals(Rectangle(102, 50, 1918, 1080), left)
-        assertEquals(Rectangle(100, 50, 1918, 1080), right)
-    }
-
-    @Test
-    fun `computeMaximizedBounds does not shrink edge that already has non-zero inset`() {
-        val result =
-            computeMaximizedBounds(
-                screenBounds = Rectangle(0, 0, 1920, 1080),
-                screenInsets = Insets(0, 0, 48, 0),
-                autoHideEdges = setOf(TaskbarEdge.BOTTOM),
-            )
-
-        assertEquals(Rectangle(0, 0, 1920, 1032), result)
-    }
-
-    @Test
-    fun `TaskbarEdge maps Win32 ABE constants`() {
-        assertEquals(TaskbarEdge.LEFT, TaskbarEdge.fromWin32Edge(ShellAPI.ABE_LEFT))
-        assertEquals(TaskbarEdge.TOP, TaskbarEdge.fromWin32Edge(ShellAPI.ABE_TOP))
-        assertEquals(TaskbarEdge.RIGHT, TaskbarEdge.fromWin32Edge(ShellAPI.ABE_RIGHT))
-        assertEquals(TaskbarEdge.BOTTOM, TaskbarEdge.fromWin32Edge(ShellAPI.ABE_BOTTOM))
-        assertNull(TaskbarEdge.fromWin32Edge(99))
     }
 }
