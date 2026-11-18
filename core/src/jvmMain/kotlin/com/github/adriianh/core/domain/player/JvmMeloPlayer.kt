@@ -55,7 +55,7 @@ class JvmMeloPlayer : MeloPlayer {
             detectedPluginsDir?.let {
                 args.add("--plugin-path=${it.absolutePath}")
             }
-            val createdFactory = MediaPlayerFactory(args)
+            val createdFactory = MediaPlayerFactory(null, args)
             factory = createdFactory
             val player = createdFactory.mediaPlayers().newMediaPlayer()
             mediaPlayer = player
