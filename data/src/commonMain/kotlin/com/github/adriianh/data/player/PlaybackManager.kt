@@ -385,13 +385,15 @@ class PlaybackManagerImpl(
         }
     }
 
+    private fun isQueueEnded(q: QueueState): Boolean =
+        !playbackState.value.isPlaying &&
+            (playbackState.value.isFinished || lastHandledFinishedTrackId != null) &&
+            q.currentIndex >= q.tracks.lastIndex
+
     override fun addToQueue(track: Track) {
         val q = _queueState.value
-        val isQueueEnded =
-            !playbackState.value.isPlaying &&
-                (playbackState.value.isFinished || lastHandledFinishedTrackId != null) &&
-                q.currentIndex >= q.tracks.lastIndex
-        val shouldAutoStart = q.currentIndex < 0 || q.tracks.isEmpty() || isQueueEnded
+        val queueEnded = isQueueEnded(q)
+        val shouldAutoStart = q.currentIndex < 0 || q.tracks.isEmpty() || queueEnded
         if (shouldAutoStart) {
             pendingRestorePositionMs = 0L
             pendingRestoreTrackId = null
@@ -399,7 +401,7 @@ class PlaybackManagerImpl(
         _queueState.update { current ->
             if (current.currentIndex < 0 || current.tracks.isEmpty()) {
                 current.copy(tracks = listOf(track), currentIndex = 0, userQueueCount = 0)
-            } else if (isQueueEnded) {
+            } else if (queueEnded) {
                 val newTracks = current.tracks.toMutableList().apply { add(track) }
                 current.copy(tracks = newTracks, currentIndex = newTracks.lastIndex, userQueueCount = 0)
             } else {
@@ -420,15 +422,43 @@ class PlaybackManagerImpl(
         track: Track,
         index: Int,
     ) {
-        _queueState.update {
-            val safeIndex = index.coerceIn(0, it.tracks.size)
-            val newTracks = it.tracks.toMutableList().apply { add(safeIndex, track) }
-            val newIndex =
-                if (safeIndex <= it.currentIndex) it.currentIndex + 1 else it.currentIndex
-            it.copy(tracks = newTracks, currentIndex = newIndex)
+        val q = _queueState.value
+        val autoStartNext = isQueueEnded(q) && index > q.currentIndex
+        val shouldAutoStart = q.currentIndex < 0 || q.tracks.isEmpty() || autoStartNext
+        if (shouldAutoStart) {
+            pendingRestorePositionMs = 0L
+            pendingRestoreTrackId = null
         }
-        persistCurrentSession(immediate = false)
+        _queueState.update { current ->
+            insertTrackIntoQueueState(current, track, index, autoStartNext)
+        }
+        if (shouldAutoStart) {
+            playCurrentQueueTrack()
+        } else {
+            persistCurrentSession(immediate = false)
+        }
     }
+
+    private fun insertTrackIntoQueueState(
+        current: QueueState,
+        track: Track,
+        index: Int,
+        autoStartNext: Boolean,
+    ): QueueState =
+        if (current.currentIndex < 0 || current.tracks.isEmpty()) {
+            current.copy(tracks = listOf(track), currentIndex = 0, userQueueCount = 0)
+        } else {
+            val safeIndex = index.coerceIn(0, current.tracks.size)
+            val newTracks = current.tracks.toMutableList().apply { add(safeIndex, track) }
+            if (autoStartNext) {
+                current.copy(tracks = newTracks, currentIndex = safeIndex, userQueueCount = 0)
+            } else {
+                val newIndex = if (safeIndex <= current.currentIndex) current.currentIndex + 1 else current.currentIndex
+                val manualRange = (current.currentIndex + 1)..(current.currentIndex + current.userQueueCount + 1)
+                val newCount = if (safeIndex in manualRange) current.userQueueCount + 1 else current.userQueueCount
+                current.copy(tracks = newTracks, currentIndex = newIndex, userQueueCount = newCount)
+            }
+        }
 
     override fun removeFromQueue(index: Int) {
         val q = _queueState.value
