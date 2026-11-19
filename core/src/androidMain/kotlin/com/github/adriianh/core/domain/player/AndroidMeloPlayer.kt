@@ -187,6 +187,11 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
 
     override fun play() {
         runOnMain {
+            // ExoPlayer ignores play() while idle: resume only after re-preparing the item
+            // left by stop(), otherwise the media controls become a no-op.
+            if (exoPlayer.playbackState == Player.STATE_IDLE && exoPlayer.mediaItemCount > 0) {
+                exoPlayer.prepare()
+            }
             exoPlayer.play()
         }
     }
