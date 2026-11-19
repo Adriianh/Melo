@@ -380,7 +380,7 @@ class PlaybackManagerImpl(
         if (validIndex >= 0) {
             playCurrentQueueTrack()
         } else {
-            meloPlayer.stop()
+            parkPlayback()
             persistCurrentSession(immediate = true)
         }
     }
@@ -487,7 +487,7 @@ class PlaybackManagerImpl(
             pendingRestorePositionMs = 0L
             pendingRestoreTrackId = null
             if (_queueState.value.tracks.isEmpty()) {
-                meloPlayer.stop()
+                parkPlayback()
                 persistCurrentSession(immediate = true)
             } else {
                 playCurrentQueueTrack()
@@ -619,6 +619,25 @@ class PlaybackManagerImpl(
         }
     }
 
+    /**
+     * Parks the player with no playable media item (end of queue, unavailable stream, ...).
+     *
+     * ExoPlayer ignores `play()` while it is idle, so [isTrackLoaded] must be cleared here.
+     * Otherwise [togglePlayPause] keeps taking the `isTrackLoaded` branch, calls `play()` on an
+     * idle player, and playback can never be resumed until the process is restarted.
+     */
+    private fun parkPlayback(
+        track: Track? = null,
+        positionMs: Long = 0L,
+    ) {
+        isTrackLoaded = false
+        if (track != null) {
+            meloPlayer.setIdleTrack(track, positionMs)
+        } else {
+            meloPlayer.stop()
+        }
+    }
+
     private fun playCurrentQueueTrack(initialSeekMs: Long? = null) {
         val track = _queueState.value.currentTrack ?: return
         // The prefetcher may still be resolving this track (it was queued as the
@@ -663,7 +682,7 @@ class PlaybackManagerImpl(
                     if (_queueState.value.hasNext) {
                         playNext()
                     } else {
-                        meloPlayer.stop()
+                        parkPlayback()
                     }
                     return@launch
                 }
@@ -680,7 +699,7 @@ class PlaybackManagerImpl(
                         _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
                         playCurrentQueueTrack()
                     } else {
-                        meloPlayer.setIdleTrack(track, targetSeek)
+                        parkPlayback(track, targetSeek)
                         wasOfflineWaitingForNetwork = true
                         pendingResumePositionMs = targetSeek
                         pendingResumeTrackId = track.id
@@ -703,7 +722,7 @@ class PlaybackManagerImpl(
 
                 if (url == null) {
                     if (isEffectivelyOffline() || networkMonitor?.isOnline?.value == false) {
-                        meloPlayer.setIdleTrack(track, targetSeek)
+                        parkPlayback(track, targetSeek)
                         wasOfflineWaitingForNetwork = true
                         pendingResumePositionMs = targetSeek
                         pendingResumeTrackId = track.id
@@ -722,14 +741,14 @@ class PlaybackManagerImpl(
                                     }
                                 }
                         } else {
-                            meloPlayer.setIdleTrack(track, targetSeek)
+                            parkPlayback(track, targetSeek)
                             wasOfflineWaitingForNetwork = true
                             pendingResumePositionMs = targetSeek
                             pendingResumeTrackId = track.id
                             emitPlaybackError("Network connection lost. Press play to retry.")
                         }
                     } else {
-                        meloPlayer.setIdleTrack(track, targetSeek)
+                        parkPlayback(track, targetSeek)
                         emitPlaybackError("Stream not available, skipping...")
                         skipCurrentQueueTrack()
                     }
@@ -874,7 +893,7 @@ class PlaybackManagerImpl(
                 _queueState.update { it.copy(currentIndex = nextOfflineIndex) }
                 playCurrentQueueTrack()
             } else {
-                meloPlayer.stop()
+                parkPlayback()
             }
             return
         }
@@ -925,7 +944,7 @@ class PlaybackManagerImpl(
             }
 
         if (isAutoplayFetching || !hasAutoplayProvider) {
-            if (forcePlayNext) meloPlayer.stop()
+            if (forcePlayNext) parkPlayback()
             return
         }
 
@@ -934,7 +953,7 @@ class PlaybackManagerImpl(
             try {
                 val autoplayEnabled = getSettingsUseCase?.invoke()?.firstOrNull()?.autoplay ?: true
                 if (!autoplayEnabled) {
-                    if (forcePlayNext) meloPlayer.stop()
+                    if (forcePlayNext) parkPlayback()
                     return@launch
                 }
 
@@ -966,10 +985,10 @@ class PlaybackManagerImpl(
                         }
                     }
                 } else if (forcePlayNext) {
-                    meloPlayer.stop()
+                    parkPlayback()
                 }
             } catch (_: Exception) {
-                if (forcePlayNext) meloPlayer.stop()
+                if (forcePlayNext) parkPlayback()
             } finally {
                 isAutoplayFetching = false
             }

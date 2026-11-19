@@ -993,6 +993,35 @@ class PlaybackManagerTest {
         }
 
     @Test
+    fun `pressing play after the queue ends reloads the track instead of resuming an idle player`() =
+        runTest {
+            coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+            val scope = managerScope()
+            val manager = createManager(scope)
+            val track = fakeTrack("1")
+
+            manager.playTrack(track)
+            scope.advanceUntilIdle()
+
+            // The track ends with nothing queued and no autoplay provider, so the player is
+            // parked (ExoPlayer goes idle and keeps no playable item).
+            meloPlayerState.value = PlaybackState(currentTrack = track, isFinished = true)
+            scope.advanceUntilIdle()
+            verify { meloPlayer.stop() }
+
+            // ExoPlayer.stop() reports STATE_IDLE, which clears isFinished.
+            meloPlayerState.value = meloPlayerState.value.copy(isFinished = false)
+            scope.advanceUntilIdle()
+
+            manager.togglePlayPause()
+            scope.advanceUntilIdle()
+
+            // play() alone is a no-op on an idle player: the stream must be resolved again.
+            coVerify(atLeast = 2) { getStreamUseCase(any()) }
+            verify(atLeast = 2) { meloPlayer.load("http://stream.url", any()) }
+        }
+
+    @Test
     fun `starting playback cancels the in-flight prefetch of the same track`() =
         runTest {
             val prefetchGate = kotlinx.coroutines.CompletableDeferred<Unit>()
