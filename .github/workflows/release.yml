@@ -256,6 +256,8 @@ jobs:
 
       - name: Prepare nightly assets
         if: startsWith(github.ref, 'refs/heads/master')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -287,7 +289,26 @@ jobs:
             cp "$f" "nightly_dist/$new"
           done
 
-          # Nightly release body: static header + dynamic asset list.
+          # Fetch changelog since the latest stable release (v*) via GitHub API
+          changelog=""
+          latest_tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)
+          if [ -z "$latest_tag" ]; then
+            latest_tag=$(gh api "repos/$GITHUB_REPOSITORY/tags" --jq '.[].name | select(startswith("v"))' 2>/dev/null | head -n 1 || true)
+          fi
+
+          if [ -n "$latest_tag" ]; then
+            echo "Generating release notes comparing $latest_tag against $GITHUB_SHA..."
+            changelog=$(gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="nightly" \
+              -f target_commitish="$GITHUB_SHA" \
+              -f previous_tag_name="$latest_tag" \
+              --jq .body 2>/dev/null || true)
+          fi
+
+          # Nightly release body: header + CLI install + changelog + assets table.
           {
             echo "Automated development build from commit \`$GITHUB_SHA\`."
             echo
@@ -308,11 +329,69 @@ jobs:
             echo 'curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly'
             echo '```'
             echo
-            echo "### Assets"
+
+            if [ -n "$changelog" ]; then
+              echo "---"
+              echo
+              echo "$changelog"
+              echo
+            fi
+
+            echo "---"
             echo
+            echo "### Downloads & Assets"
+            echo
+            echo "| Platform | Package / Type | File |"
+            echo "| :--- | :--- | :--- |"
             for f in nightly_dist/*; do
+              [ -e "$f" ] || continue
               name=$(basename "$f")
-              echo "- [$name](https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/$name)"
+              url="https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/$name"
+              platform="Other"
+              type="Binary"
+              case "$name" in
+                *android*|*.apk)
+                  platform="🤖 Android"
+                  type="APK"
+                  ;;
+                *windows.zip)
+                  platform="🪟 Windows"
+                  type="CLI (TUI)"
+                  ;;
+                *.exe)
+                  platform="🪟 Windows"
+                  type="Setup Installer"
+                  ;;
+                *.msi)
+                  platform="🪟 Windows"
+                  type="MSI Package"
+                  ;;
+                *linux.tar.gz)
+                  platform="🐧 Linux"
+                  type="CLI (TUI)"
+                  ;;
+                *.deb)
+                  platform="🐧 Linux"
+                  type="DEB Package"
+                  ;;
+                *.AppImage)
+                  platform="🐧 Linux"
+                  type="AppImage"
+                  ;;
+                *.tar.gz)
+                  platform="🐧 Linux"
+                  type="Portable Tarball"
+                  ;;
+                *macos.tar.gz)
+                  platform="🍎 macOS"
+                  type="CLI (TUI)"
+                  ;;
+                *.dmg)
+                  platform="🍎 macOS"
+                  type="DMG Installer"
+                  ;;
+              esac
+              echo "| $platform | $type | [$name]($url) |"
             done
           } > nightly_body.md
 
