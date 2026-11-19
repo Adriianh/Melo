@@ -608,8 +608,11 @@ class PlaybackManagerImpl(
         if (!replayingLoadedTrack) {
             meloPlayer.stop()
         }
+        if (replayingLoadedTrack) {
+            lastHandledFinishedTrackId = null
+        }
+
         isTrackLoaded = true
-        lastHandledFinishedTrackId = null
         lastHandledErrorTrackId = null
         pendingRestorePositionMs = 0L
         pendingRestoreTrackId = null
@@ -707,6 +710,7 @@ class PlaybackManagerImpl(
                     streamCacheRepository?.cacheUrl(track.id, url)
                 }
 
+                lastHandledFinishedTrackId = null
                 meloPlayer.load(url, track, targetSeek)
                 emitPlaybackEvent(PlaybackEvent.TrackStarted(track, positionMs = targetSeek))
                 persistCurrentSession(immediate = true)
