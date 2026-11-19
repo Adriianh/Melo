@@ -11,6 +11,7 @@ import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.github.adriianh.core.domain.player.MediaSessionManager
+import com.github.adriianh.core.domain.repository.SettingsRepository
 import org.koin.android.ext.android.inject
 
 /**
@@ -30,6 +31,8 @@ class MeloMediaSessionService : MediaSessionService() {
     }
 
     private val mediaSessionManager: MediaSessionManager by inject()
+
+    private val settingsRepository: SettingsRepository by inject()
 
     private val androidManager: AndroidMediaSessionManager?
         get() = mediaSessionManager as? AndroidMediaSessionManager
@@ -60,6 +63,21 @@ class MeloMediaSessionService : MediaSessionService() {
     ): Int {
         attachSessionIfAvailable()
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    /**
+     * Media3 keeps the service alive when playback is ongoing (the default), which lets the
+     * music continue after the task is swiped away. When the user opts into "stop on close",
+     * pause every player and stop the service so the notification disappears, while keeping
+     * the [MediaSession] alive so playback can be resumed later.
+     */
+    @OptIn(UnstableApi::class)
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (settingsRepository.getSettingsSync().stopPlaybackOnTaskRemoval) {
+            pauseAllPlayersAndStopSelf()
+            return
+        }
+        super.onTaskRemoved(rootIntent)
     }
 
     private fun attachSessionIfAvailable() {

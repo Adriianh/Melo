@@ -580,6 +580,13 @@ fun App(
                                         }
                                     }
                                 },
+                                onStopPlaybackOnTaskRemovalToggle = { stop ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(stopPlaybackOnTaskRemoval = stop)
+                                        }
+                                    }
+                                },
                                 onDiscordRpcToggle = { rpc ->
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->

@@ -165,13 +165,13 @@
         <error line="487" column="34" source="standard:trailing-comma-on-call-site" />
         <error line="494" column="72" source="standard:trailing-comma-on-call-site" />
         <error line="499" column="51" source="standard:multiline-expression-wrapping" />
-        <error line="602" column="47" source="standard:if-else-wrapping" />
-        <error line="602" column="52" source="standard:if-else-bracing" />
-        <error line="602" column="52" source="standard:if-else-wrapping" />
-        <error line="602" column="52" source="standard:multiline-if-else" />
-        <error line="647" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="665" column="70" source="standard:trailing-comma-on-call-site" />
-        <error line="669" column="1" source="standard:no-blank-line-before-rbrace" />
+        <error line="609" column="47" source="standard:if-else-wrapping" />
+        <error line="609" column="52" source="standard:if-else-bracing" />
+        <error line="609" column="52" source="standard:if-else-wrapping" />
+        <error line="609" column="52" source="standard:multiline-if-else" />
+        <error line="654" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="672" column="70" source="standard:trailing-comma-on-call-site" />
+        <error line="676" column="1" source="standard:no-blank-line-before-rbrace" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/di/Koin.kt">
         <error line="19" column="27" source="standard:trailing-comma-on-call-site" />

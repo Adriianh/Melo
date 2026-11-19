@@ -102,7 +102,11 @@ internal fun rememberSettingEntries(
     ) {
         buildList {
             addAppearanceEntries(settings = settings, actions = actions)
-            addPlaybackEntries(settings = settings, actions = actions)
+            addPlaybackEntries(
+                settings = settings,
+                actions = actions,
+                platformType = platformType,
+            )
             addLibraryEntries(
                 settings = settings,
                 actions = actions,
@@ -335,8 +339,12 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
 private fun MutableList<SettingEntry>.addPlaybackEntries(
     settings: Settings,
     actions: SettingsActions,
+    platformType: PlatformType,
 ) {
     val section = "Reproducción y streaming"
+    val stopOnCloseDescription =
+        "Al quitar Melo de recientes, pausa la reproducción y cierra el servicio en segundo plano. " +
+            "Puedes reanudar al volver a abrir la app."
     add(
         SettingEntry(
             id = "playback_data_saver",
@@ -453,6 +461,40 @@ private fun MutableList<SettingEntry>.addPlaybackEntries(
                 subtitle = "Al arrancar, recupera la cola más reciente aunque pertenezca a otra instancia de Melo.",
                 checked = settings.resumeLastActiveSession,
                 onCheckedChange = actions.onResumeLastActiveSessionToggle,
+            )
+        },
+    )
+    add(
+        SettingEntry(
+            id = "playback_stop_on_task_removal",
+            category = SettingsCategory.PLAYBACK,
+            section = section,
+            title = "Detener al cerrar la app",
+            description = stopOnCloseDescription,
+            keywords =
+                listOf(
+                    "cerrar",
+                    "close",
+                    "recientes",
+                    "recents",
+                    "deslizar",
+                    "swipe",
+                    "segundo plano",
+                    "background",
+                    "notificación",
+                    "notification",
+                    "servicio",
+                    "service",
+                    "detener",
+                    "stop",
+                ),
+            visible = platformType == PlatformType.ANDROID,
+        ) {
+            SettingToggleRow(
+                title = "Detener al cerrar la app",
+                subtitle = stopOnCloseDescription,
+                checked = settings.stopPlaybackOnTaskRemoval,
+                onCheckedChange = actions.onStopPlaybackOnTaskRemovalToggle,
             )
         },
     )
