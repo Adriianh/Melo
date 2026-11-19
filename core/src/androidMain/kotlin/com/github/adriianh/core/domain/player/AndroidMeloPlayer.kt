@@ -163,6 +163,17 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                 .setMediaMetadata(metadata)
                 .build()
 
+        _state.update {
+            it.copy(
+                currentTrack = track,
+                progressMs = initialPositionMs,
+                durationMs = track.durationMs,
+                isBuffering = true,
+                isFinished = false,
+                error = null,
+            )
+        }
+
         runOnMain {
             if (initialPositionMs > 0) {
                 exoPlayer.setMediaItem(mediaItem, initialPositionMs)
@@ -170,15 +181,6 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                 exoPlayer.setMediaItem(mediaItem)
             }
             exoPlayer.prepare()
-            _state.update {
-                it.copy(
-                    currentTrack = track,
-                    progressMs = initialPositionMs,
-                    durationMs = track.durationMs,
-                    isFinished = false,
-                    error = null,
-                )
-            }
             exoPlayer.play()
         }
     }
@@ -196,6 +198,15 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     }
 
     override fun stop() {
+        stopProgressUpdate()
+        _state.update {
+            it.copy(
+                isPlaying = false,
+                isBuffering = false,
+                isFinished = false,
+                error = null,
+            )
+        }
         runOnMain {
             exoPlayer.stop()
         }
