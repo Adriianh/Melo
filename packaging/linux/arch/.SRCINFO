@@ -1,6 +1,6 @@
 pkgbase = melo-player-bin
 	pkgdesc = Modern, fast music player for desktop (Compose Multiplatform GUI & TUI)
-	pkgver = 2.2.1
+	pkgver = 2.3.0
 	pkgrel = 1
 	url = https://github.com/Adriianh/Melo
 	arch = x86_64
@@ -18,7 +18,7 @@ pkgbase = melo-player-bin
 	conflicts = melo
 	conflicts = melo-bin
 	options = !strip
-	source = https://github.com/Adriianh/Melo/releases/download/v2.2.1/melo-2.2.1-linux-x64.tar.gz
+	source = https://github.com/Adriianh/Melo/releases/download/v2.3.0/melo-2.3.0-linux-x64.tar.gz
 	source = melo.desktop
 	sha256sums = SKIP
 	sha256sums = SKIP

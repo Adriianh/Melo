@@ -235,7 +235,7 @@ resolve_latest_version() {
 
     # 3. Default fallback
     if [ -z "$latest_tag" ]; then
-        latest_tag="v2.2.1"
+        latest_tag="v2.3.0"
     fi
 
     echo "${latest_tag#v}"
