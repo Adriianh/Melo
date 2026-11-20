@@ -15,10 +15,14 @@ import kotlinx.coroutines.Dispatchers
 import org.koin.compose.koinInject
 import java.io.File
 
+@Volatile
+internal var isJvmImageLoaderConfigured: Boolean = false
+
 @OptIn(ExperimentalCoilApi::class)
 @Composable
 actual fun InitImageLoader() {
     val httpClient: HttpClient = koinInject()
+    isJvmImageLoaderConfigured = true
     setSingletonImageLoaderFactory { context ->
         val cacheDir = File(MeloDataDirectory.resolve(), "cache/images")
         cacheDir.mkdirs()

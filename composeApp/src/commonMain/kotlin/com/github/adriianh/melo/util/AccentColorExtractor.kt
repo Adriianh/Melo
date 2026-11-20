@@ -25,6 +25,8 @@ data class AccentPalette(
 
 object AccentColorExtractor {
     private const val MAX_PALETTE_CACHE_ENTRIES = 32
+    private const val ARTWORK_CACHE_URL_SIZE_PX = 180
+    private const val PALETTE_DECODE_SIZE_PX = 120
     private val paletteCacheMutex = Mutex()
     private val paletteCache = LinkedHashMap<Pair<String, Boolean>, AccentPalette>()
 
@@ -100,13 +102,18 @@ object AccentColorExtractor {
         isDarkMode: Boolean = true,
     ): AccentPalette {
         if (url.isNullOrBlank()) return fallback
-        val compactUrl = normalizeArtworkUrl(url, 120) ?: url
+        val compactUrl = normalizeArtworkUrl(url, ARTWORK_CACHE_URL_SIZE_PX) ?: url
         val cacheKey = compactUrl to isDarkMode
         val cached = paletteCacheMutex.withLock { paletteCache[cacheKey] }
 
         return cached ?: runCatching {
-            val bytes = httpClient.get(compactUrl).body<ByteArray>()
-            fromImageBytes(bytes, isDarkMode)
+            val cachedBitmap = loadCachedArtworkBitmap(compactUrl, PALETTE_DECODE_SIZE_PX)
+            if (cachedBitmap != null) {
+                fromPalette(cachedBitmap.generatePalette(), isDarkMode)
+            } else {
+                val bytes = httpClient.get(compactUrl).body<ByteArray>()
+                fromImageBytes(bytes, isDarkMode)
+            }
         }.getOrElse { fallback }.also { extracted ->
             if (extracted != fallback) {
                 paletteCacheMutex.withLock {

@@ -1,8 +1,10 @@
 package com.github.adriianh.melo
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
+import coil3.compose.LocalPlatformContext
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.disk.DiskCache
 import coil3.disk.directory
@@ -13,11 +15,16 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.Dispatchers
 import org.koin.compose.koinInject
 
+@Volatile
+internal var androidImageLoaderAppContext: Context? = null
+
 @OptIn(ExperimentalCoilApi::class)
 @Composable
 actual fun InitImageLoader() {
     val httpClient: HttpClient = koinInject()
+    androidImageLoaderAppContext = LocalPlatformContext.current.applicationContext
     setSingletonImageLoaderFactory { context ->
+        androidImageLoaderAppContext = context.applicationContext
         ImageLoader.Builder(context)
             .components {
                 add(KtorNetworkFetcherFactory(httpClient = httpClient))
