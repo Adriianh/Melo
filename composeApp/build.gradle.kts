@@ -228,8 +228,10 @@ compose.desktop {
                 "java.logging",
                 "java.management",
                 "java.sql",
-                "jdk.unsupported",
                 "jdk.crypto.ec",
+                "jdk.net",
+                "jdk.security.auth",
+                "jdk.unsupported",
             )
 
             appResourcesRootDir.set(layout.buildDirectory.dir("app-resources"))
