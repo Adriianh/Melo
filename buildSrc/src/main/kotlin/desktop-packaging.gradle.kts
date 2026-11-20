@@ -24,17 +24,105 @@ fun requiresExecutableBit(path: String): Boolean {
         fileName == "jexec"
 }
 
+private val excludedVlcPluginDirs =
+    setOf(
+        "access_output",
+        "control",
+        "d3d11",
+        "d3d9",
+        "gui",
+        "lua",
+        "mux",
+        "services_discovery",
+        "spu",
+        "stream_out",
+        "text_renderer",
+        "video_chroma",
+        "video_filter",
+        "video_output",
+        "video_splitter",
+        "visualization",
+    )
+
+private val excludedVlcPluginFiles =
+    setOf(
+        "libaccess_srt_plugin.dll",
+        "libaom_plugin.dll",
+        "libaribsub_plugin.dll",
+        "libbluray-j2se-1.3.2.jar",
+        "libcc_plugin.dll",
+        "libcdda_plugin.dll",
+        "libcvdsub_plugin.dll",
+        "libdav1d_plugin.dll",
+        "libdcp_plugin.dll",
+        "libdshow_plugin.dll",
+        "libdtv_plugin.dll",
+        "libdvbsub_plugin.dll",
+        "libdvdnav_plugin.dll",
+        "libdvdread_plugin.dll",
+        "libftp_plugin.dll",
+        "libjpeg_plugin.dll",
+        "libkate_plugin.dll",
+        "liblibass_plugin.dll",
+        "liblibbluray_plugin.dll",
+        "liblive555_plugin.dll",
+        "libnfs_plugin.dll",
+        "libpng_plugin.dll",
+        "librist_plugin.dll",
+        "librtp_plugin.dll",
+        "libsatip_plugin.dll",
+        "libschroedinger_plugin.dll",
+        "libscreen_plugin.dll",
+        "libsdl_image_plugin.dll",
+        "libsftp_plugin.dll",
+        "libshm_plugin.dll",
+        "libsmb_plugin.dll",
+        "libspudec_plugin.dll",
+        "libstl_plugin.dll",
+        "libsubsdec_plugin.dll",
+        "libsubstx3g_plugin.dll",
+        "libsubsusf_plugin.dll",
+        "libsvcdsub_plugin.dll",
+        "libsvgdec_plugin.dll",
+        "libtelx_plugin.dll",
+        "libtheora_plugin.dll",
+        "libttml_plugin.dll",
+        "libvcd_plugin.dll",
+        "libvdr_plugin.dll",
+        "libvnc_plugin.dll",
+        "libvpx_plugin.dll",
+        "libwebvtt_plugin.dll",
+        "libx26410b_plugin.dll",
+        "libx264_plugin.dll",
+        "libx265_plugin.dll",
+        "libzvbi_plugin.dll",
+    )
+
+private fun shouldIncludeVlcPlugin(relativePluginPath: String): Boolean {
+    val parts = relativePluginPath.split('/')
+    val category = parts.firstOrNull().orEmpty()
+    val fileName = parts.lastOrNull().orEmpty()
+    return category !in excludedVlcPluginDirs && fileName !in excludedVlcPluginFiles
+}
+
 val prepareVlcWindows = tasks.register("prepareVlcWindows") {
     group = "compose desktop"
-    description = "Downloads and bundles VLC native libraries for Windows distribution"
+    description = "Downloads and bundles audio-only VLC native libraries for Windows distribution"
     onlyIf { org.gradle.internal.os.OperatingSystem.current().isWindows }
+    inputs.property("vlcAudioOnlyFilterVersion", 1)
     val vlcDir = layout.buildDirectory.dir("app-resources/windows/vlc")
     outputs.dir(vlcDir)
 
     doLast {
         val targetDir = vlcDir.get().asFile
-        if (File(targetDir, "libvlc.dll").exists()) {
+        val pluginsDir = File(targetDir, "plugins")
+        val pluginsCache = File(pluginsDir, "plugins.dat")
+        val hasStaleVideoPlugins = File(pluginsDir, "gui").exists()
+        if (File(targetDir, "libvlc.dll").exists() && pluginsCache.exists() && !hasStaleVideoPlugins) {
             return@doLast
+        }
+        if (targetDir.exists()) {
+            targetDir.deleteRecursively()
         }
         targetDir.mkdirs()
 
@@ -52,26 +140,41 @@ val prepareVlcWindows = tasks.register("prepareVlcWindows") {
                 }
         }
 
-        logger.lifecycle("Extracting VLC native libraries for Windows...")
+        logger.lifecycle("Extracting audio-only VLC native libraries for Windows...")
+        val cacheGenExe = File(targetDir, "vlc-cache-gen.exe")
         ZipFile(zipFile).use { zip ->
             for (entry in zip.entries().asSequence()) {
                 val name = entry.name.substringAfter('/') // strip "vlc-3.0.21/"
-                if (name == "libvlc.dll" || name == "libvlccore.dll" || name.startsWith("plugins/")) {
+                val isCoreBinary =
+                    name == "libvlc.dll" || name == "libvlccore.dll" || name == "vlc-cache-gen.exe"
+                val isAudioPlugin =
+                    name.startsWith("plugins/") &&
+                        !entry.isDirectory &&
+                        shouldIncludeVlcPlugin(name.removePrefix("plugins/"))
+                if (isCoreBinary || isAudioPlugin) {
                     val destFile = File(targetDir, name)
-                    if (entry.isDirectory) {
-                        destFile.mkdirs()
-                    } else {
-                        destFile.parentFile.mkdirs()
-                        zip.getInputStream(entry).use { input ->
-                            destFile.outputStream().use { output ->
-                                input.copyTo(output)
-                            }
+                    destFile.parentFile.mkdirs()
+                    zip.getInputStream(entry).use { input ->
+                        destFile.outputStream().use { output ->
+                            input.copyTo(output)
                         }
                     }
                 }
             }
         }
-        logger.lifecycle("VLC Windows native libraries ready at: ${targetDir.absolutePath}")
+        if (cacheGenExe.exists() && pluginsDir.exists()) {
+            val exitCode =
+                ProcessBuilder(cacheGenExe.absolutePath, pluginsDir.absolutePath)
+                    .directory(targetDir)
+                    .inheritIO()
+                    .start()
+                    .waitFor()
+            if (exitCode != 0) {
+                logger.warn("vlc-cache-gen exited with code $exitCode; continuing without plugins.dat")
+            }
+            cacheGenExe.delete()
+        }
+        logger.lifecycle("VLC Windows audio-only libraries ready at: ${targetDir.absolutePath}")
     }
 }
 
