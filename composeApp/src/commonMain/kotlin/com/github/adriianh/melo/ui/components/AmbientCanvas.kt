@@ -2,162 +2,165 @@ package com.github.adriianh.melo.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.FloatState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.withTransform
 import com.github.adriianh.melo.util.LocalMeloColors
+import com.github.adriianh.melo.util.LocalWindowActive
+import kotlinx.coroutines.delay
 import kotlin.math.PI
+import kotlin.math.max
 import kotlin.math.sin
+
+private const val AMBIENT_FRAME_DELAY_MS = 45L
+private const val AMBIENT_FRAME_STEP_SEC = 0.045f
+private const val AMBIENT_CYCLE_SEC = 2520f
+private const val TWO_PI = (2.0 * PI).toFloat()
 
 @Composable
 fun AmbientCanvas(
     accentColor: Color,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    content: @Composable BoxScope.() -> Unit
+    animate: Boolean = false,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val meloColors = LocalMeloColors.current
     val isDark = meloColors.isDark
+    val isWindowActive = LocalWindowActive.current
 
     Box(modifier = modifier.fillMaxSize()) {
+        val baseModifier =
+            Modifier
+                .fillMaxSize()
+                .ambientBaseBackground(
+                    isDark = isDark,
+                    surface0 = meloColors.surface0,
+                    surface2 = meloColors.surface2,
+                )
+
         if (enabled) {
             val animatedAccent by animateColorAsState(
                 targetValue = accentColor,
                 animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
-                label = "AmbientCanvasAccent"
+                label = "AmbientCanvasAccent",
             )
+            val shouldAnimate = animate && isWindowActive
+            val elapsedSeconds = remember { mutableFloatStateOf(0f) }
 
-            val infiniteTransition = rememberInfiniteTransition(label = "AmbientCanvasMotion")
-
-            val phase1 = infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(18000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "Orb1Phase"
-            )
-            val pulse1 = infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(7000, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "Orb1Pulse"
-            )
-
-            val phase2 = infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(24000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "Orb2Phase"
-            )
-            val pulse2 = infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(10000, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "Orb2Pulse"
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isDark) SolidColor(meloColors.surface0)
-                        else Brush.verticalGradient(
-                            listOf(
-                                meloColors.surface0,
-                                meloColors.surface2.copy(alpha = 0.9f)
-                            )
-                        )
-                    )
-            )
-
-            val orb1Brush = remember(animatedAccent, isDark) {
-                val alpha = if (isDark) 0.32f else 0.14f
-                Brush.radialGradient(
-                    colors = listOf(
-                        animatedAccent.copy(alpha = alpha),
-                        animatedAccent.copy(alpha = alpha * 0.35f),
-                        Color.Transparent
-                    )
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val p1 = phase1.value * 2f * PI.toFloat()
-                        translationX = size.width * (0.35f * sin(p1 + 0.2f))
-                        translationY = size.height * (0.32f * sin(p1 * 0.75f + 0.4f))
-                        val s = 1.15f + 0.15f * pulse1.value
-                        scaleX = s
-                        scaleY = s
+            LaunchedEffect(shouldAnimate) {
+                if (shouldAnimate) {
+                    while (true) {
+                        delay(AMBIENT_FRAME_DELAY_MS)
+                        elapsedSeconds.floatValue =
+                            (elapsedSeconds.floatValue + AMBIENT_FRAME_STEP_SEC) % AMBIENT_CYCLE_SEC
                     }
-                    .background(orb1Brush)
-            )
-
-            val orb2Brush = remember(animatedAccent, isDark) {
-                val alpha = if (isDark) 0.22f else 0.10f
-                Brush.radialGradient(
-                    colors = listOf(
-                        animatedAccent.copy(alpha = alpha),
-                        animatedAccent.copy(alpha = alpha * 0.35f),
-                        Color.Transparent
-                    )
-                )
+                }
             }
+
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val p2 = phase2.value * 2f * PI.toFloat()
-                        translationX = size.width * (-0.32f * sin(p2 * 0.85f + 1.2f))
-                        translationY = size.height * (0.35f * sin(p2 * 0.90f + 0.3f))
-                        val s = 1.05f + 0.12f * pulse2.value
-                        scaleX = s
-                        scaleY = s
-                    }
-                    .background(orb2Brush)
+                modifier =
+                    baseModifier.ambientOrbsOverlay(
+                        animatedAccent = animatedAccent,
+                        isDark = isDark,
+                        elapsedSeconds = elapsedSeconds,
+                    ),
             )
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isDark) SolidColor(meloColors.surface0)
-                        else Brush.verticalGradient(
-                            listOf(
-                                meloColors.surface0,
-                                meloColors.surface2.copy(alpha = 0.9f)
-                            )
-                        )
-                    )
-            )
+            Box(modifier = baseModifier)
         }
         content()
     }
 }
+
+private fun Modifier.ambientBaseBackground(
+    isDark: Boolean,
+    surface0: Color,
+    surface2: Color,
+): Modifier =
+    background(
+        if (isDark) {
+            SolidColor(surface0)
+        } else {
+            Brush.verticalGradient(listOf(surface0, surface2.copy(alpha = 0.9f)))
+        },
+    )
+
+private fun Modifier.ambientOrbsOverlay(
+    animatedAccent: Color,
+    isDark: Boolean,
+    elapsedSeconds: FloatState,
+): Modifier =
+    drawWithCache {
+        val orb1Radius = max(size.width, size.height) * 0.65f
+        val orb2Radius = orb1Radius * 0.9f
+        val orb1Alpha = if (isDark) 0.30f else 0.14f
+        val orb2Alpha = if (isDark) 0.20f else 0.10f
+        val baseOrb1X = size.width * 0.72f
+        val baseOrb1Y = size.height * 0.28f
+        val baseOrb2X = size.width * 0.24f
+        val baseOrb2Y = size.height * 0.76f
+
+        val orb1Brush =
+            Brush.radialGradient(
+                colors =
+                    listOf(
+                        animatedAccent.copy(alpha = orb1Alpha),
+                        animatedAccent.copy(alpha = orb1Alpha * 0.35f),
+                        Color.Transparent,
+                    ),
+                center = Offset.Zero,
+                radius = orb1Radius,
+            )
+        val orb2Brush =
+            Brush.radialGradient(
+                colors =
+                    listOf(
+                        animatedAccent.copy(alpha = orb2Alpha),
+                        animatedAccent.copy(alpha = orb2Alpha * 0.35f),
+                        Color.Transparent,
+                    ),
+                center = Offset.Zero,
+                radius = orb2Radius,
+            )
+
+        onDrawBehind {
+            val t = elapsedSeconds.floatValue
+            val dx1 = size.width * 0.22f * sin(t * (TWO_PI / 18f))
+            val dy1 = size.height * 0.20f * sin(t * (TWO_PI / 24f) + 0.4f)
+            val scale1 = 1f + 0.14f * (0.5f + 0.5f * sin(t * (TWO_PI / 7f)))
+
+            val dx2 = size.width * -0.20f * sin(t * (TWO_PI / 24f) + 1.2f)
+            val dy2 = size.height * 0.22f * sin(t * (TWO_PI / 18f) + 0.3f)
+            val scale2 = 1f + 0.12f * (0.5f + 0.5f * sin(t * (TWO_PI / 10f)))
+
+            withTransform({
+                translate(left = baseOrb1X + dx1, top = baseOrb1Y + dy1)
+                scale(scaleX = scale1, scaleY = scale1, pivot = Offset.Zero)
+            }) {
+                drawCircle(brush = orb1Brush, radius = orb1Radius, center = Offset.Zero)
+            }
+
+            withTransform({
+                translate(left = baseOrb2X + dx2, top = baseOrb2Y + dy2)
+                scale(scaleX = scale2, scaleY = scale2, pivot = Offset.Zero)
+            }) {
+                drawCircle(brush = orb2Brush, radius = orb2Radius, center = Offset.Zero)
+            }
+        }
+    }

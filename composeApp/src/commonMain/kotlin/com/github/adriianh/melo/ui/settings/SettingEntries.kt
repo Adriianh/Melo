@@ -296,6 +296,35 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
     )
     add(
         SettingEntry(
+            id = "appearance_ambient_motion",
+            category = SettingsCategory.APPEARANCE,
+            section = section,
+            title = "Fondo ambiental animado",
+            description = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+            keywords =
+                listOf(
+                    "fondo",
+                    "ambient",
+                    "animación",
+                    "animation",
+                    "movimiento",
+                    "motion",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                    "canvas",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Fondo ambiental animado",
+                subtitle = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+                checked = settings.ambientMotion,
+                onCheckedChange = actions.onAmbientMotionToggle,
+            )
+        },
+    )
+    add(
+        SettingEntry(
             id = "appearance_theme_preset",
             category = SettingsCategory.APPEARANCE,
             section = section,

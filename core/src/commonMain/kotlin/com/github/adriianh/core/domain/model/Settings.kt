@@ -134,6 +134,7 @@ data class Settings(
     val accountPageId: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
+    val ambientMotion: Boolean = false,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
     val stopPlaybackOnTaskRemoval: Boolean = false,
