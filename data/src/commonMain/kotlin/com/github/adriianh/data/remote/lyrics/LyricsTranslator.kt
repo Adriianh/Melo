@@ -25,7 +25,7 @@ class LyricsTranslator(
     private val httpClient: HttpClient
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val translationCache = mutableMapOf<String, List<SyncedLine>>()
+    private val translationCache = LinkedHashMap<String, List<SyncedLine>>()
 
     /**
      * Translates a list of [SyncedLine] into the requested [targetLanguage] (e.g. "es", "en", "pt", "fr").
@@ -46,6 +46,10 @@ class LyricsTranslator(
             line.copy(translation = translation)
         }
 
+        while (translationCache.size >= 30) {
+            val oldestKey = translationCache.keys.firstOrNull() ?: break
+            translationCache.remove(oldestKey)
+        }
         translationCache[cacheKey] = result
         return result
     }
@@ -55,7 +59,7 @@ class LyricsTranslator(
      */
     suspend fun translatePlainLyrics(
         text: String,
-        targetLanguage: String = "es"
+        targetLanguage: String = "es",
     ): String {
         if (text.isBlank()) return text
         val lines = text.lines()
@@ -65,7 +69,7 @@ class LyricsTranslator(
 
     private suspend fun translateBatch(
         lines: List<String>,
-        targetLanguage: String
+        targetLanguage: String,
     ): List<String> {
         if (lines.isEmpty()) return emptyList()
 
@@ -90,23 +94,27 @@ class LyricsTranslator(
         }
     }
 
-    private suspend fun queryGoogleTranslate(text: String, targetLang: String): String? {
-        return try {
-            httpClient.submitForm(
-                url = "https://translate.google.com/translate_a/single?client=at&dt=t&dj=1&hl=$targetLang&ie=UTF-8&oe=UTF-8",
-                formParameters = parameters {
-                    append("sl", "auto")
-                    append("tl", targetLang)
-                    append("q", text)
-                }
-            ) {
-                header(
-                    "User-Agent",
-                    "AndroidTranslate/5.3.0.RC02.130475354-53000263 5.1 phone TRANSLATE_OPM5_TEST_1"
-                )
-            }.body<String>()
+    private suspend fun queryGoogleTranslate(
+        text: String,
+        targetLang: String,
+    ): String? =
+        try {
+            httpClient
+                .submitForm(
+                    url = "https://translate.google.com/translate_a/single?client=at&dt=t&dj=1&hl=$targetLang&ie=UTF-8&oe=UTF-8",
+                    formParameters =
+                        parameters {
+                            append("sl", "auto")
+                            append("tl", targetLang)
+                            append("q", text)
+                        },
+                ) {
+                    header(
+                        "User-Agent",
+                        "AndroidTranslate/5.3.0.RC02.130475354-53000263 5.1 phone TRANSLATE_OPM5_TEST_1",
+                    )
+                }.body<String>()
         } catch (_: Exception) {
             null
         }
-    }
 }

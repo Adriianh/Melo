@@ -8,6 +8,8 @@ import com.kmpalette.palette.graphics.Palette
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class AccentPalette(
     val dominant: Color,
@@ -22,6 +24,10 @@ data class AccentPalette(
 }
 
 object AccentColorExtractor {
+    private const val MAX_PALETTE_CACHE_ENTRIES = 32
+    private val paletteCacheMutex = Mutex()
+    private val paletteCache = LinkedHashMap<Pair<String, Boolean>, AccentPalette>()
+
     val fallback = AccentPalette(
         dominant = Color(0xFFFF2D55),
         onDominant = Color.White,
@@ -91,12 +97,25 @@ object AccentColorExtractor {
     suspend fun fromImageUrl(
         url: String?,
         httpClient: HttpClient,
-        isDarkMode: Boolean = true
+        isDarkMode: Boolean = true,
     ): AccentPalette {
         if (url.isNullOrBlank()) return fallback
-        return runCatching {
-            val bytes = httpClient.get(url).body<ByteArray>()
+        val compactUrl = normalizeArtworkUrl(url, 120) ?: url
+        val cacheKey = compactUrl to isDarkMode
+        val cached = paletteCacheMutex.withLock { paletteCache[cacheKey] }
+
+        return cached ?: runCatching {
+            val bytes = httpClient.get(compactUrl).body<ByteArray>()
             fromImageBytes(bytes, isDarkMode)
-        }.getOrElse { fallback }
+        }.getOrElse { fallback }.also { extracted ->
+            if (extracted != fallback) {
+                paletteCacheMutex.withLock {
+                    if (paletteCache.size >= MAX_PALETTE_CACHE_ENTRIES) {
+                        paletteCache.keys.firstOrNull()?.let { paletteCache.remove(it) }
+                    }
+                    paletteCache[cacheKey] = extracted
+                }
+            }
+        }
     }
 }

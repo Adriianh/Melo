@@ -49,7 +49,7 @@ class EntityCacheImpl(
                 memoryCache[cleanId] = entity
             }
 
-            while (memoryCache.size > 100) {
+            while (memoryCache.size > 40) {
                 val oldestKey = memoryCache.keys.firstOrNull() ?: break
                 memoryCache.remove(oldestKey)
             }

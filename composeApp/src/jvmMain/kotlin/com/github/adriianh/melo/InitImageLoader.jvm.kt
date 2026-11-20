@@ -29,7 +29,7 @@ actual fun InitImageLoader() {
             }.memoryCache {
                 MemoryCache
                     .Builder()
-                    .maxSizePercent(context, 0.20)
+                    .maxSizeBytes(24L * 1024 * 1024)
                     .build()
             }.diskCache {
                 DiskCache

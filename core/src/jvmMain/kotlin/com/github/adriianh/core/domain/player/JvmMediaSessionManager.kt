@@ -383,10 +383,12 @@ class JvmMediaSessionManager(
     }
 
     private suspend fun downloadArtwork(url: String): File? = try {
-        val formattedUrl = if (url.startsWith("//")) "https:$url" else url
+        val rawUrl = if (url.startsWith("//")) "https:$url" else url
+        val formattedUrl = compactArtworkUrl(rawUrl)
         val bytes = httpClient.get(formattedUrl).readRawBytes()
-        if (bytes.isEmpty()) null
-        else {
+        if (bytes.isEmpty()) {
+            null
+        } else {
             val tempFile =
                 withContext(Dispatchers.IO) {
                     Files.createTempFile("melo-art-${System.currentTimeMillis()}-", ".jpg")
@@ -407,5 +409,19 @@ class JvmMediaSessionManager(
         } catch (_: Throwable) {
         }
         currentArtFile = null
+    }
+
+    private fun compactArtworkUrl(url: String): String =
+        if (url.contains("googleusercontent.com") || url.contains("ggpht.com")) {
+            url
+                .replace(ARTWORK_WH_REGEX, "=w256-h256-l85-rj")
+                .replace(ARTWORK_S_REGEX, "=s256-c")
+        } else {
+            url
+        }
+
+    companion object {
+        private val ARTWORK_WH_REGEX = Regex("=w\\d+-h\\d+[^?&]*")
+        private val ARTWORK_S_REGEX = Regex("=s\\d+[^?&]*")
     }
 }
