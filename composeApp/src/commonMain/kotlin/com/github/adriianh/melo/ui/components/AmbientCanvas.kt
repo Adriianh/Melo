@@ -27,8 +27,8 @@ import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.sin
 
-private const val AMBIENT_FRAME_DELAY_MS = 45L
-private const val AMBIENT_FRAME_STEP_SEC = 0.045f
+private const val AMBIENT_FRAME_DELAY_MS = 100L
+private const val AMBIENT_FRAME_STEP_SEC = 0.10f
 private const val AMBIENT_CYCLE_SEC = 2520f
 private const val TWO_PI = (2.0 * PI).toFloat()
 

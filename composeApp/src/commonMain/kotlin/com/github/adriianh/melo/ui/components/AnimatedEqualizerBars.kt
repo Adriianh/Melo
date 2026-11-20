@@ -21,11 +21,12 @@ import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val EQUALIZER_FRAME_DELAY_MS = 100L
-private const val EQUALIZER_FRAME_STEP_SEC = 0.10f
+private const val EQUALIZER_FRAME_DELAY_MS = 200L
+private const val EQUALIZER_FRAME_STEP_SEC = 0.20f
 private const val EQUALIZER_CYCLE_SEC = 63f
 private const val TWO_PI = (2.0 * PI).toFloat()
 
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
 fun AnimatedEqualizerBars(
     accentColor: Color,

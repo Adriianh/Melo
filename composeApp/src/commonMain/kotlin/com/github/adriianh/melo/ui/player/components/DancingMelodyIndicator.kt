@@ -33,6 +33,7 @@ private const val MELODY_CYCLE_SEC = 60f
 private const val MELODY_TWO_PI = (2.0 * PI).toFloat()
 private val MELODY_NOTES = listOf("♪", "♫", "♩", "♬")
 
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
 fun DancingMelodyIndicator(
     isActive: Boolean,

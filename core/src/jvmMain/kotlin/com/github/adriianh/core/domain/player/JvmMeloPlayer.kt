@@ -337,7 +337,7 @@ class JvmMeloPlayer : MeloPlayer {
             while (true) {
                 val time = mediaPlayer?.status()?.time() ?: 0L
                 _state.update { it.copy(progressMs = time) }
-                delay(200.milliseconds)
+                delay(500.milliseconds)
             }
         }
     }
