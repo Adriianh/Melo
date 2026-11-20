@@ -34,6 +34,9 @@ class DesktopWindowManager(
             onMaximizedChanged = { maximized ->
                 isMaximized = maximized
             },
+            onMinimizedChanged = { minimized ->
+                isMinimized = minimized
+            },
         )
     private val windowStateListener =
         WindowStateListener { event: WindowEvent ->

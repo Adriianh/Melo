@@ -21,6 +21,7 @@ private const val WM_NCDESTROY = 0x0082
 private const val WM_NCCALCSIZE = 0x0083
 
 private const val SIZE_RESTORED = 0
+private const val SIZE_MINIMIZED = 1
 private const val SIZE_MAXIMIZED = 2
 
 internal data class Win32Rect(
@@ -85,6 +86,7 @@ internal fun isWindowsPlatform(): Boolean = System.getProperty("os.name")?.conta
 internal class WindowsWindowProcHook(
     private val window: Window,
     private val onMaximizedChanged: (Boolean) -> Unit,
+    private val onMinimizedChanged: (Boolean) -> Unit = {},
 ) {
     private var hwnd: WinDef.HWND? = null
     private var originalWndProc: Pointer? = null
@@ -184,8 +186,15 @@ internal class WindowsWindowProcHook(
                 WM_SIZE -> {
                     val result = User32.INSTANCE.CallWindowProc(prevProc, hWnd, uMsg, wParam, lParam)
                     when (wParam.toInt()) {
-                        SIZE_MAXIMIZED -> notifyMaximized(true)
-                        SIZE_RESTORED -> notifyMaximized(false)
+                        SIZE_MINIMIZED -> notifyMinimized(true)
+                        SIZE_MAXIMIZED -> {
+                            notifyMinimized(false)
+                            notifyMaximized(true)
+                        }
+                        SIZE_RESTORED -> {
+                            notifyMinimized(false)
+                            notifyMaximized(false)
+                        }
                     }
                     result
                 }
@@ -209,6 +218,16 @@ internal class WindowsWindowProcHook(
         } else {
             SwingUtilities.invokeLater {
                 onMaximizedChanged(maximized)
+            }
+        }
+    }
+
+    private fun notifyMinimized(minimized: Boolean) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            onMinimizedChanged(minimized)
+        } else {
+            SwingUtilities.invokeLater {
+                onMinimizedChanged(minimized)
             }
         }
     }

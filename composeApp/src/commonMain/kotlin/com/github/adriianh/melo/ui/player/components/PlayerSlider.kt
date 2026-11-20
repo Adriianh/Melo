@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.components.MeloSlider
+import com.github.adriianh.melo.util.LocalWindowActive
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerProgressState
@@ -24,6 +25,29 @@ import com.github.adriianh.melo.util.formatTime
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
+private fun rememberLiveProgress(
+    state: PlayerUiState,
+    progressState: StateFlow<PlayerProgressState>?,
+): PlayerProgressState {
+    val isWindowActive = LocalWindowActive.current
+    val liveProgress =
+        if (progressState != null) {
+            if (isWindowActive) progressState.collectAsState().value else progressState.value
+        } else {
+            null
+        }
+    return liveProgress
+        ?: PlayerProgressState(
+            progressFraction = state.progressFraction,
+            progressMs = state.progressMs,
+            durationMs = state.durationMs,
+            elapsedLabel = state.elapsedLabel,
+            remainingLabel = state.remainingLabel,
+        )
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
 fun PlayerSlider(
     state: PlayerUiState,
     activeAccent: Color,
@@ -31,16 +55,12 @@ fun PlayerSlider(
     modifier: Modifier = Modifier,
     progressState: StateFlow<PlayerProgressState>? = null,
 ) {
-    val liveProgress = progressState?.collectAsState()?.value
-    val progressFraction = liveProgress?.progressFraction ?: state.progressFraction
-    val durationMs = liveProgress?.durationMs ?: state.durationMs
-    val elapsedLabel = liveProgress?.elapsedLabel ?: state.elapsedLabel
-    val remainingLabel = liveProgress?.remainingLabel ?: state.remainingLabel
-
+    val progress = rememberLiveProgress(state = state, progressState = progressState)
+    val durationMs = progress.durationMs
     var isSeeking by remember { mutableStateOf(false) }
     var seekFraction by remember { mutableStateOf(0f) }
 
-    val displayFraction = if (isSeeking) seekFraction else progressFraction
+    val displayFraction = if (isSeeking) seekFraction else progress.progressFraction
 
     Column(modifier = modifier.fillMaxWidth()) {
         MeloSlider(
@@ -71,10 +91,9 @@ fun PlayerSlider(
             Text(
                 text =
                     if (isSeeking && durationMs > 0) {
-                        val seekMs = (seekFraction * durationMs).toLong()
-                        formatTime(seekMs)
+                        formatTime((seekFraction * durationMs).toLong())
                     } else {
-                        elapsedLabel
+                        progress.elapsedLabel
                     },
                 style = MeloType.labelSmall,
                 color = MeloColors.textMuted,
@@ -82,11 +101,9 @@ fun PlayerSlider(
             Text(
                 text =
                     if (isSeeking && durationMs > 0) {
-                        val remainingMs =
-                            ((1f - seekFraction) * durationMs).toLong().coerceAtLeast(0L)
-                        formatTime(remainingMs)
+                        formatTime(((1f - seekFraction) * durationMs).toLong().coerceAtLeast(0L))
                     } else {
-                        remainingLabel
+                        progress.remainingLabel
                     },
                 style = MeloType.labelSmall,
                 color = MeloColors.textMuted,
