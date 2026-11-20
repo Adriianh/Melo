@@ -249,6 +249,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Full history and tags are required to compute the changelog ranges
+      # (previous nightly target and latest stable tag) with git.
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8.0.0
         with:
@@ -289,33 +295,141 @@ jobs:
             cp "$f" "nightly_dist/$new"
           done
 
-          # Fetch changelog since the latest stable release (v*) via GitHub API
-          changelog=""
+          # ── Changelog rendering ──────────────────────────────────────────
+          # Group Conventional Commit subjects into changelog sections.
+          # Subjects that do not parse fall through to "Other" instead of
+          # being dropped, so nothing silently disappears from the notes.
+          render_changes() {
+            local range="$1"
+            local tmp
+            tmp=$(mktemp)
+            git log --no-merges --pretty=format:'%s' "$range" > "$tmp" 2>/dev/null || true
+
+            if [ ! -s "$tmp" ]; then
+              rm -f "$tmp"
+              return 1
+            fi
+
+            local new="" fixed="" improved="" other=""
+            local subject type desc pr entry
+            # Regexes live in variables: unquoted parentheses inside a
+            # [[ =~ ]] expression are a syntax error in bash.
+            local re_commit='^([a-z]+)(\([^)]*\))?(!)?:[[:space:]]*(.+)$'
+            local re_pr='^(.*)[[:space:]]\(#([0-9]+)\)$'
+            while IFS= read -r subject; do
+              [ -n "$subject" ] || continue
+              type=""
+              desc="$subject"
+              if [[ "$subject" =~ $re_commit ]]; then
+                type="${BASH_REMATCH[1]}"
+                desc="${BASH_REMATCH[4]}"
+              fi
+              # A trailing "(#123)" becomes a link to the pull request.
+              pr=""
+              if [[ "$desc" =~ $re_pr ]]; then
+                desc="${BASH_REMATCH[1]}"
+                pr="${BASH_REMATCH[2]}"
+              fi
+              entry="- ${desc}"
+              if [ -n "$pr" ]; then
+                entry="${entry} ([#${pr}](https://github.com/${GITHUB_REPOSITORY}/pull/${pr}))"
+              fi
+              case "$type" in
+                feat)        new="${new}${entry}"$'\n' ;;
+                fix|revert)  fixed="${fixed}${entry}"$'\n' ;;
+                perf|style)  improved="${improved}${entry}"$'\n' ;;
+                *)           other="${other}${entry}"$'\n' ;;
+              esac
+            done < "$tmp"
+            rm -f "$tmp"
+
+            local emitted=0
+            for section in New Fixed Improved Other; do
+              local body=""
+              case "$section" in
+                New)      body="$new" ;;
+                Fixed)    body="$fixed" ;;
+                Improved) body="$improved" ;;
+                Other)    body="$other" ;;
+              esac
+              [ -n "$body" ] || continue
+              echo "### $section"
+              echo
+              printf '%s' "$body"
+              echo
+              emitted=1
+            done
+
+            [ "$emitted" -eq 1 ] || return 1
+            return 0
+          }
+
+          # ── Resolve changelog ranges ─────────────────────────────────────
+          # Previous nightly: the commit the "nightly" release pointed at before
+          # this run overwrites it. The ancestry check means a force-push or a
+          # missing release yields no section instead of a bogus diff.
+          prev_nightly=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/nightly" \
+            --jq .target_commitish 2>/dev/null || true)
+          nightly_range=""
+          if [ -n "$prev_nightly" ] \
+             && git rev-parse --verify --quiet "${prev_nightly}^{commit}" >/dev/null \
+             && git merge-base --is-ancestor "$prev_nightly" HEAD 2>/dev/null \
+             && [ "$(git rev-list --count "${prev_nightly}..HEAD")" -gt 0 ]; then
+            nightly_range="${prev_nightly}..HEAD"
+            echo "Nightly changelog range: $nightly_range"
+          fi
+
+          # Latest stable release tag (v*). releases/latest already skips
+          # prereleases, so the nightly tag is never picked up here.
           latest_tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name 2>/dev/null || true)
           if [ -z "$latest_tag" ]; then
-            latest_tag=$(gh api "repos/$GITHUB_REPOSITORY/tags" --jq '.[].name | select(startswith("v"))' 2>/dev/null | head -n 1 || true)
+            latest_tag=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          fi
+          stable_range=""
+          if [ -n "$latest_tag" ] \
+             && git rev-parse --verify --quiet "${latest_tag}^{commit}" >/dev/null \
+             && git merge-base --is-ancestor "$latest_tag" HEAD 2>/dev/null \
+             && [ "$(git rev-list --count "${latest_tag}..HEAD")" -gt 0 ]; then
+            stable_range="${latest_tag}..HEAD"
+            echo "Stable changelog range: $stable_range"
           fi
 
-          if [ -n "$latest_tag" ]; then
-            echo "Generating release notes comparing $latest_tag against $GITHUB_SHA..."
-            changelog=$(gh api \
-              --method POST \
-              -H "Accept: application/vnd.github+json" \
-              "/repos/$GITHUB_REPOSITORY/releases/generate-notes" \
-              -f tag_name="nightly" \
-              -f target_commitish="$GITHUB_SHA" \
-              -f previous_tag_name="$latest_tag" \
-              --jq .body 2>/dev/null || true)
-          fi
-
-          # Nightly release body: header + CLI install + changelog + assets table.
+          # Nightly release body: build info + changelogs + CLI + assets table.
           {
-            echo "Automated development build from commit \`$GITHUB_SHA\`."
+            echo "## Build information"
             echo
-            echo "Version: \`$app_version\`"
+            echo "| | |"
+            echo "| :--- | :--- |"
+            echo "| **Version** | \`$app_version\` |"
+            echo "| **Built from** | [\`${GITHUB_SHA:0:7}\`](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA) on \`${GITHUB_REF_NAME}\` |"
+            echo "| **Built at** | $(date -u '+%Y-%m-%d %H:%M UTC') |"
             echo
-            echo "> Nightly builds ship every push to \`master\`. They are development"
-            echo "> snapshots, not official releases."
+            echo "> [!WARNING]"
+            echo "> This is an automated development build, not an official release."
+            echo "> It ships on every push to \`master\` and may be unstable or broken."
+            echo "> Use the latest stable release if you need something reliable."
+            echo
+            echo "## Changes since the last nightly"
+            echo
+            if [ -n "$nightly_range" ] && render_changes "$nightly_range"; then
+              :
+            else
+              echo "_No changes since the previous nightly build._"
+            fi
+            echo
+            if [ -n "$latest_tag" ]; then
+              echo "## Changes since the last stable release (\`$latest_tag\`)"
+            else
+              echo "## Changes since the last stable release"
+            fi
+            echo
+            if [ -n "$stable_range" ] && render_changes "$stable_range"; then
+              :
+            else
+              echo "_No changes since the last stable release._"
+            fi
+            echo
+            echo "---"
             echo
             echo "### CLI (TUI)"
             echo
@@ -329,14 +443,6 @@ jobs:
             echo 'curl -fsSL https://raw.githubusercontent.com/Adriianh/Melo/master/scripts/install.sh | bash -s -- --nightly'
             echo '```'
             echo
-
-            if [ -n "$changelog" ]; then
-              echo "---"
-              echo
-              echo "$changelog"
-              echo
-            fi
-
             echo "---"
             echo
             echo "### Downloads & Assets"
@@ -349,6 +455,9 @@ jobs:
               url="https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/$name"
               platform="Other"
               type="Binary"
+              # Order matters: the most specific patterns must come first, or
+              # "melo-nightly-macos.tar.gz" is swallowed by the generic
+              # "*.tar.gz" branch and mislabelled as a Linux tarball.
               case "$name" in
                 *android*|*.apk)
                   platform="🤖 Android"
@@ -366,6 +475,14 @@ jobs:
                   platform="🪟 Windows"
                   type="MSI Package"
                   ;;
+                *macos.tar.gz)
+                  platform="🍎 macOS"
+                  type="CLI (TUI)"
+                  ;;
+                *.dmg)
+                  platform="🍎 macOS"
+                  type="DMG Installer"
+                  ;;
                 *linux.tar.gz)
                   platform="🐧 Linux"
                   type="CLI (TUI)"
@@ -381,14 +498,6 @@ jobs:
                 *.tar.gz)
                   platform="🐧 Linux"
                   type="Portable Tarball"
-                  ;;
-                *macos.tar.gz)
-                  platform="🍎 macOS"
-                  type="CLI (TUI)"
-                  ;;
-                *.dmg)
-                  platform="🍎 macOS"
-                  type="DMG Installer"
                   ;;
               esac
               echo "| $platform | $type | [$name]($url) |"
