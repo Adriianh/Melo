@@ -1,6 +1,7 @@
 package com.github.adriianh.melo.service
 
 import android.util.Log
+import com.github.adriianh.data.remote.createSharedHttpEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
@@ -43,14 +44,14 @@ class DiscordGatewayClient(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
 ) {
     private val wsClient =
-        HttpClient {
+        HttpClient(createSharedHttpEngine()) {
             install(WebSockets) {
                 maxFrameSize = Long.MAX_VALUE
             }
         }
 
     private val httpClient =
-        HttpClient {
+        HttpClient(createSharedHttpEngine()) {
             install(HttpTimeout) {
                 requestTimeoutMillis = 6_000L
                 connectTimeoutMillis = 6_000L

@@ -1,6 +1,14 @@
 package com.github.adriianh.innertube
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+
+/**
+ * Creates a platform-specific [HttpClientEngine] backed by a shared connection pool.
+ *
+ * On JVM and Android this uses a shared OkHttp instance; on iOS it uses Darwin.
+ */
+expect fun createPlatformHttpEngine(proxyConfig: ProxyConfig? = null): HttpClientEngine
 
 /**
  * Creates a platform-specific [HttpClient] with the appropriate engine.
