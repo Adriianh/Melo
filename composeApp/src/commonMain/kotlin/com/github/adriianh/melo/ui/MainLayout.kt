@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.ui.player.DesktopNowPlayingDockedPane
@@ -123,21 +124,26 @@ private fun DesktopMainLayout(
                     .padding(top = 12.dp, bottom = 12.dp, start = 12.dp, end = 12.dp)
             ) {
                 val currentColors = LocalMeloColors.current
-                val glassTint =
-                    if (isDarkTheme) currentColors.glassSurface else Color.Black.copy(alpha = 0.5f)
+                val contentBgBrush =
+                    if (currentColors.reduceTransparency) {
+                        SolidColor(currentColors.surface1)
+                    } else {
+                        val glassTint =
+                            if (isDarkTheme) currentColors.glassSurface else Color.Black.copy(alpha = 0.5f)
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    glassTint.copy(alpha = if (isDarkTheme) 0.18f else 0.12f),
+                                    glassTint.copy(alpha = if (isDarkTheme) 0.06f else 0.04f),
+                                ),
+                        )
+                    }
 
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    glassTint.copy(alpha = if (isDarkTheme) 0.18f else 0.12f),
-                                    glassTint.copy(alpha = if (isDarkTheme) 0.06f else 0.04f)
-                                )
-                            )
-                        )
+                        .background(contentBgBrush)
                         .border(
                             width = 0.5.dp,
                             color = if (isDarkTheme) currentColors.border.copy(alpha = 0.2f)

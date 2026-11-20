@@ -64,8 +64,13 @@ import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsModal
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.ui.settings.hasAvailableUpdate
+import com.github.adriianh.melo.util.LocalAnimationClock
 import com.github.adriianh.melo.util.MeloMotion
+import com.github.adriianh.melo.util.SharedAnimationClock
+import com.github.adriianh.melo.util.SharedAnimationClockDriver
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -90,7 +95,16 @@ fun App(
     val isOnline by networkMonitor.isOnline.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
-    val playbackState by playerViewModel.playbackState.collectAsState()
+    val hasTrack by remember(playerViewModel) {
+        playerViewModel.playbackState
+            .map { it.currentTrack != null }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playerViewModel.playbackState.value.currentTrack != null)
+    val isPlaying by remember(playerViewModel) {
+        playerViewModel.playbackState
+            .map { it.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playerViewModel.playbackState.value.isPlaying)
     val settings by getSettingsUseCase().collectAsState()
     val loginState by loginViewModel.uiState.collectAsState()
     val isOfflineMode = settings.offlineMode || !isOnline
@@ -109,7 +123,6 @@ fun App(
     val savedAccent: Color? = remember(settings.lastAccentColor) {
         settings.lastAccentColor?.let { Color(it.toULong()) }
     }
-    val hasTrack = playbackState.currentTrack != null
     val finalAccent = when {
         settings.dynamicColor && hasTrack -> accentPalette.dominant
         settings.dynamicColor && savedAccent != null -> savedAccent
@@ -126,7 +139,8 @@ fun App(
 
     MeloTheme(
         accentColor = finalAccent,
-        isDarkTheme = isDarkTheme
+        isDarkTheme = isDarkTheme,
+        reduceTransparency = settings.reduceTransparency,
     ) {
         var selectedTab by remember { mutableStateOf(MainTab.HOME) }
         var showLoginDialog by remember { mutableStateOf(false) }
@@ -168,16 +182,20 @@ fun App(
         }
 
         if (!showSplash) {
+            val animationClock = remember { SharedAnimationClock() }
+            SharedAnimationClockDriver(clock = animationClock)
 
             CompositionLocalProvider(
                 LocalMeloSnackbar provides snackbarState,
                 LocalSelectionMode provides isSelectionMode,
                 LocalHasAvailableUpdate provides updateState.hasAvailableUpdate(),
+                LocalAnimationClock provides animationClock,
             ) {
                 AmbientCanvas(
                     accentColor = finalAccent,
                     modifier = Modifier.fillMaxSize(),
-                    enabled = isAmbientCanvasEnabled
+                    enabled = isAmbientCanvasEnabled,
+                    animate = settings.ambientMotion && isPlaying,
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -472,6 +490,7 @@ fun App(
                         ) {
                             NowPlayingScreen(
                                 titleBar = titleBar,
+                                blurEnabled = settings.nowPlayingBlur,
                                 onCollapse = { isNowPlayingExpanded = false },
                                 onArtistClick = { id ->
                                     isNowPlayingExpanded = false
@@ -515,6 +534,27 @@ fun App(
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(dynamicColor = enabled)
+                                        }
+                                    }
+                                },
+                                onAmbientMotionToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(ambientMotion = enabled)
+                                        }
+                                    }
+                                },
+                                onNowPlayingBlurToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(nowPlayingBlur = enabled)
+                                        }
+                                    }
+                                },
+                                onReduceTransparencyToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(reduceTransparency = enabled)
                                         }
                                     }
                                 },

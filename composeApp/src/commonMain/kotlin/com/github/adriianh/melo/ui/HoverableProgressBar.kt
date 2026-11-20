@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -57,6 +58,7 @@ internal fun HoverableProgressBar(
         animationSpec = tween(durationMillis = 150),
         label = "barHeight"
     )
+    val currentOnSeek by rememberUpdatedState(onSeek)
     val markerSize = 12.dp
 
     BoxWithConstraints(
@@ -67,7 +69,7 @@ internal fun HoverableProgressBar(
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val fraction = (offset.x / size.width).coerceIn(0f, 1f)
-                    onSeek(fraction)
+                    currentOnSeek(fraction)
                 }
             }
     ) {

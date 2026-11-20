@@ -114,7 +114,8 @@ internal fun NowPlayingDesktopLayout(
                 state = state,
                 activeAccent = activeAccent,
                 onSeekTo = viewModel::seekTo,
-                modifier = Modifier.widthIn(max = 420.dp)
+                progressState = viewModel.progressState,
+                modifier = Modifier.widthIn(max = 420.dp),
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -164,19 +165,13 @@ internal fun NowPlayingDesktopLayout(
                                 isLiked = isLiked
                             )
 
-                            PanelSection.LYRICS -> NowPlayingLyricsCard(
-                                trackLyrics = state.trackLyrics,
-                                activeLyricIndex = state.activeLyricIndex,
-                                isLoading = state.isLyricsLoading,
-                                showTranslation = state.showTranslation,
-                                isTranslating = state.isTranslating,
-                                targetLanguage = state.targetLanguage,
-                                activeAccent = activeAccent,
-                                onSeekTo = { viewModel.seekTo(it) },
-                                onToggleTranslation = { viewModel.toggleTranslation() },
-                                onSelectLanguage = { viewModel.setTargetLanguage(it) },
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            PanelSection.LYRICS ->
+                                IsolatedNowPlayingLyricsCard(
+                                    state = state,
+                                    activeAccent = activeAccent,
+                                    viewModel = viewModel,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
 
                             PanelSection.ARTIST -> NowPlayingArtistSection(
                                 state = state,

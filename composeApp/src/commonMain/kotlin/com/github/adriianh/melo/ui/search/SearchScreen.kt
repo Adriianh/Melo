@@ -43,8 +43,6 @@ import com.github.adriianh.melo.ui.search.components.ExploreContent
 import com.github.adriianh.melo.ui.search.components.SearchFilterChipsRow
 import com.github.adriianh.melo.ui.search.components.SearchOverlayWrapper
 import com.github.adriianh.melo.ui.search.components.SearchResultsContent
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -61,11 +59,10 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val playerViewModel: PlayerViewModel = koinViewModel()
-    val accentColorFromPlayer by playerViewModel.uiState.map { it.accentColor }
-        .distinctUntilChanged().collectAsState(Color.Transparent)
+    val accentPalette by playerViewModel.accentPalette.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
+    val activeAccent = interaction.resolveActiveAccent(accentPalette.dominant)
     val likedTrackIds = remember(libraryState.likedSongs) {
         libraryState.likedSongs.map { it.id }.toSet()
     }

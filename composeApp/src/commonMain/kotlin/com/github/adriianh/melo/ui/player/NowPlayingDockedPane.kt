@@ -57,7 +57,7 @@ fun DesktopNowPlayingDockedPane(
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.stableUiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
     val activeAccent =
         if (state.accentColor != Color.Transparent && state.accentColor != MeloColors.textMuted) {

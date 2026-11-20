@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -64,6 +65,8 @@ expect fun PlatformAsyncImage(
     modifier: Modifier = Modifier,
     size: Dp? = null,
     shape: Shape = RoundedCornerShape(4.dp),
+    filterQuality: FilterQuality = FilterQuality.Low,
+    decodeSizePx: Int? = null,
 )
 
 @Composable

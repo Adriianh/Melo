@@ -13,25 +13,38 @@ class LyricsRepositoryImpl(
     val lyricsTranslator: LyricsTranslator? = null,
     private val configDirPath: String? = null,
 ) : LyricsRepository {
-    private val lyricsCache = mutableMapOf<String, TrackLyrics>()
+    private val lyricsCache = LinkedHashMap<String, TrackLyrics>()
+
     private val json =
         Json {
             ignoreUnknownKeys = true
             encodeDefaults = true
         }
 
+    private fun putCachedLyrics(
+        key: String,
+        value: TrackLyrics,
+    ) {
+        lyricsCache.remove(key)
+        while (lyricsCache.size >= MAX_LYRICS_CACHE_ENTRIES) {
+            val oldestKey = lyricsCache.keys.firstOrNull() ?: break
+            lyricsCache.remove(oldestKey)
+        }
+        lyricsCache[key] = value
+    }
+
     override suspend fun getLyrics(
         artist: String,
         title: String,
     ): String? {
         val cacheKey = "$artist - $title".lowercase()
-        val cached = lyricsCache[cacheKey] ?: loadFromDisk(cacheKey)?.also { lyricsCache[cacheKey] = it }
+        val cached = lyricsCache[cacheKey] ?: loadFromDisk(cacheKey)?.also { putCachedLyrics(cacheKey, it) }
         if (cached?.plainLyrics != null) return cached.plainLyrics
 
         val raw = lyricsApiClient.getLyricsResponse(artist, title)?.plainLyrics ?: return null
         val sanitized = sanitizePlainLyrics(raw)
         val entry = (cached ?: TrackLyrics()).copy(plainLyrics = sanitized)
-        lyricsCache[cacheKey] = entry
+        putCachedLyrics(cacheKey, entry)
         saveToDisk(cacheKey, entry)
 
         return sanitized
@@ -42,7 +55,7 @@ class LyricsRepositoryImpl(
         title: String,
     ): String? {
         val cacheKey = "$artist - $title".lowercase()
-        val cached = lyricsCache[cacheKey] ?: loadFromDisk(cacheKey)?.also { lyricsCache[cacheKey] = it }
+        val cached = lyricsCache[cacheKey] ?: loadFromDisk(cacheKey)?.also { putCachedLyrics(cacheKey, it) }
         if (cached?.syncedLyrics?.isNotEmpty() == true) {
             return cached.syncedLyrics.joinToString("\n") { "[${it.timeMs}] ${it.text}" }
         }
@@ -55,7 +68,7 @@ class LyricsRepositoryImpl(
                     syncedLyrics = synced,
                     hasSync = synced.isNotEmpty(),
                 )
-            lyricsCache[cacheKey] = entry
+            putCachedLyrics(cacheKey, entry)
             saveToDisk(cacheKey, entry)
         }
 
@@ -70,7 +83,7 @@ class LyricsRepositoryImpl(
         lyricsCache[cacheKey]?.let { return it }
 
         loadFromDisk(cacheKey)?.let {
-            lyricsCache[cacheKey] = it
+            putCachedLyrics(cacheKey, it)
             return it
         }
 
@@ -86,7 +99,7 @@ class LyricsRepositoryImpl(
                 syncedLyrics = synced,
                 hasSync = synced.isNotEmpty(),
             )
-        lyricsCache[cacheKey] = result
+        putCachedLyrics(cacheKey, result)
         saveToDisk(cacheKey, result)
         return result
     }
@@ -163,5 +176,9 @@ class LyricsRepositoryImpl(
             PlatformFileSystem.writeText(filePath, json.encodeToString(lyrics))
         } catch (_: Exception) {
         }
+    }
+
+    private companion object {
+        const val MAX_LYRICS_CACHE_ENTRIES = 30
     }
 }

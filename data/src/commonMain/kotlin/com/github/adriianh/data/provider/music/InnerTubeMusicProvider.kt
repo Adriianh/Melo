@@ -368,9 +368,9 @@ class InnerTubeMusicProvider(
             otherVersions = otherVersions
         )
 
-        if (albumCache.size > 100) {
-            val oldest = albumCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key
-            oldest?.let { albumCache.remove(it) }
+        while (albumCache.size >= 30) {
+            val oldest = albumCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key ?: break
+            albumCache.remove(oldest)
         }
         albumCache[cleanId] = CachedAlbum(album)
         albumCache[albumItem.browseId] = CachedAlbum(album)
@@ -496,9 +496,9 @@ class InnerTubeMusicProvider(
             sections = sections
         )
 
-        if (artistCache.size > 100) {
-            val oldest = artistCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key
-            oldest?.let { artistCache.remove(it) }
+        while (artistCache.size >= 30) {
+            val oldest = artistCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key ?: break
+            artistCache.remove(oldest)
         }
         artistCache[cleanId] = CachedArtist(artist)
         artistCache[resolvedId] = CachedArtist(artist)

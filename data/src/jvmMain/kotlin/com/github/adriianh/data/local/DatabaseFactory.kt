@@ -74,6 +74,7 @@ actual object DatabaseFactory {
             put("busy_timeout", "5000")
             put("journal_mode", "WAL")
             put("synchronous", "NORMAL")
+            put("cache_size", "-1000")
         }
 
     internal fun openDriver(url: String): JdbcSqliteDriver {

@@ -8,6 +8,8 @@ import com.kmpalette.palette.graphics.Palette
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class AccentPalette(
     val dominant: Color,
@@ -22,6 +24,12 @@ data class AccentPalette(
 }
 
 object AccentColorExtractor {
+    private const val MAX_PALETTE_CACHE_ENTRIES = 32
+    private const val ARTWORK_CACHE_URL_SIZE_PX = 180
+    private const val PALETTE_DECODE_SIZE_PX = 120
+    private val paletteCacheMutex = Mutex()
+    private val paletteCache = LinkedHashMap<Pair<String, Boolean>, AccentPalette>()
+
     val fallback = AccentPalette(
         dominant = Color(0xFFFF2D55),
         onDominant = Color.White,
@@ -91,12 +99,30 @@ object AccentColorExtractor {
     suspend fun fromImageUrl(
         url: String?,
         httpClient: HttpClient,
-        isDarkMode: Boolean = true
+        isDarkMode: Boolean = true,
     ): AccentPalette {
         if (url.isNullOrBlank()) return fallback
-        return runCatching {
-            val bytes = httpClient.get(url).body<ByteArray>()
-            fromImageBytes(bytes, isDarkMode)
-        }.getOrElse { fallback }
+        val compactUrl = normalizeArtworkUrl(url, ARTWORK_CACHE_URL_SIZE_PX) ?: url
+        val cacheKey = compactUrl to isDarkMode
+        val cached = paletteCacheMutex.withLock { paletteCache[cacheKey] }
+
+        return cached ?: runCatching {
+            val cachedBitmap = loadCachedArtworkBitmap(compactUrl, PALETTE_DECODE_SIZE_PX)
+            if (cachedBitmap != null) {
+                fromPalette(cachedBitmap.generatePalette(), isDarkMode)
+            } else {
+                val bytes = httpClient.get(compactUrl).body<ByteArray>()
+                fromImageBytes(bytes, isDarkMode)
+            }
+        }.getOrElse { fallback }.also { extracted ->
+            if (extracted != fallback) {
+                paletteCacheMutex.withLock {
+                    if (paletteCache.size >= MAX_PALETTE_CACHE_ENTRIES) {
+                        paletteCache.keys.firstOrNull()?.let { paletteCache.remove(it) }
+                    }
+                    paletteCache[cacheKey] = extracted
+                }
+            }
+        }
     }
 }

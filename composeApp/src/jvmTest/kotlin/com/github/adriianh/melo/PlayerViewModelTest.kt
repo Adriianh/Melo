@@ -1,6 +1,8 @@
 package com.github.adriianh.melo
 
+import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
@@ -22,6 +24,7 @@ import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -84,7 +87,7 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `uiState maps playback correctly`() = runTest {
+    fun `stableUiState and progressState map playback correctly`() = runTest {
         val track =
             Track("t1", "Song Title", "Artist Name", "Album", 240_000, emptyList(), null, null)
         playbackFlow.value = PlaybackState(
@@ -95,18 +98,21 @@ class PlayerViewModelTest {
         )
 
         val vm = createVm()
+        backgroundScope.launch { vm.stableUiState.collect {} }
+        backgroundScope.launch { vm.progressState.collect {} }
         advanceUntilIdle()
 
-        val ui = vm.uiState.value
+        val ui = vm.stableUiState.value
+        val progress = vm.progressState.value
         assertEquals("Song Title", ui.title)
         assertEquals("Artist Name", ui.artist)
         assertTrue(ui.isPlaying)
-        assertTrue(ui.elapsedLabel.contains(":"))
-        assertTrue(ui.remainingLabel.contains(":"))
+        assertTrue(progress.elapsedLabel.contains(":"))
+        assertTrue(progress.remainingLabel.contains(":"))
     }
 
     @Test
-    fun `uiState computes progress fraction`() = runTest {
+    fun `progressState computes progress fraction`() = runTest {
         playbackFlow.value = PlaybackState(
             currentTrack = Track("t1", "S", "A", "B", 200_000, emptyList(), null, null),
             progressMs = 100_000,
@@ -114,34 +120,67 @@ class PlayerViewModelTest {
         )
 
         val vm = createVm()
+        backgroundScope.launch { vm.progressState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(0.5f, vm.uiState.value.progressFraction, 0.01f)
+        assertEquals(0.5f, vm.progressState.value.progressFraction, 0.01f)
     }
 
     @Test
-    fun `uiState has empty when no track`() = runTest {
+    fun `activeLyricIndex updates independently of stableUiState`() = runTest {
+        val track = Track("t1", "Song", "Artist", "Album", 180_000, emptyList(), null, null)
+        coEvery { getTrackLyricsUseCase("Artist", "Song") } returns
+            TrackLyrics(
+                syncedLyrics =
+                    listOf(
+                        SyncedLine(timeMs = 0L, text = "Line 1"),
+                        SyncedLine(timeMs = 10_000L, text = "Line 2"),
+                    ),
+                hasSync = true,
+            )
+        playbackFlow.value = PlaybackState(currentTrack = track, isPlaying = true, progressMs = 1_000L)
+
         val vm = createVm()
+        val stableEmissions = mutableListOf<com.github.adriianh.melo.util.PlayerUiState>()
+        backgroundScope.launch { vm.stableUiState.collect { stableEmissions.add(it) } }
+        backgroundScope.launch { vm.activeLyricIndex.collect {} }
         advanceUntilIdle()
 
-        assertFalse(vm.uiState.value.hasTrack)
-        assertEquals("", vm.uiState.value.title)
+        assertEquals(0, vm.activeLyricIndex.value)
+        val stableCountBeforeProgress = stableEmissions.size
+
+        playbackFlow.value = playbackFlow.value.copy(progressMs = 12_000L)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.activeLyricIndex.value)
+        assertEquals(stableCountBeforeProgress, stableEmissions.size)
     }
 
     @Test
-    fun `uiState uses fallback accent when no artwork`() = runTest {
+    fun `stableUiState has empty when no track`() = runTest {
+        val vm = createVm()
+        backgroundScope.launch { vm.stableUiState.collect {} }
+        advanceUntilIdle()
+
+        assertFalse(vm.stableUiState.value.hasTrack)
+        assertEquals("", vm.stableUiState.value.title)
+    }
+
+    @Test
+    fun `stableUiState uses fallback accent when no artwork`() = runTest {
         playbackFlow.value = PlaybackState(
             currentTrack = Track("t1", "S", "A", "B", 200_000, emptyList(), null, null)
         )
 
         val vm = createVm()
+        backgroundScope.launch { vm.stableUiState.collect {} }
         advanceUntilIdle()
 
-        assertEquals(AccentColorExtractor.fallback.dominant, vm.uiState.value.accentColor)
+        assertEquals(AccentColorExtractor.fallback.dominant, vm.stableUiState.value.accentColor)
     }
 
     @Test
-    fun `uiState reflects queue shuffle and repeat`() = runTest {
+    fun `stableUiState reflects queue shuffle and repeat`() = runTest {
         queueFlow.value = QueueState(
             tracks = listOf(mockk(relaxed = true)),
             currentIndex = 0,
@@ -150,10 +189,11 @@ class PlayerViewModelTest {
         )
 
         val vm = createVm()
+        backgroundScope.launch { vm.stableUiState.collect {} }
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.shuffleEnabled)
-        assertEquals(RepeatMode.ALL, vm.uiState.value.repeatMode)
+        assertTrue(vm.stableUiState.value.shuffleEnabled)
+        assertEquals(RepeatMode.ALL, vm.stableUiState.value.repeatMode)
     }
 
     @Test
@@ -222,9 +262,10 @@ class PlayerViewModelTest {
             translateLyricsUseCase,
             getLikedSongsUseCase = getLikedSongsUseCase
         )
+        backgroundScope.launch { vm.stableUiState.collect {} }
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.isFavorite)
+        assertTrue(vm.stableUiState.value.isFavorite)
     }
 
     @Test
@@ -234,13 +275,14 @@ class PlayerViewModelTest {
         coEvery { toggleLikeTrackUseCase("v1", true) } returns Result.success(Unit)
 
         val vm = createVm()
+        backgroundScope.launch { vm.stableUiState.collect {} }
         advanceUntilIdle()
-        assertFalse(vm.uiState.value.isFavorite)
+        assertFalse(vm.stableUiState.value.isFavorite)
 
         vm.toggleFavorite()
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.isFavorite)
+        assertTrue(vm.stableUiState.value.isFavorite)
         coVerify { toggleLikeTrackUseCase("v1", true) }
     }
 }

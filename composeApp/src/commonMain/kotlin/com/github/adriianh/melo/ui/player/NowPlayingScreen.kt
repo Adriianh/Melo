@@ -58,11 +58,12 @@ fun NowPlayingScreen(
     onPlaylistClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     titleBar: @Composable () -> Unit = {},
+    blurEnabled: Boolean = true,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.stableUiState.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
     val platform = remember { getPlatform() }
@@ -225,7 +226,11 @@ fun NowPlayingScreen(
                 detectTapGestures { }
             }
     ) {
-        NowPlayingBackground(artworkUrl = effectiveState.albumArt)
+        NowPlayingBackground(
+            artworkUrl = effectiveState.albumArt,
+            blurEnabled = blurEnabled,
+            accentColor = activeAccent,
+        )
 
         Column(
             modifier = Modifier

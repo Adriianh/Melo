@@ -11,6 +11,7 @@ import java.awt.Rectangle
 import java.awt.Toolkit
 import java.awt.Window
 import java.awt.event.WindowEvent
+import java.awt.event.WindowFocusListener
 import java.awt.event.WindowStateListener
 
 /**
@@ -24,6 +25,12 @@ class DesktopWindowManager(
     var isMaximized by mutableStateOf(false)
         private set
 
+    var isMinimized by mutableStateOf(false)
+        private set
+
+    var isFocused by mutableStateOf(true)
+        private set
+
     private var savedBounds: Rectangle? = null
     private val win32Hook =
         WindowsWindowProcHook(
@@ -31,19 +38,36 @@ class DesktopWindowManager(
             onMaximizedChanged = { maximized ->
                 isMaximized = maximized
             },
+            onMinimizedChanged = { minimized ->
+                isMinimized = minimized
+            },
         )
     private val windowStateListener =
         WindowStateListener { event: WindowEvent ->
             val newState = event.newState
-            if ((newState and Frame.ICONIFIED) == 0) {
+            val iconified = (newState and Frame.ICONIFIED) != 0
+            isMinimized = iconified
+            if (!iconified) {
                 isMaximized = (newState and Frame.MAXIMIZED_BOTH) != 0
+            }
+        }
+    private val windowFocusListener =
+        object : WindowFocusListener {
+            override fun windowGainedFocus(e: WindowEvent?) {
+                isFocused = true
+            }
+
+            override fun windowLostFocus(e: WindowEvent?) {
+                isFocused = false
             }
         }
     private var listenersAttached = false
 
     fun attach() {
         if (!listenersAttached) {
+            isFocused = window.isFocused
             window.addWindowStateListener(windowStateListener)
+            window.addWindowFocusListener(windowFocusListener)
             listenersAttached = true
         }
         win32Hook.attach()
@@ -53,6 +77,7 @@ class DesktopWindowManager(
         win32Hook.detach()
         if (listenersAttached) {
             window.removeWindowStateListener(windowStateListener)
+            window.removeWindowFocusListener(windowFocusListener)
             listenersAttached = false
         }
     }

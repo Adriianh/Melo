@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +69,8 @@ fun MeloSlider(
         label = "MeloSliderThumbAlpha"
     )
 
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    val currentOnValueChangeFinished by rememberUpdatedState(onValueChangeFinished)
     val rangeSpan = (valueRange.endInclusive - valueRange.start).let { if (it <= 0f) 1f else it }
     val fraction = ((value - valueRange.start) / rangeSpan).coerceIn(0f, 1f)
 
@@ -87,7 +90,7 @@ fun MeloSlider(
                         if (w > 0f) {
                             val f = (x / w).coerceIn(0f, 1f)
                             val newVal = valueRange.start + f * rangeSpan
-                            onValueChange(newVal)
+                            currentOnValueChange(newVal)
                         }
                     }
 
@@ -108,7 +111,7 @@ fun MeloSlider(
                         }
                     } finally {
                         isDragging = false
-                        onValueChangeFinished?.invoke()
+                        currentOnValueChangeFinished?.invoke()
                     }
                 }
             },

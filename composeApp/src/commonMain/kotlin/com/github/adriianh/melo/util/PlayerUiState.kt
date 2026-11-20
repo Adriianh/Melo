@@ -7,6 +7,14 @@ import com.github.adriianh.core.domain.player.PlaybackState
 import com.github.adriianh.core.domain.player.QueueState
 import com.github.adriianh.core.domain.player.RepeatMode
 
+data class PlayerProgressState(
+    val progressFraction: Float = 0f,
+    val progressMs: Long = 0L,
+    val durationMs: Long = 0L,
+    val elapsedLabel: String = "0:00",
+    val remainingLabel: String = "0:00",
+)
+
 data class PlayerUiState(
     val currentTrack: Track? = null,
     val title: String = "",

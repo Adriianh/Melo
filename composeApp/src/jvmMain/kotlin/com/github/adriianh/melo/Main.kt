@@ -20,6 +20,8 @@ import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
+import com.github.adriianh.melo.util.LocalWindowActivity
+import com.github.adriianh.melo.util.WindowActivityState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +34,18 @@ import java.awt.Toolkit
 import java.util.concurrent.atomic.AtomicReference
 import java.awt.Window as AwtWindow
 
+private fun configureDesktopRenderApi() {
+    val isWindows = System.getProperty("os.name")?.contains("win", ignoreCase = true) == true
+    if (isWindows &&
+        System.getProperty("skiko.renderApi").isNullOrBlank() &&
+        System.getenv("SKIKO_RENDER_API").isNullOrBlank()
+    ) {
+        System.setProperty("skiko.renderApi", "OPENGL")
+    }
+}
+
 fun main() {
+    configureDesktopRenderApi()
     val koinApp = initKoin()
     val instanceIdentity = koinApp.koin.getOrNull<InstanceIdentity>()
     val instanceKey = instanceIdentity?.instanceKey
@@ -135,7 +148,17 @@ fun main() {
                 }
             }
 
-            CompositionLocalProvider(LocalInstanceLabel provides instanceKey) {
+            val windowActivity =
+                when {
+                    windowManager.isMinimized -> WindowActivityState.MINIMIZED
+                    windowManager.isFocused -> WindowActivityState.ACTIVE
+                    else -> WindowActivityState.UNFOCUSED
+                }
+
+            CompositionLocalProvider(
+                LocalInstanceLabel provides instanceKey,
+                LocalWindowActivity provides windowActivity,
+            ) {
                 App(
                     titleBar = {
                         MeloTitleBar(

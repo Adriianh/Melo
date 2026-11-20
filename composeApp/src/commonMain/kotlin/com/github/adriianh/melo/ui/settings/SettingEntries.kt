@@ -334,6 +334,94 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
             }
         },
     )
+
+    val effectsSection = "Efectos y rendimiento"
+    add(
+        SettingEntry(
+            id = "appearance_ambient_motion",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Fondo ambiental animado",
+            description = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+            keywords =
+                listOf(
+                    "fondo",
+                    "ambient",
+                    "animación",
+                    "animation",
+                    "movimiento",
+                    "motion",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                    "canvas",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Fondo ambiental animado",
+                subtitle = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+                checked = settings.ambientMotion,
+                onCheckedChange = actions.onAmbientMotionToggle,
+            )
+        },
+    )
+    add(
+        SettingEntry(
+            id = "appearance_now_playing_blur",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Desenfoque en Reproduciendo",
+            description = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
+            keywords =
+                listOf(
+                    "blur",
+                    "desenfoque",
+                    "fondo",
+                    "reproduciendo",
+                    "now playing",
+                    "carátula",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                    "efectos",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Desenfoque en Reproduciendo",
+                subtitle = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
+                checked = settings.nowPlayingBlur,
+                onCheckedChange = actions.onNowPlayingBlurToggle,
+            )
+        },
+    )
+    add(
+        SettingEntry(
+            id = "appearance_reduce_transparency",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Reducir transparencia",
+            description = "Usa superficies sólidas en paneles y barras para mayor contraste y menor sobre-dibujado.",
+            keywords =
+                listOf(
+                    "transparencia",
+                    "transparency",
+                    "glass",
+                    "opaco",
+                    "sólido",
+                    "contraste",
+                    "accesibilidad",
+                    "rendimiento",
+                    "gpu",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Reducir transparencia",
+                subtitle = "Usa superficies sólidas en paneles y barras para mayor contraste y menor sobre-dibujado.",
+                checked = settings.reduceTransparency,
+                onCheckedChange = actions.onReduceTransparencyToggle,
+            )
+        },
+    )
 }
 
 private fun MutableList<SettingEntry>.addPlaybackEntries(

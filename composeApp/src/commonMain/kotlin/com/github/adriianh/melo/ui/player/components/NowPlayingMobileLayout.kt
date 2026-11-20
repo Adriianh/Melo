@@ -44,21 +44,15 @@ internal fun NowPlayingMobileLayout(
             modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            NowPlayingLyricsCard(
-                trackLyrics = state.trackLyrics,
-                activeLyricIndex = state.activeLyricIndex,
-                isLoading = state.isLyricsLoading,
-                showTranslation = state.showTranslation,
-                isTranslating = state.isTranslating,
-                targetLanguage = state.targetLanguage,
+            IsolatedNowPlayingLyricsCard(
+                state = state,
                 activeAccent = activeAccent,
-                onSeekTo = { viewModel.seekTo(it) },
-                onToggleTranslation = { viewModel.toggleTranslation() },
-                onSelectLanguage = { viewModel.setTargetLanguage(it) },
+                viewModel = viewModel,
                 onToggleArtwork = onToggleLyrics,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -72,7 +66,8 @@ internal fun NowPlayingMobileLayout(
                 PlayerSlider(
                     state = state,
                     activeAccent = activeAccent,
-                    onSeekTo = viewModel::seekTo
+                    onSeekTo = viewModel::seekTo,
+                    progressState = viewModel.progressState,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -151,9 +146,11 @@ internal fun NowPlayingMobileLayout(
                     state = state,
                     activeAccent = activeAccent,
                     onSeekTo = viewModel::seekTo,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                    progressState = viewModel.progressState,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -166,15 +163,15 @@ internal fun NowPlayingMobileLayout(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                LiveLyricsPreviewCard(
-                    trackLyrics = state.trackLyrics,
-                    activeLyricIndex = state.activeLyricIndex,
-                    showTranslation = state.showTranslation,
+                IsolatedLiveLyricsPreviewCard(
+                    state = state,
                     activeAccent = activeAccent,
                     onExpand = onToggleLyrics,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                    viewModel = viewModel,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -192,4 +189,24 @@ internal fun NowPlayingMobileLayout(
             }
         }
     }
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun IsolatedLiveLyricsPreviewCard(
+    state: PlayerUiState,
+    activeAccent: Color,
+    onExpand: () -> Unit,
+    viewModel: PlayerViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val activeLyricIndex = rememberLiveActiveLyricIndex(viewModel)
+    LiveLyricsPreviewCard(
+        trackLyrics = state.trackLyrics,
+        activeLyricIndex = activeLyricIndex,
+        showTranslation = state.showTranslation,
+        activeAccent = activeAccent,
+        onExpand = onExpand,
+        modifier = modifier,
+    )
 }

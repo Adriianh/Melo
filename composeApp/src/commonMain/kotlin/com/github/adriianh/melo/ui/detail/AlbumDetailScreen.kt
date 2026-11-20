@@ -86,19 +86,17 @@ fun AlbumDetailScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPlaying by playerViewModel.uiState
-        .map { it.isPlaying }
-        .distinctUntilChanged()
-        .collectAsState(false)
-    val accentColorFromPlayer by playerViewModel.uiState
-        .map { it.accentColor }
-        .distinctUntilChanged()
-        .collectAsState(Color.Transparent)
+    val isPlaying by remember(playerViewModel) {
+        playerViewModel.stableUiState
+            .map { it.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playerViewModel.stableUiState.value.isPlaying)
+    val accentPalette by playerViewModel.accentPalette.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val queueState by queueViewModel.queueState.collectAsState()
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(accentColorFromPlayer)
+    val activeAccent = interaction.resolveActiveAccent(accentPalette.dominant)
     val accentColor = MaterialTheme.colorScheme.primary
     val likedTrackIds =
         remember(libraryState.likedSongs) {
