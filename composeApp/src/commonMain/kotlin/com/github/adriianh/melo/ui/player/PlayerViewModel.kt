@@ -110,7 +110,7 @@ class PlayerViewModel(
             .map { it.copy(progressMs = 0L) }
             .distinctUntilChanged()
 
-    private val activeLyricIndexFlow =
+    val activeLyricIndex: StateFlow<Int> =
         combine(
             manager.playbackState.map { it.progressMs }.distinctUntilChanged(),
             _trackLyrics,
@@ -121,6 +121,7 @@ class PlayerViewModel(
                 -1
             }
         }.distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), -1)
 
     val stableUiState: StateFlow<PlayerUiState> =
         combine(
@@ -129,7 +130,6 @@ class PlayerViewModel(
             _accentPalette,
             _isFavorite,
             _trackLyrics,
-            activeLyricIndexFlow,
             _isLyricsLoading,
             _showTranslation,
             _isTranslating,
@@ -140,17 +140,15 @@ class PlayerViewModel(
             val accent = args[2] as AccentPalette
             val isFavorite = args[3] as Boolean
             val trackLyrics = args[4] as TrackLyrics?
-            val activeIndex = args[5] as Int
-            val isLyricsLoading = args[6] as Boolean
-            val showTranslation = args[7] as Boolean
-            val isTranslating = args[8] as Boolean
-            val targetLanguage = args[9] as String
+            val isLyricsLoading = args[5] as Boolean
+            val showTranslation = args[6] as Boolean
+            val isTranslating = args[7] as Boolean
+            val targetLanguage = args[8] as String
 
             PlayerUiState.from(playback, queue, accent.dominant).copy(
                 isFavorite = isFavorite,
                 lyrics = trackLyrics?.plainLyrics,
                 trackLyrics = trackLyrics,
-                activeLyricIndex = activeIndex,
                 isLyricsLoading = isLyricsLoading,
                 showTranslation = showTranslation,
                 isTranslating = isTranslating,
@@ -158,45 +156,6 @@ class PlayerViewModel(
             )
         }.distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
-
-    val uiState: StateFlow<PlayerUiState> = combine(
-        manager.playbackState,
-        manager.queueState,
-        _accentPalette,
-        _isFavorite,
-        _trackLyrics,
-        _isLyricsLoading,
-        _showTranslation,
-        _isTranslating,
-        _targetLanguage
-    ) { args: Array<Any?> ->
-        val playback = args[0] as com.github.adriianh.core.domain.player.PlaybackState
-        val queue = args[1] as com.github.adriianh.core.domain.player.QueueState
-        val accent = args[2] as AccentPalette
-        val isFavorite = args[3] as Boolean
-        val trackLyrics = args[4] as TrackLyrics?
-        val isLyricsLoading = args[5] as Boolean
-        val showTranslation = args[6] as Boolean
-        val isTranslating = args[7] as Boolean
-        val targetLanguage = args[8] as String
-
-        val activeIndex = if (trackLyrics != null && trackLyrics.hasSync) {
-            LrcParser.currentLineIndex(trackLyrics.syncedLyrics, playback.progressMs)
-        } else {
-            -1
-        }
-
-        PlayerUiState.from(playback, queue, accent.dominant).copy(
-            isFavorite = isFavorite,
-            lyrics = trackLyrics?.plainLyrics,
-            trackLyrics = trackLyrics,
-            activeLyricIndex = activeIndex,
-            isLyricsLoading = isLyricsLoading,
-            showTranslation = showTranslation,
-            isTranslating = isTranslating,
-            targetLanguage = targetLanguage
-        )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, PlayerUiState())
 
     init {
         observeLibraryUpdatesUseCase?.let { observeUseCase ->
