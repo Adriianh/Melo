@@ -9,9 +9,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.FloatState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,16 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.adriianh.melo.util.LocalWindowActive
+import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloType
-import kotlinx.coroutines.delay
+import com.github.adriianh.melo.util.rememberSharedAnimationTime
 import kotlin.math.PI
 import kotlin.math.sin
-import kotlin.time.Duration.Companion.milliseconds
 
-private const val MELODY_FRAME_DELAY_MS = 85L
-private const val MELODY_FRAME_STEP_SEC = 0.085f
-private const val MELODY_CYCLE_SEC = 60f
 private const val MELODY_TWO_PI = (2.0 * PI).toFloat()
 private val MELODY_NOTES = listOf("♪", "♫", "♩", "♬")
 
@@ -42,16 +35,9 @@ fun DancingMelodyIndicator(
     baseFontSize: TextUnit = 17.sp,
     noteCount: Int = 3,
 ) {
-    val shouldAnimate = isActive && LocalWindowActive.current
+    val shouldAnimate = isActive && LocalWindowActivity.current.isVisible
     if (shouldAnimate) {
-        val elapsedSeconds = remember { mutableFloatStateOf(0f) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(MELODY_FRAME_DELAY_MS.milliseconds)
-                elapsedSeconds.floatValue =
-                    (elapsedSeconds.floatValue + MELODY_FRAME_STEP_SEC) % MELODY_CYCLE_SEC
-            }
-        }
+        val elapsedSeconds = rememberSharedAnimationTime(enabled = true)
         AnimatedMelodyRow(
             elapsedSeconds = elapsedSeconds,
             tint = tint,

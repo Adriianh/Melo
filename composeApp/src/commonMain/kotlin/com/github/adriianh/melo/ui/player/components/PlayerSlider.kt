@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.components.MeloSlider
-import com.github.adriianh.melo.util.LocalWindowActive
+import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerProgressState
@@ -29,10 +29,10 @@ private fun rememberLiveProgress(
     state: PlayerUiState,
     progressState: StateFlow<PlayerProgressState>?,
 ): PlayerProgressState {
-    val isWindowActive = LocalWindowActive.current
+    val isWindowVisible = LocalWindowActivity.current.isVisible
     val liveProgress =
         if (progressState != null) {
-            if (isWindowActive) progressState.collectAsState().value else progressState.value
+            if (isWindowVisible) progressState.collectAsState().value else progressState.value
         } else {
             null
         }

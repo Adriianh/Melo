@@ -64,7 +64,10 @@ import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsModal
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.ui.settings.hasAvailableUpdate
+import com.github.adriianh.melo.util.LocalAnimationClock
 import com.github.adriianh.melo.util.MeloMotion
+import com.github.adriianh.melo.util.SharedAnimationClock
+import com.github.adriianh.melo.util.SharedAnimationClockDriver
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -179,11 +182,14 @@ fun App(
         }
 
         if (!showSplash) {
+            val animationClock = remember { SharedAnimationClock() }
+            SharedAnimationClockDriver(clock = animationClock)
 
             CompositionLocalProvider(
                 LocalMeloSnackbar provides snackbarState,
                 LocalSelectionMode provides isSelectionMode,
                 LocalHasAvailableUpdate provides updateState.hasAvailableUpdate(),
+                LocalAnimationClock provides animationClock,
             ) {
                 AmbientCanvas(
                     accentColor = finalAccent,

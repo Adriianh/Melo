@@ -68,7 +68,7 @@ import com.github.adriianh.core.domain.player.RepeatMode
 import com.github.adriianh.melo.ui.components.AnimatedEqualizerBars
 import com.github.adriianh.melo.ui.components.MeloSlider
 import com.github.adriianh.melo.ui.player.PlayerViewModel
-import com.github.adriianh.melo.util.LocalWindowActive
+import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -451,9 +451,9 @@ private fun IsolatedPlayerProgressBar(
     containerHeight: Dp = 44.dp,
     showHoverControls: Boolean = true,
 ) {
-    val isWindowActive = LocalWindowActive.current
+    val isWindowVisible = LocalWindowActivity.current.isVisible
     val progress =
-        if (isWindowActive) {
+        if (isWindowVisible) {
             viewModel.progressState.collectAsState().value
         } else {
             viewModel.progressState.value

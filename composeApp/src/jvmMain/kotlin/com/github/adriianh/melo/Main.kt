@@ -20,7 +20,8 @@ import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
-import com.github.adriianh.melo.util.LocalWindowActive
+import com.github.adriianh.melo.util.LocalWindowActivity
+import com.github.adriianh.melo.util.WindowActivityState
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -147,9 +148,16 @@ fun main() {
                 }
             }
 
+            val windowActivity =
+                when {
+                    windowManager.isMinimized -> WindowActivityState.MINIMIZED
+                    windowManager.isFocused -> WindowActivityState.ACTIVE
+                    else -> WindowActivityState.UNFOCUSED
+                }
+
             CompositionLocalProvider(
                 LocalInstanceLabel provides instanceKey,
-                LocalWindowActive provides (!windowManager.isMinimized && windowManager.isFocused),
+                LocalWindowActivity provides windowActivity,
             ) {
                 App(
                     titleBar = {

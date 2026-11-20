@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.FloatState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -21,15 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.withTransform
 import com.github.adriianh.melo.util.LocalMeloColors
-import com.github.adriianh.melo.util.LocalWindowActive
-import kotlinx.coroutines.delay
+import com.github.adriianh.melo.util.LocalWindowActivity
+import com.github.adriianh.melo.util.rememberSharedAnimationTime
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.sin
 
-private const val AMBIENT_FRAME_DELAY_MS = 100L
-private const val AMBIENT_FRAME_STEP_SEC = 0.10f
-private const val AMBIENT_CYCLE_SEC = 2520f
 private const val TWO_PI = (2.0 * PI).toFloat()
 
 @Composable
@@ -42,7 +36,7 @@ fun AmbientCanvas(
 ) {
     val meloColors = LocalMeloColors.current
     val isDark = meloColors.isDark
-    val isWindowActive = LocalWindowActive.current
+    val isWindowVisible = LocalWindowActivity.current.isVisible
 
     Box(modifier = modifier.fillMaxSize()) {
         val baseModifier =
@@ -60,25 +54,15 @@ fun AmbientCanvas(
                 animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
                 label = "AmbientCanvasAccent",
             )
-            val shouldAnimate = animate && isWindowActive
-            val elapsedSeconds = remember { mutableFloatStateOf(0f) }
-
-            LaunchedEffect(shouldAnimate) {
-                if (shouldAnimate) {
-                    while (true) {
-                        delay(AMBIENT_FRAME_DELAY_MS)
-                        elapsedSeconds.floatValue =
-                            (elapsedSeconds.floatValue + AMBIENT_FRAME_STEP_SEC) % AMBIENT_CYCLE_SEC
-                    }
-                }
-            }
+            val shouldAnimate = animate && isWindowVisible
+            val sharedTime = rememberSharedAnimationTime(enabled = shouldAnimate)
 
             Box(
                 modifier =
                     baseModifier.ambientOrbsOverlay(
                         animatedAccent = animatedAccent,
                         isDark = isDark,
-                        elapsedSeconds = elapsedSeconds,
+                        elapsedSeconds = if (shouldAnimate) sharedTime else null,
                     ),
             )
         } else {
@@ -104,7 +88,7 @@ private fun Modifier.ambientBaseBackground(
 private fun Modifier.ambientOrbsOverlay(
     animatedAccent: Color,
     isDark: Boolean,
-    elapsedSeconds: FloatState,
+    elapsedSeconds: FloatState?,
 ): Modifier =
     drawWithCache {
         val orb1Radius = max(size.width, size.height) * 0.65f
@@ -140,7 +124,7 @@ private fun Modifier.ambientOrbsOverlay(
             )
 
         onDrawBehind {
-            val t = elapsedSeconds.floatValue
+            val t = elapsedSeconds?.floatValue ?: 0f
             val dx1 = size.width * 0.22f * sin(t * (TWO_PI / 18f))
             val dy1 = size.height * 0.20f * sin(t * (TWO_PI / 24f) + 0.4f)
             val scale1 = 1f + 0.14f * (0.5f + 0.5f * sin(t * (TWO_PI / 7f)))
