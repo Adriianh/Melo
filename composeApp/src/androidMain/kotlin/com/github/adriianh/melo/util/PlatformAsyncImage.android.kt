@@ -23,12 +23,14 @@ actual fun PlatformAsyncImage(
     modifier: Modifier,
     size: Dp?,
     shape: Shape,
+    filterQuality: FilterQuality,
+    decodeSizePx: Int?,
 ) {
     val sizeMod = if (size != null) Modifier.size(size) else Modifier
     val context = LocalPlatformContext.current
     val density = LocalDensity.current
 
-    val model = remember(url, size, density) {
+    val model = remember(url, size, density, decodeSizePx) {
         if (url == null) null
         else {
             val builder = ImageRequest.Builder(context)
@@ -36,11 +38,9 @@ actual fun PlatformAsyncImage(
             if (size == null || size >= 160.dp) {
                 builder.crossfade(150)
             }
-            if (size != null) {
-                val px = with(density) { size.roundToPx() }
-                if (px > 0) {
-                    builder.size(px, px)
-                }
+            val targetPx = decodeSizePx ?: size?.let { with(density) { it.roundToPx() } }
+            if (targetPx != null && targetPx > 0) {
+                builder.size(targetPx, targetPx)
             }
             builder.build()
         }
@@ -53,6 +53,6 @@ actual fun PlatformAsyncImage(
             .then(sizeMod)
             .clip(shape),
         contentScale = ContentScale.Crop,
-        filterQuality = FilterQuality.Low,
+        filterQuality = filterQuality,
     )
 }

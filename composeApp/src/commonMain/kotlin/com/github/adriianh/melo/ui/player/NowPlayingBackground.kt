@@ -14,12 +14,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloColors
@@ -27,7 +27,9 @@ import com.github.adriianh.melo.util.PlatformAsyncImage
 import com.github.adriianh.melo.util.normalizeArtworkUrl
 import kotlin.math.max
 
-private val BLUR_SOURCE_SIZE = 160.dp
+private val BLUR_SOURCE_SIZE = 24.dp
+private const val BLUR_DECODE_PX = 24
+private const val BACKDROP_CACHE_URL_SIZE_PX = 180
 
 @Composable
 fun NowPlayingBackground(
@@ -69,7 +71,7 @@ private fun BlurredArtworkBackdrop(
     url: String,
     isDark: Boolean,
 ) {
-    val lowResUrl = remember(url) { normalizeArtworkUrl(url, 160) }
+    val lowResUrl = remember(url) { normalizeArtworkUrl(url, BACKDROP_CACHE_URL_SIZE_PX) }
     val scrimColor = if (isDark) Color.Black else Color.White
     val scrimBrush =
         remember(scrimColor) {
@@ -88,8 +90,8 @@ private fun BlurredArtworkBackdrop(
         modifier = Modifier.fillMaxSize().clipToBounds(),
         contentAlignment = Alignment.Center,
     ) {
-        val scaleXFactor = (maxWidth / BLUR_SOURCE_SIZE).coerceAtLeast(1f) * 1.25f
-        val scaleYFactor = (maxHeight / BLUR_SOURCE_SIZE).coerceAtLeast(1f) * 1.25f
+        val scaleXFactor = (maxWidth / BLUR_SOURCE_SIZE).coerceAtLeast(1f) * 1.15f
+        val scaleYFactor = (maxHeight / BLUR_SOURCE_SIZE).coerceAtLeast(1f) * 1.15f
 
         Box(
             modifier =
@@ -102,8 +104,9 @@ private fun BlurredArtworkBackdrop(
                 url = lowResUrl,
                 contentDescription = null,
                 size = BLUR_SOURCE_SIZE,
-                modifier = Modifier.blur(14.dp),
                 shape = RoundedCornerShape(0.dp),
+                filterQuality = FilterQuality.High,
+                decodeSizePx = BLUR_DECODE_PX,
             )
         }
 
