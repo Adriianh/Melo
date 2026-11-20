@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Melo TUI & CLI One-Line Installer for Windows (PowerShell)
 
@@ -52,7 +52,7 @@ if ($Version -eq "nightly" -or $Version -eq "dev") {
             $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{ "User-Agent" = "Melo-Installer" }
             $Version = $release.tag_name.TrimStart('v')
         } catch {
-            $Version = "2.3.0"
+            $Version = "2.4.0"
         }
     } else {
         $Version = $Version.TrimStart('v')
