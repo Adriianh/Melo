@@ -13,6 +13,7 @@ import com.github.adriianh.data.player.PlaybackManagerImpl
 import com.github.adriianh.data.provider.audio.PipedAudioProvider
 import com.github.adriianh.data.provider.discovery.InnerTubeDiscoveryProvider
 import com.github.adriianh.data.provider.music.InnerTubeMusicProvider
+import com.github.adriianh.data.remote.createSharedHttpEngine
 import com.github.adriianh.data.repository.HistoryRepositoryImpl
 import com.github.adriianh.melo.ui.SidebarViewModel
 import com.github.adriianh.melo.ui.detail.EntityDetailViewModel
@@ -25,7 +26,6 @@ import com.github.adriianh.melo.ui.search.SearchViewModel
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.PlatformUpdateInstaller
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
@@ -46,10 +46,7 @@ import org.koin.dsl.module
 val commonModule =
     module {
         single<HttpClient> {
-            HttpClient(CIO) {
-                engine {
-                    requestTimeout = 0L
-                }
+            HttpClient(createSharedHttpEngine()) {
                 install(HttpTimeout) {
                     requestTimeoutMillis = 30_000L
                     connectTimeoutMillis = 15_000L

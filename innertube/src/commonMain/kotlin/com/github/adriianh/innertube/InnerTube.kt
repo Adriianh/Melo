@@ -81,7 +81,7 @@ class InnerTube(
     var useLoginForBrowse: Boolean = false
 
     private fun createClient(engine: HttpClientEngine? = null): HttpClient {
-        val resolvedEngine = engine ?: createPlatformHttpClient(proxyConfig).engine
+        val resolvedEngine = engine ?: createPlatformHttpEngine(proxyConfig)
         return HttpClient(resolvedEngine) {
             expectSuccess = true
 

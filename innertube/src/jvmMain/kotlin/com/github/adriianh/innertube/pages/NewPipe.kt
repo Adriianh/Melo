@@ -5,9 +5,9 @@ import com.github.adriianh.innertube.ProxyType
 import com.github.adriianh.innertube.YouTube
 import com.github.adriianh.innertube.models.YouTubeClient
 import com.github.adriianh.innertube.models.response.PlayerResponse
+import com.github.adriianh.innertube.sharedOkHttpClient
 import io.ktor.http.URLBuilder
 import io.ktor.http.parseQueryString
-import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.downloader.Downloader
@@ -40,8 +40,8 @@ class NewPipeDownloaderImpl(
     proxyAuth: String? = null,
 ) : Downloader() {
     private val client =
-        OkHttpClient
-            .Builder()
+        sharedOkHttpClient
+            .newBuilder()
             .proxy(proxyConfig?.let { cfg ->
                 Proxy(
                     when (cfg.type) {
