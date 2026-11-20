@@ -20,13 +20,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.getCachedBlurredArtwork
 import com.github.adriianh.melo.util.getOrLoadBlurredArtworkBitmap
 import com.github.adriianh.melo.util.normalizeArtworkUrl
 import kotlin.math.max
 
-private const val BACKDROP_SOURCE_URL_SIZE_PX = 360
+private const val BACKDROP_SOURCE_URL_SIZE_PX = 544
 
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
@@ -34,6 +35,7 @@ fun NowPlayingBackground(
     artworkUrl: String?,
     modifier: Modifier = Modifier,
     blurEnabled: Boolean = true,
+    blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     accentColor: Color = MeloColors.brandAccent,
 ) {
     val surface0 = MeloColors.surface0
@@ -56,6 +58,7 @@ fun NowPlayingBackground(
             if (url != null) {
                 BlurredArtworkBackdrop(
                     url = url,
+                    blurSigmaPx = blurIntensity.sigmaPx,
                     isDark = isDark,
                 )
             }
@@ -67,15 +70,17 @@ fun NowPlayingBackground(
 @Composable
 private fun BlurredArtworkBackdrop(
     url: String,
+    blurSigmaPx: Float,
     isDark: Boolean,
 ) {
     val backdropUrl = remember(url) { normalizeArtworkUrl(url, BACKDROP_SOURCE_URL_SIZE_PX) ?: url }
     val blurredBitmap by produceState<ImageBitmap?>(
-        initialValue = remember(backdropUrl) { getCachedBlurredArtwork(backdropUrl) },
+        initialValue = remember(backdropUrl, blurSigmaPx) { getCachedBlurredArtwork(backdropUrl, blurSigmaPx) },
         key1 = backdropUrl,
+        key2 = blurSigmaPx,
     ) {
         if (value == null) {
-            value = getOrLoadBlurredArtworkBitmap(backdropUrl)
+            value = getOrLoadBlurredArtworkBitmap(backdropUrl, blurSigmaPx = blurSigmaPx)
         }
     }
     val scrimColor = if (isDark) Color.Black else Color.White

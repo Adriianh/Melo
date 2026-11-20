@@ -30,6 +30,7 @@ import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
+import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -392,6 +393,47 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
                 checked = settings.nowPlayingBlur,
                 onCheckedChange = actions.onNowPlayingBlurToggle,
             )
+        },
+    )
+    add(
+        SettingEntry(
+            id = "appearance_now_playing_blur_intensity",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Intensidad del desenfoque",
+            description = "Ajusta qué tan definida o difusa se muestra la carátula de fondo en Reproduciendo.",
+            keywords =
+                listOf(
+                    "blur",
+                    "desenfoque",
+                    "intensidad",
+                    "intensity",
+                    "suave",
+                    "medio",
+                    "intenso",
+                    "carátula",
+                    "reproduciendo",
+                    "now playing",
+                ),
+        ) {
+            SettingInlineChoiceRow(
+                title = "Intensidad del desenfoque",
+                subtitle = "Ajusta qué tan definida o difusa se muestra la carátula de fondo en Reproduciendo.",
+                enabled = settings.nowPlayingBlur,
+                disabledNote = "Requiere activar Desenfoque en Reproduciendo",
+            ) { isInline ->
+                SegmentedControl(
+                    options = NowPlayingBlurIntensity.entries,
+                    selected = settings.nowPlayingBlurIntensity,
+                    onSelect = { intensity ->
+                        if (settings.nowPlayingBlur) {
+                            actions.onNowPlayingBlurIntensitySelected(intensity)
+                        }
+                    },
+                    label = { it.displayName },
+                    fillMaxWidth = !isInline,
+                )
+            }
         },
     )
     add(

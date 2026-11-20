@@ -491,6 +491,7 @@ fun App(
                             NowPlayingScreen(
                                 titleBar = titleBar,
                                 blurEnabled = settings.nowPlayingBlur,
+                                blurIntensity = settings.nowPlayingBlurIntensity,
                                 onCollapse = { isNowPlayingExpanded = false },
                                 onArtistClick = { id ->
                                     isNowPlayingExpanded = false
@@ -548,6 +549,13 @@ fun App(
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(nowPlayingBlur = enabled)
+                                        }
+                                    }
+                                },
+                                onNowPlayingBlurIntensitySelected = { intensity ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(nowPlayingBlurIntensity = intensity)
                                         }
                                     }
                                 },

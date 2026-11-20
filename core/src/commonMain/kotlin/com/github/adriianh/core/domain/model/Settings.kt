@@ -136,6 +136,7 @@ data class Settings(
     val dynamicColor: Boolean = true,
     val ambientMotion: Boolean = false,
     val nowPlayingBlur: Boolean = true,
+    val nowPlayingBlurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     val reduceTransparency: Boolean = false,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
@@ -153,3 +154,13 @@ data class Settings(
         },
     val lastAccentColor: Long? = null,
 )
+
+@Serializable
+enum class NowPlayingBlurIntensity(
+    val displayName: String,
+    val sigmaPx: Float,
+) {
+    SOFT("Suave", 4.5f),
+    MEDIUM("Medio", 7.2f),
+    INTENSE("Intenso", 13.5f),
+}

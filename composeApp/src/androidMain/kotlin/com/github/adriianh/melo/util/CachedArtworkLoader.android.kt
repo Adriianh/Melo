@@ -2,6 +2,9 @@ package com.github.adriianh.melo.util
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.ui.graphics.ImageBitmap
@@ -18,7 +21,8 @@ import kotlinx.coroutines.withContext
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-private const val BACKDROP_CROP_ZOOM = 1.25f
+private const val BACKDROP_CROP_ZOOM = 1.08f
+private const val BACKDROP_SATURATION_BOOST = 1.22f
 
 internal actual suspend fun loadCachedArtworkBitmap(
     url: String,
@@ -78,7 +82,14 @@ private fun renderBlurredAndroidBitmap(
     val canvas = Canvas(outBitmap)
     val srcRect = Rect(cropLeft, cropTop, cropLeft + cropSpan, cropTop + cropSpan)
     val dstRect = RectF(0f, 0f, targetSizePx.toFloat(), targetSizePx.toFloat())
-    canvas.drawBitmap(srcBitmap, srcRect, dstRect, null)
+    val saturationPaint =
+        Paint(Paint.FILTER_BITMAP_FLAG).apply {
+            colorFilter =
+                ColorMatrixColorFilter(
+                    ColorMatrix().apply { setSaturation(BACKDROP_SATURATION_BOOST) },
+                )
+        }
+    canvas.drawBitmap(srcBitmap, srcRect, dstRect, saturationPaint)
 
     val pixels = IntArray(targetSizePx * targetSizePx)
     outBitmap.getPixels(pixels, 0, targetSizePx, 0, 0, targetSizePx, targetSizePx)

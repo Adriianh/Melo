@@ -7,11 +7,11 @@ import kotlinx.coroutines.internal.synchronized
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-private const val MAX_BLURRED_BACKDROP_CACHE_ENTRIES = 6
-private const val DEFAULT_BLUR_TARGET_SIZE_PX = 256
-private const val DEFAULT_BLUR_SIGMA_PX = 10f
+private const val MAX_BLURRED_BACKDROP_CACHE_ENTRIES = 4
+private const val DEFAULT_BLUR_TARGET_SIZE_PX = 512
+private const val DEFAULT_BLUR_SIGMA_PX = 7.2f
 
-private val blurredBackdropCache = LinkedHashMap<String, ImageBitmap>()
+private val blurredBackdropCache = LinkedHashMap<Pair<String, Float>, ImageBitmap>()
 private val blurredBackdropLock = Any()
 private val blurredBackdropMutex = Mutex()
 
@@ -27,9 +27,12 @@ internal expect suspend fun loadBlurredArtworkBitmap(
 ): ImageBitmap?
 
 @OptIn(InternalCoroutinesApi::class)
-internal fun getCachedBlurredArtwork(url: String): ImageBitmap? =
+internal fun getCachedBlurredArtwork(
+    url: String,
+    blurSigmaPx: Float = DEFAULT_BLUR_SIGMA_PX,
+): ImageBitmap? =
     synchronized(blurredBackdropLock as SynchronizedObject) {
-        blurredBackdropCache[url]
+        blurredBackdropCache[url to blurSigmaPx]
     }
 
 @OptIn(InternalCoroutinesApi::class)
@@ -38,14 +41,15 @@ internal suspend fun getOrLoadBlurredArtworkBitmap(
     targetSizePx: Int = DEFAULT_BLUR_TARGET_SIZE_PX,
     blurSigmaPx: Float = DEFAULT_BLUR_SIGMA_PX,
 ): ImageBitmap? {
-    getCachedBlurredArtwork(url)?.let { return it }
+    getCachedBlurredArtwork(url, blurSigmaPx)?.let { return it }
     return blurredBackdropMutex.withLock {
-        getCachedBlurredArtwork(url)?.let { return@withLock it }
+        getCachedBlurredArtwork(url, blurSigmaPx)?.let { return@withLock it }
         val loaded =
             runCatching {
                 loadBlurredArtworkBitmap(url, targetSizePx, blurSigmaPx)
             }.getOrNull()
         if (loaded != null) {
+            val cacheKey = url to blurSigmaPx
             synchronized(blurredBackdropLock as SynchronizedObject) {
                 if (blurredBackdropCache.size >= MAX_BLURRED_BACKDROP_CACHE_ENTRIES) {
                     val eldestKey = blurredBackdropCache.keys.firstOrNull()
@@ -53,7 +57,7 @@ internal suspend fun getOrLoadBlurredArtworkBitmap(
                         blurredBackdropCache.remove(eldestKey)
                     }
                 }
-                blurredBackdropCache[url] = loaded
+                blurredBackdropCache[cacheKey] = loaded
             }
         }
         loaded
