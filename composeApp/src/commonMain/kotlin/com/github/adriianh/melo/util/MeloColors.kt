@@ -22,6 +22,7 @@ interface MeloColorScheme {
     val chromePillFill: Color
     val chromePillBorder: Color
     val brandAccent: Color get() = Color(0xFFFF2D55)
+    val reduceTransparency: Boolean get() = false
 }
 
 object DarkMeloColors : MeloColorScheme {
@@ -79,6 +80,7 @@ data class AnimatedMeloColors(
     override val playerBarBorder: Color,
     override val chromePillFill: Color,
     override val chromePillBorder: Color,
+    override val reduceTransparency: Boolean = false,
 ) : MeloColorScheme
 
 val LocalMeloColors = staticCompositionLocalOf<MeloColorScheme> { DarkMeloColors }

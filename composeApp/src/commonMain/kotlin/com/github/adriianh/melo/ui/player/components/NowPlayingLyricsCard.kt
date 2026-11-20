@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,13 +64,19 @@ fun NowPlayingLyricsCard(
     modifier: Modifier = Modifier
 ) {
     val cardShape = RoundedCornerShape(24.dp)
-    val glassFillBrush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.08f),
-            MeloColors.glassSurface.copy(alpha = 0.82f),
-            Color.Black.copy(alpha = 0.65f)
-        )
-    )
+    val glassFillBrush =
+        if (MeloColors.reduceTransparency) {
+            SolidColor(MeloColors.surface1)
+        } else {
+            Brush.linearGradient(
+                colors =
+                    listOf(
+                        Color.White.copy(alpha = 0.08f),
+                        MeloColors.glassSurface.copy(alpha = 0.82f),
+                        Color.Black.copy(alpha = 0.65f),
+                    ),
+            )
+        }
     val glassBorderBrush = Brush.linearGradient(
         colors = listOf(
             Color.White.copy(alpha = 0.42f),

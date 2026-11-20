@@ -394,6 +394,34 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
             )
         },
     )
+    add(
+        SettingEntry(
+            id = "appearance_reduce_transparency",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Reducir transparencia",
+            description = "Usa superficies sólidas en paneles y barras para mayor contraste y menor sobre-dibujado.",
+            keywords =
+                listOf(
+                    "transparencia",
+                    "transparency",
+                    "glass",
+                    "opaco",
+                    "sólido",
+                    "contraste",
+                    "accesibilidad",
+                    "rendimiento",
+                    "gpu",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Reducir transparencia",
+                subtitle = "Usa superficies sólidas en paneles y barras para mayor contraste y menor sobre-dibujado.",
+                checked = settings.reduceTransparency,
+                onCheckedChange = actions.onReduceTransparencyToggle,
+            )
+        },
+    )
 }
 
 private fun MutableList<SettingEntry>.addPlaybackEntries(

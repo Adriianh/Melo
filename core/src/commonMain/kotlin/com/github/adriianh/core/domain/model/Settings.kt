@@ -136,6 +136,7 @@ data class Settings(
     val dynamicColor: Boolean = true,
     val ambientMotion: Boolean = false,
     val nowPlayingBlur: Boolean = true,
+    val reduceTransparency: Boolean = false,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
     val stopPlaybackOnTaskRemoval: Boolean = false,

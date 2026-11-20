@@ -136,7 +136,8 @@ fun App(
 
     MeloTheme(
         accentColor = finalAccent,
-        isDarkTheme = isDarkTheme
+        isDarkTheme = isDarkTheme,
+        reduceTransparency = settings.reduceTransparency,
     ) {
         var selectedTab by remember { mutableStateOf(MainTab.HOME) }
         var showLoginDialog by remember { mutableStateOf(false) }
@@ -541,6 +542,13 @@ fun App(
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(nowPlayingBlur = enabled)
+                                        }
+                                    }
+                                },
+                                onReduceTransparencyToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(reduceTransparency = enabled)
                                         }
                                     }
                                 },

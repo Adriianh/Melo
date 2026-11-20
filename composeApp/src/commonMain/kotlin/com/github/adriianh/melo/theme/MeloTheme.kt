@@ -100,6 +100,7 @@ private val MeloLightColorScheme = lightColorScheme(
 fun MeloTheme(
     accentColor: Color? = null,
     isDarkTheme: Boolean = isSystemInDarkTheme(),
+    reduceTransparency: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val targetColors = if (isDarkTheme) DarkMeloColors else LightMeloColors
@@ -126,18 +127,26 @@ fun MeloTheme(
     )
     val textMuted by animateColorAsState(targetColors.textMuted, colorAnimSpec, label = "textMuted")
     val glassSurface by animateColorAsState(
-        targetColors.glassSurface,
+        if (reduceTransparency) targetColors.surface1 else targetColors.glassSurface,
         colorAnimSpec,
         label = "glassSurface"
     )
-    val glassFill by animateColorAsState(targetColors.glassFill, colorAnimSpec, label = "glassFill")
+    val glassFill by animateColorAsState(
+        if (reduceTransparency) targetColors.surface1 else targetColors.glassFill,
+        colorAnimSpec,
+        label = "glassFill"
+    )
     val glassBorder by animateColorAsState(
         targetColors.glassBorder,
         colorAnimSpec,
         label = "glassBorder"
     )
     val playerBarFill by animateColorAsState(
-        targetColors.playerBarFill,
+        if (reduceTransparency) {
+            if (isDarkTheme) targetColors.surface2 else targetColors.surface1
+        } else {
+            targetColors.playerBarFill
+        },
         colorAnimSpec,
         label = "playerBarFill"
     )
@@ -147,7 +156,7 @@ fun MeloTheme(
         label = "playerBarBorder"
     )
     val chromePillFill by animateColorAsState(
-        targetColors.chromePillFill,
+        if (reduceTransparency) targetColors.surface2 else targetColors.chromePillFill,
         colorAnimSpec,
         label = "chromePillFill"
     )
@@ -161,7 +170,7 @@ fun MeloTheme(
         surface0, surface1, surface2, border, borderStrong,
         textPrimary, textSecondary, textMuted, glassSurface, glassFill, glassBorder,
         playerBarFill, playerBarBorder, chromePillFill, chromePillBorder,
-        isDarkTheme
+        isDarkTheme, reduceTransparency
     ) {
         AnimatedMeloColors(
             isDark = isDarkTheme,
@@ -179,7 +188,8 @@ fun MeloTheme(
             playerBarFill = playerBarFill,
             playerBarBorder = playerBarBorder,
             chromePillFill = chromePillFill,
-            chromePillBorder = chromePillBorder
+            chromePillBorder = chromePillBorder,
+            reduceTransparency = reduceTransparency,
         )
     }
 
