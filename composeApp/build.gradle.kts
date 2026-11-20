@@ -49,7 +49,6 @@ kotlin {
 
                 // Ktor & Serialization
                 implementation(libs.ktorClientCore)
-                implementation(libs.ktorClientCio)
                 implementation(libs.ktorClientContentNegotiation)
                 implementation(libs.ktorSerializationKotlinxJson)
                 implementation(libs.kotlinxSerialization)
@@ -163,6 +162,8 @@ compose.desktop {
             listOf(
                 "-XX:+UnlockExperimentalVMOptions",
                 "-XX:-UseJVMCICompiler",
+                "-XX:TieredStopAtLevel=1",
+                "-Xshare:auto",
                 "-Xms32m",
                 "-Xmx256m",
                 "-Xss512k",
@@ -171,7 +172,7 @@ compose.desktop {
                 "-XX:MaxHeapFreeRatio=30",
                 "-XX:+UseStringDeduplication",
                 "-XX:CICompilerCount=2",
-                "-XX:ReservedCodeCacheSize=32m",
+                "-XX:ReservedCodeCacheSize=24m",
                 "-XX:MaxMetaspaceSize=128m",
                 "-XX:CompressedClassSpaceSize=32m",
                 "-XX:MaxDirectMemorySize=64m",
@@ -226,12 +227,9 @@ compose.desktop {
                 "java.desktop",
                 "java.logging",
                 "java.management",
-                "java.naming",
-                "java.net.http",
                 "java.sql",
                 "jdk.unsupported",
                 "jdk.crypto.ec",
-                "jdk.security.auth",
             )
 
             appResourcesRootDir.set(layout.buildDirectory.dir("app-resources"))
