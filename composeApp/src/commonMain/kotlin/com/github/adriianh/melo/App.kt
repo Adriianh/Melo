@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
@@ -492,6 +493,7 @@ fun App(
                                 titleBar = titleBar,
                                 blurEnabled = settings.nowPlayingBlur,
                                 blurIntensity = settings.nowPlayingBlurIntensity,
+                                backdropScrim = settings.nowPlayingBackdropScrim,
                                 onCollapse = { isNowPlayingExpanded = false },
                                 onArtistClick = { id ->
                                     isNowPlayingExpanded = false
@@ -545,17 +547,20 @@ fun App(
                                         }
                                     }
                                 },
-                                onNowPlayingBlurToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(nowPlayingBlur = enabled)
-                                        }
-                                    }
-                                },
                                 onNowPlayingBlurIntensitySelected = { intensity ->
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
-                                            current.copy(nowPlayingBlurIntensity = intensity)
+                                            current.copy(
+                                                nowPlayingBlur = intensity != NowPlayingBlurIntensity.OFF,
+                                                nowPlayingBlurIntensity = intensity,
+                                            )
+                                        }
+                                    }
+                                },
+                                onNowPlayingBackdropScrimSelected = { scrim ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(nowPlayingBackdropScrim = scrim)
                                         }
                                     }
                                 },

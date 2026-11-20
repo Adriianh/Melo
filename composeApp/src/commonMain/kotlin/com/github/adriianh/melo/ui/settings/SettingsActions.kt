@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
+import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -16,6 +17,7 @@ data class SettingsActions(
     val onAmbientMotionToggle: (Boolean) -> Unit = {},
     val onNowPlayingBlurToggle: (Boolean) -> Unit = {},
     val onNowPlayingBlurIntensitySelected: (NowPlayingBlurIntensity) -> Unit = {},
+    val onNowPlayingBackdropScrimSelected: (NowPlayingBackdropScrim) -> Unit = {},
     val onReduceTransparencyToggle: (Boolean) -> Unit = {},
     val onDataSaverToggle: (Boolean) -> Unit,
     val onAudioQualitySelected: (AudioQuality) -> Unit,

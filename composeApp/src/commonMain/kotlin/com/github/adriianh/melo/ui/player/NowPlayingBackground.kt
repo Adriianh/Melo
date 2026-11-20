@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.getCachedBlurredArtwork
@@ -36,13 +37,15 @@ fun NowPlayingBackground(
     modifier: Modifier = Modifier,
     blurEnabled: Boolean = true,
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
+    backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     accentColor: Color = MeloColors.brandAccent,
 ) {
     val surface0 = MeloColors.surface0
     val isDark = MeloColors.isDark
+    val isBlurActive = blurEnabled && blurIntensity != NowPlayingBlurIntensity.OFF
 
     Box(modifier = modifier.fillMaxSize().background(surface0)) {
-        if (!blurEnabled) {
+        if (!isBlurActive) {
             NowPlayingGradientFallback(
                 accentColor = accentColor,
                 isDark = isDark,
@@ -59,6 +62,7 @@ fun NowPlayingBackground(
                 BlurredArtworkBackdrop(
                     url = url,
                     blurSigmaPx = blurIntensity.sigmaPx,
+                    backdropScrim = backdropScrim,
                     isDark = isDark,
                 )
             }
@@ -71,6 +75,7 @@ fun NowPlayingBackground(
 private fun BlurredArtworkBackdrop(
     url: String,
     blurSigmaPx: Float,
+    backdropScrim: NowPlayingBackdropScrim,
     isDark: Boolean,
 ) {
     val backdropUrl = remember(url) { normalizeArtworkUrl(url, BACKDROP_SOURCE_URL_SIZE_PX) ?: url }
@@ -85,14 +90,14 @@ private fun BlurredArtworkBackdrop(
     }
     val scrimColor = if (isDark) Color.Black else Color.White
     val scrimBrush =
-        remember(scrimColor) {
+        remember(scrimColor, backdropScrim) {
             Brush.verticalGradient(
                 colors =
                     listOf(
-                        scrimColor.copy(alpha = 0.50f),
-                        scrimColor.copy(alpha = 0.35f),
-                        scrimColor.copy(alpha = 0.75f),
-                        scrimColor.copy(alpha = 0.95f),
+                        scrimColor.copy(alpha = backdropScrim.topAlpha),
+                        scrimColor.copy(alpha = backdropScrim.upperMidAlpha),
+                        scrimColor.copy(alpha = backdropScrim.lowerMidAlpha),
+                        scrimColor.copy(alpha = backdropScrim.bottomAlpha),
                     ),
             )
         }

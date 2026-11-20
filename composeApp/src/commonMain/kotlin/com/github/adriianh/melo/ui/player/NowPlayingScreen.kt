@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.AddToPlaylistSheet
@@ -61,6 +62,7 @@ fun NowPlayingScreen(
     titleBar: @Composable () -> Unit = {},
     blurEnabled: Boolean = true,
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
+    backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel()
@@ -232,6 +234,7 @@ fun NowPlayingScreen(
             artworkUrl = effectiveState.albumArt,
             blurEnabled = blurEnabled,
             blurIntensity = blurIntensity,
+            backdropScrim = backdropScrim,
             accentColor = activeAccent,
         )
 
