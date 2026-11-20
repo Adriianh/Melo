@@ -175,7 +175,7 @@ enum class NowPlayingBackdropScrim(
     val lowerMidAlpha: Float,
     val bottomAlpha: Float,
 ) {
-    LIGHT("Ligero", 0.35f, 0.20f, 0.55f, 0.82f),
-    NORMAL("Normal", 0.45f, 0.30f, 0.68f, 0.90f),
-    DARK("Oscuro", 0.55f, 0.40f, 0.78f, 0.96f),
+    LIGHT("Ligero", 0.18f, 0.08f, 0.28f, 0.55f),
+    NORMAL("Normal", 0.42f, 0.26f, 0.60f, 0.86f),
+    DARK("Oscuro", 0.68f, 0.55f, 0.84f, 0.98f),
 }
