@@ -62,7 +62,7 @@ fun NowPlayingScreen(
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.stableUiState.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
     val platform = remember { getPlatform() }

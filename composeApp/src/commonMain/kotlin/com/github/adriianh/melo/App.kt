@@ -66,6 +66,8 @@ import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.ui.settings.hasAvailableUpdate
 import com.github.adriianh.melo.util.MeloMotion
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -90,7 +92,16 @@ fun App(
     val isOnline by networkMonitor.isOnline.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val accentPalette by playerViewModel.accentPalette.collectAsState()
-    val playbackState by playerViewModel.playbackState.collectAsState()
+    val hasTrack by remember(playerViewModel) {
+        playerViewModel.playbackState
+            .map { it.currentTrack != null }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playerViewModel.playbackState.value.currentTrack != null)
+    val isPlaying by remember(playerViewModel) {
+        playerViewModel.playbackState
+            .map { it.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsState(initial = playerViewModel.playbackState.value.isPlaying)
     val settings by getSettingsUseCase().collectAsState()
     val loginState by loginViewModel.uiState.collectAsState()
     val isOfflineMode = settings.offlineMode || !isOnline
@@ -109,7 +120,6 @@ fun App(
     val savedAccent: Color? = remember(settings.lastAccentColor) {
         settings.lastAccentColor?.let { Color(it.toULong()) }
     }
-    val hasTrack = playbackState.currentTrack != null
     val finalAccent = when {
         settings.dynamicColor && hasTrack -> accentPalette.dominant
         settings.dynamicColor && savedAccent != null -> savedAccent
@@ -177,7 +187,8 @@ fun App(
                 AmbientCanvas(
                     accentColor = finalAccent,
                     modifier = Modifier.fillMaxSize(),
-                    enabled = isAmbientCanvasEnabled
+                    enabled = isAmbientCanvasEnabled,
+                    animate = settings.ambientMotion && isPlaying,
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -515,6 +526,13 @@ fun App(
                                     coroutineScope.launch {
                                         updateSettingsUseCase { current ->
                                             current.copy(dynamicColor = enabled)
+                                        }
+                                    }
+                                },
+                                onAmbientMotionToggle = { enabled ->
+                                    coroutineScope.launch {
+                                        updateSettingsUseCase { current ->
+                                            current.copy(ambientMotion = enabled)
                                         }
                                     }
                                 },

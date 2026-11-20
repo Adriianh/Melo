@@ -87,7 +87,7 @@ internal fun DesktopPlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.stableUiState.collectAsState()
     val activeAccent by rememberAnimatedPlayerAccent(state)
 
     if (!state.hasTrack) return
@@ -342,20 +342,15 @@ internal fun DesktopPlayerBar(
             }
         }
 
-        HoverableProgressBar(
-            progressFraction = state.progressFraction,
+        IsolatedPlayerProgressBar(
+            viewModel = viewModel,
             accentColor = activeAccent,
-            elapsedLabel = state.elapsedLabel,
-            onSeek = { fraction ->
-                if (state.durationMs > 0) {
-                    viewModel.seekTo((fraction * state.durationMs).toLong())
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
             lineCenterY = 10.5.dp,
-            containerHeight = 21.dp
+            containerHeight = 21.dp,
         )
     }
 }
@@ -366,7 +361,7 @@ internal fun MobilePlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel()
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.stableUiState.collectAsState()
     val activeAccent by rememberAnimatedPlayerAccent(state)
 
     if (!state.hasTrack) return
@@ -429,24 +424,49 @@ internal fun MobilePlayerBar(
             }
         }
 
-        HoverableProgressBar(
-            progressFraction = state.progressFraction,
+        IsolatedPlayerProgressBar(
+            viewModel = viewModel,
             accentColor = activeAccent,
-            elapsedLabel = state.elapsedLabel,
-            onSeek = { fraction ->
-                if (state.durationMs > 0) {
-                    viewModel.seekTo((fraction * state.durationMs).toLong())
-                }
-            },
             cornerRadius = 12.dp,
             lineCenterY = 12.5.dp,
             containerHeight = 25.dp,
             showHoverControls = false,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
         )
     }
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun IsolatedPlayerProgressBar(
+    viewModel: PlayerViewModel,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 14.dp,
+    lineCenterY: Dp = 22.dp,
+    containerHeight: Dp = 44.dp,
+    showHoverControls: Boolean = true,
+) {
+    val progress by viewModel.progressState.collectAsState()
+
+    HoverableProgressBar(
+        progressFraction = progress.progressFraction,
+        accentColor = accentColor,
+        elapsedLabel = progress.elapsedLabel,
+        onSeek = { fraction ->
+            if (progress.durationMs > 0) {
+                viewModel.seekTo((fraction * progress.durationMs).toLong())
+            }
+        },
+        cornerRadius = cornerRadius,
+        lineCenterY = lineCenterY,
+        containerHeight = containerHeight,
+        showHoverControls = showHoverControls,
+        modifier = modifier,
+    )
 }
 
 @Composable

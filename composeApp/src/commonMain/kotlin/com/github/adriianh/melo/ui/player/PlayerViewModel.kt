@@ -20,7 +20,9 @@ import com.github.adriianh.core.util.LrcParser
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.melo.util.AccentColorExtractor
 import com.github.adriianh.melo.util.AccentPalette
+import com.github.adriianh.melo.util.PlayerProgressState
 import com.github.adriianh.melo.util.PlayerUiState
+import com.github.adriianh.melo.util.formatTime
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +83,81 @@ class PlayerViewModel(
     private val _showTranslation = MutableStateFlow(false)
     private val _isTranslating = MutableStateFlow(false)
     private val _targetLanguage = MutableStateFlow("es")
+
+    val progressState: StateFlow<PlayerProgressState> =
+        combine(manager.playbackState, manager.queueState) { playback, queue ->
+            val track = queue.currentTrack ?: playback.currentTrack
+            val durationMs =
+                if (playback.durationMs > 0) playback.durationMs else (track?.durationMs ?: 0L)
+            val fraction =
+                if (durationMs > 0) {
+                    (playback.progressMs.toFloat() / durationMs).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            PlayerProgressState(
+                progressFraction = fraction,
+                progressMs = playback.progressMs,
+                durationMs = durationMs,
+                elapsedLabel = formatTime(playback.progressMs),
+                remainingLabel = formatTime((durationMs - playback.progressMs).coerceAtLeast(0L)),
+            )
+        }.distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerProgressState())
+
+    private val stablePlaybackState =
+        manager.playbackState
+            .map { it.copy(progressMs = 0L) }
+            .distinctUntilChanged()
+
+    private val activeLyricIndexFlow =
+        combine(
+            manager.playbackState.map { it.progressMs }.distinctUntilChanged(),
+            _trackLyrics,
+        ) { progressMs, trackLyrics ->
+            if (trackLyrics != null && trackLyrics.hasSync) {
+                LrcParser.currentLineIndex(trackLyrics.syncedLyrics, progressMs)
+            } else {
+                -1
+            }
+        }.distinctUntilChanged()
+
+    val stableUiState: StateFlow<PlayerUiState> =
+        combine(
+            stablePlaybackState,
+            manager.queueState,
+            _accentPalette,
+            _isFavorite,
+            _trackLyrics,
+            activeLyricIndexFlow,
+            _isLyricsLoading,
+            _showTranslation,
+            _isTranslating,
+            _targetLanguage,
+        ) { args: Array<Any?> ->
+            val playback = args[0] as com.github.adriianh.core.domain.player.PlaybackState
+            val queue = args[1] as com.github.adriianh.core.domain.player.QueueState
+            val accent = args[2] as AccentPalette
+            val isFavorite = args[3] as Boolean
+            val trackLyrics = args[4] as TrackLyrics?
+            val activeIndex = args[5] as Int
+            val isLyricsLoading = args[6] as Boolean
+            val showTranslation = args[7] as Boolean
+            val isTranslating = args[8] as Boolean
+            val targetLanguage = args[9] as String
+
+            PlayerUiState.from(playback, queue, accent.dominant).copy(
+                isFavorite = isFavorite,
+                lyrics = trackLyrics?.plainLyrics,
+                trackLyrics = trackLyrics,
+                activeLyricIndex = activeIndex,
+                isLyricsLoading = isLyricsLoading,
+                showTranslation = showTranslation,
+                isTranslating = isTranslating,
+                targetLanguage = targetLanguage,
+            )
+        }.distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
 
     val uiState: StateFlow<PlayerUiState> = combine(
         manager.playbackState,

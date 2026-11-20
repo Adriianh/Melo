@@ -114,7 +114,8 @@ internal fun NowPlayingDesktopLayout(
                 state = state,
                 activeAccent = activeAccent,
                 onSeekTo = viewModel::seekTo,
-                modifier = Modifier.widthIn(max = 420.dp)
+                progressState = viewModel.progressState,
+                modifier = Modifier.widthIn(max = 420.dp),
             )
 
             Spacer(modifier = Modifier.height(10.dp))

@@ -72,7 +72,8 @@ internal fun NowPlayingMobileLayout(
                 PlayerSlider(
                     state = state,
                     activeAccent = activeAccent,
-                    onSeekTo = viewModel::seekTo
+                    onSeekTo = viewModel::seekTo,
+                    progressState = viewModel.progressState,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -151,9 +152,11 @@ internal fun NowPlayingMobileLayout(
                     state = state,
                     activeAccent = activeAccent,
                     onSeekTo = viewModel::seekTo,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                    progressState = viewModel.progressState,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))

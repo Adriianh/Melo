@@ -44,10 +44,10 @@ fun LibraryScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val playerViewModel: PlayerViewModel = koinViewModel()
-    val playerState by playerViewModel.uiState.collectAsState()
+    val accentPalette by playerViewModel.accentPalette.collectAsState()
 
     val interaction = rememberTrackInteraction(viewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(playerState)
+    val activeAccent = interaction.resolveActiveAccent(accentPalette.dominant)
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
     val isSelectionMode = selectedTrackIds.isNotEmpty()
