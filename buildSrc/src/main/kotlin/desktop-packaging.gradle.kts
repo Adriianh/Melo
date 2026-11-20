@@ -187,6 +187,49 @@ tasks.matching {
     dependsOn(prepareVlcWindows)
 }
 
+tasks.matching {
+    org.gradle.internal.os.OperatingSystem.current().isWindows && it.name == "createDistributable"
+}.configureEach {
+    val distVlcDir = layout.buildDirectory.dir("compose/binaries/main/app/Melo/app/resources/vlc")
+    val vlcZipFile = layout.buildDirectory.file("tmp/vlc-download/vlc-3.0.21-win64.zip")
+    doLast {
+        val targetVlcDir = distVlcDir.get().asFile
+        val distPluginsDir = File(targetVlcDir, "plugins")
+        val zipFile = vlcZipFile.get().asFile
+        if (!distPluginsDir.exists() || !zipFile.exists()) {
+            return@doLast
+        }
+        val cacheGenExe = File(targetVlcDir, "vlc-cache-gen.exe")
+        try {
+            ZipFile(zipFile).use { zip ->
+                val entry = zip.entries().asSequence().firstOrNull {
+                    it.name.substringAfter('/') == "vlc-cache-gen.exe"
+                }
+                if (entry != null) {
+                    zip.getInputStream(entry).use { input ->
+                        cacheGenExe.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                }
+            }
+            if (cacheGenExe.exists()) {
+                val exitCode =
+                    ProcessBuilder(cacheGenExe.absolutePath, distPluginsDir.absolutePath)
+                        .directory(targetVlcDir)
+                        .inheritIO()
+                        .start()
+                        .waitFor()
+                if (exitCode != 0) {
+                    logger.warn("Post-copy vlc-cache-gen exited with code $exitCode")
+                }
+            }
+        } finally {
+            cacheGenExe.delete()
+        }
+    }
+}
+
 val generateLinuxLauncher = tasks.register("generateLinuxLauncher") {
     description = "Generates a Linux launcher script for the application"
     dependsOn("createDistributable")
