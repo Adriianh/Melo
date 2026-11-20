@@ -169,8 +169,8 @@ class JvmMediaSessionManager(
             } catch (e: Throwable) {
                 // The identity (and its lock) stays owned by the process even if the OS
                 // media session fails to come up; it still scopes the playback session.
+                System.err.println("[Melo] Failed to initialize MediaSession (SMTC/MPRIS): ${e.message}")
                 if (System.getProperty("melo.debug") == "true" || System.getenv("MELO_DEBUG") == "1") {
-                    System.err.println("[Melo] Failed to initialize MediaSession (SMTC/MPRIS): ${e.message}")
                     e.printStackTrace()
                 }
             }
