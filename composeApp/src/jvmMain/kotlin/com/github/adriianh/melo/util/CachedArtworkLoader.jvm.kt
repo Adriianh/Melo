@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.ColorFilter
+import org.jetbrains.skia.ColorMatrix
 import org.jetbrains.skia.FilterTileMode
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.ImageFilter
@@ -20,7 +22,35 @@ import org.jetbrains.skia.Paint
 import org.jetbrains.skia.Rect
 import kotlin.math.min
 
-private const val BACKDROP_CROP_ZOOM = 1.25f
+private const val BACKDROP_CROP_ZOOM = 1.08f
+private const val BACKDROP_SATURATION_BOOST = 1.22f
+private const val LUMA_R = 0.2126f
+private const val LUMA_G = 0.7152f
+private const val LUMA_B = 0.0722f
+
+private val backdropSaturationMatrix =
+    ColorMatrix(
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_R + BACKDROP_SATURATION_BOOST,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_G,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_B,
+        0f,
+        0f,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_R,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_G + BACKDROP_SATURATION_BOOST,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_B,
+        0f,
+        0f,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_R,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_G,
+        (1f - BACKDROP_SATURATION_BOOST) * LUMA_B + BACKDROP_SATURATION_BOOST,
+        0f,
+        0f,
+        0f,
+        0f,
+        0f,
+        1f,
+        0f,
+    )
 
 internal actual suspend fun loadCachedArtworkBitmap(
     url: String,
@@ -88,16 +118,25 @@ private fun renderBlurredSkiaBitmap(
     }
 
     val outBitmap = Bitmap().apply { allocN32Pixels(targetSizePx, targetSizePx, true) }
-    ImageFilter.makeBlur(blurSigmaPx, blurSigmaPx, FilterTileMode.CLAMP).use { blurFilter ->
-        Paint().apply { imageFilter = blurFilter }.use { blurPaint ->
-            Image.makeFromBitmap(croppedBitmap).use { croppedImage ->
-                Canvas(outBitmap).use { outCanvas ->
-                    outCanvas.drawImage(croppedImage, 0f, 0f, blurPaint)
-                }
-            }
+    val saturationFilter = ColorFilter.makeMatrix(backdropSaturationMatrix)
+    val blurFilter = ImageFilter.makeBlur(blurSigmaPx, blurSigmaPx, FilterTileMode.CLAMP)
+    val blurPaint =
+        Paint().apply {
+            colorFilter = saturationFilter
+            imageFilter = blurFilter
         }
+    val croppedImage = Image.makeFromBitmap(croppedBitmap)
+    val outCanvas = Canvas(outBitmap)
+    try {
+        outCanvas.drawImage(croppedImage, 0f, 0f, blurPaint)
+    } finally {
+        outCanvas.close()
+        croppedImage.close()
+        blurPaint.close()
+        blurFilter.close()
+        saturationFilter.close()
+        croppedBitmap.close()
     }
-    croppedBitmap.close()
     outBitmap.setImmutable()
     return outBitmap.asComposeImageBitmap()
 }

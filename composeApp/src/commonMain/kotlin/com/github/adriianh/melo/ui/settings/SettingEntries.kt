@@ -30,6 +30,8 @@ import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
+import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
+import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -230,7 +232,7 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
     settings: Settings,
     actions: SettingsActions,
 ) {
-    val section = "Apariencia y tema"
+    val section = "Tema y color"
     add(
         SettingEntry(
             id = "appearance_theme_mode",
@@ -335,6 +337,97 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
         },
     )
 
+    val nowPlayingSection = "Pantalla Reproduciendo"
+    val effectiveBlurIntensity =
+        if (!settings.nowPlayingBlur || settings.nowPlayingBlurIntensity == NowPlayingBlurIntensity.OFF) {
+            NowPlayingBlurIntensity.OFF
+        } else {
+            settings.nowPlayingBlurIntensity
+        }
+    val isNowPlayingBlurEnabled = effectiveBlurIntensity != NowPlayingBlurIntensity.OFF
+
+    add(
+        SettingEntry(
+            id = "appearance_now_playing_blur_intensity",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = "Desenfoque de carátula",
+            description = "Muestra la carátula difuminada de fondo o la desactiva por un degradado de acento.",
+            keywords =
+                listOf(
+                    "blur",
+                    "desenfoque",
+                    "fondo",
+                    "intensidad",
+                    "intensity",
+                    "suave",
+                    "medio",
+                    "intenso",
+                    "carátula",
+                    "reproduciendo",
+                    "now playing",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                ),
+        ) {
+            SettingInlineChoiceRow(
+                title = "Desenfoque de carátula",
+                subtitle = "Muestra la carátula difuminada de fondo o la desactiva por un degradado de acento.",
+            ) { isInline ->
+                SegmentedControl(
+                    options = NowPlayingBlurIntensity.entries,
+                    selected = effectiveBlurIntensity,
+                    onSelect = actions.onNowPlayingBlurIntensitySelected,
+                    label = { it.displayName },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+    add(
+        SettingEntry(
+            id = "appearance_now_playing_backdrop_scrim",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = "Oscurecimiento del fondo",
+            description = "Ajusta el contraste del velo sobre la carátula difuminada.",
+            keywords =
+                listOf(
+                    "scrim",
+                    "oscurecimiento",
+                    "contraste",
+                    "brillo",
+                    "ligero",
+                    "normal",
+                    "oscuro",
+                    "fondo",
+                    "reproduciendo",
+                    "now playing",
+                    "carátula",
+                ),
+        ) {
+            SettingInlineChoiceRow(
+                title = "Oscurecimiento del fondo",
+                subtitle = "Ajusta el contraste del velo sobre la carátula difuminada.",
+                enabled = isNowPlayingBlurEnabled,
+                disabledNote = "Requiere activar Desenfoque de carátula",
+            ) { isInline ->
+                SegmentedControl(
+                    options = NowPlayingBackdropScrim.entries,
+                    selected = settings.nowPlayingBackdropScrim,
+                    onSelect = { scrim ->
+                        if (isNowPlayingBlurEnabled) {
+                            actions.onNowPlayingBackdropScrimSelected(scrim)
+                        }
+                    },
+                    label = { it.displayName },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+
     val effectsSection = "Efectos y rendimiento"
     add(
         SettingEntry(
@@ -362,35 +455,6 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
                 subtitle = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
                 checked = settings.ambientMotion,
                 onCheckedChange = actions.onAmbientMotionToggle,
-            )
-        },
-    )
-    add(
-        SettingEntry(
-            id = "appearance_now_playing_blur",
-            category = SettingsCategory.APPEARANCE,
-            section = effectsSection,
-            title = "Desenfoque en Reproduciendo",
-            description = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
-            keywords =
-                listOf(
-                    "blur",
-                    "desenfoque",
-                    "fondo",
-                    "reproduciendo",
-                    "now playing",
-                    "carátula",
-                    "gpu",
-                    "rendimiento",
-                    "performance",
-                    "efectos",
-                ),
-        ) {
-            SettingToggleRow(
-                title = "Desenfoque en Reproduciendo",
-                subtitle = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
-                checked = settings.nowPlayingBlur,
-                onCheckedChange = actions.onNowPlayingBlurToggle,
             )
         },
     )

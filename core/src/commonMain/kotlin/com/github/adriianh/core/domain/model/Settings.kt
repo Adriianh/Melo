@@ -136,6 +136,8 @@ data class Settings(
     val dynamicColor: Boolean = true,
     val ambientMotion: Boolean = false,
     val nowPlayingBlur: Boolean = true,
+    val nowPlayingBlurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
+    val nowPlayingBackdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     val reduceTransparency: Boolean = false,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
@@ -153,3 +155,27 @@ data class Settings(
         },
     val lastAccentColor: Long? = null,
 )
+
+@Serializable
+enum class NowPlayingBlurIntensity(
+    val displayName: String,
+    val sigmaPx: Float,
+) {
+    OFF("Desactivado", 0f),
+    SOFT("Suave", 4.5f),
+    MEDIUM("Medio", 7.2f),
+    INTENSE("Intenso", 13.5f),
+}
+
+@Serializable
+enum class NowPlayingBackdropScrim(
+    val displayName: String,
+    val topAlpha: Float,
+    val upperMidAlpha: Float,
+    val lowerMidAlpha: Float,
+    val bottomAlpha: Float,
+) {
+    LIGHT("Ligero", 0.18f, 0.08f, 0.28f, 0.55f),
+    NORMAL("Normal", 0.42f, 0.26f, 0.60f, 0.86f),
+    DARK("Oscuro", 0.68f, 0.55f, 0.84f, 0.98f),
+}
