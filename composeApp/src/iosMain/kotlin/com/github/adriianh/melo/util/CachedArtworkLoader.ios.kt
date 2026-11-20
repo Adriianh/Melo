@@ -6,3 +6,9 @@ internal actual suspend fun loadCachedArtworkBitmap(
     url: String,
     targetSizePx: Int,
 ): ImageBitmap? = null
+
+internal actual suspend fun loadBlurredArtworkBitmap(
+    url: String,
+    targetSizePx: Int,
+    blurSigmaPx: Float,
+): ImageBitmap? = null
