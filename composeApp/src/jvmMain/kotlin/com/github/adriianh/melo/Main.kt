@@ -20,6 +20,7 @@ import com.github.adriianh.melo.ui.LocalInstanceLabel
 import com.github.adriianh.melo.ui.titlebar.DesktopWindowManager
 import com.github.adriianh.melo.ui.titlebar.MeloTitleBar
 import com.github.adriianh.melo.ui.titlebar.WindowResizer
+import com.github.adriianh.melo.util.LocalWindowActive
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -135,7 +136,10 @@ fun main() {
                 }
             }
 
-            CompositionLocalProvider(LocalInstanceLabel provides instanceKey) {
+            CompositionLocalProvider(
+                LocalInstanceLabel provides instanceKey,
+                LocalWindowActive provides !windowManager.isMinimized,
+            ) {
                 App(
                     titleBar = {
                         MeloTitleBar(

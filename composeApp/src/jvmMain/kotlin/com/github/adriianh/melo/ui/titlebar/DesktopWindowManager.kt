@@ -24,6 +24,9 @@ class DesktopWindowManager(
     var isMaximized by mutableStateOf(false)
         private set
 
+    var isMinimized by mutableStateOf(false)
+        private set
+
     private var savedBounds: Rectangle? = null
     private val win32Hook =
         WindowsWindowProcHook(
@@ -35,7 +38,9 @@ class DesktopWindowManager(
     private val windowStateListener =
         WindowStateListener { event: WindowEvent ->
             val newState = event.newState
-            if ((newState and Frame.ICONIFIED) == 0) {
+            val iconified = (newState and Frame.ICONIFIED) != 0
+            isMinimized = iconified
+            if (!iconified) {
                 isMaximized = (newState and Frame.MAXIMIZED_BOTH) != 0
             }
         }
