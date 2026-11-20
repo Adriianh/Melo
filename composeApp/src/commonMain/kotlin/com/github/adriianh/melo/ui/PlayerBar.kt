@@ -464,8 +464,12 @@ private fun IsolatedPlayerProgressBar(
         accentColor = accentColor,
         elapsedLabel = progress.elapsedLabel,
         onSeek = { fraction ->
-            if (progress.durationMs > 0) {
-                viewModel.seekTo((fraction * progress.durationMs).toLong())
+            val liveDurationMs =
+                viewModel.progressState.value.durationMs
+                    .takeIf { it > 0L }
+                    ?: viewModel.stableUiState.value.durationMs
+            if (liveDurationMs > 0L) {
+                viewModel.seekTo((fraction * liveDurationMs).toLong())
             }
         },
         cornerRadius = cornerRadius,
