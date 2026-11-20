@@ -11,6 +11,7 @@ import java.awt.Rectangle
 import java.awt.Toolkit
 import java.awt.Window
 import java.awt.event.WindowEvent
+import java.awt.event.WindowFocusListener
 import java.awt.event.WindowStateListener
 
 /**
@@ -25,6 +26,9 @@ class DesktopWindowManager(
         private set
 
     var isMinimized by mutableStateOf(false)
+        private set
+
+    var isFocused by mutableStateOf(true)
         private set
 
     private var savedBounds: Rectangle? = null
@@ -47,11 +51,23 @@ class DesktopWindowManager(
                 isMaximized = (newState and Frame.MAXIMIZED_BOTH) != 0
             }
         }
+    private val windowFocusListener =
+        object : WindowFocusListener {
+            override fun windowGainedFocus(e: WindowEvent?) {
+                isFocused = true
+            }
+
+            override fun windowLostFocus(e: WindowEvent?) {
+                isFocused = false
+            }
+        }
     private var listenersAttached = false
 
     fun attach() {
         if (!listenersAttached) {
+            isFocused = window.isFocused
             window.addWindowStateListener(windowStateListener)
+            window.addWindowFocusListener(windowFocusListener)
             listenersAttached = true
         }
         win32Hook.attach()
@@ -61,6 +77,7 @@ class DesktopWindowManager(
         win32Hook.detach()
         if (listenersAttached) {
             window.removeWindowStateListener(windowStateListener)
+            window.removeWindowFocusListener(windowFocusListener)
             listenersAttached = false
         }
     }

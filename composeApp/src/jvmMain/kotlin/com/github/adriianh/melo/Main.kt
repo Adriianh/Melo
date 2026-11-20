@@ -149,7 +149,7 @@ fun main() {
 
             CompositionLocalProvider(
                 LocalInstanceLabel provides instanceKey,
-                LocalWindowActive provides !windowManager.isMinimized,
+                LocalWindowActive provides (!windowManager.isMinimized && windowManager.isFocused),
             ) {
                 App(
                     titleBar = {
