@@ -33,7 +33,18 @@ import java.awt.Toolkit
 import java.util.concurrent.atomic.AtomicReference
 import java.awt.Window as AwtWindow
 
+private fun configureDesktopRenderApi() {
+    val isWindows = System.getProperty("os.name")?.contains("win", ignoreCase = true) == true
+    if (isWindows &&
+        System.getProperty("skiko.renderApi").isNullOrBlank() &&
+        System.getenv("SKIKO_RENDER_API").isNullOrBlank()
+    ) {
+        System.setProperty("skiko.renderApi", "OPENGL")
+    }
+}
+
 fun main() {
+    configureDesktopRenderApi()
     val koinApp = initKoin()
     val instanceIdentity = koinApp.koin.getOrNull<InstanceIdentity>()
     val instanceKey = instanceIdentity?.instanceKey

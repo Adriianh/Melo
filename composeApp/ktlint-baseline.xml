@@ -558,7 +558,7 @@
         <error line="36" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/AnimatedEqualizerBars.kt">
-        <error line="25" column="5" source="standard:function-naming" />
+        <error line="29" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/ArtistCircle.kt">
         <error line="24" column="5" source="standard:function-naming" />
@@ -1865,13 +1865,7 @@
         <error line="438" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/DancingMelodyIndicator.kt">
-        <error line="30" column="5" source="standard:function-naming" />
-        <error line="149" column="63" source="standard:trailing-comma-on-call-site" />
-        <error line="155" column="48" source="standard:trailing-comma-on-call-site" />
-        <error line="159" column="25" source="standard:multiline-expression-wrapping" />
-        <error line="162" column="41" source="standard:trailing-comma-on-call-site" />
-        <error line="164" column="29" source="standard:trailing-comma-on-call-site" />
-        <error line="168" column="1" source="standard:final-newline" />
+        <error line="36" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/DockedArtistContent.kt">
         <error line="47" column="14" source="standard:function-naming" />
