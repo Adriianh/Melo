@@ -135,6 +135,7 @@ data class Settings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val ambientMotion: Boolean = false,
+    val nowPlayingBlur: Boolean = true,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
     val stopPlaybackOnTaskRemoval: Boolean = false,

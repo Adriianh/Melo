@@ -13,6 +13,7 @@ data class SettingsActions(
     val onThemePresetSelected: (ThemePreset) -> Unit,
     val onDynamicColorToggle: (Boolean) -> Unit,
     val onAmbientMotionToggle: (Boolean) -> Unit = {},
+    val onNowPlayingBlurToggle: (Boolean) -> Unit = {},
     val onDataSaverToggle: (Boolean) -> Unit,
     val onAudioQualitySelected: (AudioQuality) -> Unit,
     val onDownloadFormatSelected: (DownloadFormat) -> Unit = {},

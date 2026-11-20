@@ -296,35 +296,6 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
     )
     add(
         SettingEntry(
-            id = "appearance_ambient_motion",
-            category = SettingsCategory.APPEARANCE,
-            section = section,
-            title = "Fondo ambiental animado",
-            description = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
-            keywords =
-                listOf(
-                    "fondo",
-                    "ambient",
-                    "animación",
-                    "animation",
-                    "movimiento",
-                    "motion",
-                    "gpu",
-                    "rendimiento",
-                    "performance",
-                    "canvas",
-                ),
-        ) {
-            SettingToggleRow(
-                title = "Fondo ambiental animado",
-                subtitle = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
-                checked = settings.ambientMotion,
-                onCheckedChange = actions.onAmbientMotionToggle,
-            )
-        },
-    )
-    add(
-        SettingEntry(
             id = "appearance_theme_preset",
             category = SettingsCategory.APPEARANCE,
             section = section,
@@ -361,6 +332,66 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
                     enabled = paletteEnabled,
                 )
             }
+        },
+    )
+
+    val effectsSection = "Efectos y rendimiento"
+    add(
+        SettingEntry(
+            id = "appearance_ambient_motion",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Fondo ambiental animado",
+            description = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+            keywords =
+                listOf(
+                    "fondo",
+                    "ambient",
+                    "animación",
+                    "animation",
+                    "movimiento",
+                    "motion",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                    "canvas",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Fondo ambiental animado",
+                subtitle = "Mueve suavemente el fondo durante la reproducción (usa más GPU).",
+                checked = settings.ambientMotion,
+                onCheckedChange = actions.onAmbientMotionToggle,
+            )
+        },
+    )
+    add(
+        SettingEntry(
+            id = "appearance_now_playing_blur",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = "Desenfoque en Reproduciendo",
+            description = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
+            keywords =
+                listOf(
+                    "blur",
+                    "desenfoque",
+                    "fondo",
+                    "reproduciendo",
+                    "now playing",
+                    "carátula",
+                    "gpu",
+                    "rendimiento",
+                    "performance",
+                    "efectos",
+                ),
+        ) {
+            SettingToggleRow(
+                title = "Desenfoque en Reproduciendo",
+                subtitle = "Muestra la carátula difuminada de fondo en pantalla completa (usa más GPU).",
+                checked = settings.nowPlayingBlur,
+                onCheckedChange = actions.onNowPlayingBlurToggle,
+            )
         },
     )
 }
