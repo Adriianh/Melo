@@ -45,8 +45,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.TrackLyrics
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_change_language
+import com.github.adriianh.melo.resources.a11y_close_lyrics
+import com.github.adriianh.melo.resources.a11y_translate
+import com.github.adriianh.melo.resources.player_lyrics_loading
+import com.github.adriianh.melo.resources.player_lyrics_tap_to_return
+import com.github.adriianh.melo.resources.player_lyrics_title
+import com.github.adriianh.melo.resources.player_lyrics_unavailable
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun NowPlayingLyricsCard(
@@ -61,7 +70,7 @@ fun NowPlayingLyricsCard(
     onToggleTranslation: () -> Unit,
     onSelectLanguage: (String) -> Unit,
     onToggleArtwork: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cardShape = RoundedCornerShape(24.dp)
     val glassFillBrush =
@@ -77,20 +86,23 @@ fun NowPlayingLyricsCard(
                     ),
             )
         }
-    val glassBorderBrush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.42f),
-            activeAccent.copy(alpha = 0.50f),
-            MeloColors.glassBorder.copy(alpha = 0.40f),
-            Color.White.copy(alpha = 0.12f)
+    val glassBorderBrush =
+        Brush.linearGradient(
+            colors =
+                listOf(
+                    Color.White.copy(alpha = 0.42f),
+                    activeAccent.copy(alpha = 0.50f),
+                    MeloColors.glassBorder.copy(alpha = 0.40f),
+                    Color.White.copy(alpha = 0.12f),
+                ),
         )
-    )
 
     Box(
-        modifier = modifier
-            .clip(cardShape)
-            .background(glassFillBrush)
-            .border(width = 1.2.dp, brush = glassBorderBrush, shape = cardShape)
+        modifier =
+            modifier
+                .clip(cardShape)
+                .background(glassFillBrush)
+                .border(width = 1.2.dp, brush = glassBorderBrush, shape = cardShape),
     ) {
         LyricsEnvironmentVignette(activeAccent)
 
@@ -103,7 +115,7 @@ fun NowPlayingLyricsCard(
                 activeAccent = activeAccent,
                 onToggleTranslation = onToggleTranslation,
                 onSelectLanguage = onSelectLanguage,
-                onToggleArtwork = onToggleArtwork
+                onToggleArtwork = onToggleArtwork,
             )
 
             LyricsBody(
@@ -114,9 +126,10 @@ fun NowPlayingLyricsCard(
                 activeAccent = activeAccent,
                 onSeekTo = onSeekTo,
                 onToggleArtwork = onToggleArtwork,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
             )
         }
     }
@@ -125,17 +138,19 @@ fun NowPlayingLyricsCard(
 @Composable
 private fun LyricsEnvironmentVignette(activeAccent: Color) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        activeAccent.copy(alpha = 0.14f),
-                        Color.Transparent
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors =
+                            listOf(
+                                activeAccent.copy(alpha = 0.14f),
+                                Color.Transparent,
+                            ),
+                        radius = 800f,
                     ),
-                    radius = 800f
-                )
-            )
+                ),
     )
 }
 
@@ -157,19 +172,21 @@ private fun LyricsBody(
             trackLyrics == null || (!trackLyrics.hasSync && trackLyrics.plainLyrics.isNullOrBlank()) ->
                 LyricsUnavailable(trackLyrics, onToggleArtwork)
 
-            trackLyrics.hasSync -> SyncedLyricsList(
-                lines = trackLyrics.syncedLyrics,
-                activeIndex = activeLyricIndex,
-                showTranslation = showTranslation,
-                activeAccent = activeAccent,
-                onSeekTo = onSeekTo,
-                modifier = Modifier.fillMaxSize()
-            )
+            trackLyrics.hasSync ->
+                SyncedLyricsList(
+                    lines = trackLyrics.syncedLyrics,
+                    activeIndex = activeLyricIndex,
+                    showTranslation = showTranslation,
+                    activeAccent = activeAccent,
+                    onSeekTo = onSeekTo,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-            else -> PlainLyricsView(
-                text = trackLyrics.plainLyrics ?: "",
-                modifier = Modifier.fillMaxSize()
-            )
+            else ->
+                PlainLyricsView(
+                    text = trackLyrics.plainLyrics ?: "",
+                    modifier = Modifier.fillMaxSize(),
+                )
         }
 
         LibraryShaderOverlay()
@@ -180,19 +197,19 @@ private fun LyricsBody(
 private fun LyricsLoading(activeAccent: Color) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(
                 color = activeAccent,
                 strokeWidth = 2.5.dp,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Buscando letras...",
+                text = stringResource(Res.string.player_lyrics_loading),
                 style = MeloType.body,
-                color = MeloColors.textMuted
+                color = MeloColors.textMuted,
             )
         }
     }
@@ -204,35 +221,38 @@ private fun LyricsUnavailable(
     onToggleArtwork: (() -> Unit)?,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Mic,
                 contentDescription = null,
                 tint = MeloColors.textMuted,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = trackLyrics?.error ?: "Letra no disponible para esta canción",
+                text =
+                    trackLyrics?.error?.takeIf { it.isNotBlank() }
+                        ?: stringResource(Res.string.player_lyrics_unavailable),
                 style = MeloType.body,
                 color = MeloColors.textMuted,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
             if (onToggleArtwork != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Toca para volver a la portada",
+                    text = stringResource(Res.string.player_lyrics_tap_to_return),
                     style = MeloType.labelSmall.copy(fontSize = 11.sp),
                     color = MeloColors.textMuted.copy(alpha = 0.7f),
-                    modifier = Modifier.clickable { onToggleArtwork() }
+                    modifier = Modifier.clickable { onToggleArtwork() },
                 )
             }
         }
@@ -242,32 +262,36 @@ private fun LyricsUnavailable(
 @Composable
 private fun BoxScope.LibraryShaderOverlay() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(24.dp)
-            .align(Alignment.TopCenter)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MeloColors.glassSurface.copy(alpha = 0.85f),
-                        Color.Transparent
-                    )
-                )
-            )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .align(Alignment.TopCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                MeloColors.glassSurface.copy(alpha = 0.85f),
+                                Color.Transparent,
+                            ),
+                    ),
+                ),
     )
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(32.dp)
-            .align(Alignment.BottomCenter)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        MeloColors.glassSurface.copy(alpha = 0.92f)
-                    )
-                )
-            )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(32.dp)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                Color.Transparent,
+                                MeloColors.glassSurface.copy(alpha = 0.92f),
+                            ),
+                    ),
+                ),
     )
 }
 
@@ -280,29 +304,30 @@ private fun LyricsHeaderBar(
     activeAccent: Color,
     onToggleTranslation: () -> Unit,
     onSelectLanguage: (String) -> Unit,
-    onToggleArtwork: (() -> Unit)? = null
+    onToggleArtwork: (() -> Unit)? = null,
 ) {
     var showLanguageMenu by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Mic,
                 contentDescription = null,
                 tint = activeAccent,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Letras",
+                text = stringResource(Res.string.player_lyrics_title),
                 style = MeloType.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
         }
 
@@ -316,7 +341,7 @@ private fun LyricsHeaderBar(
                 activeAccent = activeAccent,
                 onToggleTranslation = onToggleTranslation,
                 onSelectLanguage = onSelectLanguage,
-                onToggleArtwork = onToggleArtwork
+                onToggleArtwork = onToggleArtwork,
             )
         }
     }
@@ -336,7 +361,7 @@ private fun LyricsHeaderActions(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         TranslationButton(
             showLanguageMenu = showLanguageMenu,
@@ -346,31 +371,31 @@ private fun LyricsHeaderActions(
             targetLanguage = targetLanguage,
             activeAccent = activeAccent,
             onToggleTranslation = onToggleTranslation,
-            onSelectLanguage = onSelectLanguage
+            onSelectLanguage = onSelectLanguage,
         )
 
         IconButton(
             onClick = { onShowLanguageMenuChange(true) },
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(28.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Language,
-                contentDescription = "Cambiar idioma",
+                contentDescription = stringResource(Res.string.a11y_change_language),
                 tint = MeloColors.textMuted,
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(15.dp),
             )
         }
 
         if (onToggleArtwork != null) {
             IconButton(
                 onClick = onToggleArtwork,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Cerrar letras",
+                    contentDescription = stringResource(Res.string.a11y_close_lyrics),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -391,48 +416,45 @@ private fun TranslationButton(
     Box {
         val buttonBg by animateColorAsState(
             targetValue = if (showTranslation) activeAccent.copy(alpha = 0.22f) else MeloColors.chromePillFill,
-            label = "TranslationBgAnim"
+            label = "TranslationBgAnim",
         )
         val iconTint by animateColorAsState(
             targetValue = if (showTranslation) activeAccent else MeloColors.textMuted,
-            label = "TranslationTintAnim"
+            label = "TranslationTintAnim",
         )
 
         Row(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(buttonBg)
-                .border(
-                    width = 1.dp,
-                    color = if (showTranslation) activeAccent.copy(alpha = 0.4f) else MeloColors.chromePillBorder,
-                    shape = CircleShape
-                )
-                .clickable { onToggleTranslation() }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .clip(CircleShape)
+                    .background(buttonBg)
+                    .border(
+                        width = 1.dp,
+                        color = if (showTranslation) activeAccent.copy(alpha = 0.4f) else MeloColors.chromePillBorder,
+                        shape = CircleShape,
+                    ).clickable { onToggleTranslation() }
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (isTranslating) {
                 CircularProgressIndicator(
                     strokeWidth = 1.5.dp,
                     color = activeAccent,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(14.dp),
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.Translate,
-                    contentDescription = "Traducir",
+                    contentDescription = stringResource(Res.string.a11y_translate),
                     tint = iconTint,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier.size(14.dp),
                 )
             }
             Spacer(modifier = Modifier.width(5.dp))
             Text(
                 text = targetLanguage.uppercase(),
-                style = MeloType.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = iconTint
+                style = MeloType.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                color = iconTint,
             )
         }
 
@@ -445,7 +467,7 @@ private fun TranslationButton(
                 onSelectLanguage(code)
                 onShowLanguageMenuChange(false)
             },
-            modifier = Modifier.background(MeloColors.surface1)
+            modifier = Modifier.background(MeloColors.surface1),
         )
     }
 }
@@ -457,32 +479,33 @@ private fun LanguageMenu(
     targetLanguage: String,
     activeAccent: Color,
     onSelectLanguage: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        modifier = modifier
+        modifier = modifier,
     ) {
-        val languages = listOf(
-            "es" to "Español",
-            "en" to "English",
-            "pt" to "Português",
-            "fr" to "Français",
-            "de" to "Deutsch",
-            "it" to "Italiano",
-            "ja" to "日本語"
-        )
+        val languages =
+            listOf(
+                "es" to "Español",
+                "en" to "English",
+                "pt" to "Português",
+                "fr" to "Français",
+                "de" to "Deutsch",
+                "it" to "Italiano",
+                "ja" to "日本語",
+            )
         languages.forEach { (code, label) ->
             DropdownMenuItem(
                 text = {
                     Text(
                         text = "$label (${code.uppercase()})",
                         style = MeloType.body,
-                        color = if (targetLanguage == code) activeAccent else MeloColors.textPrimary
+                        color = if (targetLanguage == code) activeAccent else MeloColors.textPrimary,
                     )
                 },
-                onClick = { onSelectLanguage(code) }
+                onClick = { onSelectLanguage(code) },
             )
         }
     }

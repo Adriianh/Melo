@@ -33,10 +33,18 @@ import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_undo
+import com.github.adriianh.melo.resources.track_snackbar_added_to_likes
+import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_play_next
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
 import com.github.adriianh.melo.ui.components.AddToPlaylistSheet
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.TrackContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.components.ExpandedSectionSheet
 import com.github.adriianh.melo.ui.player.components.NowPlayingDesktopLayout
@@ -49,7 +57,7 @@ import org.koin.compose.viewmodel.koinViewModel
 enum class PanelSection {
     QUEUE,
     LYRICS,
-    ARTIST
+    ARTIST,
 }
 
 @Composable
@@ -65,7 +73,7 @@ fun NowPlayingScreen(
     backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
-    libraryViewModel: LibraryViewModel = koinViewModel()
+    libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.stableUiState.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
@@ -89,26 +97,27 @@ fun NowPlayingScreen(
     val sheetSnackbarState = remember { MeloSnackbarState() }
     var contextMenuInQueue by remember { mutableStateOf(false) }
 
-    val isTrackLiked: (Track) -> Boolean = remember(libraryState.likedSongs) {
-        { track ->
-            val rawId = track.sourceId ?: track.id.removePrefix("piped:")
-            libraryState.likedSongs.any {
-                it.id == track.id ||
+    val isTrackLiked: (Track) -> Boolean =
+        remember(libraryState.likedSongs) {
+            { track ->
+                val rawId = track.sourceId ?: track.id.removePrefix("piped:")
+                libraryState.likedSongs.any {
+                    it.id == track.id ||
                         (!it.sourceId.isNullOrBlank() && it.sourceId == track.sourceId) ||
                         (rawId.isNotBlank() && (it.id.removePrefix("piped:") == rawId || it.sourceId == rawId))
+                }
             }
         }
-    }
 
     val currentTrackIsLiked =
         remember(state.currentTrack, state.isFavorite, libraryState.likedSongs) {
             val track = state.currentTrack
-            if (track == null) false
-            else state.isFavorite || isTrackLiked(track)
+            track != null && (state.isFavorite || isTrackLiked(track))
         }
-    val effectiveState = remember(state, currentTrackIsLiked) {
-        state.copy(isFavorite = currentTrackIsLiked)
-    }
+    val effectiveState =
+        remember(state, currentTrackIsLiked) {
+            state.copy(isFavorite = currentTrackIsLiked)
+        }
 
     if (interaction.contextMenuTrack != null) {
         val track = interaction.contextMenuTrack!!
@@ -127,22 +136,22 @@ fun NowPlayingScreen(
                 val insertIndex = queueViewModel.queueState.value.currentIndex + 1
                 queueViewModel.insertTrackNext(track)
                 targetSnackbar.show(
-                    msg = "Se reproducirá a continuación",
+                    msg = UiText.Resource(Res.string.track_snackbar_play_next),
                     vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                    action = "Deshacer",
+                    action = UiText.Resource(Res.string.common_action_undo),
                     actionColor = activeAccent,
-                    onAction = { queueViewModel.removeTrackAt(insertIndex) }
+                    onAction = { queueViewModel.removeTrackAt(insertIndex) },
                 )
                 interaction.contextMenuTrack = null
             },
             onAddToQueue = {
                 queueViewModel.addToQueue(track)
                 targetSnackbar.show(
-                    msg = "Añadida a la cola",
+                    msg = UiText.Resource(Res.string.track_snackbar_added_to_queue),
                     vector = Icons.AutoMirrored.Filled.QueueMusic,
-                    action = "Deshacer",
+                    action = UiText.Resource(Res.string.common_action_undo),
                     actionColor = activeAccent,
-                    onAction = { queueViewModel.removeTrackFromQueue(track) }
+                    onAction = { queueViewModel.removeTrackFromQueue(track) },
                 )
                 interaction.contextMenuTrack = null
             },
@@ -150,11 +159,11 @@ fun NowPlayingScreen(
                 val removedIndex = queueViewModel.removeTrackFromQueue(track)
                 if (removedIndex != -1) {
                     targetSnackbar.show(
-                        msg = "Eliminada de la cola",
+                        msg = UiText.Resource(Res.string.track_snackbar_removed_from_queue),
                         vector = Icons.Default.Delete,
-                        action = "Deshacer",
+                        action = UiText.Resource(Res.string.common_action_undo),
                         actionColor = activeAccent,
-                        onAction = { queueViewModel.insertTrackAt(track, removedIndex) }
+                        onAction = { queueViewModel.insertTrackAt(track, removedIndex) },
                     )
                 }
                 interaction.contextMenuTrack = null
@@ -163,11 +172,18 @@ fun NowPlayingScreen(
             onToggleLike = {
                 libraryViewModel.toggleLike(track.id, !isLiked)
                 targetSnackbar.show(
-                    msg = if (isLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
+                    msg =
+                        UiText.Resource(
+                            if (isLiked) {
+                                Res.string.track_snackbar_removed_from_likes
+                            } else {
+                                Res.string.track_snackbar_added_to_likes
+                            },
+                        ),
                     vector = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                    action = "Deshacer",
+                    action = UiText.Resource(Res.string.common_action_undo),
                     actionColor = activeAccent,
-                    onAction = { libraryViewModel.toggleLike(track.id, isLiked) }
+                    onAction = { libraryViewModel.toggleLike(track.id, isLiked) },
                 )
                 interaction.contextMenuTrack = null
             },
@@ -194,7 +210,7 @@ fun NowPlayingScreen(
             },
             isDownloaded = isDownloaded,
             isDownloading = isDownloading,
-            downloadProgress = downloadProgress
+            downloadProgress = downloadProgress,
         )
     }
 
@@ -206,11 +222,11 @@ fun NowPlayingScreen(
         val removedTrack = queueViewModel.removeTrackAt(trackIndex)
         if (removedTrack != null) {
             interaction.snackbar.show(
-                msg = "Eliminada de la cola",
+                msg = UiText.Resource(Res.string.track_snackbar_removed_from_queue),
                 vector = Icons.Default.Delete,
-                action = "Deshacer",
+                action = UiText.Resource(Res.string.common_action_undo),
                 actionColor = activeAccent,
-                onAction = { queueViewModel.insertTrackAt(removedTrack, trackIndex) }
+                onAction = { queueViewModel.insertTrackAt(removedTrack, trackIndex) },
             )
         }
     }
@@ -224,11 +240,12 @@ fun NowPlayingScreen(
     val isLiked: (Track) -> Boolean = isTrackLiked
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures { }
-            }
+        modifier =
+            modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures { }
+                },
     ) {
         NowPlayingBackground(
             artworkUrl = effectiveState.albumArt,
@@ -239,26 +256,28 @@ fun NowPlayingScreen(
         )
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.Top
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
+            verticalArrangement = Arrangement.Top,
         ) {
             titleBar()
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
-                        vertical = 8.dp
-                    )
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
+                            vertical = 8.dp,
+                        ),
             ) {
                 NowPlayingTopBar(
                     title = effectiveState.title,
-                    onCollapse = onCollapse
+                    onCollapse = onCollapse,
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -276,17 +295,26 @@ fun NowPlayingScreen(
                         onPlayNextSuggestionItem = { track ->
                             interaction.showPlayNextSnackbar(
                                 track,
-                                activeAccent
+                                activeAccent,
                             )
                         },
                         onSwipeRight = onSwipeRight,
                         isLiked = isLiked,
                         onToggleFavorite = viewModel::toggleFavorite,
-                        onArtistClick = { id -> onCollapse(); onArtistClick(id) },
-                        onAlbumClick = { id -> onCollapse(); onAlbumClick(id) },
-                        onPlaylistClick = { id -> onCollapse(); onPlaylistClick(id) },
+                        onArtistClick = { id ->
+                            onCollapse()
+                            onArtistClick(id)
+                        },
+                        onAlbumClick = { id ->
+                            onCollapse()
+                            onAlbumClick(id)
+                        },
+                        onPlaylistClick = { id ->
+                            onCollapse()
+                            onPlaylistClick(id)
+                        },
                         viewModel = viewModel,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 } else {
                     NowPlayingMobileLayout(
@@ -305,7 +333,7 @@ fun NowPlayingScreen(
                         onStartRadio = { track -> queueViewModel.startRadio(track) },
                         onOpenArtist = { expandedBottomSection = PanelSection.ARTIST },
                         viewModel = viewModel,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -334,7 +362,7 @@ fun NowPlayingScreen(
                 onPlaylistClick(id)
             },
             onMoreClick = onMoreClick,
-            isLiked = isLiked
+            isLiked = isLiked,
         )
 
         val playlistTrack = interaction.addToPlaylistTrack
@@ -352,7 +380,7 @@ fun NowPlayingScreen(
                     libraryViewModel.addTrackToPlaylist(playlist.id, playlistTrack) {
                         interaction.showAddedToPlaylistSnackbar(
                             playlist.name,
-                            activeAccent
+                            activeAccent,
                         )
                     }
                 },
@@ -361,11 +389,11 @@ fun NowPlayingScreen(
                         libraryViewModel.addTrackToPlaylist(id, playlistTrack) {
                             interaction.showAddedToPlaylistSnackbar(
                                 name,
-                                activeAccent
+                                activeAccent,
                             )
                         }
                     }
-                }
+                },
             )
         }
     }

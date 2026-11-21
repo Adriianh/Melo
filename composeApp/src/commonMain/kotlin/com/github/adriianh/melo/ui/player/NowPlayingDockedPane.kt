@@ -35,6 +35,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_close_panel
+import com.github.adriianh.melo.resources.a11y_expand_fullscreen
+import com.github.adriianh.melo.resources.a11y_favorite
+import com.github.adriianh.melo.resources.a11y_start_radio
+import com.github.adriianh.melo.resources.player_header_now_playing
+import com.github.adriianh.melo.resources.player_tab_artist
+import com.github.adriianh.melo.resources.player_tab_lyrics
+import com.github.adriianh.melo.resources.player_tab_queue
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.ui.player.components.DockedArtistContent
 import com.github.adriianh.melo.ui.player.components.DockedLyricsContent
@@ -43,6 +52,7 @@ import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -69,31 +79,33 @@ fun DesktopNowPlayingDockedPane(
     if (!state.hasTrack) return
 
     Column(
-        modifier = modifier
-            .width(290.dp)
-            .fillMaxHeight()
-            .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.glassSurface)
-            .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier =
+            modifier
+                .width(290.dp)
+                .fillMaxHeight()
+                .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MeloColors.glassSurface)
+                .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
+                .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         DockedPaneHeader(
             onExpandToFullscreen = onExpandToFullscreen,
-            onClose = onClose
+            onClose = onClose,
         )
 
         MeloAsyncImage(
             url = state.albumArt,
             contentDescription = state.title,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .shadow(10.dp, RoundedCornerShape(12.dp))
-                .clip(RoundedCornerShape(12.dp)),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .shadow(10.dp, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)),
             size = 160.dp,
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         )
 
         DockedPaneTrackInfo(
@@ -102,8 +114,12 @@ fun DesktopNowPlayingDockedPane(
             onArtistClick = onArtistClick,
             artistId = artistDetails?.id,
             onStartRadio = { state.currentTrack?.let(queueViewModel::startRadio) },
-            onToggleFavorite = { viewModel.toggleFavorite() }
+            onToggleFavorite = { viewModel.toggleFavorite() },
         )
+
+        val queueLabel = stringResource(Res.string.player_tab_queue)
+        val lyricsLabel = stringResource(Res.string.player_tab_lyrics)
+        val artistLabel = stringResource(Res.string.player_tab_artist)
 
         SegmentedControl(
             options = PanelSection.entries,
@@ -111,29 +127,31 @@ fun DesktopNowPlayingDockedPane(
             onSelect = onSectionChange,
             label = {
                 when (it) {
-                    PanelSection.QUEUE -> "Cola"
-                    PanelSection.LYRICS -> "Letra"
-                    PanelSection.ARTIST -> "Artista"
+                    PanelSection.QUEUE -> queueLabel
+                    PanelSection.LYRICS -> lyricsLabel
+                    PanelSection.ARTIST -> artistLabel
                 }
-            }
+            },
         )
 
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
         ) {
             when (selectedSection) {
                 PanelSection.QUEUE -> DockedQueueContent(state, activeAccent, queueViewModel)
                 PanelSection.LYRICS -> DockedLyricsContent(state, activeAccent, viewModel)
-                PanelSection.ARTIST -> DockedArtistContent(
-                    state = state,
-                    artistDetails = artistDetails,
-                    activeAccent = activeAccent,
-                    onArtistClick = onArtistClick,
-                    onAlbumClick = onAlbumClick,
-                    queueViewModel = queueViewModel
-                )
+                PanelSection.ARTIST ->
+                    DockedArtistContent(
+                        state = state,
+                        artistDetails = artistDetails,
+                        activeAccent = activeAccent,
+                        onArtistClick = onArtistClick,
+                        onAlbumClick = onAlbumClick,
+                        queueViewModel = queueViewModel,
+                    )
             }
         }
     }
@@ -147,30 +165,30 @@ private fun DockedPaneHeader(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "REPRODUCIENDO",
+            text = stringResource(Res.string.player_header_now_playing),
             style = MeloType.labelSmall,
             letterSpacing = 1.2.sp,
-            color = MeloColors.textMuted
+            color = MeloColors.textMuted,
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onExpandToFullscreen, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Default.OpenInFull,
-                    contentDescription = "Expandir pantalla completa",
+                    contentDescription = stringResource(Res.string.a11y_expand_fullscreen),
                     tint = MeloColors.textPrimary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
             }
             IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Cerrar panel",
+                    contentDescription = stringResource(Res.string.a11y_close_panel),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
@@ -189,7 +207,7 @@ private fun DockedPaneTrackInfo(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -198,7 +216,7 @@ private fun DockedPaneTrackInfo(
                 fontWeight = FontWeight.Bold,
                 color = MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = state.artist,
@@ -206,34 +224,35 @@ private fun DockedPaneTrackInfo(
                 color = MeloColors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable {
-                    artistId?.let(onArtistClick)
-                }
+                modifier =
+                    Modifier.clickable {
+                        artistId?.let(onArtistClick)
+                    },
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
                 onClick = onStartRadio,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     Icons.Default.GraphicEq,
-                    contentDescription = "Iniciar Radio",
+                    contentDescription = stringResource(Res.string.a11y_start_radio),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
 
             IconButton(
                 onClick = onToggleFavorite,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorito",
+                    contentDescription = stringResource(Res.string.a11y_favorite),
                     tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

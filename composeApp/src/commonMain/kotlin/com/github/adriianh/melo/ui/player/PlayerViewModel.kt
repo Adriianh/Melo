@@ -59,16 +59,17 @@ class PlayerViewModel(
 
     private val initialAccent =
         getSettingsUseCase?.getInitial()?.lastAccentColor?.let { Color(it.toULong()) }
-    private val _accentPalette = MutableStateFlow(
-        initialAccent?.let {
-            AccentPalette(
-                dominant = it,
-                onDominant = Color.White,
-                rawDominant = it
-            )
-        }
-            ?: AccentColorExtractor.fallback
-    )
+    private val _accentPalette =
+        MutableStateFlow(
+            initialAccent?.let {
+                AccentPalette(
+                    dominant = it,
+                    onDominant = Color.White,
+                    rawDominant = it,
+                )
+            }
+                ?: AccentColorExtractor.fallback,
+        )
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     private val _isFavorite = MutableStateFlow(false)
@@ -188,19 +189,20 @@ class PlayerViewModel(
                             emit(
                                 withContext(MeloDispatchers.IO) {
                                     AccentColorExtractor.fromImageUrl(artworkUrl, httpClient)
-                                }
+                                },
                             )
                         }
                     }
-                }
-                .collectLatest { palette ->
+                }.collectLatest { palette ->
                     _accentPalette.value = palette
                     if (manager.playbackState.value.currentTrack != null) {
                         updateSettingsUseCase?.invoke { current ->
                             val colorLong = palette.dominant.value.toLong()
                             if (current.lastAccentColor != colorLong) {
                                 current.copy(lastAccentColor = colorLong)
-                            } else current
+                            } else {
+                                current
+                            }
                         }
                     }
                 }
@@ -221,7 +223,9 @@ class PlayerViewModel(
                         updateSettingsUseCase?.invoke { current ->
                             if (current.lastAccentColor != null) {
                                 current.copy(lastAccentColor = null)
-                            } else current
+                            } else {
+                                current
+                            }
                         }
                     }
                 }
@@ -240,7 +244,11 @@ class PlayerViewModel(
         }
     }
 
-    private suspend fun loadLyrics(artist: String, title: String, trackId: String) {
+    private suspend fun loadLyrics(
+        artist: String,
+        title: String,
+        trackId: String,
+    ) {
         if (artist.isBlank() || title.isBlank()) {
             _trackLyrics.value = null
             return
@@ -255,7 +263,7 @@ class PlayerViewModel(
             }
             _trackLyrics.value = lyrics
         }.onFailure {
-            _trackLyrics.value = TrackLyrics(error = "No se pudieron cargar las letras")
+            _trackLyrics.value = TrackLyrics(error = "")
             _isTranslating.value = false
         }
         _isLyricsLoading.value = false
@@ -268,7 +276,8 @@ class PlayerViewModel(
         val track = manager.playbackState.value.currentTrack ?: return
 
         if (currentShow) {
-            val hasTranslations = current.syncedLyrics.any { it.translation != null } ||
+            val hasTranslations =
+                current.syncedLyrics.any { it.translation != null } ||
                     (current.plainLyrics != null && current.targetLanguage == _targetLanguage.value)
             if (!hasTranslations) {
                 viewModelScope.launch {
@@ -338,13 +347,15 @@ class PlayerViewModel(
             val result = getLikedSongsUseCase().getOrNull()
             if (result != null) {
                 hasFetchedLikedSongs = true
-                val ids = result.flatMap { track ->
-                    listOfNotNull(
-                        track.id,
-                        track.sourceId,
-                        track.id.removePrefix("piped:").takeIf { it.isNotBlank() }
-                    )
-                }.toSet()
+                val ids =
+                    result
+                        .flatMap { track ->
+                            listOfNotNull(
+                                track.id,
+                                track.sourceId,
+                                track.id.removePrefix("piped:").takeIf { it.isNotBlank() },
+                            )
+                        }.toSet()
                 _likedTrackIds.value = ids
                 updateFavoriteForCurrentTrack()
             }
@@ -360,7 +371,9 @@ class PlayerViewModel(
         val rawId = track.sourceId ?: track.id.removePrefix("piped:")
         val ids = _likedTrackIds.value
         _isFavorite.value =
-            track.id in ids || (rawId.isNotBlank() && rawId in ids) || ("piped:$rawId" in ids)
+            track.id in ids ||
+            (rawId.isNotBlank() && rawId in ids) ||
+            ("piped:$rawId" in ids)
         if (!hasFetchedLikedSongs && getLikedSongsUseCase != null) {
             fetchLikedSongs()
         }

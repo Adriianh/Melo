@@ -35,6 +35,35 @@
     <string name="a11y_play_next">Reproducir a continuación</string>
     <string name="a11y_remove_folder">Eliminar carpeta</string>
     <string name="a11y_add_folder">Añadir carpeta</string>
+    <string name="a11y_shuffle">Aleatorio</string>
+    <string name="a11y_previous">Anterior</string>
+    <string name="a11y_play">Reproducir</string>
+    <string name="a11y_pause">Pausar</string>
+    <string name="a11y_next">Siguiente</string>
+    <string name="a11y_repeat">Repetir</string>
+    <string name="a11y_mute">Silenciar</string>
+    <string name="a11y_unmute">Activar sonido</string>
+    <string name="a11y_panel_lyrics">Letras en panel</string>
+    <string name="a11y_panel_queue">Cola en panel</string>
+    <string name="a11y_expand_fullscreen">Expandir pantalla completa</string>
+    <string name="a11y_collapse">Contraer</string>
+    <string name="a11y_close_panel">Cerrar panel</string>
+    <string name="a11y_start_radio">Iniciar Radio</string>
+    <string name="a11y_favorite">Favorito</string>
+    <string name="a11y_lyrics">Letra</string>
+    <string name="a11y_melody">Melodía</string>
+    <string name="a11y_expand_lyrics">Expandir letra</string>
+    <string name="a11y_change_language">Cambiar idioma</string>
+    <string name="a11y_close_lyrics">Cerrar letras</string>
+    <string name="a11y_translate">Traducir</string>
+    <string name="a11y_remove_from_queue">Quitar de la cola</string>
+    <string name="a11y_refresh_suggestions">Refrescar sugerencias</string>
+    <string name="a11y_reorder">Reordenar</string>
+    <string name="a11y_sidebar_expand">Expandir barra lateral</string>
+    <string name="a11y_sidebar_collapse">Colapsar barra lateral</string>
+    <string name="a11y_melo_logo">Logo de Melo</string>
+    <string name="a11y_new_playlist">Nueva lista</string>
+    <string name="a11y_toggle_theme">Cambiar tema</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
@@ -103,4 +132,46 @@
     <string name="track_snackbar_removed_from_likes">Eliminada de tus Me Gusta</string>
     <string name="track_snackbar_downloading">Descargando %1$s...</string>
     <string name="track_snackbar_download_removed">Descarga eliminada</string>
+    <string name="track_snackbar_removed_from_queue">Eliminada de la cola</string>
+
+    <!-- Navegación y barra lateral -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_explore">Explorar</string>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="nav_settings_update_available">Ajustes (actualización disponible)</string>
+    <string name="sidebar_section_playlists">PLAYLISTS</string>
+
+    <!-- Aplicación -->
+    <string name="app_offline_disabled_snackbar">Modo sin conexión desactivado</string>
+    <string name="app_update_available_banner">Nueva versión %1$s%2$s disponible</string>
+    <string name="app_update_action">Actualizar</string>
+    <string name="app_cache_cleared_snackbar">Caché de audio liberada correctamente</string>
+
+    <!-- Reproductor -->
+    <string name="player_tab_queue">Cola</string>
+    <string name="player_tab_lyrics">Letra</string>
+    <string name="player_tab_artist">Artista</string>
+    <string name="player_tab_radio">Radio</string>
+    <string name="player_header_now_playing">REPRODUCIENDO</string>
+    <string name="player_section_now_playing">Reproduciendo ahora</string>
+    <string name="player_section_up_next">A continuación</string>
+    <string name="player_section_suggestions">Sugerencias para ti</string>
+    <string name="player_queue_collapse">Contraer</string>
+    <string name="player_queue_more_count">+%1$d en cola</string>
+    <string name="player_suggestions_empty">No hay más sugerencias por ahora</string>
+    <string name="player_sheet_queue_title">Cola de reproducción</string>
+    <string name="player_sheet_artist_title">Acerca del Artista</string>
+    <string name="player_lyrics_header">LETRA</string>
+    <string name="player_lyrics_expand">EXPANDIR</string>
+    <string name="player_lyrics_title">Letras</string>
+    <string name="player_lyrics_loading">Buscando letras...</string>
+    <string name="player_lyrics_unavailable">Letra no disponible para esta canción</string>
+    <string name="player_lyrics_tap_to_return">Toca para volver a la portada</string>
+    <string name="player_artist_popular">Populares</string>
+    <string name="player_artist_popular_songs">Canciones populares</string>
+    <string name="player_artist_albums">Álbumes y lanzamientos</string>
+    <string name="player_artist_biography">Biografía</string>
+    <string name="player_artist_view_full_profile">Ver perfil completo</string>
+    <string name="player_artist_view_profile">Ver perfil</string>
 </resources>

@@ -35,12 +35,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.player_artist_albums
+import com.github.adriianh.melo.resources.player_artist_popular
+import com.github.adriianh.melo.resources.player_artist_view_full_profile
+import com.github.adriianh.melo.resources.player_artist_view_profile
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -50,56 +56,57 @@ internal fun DockedArtistContent(
     activeAccent: Color,
     onArtistClick: (String) -> Unit,
     onAlbumClick: (String) -> Unit,
-    queueViewModel: QueueViewModel = koinViewModel()
+    queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     if (artistDetails == null) {
         DockedArtistLoading(state, activeAccent)
         return
     }
 
-    val topSongs = remember(artistDetails) {
-        artistDetails.topSongs?.take(4) ?: emptyList()
-    }
+    val topSongs =
+        remember(artistDetails) {
+            artistDetails.topSongs?.take(4) ?: emptyList()
+        }
 
-    val albums = remember(artistDetails) {
-        val albumsFromSections = artistDetails.sections
-            .filter { section ->
-                section.title.contains("álbum", ignoreCase = true) ||
-                        section.title.contains("album", ignoreCase = true) ||
-                        section.title.contains("disc", ignoreCase = true) ||
-                        section.title.contains("lanzamiento", ignoreCase = true) ||
-                        section.title.contains("release", ignoreCase = true)
-            }
-            .flatMap { it.items }
-            .filterIsInstance<SearchResult.Album>()
-            .ifEmpty {
-                artistDetails.sections.flatMap { it.items }.filterIsInstance<SearchResult.Album>()
-            }
-            .distinctBy { it.id }
-            .take(4)
-        albumsFromSections
-    }
+    val albums =
+        remember(artistDetails) {
+            val albumsFromSections =
+                artistDetails.sections
+                    .filter { section ->
+                        section.title.contains("álbum", ignoreCase = true) ||
+                            section.title.contains("album", ignoreCase = true) ||
+                            section.title.contains("disc", ignoreCase = true) ||
+                            section.title.contains("lanzamiento", ignoreCase = true) ||
+                            section.title.contains("release", ignoreCase = true)
+                    }.flatMap { it.items }
+                    .filterIsInstance<SearchResult.Album>()
+                    .ifEmpty {
+                        artistDetails.sections.flatMap { it.items }.filterIsInstance<SearchResult.Album>()
+                    }.distinctBy { it.id }
+                    .take(4)
+            albumsFromSections
+        }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             DockedArtistHeader(
                 artistDetails = artistDetails,
                 activeAccent = activeAccent,
-                onArtistClick = onArtistClick
+                onArtistClick = onArtistClick,
             )
         }
 
         if (topSongs.isNotEmpty()) {
             item {
                 Text(
-                    "Populares",
+                    stringResource(Res.string.player_artist_popular),
                     style = MeloType.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = activeAccent,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
                 )
             }
             items(topSongs) { track ->
@@ -108,7 +115,7 @@ internal fun DockedArtistContent(
                     track = track,
                     isPlayingThis = isPlayingThis,
                     activeAccent = activeAccent,
-                    onClick = { queueViewModel.playTrack(track) }
+                    onClick = { queueViewModel.playTrack(track) },
                 )
             }
         }
@@ -117,17 +124,17 @@ internal fun DockedArtistContent(
             item {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    "Álbumes y lanzamientos",
+                    stringResource(Res.string.player_artist_albums),
                     style = MeloType.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MeloColors.textMuted,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
                 )
             }
             items(albums) { album ->
                 DockedArtistAlbumRow(
                     album = album,
-                    onClick = { onAlbumClick(album.id) }
+                    onClick = { onAlbumClick(album.id) },
                 )
             }
         }
@@ -137,22 +144,24 @@ internal fun DockedArtistContent(
                 shape = RoundedCornerShape(10.dp),
                 color = MeloColors.chromePillFill,
                 border = BorderStroke(0.5.dp, MeloColors.border),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onArtistClick(artistDetails.id) }
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onArtistClick(artistDetails.id) },
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Ver perfil completo",
+                        stringResource(Res.string.player_artist_view_full_profile),
                         style = MeloType.labelSmall,
                         color = activeAccent,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -169,22 +178,22 @@ private fun DockedArtistLoading(
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             ArtistCircle(
                 name = state.artist,
                 artworkUrl = state.albumArt,
                 onClick = { },
-                size = 68.dp
+                size = 68.dp,
             )
             CircularProgressIndicator(
                 color = activeAccent,
                 modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp
+                strokeWidth = 2.dp,
             )
         }
     }
@@ -197,23 +206,25 @@ private fun DockedArtistHeader(
     onArtistClick: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onArtistClick(artistDetails.id) }
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onArtistClick(artistDetails.id) }
+                .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         MeloAsyncImage(
             url = artistDetails.artworkUrl,
             contentDescription = artistDetails.name,
-            modifier = Modifier
-                .size(68.dp)
-                .shadow(6.dp, CircleShape)
-                .clip(CircleShape)
-                .border(1.5.dp, MeloColors.borderStrong, CircleShape),
+            modifier =
+                Modifier
+                    .size(68.dp)
+                    .shadow(6.dp, CircleShape)
+                    .clip(CircleShape)
+                    .border(1.5.dp, MeloColors.borderStrong, CircleShape),
             size = 68.dp,
-            shape = CircleShape
+            shape = CircleShape,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -225,20 +236,17 @@ private fun DockedArtistHeader(
             color = MeloColors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
-        val subtitle = listOfNotNull(
-            artistDetails.subscriberCountText,
-            artistDetails.monthlyListenerCount
-        ).firstOrNull { it.isNotBlank() }
+        val subtitle = artistDetails.subscriberCountText?.ifBlank { null } ?: artistDetails.monthlyListenerCount
 
         if (!subtitle.isNullOrBlank()) {
             Text(
                 text = subtitle,
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
 
@@ -248,14 +256,14 @@ private fun DockedArtistHeader(
             shape = RoundedCornerShape(16.dp),
             color = activeAccent.copy(alpha = 0.12f),
             border = BorderStroke(0.5.dp, activeAccent.copy(alpha = 0.35f)),
-            modifier = Modifier.clickable { onArtistClick(artistDetails.id) }
+            modifier = Modifier.clickable { onArtistClick(artistDetails.id) },
         ) {
             Text(
-                "Ver perfil",
+                stringResource(Res.string.player_artist_view_profile),
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp),
                 style = MeloType.labelSmall.copy(fontSize = 11.sp),
                 color = activeAccent,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
@@ -269,23 +277,26 @@ private fun DockedArtistTopSongRow(
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                if (isPlayingThis) activeAccent.copy(alpha = 0.15f)
-                else Color.Transparent
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    if (isPlayingThis) {
+                        activeAccent.copy(alpha = 0.15f)
+                    } else {
+                        Color.Transparent
+                    },
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         MeloAsyncImage(
             url = track.artworkUrl,
             contentDescription = track.title,
             size = 36.dp,
-            shape = RoundedCornerShape(6.dp)
+            shape = RoundedCornerShape(6.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -294,14 +305,14 @@ private fun DockedArtistTopSongRow(
                 fontWeight = if (isPlayingThis) FontWeight.Bold else FontWeight.Medium,
                 color = if (isPlayingThis) activeAccent else MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 track.artist,
                 style = MeloType.labelSmall.copy(fontSize = 10.sp),
                 color = MeloColors.textSecondary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -313,19 +324,20 @@ private fun DockedArtistAlbumRow(
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         MeloAsyncImage(
             url = album.artworkUrl,
             contentDescription = album.title,
             size = 44.dp,
-            shape = RoundedCornerShape(6.dp)
+            shape = RoundedCornerShape(6.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -334,7 +346,7 @@ private fun DockedArtistAlbumRow(
                 fontWeight = FontWeight.Medium,
                 color = MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             val yearOrAuthor =
                 listOfNotNull(album.year, album.author).firstOrNull { it.isNotBlank() }
@@ -344,7 +356,7 @@ private fun DockedArtistAlbumRow(
                     style = MeloType.labelSmall.copy(fontSize = 11.sp),
                     color = MeloColors.textSecondary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

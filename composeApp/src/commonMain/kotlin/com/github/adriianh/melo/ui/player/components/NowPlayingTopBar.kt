@@ -18,35 +18,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_collapse
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.player_header_now_playing
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun NowPlayingTopBar(
     title: String,
     onCollapse: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onCollapse) {
             Icon(
                 Icons.Default.KeyboardArrowDown,
-                contentDescription = "Collapse",
+                contentDescription = stringResource(Res.string.a11y_collapse),
                 tint = MeloColors.textPrimary,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             )
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "REPRODUCIENDO",
+                text = stringResource(Res.string.player_header_now_playing),
                 style = MeloType.labelSmall,
                 letterSpacing = 1.5.sp,
-                color = MeloColors.textMuted
+                color = MeloColors.textMuted,
             )
             Text(
                 text = title.ifEmpty { "Melo" },
@@ -54,16 +59,16 @@ internal fun NowPlayingTopBar(
                 fontWeight = FontWeight.Bold,
                 color = MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
         IconButton(onClick = { /* options */ }) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "Options",
+                contentDescription = stringResource(Res.string.a11y_more_options),
                 tint = MeloColors.textPrimary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         }
     }

@@ -25,60 +25,76 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.player.RepeatMode
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_next
+import com.github.adriianh.melo.resources.a11y_pause
+import com.github.adriianh.melo.resources.a11y_play
+import com.github.adriianh.melo.resources.a11y_previous
+import com.github.adriianh.melo.resources.a11y_repeat
+import com.github.adriianh.melo.resources.a11y_shuffle
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PlayerTransportControls(
     state: PlayerUiState,
     activeAccent: Color,
     viewModel: PlayerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = viewModel::toggleShuffle) {
             Icon(
                 Icons.Default.Shuffle,
-                contentDescription = "Shuffle",
+                contentDescription = stringResource(Res.string.a11y_shuffle),
                 tint = if (state.shuffleEnabled) activeAccent else MeloColors.textMuted,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             )
         }
 
         IconButton(onClick = viewModel::playPrevious, enabled = state.hasPrevious) {
             Icon(
                 Icons.Default.SkipPrevious,
-                contentDescription = "Previous",
-                tint = if (state.hasPrevious) MeloColors.textPrimary else MeloColors.textMuted.copy(
-                    alpha = 0.4f
-                ),
-                modifier = Modifier.size(36.dp)
+                contentDescription = stringResource(Res.string.a11y_previous),
+                tint =
+                    if (state.hasPrevious) {
+                        MeloColors.textPrimary
+                    } else {
+                        MeloColors.textMuted.copy(
+                            alpha = 0.4f,
+                        )
+                    },
+                modifier = Modifier.size(36.dp),
             )
         }
 
         Surface(
             shape = CircleShape,
             color = activeAccent,
-            modifier = Modifier.size(64.dp).clickable(onClick = viewModel::togglePlayPause)
+            modifier = Modifier.size(64.dp).clickable(onClick = viewModel::togglePlayPause),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (state.isBuffering) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(30.dp),
                         color = Color.White,
-                        strokeWidth = 3.dp
+                        strokeWidth = 3.dp,
                     )
                 } else {
                     Icon(
                         if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (state.isPlaying) "Pause" else "Play",
+                        contentDescription =
+                            stringResource(
+                                if (state.isPlaying) Res.string.a11y_pause else Res.string.a11y_play,
+                            ),
                         tint = Color.White,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(34.dp),
                     )
                 }
             }
@@ -87,24 +103,36 @@ fun PlayerTransportControls(
         IconButton(onClick = viewModel::playNext, enabled = state.hasNext) {
             Icon(
                 Icons.Default.SkipNext,
-                contentDescription = "Next",
-                tint = if (state.hasNext) MeloColors.textPrimary else MeloColors.textMuted.copy(
-                    alpha = 0.4f
-                ),
-                modifier = Modifier.size(36.dp)
+                contentDescription = stringResource(Res.string.a11y_next),
+                tint =
+                    if (state.hasNext) {
+                        MeloColors.textPrimary
+                    } else {
+                        MeloColors.textMuted.copy(
+                            alpha = 0.4f,
+                        )
+                    },
+                modifier = Modifier.size(36.dp),
             )
         }
 
         IconButton(onClick = viewModel::toggleRepeat) {
-            val icon = when (state.repeatMode) {
-                RepeatMode.ONE -> Icons.Default.RepeatOne
-                else -> Icons.Default.Repeat
-            }
-            val tint = when (state.repeatMode) {
-                RepeatMode.NONE -> MeloColors.textMuted
-                else -> activeAccent
-            }
-            Icon(icon, contentDescription = "Repeat", tint = tint, modifier = Modifier.size(24.dp))
+            val icon =
+                when (state.repeatMode) {
+                    RepeatMode.ONE -> Icons.Default.RepeatOne
+                    else -> Icons.Default.Repeat
+                }
+            val tint =
+                when (state.repeatMode) {
+                    RepeatMode.NONE -> MeloColors.textMuted
+                    else -> activeAccent
+                }
+            Icon(
+                icon,
+                contentDescription = stringResource(Res.string.a11y_repeat),
+                tint = tint,
+                modifier = Modifier.size(24.dp),
+            )
         }
     }
 }

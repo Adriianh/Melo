@@ -19,9 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_favorite
+import com.github.adriianh.melo.resources.a11y_lyrics
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun TrackInfoBar(
@@ -31,12 +35,12 @@ internal fun TrackInfoBar(
     onToggleLyrics: () -> Unit,
     onToggleFavorite: () -> Unit,
     onArtistClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -45,7 +49,7 @@ internal fun TrackInfoBar(
                 fontWeight = FontWeight.Bold,
                 color = MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = state.artist,
@@ -53,27 +57,27 @@ internal fun TrackInfoBar(
                 color = MeloColors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { onArtistClick() }
+                modifier = Modifier.clickable { onArtistClick() },
             )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             IconButton(onClick = onToggleLyrics) {
                 Icon(
                     Icons.Outlined.Mic,
-                    contentDescription = "Letra",
+                    contentDescription = stringResource(Res.string.a11y_lyrics),
                     tint = if (showLyrics) activeAccent else MeloColors.textMuted,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
             IconButton(onClick = onToggleFavorite) {
                 Icon(
                     if (state.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorite",
+                    contentDescription = stringResource(Res.string.a11y_favorite),
                     tint = if (state.isFavorite) activeAccent else MeloColors.textMuted,
-                    modifier = Modifier.size(26.dp)
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
