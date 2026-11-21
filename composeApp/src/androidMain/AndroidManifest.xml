@@ -18,7 +18,7 @@
     <application
         android:name=".MeloApp"
         android:allowBackup="true"
-        android:label="Melo"
+        android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Melo">

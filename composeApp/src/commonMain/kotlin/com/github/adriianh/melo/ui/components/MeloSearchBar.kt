@@ -29,10 +29,17 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_account
+import com.github.adriianh.melo.resources.a11y_account_update_available
+import com.github.adriianh.melo.resources.a11y_clear_search
+import com.github.adriianh.melo.resources.a11y_search
+import com.github.adriianh.melo.resources.search_placeholder_home
 import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
 import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MeloSearchBar(
@@ -42,13 +49,13 @@ fun MeloSearchBar(
     onClear: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onFocusChanged: (Boolean) -> Unit = {},
-    placeholderText: String = "¿Qué quieres escuchar?",
+    placeholderText: String = stringResource(Res.string.search_placeholder_home),
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TextField(
             value = query,
@@ -57,15 +64,15 @@ fun MeloSearchBar(
                 Text(
                     text = placeholderText,
                     style = MeloType.body,
-                    color = MeloColors.textMuted
+                    color = MeloColors.textMuted,
                 )
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Buscar",
+                    contentDescription = stringResource(Res.string.a11y_search),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             },
             trailingIcon = {
@@ -74,8 +81,8 @@ fun MeloSearchBar(
                         IconButton(onClick = onClear) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Limpiar",
-                                tint = MeloColors.textMuted
+                                contentDescription = stringResource(Res.string.a11y_clear_search),
+                                tint = MeloColors.textMuted,
                             )
                         }
                     }
@@ -86,9 +93,9 @@ fun MeloSearchBar(
                                 imageVector = Icons.Default.AccountCircle,
                                 contentDescription =
                                     if (hasAvailableUpdate) {
-                                        "Cuenta (actualización disponible)"
+                                        stringResource(Res.string.a11y_account_update_available)
                                     } else {
-                                        "Cuenta"
+                                        stringResource(Res.string.a11y_account)
                                     },
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(28.dp),
@@ -100,28 +107,30 @@ fun MeloSearchBar(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onSearch(query) }),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MeloColors.glassSurface,
-                unfocusedContainerColor = MeloColors.glassSurface.copy(alpha = 0.45f),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                focusedTextColor = MeloColors.textPrimary,
-                unfocusedTextColor = MeloColors.textPrimary,
-                cursorColor = MaterialTheme.colorScheme.primary,
-            ),
+            colors =
+                TextFieldDefaults.colors(
+                    focusedContainerColor = MeloColors.glassSurface,
+                    unfocusedContainerColor = MeloColors.glassSurface.copy(alpha = 0.45f),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    focusedTextColor = MeloColors.textPrimary,
+                    unfocusedTextColor = MeloColors.textPrimary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                ),
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { onFocusChanged(it.isFocused) }
-                .onKeyEvent { keyEvent ->
-                    if (keyEvent.key == Key.Enter && keyEvent.type == KeyEventType.KeyUp) {
-                        onSearch(query)
-                        true
-                    } else {
-                        false
-                    }
-                }
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { onFocusChanged(it.isFocused) }
+                    .onKeyEvent { keyEvent ->
+                        if (keyEvent.key == Key.Enter && keyEvent.type == KeyEventType.KeyUp) {
+                            onSearch(query)
+                            true
+                        } else {
+                            false
+                        }
+                    },
         )
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Melo</string>
+    <string name="notification_channel_playback">Reproducción de Melo</string>
+    <string name="notification_channel_playback_description">Controles de reproducción de Melo</string>
+</resources>

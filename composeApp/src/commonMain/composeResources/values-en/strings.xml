@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common actions -->
+    <string name="common_action_retry">Retry</string>
+
+    <!-- Errors -->
+    <string name="common_error_with_detail">Error: %1$s</string>
+    <string name="common_error_unknown">Something went wrong</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_search">Search</string>
+    <string name="a11y_clear_search">Clear</string>
+    <string name="a11y_account">Account</string>
+    <string name="a11y_account_update_available">Account (update available)</string>
+
+    <!-- Search -->
+    <string name="search_placeholder_home">What do you want to listen to?</string>
+    <string name="search_placeholder_library">Search songs, artists, albums...</string>
+</resources>

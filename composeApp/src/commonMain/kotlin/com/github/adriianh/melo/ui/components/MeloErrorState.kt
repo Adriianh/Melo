@@ -14,7 +14,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_retry
+import com.github.adriianh.melo.resources.common_error_unknown
+import com.github.adriianh.melo.resources.common_error_with_detail
 import com.github.adriianh.melo.util.MeloColors
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MeloErrorState(
@@ -27,20 +32,22 @@ fun MeloErrorState(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val detail = error ?: stringResource(Res.string.common_error_unknown)
             Text(
-                text = "Error: $error",
+                text = stringResource(Res.string.common_error_with_detail, detail),
                 color = MaterialTheme.colorScheme.error,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeloColors.surface2,
-                    contentColor = MeloColors.textPrimary
-                ),
-                shape = RoundedCornerShape(24.dp)
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MeloColors.surface2,
+                        contentColor = MeloColors.textPrimary,
+                    ),
+                shape = RoundedCornerShape(24.dp),
             ) {
-                Text("Reintentar")
+                Text(stringResource(Res.string.common_action_retry))
             }
         }
     }

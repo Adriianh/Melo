@@ -1,5 +1,16 @@
 package com.github.adriianh.core.domain.model.update
 
+/**
+ * Machine-readable cause of an update failure. The UI maps it to a localized message and
+ * falls back to [UpdateState.Error.message] for technical detail.
+ */
+enum class UpdateErrorReason {
+    CHECK_FAILED,
+    DOWNLOAD_FAILED,
+    INSTALL_FAILED,
+    UNKNOWN,
+}
+
 sealed interface UpdateState {
     data object Idle : UpdateState
 
@@ -42,5 +53,6 @@ sealed interface UpdateState {
     data class Error(
         val message: String,
         val canRetry: Boolean = true,
+        val reason: UpdateErrorReason? = null,
     ) : UpdateState
 }

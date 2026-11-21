@@ -154,6 +154,11 @@ configure<com.android.build.api.dsl.ApplicationExtension> {
     }
 }
 
+compose.resources {
+    publicResClass = false
+    packageOfResClass = "com.github.adriianh.melo.resources"
+}
+
 compose.desktop {
     application {
         mainClass = "com.github.adriianh.melo.MainKt"
