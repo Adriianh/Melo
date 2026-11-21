@@ -15,8 +15,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_undo
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.TrackInteractionState
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryFilters
 import com.github.adriianh.melo.ui.library.LibraryTab
 import com.github.adriianh.melo.ui.library.LibraryUiState
@@ -110,9 +114,9 @@ fun LibraryTabContent(
                         onSwipeRight = { track ->
                             viewModel.toggleLike(track.id, false)
                             interaction.snackbar.show(
-                                msg = "Eliminada de tus Me Gusta",
+                                msg = UiText.Resource(Res.string.track_snackbar_removed_from_likes),
                                 vector = Icons.Default.HeartBroken,
-                                action = "Deshacer",
+                                action = UiText.Resource(Res.string.common_action_undo),
                                 actionColor = activeAccent,
                                 onAction = {
                                     viewModel.toggleLike(track.id, true)

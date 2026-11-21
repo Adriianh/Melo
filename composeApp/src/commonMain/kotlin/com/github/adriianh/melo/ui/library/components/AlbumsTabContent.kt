@@ -35,11 +35,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_available_offline
+import com.github.adriianh.melo.resources.library_albums_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.library.LibraryViewMode
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AlbumsTabContent(
@@ -52,7 +56,7 @@ fun AlbumsTabContent(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (albums.isEmpty()) {
-        MeloEmptyState(message = "No tienes álbumes guardados.", modifier = modifier)
+        MeloEmptyState(message = stringResource(Res.string.library_albums_empty), modifier = modifier)
         return
     }
 
@@ -107,7 +111,7 @@ fun AlbumsTabContent(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.DownloadDone,
-                                        contentDescription = "Disponible sin conexión",
+                                        contentDescription = stringResource(Res.string.a11y_available_offline),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(14.dp),
                                     )
@@ -179,7 +183,7 @@ fun AlbumsTabContent(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.DownloadDone,
-                                    contentDescription = "Disponible sin conexión",
+                                    contentDescription = stringResource(Res.string.a11y_available_offline),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(12.dp),
                                 )

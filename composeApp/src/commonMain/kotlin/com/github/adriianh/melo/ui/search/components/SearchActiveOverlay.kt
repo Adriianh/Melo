@@ -34,8 +34,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_remove_recent_search
+import com.github.adriianh.melo.resources.search_recent_title
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SearchOverlayWrapper(
@@ -45,18 +49,19 @@ fun SearchOverlayWrapper(
     recentSearches: List<String>,
     onSelect: (String) -> Unit,
     onDeleteRecentSearch: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
         ) {
             SearchActiveOverlay(
                 query = query,
@@ -64,9 +69,10 @@ fun SearchOverlayWrapper(
                 recentSearches = recentSearches,
                 onSelect = onSelect,
                 onDeleteRecentSearch = onDeleteRecentSearch,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 360.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp),
             )
         }
     }
@@ -79,14 +85,15 @@ fun SearchActiveOverlay(
     recentSearches: List<String>,
     onSelect: (String) -> Unit,
     onDeleteRecentSearch: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .shadow(16.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(MeloColors.surface1.copy(alpha = 0.98f))
-            .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp))
+        modifier =
+            modifier
+                .shadow(16.dp, RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .background(MeloColors.surface1.copy(alpha = 0.98f))
+                .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(20.dp)),
     ) {
         val showHistory = query.isBlank()
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
@@ -94,14 +101,15 @@ fun SearchActiveOverlay(
                 if (recentSearches.isNotEmpty()) {
                     item {
                         Text(
-                            "Búsquedas recientes",
+                            stringResource(Res.string.search_recent_title),
                             style = MeloType.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = MeloColors.textMuted,
-                            modifier = Modifier.padding(
-                                horizontal = 16.dp,
-                                vertical = 12.dp
-                            )
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 16.dp,
+                                    vertical = 12.dp,
+                                ),
                         )
                     }
                     items(recentSearches, key = { it }) { search ->
@@ -109,7 +117,7 @@ fun SearchActiveOverlay(
                             text = search,
                             icon = Icons.Default.History,
                             onClick = { onSelect(search) },
-                            onDelete = onDeleteRecentSearch?.let { del -> { del(search) } }
+                            onDelete = onDeleteRecentSearch?.let { del -> { del(search) } },
                         )
                     }
                 }
@@ -118,7 +126,7 @@ fun SearchActiveOverlay(
                     SearchItemRow(
                         text = suggestion,
                         icon = Icons.Default.Search,
-                        onClick = { onSelect(suggestion) }
+                        onClick = { onSelect(suggestion) },
                     )
                 }
             }
@@ -131,16 +139,17 @@ private fun SearchItemRow(
     text: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onClick() }
-            .padding(vertical = 8.dp, horizontal = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onClick() }
+                .padding(vertical = 8.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Icon(icon, null, tint = MeloColors.textMuted, modifier = Modifier.size(20.dp))
         Text(
@@ -149,18 +158,18 @@ private fun SearchItemRow(
             color = MeloColors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         if (onDelete != null) {
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Eliminar de búsquedas",
+                    contentDescription = stringResource(Res.string.a11y_remove_recent_search),
                     tint = MeloColors.textSecondary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }

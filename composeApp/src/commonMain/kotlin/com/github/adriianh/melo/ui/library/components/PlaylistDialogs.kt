@@ -53,27 +53,51 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_clear_search
+import com.github.adriianh.melo.resources.a11y_dynamic_inspiration
+import com.github.adriianh.melo.resources.common_action_delete
+import com.github.adriianh.melo.resources.library_playlist_delete_confirm
+import com.github.adriianh.melo.resources.library_playlist_delete_message
+import com.github.adriianh.melo.resources.library_playlist_delete_title
+import com.github.adriianh.melo.resources.library_playlist_delete_warning
+import com.github.adriianh.melo.resources.library_playlist_dialog_create_subtitle
+import com.github.adriianh.melo.resources.library_playlist_dialog_edit_subtitle
+import com.github.adriianh.melo.resources.library_playlist_dialog_style_label
+import com.github.adriianh.melo.resources.library_playlist_preset_bolt
+import com.github.adriianh.melo.resources.library_playlist_preset_coffee
+import com.github.adriianh.melo.resources.library_playlist_preset_favorite
+import com.github.adriianh.melo.resources.library_playlist_preset_fire
+import com.github.adriianh.melo.resources.library_playlist_preset_headphones
+import com.github.adriianh.melo.resources.library_playlist_preset_music
+import com.github.adriianh.melo.resources.library_playlist_preset_night
+import com.github.adriianh.melo.resources.library_playlist_preset_radio
+import com.github.adriianh.melo.resources.library_playlist_preset_star
+import com.github.adriianh.melo.resources.library_playlist_preset_trip
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 data class PlaylistCoverPreset(
     val id: String,
-    val label: String,
+    val labelRes: StringResource,
     val icon: ImageVector,
 )
 
-val PLAYLIST_COVER_PRESETS = listOf(
-    PlaylistCoverPreset("music", "Música", Icons.Default.MusicNote),
-    PlaylistCoverPreset("headphones", "Audífonos", Icons.Default.Headphones),
-    PlaylistCoverPreset("favorite", "Favorito", Icons.Default.Favorite),
-    PlaylistCoverPreset("fire", "Energía", Icons.Default.LocalFireDepartment),
-    PlaylistCoverPreset("night", "Noche", Icons.Default.Bedtime),
-    PlaylistCoverPreset("bolt", "Entreno", Icons.Default.Bolt),
-    PlaylistCoverPreset("coffee", "Chill", Icons.Default.Coffee),
-    PlaylistCoverPreset("trip", "Viaje", Icons.Default.DirectionsCar),
-    PlaylistCoverPreset("radio", "Radio", Icons.Default.Radio),
-    PlaylistCoverPreset("star", "Especial", Icons.Default.Star),
-)
+val PLAYLIST_COVER_PRESETS =
+    listOf(
+        PlaylistCoverPreset("music", Res.string.library_playlist_preset_music, Icons.Default.MusicNote),
+        PlaylistCoverPreset("headphones", Res.string.library_playlist_preset_headphones, Icons.Default.Headphones),
+        PlaylistCoverPreset("favorite", Res.string.library_playlist_preset_favorite, Icons.Default.Favorite),
+        PlaylistCoverPreset("fire", Res.string.library_playlist_preset_fire, Icons.Default.LocalFireDepartment),
+        PlaylistCoverPreset("night", Res.string.library_playlist_preset_night, Icons.Default.Bedtime),
+        PlaylistCoverPreset("bolt", Res.string.library_playlist_preset_bolt, Icons.Default.Bolt),
+        PlaylistCoverPreset("coffee", Res.string.library_playlist_preset_coffee, Icons.Default.Coffee),
+        PlaylistCoverPreset("trip", Res.string.library_playlist_preset_trip, Icons.Default.DirectionsCar),
+        PlaylistCoverPreset("radio", Res.string.library_playlist_preset_radio, Icons.Default.Radio),
+        PlaylistCoverPreset("star", Res.string.library_playlist_preset_star, Icons.Default.Star),
+    )
 
 @Composable
 fun PlaylistNameDialog(
@@ -97,20 +121,21 @@ fun PlaylistNameDialog(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = if (isEditing) Icons.Default.Edit else selectedIcon.icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(26.dp),
                     )
                 }
 
@@ -119,12 +144,19 @@ fun PlaylistNameDialog(
                         text = title,
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary
+                        color = MeloColors.textPrimary,
                     )
                     Text(
-                        text = if (isEditing) "Cambia el nombre visible de tu lista" else "Personaliza el nombre y estilo de tu lista",
+                        text =
+                            stringResource(
+                                if (isEditing) {
+                                    Res.string.library_playlist_dialog_edit_subtitle
+                                } else {
+                                    Res.string.library_playlist_dialog_create_subtitle
+                                },
+                            ),
                         style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary
+                        color = MeloColors.textSecondary,
                     )
                 }
             }
@@ -132,7 +164,7 @@ fun PlaylistNameDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 OutlinedTextField(
                     value = value,
@@ -141,52 +173,53 @@ fun PlaylistNameDialog(
                         Text(
                             placeholder,
                             style = MeloType.body,
-                            color = MeloColors.textMuted
+                            color = MeloColors.textMuted,
                         )
                     },
                     leadingIcon = {
                         Icon(
                             imageVector = selectedIcon.icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     },
                     trailingIcon = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            modifier = Modifier.padding(end = 4.dp)
+                            modifier = Modifier.padding(end = 4.dp),
                         ) {
                             if (!isEditing) {
                                 IconButton(
                                     onClick = {
-                                        value = PlaylistNameGenerator.generateIdea(
-                                            selectedIconId = selectedIcon.id,
-                                            userArtists = userArtists,
-                                            existingPlaylistNames = existingPlaylistNames,
-                                            currentValue = value
-                                        )
+                                        value =
+                                            PlaylistNameGenerator.generateIdea(
+                                                selectedIconId = selectedIcon.id,
+                                                userArtists = userArtists,
+                                                existingPlaylistNames = existingPlaylistNames,
+                                                currentValue = value,
+                                            )
                                     },
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(36.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Casino,
-                                        contentDescription = "Inspiración dinámica",
+                                        contentDescription = stringResource(Res.string.a11y_dynamic_inspiration),
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
                                 }
                             }
                             if (value.isNotEmpty()) {
                                 IconButton(
                                     onClick = { value = "" },
-                                    modifier = Modifier.size(36.dp)
+                                    modifier = Modifier.size(36.dp),
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
-                                        contentDescription = "Limpiar texto",
+                                        contentDescription = stringResource(Res.string.a11y_clear_search),
                                         tint = MeloColors.textMuted,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(18.dp),
                                     )
                                 }
                             }
@@ -194,62 +227,72 @@ fun PlaylistNameDialog(
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MeloColors.border,
-                        focusedContainerColor = MeloColors.surface2,
-                        unfocusedContainerColor = MeloColors.surface2,
-                        focusedTextColor = MeloColors.textPrimary,
-                        unfocusedTextColor = MeloColors.textPrimary,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MeloColors.border,
+                            focusedContainerColor = MeloColors.surface2,
+                            unfocusedContainerColor = MeloColors.surface2,
+                            focusedTextColor = MeloColors.textPrimary,
+                            unfocusedTextColor = MeloColors.textPrimary,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 if (!isEditing) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Estilo / Icono temático",
+                            text = stringResource(Res.string.library_playlist_dialog_style_label),
                             style = MeloType.labelSmall,
-                            color = MeloColors.textMuted
+                            color = MeloColors.textMuted,
                         )
 
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             PLAYLIST_COVER_PRESETS.forEach { preset ->
                                 val isSelected = selectedIcon.id == preset.id
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(
-                                        alpha = 0.2f
-                                    ) else MeloColors.surface2,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .clickable { selectedIcon = preset }
+                                    color =
+                                        if (isSelected) {
+                                            MaterialTheme.colorScheme.primary.copy(
+                                                alpha = 0.2f,
+                                            )
+                                        } else {
+                                            MeloColors.surface2
+                                        },
+                                    modifier =
+                                        Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable { selectedIcon = preset },
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        modifier = Modifier.padding(
-                                            horizontal = 10.dp,
-                                            vertical = 7.dp
-                                        )
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal = 10.dp,
+                                                vertical = 7.dp,
+                                            ),
                                     ) {
+                                        val presetLabel = stringResource(preset.labelRes)
                                         Icon(
                                             imageVector = preset.icon,
-                                            contentDescription = preset.label,
+                                            contentDescription = presetLabel,
                                             tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(16.dp),
                                         )
                                         Text(
-                                            text = preset.label,
+                                            text = presetLabel,
                                             style = MeloType.labelSmall,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
                                         )
                                     }
                                 }
@@ -268,12 +311,12 @@ fun PlaylistNameDialog(
                 },
                 enabled = value.isNotBlank(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(confirmLabel, style = MeloType.labelMedium, fontWeight = FontWeight.Bold)
@@ -282,11 +325,11 @@ fun PlaylistNameDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text("Cancelar", style = MeloType.labelMedium, color = MeloColors.textSecondary)
             }
-        }
+        },
     )
 }
 
@@ -303,34 +346,35 @@ fun PlaylistDeleteDialog(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.DeleteForever,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(26.dp),
                     )
                 }
 
                 Column {
                     Text(
-                        text = "Eliminar playlist",
+                        text = stringResource(Res.string.library_playlist_delete_title),
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary
+                        color = MeloColors.textPrimary,
                     )
                     Text(
-                        text = "Acción permanente",
+                        text = stringResource(Res.string.library_playlist_delete_warning),
                         style = MeloType.labelSmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -338,15 +382,15 @@ fun PlaylistDeleteDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "¿Estás seguro de que deseas eliminar \"$playlistName\"?",
+                    text = stringResource(Res.string.library_playlist_delete_confirm, playlistName),
                     style = MeloType.body,
                     color = MeloColors.textPrimary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "Esta lista se borrará de tu biblioteca. Las canciones guardadas o descargadas en tu dispositivo no se verán afectadas.",
+                    text = stringResource(Res.string.library_playlist_delete_message),
                     style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
+                    color = MeloColors.textSecondary,
                 )
             }
         },
@@ -354,31 +398,32 @@ fun PlaylistDeleteDialog(
             Button(
                 onClick = onConfirm,
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Eliminar",
+                    text = stringResource(Res.string.common_action_delete),
                     style = MeloType.labelMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text("Cancelar", style = MeloType.labelMedium, color = MeloColors.textSecondary)
             }
-        }
+        },
     )
 }

@@ -23,16 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.library_login_action
+import com.github.adriianh.melo.resources.library_login_subtitle
+import com.github.adriianh.melo.resources.library_login_title
 import com.github.adriianh.melo.util.MeloColors
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LibraryNotLoggedInCard(
     onLoginClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize().padding(24.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(0.85f),
@@ -41,28 +46,28 @@ fun LibraryNotLoggedInCard(
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.LibraryMusic,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Tu Biblioteca de YouTube Music",
+                    text = stringResource(Res.string.library_login_title),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "Inicia sesión para sincronizar y reproducir tus playlists guardadas, canciones con 'Me Gusta', artistas favoritos e historial.",
+                    text = stringResource(Res.string.library_login_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MeloColors.textSecondary
+                    color = MeloColors.textSecondary,
                 )
                 Button(onClick = onLoginClick) {
                     Icon(imageVector = Icons.Default.AccountCircle, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Iniciar sesión")
+                    Text(stringResource(Res.string.library_login_action))
                 }
             }
         }

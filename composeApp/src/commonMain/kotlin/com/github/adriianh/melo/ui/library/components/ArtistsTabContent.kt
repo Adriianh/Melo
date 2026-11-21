@@ -34,11 +34,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_available_offline
+import com.github.adriianh.melo.resources.library_artists_empty
+import com.github.adriianh.melo.resources.library_artists_in_library
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.library.LibraryViewMode
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ArtistsTabContent(
@@ -51,7 +56,7 @@ fun ArtistsTabContent(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (artists.isEmpty()) {
-        MeloEmptyState(message = "No sigues a ningún artista actualmente.", modifier = modifier)
+        MeloEmptyState(message = stringResource(Res.string.library_artists_empty), modifier = modifier)
         return
     }
 
@@ -154,7 +159,7 @@ private fun artistGridCover(
             ) {
                 Icon(
                     imageVector = Icons.Default.DownloadDone,
-                    contentDescription = "Disponible sin conexión",
+                    contentDescription = stringResource(Res.string.a11y_available_offline),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp),
                 )
@@ -199,7 +204,7 @@ private fun artistCompactItem(
             Spacer(modifier = Modifier.height(2.dp))
             val artistSubtitle =
                 artist.subscriberCountText?.takeIf { it.isNotBlank() }
-                    ?: "En tu biblioteca"
+                    ?: stringResource(Res.string.library_artists_in_library)
             Text(
                 text = artistSubtitle,
                 style = MeloType.labelSmall,
@@ -252,7 +257,7 @@ private fun artistCompactCover(
             ) {
                 Icon(
                     imageVector = Icons.Default.DownloadDone,
-                    contentDescription = "Disponible sin conexión",
+                    contentDescription = stringResource(Res.string.a11y_available_offline),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(12.dp),
                 )

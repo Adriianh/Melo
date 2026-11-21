@@ -8,6 +8,11 @@
     <string name="common_action_add_to_playlist">Add to playlist</string>
     <string name="common_action_add_to_queue">Add to queue</string>
     <string name="common_action_undo">Undo</string>
+    <string name="common_action_save">Save</string>
+    <string name="common_action_delete">Delete</string>
+    <string name="common_action_rename">Rename</string>
+    <string name="common_action_close">Close</string>
+    <string name="common_action_you">You</string>
 
     <!-- Errors -->
     <string name="common_error_with_detail">Error: %1$s</string>
@@ -64,6 +69,17 @@
     <string name="a11y_melo_logo">Melo Logo</string>
     <string name="a11y_new_playlist">New playlist</string>
     <string name="a11y_toggle_theme">Toggle theme</string>
+    <string name="a11y_remove_recent_search">Remove from searches</string>
+    <string name="a11y_available_offline">Available offline</string>
+    <string name="a11y_delete_download">Delete download</string>
+    <string name="a11y_search_library">Search library</string>
+    <string name="a11y_close_search">Close search</string>
+    <string name="a11y_sort">Sort</string>
+    <string name="a11y_change_view">Change view</string>
+    <string name="a11y_refresh">Refresh</string>
+    <string name="a11y_manage_folders">Manage folders</string>
+    <string name="a11y_rescan">Rescan</string>
+    <string name="a11y_dynamic_inspiration">Dynamic inspiration</string>
 
     <!-- Search -->
     <string name="search_placeholder_home">What do you want to listen to?</string>
@@ -174,4 +190,120 @@
     <string name="player_artist_biography">Biography</string>
     <string name="player_artist_view_full_profile">View full profile</string>
     <string name="player_artist_view_profile">View profile</string>
+
+    <!-- Sections & Home -->
+    <string name="section_trending">Trending</string>
+    <string name="section_recently_played">Recently played</string>
+    <string name="section_downloads">Your downloads</string>
+    <string name="section_cached_music">Cached music</string>
+    <string name="section_local_files">Local files</string>
+    <string name="section_songs">Songs</string>
+    <string name="section_albums">Albums</string>
+    <string name="section_artists">Artists</string>
+    <string name="home_offline_empty_title">No music available offline</string>
+    <string name="home_offline_empty_subtitle">Download songs or add local folders in your Library to listen without an internet connection.</string>
+    <string name="home_search_empty">No results found</string>
+
+    <!-- Search -->
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_songs">Songs</string>
+    <string name="search_filter_albums">Albums</string>
+    <string name="search_filter_artists">Artists</string>
+    <string name="search_filter_playlists">Playlists</string>
+    <string name="search_filter_videos">Videos</string>
+    <string name="search_section_more_songs">More songs</string>
+    <string name="search_section_top_result">Top result</string>
+    <string name="search_section_top_songs">Top songs</string>
+    <string name="search_recent_title">Recent searches</string>
+    <string name="search_explore_offline_title">No offline content</string>
+    <string name="search_explore_error_title">Could not load content</string>
+    <string name="search_explore_offline_subtitle">Download songs or add local files to browse them offline</string>
+    <string name="search_explore_error_subtitle">Check your internet connection or try again later</string>
+    <string name="search_results_offline_empty_title">No downloads or local files found</string>
+    <string name="search_results_empty_title">No results found</string>
+    <string name="search_results_offline_empty_message">Try searching for a song title saved on your device</string>
+    <string name="search_results_empty_message">Try different keywords or change your filter</string>
+    <string name="search_badge_artist">ARTIST</string>
+    <string name="search_badge_song">SONG</string>
+    <string name="search_badge_album">ALBUM</string>
+    <string name="search_badge_playlist">PLAYLIST</string>
+
+    <!-- Library -->
+    <string name="library_tab_playlists">Playlists</string>
+    <string name="library_tab_liked">Liked</string>
+    <string name="library_tab_downloads">Downloads</string>
+    <string name="library_tab_local">Local files</string>
+    <string name="library_tab_artists">Artists</string>
+    <string name="library_tab_albums">Albums</string>
+    <string name="library_tab_history">History</string>
+    <string name="library_sort_recently_added">Recently added</string>
+    <string name="library_sort_title_az">Title (A-Z)</string>
+    <string name="library_sort_artist_az">Artist (A-Z)</string>
+    <string name="library_sort_duration">Duration</string>
+    <string name="library_group_collection">Collection</string>
+    <string name="library_group_device">Device</string>
+    <string name="library_group_history">History</string>
+    <string name="library_error_load">Could not load library. Check your connection or session.</string>
+    <string name="library_header_default_title">My Library</string>
+    <string name="library_header_search_placeholder">Search in %1$s...</string>
+    <string name="library_login_title">Your YouTube Music Library</string>
+    <string name="library_login_subtitle">Sign in to sync and play your saved playlists, liked songs, favorite artists, and history.</string>
+    <string name="library_login_action">Sign in</string>
+    <string name="library_albums_empty">You have no saved albums.</string>
+    <string name="library_artists_empty">You are not following any artists yet.</string>
+    <string name="library_artists_in_library">In your library</string>
+    <string name="library_history_empty">No recent plays recorded.</string>
+    <string name="library_liked_empty">You have no liked songs yet.</string>
+    <string name="library_downloads_pending_hint">Songs will appear here as soon as the download finishes.</string>
+    <plurals name="library_downloads_downloading_count">
+        <item quantity="one">Downloading %1$d song...</item>
+        <item quantity="other">Downloading %1$d songs...</item>
+    </plurals>
+    <string name="library_downloads_empty_title">No downloaded songs</string>
+    <string name="library_downloads_empty_subtitle">Download your favorite songs, albums, or playlists to listen offline without using mobile data.</string>
+    <string name="library_downloads_various_artists">Various Artists</string>
+    <string name="library_downloads_albums_empty">You have no downloaded albums</string>
+    <string name="library_downloads_artists_empty">You have no downloaded artists</string>
+    <string name="library_local_scanning">Scanning local files...</string>
+    <string name="library_local_empty_title">No local files found</string>
+    <string name="library_local_empty_subtitle">Add your music folders or scan the default folders to play your MP3, FLAC, M4A, and AAC files.</string>
+    <string name="library_local_folders_button">Folders</string>
+    <string name="library_local_scan_button">Scan</string>
+    <string name="library_local_scan_now">Scan now</string>
+    <string name="library_local_device_audio">Audio files on your device</string>
+    <string name="library_local_folders_title">Local music folders</string>
+    <string name="library_local_folders_subtitle">Add folder paths from your device to include your local tracks.</string>
+    <string name="library_local_default_folders">System default folders:</string>
+    <plurals name="library_local_track_count">
+        <item quantity="one">%1$d local file</item>
+        <item quantity="other">%1$d local files</item>
+    </plurals>
+    <string name="library_playlist_preset_music">Music</string>
+    <string name="library_playlist_preset_headphones">Headphones</string>
+    <string name="library_playlist_preset_favorite">Favorite</string>
+    <string name="library_playlist_preset_fire">Energy</string>
+    <string name="library_playlist_preset_night">Night</string>
+    <string name="library_playlist_preset_bolt">Workout</string>
+    <string name="library_playlist_preset_coffee">Chill</string>
+    <string name="library_playlist_preset_trip">Road Trip</string>
+    <string name="library_playlist_preset_radio">Radio</string>
+    <string name="library_playlist_preset_star">Special</string>
+    <string name="library_playlist_dialog_edit_subtitle">Change the display name of your playlist</string>
+    <string name="library_playlist_dialog_create_subtitle">Customize the name and style of your playlist</string>
+    <string name="library_playlist_dialog_style_label">Theme style / icon</string>
+    <string name="library_playlist_delete_title">Delete playlist</string>
+    <string name="library_playlist_delete_warning">Permanent action</string>
+    <string name="library_playlist_delete_confirm">Are you sure you want to delete \"%1$s\"?</string>
+    <string name="library_playlist_delete_message">This playlist will be removed from your library. Songs saved or downloaded on your device will not be affected.</string>
+    <string name="library_playlist_create_title">Create playlist</string>
+    <string name="library_playlist_custom_subtitle">Custom playlist</string>
+    <string name="library_playlist_create_hint">Create a custom playlist with your favorite songs</string>
+    <string name="library_playlist_new_title">New playlist</string>
+    <string name="library_playlist_new_placeholder">Playlist name</string>
+    <string name="library_playlist_rename_title">Rename playlist</string>
+    <string name="library_playlist_rename_placeholder">New name</string>
+    <plurals name="library_playlist_owned_track_count">
+        <item quantity="one">Yours • %1$d song</item>
+        <item quantity="other">Yours • %1$d songs</item>
+    </plurals>
 </resources>

@@ -24,18 +24,19 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.search.SearchFilterType
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SearchFilterChipsRow(
     selectedFilter: SearchFilterType,
     onFilterSelected: (SearchFilterType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     Row(
         modifier = modifier.horizontalScroll(scrollState),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         SearchFilterType.entries.forEach { filter ->
             val isSelected = filter == selectedFilter
@@ -43,27 +44,28 @@ fun SearchFilterChipsRow(
             val bgAlpha by animateColorAsState(
                 targetValue = if (isSelected) activeColor else MeloColors.surface1,
                 animationSpec = tween(250),
-                label = "chip_bg"
+                label = "chip_bg",
             )
             val textColor by animateColorAsState(
                 targetValue = if (isSelected) Color.White else MeloColors.textSecondary,
                 animationSpec = tween(250),
-                label = "chip_text"
+                label = "chip_text",
             )
 
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(bgAlpha)
-                    .clickable { onFilterSelected(filter) }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(bgAlpha)
+                        .clickable { onFilterSelected(filter) }
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = filter.label,
+                    text = stringResource(filter.labelRes),
                     style = MeloType.labelMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = textColor
+                    color = textColor,
                 )
             }
         }

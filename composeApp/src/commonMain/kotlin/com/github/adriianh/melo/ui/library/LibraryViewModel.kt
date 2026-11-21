@@ -42,6 +42,21 @@ import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.library_group_collection
+import com.github.adriianh.melo.resources.library_group_device
+import com.github.adriianh.melo.resources.library_group_history
+import com.github.adriianh.melo.resources.library_sort_artist_az
+import com.github.adriianh.melo.resources.library_sort_duration
+import com.github.adriianh.melo.resources.library_sort_recently_added
+import com.github.adriianh.melo.resources.library_sort_title_az
+import com.github.adriianh.melo.resources.library_tab_albums
+import com.github.adriianh.melo.resources.library_tab_artists
+import com.github.adriianh.melo.resources.library_tab_downloads
+import com.github.adriianh.melo.resources.library_tab_history
+import com.github.adriianh.melo.resources.library_tab_liked
+import com.github.adriianh.melo.resources.library_tab_local
+import com.github.adriianh.melo.resources.library_tab_playlists
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -57,30 +72,31 @@ import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val CACHE_FRESHNESS_THRESHOLD_MS = 10 * 60 * 1000L
 
 enum class LibraryTab(
-    val label: String,
+    val labelRes: StringResource,
 ) {
-    PLAYLISTS("Playlists"),
-    LIKED("Me Gusta"),
-    DOWNLOADS("Descargas"),
-    LOCAL("Archivos locales"),
-    ARTISTS("Artistas"),
-    ALBUMS("Álbumes"),
-    HISTORY("Historial"),
+    PLAYLISTS(Res.string.library_tab_playlists),
+    LIKED(Res.string.library_tab_liked),
+    DOWNLOADS(Res.string.library_tab_downloads),
+    LOCAL(Res.string.library_tab_local),
+    ARTISTS(Res.string.library_tab_artists),
+    ALBUMS(Res.string.library_tab_albums),
+    HISTORY(Res.string.library_tab_history),
 }
 
 enum class LibrarySortOrder(
-    val label: String,
+    val labelRes: StringResource,
 ) {
-    RECENTLY_ADDED("Añadido recientemente"),
-    TITLE_A_Z("Título (A-Z)"),
-    ARTIST_A_Z("Artista (A-Z)"),
-    DURATION("Duración"),
+    RECENTLY_ADDED(Res.string.library_sort_recently_added),
+    TITLE_A_Z(Res.string.library_sort_title_az),
+    ARTIST_A_Z(Res.string.library_sort_artist_az),
+    DURATION(Res.string.library_sort_duration),
 }
 
 enum class LibraryViewMode {
@@ -89,15 +105,15 @@ enum class LibraryViewMode {
 }
 
 enum class LibraryCategory(
-    val label: String,
+    val labelRes: StringResource,
     val tabs: List<LibraryTab>,
 ) {
     COLLECTION(
-        "Colección",
+        Res.string.library_group_collection,
         listOf(LibraryTab.PLAYLISTS, LibraryTab.LIKED, LibraryTab.ALBUMS, LibraryTab.ARTISTS),
     ),
-    DEVICE("Dispositivo", listOf(LibraryTab.DOWNLOADS, LibraryTab.LOCAL)),
-    HISTORY("Historial", listOf(LibraryTab.HISTORY)),
+    DEVICE(Res.string.library_group_device, listOf(LibraryTab.DOWNLOADS, LibraryTab.LOCAL)),
+    HISTORY(Res.string.library_group_history, listOf(LibraryTab.HISTORY)),
     ;
 
     companion object {
@@ -181,7 +197,8 @@ class LibraryViewModel(
     }
 
     fun isEffectivelyOffline(): Boolean =
-        getSettingsUseCase().value.offlineMode || (networkMonitor?.isOnline?.value == false)
+        getSettingsUseCase().value.offlineMode ||
+            (networkMonitor?.isOnline?.value == false)
 
     init {
         viewModelScope.launch(ioDispatcher) {
@@ -589,7 +606,7 @@ class LibraryViewModel(
                     albums = albumsResult.getOrDefault(current.albums),
                     error =
                         if (!silent && playlistsResult.isFailure && likedSongsResult.isFailure) {
-                            "No se pudo cargar la biblioteca. Verifica tu conexión o sesión."
+                            ""
                         } else {
                             current.error
                         },

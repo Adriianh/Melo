@@ -33,6 +33,14 @@ import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.util.extractOfflineAlbums
 import com.github.adriianh.core.util.extractOfflineArtists
 import com.github.adriianh.core.util.extractOfflineSongs
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.search_filter_albums
+import com.github.adriianh.melo.resources.search_filter_all
+import com.github.adriianh.melo.resources.search_filter_artists
+import com.github.adriianh.melo.resources.search_filter_playlists
+import com.github.adriianh.melo.resources.search_filter_songs
+import com.github.adriianh.melo.resources.search_filter_videos
+import com.github.adriianh.melo.ui.i18n.SectionTitleKeys
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,17 +54,18 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import kotlin.time.Duration.Companion.milliseconds
 
 enum class SearchFilterType(
-    val label: String,
+    val labelRes: StringResource,
 ) {
-    ALL("Todos"),
-    SONGS("Canciones"),
-    ALBUMS("Álbumes"),
-    ARTISTS("Artistas"),
-    PLAYLISTS("Playlists"),
-    VIDEOS("Videos"),
+    ALL(Res.string.search_filter_all),
+    SONGS(Res.string.search_filter_songs),
+    ALBUMS(Res.string.search_filter_albums),
+    ARTISTS(Res.string.search_filter_artists),
+    PLAYLISTS(Res.string.search_filter_playlists),
+    VIDEOS(Res.string.search_filter_videos),
 }
 
 data class SearchUiState(
@@ -286,6 +295,7 @@ class SearchViewModel(
                                         "Canciones",
                                         HomeSectionType.SONGS,
                                         tracks.map { SearchResult.Song(it) },
+                                        titleKey = SectionTitleKeys.SONGS,
                                     ),
                                 )
                             } else {
@@ -531,10 +541,11 @@ class SearchViewModel(
                                     title = "Trending",
                                     type = HomeSectionType.SONGS,
                                     items = trending.map { SearchResult.Song(it) },
+                                    titleKey = SectionTitleKeys.TRENDING,
                                 ),
                             )
                         }
-                    }.distinctBy { it.title }
+                    }.distinctBy { it.titleKey ?: it.title }
                 _uiState.update {
                     it.copy(
                         exploreSections = combined,
@@ -551,7 +562,7 @@ class SearchViewModel(
                     _uiState.update {
                         it.copy(
                             isLoadingExplore = false,
-                            error = e.message ?: "Error al cargar",
+                            error = e.message ?: "",
                         )
                     }
                 }
@@ -594,6 +605,7 @@ class SearchViewModel(
                             title = "Descargas",
                             type = HomeSectionType.SONGS,
                             items = downloaded.map { SearchResult.Song(it) },
+                            titleKey = SectionTitleKeys.DOWNLOADS,
                         ),
                     )
                 }
@@ -603,6 +615,7 @@ class SearchViewModel(
                             title = "Archivos locales",
                             type = HomeSectionType.SONGS,
                             items = local.map { SearchResult.Song(it) },
+                            titleKey = SectionTitleKeys.LOCAL_FILES,
                         ),
                     )
                 }
@@ -676,6 +689,7 @@ private fun buildOfflineSummarySections(
                     title = "Canciones",
                     type = HomeSectionType.SONGS,
                     items = songs.map { SearchResult.Song(it) },
+                    titleKey = SectionTitleKeys.SONGS,
                 ),
             )
         }
@@ -685,6 +699,7 @@ private fun buildOfflineSummarySections(
                     title = "Álbumes",
                     type = HomeSectionType.ALBUMS,
                     items = albums,
+                    titleKey = SectionTitleKeys.ALBUMS,
                 ),
             )
         }
@@ -694,6 +709,7 @@ private fun buildOfflineSummarySections(
                     title = "Artistas",
                     type = HomeSectionType.ARTISTS,
                     items = artists,
+                    titleKey = SectionTitleKeys.ARTISTS,
                 ),
             )
         }

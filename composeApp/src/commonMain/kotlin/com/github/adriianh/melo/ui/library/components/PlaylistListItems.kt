@@ -34,10 +34,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_available_offline
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.library_playlist_create_hint
+import com.github.adriianh.melo.resources.library_playlist_create_title
+import com.github.adriianh.melo.resources.library_playlist_owned_track_count
 import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CreatePlaylistCompactRow(
@@ -65,21 +73,21 @@ fun CreatePlaylistCompactRow(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Crear playlist",
+                contentDescription = stringResource(Res.string.library_playlist_create_title),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(28.dp),
             )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Crear playlist",
+                text = stringResource(Res.string.library_playlist_create_title),
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Crea una lista personalizada con tus canciones favoritas",
+                text = stringResource(Res.string.library_playlist_create_hint),
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
             )
@@ -126,7 +134,12 @@ fun CustomPlaylistCompactRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Tuya • ${playlist.trackCount} canciones",
+                text =
+                    pluralStringResource(
+                        Res.plurals.library_playlist_owned_track_count,
+                        playlist.trackCount,
+                        playlist.trackCount,
+                    ),
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,
@@ -155,7 +168,7 @@ private fun playlistCompactOptionsMenu(
         IconButton(onClick = onOpen) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = "Opciones",
+                contentDescription = stringResource(Res.string.a11y_more_options),
                 tint = MeloColors.textSecondary,
             )
         }
@@ -253,7 +266,7 @@ private fun customPlaylistRowCover(
             ) {
                 Icon(
                     imageVector = Icons.Default.DownloadDone,
-                    contentDescription = "Disponible sin conexión",
+                    contentDescription = stringResource(Res.string.a11y_available_offline),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(12.dp),
                 )
@@ -292,7 +305,7 @@ private fun remotePlaylistRowCover(
             ) {
                 Icon(
                     imageVector = Icons.Default.DownloadDone,
-                    contentDescription = "Disponible sin conexión",
+                    contentDescription = stringResource(Res.string.a11y_available_offline),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(12.dp),
                 )

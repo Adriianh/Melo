@@ -63,6 +63,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_change_view
+import com.github.adriianh.melo.resources.a11y_clear_search
+import com.github.adriianh.melo.resources.a11y_close_search
+import com.github.adriianh.melo.resources.a11y_refresh
+import com.github.adriianh.melo.resources.a11y_search_library
+import com.github.adriianh.melo.resources.a11y_sort
+import com.github.adriianh.melo.resources.library_header_default_title
+import com.github.adriianh.melo.resources.library_header_search_placeholder
+import com.github.adriianh.melo.resources.nav_settings
+import com.github.adriianh.melo.resources.nav_settings_update_available
 import com.github.adriianh.melo.ui.library.LibraryCategory
 import com.github.adriianh.melo.ui.library.LibrarySortOrder
 import com.github.adriianh.melo.ui.library.LibraryTab
@@ -72,6 +83,7 @@ import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,26 +103,30 @@ fun LibraryHeader(
     onViewModeChange: (LibraryViewMode) -> Unit,
     onOpenSettings: () -> Unit,
     onRefresh: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val activeCategory = LibraryCategory.fromTab(selectedTab)
     var showSortMenu by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f, fill = false),
             ) {
                 val hasAvailableUpdate = LocalHasAvailableUpdate.current
+                val settingsDescription =
+                    stringResource(
+                        if (hasAvailableUpdate) Res.string.nav_settings_update_available else Res.string.nav_settings,
+                    )
                 SettingsEntryUpdateBadge(showDot = hasAvailableUpdate, dotSize = 10.dp) {
                     Surface(
                         shape = CircleShape,
@@ -119,12 +135,7 @@ fun LibraryHeader(
                             Modifier
                                 .size(48.dp)
                                 .semantics {
-                                    contentDescription =
-                                        if (hasAvailableUpdate) {
-                                            "Ajustes (actualización disponible)"
-                                        } else {
-                                            "Ajustes"
-                                        }
+                                    contentDescription = settingsDescription
                                 }.clickable(onClick = onOpenSettings),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -139,12 +150,12 @@ fun LibraryHeader(
                 }
                 Column {
                     Text(
-                        text = profile?.name ?: "Mi Biblioteca",
+                        text = profile?.name ?: stringResource(Res.string.library_header_default_title),
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     val handle = profile?.channelHandle
                     if (!handle.isNullOrBlank()) {
@@ -153,7 +164,7 @@ fun LibraryHeader(
                             style = MeloType.labelSmall,
                             color = MeloColors.textSecondary,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -161,13 +172,16 @@ fun LibraryHeader(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 IconButton(onClick = { onToggleSearch(!isSearchActive) }) {
                     Icon(
                         imageVector = if (isSearchActive) Icons.Default.Clear else Icons.Default.Search,
-                        contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar en biblioteca",
-                        tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MeloColors.textSecondary
+                        contentDescription =
+                            stringResource(
+                                if (isSearchActive) Res.string.a11y_close_search else Res.string.a11y_search_library,
+                            ),
+                        tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MeloColors.textSecondary,
                     )
                 }
 
@@ -175,29 +189,36 @@ fun LibraryHeader(
                     IconButton(onClick = { showSortMenu = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = "Ordenar",
-                            tint = if (sortOrder != LibrarySortOrder.RECENTLY_ADDED) MaterialTheme.colorScheme.primary else MeloColors.textSecondary
+                            contentDescription = stringResource(Res.string.a11y_sort),
+                            tint =
+                                if (sortOrder !=
+                                    LibrarySortOrder.RECENTLY_ADDED
+                                ) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MeloColors.textSecondary
+                                },
                         )
                     }
                     DropdownMenu(
                         expanded = showSortMenu,
                         onDismissRequest = { showSortMenu = false },
-                        modifier = Modifier.background(MeloColors.surface2)
+                        modifier = Modifier.background(MeloColors.surface2),
                     ) {
                         LibrarySortOrder.entries.forEach { order ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        order.label,
+                                        stringResource(order.labelRes),
                                         style = MeloType.body,
                                         color = if (sortOrder == order) MaterialTheme.colorScheme.primary else MeloColors.textPrimary,
-                                        fontWeight = if (sortOrder == order) FontWeight.Bold else FontWeight.Normal
+                                        fontWeight = if (sortOrder == order) FontWeight.Bold else FontWeight.Normal,
                                     )
                                 },
                                 onClick = {
                                     onSortOrderChange(order)
                                     showSortMenu = false
-                                }
+                                },
                             )
                         }
                     }
@@ -209,12 +230,19 @@ fun LibraryHeader(
                             val nextMode =
                                 if (viewMode == LibraryViewMode.GRID) LibraryViewMode.COMPACT_LIST else LibraryViewMode.GRID
                             onViewModeChange(nextMode)
-                        }
+                        },
                     ) {
                         Icon(
-                            imageVector = if (viewMode == LibraryViewMode.GRID) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                            contentDescription = "Cambiar vista",
-                            tint = MeloColors.textSecondary
+                            imageVector =
+                                if (viewMode ==
+                                    LibraryViewMode.GRID
+                                ) {
+                                    Icons.AutoMirrored.Filled.ViewList
+                                } else {
+                                    Icons.Default.GridView
+                                },
+                            contentDescription = stringResource(Res.string.a11y_change_view),
+                            tint = MeloColors.textSecondary,
                         )
                     }
                 }
@@ -222,8 +250,8 @@ fun LibraryHeader(
                 IconButton(onClick = onRefresh) {
                     Icon(
                         Icons.Default.Refresh,
-                        contentDescription = "Actualizar",
-                        tint = MeloColors.textSecondary
+                        contentDescription = stringResource(Res.string.a11y_refresh),
+                        tint = MeloColors.textSecondary,
                     )
                 }
             }
@@ -236,23 +264,24 @@ fun LibraryHeader(
                 color = MeloColors.textSecondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
             )
         }
 
         AnimatedVisibility(
             visible = isSearchActive,
             enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            exit = fadeOut() + shrinkVertically(),
         ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = {
+                    val tabLabel = stringResource(selectedTab.labelRes)
                     Text(
-                        "Buscar en ${selectedTab.label}...",
+                        stringResource(Res.string.library_header_search_placeholder, tabLabel),
                         style = MeloType.body,
-                        color = MeloColors.textSecondary
+                        color = MeloColors.textSecondary,
                     )
                 },
                 singleLine = true,
@@ -262,8 +291,8 @@ fun LibraryHeader(
                         IconButton(onClick = { onSearchQueryChange("") }) {
                             Icon(
                                 Icons.Default.Clear,
-                                contentDescription = "Borrar texto",
-                                tint = MeloColors.textSecondary
+                                contentDescription = stringResource(Res.string.a11y_clear_search),
+                                tint = MeloColors.textSecondary,
                             )
                         }
                     }
@@ -272,31 +301,34 @@ fun LibraryHeader(
                     Icon(
                         Icons.Default.Search,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MeloColors.border,
-                    focusedContainerColor = MeloColors.surface1,
-                    unfocusedContainerColor = MeloColors.surface1,
-                    focusedTextColor = MeloColors.textPrimary,
-                    unfocusedTextColor = MeloColors.textPrimary,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MeloColors.border,
+                        focusedContainerColor = MeloColors.surface1,
+                        unfocusedContainerColor = MeloColors.surface1,
+                        focusedTextColor = MeloColors.textPrimary,
+                        unfocusedTextColor = MeloColors.textPrimary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
             )
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MeloColors.surface1)
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MeloColors.surface1)
+                    .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             LibraryCategory.entries.forEach { category ->
                 val isSelected = activeCategory == category
@@ -306,40 +338,42 @@ fun LibraryHeader(
                 val fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
 
                 Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable {
-                            if (!isSelected) {
-                                onTabSelected(category.tabs.first())
-                            }
-                        },
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                if (!isSelected) {
+                                    onTabSelected(category.tabs.first())
+                                }
+                            },
                     color = background,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Row(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
                         horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val categoryIcon = when (category) {
-                            LibraryCategory.COLLECTION -> Icons.Default.LibraryMusic
-                            LibraryCategory.DEVICE -> Icons.Default.Devices
-                            LibraryCategory.HISTORY -> Icons.Default.History
-                        }
+                        val categoryIcon =
+                            when (category) {
+                                LibraryCategory.COLLECTION -> Icons.Default.LibraryMusic
+                                LibraryCategory.DEVICE -> Icons.Default.Devices
+                                LibraryCategory.HISTORY -> Icons.Default.History
+                            }
                         Icon(
                             imageVector = categoryIcon,
                             contentDescription = null,
                             tint = textColor,
-                            modifier = Modifier.size(16.dp).padding(end = 4.dp)
+                            modifier = Modifier.size(16.dp).padding(end = 4.dp),
                         )
                         Text(
-                            text = category.label,
+                            text = stringResource(category.labelRes),
                             style = MeloType.labelMedium,
                             fontWeight = fontWeight,
                             color = textColor,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -351,40 +385,43 @@ fun LibraryHeader(
             LazyRow(
                 state = chipState,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().desktopScroll(chipState)
+                modifier = Modifier.fillMaxWidth().desktopScroll(chipState),
             ) {
                 items(activeCategory.tabs) { tab ->
                     val selected = selectedTab == tab
                     FilterChip(
                         selected = selected,
                         onClick = { onTabSelected(tab) },
-                        label = { Text(tab.label, style = MeloType.labelMedium) },
+                        label = { Text(stringResource(tab.labelRes), style = MeloType.labelMedium) },
                         leadingIcon = {
-                            val icon = when (tab) {
-                                LibraryTab.PLAYLISTS -> Icons.AutoMirrored.Filled.PlaylistPlay
-                                LibraryTab.LIKED -> Icons.Default.Favorite
-                                LibraryTab.DOWNLOADS -> Icons.Default.DownloadDone
-                                LibraryTab.LOCAL -> Icons.Default.Folder
-                                LibraryTab.ARTISTS -> Icons.Default.Person
-                                LibraryTab.ALBUMS -> Icons.Default.Album
-                                LibraryTab.HISTORY -> Icons.Default.History
-                            }
+                            val icon =
+                                when (tab) {
+                                    LibraryTab.PLAYLISTS -> Icons.AutoMirrored.Filled.PlaylistPlay
+                                    LibraryTab.LIKED -> Icons.Default.Favorite
+                                    LibraryTab.DOWNLOADS -> Icons.Default.DownloadDone
+                                    LibraryTab.LOCAL -> Icons.Default.Folder
+                                    LibraryTab.ARTISTS -> Icons.Default.Person
+                                    LibraryTab.ALBUMS -> Icons.Default.Album
+                                    LibraryTab.HISTORY -> Icons.Default.History
+                                }
                             Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
                         },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MeloColors.surface1,
-                            labelColor = MeloColors.textPrimary,
-                            iconColor = MeloColors.textSecondary,
-                            selectedContainerColor = MeloColors.surface2,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.primary
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = selected,
-                            borderColor = MeloColors.borderStrong,
-                            selectedBorderColor = MaterialTheme.colorScheme.primary
-                        )
+                        colors =
+                            FilterChipDefaults.filterChipColors(
+                                containerColor = MeloColors.surface1,
+                                labelColor = MeloColors.textPrimary,
+                                iconColor = MeloColors.textSecondary,
+                                selectedContainerColor = MeloColors.surface2,
+                                selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                selectedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        border =
+                            FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = selected,
+                                borderColor = MeloColors.borderStrong,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
                     )
                 }
             }
