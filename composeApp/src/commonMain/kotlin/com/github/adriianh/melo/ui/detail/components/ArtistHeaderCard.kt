@@ -37,9 +37,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_play
+import com.github.adriianh.melo.resources.a11y_radio
+import com.github.adriianh.melo.resources.a11y_shuffle
+import com.github.adriianh.melo.resources.detail_action_follow
+import com.github.adriianh.melo.resources.detail_action_following
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ArtistHeaderCard(
@@ -53,24 +60,26 @@ fun ArtistHeaderCard(
     onToggleFollow: () -> Unit,
     accentColor: Color,
     modifier: Modifier = Modifier,
-    hasTracks: Boolean = true
+    hasTracks: Boolean = true,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         MeloAsyncImage(
             url = artworkUrl,
             contentDescription = name,
-            modifier = Modifier
-                .size(160.dp)
-                .shadow(16.dp, CircleShape)
-                .clip(CircleShape)
-                .border(1.5.dp, MeloColors.borderStrong, CircleShape),
+            modifier =
+                Modifier
+                    .size(160.dp)
+                    .shadow(16.dp, CircleShape)
+                    .clip(CircleShape)
+                    .border(1.5.dp, MeloColors.borderStrong, CircleShape),
             size = 160.dp,
-            shape = CircleShape
+            shape = CircleShape,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -82,7 +91,7 @@ fun ArtistHeaderCard(
             color = MeloColors.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         if (!subtitleText.isNullOrBlank()) {
@@ -91,7 +100,7 @@ fun ArtistHeaderCard(
                 text = subtitleText,
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
 
@@ -100,41 +109,44 @@ fun ArtistHeaderCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Button(
                 onClick = onPlayClick,
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 shape = RoundedCornerShape(24.dp),
                 enabled = hasTracks,
-                modifier = Modifier.weight(1f).height(44.dp)
+                modifier = Modifier.weight(1f).height(44.dp),
             ) {
+                val playLabel = stringResource(Res.string.a11y_play)
                 Icon(
                     Icons.Default.PlayArrow,
-                    contentDescription = "Reproducir",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    contentDescription = playLabel,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(modifier = Modifier.size(6.dp))
-                Text("Reproducir", color = MaterialTheme.colorScheme.onPrimary)
+                Text(playLabel, color = MaterialTheme.colorScheme.onPrimary)
             }
 
             Button(
                 onClick = onShuffleClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeloColors.surface2,
-                    contentColor = MeloColors.textPrimary
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MeloColors.surface2,
+                        contentColor = MeloColors.textPrimary,
+                    ),
                 shape = RoundedCornerShape(24.dp),
                 enabled = hasTracks,
-                modifier = Modifier.weight(1f).height(44.dp)
+                modifier = Modifier.weight(1f).height(44.dp),
             ) {
+                val shuffleLabel = stringResource(Res.string.a11y_shuffle)
                 Icon(
                     Icons.Default.Shuffle,
-                    contentDescription = "Aleatorio",
-                    tint = MeloColors.textPrimary
+                    contentDescription = shuffleLabel,
+                    tint = MeloColors.textPrimary,
                 )
                 Spacer(modifier = Modifier.size(6.dp))
-                Text("Aleatorio", color = MeloColors.textPrimary)
+                Text(shuffleLabel, color = MeloColors.textPrimary)
             }
         }
 
@@ -143,52 +155,59 @@ fun ArtistHeaderCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MeloColors.surface2,
                 border = BorderStroke(0.5.dp, MeloColors.border),
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable(onClick = onRadioClick)
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable(onClick = onRadioClick),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Default.Radio,
-                        contentDescription = "Radio",
+                        contentDescription = stringResource(Res.string.a11y_radio),
                         tint = MeloColors.textPrimary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
             Button(
                 onClick = onToggleFollow,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
-                    contentColor = if (isSaved) accentColor else MeloColors.textPrimary
-                ),
-                border = BorderStroke(
-                    0.5.dp,
-                    if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
+                        contentColor = if (isSaved) accentColor else MeloColors.textPrimary,
+                    ),
+                border =
+                    BorderStroke(
+                        0.5.dp,
+                        if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border,
+                    ),
                 shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.height(44.dp)
+                modifier = Modifier.height(44.dp),
             ) {
+                val followLabel =
+                    stringResource(
+                        if (isSaved) Res.string.detail_action_following else Res.string.detail_action_follow,
+                    )
                 Icon(
                     if (isSaved) Icons.Default.Check else Icons.Default.PersonAdd,
-                    contentDescription = if (isSaved) "Siguiendo" else "Seguir",
-                    tint = if (isSaved) accentColor else MeloColors.textPrimary
+                    contentDescription = followLabel,
+                    tint = if (isSaved) accentColor else MeloColors.textPrimary,
                 )
                 Spacer(modifier = Modifier.size(6.dp))
                 Text(
-                    if (isSaved) "Siguiendo" else "Seguir",
-                    color = if (isSaved) accentColor else MeloColors.textPrimary
+                    followLabel,
+                    color = if (isSaved) accentColor else MeloColors.textPrimary,
                 )
             }
         }

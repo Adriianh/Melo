@@ -33,15 +33,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_back
+import com.github.adriianh.melo.resources.common_action_back
+import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.common_action_close
+import com.github.adriianh.melo.resources.discord_login_action
+import com.github.adriianh.melo.resources.discord_login_browser_hint
+import com.github.adriianh.melo.resources.discord_login_disclaimer
+import com.github.adriianh.melo.resources.discord_login_manual_action
+import com.github.adriianh.melo.resources.discord_login_manual_prompt
+import com.github.adriianh.melo.resources.discord_login_save_token
+import com.github.adriianh.melo.resources.discord_login_title_browser
+import com.github.adriianh.melo.resources.discord_login_title_default
+import com.github.adriianh.melo.resources.discord_login_token_label
+import com.github.adriianh.melo.resources.discord_login_token_placeholder
 import com.github.adriianh.melo.ui.login.InAppDiscordLogin
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
-
-private const val DISCLAIMER_TEXT =
-    "Discord no admite Rich Presence local en Android. " +
-        "Esta integración conecta con el Gateway usando tu token de sesión. " +
-        "El uso de clientes no oficiales va contra los Términos de Servicio de Discord. " +
-        "Se ofrece exclusivamente con fines educativos y bajo tu propia responsabilidad."
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun DiscordLoginDialogBody(
@@ -93,7 +103,7 @@ internal fun DiscordLoginDialogTitle(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Atrás",
+                    contentDescription = stringResource(Res.string.a11y_back),
                     tint = MeloColors.textPrimary,
                 )
             }
@@ -105,7 +115,14 @@ internal fun DiscordLoginDialogTitle(
             )
         }
         Text(
-            text = if (isShowingInAppBrowser) "Acceso a Discord" else "Vincular Discord en Android",
+            text =
+                stringResource(
+                    if (isShowingInAppBrowser) {
+                        Res.string.discord_login_title_browser
+                    } else {
+                        Res.string.discord_login_title_default
+                    },
+                ),
             style = MeloType.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -131,7 +148,7 @@ private fun DiscordDisclaimerBanner() {
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = DISCLAIMER_TEXT,
+                text = stringResource(Res.string.discord_login_disclaimer),
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
             )
@@ -146,7 +163,7 @@ private fun DiscordInAppBrowserContent(onTokenCaptured: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Inicia sesión con tu cuenta de Discord. Tu token de sesión será capturado automáticamente.",
+            text = stringResource(Res.string.discord_login_browser_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -178,7 +195,7 @@ private fun DiscordAutoLoginOptions(
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Text("Iniciar sesión en Discord")
+        Text(stringResource(Res.string.discord_login_action))
     }
 
     Button(
@@ -187,7 +204,7 @@ private fun DiscordAutoLoginOptions(
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Text("Ingresar token manualmente")
+        Text(stringResource(Res.string.discord_login_manual_action))
     }
 }
 
@@ -200,7 +217,7 @@ private fun DiscordManualInputContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Pega tu token:",
+            text = stringResource(Res.string.discord_login_manual_prompt),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -209,8 +226,8 @@ private fun DiscordManualInputContent(
             value = manualToken,
             onValueChange = onTokenChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Token de Discord") },
-            placeholder = { Text("OTQ... o mfa....") },
+            label = { Text(stringResource(Res.string.discord_login_token_label)) },
+            placeholder = { Text(stringResource(Res.string.discord_login_token_placeholder)) },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
         )
@@ -219,7 +236,7 @@ private fun DiscordManualInputContent(
             TextButton(
                 onClick = onBackToAuto,
             ) {
-                Text("Volver")
+                Text(stringResource(Res.string.common_action_back))
             }
         }
     }
@@ -237,7 +254,7 @@ internal fun DiscordLoginConfirmButtons(
 ) {
     if (isShowingInAppBrowser) {
         TextButton(onClick = onCancelInAppBrowser) {
-            Text("Cancelar")
+            Text(stringResource(Res.string.common_action_cancel))
         }
     } else if (showManualInput || !inAppBrowserAvailable) {
         Row {
@@ -246,16 +263,16 @@ internal fun DiscordLoginConfirmButtons(
                 onClick = { onTokenSaved(manualToken.trim()) },
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Guardar token")
+                Text(stringResource(Res.string.discord_login_save_token))
             }
             Spacer(Modifier.width(8.dp))
             TextButton(onClick = onDismiss) {
-                Text("Cerrar")
+                Text(stringResource(Res.string.common_action_close))
             }
         }
     } else {
         TextButton(onClick = onDismiss) {
-            Text("Cerrar")
+            Text(stringResource(Res.string.common_action_close))
         }
     }
 }

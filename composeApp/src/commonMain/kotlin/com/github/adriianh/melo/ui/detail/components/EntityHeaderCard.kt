@@ -45,10 +45,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_download
+import com.github.adriianh.melo.resources.a11y_downloaded
+import com.github.adriianh.melo.resources.a11y_play
+import com.github.adriianh.melo.resources.a11y_shuffle
+import com.github.adriianh.melo.resources.common_action_add_to_queue
+import com.github.adriianh.melo.resources.detail_action_save
+import com.github.adriianh.melo.resources.detail_action_saved
+import com.github.adriianh.melo.resources.detail_downloading_progress
+import com.github.adriianh.melo.resources.detail_downloading_track
 import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun EntityHeaderCard(
@@ -75,41 +86,44 @@ fun EntityHeaderCard(
     onSubtitleClick: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (!artworkUrls.isNullOrEmpty()) {
             PlaylistMosaicCover(
                 artworks = artworkUrls,
                 shape = RoundedCornerShape(14.dp),
                 placeholderIconSize = 64.dp,
-                modifier = Modifier
-                    .size(200.dp)
-                    .shadow(16.dp, RoundedCornerShape(14.dp))
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(
-                        1.dp,
-                        MeloColors.borderStrong,
-                        RoundedCornerShape(14.dp)
-                    )
+                modifier =
+                    Modifier
+                        .size(200.dp)
+                        .shadow(16.dp, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            1.dp,
+                            MeloColors.borderStrong,
+                            RoundedCornerShape(14.dp),
+                        ),
             )
         } else {
             MeloAsyncImage(
                 url = artworkUrl,
                 contentDescription = title,
-                modifier = Modifier
-                    .size(200.dp)
-                    .shadow(16.dp, RoundedCornerShape(14.dp))
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(
-                        1.dp,
-                        MeloColors.borderStrong,
-                        RoundedCornerShape(14.dp)
-                    ),
+                modifier =
+                    Modifier
+                        .size(200.dp)
+                        .shadow(16.dp, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            1.dp,
+                            MeloColors.borderStrong,
+                            RoundedCornerShape(14.dp),
+                        ),
                 size = 200.dp,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(14.dp),
             )
         }
 
@@ -121,7 +135,7 @@ fun EntityHeaderCard(
             fontWeight = FontWeight.Bold,
             color = MeloColors.textPrimary,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         if (!subtitle.isNullOrBlank()) {
@@ -131,7 +145,7 @@ fun EntityHeaderCard(
                 style = MeloType.labelMedium,
                 color = if (onSubtitleClick != null) accentColor else MeloColors.textSecondary,
                 fontWeight = if (onSubtitleClick != null) FontWeight.SemiBold else FontWeight.Normal,
-                modifier = if (onSubtitleClick != null) Modifier.clickable(onClick = onSubtitleClick) else Modifier
+                modifier = if (onSubtitleClick != null) Modifier.clickable(onClick = onSubtitleClick) else Modifier,
             )
         }
 
@@ -140,7 +154,7 @@ fun EntityHeaderCard(
             Text(
                 text = metadataText,
                 style = MeloType.labelSmall,
-                color = MeloColors.textMuted
+                color = MeloColors.textMuted,
             )
         }
 
@@ -149,24 +163,25 @@ fun EntityHeaderCard(
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = accentColor.copy(alpha = 0.14f),
-                border = BorderStroke(0.5.dp, accentColor.copy(alpha = 0.35f))
+                border = BorderStroke(0.5.dp, accentColor.copy(alpha = 0.35f)),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    val downloadedLabel = stringResource(Res.string.a11y_downloaded)
                     Icon(
                         Icons.Default.DownloadDone,
-                        contentDescription = "Descargado",
+                        contentDescription = downloadedLabel,
                         tint = accentColor,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(13.dp),
                     )
                     Text(
-                        text = "Descargado",
+                        text = downloadedLabel,
                         style = MeloType.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = accentColor
+                        color = accentColor,
                     )
                 }
             }
@@ -177,41 +192,44 @@ fun EntityHeaderCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Button(
                 onClick = onPlayClick,
                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                 shape = RoundedCornerShape(24.dp),
                 enabled = hasTracks,
-                modifier = Modifier.weight(1f).height(44.dp)
+                modifier = Modifier.weight(1f).height(44.dp),
             ) {
+                val playLabel = stringResource(Res.string.a11y_play)
                 Icon(
                     Icons.Default.PlayArrow,
-                    contentDescription = "Reproducir",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    contentDescription = playLabel,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(modifier = Modifier.size(6.dp))
-                Text("Reproducir", color = MaterialTheme.colorScheme.onPrimary)
+                Text(playLabel, color = MaterialTheme.colorScheme.onPrimary)
             }
 
             Button(
                 onClick = onShuffleClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MeloColors.surface2,
-                    contentColor = MeloColors.textPrimary
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MeloColors.surface2,
+                        contentColor = MeloColors.textPrimary,
+                    ),
                 shape = RoundedCornerShape(24.dp),
                 enabled = hasTracks,
-                modifier = Modifier.weight(1f).height(44.dp)
+                modifier = Modifier.weight(1f).height(44.dp),
             ) {
+                val shuffleLabel = stringResource(Res.string.a11y_shuffle)
                 Icon(
                     Icons.Default.Shuffle,
-                    contentDescription = "Aleatorio",
-                    tint = MeloColors.textPrimary
+                    contentDescription = shuffleLabel,
+                    tint = MeloColors.textPrimary,
                 )
                 Spacer(modifier = Modifier.size(6.dp))
-                Text("Aleatorio", color = MeloColors.textPrimary)
+                Text(shuffleLabel, color = MeloColors.textPrimary)
             }
         }
 
@@ -220,30 +238,35 @@ fun EntityHeaderCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onToggleSave != null) {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = if (isSaved) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
-                    border = BorderStroke(
-                        0.5.dp,
-                        if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border
-                    ),
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .clickable(onClick = onToggleSave)
+                    border =
+                        BorderStroke(
+                            0.5.dp,
+                            if (isSaved) accentColor.copy(alpha = 0.4f) else MeloColors.border,
+                        ),
+                    modifier =
+                        Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(onClick = onToggleSave),
                 ) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                            contentDescription = if (isSaved) "Guardado" else "Guardar",
+                            contentDescription =
+                                stringResource(
+                                    if (isSaved) Res.string.detail_action_saved else Res.string.detail_action_save,
+                                ),
                             tint = if (isSaved) accentColor else MeloColors.textPrimary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -253,20 +276,21 @@ fun EntityHeaderCard(
                 shape = RoundedCornerShape(24.dp),
                 color = MeloColors.surface2,
                 border = BorderStroke(0.5.dp, MeloColors.border),
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .clickable(onClick = onAddToQueue)
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .clickable(onClick = onAddToQueue),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.QueueMusic,
-                        contentDescription = "Añadir a la cola",
+                        contentDescription = stringResource(Res.string.common_action_add_to_queue),
                         tint = MeloColors.textPrimary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -275,54 +299,56 @@ fun EntityHeaderCard(
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = if (isDownloaded) accentColor.copy(alpha = 0.15f) else MeloColors.surface2,
-                    border = BorderStroke(
-                        0.5.dp,
-                        if (isDownloaded) accentColor.copy(alpha = 0.4f) else MeloColors.border
-                    ),
-                    modifier = Modifier
-                        .height(44.dp)
-                        .then(if (isDownloading) Modifier else Modifier.size(44.dp))
-                        .clip(RoundedCornerShape(24.dp))
-                        .clickable(onClick = onDownloadClick)
+                    border =
+                        BorderStroke(
+                            0.5.dp,
+                            if (isDownloaded) accentColor.copy(alpha = 0.4f) else MeloColors.border,
+                        ),
+                    modifier =
+                        Modifier
+                            .height(44.dp)
+                            .then(if (isDownloading) Modifier else Modifier.size(44.dp))
+                            .clip(RoundedCornerShape(24.dp))
+                            .clickable(onClick = onDownloadClick),
                 ) {
                     Box(
                         modifier = Modifier.padding(horizontal = if (isDownloading) 12.dp else 0.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         when {
                             isDownloading -> {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     CircularProgressIndicator(
                                         progress = { downloadProgress.coerceIn(0f, 1f) },
                                         modifier = Modifier.size(18.dp),
                                         strokeWidth = 2.dp,
-                                        color = accentColor
+                                        color = accentColor,
                                     )
                                     Text(
                                         text = "${(downloadProgress * 100).toInt()}%",
                                         style = MeloType.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = accentColor
+                                        color = accentColor,
                                     )
                                 }
                             }
                             isDownloaded -> {
                                 Icon(
                                     Icons.Default.DownloadDone,
-                                    contentDescription = "Descargado",
+                                    contentDescription = stringResource(Res.string.a11y_downloaded),
                                     tint = accentColor,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                             else -> {
                                 Icon(
                                     Icons.Default.Download,
-                                    contentDescription = "Descargar",
+                                    contentDescription = stringResource(Res.string.a11y_download),
                                     tint = MeloColors.textPrimary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }
@@ -334,56 +360,68 @@ fun EntityHeaderCard(
         AnimatedVisibility(
             visible = isDownloading,
             enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            exit = fadeOut() + shrinkVertically(),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .padding(top = 14.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MeloColors.surface1)
-                    .border(0.5.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.92f)
+                        .padding(top = 14.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MeloColors.surface1)
+                        .border(0.5.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val remaining = (totalTrackCount - downloadedCount).coerceAtLeast(0)
                     Text(
-                        text = "Descargando $downloadedCount de $totalTrackCount canciones ($remaining restantes)",
+                        text =
+                            stringResource(
+                                Res.string.detail_downloading_progress,
+                                downloadedCount,
+                                totalTrackCount,
+                                remaining,
+                            ),
                         style = MeloType.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = MeloColors.textPrimary
+                        color = MeloColors.textPrimary,
                     )
                     Text(
                         text = "${(downloadProgress * 100).toInt()}%",
                         style = MeloType.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = accentColor
+                        color = accentColor,
                     )
                 }
 
                 LinearProgressIndicator(
                     progress = { downloadProgress.coerceIn(0f, 1f) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(3.dp)),
                     color = accentColor,
-                    trackColor = MeloColors.surface2
+                    trackColor = MeloColors.surface2,
                 )
 
                 if (!currentDownloadingTrackTitle.isNullOrBlank()) {
                     Text(
-                        text = "Descargando: $currentDownloadingTrackTitle",
+                        text =
+                            stringResource(
+                                Res.string.detail_downloading_track,
+                                currentDownloadingTrackTitle,
+                            ),
                         style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

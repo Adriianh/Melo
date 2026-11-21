@@ -255,8 +255,8 @@ class EntityDetailViewModel(
                 entity =
                     SearchResult.Playlist(
                         id = rawId,
-                        title = initialTitle.ifBlank { "Mi playlist" },
-                        author = "Tú",
+                        title = initialTitle,
+                        author = "",
                         trackCount = 0,
                         artworkUrl = null,
                         songs = emptyList(),
@@ -280,13 +280,13 @@ class EntityDetailViewModel(
                         _uiState.update { current ->
                             val currentPlaylist = current.entity as? SearchResult.Playlist
                             val title =
-                                currentPlaylist?.title?.takeIf { t -> t.isNotBlank() && t != "Mi playlist" }
-                                    ?: initialTitle.ifBlank { "Mi playlist" }
+                                currentPlaylist?.title?.takeIf { t -> t.isNotBlank() }
+                                    ?: initialTitle
                             val resolved =
                                 SearchResult.Playlist(
                                     id = rawId,
                                     title = title,
-                                    author = "Tú",
+                                    author = "",
                                     trackCount = tracks.size,
                                     artworkUrl = tracks.firstOrNull()?.artworkUrl,
                                     songs = tracks,
@@ -543,7 +543,7 @@ class EntityDetailViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = "No hay contenido descargado para este elemento.",
+                                error = "",
                             )
                         }
                     }
@@ -625,7 +625,7 @@ class EntityDetailViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = "No se pudieron obtener los detalles del elemento.",
+                                error = "",
                             )
                         }
                     }
@@ -634,7 +634,7 @@ class EntityDetailViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = e.message ?: "Error al cargar detalles",
+                                error = e.message ?: "",
                             )
                         }
                     }

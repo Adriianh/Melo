@@ -9,6 +9,15 @@ import com.github.adriianh.core.domain.usecase.login.SetSessionCookiesUseCase
 import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.login_error_browser_failed
+import com.github.adriianh.melo.resources.login_error_invalid_cookies
+import com.github.adriianh.melo.resources.login_error_no_local_session
+import com.github.adriianh.melo.resources.login_error_verification_failed
+import com.github.adriianh.melo.resources.login_status_opening_window
+import com.github.adriianh.melo.resources.login_status_scanning_browsers
+import com.github.adriianh.melo.resources.login_status_starting_browser
+import com.github.adriianh.melo.ui.i18n.UiText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,14 +29,14 @@ data class LoginUiState(
     val isLoggedIn: Boolean = false,
     val isVerifying: Boolean = false,
     val isWaitingBrowserAuth: Boolean = false,
-    val browserAuthStatus: String? = null,
+    val browserAuthStatus: UiText? = null,
     val accountName: String? = null,
     val profiles: List<AccountProfile> = emptyList(),
     val activePageId: String? = null,
     val isLoadingProfiles: Boolean = false,
     val isSwitchingProfile: Boolean = false,
     val profilesError: String? = null,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 class LoginViewModel(
@@ -38,7 +47,6 @@ class LoginViewModel(
     private val getAccountProfiles: GetAccountProfilesUseCase,
     private val setActiveAccountProfile: SetActiveAccountProfileUseCase,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -71,7 +79,7 @@ class LoginViewModel(
                         it.copy(
                             isVerifying = false,
                             isLoggedIn = false,
-                            error = "Las cookies no pudieron autenticar la sesión. Asegúrate de tener una sesión activa en music.youtube.com o inicia sesión con el navegador.",
+                            error = UiText.Resource(Res.string.login_error_invalid_cookies),
                         )
                     }
                 } else {
@@ -102,7 +110,9 @@ class LoginViewModel(
                     it.copy(
                         isVerifying = false,
                         isLoggedIn = false,
-                        error = e.message ?: "Verification failed",
+                        error =
+                            e.message?.let { msg -> UiText.Dynamic(msg) }
+                                ?: UiText.Resource(Res.string.login_error_verification_failed),
                     )
                 }
             }
@@ -114,13 +124,13 @@ class LoginViewModel(
         _uiState.update {
             it.copy(
                 isWaitingBrowserAuth = true,
-                browserAuthStatus = "Abriendo ventana de inicio de sesión seguro...",
+                browserAuthStatus = UiText.Resource(Res.string.login_status_opening_window),
             )
         }
         viewModelScope.launch {
             val captured = launchAutomatedBrowserLogin()
             if (captured.isNullOrBlank()) {
-                _uiState.update { it.copy(error = BROWSER_LOGIN_FAILED) }
+                _uiState.update { it.copy(error = UiText.Resource(Res.string.login_error_browser_failed)) }
             }
             finishBrowserAuth(captured)
         }
@@ -131,8 +141,7 @@ class LoginViewModel(
         _uiState.update {
             it.copy(
                 isWaitingBrowserAuth = true,
-                browserAuthStatus =
-                    "Buscando sesión en navegadores locales (Chrome, Edge, Brave, Firefox)...",
+                browserAuthStatus = UiText.Resource(Res.string.login_status_scanning_browsers),
             )
         }
         viewModelScope.launch {
@@ -140,10 +149,12 @@ class LoginViewModel(
             if (!captured.isNullOrBlank()) {
                 finishBrowserAuth(captured)
             } else {
-                _uiState.update { it.copy(browserAuthStatus = "Iniciando ventana de navegador...") }
+                _uiState.update {
+                    it.copy(browserAuthStatus = UiText.Resource(Res.string.login_status_starting_browser))
+                }
                 val autoCaptured = launchAutomatedBrowserLogin()
                 if (autoCaptured.isNullOrBlank()) {
-                    _uiState.update { it.copy(error = BROWSER_IMPORT_FAILED) }
+                    _uiState.update { it.copy(error = UiText.Resource(Res.string.login_error_no_local_session)) }
                 }
                 finishBrowserAuth(autoCaptured)
             }
@@ -241,14 +252,5 @@ class LoginViewModel(
                 )
             }
         }
-    }
-
-    private companion object {
-        const val BROWSER_LOGIN_FAILED =
-            "No se pudo iniciar sesión con el navegador. Prueba a importar la sesión de un navegador local " +
-                "o a ingresar las cookies manualmente."
-        const val BROWSER_IMPORT_FAILED =
-            "No se encontró una sesión activa en tus navegadores. Inicia sesión en music.youtube.com " +
-                "o ingresa las cookies manualmente."
     }
 }
