@@ -2,6 +2,12 @@
 <resources>
     <!-- Common actions -->
     <string name="common_action_retry">Retry</string>
+    <string name="common_action_create">Create</string>
+    <string name="common_action_cancel">Cancel</string>
+    <string name="common_action_share">Share</string>
+    <string name="common_action_add_to_playlist">Add to playlist</string>
+    <string name="common_action_add_to_queue">Add to queue</string>
+    <string name="common_action_undo">Undo</string>
 
     <!-- Errors -->
     <string name="common_error_with_detail">Error: %1$s</string>
@@ -12,8 +18,89 @@
     <string name="a11y_clear_search">Clear</string>
     <string name="a11y_account">Account</string>
     <string name="a11y_account_update_available">Account (update available)</string>
+    <string name="a11y_more_options">More options</string>
+    <string name="a11y_play_all">Play all</string>
+    <string name="a11y_radio">Radio</string>
+    <string name="a11y_save_to_library">Save to library</string>
+    <string name="a11y_dismiss">Dismiss</string>
+    <string name="a11y_selected">Selected</string>
+    <string name="a11y_not_selected">Not selected</string>
+    <string name="a11y_now_playing">Playing</string>
+    <string name="a11y_downloaded">Downloaded</string>
+    <string name="a11y_clear_selection">Clear selection</string>
+    <string name="a11y_select_all">Select all</string>
+    <string name="a11y_deselect_all">Deselect all</string>
+    <string name="a11y_download_selected">Download selected</string>
+    <string name="a11y_delete_selected">Delete selected</string>
+    <string name="a11y_play_next">Play next</string>
+    <string name="a11y_remove_folder">Remove folder</string>
+    <string name="a11y_add_folder">Add folder</string>
 
     <!-- Search -->
     <string name="search_placeholder_home">What do you want to listen to?</string>
     <string name="search_placeholder_library">Search songs, artists, albums...</string>
+    <string name="search_type_artist">Artist</string>
+
+    <!-- Offline mode -->
+    <string name="offline_manual_title">Offline mode</string>
+    <string name="offline_title">No internet connection</string>
+    <string name="offline_manual_subtitle">Playing downloaded and local tracks only</string>
+    <string name="offline_subtitle">Check your connection to browse the full catalog</string>
+    <string name="offline_disable">Turn off</string>
+
+    <!-- Playlists -->
+    <string name="playlist_sheet_add_selection_title">Add selection to playlist</string>
+    <string name="playlist_sheet_add_title">Add to playlist</string>
+    <string name="playlist_sheet_unknown_track">Song</string>
+    <string name="playlist_sheet_more_artists">%1$s and more</string>
+    <string name="playlist_sheet_new_name_placeholder">Playlist name...</string>
+    <string name="playlist_sheet_create_new">Create new playlist</string>
+    <string name="playlist_sheet_empty">You don\'t have any playlists yet. Create one to get started!</string>
+    <string name="playlist_sheet_all_contain">This song is already in all of your playlists.</string>
+    <plurals name="playlist_track_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="playlist_selected_count">
+        <item quantity="one">%1$d song selected</item>
+        <item quantity="other">%1$d songs selected</item>
+    </plurals>
+
+    <!-- Multi-selection -->
+    <plurals name="selection_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+
+    <!-- Local folders -->
+    <string name="folders_choose">Choose folder</string>
+    <string name="folders_manual_path">Enter path manually</string>
+    <string name="folders_path_label">Folder path</string>
+    <string name="folders_empty">No folders configured.</string>
+
+    <!-- Track menu -->
+    <string name="track_menu_play_next">Play next</string>
+    <string name="track_menu_remove_from_queue">Remove from queue</string>
+    <string name="track_menu_add_to_likes">Add to liked songs</string>
+    <string name="track_menu_remove_from_likes">Remove from liked songs</string>
+    <string name="track_menu_remove_download">Remove download</string>
+    <string name="track_menu_downloading">Downloading... %1$s</string>
+    <string name="track_menu_download">Download song</string>
+    <string name="track_menu_add_to_playlist">Add to playlist...</string>
+    <string name="track_menu_remove_from_playlist">Remove from this playlist</string>
+    <string name="track_menu_go_to_artist">Go to artist</string>
+    <string name="track_menu_go_to_album">Go to album</string>
+
+    <!-- Track snackbars -->
+    <string name="track_snackbar_added_to_playlist">Added to %1$s</string>
+    <plurals name="track_snackbar_batch_added_to_playlist">
+        <item quantity="one">%1$d song added to %2$s</item>
+        <item quantity="other">%1$d songs added to %2$s</item>
+    </plurals>
+    <string name="track_snackbar_play_next">Playing next</string>
+    <string name="track_snackbar_added_to_queue">Added to queue</string>
+    <string name="track_snackbar_added_to_likes">Added to your liked songs</string>
+    <string name="track_snackbar_removed_from_likes">Removed from your liked songs</string>
+    <string name="track_snackbar_downloading">Downloading %1$s...</string>
+    <string name="track_snackbar_download_removed">Download removed</string>
 </resources>

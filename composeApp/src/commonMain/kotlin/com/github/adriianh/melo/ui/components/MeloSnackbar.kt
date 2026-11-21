@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.ui.i18n.UiText
+import com.github.adriianh.melo.ui.i18n.resolve
 import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
@@ -35,12 +37,12 @@ import kotlin.time.Duration.Companion.milliseconds
 class MeloSnackbarState {
     var isVisible = mutableStateOf(false)
         private set
-    var message = mutableStateOf("")
+    var message = mutableStateOf<UiText>(UiText.Dynamic(""))
         private set
     var icon = mutableStateOf<ImageVector?>(null)
         private set
 
-    var actionLabel = mutableStateOf<String?>(null)
+    var actionLabel = mutableStateOf<UiText?>(null)
         private set
     var actionColor = mutableStateOf<androidx.compose.ui.graphics.Color?>(null)
         private set
@@ -55,7 +57,23 @@ class MeloSnackbarState {
         vector: ImageVector? = null,
         action: String? = null,
         actionColor: androidx.compose.ui.graphics.Color? = null,
-        onAction: (() -> Unit)? = null
+        onAction: (() -> Unit)? = null,
+    ) {
+        show(
+            msg = UiText.Dynamic(msg),
+            vector = vector,
+            action = action?.let { UiText.Dynamic(it) },
+            actionColor = actionColor,
+            onAction = onAction,
+        )
+    }
+
+    fun show(
+        msg: UiText,
+        vector: ImageVector? = null,
+        action: UiText? = null,
+        actionColor: androidx.compose.ui.graphics.Color? = null,
+        onAction: (() -> Unit)? = null,
     ) {
         message.value = msg
         icon.value = vector
@@ -77,7 +95,7 @@ val LocalMeloSnackbar = compositionLocalOf<MeloSnackbarState> { error("No Snackb
 fun MeloSnackbarHost(
     state: MeloSnackbarState,
     modifier: Modifier = Modifier,
-    bottomPadding: androidx.compose.ui.unit.Dp? = null
+    bottomPadding: androidx.compose.ui.unit.Dp? = null,
 ) {
     val platform = remember { getPlatform() }
 
@@ -92,35 +110,36 @@ fun MeloSnackbarHost(
         visible = state.isVisible.value,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         val colors = LocalMeloColors.current
         val actualBottomPadding =
             bottomPadding ?: if (platform.type == PlatformType.DESKTOP) 120.dp else 180.dp
 
         Row(
-            modifier = Modifier
-                .padding(bottom = actualBottomPadding, start = 24.dp, end = 24.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(colors.surface2.copy(alpha = 0.95f))
-                .border(0.5.dp, colors.glassBorder, RoundedCornerShape(32.dp))
-                .padding(horizontal = 24.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .padding(bottom = actualBottomPadding, start = 24.dp, end = 24.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(colors.surface2.copy(alpha = 0.95f))
+                    .border(0.5.dp, colors.glassBorder, RoundedCornerShape(32.dp))
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             val vector = state.icon.value
             if (vector != null) {
                 Icon(
                     imageVector = vector,
                     contentDescription = null,
-                    tint = colors.textPrimary
+                    tint = colors.textPrimary,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
             }
             Text(
-                text = state.message.value,
+                text = state.message.value.resolve(),
                 style = MeloType.labelMedium,
                 color = colors.textPrimary,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f, fill = false),
             )
 
             val actionLabel = state.actionLabel.value
@@ -129,16 +148,16 @@ fun MeloSnackbarHost(
             if (actionLabel != null && onActionClick != null) {
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = actionLabel,
+                    text = actionLabel.resolve(),
                     style = MeloType.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                     color = actionColor,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable {
-                            onActionClick()
-                            state.dismiss()
-                        }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                onActionClick()
+                                state.dismiss()
+                            }.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }

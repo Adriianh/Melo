@@ -4,6 +4,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_retry
+import com.github.adriianh.melo.resources.offline_disable
+import com.github.adriianh.melo.resources.offline_manual_subtitle
+import com.github.adriianh.melo.resources.offline_manual_title
+import com.github.adriianh.melo.resources.offline_subtitle
+import com.github.adriianh.melo.resources.offline_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun OfflineModeBanner(
@@ -16,14 +24,25 @@ fun OfflineModeBanner(
     MeloBanner(
         visible = visible,
         modifier = modifier,
-        title = if (isManualOffline) "Modo sin conexión" else "Sin conexión a internet",
-        subtitle = if (isManualOffline) {
-            "Reproduciendo únicamente pistas descargadas y locales"
-        } else {
-            "Comprueba tu conexión para acceder a todo el catálogo"
-        },
+        title =
+            if (isManualOffline) {
+                stringResource(Res.string.offline_manual_title)
+            } else {
+                stringResource(Res.string.offline_title)
+            },
+        subtitle =
+            if (isManualOffline) {
+                stringResource(Res.string.offline_manual_subtitle)
+            } else {
+                stringResource(Res.string.offline_subtitle)
+            },
         icon = Icons.Default.CloudOff,
-        actionLabel = if (isManualOffline) "Desactivar" else "Reintentar",
+        actionLabel =
+            if (isManualOffline) {
+                stringResource(Res.string.offline_disable)
+            } else {
+                stringResource(Res.string.common_action_retry)
+            },
         onAction = if (isManualOffline) onDisableManual else onRetry,
     )
 }

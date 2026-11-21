@@ -31,12 +31,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_play_all
+import com.github.adriianh.melo.resources.a11y_radio
+import com.github.adriianh.melo.resources.a11y_save_to_library
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CuratedHighlightCard(
+    modifier: Modifier = Modifier,
     title: String,
     author: String,
     metadata: String,
@@ -46,29 +53,29 @@ fun CuratedHighlightCard(
     onTrackClick: (Track) -> Unit,
     onRadioClick: () -> Unit = {},
     onBookmarkClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier
-            .width(330.dp)
-            .clip(RoundedCornerShape(16.dp)),
+        modifier =
+            modifier
+                .width(330.dp)
+                .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(containerColor = MeloColors.surface1),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 MeloAsyncImage(
                     url = artworkUrl,
                     contentDescription = title,
                     size = 64.dp,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -78,7 +85,7 @@ fun CuratedHighlightCard(
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -86,7 +93,7 @@ fun CuratedHighlightCard(
                         style = MeloType.labelMedium,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (metadata.isNotBlank()) {
                         Text(
@@ -94,7 +101,7 @@ fun CuratedHighlightCard(
                             style = MeloType.labelSmall,
                             color = MeloColors.textMuted,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -103,19 +110,20 @@ fun CuratedHighlightCard(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 tracks.take(3).forEach { track ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onTrackClick(track) }
-                            .padding(vertical = 4.dp, horizontal = 2.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onTrackClick(track) }
+                                .padding(vertical = 4.dp, horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         MeloAsyncImage(
                             url = track.artworkUrl,
                             contentDescription = track.title,
                             size = 40.dp,
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(6.dp),
                         )
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -124,22 +132,22 @@ fun CuratedHighlightCard(
                                 style = MeloType.body,
                                 color = MeloColors.textPrimary,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                             Text(
                                 text = track.artist,
                                 style = MeloType.labelSmall,
                                 color = MeloColors.textMuted,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
 
                         Icon(
                             Icons.Default.MoreVert,
-                            contentDescription = "Options",
+                            contentDescription = stringResource(Res.string.a11y_more_options),
                             tint = MeloColors.textMuted,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                     }
                 }
@@ -148,19 +156,19 @@ fun CuratedHighlightCard(
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     shape = CircleShape,
                     color = MeloColors.surface2,
-                    modifier = Modifier.size(44.dp).clickable(onClick = onPlayAll)
+                    modifier = Modifier.size(44.dp).clickable(onClick = onPlayAll),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.PlayArrow,
-                            contentDescription = "Play all",
+                            contentDescription = stringResource(Res.string.a11y_play_all),
                             tint = MeloColors.textPrimary,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(24.dp),
                         )
                     }
                 }
@@ -168,14 +176,14 @@ fun CuratedHighlightCard(
                 Surface(
                     shape = CircleShape,
                     color = MeloColors.surface2,
-                    modifier = Modifier.size(44.dp).clickable(onClick = onRadioClick)
+                    modifier = Modifier.size(44.dp).clickable(onClick = onRadioClick),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.Radio,
-                            contentDescription = "Radio",
+                            contentDescription = stringResource(Res.string.a11y_radio),
                             tint = MeloColors.textMuted,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -183,14 +191,14 @@ fun CuratedHighlightCard(
                 Surface(
                     shape = CircleShape,
                     color = MeloColors.surface2,
-                    modifier = Modifier.size(44.dp).clickable(onClick = onBookmarkClick)
+                    modifier = Modifier.size(44.dp).clickable(onClick = onBookmarkClick),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Save to library",
+                            contentDescription = stringResource(Res.string.a11y_save_to_library),
                             tint = MeloColors.textMuted,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }

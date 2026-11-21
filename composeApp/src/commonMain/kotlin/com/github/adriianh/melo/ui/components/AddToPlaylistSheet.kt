@@ -51,9 +51,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.common_action_create
+import com.github.adriianh.melo.resources.playlist_selected_count
+import com.github.adriianh.melo.resources.playlist_sheet_add_selection_title
+import com.github.adriianh.melo.resources.playlist_sheet_add_title
+import com.github.adriianh.melo.resources.playlist_sheet_all_contain
+import com.github.adriianh.melo.resources.playlist_sheet_create_new
+import com.github.adriianh.melo.resources.playlist_sheet_empty
+import com.github.adriianh.melo.resources.playlist_sheet_more_artists
+import com.github.adriianh.melo.resources.playlist_sheet_new_name_placeholder
+import com.github.adriianh.melo.resources.playlist_sheet_unknown_track
+import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,9 +82,10 @@ fun AddToPlaylistSheet(
     tracks: List<Track> = emptyList(),
     containingPlaylistIds: Set<Long> = emptySet(),
 ) {
-    val effectiveTracks = remember(track, tracks) {
-        if (track != null) listOf(track) else tracks
-    }
+    val effectiveTracks =
+        remember(track, tracks) {
+            if (track != null) listOf(track) else tracks
+        }
     val singleTrack = effectiveTracks.singleOrNull()
     val isBatch = effectiveTracks.size > 1
 
@@ -82,66 +98,89 @@ fun AddToPlaylistSheet(
         sheetState = sheetState,
         containerColor = MeloColors.surface1,
         dragHandle = { BottomSheetDefaults.DragHandle(color = MeloColors.textMuted) },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 if (isBatch) {
                     PlaylistMosaicCover(
                         artworks = effectiveTracks.mapNotNull { it.artworkUrl },
                         modifier = Modifier.size(50.dp),
                         placeholderIconSize = 26.dp,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
                     )
                 } else {
                     MeloAsyncImage(
                         url = singleTrack?.artworkUrl,
                         contentDescription = singleTrack?.title,
                         size = 50.dp,
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isBatch) "Añadir selección a playlist" else "Añadir a playlist",
+                        text =
+                            if (isBatch) {
+                                stringResource(Res.string.playlist_sheet_add_selection_title)
+                            } else {
+                                stringResource(Res.string.playlist_sheet_add_title)
+                            },
                         style = MeloType.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = if (isBatch) "${effectiveTracks.size} canciones seleccionadas" else (singleTrack?.title
-                            ?: "Canción"),
+                        text =
+                            if (isBatch) {
+                                pluralStringResource(
+                                    Res.plurals.playlist_selected_count,
+                                    effectiveTracks.size,
+                                    effectiveTracks.size,
+                                )
+                            } else {
+                                singleTrack?.title ?: stringResource(Res.string.playlist_sheet_unknown_track)
+                            },
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = if (isBatch) {
-                            val distinctArtists =
-                                effectiveTracks.map { it.artist }.filter { it.isNotBlank() }
-                                    .distinct()
-                            if (distinctArtists.size == 1) distinctArtists.first() else "${
-                                distinctArtists.take(
-                                    2
-                                ).joinToString(", ")
-                            } y más"
-                        } else (singleTrack?.artist ?: ""),
+                        text =
+                            if (isBatch) {
+                                val distinctArtists =
+                                    effectiveTracks
+                                        .map { it.artist }
+                                        .filter { it.isNotBlank() }
+                                        .distinct()
+                                if (distinctArtists.size == 1) {
+                                    distinctArtists.first()
+                                } else {
+                                    stringResource(
+                                        Res.string.playlist_sheet_more_artists,
+                                        distinctArtists.take(2).joinToString(", "),
+                                    )
+                                }
+                            } else {
+                                singleTrack?.artist ?: ""
+                            },
                         style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -151,29 +190,36 @@ fun AddToPlaylistSheet(
             AnimatedVisibility(
                 visible = isCreatingNew,
                 enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+                exit = fadeOut() + shrinkVertically(),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OutlinedTextField(
                         value = newPlaylistName,
                         onValueChange = { newPlaylistName = it },
-                        placeholder = { Text("Nombre de la playlist...", style = MeloType.body) },
+                        placeholder = {
+                            Text(
+                                stringResource(Res.string.playlist_sheet_new_name_placeholder),
+                                style = MeloType.body,
+                            )
+                        },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MeloColors.border,
-                            focusedTextColor = MeloColors.textPrimary,
-                            unfocusedTextColor = MeloColors.textPrimary,
-                            cursorColor = MaterialTheme.colorScheme.primary,
-                        )
+                        colors =
+                            OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MeloColors.border,
+                                focusedTextColor = MeloColors.textPrimary,
+                                unfocusedTextColor = MeloColors.textPrimary,
+                                cursorColor = MaterialTheme.colorScheme.primary,
+                            ),
                     )
 
                     Button(
@@ -185,22 +231,25 @@ fun AddToPlaylistSheet(
                         },
                         enabled = newPlaylistName.isNotBlank(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = "Crear",
-                            modifier = Modifier.size(18.dp)
+                            contentDescription = stringResource(Res.string.common_action_create),
+                            modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Crear", style = MeloType.labelMedium)
+                        Text(stringResource(Res.string.common_action_create), style = MeloType.labelMedium)
                     }
 
-                    IconButton(onClick = { isCreatingNew = false; newPlaylistName = "" }) {
+                    IconButton(onClick = {
+                        isCreatingNew = false
+                        newPlaylistName = ""
+                    }) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Cancelar",
-                            tint = MeloColors.textSecondary
+                            contentDescription = stringResource(Res.string.common_action_cancel),
+                            tint = MeloColors.textSecondary,
                         )
                     }
                 }
@@ -208,40 +257,43 @@ fun AddToPlaylistSheet(
 
             if (!isCreatingNew) {
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 6.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { isCreatingNew = true },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { isCreatingNew = true },
                     shape = RoundedCornerShape(12.dp),
-                    color = MeloColors.surface2
+                    color = MeloColors.surface2,
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 Icons.Default.Add,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                         Text(
-                            text = "Crear nueva playlist",
+                            text = stringResource(Res.string.playlist_sheet_create_new),
                             style = MeloType.body,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -249,58 +301,62 @@ fun AddToPlaylistSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val availablePlaylists = remember(playlists, containingPlaylistIds) {
-                playlists.filter { it.id !in containingPlaylistIds }
-            }
+            val availablePlaylists =
+                remember(playlists, containingPlaylistIds) {
+                    playlists.filter { it.id !in containingPlaylistIds }
+                }
 
             if (playlists.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp, horizontal = 24.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp, horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Aún no tienes playlists creadas. ¡Crea una para comenzar!",
+                        text = stringResource(Res.string.playlist_sheet_empty),
                         style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary
+                        color = MeloColors.textSecondary,
                     )
                 }
             } else if (availablePlaylists.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp, horizontal = 24.dp),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp, horizontal = 24.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "Esta canción ya está agregada en todas tus playlists.",
+                        text = stringResource(Res.string.playlist_sheet_all_contain),
                         style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary
+                        color = MeloColors.textSecondary,
                     )
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 320.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 320.dp),
                 ) {
                     items(availablePlaylists, key = { it.id }) { playlist ->
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelectPlaylist(playlist)
-                                    onDismissRequest()
-                                }
-                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSelectPlaylist(playlist)
+                                        onDismissRequest()
+                                    }.padding(horizontal = 24.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
                         ) {
                             PlaylistMosaicCover(
                                 artworks = playlist.artworks,
                                 modifier = Modifier.size(44.dp),
-                                placeholderIconSize = 24.dp
+                                placeholderIconSize = 24.dp,
                             )
 
                             Column(modifier = Modifier.weight(1f)) {
@@ -310,12 +366,17 @@ fun AddToPlaylistSheet(
                                     fontWeight = FontWeight.Medium,
                                     color = MeloColors.textPrimary,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = "${playlist.trackCount} canciones",
+                                    text =
+                                        pluralStringResource(
+                                            Res.plurals.playlist_track_count,
+                                            playlist.trackCount,
+                                            playlist.trackCount,
+                                        ),
                                     style = MeloType.labelSmall,
-                                    color = MeloColors.textSecondary
+                                    color = MeloColors.textSecondary,
                                 )
                             }
                         }

@@ -35,10 +35,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_downloaded
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_not_selected
+import com.github.adriianh.melo.resources.a11y_now_playing
+import com.github.adriianh.melo.resources.a11y_selected
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.formatDuration
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -62,95 +69,102 @@ fun TrackRow(
     onSelectionToggle: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-        isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        showGlassBackground -> MeloColors.glassSurface.copy(alpha = 0.3f)
-        else -> Transparent
-    }
+    val backgroundColor =
+        when {
+            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            showGlassBackground -> MeloColors.glassSurface.copy(alpha = 0.3f)
+            else -> Transparent
+        }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .alpha(if (isEnabled) 1f else 0.45f)
-            .background(backgroundColor)
-            .combinedClickable(
-                enabled = isEnabled,
-                onClick = {
-                    if (isDownloading) {
-                        // Incomplete/downloading track cannot be played yet
-                        return@combinedClickable
-                    }
-                    if (isSelectionMode) {
-                        onSelectionToggle?.invoke()
-                    } else {
-                        onClick()
-                    }
-                },
-                onLongClick = onLongClick
-            )
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .alpha(if (isEnabled) 1f else 0.45f)
+                .background(backgroundColor)
+                .combinedClickable(
+                    enabled = isEnabled,
+                    onClick = {
+                        if (isDownloading) {
+                            // Incomplete/downloading track cannot be played yet
+                            return@combinedClickable
+                        }
+                        if (isSelectionMode) {
+                            onSelectionToggle?.invoke()
+                        } else {
+                            onClick()
+                        }
+                    },
+                    onLongClick = onLongClick,
+                ).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (isSelectionMode) {
             Box(
                 modifier = Modifier.size(32.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                    contentDescription = if (isSelected) "Seleccionada" else "No seleccionada",
+                    contentDescription =
+                        if (isSelected) {
+                            stringResource(Res.string.a11y_selected)
+                        } else {
+                            stringResource(Res.string.a11y_not_selected)
+                        },
                     tint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }
         if (trackNumber != null) {
             Box(
                 modifier = Modifier.size(32.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 if (isCurrent && isPlaying) {
                     Icon(
                         Icons.Default.Equalizer,
-                        contentDescription = "Playing",
+                        contentDescription = stringResource(Res.string.a11y_now_playing),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 } else if (isCurrent) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Text(
                         text = "$trackNumber",
                         style = MeloType.labelMedium,
-                        color = if (isCurrent) MaterialTheme.colorScheme.primary else MeloColors.textMuted
+                        color = if (isCurrent) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
                     )
                 }
             }
         } else {
             Box(
                 modifier = Modifier.size(48.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 MeloAsyncImage(
                     url = track.artworkUrl,
                     contentDescription = track.title,
                     size = 48.dp,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 )
                 if (isCurrent) {
                     Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.Black.copy(alpha = 0.45f)),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.45f)),
+                        contentAlignment = Alignment.Center,
                     ) {
                         if (isPlaying) {
                             AnimatedEqualizerBars(accentColor = Color.White)
@@ -158,7 +172,7 @@ fun TrackRow(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(18.dp),
                                 color = Color.White,
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
                             )
                         }
                     }
@@ -172,47 +186,48 @@ fun TrackRow(
                 style = MeloType.body,
                 color = if (isCurrent) MaterialTheme.colorScheme.primary else MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(modifier = Modifier.height(2.dp))
-            val subtitle = when {
-                !subtitleOverride.isNullOrBlank() -> subtitleOverride
-                track.album.isNotBlank() && track.album != track.title -> "${track.artist} • ${track.album}"
-                else -> track.artist
-            }
+            val subtitle =
+                when {
+                    !subtitleOverride.isNullOrBlank() -> subtitleOverride
+                    track.album.isNotBlank() && track.album != track.title -> "${track.artist} • ${track.album}"
+                    else -> track.artist
+                }
             Text(
                 text = subtitle,
                 style = MeloType.labelSmall,
                 color = MeloColors.textMuted,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
 
         if (isDownloading) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 CircularProgressIndicator(
                     progress = { downloadProgress.coerceIn(0f, 1f) },
                     modifier = Modifier.size(14.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     text = "${(downloadProgress * 100).toInt()}%",
                     style = MeloType.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         } else if (isDownloaded) {
             Icon(
                 Icons.Default.DownloadDone,
-                contentDescription = "Descargado",
+                contentDescription = stringResource(Res.string.a11y_downloaded),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(16.dp),
             )
         }
 
@@ -221,20 +236,20 @@ fun TrackRow(
             Text(
                 text = durationText,
                 style = MeloType.labelSmall,
-                color = MeloColors.textMuted
+                color = MeloColors.textMuted,
             )
         }
 
         if (onMoreClick != null) {
             IconButton(
                 onClick = onMoreClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(32.dp),
             ) {
                 Icon(
                     Icons.Default.MoreVert,
-                    contentDescription = "Options",
+                    contentDescription = stringResource(Res.string.a11y_more_options),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
