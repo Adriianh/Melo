@@ -1,5 +1,6 @@
 package com.github.adriianh.melo.ui.settings
 
+import com.github.adriianh.core.domain.model.AppLanguage
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
@@ -11,6 +12,7 @@ import com.github.adriianh.core.domain.model.ThemePreset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 
 data class SettingsActions(
+    val onAppLanguageSelected: (AppLanguage) -> Unit = {},
     val onThemeModeSelected: (ThemeMode) -> Unit,
     val onThemePresetSelected: (ThemePreset) -> Unit,
     val onDynamicColorToggle: (Boolean) -> Unit,

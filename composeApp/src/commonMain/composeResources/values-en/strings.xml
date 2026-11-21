@@ -394,12 +394,14 @@
     <string name="settings_title">Settings</string>
     <string name="settings_breadcrumb_prefix">Settings  &gt;  </string>
     <string name="settings_group_experience">Experience</string>
-    <string name="settings_group_account_app">Account &amp; app</string>
+    <string name="settings_group_account">Account</string>
+    <string name="settings_group_app">App</string>
     <string name="settings_cat_appearance">Appearance</string>
     <string name="settings_cat_playback">Playback</string>
     <string name="settings_cat_library">Library</string>
     <string name="settings_cat_account">Account</string>
     <string name="settings_cat_integrations">Integrations</string>
+    <string name="settings_cat_general">General</string>
     <string name="settings_cat_updates">Updates</string>
     <string name="settings_summary_account_connected">YouTube Music connected</string>
     <string name="settings_summary_account_disconnected">Not signed in</string>
@@ -441,6 +443,9 @@
     <string name="settings_scrim_dark">Dark</string>
     <string name="settings_update_channel_stable">Stable</string>
     <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_language_system">System</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_english">English</string>
 
     <!-- Settings Navigation & Search -->
     <string name="settings_search_results_title">Results</string>
@@ -565,6 +570,12 @@
     <string name="settings_discord_rpc_desktop_desc">Shows your currently playing music in real time in your Discord Desktop status.</string>
     <string name="settings_discord_rpc_disabled">Link your account to enable</string>
     <string name="settings_kw_discord_rpc">discord, rich presence, rpc, activity, status, integrations</string>
+
+    <!-- Entries: General -->
+    <string name="settings_section_language">Language</string>
+    <string name="settings_app_language_title">App language</string>
+    <string name="settings_app_language_desc">Choose the interface language or follow the system setting.</string>
+    <string name="settings_kw_app_language">language, locale, spanish, english, system</string>
 
     <!-- Entries: Updates -->
     <string name="settings_section_version">Version</string>
