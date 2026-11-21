@@ -26,10 +26,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.itemKey
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.search_type_artist
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SpeedDialGrid(
@@ -43,35 +46,37 @@ fun SpeedDialGrid(
 
     CarouselScrollContainer(state = listState) {
         if (containerWidth != null) {
-            val columnWidth = remember(containerWidth) {
-                calculateAdaptiveCardWidth(
-                    containerWidth = containerWidth,
-                    minCardWidth = 280.dp,
-                    spacing = 10.dp,
-                    horizontalPadding = 24.dp
-                )
-            }
+            val columnWidth =
+                remember(containerWidth) {
+                    calculateAdaptiveCardWidth(
+                        containerWidth = containerWidth,
+                        minCardWidth = 280.dp,
+                        spacing = 10.dp,
+                        horizontalPadding = 24.dp,
+                    )
+                }
             SpeedDialRowContent(
                 columns = columns,
                 columnWidth = columnWidth,
                 listState = listState,
                 modifier = modifier,
-                onItemClick = onItemClick
+                onItemClick = onItemClick,
             )
         } else {
             BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-                val columnWidth = calculateAdaptiveCardWidth(
-                    containerWidth = maxWidth,
-                    minCardWidth = 280.dp,
-                    spacing = 10.dp,
-                    horizontalPadding = 24.dp
-                )
+                val columnWidth =
+                    calculateAdaptiveCardWidth(
+                        containerWidth = maxWidth,
+                        minCardWidth = 280.dp,
+                        spacing = 10.dp,
+                        horizontalPadding = 24.dp,
+                    )
                 SpeedDialRowContent(
                     columns = columns,
                     columnWidth = columnWidth,
                     listState = listState,
                     modifier = Modifier,
-                    onItemClick = onItemClick
+                    onItemClick = onItemClick,
                 )
             }
         }
@@ -90,18 +95,19 @@ private fun SpeedDialRowContent(
         state = listState,
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .desktopScroll(listState)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .desktopScroll(listState),
     ) {
         items(
             items = columns,
             key = { col -> col.firstOrNull()?.itemKey() ?: col.hashCode() },
-            contentType = { "speed_dial_column" }
+            contentType = { "speed_dial_column" },
         ) { columnItems ->
             Column(
                 modifier = Modifier.width(columnWidth),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 columnItems.forEach { item ->
                     val title: String
@@ -129,26 +135,27 @@ private fun SpeedDialRowContent(
 
                         is SearchResult.Artist -> {
                             title = item.name
-                            subtitle = "Artista"
+                            subtitle = stringResource(Res.string.search_type_artist)
                             artworkUrl = item.artworkUrl
                         }
                     }
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MeloColors.glassSurface.copy(alpha = 0.35f))
-                            .clickable { onItemClick(item) }
-                            .padding(8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MeloColors.glassSurface.copy(alpha = 0.35f))
+                                .clickable { onItemClick(item) }
+                                .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         MeloAsyncImage(
                             url = artworkUrl,
                             contentDescription = title,
                             size = 48.dp,
-                            shape = RoundedCornerShape(6.dp)
+                            shape = RoundedCornerShape(6.dp),
                         )
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -157,14 +164,14 @@ private fun SpeedDialRowContent(
                                 style = MeloType.labelMedium,
                                 color = MeloColors.textPrimary,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                             Text(
                                 text = subtitle,
                                 style = MeloType.labelSmall,
                                 color = MeloColors.textMuted,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }

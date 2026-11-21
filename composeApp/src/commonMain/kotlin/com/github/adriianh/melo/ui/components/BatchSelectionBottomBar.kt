@@ -39,8 +39,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_clear_selection
+import com.github.adriianh.melo.resources.a11y_delete_selected
+import com.github.adriianh.melo.resources.a11y_deselect_all
+import com.github.adriianh.melo.resources.a11y_download_selected
+import com.github.adriianh.melo.resources.a11y_select_all
+import com.github.adriianh.melo.resources.common_action_add_to_playlist
+import com.github.adriianh.melo.resources.common_action_add_to_queue
+import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun BatchSelectionBottomBar(
@@ -62,99 +73,107 @@ fun BatchSelectionBottomBar(
         visible = isVisible,
         enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(16.dp, RoundedCornerShape(18.dp)),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .shadow(16.dp, RoundedCornerShape(18.dp)),
                 shape = RoundedCornerShape(18.dp),
                 color = MeloColors.surface1,
-                border = BorderStroke(1.dp, MeloColors.borderStrong)
+                border = BorderStroke(1.dp, MeloColors.borderStrong),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         IconButton(
                             onClick = onClearSelection,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Cancelar selección",
+                                contentDescription = stringResource(Res.string.a11y_clear_selection),
                                 tint = MeloColors.textMuted,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
 
                         Column {
                             Text(
-                                text = if (selectedCount == 1) "1 seleccionada" else "$selectedCount seleccionadas",
+                                text = pluralStringResource(Res.plurals.selection_count, selectedCount, selectedCount),
                                 style = MeloType.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MeloColors.textPrimary
+                                color = MeloColors.textPrimary,
                             )
                         }
 
                         IconButton(
                             onClick = onSelectAllToggle,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 Icons.Default.SelectAll,
-                                contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
+                                contentDescription =
+                                    if (isAllSelected) {
+                                        stringResource(Res.string.a11y_deselect_all)
+                                    } else {
+                                        stringResource(Res.string.a11y_select_all)
+                                    },
                                 tint = if (isAllSelected) accentColor else MeloColors.textMuted,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         BatchActionButton(
                             icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                            contentDescription = "Añadir a playlist",
+                            contentDescription = stringResource(Res.string.common_action_add_to_playlist),
                             onClick = onAddToPlaylist,
-                            tint = accentColor
+                            tint = accentColor,
                         )
 
                         BatchActionButton(
                             icon = Icons.AutoMirrored.Filled.QueueMusic,
-                            contentDescription = "Añadir a la cola",
+                            contentDescription = stringResource(Res.string.common_action_add_to_queue),
                             onClick = onAddToQueue,
-                            tint = MeloColors.brandAccent
+                            tint = MeloColors.brandAccent,
                         )
 
                         BatchActionButton(
                             icon = Icons.Default.Download,
-                            contentDescription = "Descargar seleccionadas",
+                            contentDescription = stringResource(Res.string.a11y_download_selected),
                             onClick = onDownload,
-                            tint = MeloColors.textPrimary
+                            tint = MeloColors.textPrimary,
                         )
 
                         if (onDeleteSelected != null) {
                             BatchActionButton(
                                 icon = Icons.Default.DeleteOutline,
-                                contentDescription = "Eliminar seleccionadas",
+                                contentDescription = stringResource(Res.string.a11y_delete_selected),
                                 onClick = onDeleteSelected,
-                                tint = MaterialTheme.colorScheme.error
+                                tint = MaterialTheme.colorScheme.error,
                             )
                         }
                     }
@@ -173,18 +192,19 @@ private fun BatchActionButton(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .size(38.dp)
-            .clip(CircleShape)
-            .background(MeloColors.surface2)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(MeloColors.surface2)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(20.dp),
         )
     }
 }

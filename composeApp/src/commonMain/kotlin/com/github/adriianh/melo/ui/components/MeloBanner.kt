@@ -35,8 +35,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_dismiss
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun MeloBanner(
@@ -58,14 +61,15 @@ fun MeloBanner(
     ) {
         val shape = RoundedCornerShape(14.dp)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-                .shadow(8.dp, shape)
-                .clip(shape)
-                .background(MeloColors.playerBarFill)
-                .border(0.5.dp, MeloColors.playerBarBorder, shape)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .shadow(8.dp, shape)
+                    .clip(shape)
+                    .background(MeloColors.playerBarFill)
+                    .border(0.5.dp, MeloColors.playerBarBorder, shape)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             MeloBannerText(
@@ -151,7 +155,7 @@ private fun MeloBannerDismissButton(onDismiss: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Close,
-            contentDescription = "Descartar",
+            contentDescription = stringResource(Res.string.a11y_dismiss),
             tint = MeloColors.textMuted,
             modifier = Modifier.size(18.dp),
         )

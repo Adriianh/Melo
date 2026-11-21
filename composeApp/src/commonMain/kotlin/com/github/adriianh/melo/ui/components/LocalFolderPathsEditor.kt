@@ -47,11 +47,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_add_folder
+import com.github.adriianh.melo.resources.a11y_remove_folder
+import com.github.adriianh.melo.resources.folders_choose
+import com.github.adriianh.melo.resources.folders_empty
+import com.github.adriianh.melo.resources.folders_manual_path
+import com.github.adriianh.melo.resources.folders_path_label
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
 import com.github.adriianh.melo.util.rememberDirectoryPicker
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LocalFolderPathsEditor(
@@ -107,7 +115,7 @@ fun LocalFolderPathsEditor(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Elegir carpeta",
+                    text = stringResource(Res.string.folders_choose),
                     style = MeloType.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -128,7 +136,7 @@ fun LocalFolderPathsEditor(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Escribir ruta manualmente",
+                    text = stringResource(Res.string.folders_manual_path),
                     style = MeloType.labelMedium,
                     color = MeloColors.textSecondary,
                     maxLines = 1,
@@ -168,7 +176,7 @@ private fun LocalFoldersEmptyState() {
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = "No hay carpetas configuradas.",
+            text = stringResource(Res.string.folders_empty),
             style = MeloType.labelSmall,
             color = MeloColors.textMuted,
             modifier = Modifier.weight(1f),
@@ -220,7 +228,7 @@ private fun ConfiguredFoldersList(
                     ) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Eliminar carpeta",
+                            contentDescription = stringResource(Res.string.a11y_remove_folder),
                             tint = MeloColors.textSecondary,
                             modifier = Modifier.size(18.dp),
                         )
@@ -241,7 +249,7 @@ private fun ManualFolderPathField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text("Ruta de la carpeta", style = MeloType.labelSmall) },
+        label = { Text(stringResource(Res.string.folders_path_label), style = MeloType.labelSmall) },
         singleLine = true,
         shape = RoundedCornerShape(12.dp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -254,7 +262,7 @@ private fun ManualFolderPathField(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Añadir carpeta",
+                    contentDescription = stringResource(Res.string.a11y_add_folder),
                     tint = if (canAdd) MaterialTheme.colorScheme.primary else MeloColors.textMuted,
                 )
             }

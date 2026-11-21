@@ -36,9 +36,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_play_next
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SuggestionTrackCard(
@@ -54,32 +58,34 @@ fun SuggestionTrackCard(
     val backgroundColor =
         if (isCurrent) activeAccent.copy(alpha = 0.18f) else MeloColors.surface1.copy(alpha = 0.55f)
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(backgroundColor)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
             modifier = Modifier.size(36.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             MeloAsyncImage(
                 url = track.artworkUrl,
                 contentDescription = track.title,
                 size = 36.dp,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(6.dp),
             )
             if (isCurrent) {
                 Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.Black.copy(alpha = 0.45f)),
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color.Black.copy(alpha = 0.45f)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (isPlaying) {
                         AnimatedEqualizerBars(accentColor = Color.White)
@@ -87,7 +93,7 @@ fun SuggestionTrackCard(
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             color = Color.White,
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     }
                 }
@@ -95,7 +101,7 @@ fun SuggestionTrackCard(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = track.title,
@@ -103,40 +109,40 @@ fun SuggestionTrackCard(
                 fontWeight = FontWeight.Medium,
                 color = if (isCurrent) activeAccent else MeloColors.textPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = track.artist,
                 style = MeloType.labelSmall.copy(fontSize = 11.sp),
                 color = MeloColors.textMuted,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             IconButton(
                 onClick = onMoreClick,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     Icons.Default.MoreVert,
-                    contentDescription = "Más opciones",
+                    contentDescription = stringResource(Res.string.a11y_more_options),
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
             IconButton(
                 onClick = onAddClick,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.PlaylistPlay,
-                    contentDescription = "Reproducir a continuación",
+                    contentDescription = stringResource(Res.string.a11y_play_next),
                     tint = activeAccent,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
@@ -144,59 +150,63 @@ fun SuggestionTrackCard(
 }
 
 @Composable
-fun SuggestionSkeletonCard(
-    modifier: Modifier = Modifier,
-) {
+fun SuggestionSkeletonCard(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "suggestion_skeleton")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.25f,
         targetValue = 0.6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "skeleton_alpha"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "skeleton_alpha",
     )
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MeloColors.surface1.copy(alpha = alpha * 0.4f))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MeloColors.surface1.copy(alpha = alpha * 0.4f))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MeloColors.surface2.copy(alpha = alpha))
+            modifier =
+                Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MeloColors.surface2.copy(alpha = alpha)),
         )
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .height(11.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MeloColors.surface2.copy(alpha = alpha))
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.65f)
+                        .height(11.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MeloColors.surface2.copy(alpha = alpha)),
             )
             Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.4f)
-                    .height(9.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MeloColors.surface2.copy(alpha = alpha * 0.7f))
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.4f)
+                        .height(9.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MeloColors.surface2.copy(alpha = alpha * 0.7f)),
             )
         }
         Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(MeloColors.surface2.copy(alpha = alpha * 0.5f))
+            modifier =
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(MeloColors.surface2.copy(alpha = alpha * 0.5f)),
         )
     }
 }

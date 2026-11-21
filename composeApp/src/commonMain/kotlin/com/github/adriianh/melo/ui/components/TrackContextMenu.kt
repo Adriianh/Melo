@@ -42,10 +42,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_add_to_queue
+import com.github.adriianh.melo.resources.common_action_share
+import com.github.adriianh.melo.resources.track_menu_add_to_likes
+import com.github.adriianh.melo.resources.track_menu_add_to_playlist
+import com.github.adriianh.melo.resources.track_menu_download
+import com.github.adriianh.melo.resources.track_menu_downloading
+import com.github.adriianh.melo.resources.track_menu_go_to_album
+import com.github.adriianh.melo.resources.track_menu_go_to_artist
+import com.github.adriianh.melo.resources.track_menu_play_next
+import com.github.adriianh.melo.resources.track_menu_remove_download
+import com.github.adriianh.melo.resources.track_menu_remove_from_likes
+import com.github.adriianh.melo.resources.track_menu_remove_from_playlist
+import com.github.adriianh.melo.resources.track_menu_remove_from_queue
 import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +82,7 @@ fun TrackContextMenu(
     onRemoveFromPlaylist: (() -> Unit)? = null,
     isDownloaded: Boolean = false,
     isDownloading: Boolean = false,
-    downloadProgress: Float? = null
+    downloadProgress: Float? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -75,25 +90,27 @@ fun TrackContextMenu(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         containerColor = MeloColors.surface1,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = MeloColors.textMuted) }
+        dragHandle = { BottomSheetDefaults.DragHandle(color = MeloColors.textMuted) },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 MeloAsyncImage(
                     url = track.artworkUrl,
                     contentDescription = track.title,
                     size = 56.dp,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -102,14 +119,14 @@ fun TrackContextMenu(
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = track.artist,
                         style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -117,84 +134,126 @@ fun TrackContextMenu(
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 color = MeloColors.border.copy(alpha = 0.5f),
-                thickness = DividerDefaults.Thickness
+                thickness = DividerDefaults.Thickness,
             )
 
             ContextMenuItem(
                 icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                text = "Reproducir siguiente",
-                onClick = { onPlayNext(); onDismissRequest() }
+                text = stringResource(Res.string.track_menu_play_next),
+                onClick = {
+                    onPlayNext()
+                    onDismissRequest()
+                },
             )
             if (inQueue) {
                 ContextMenuItem(
                     icon = Icons.AutoMirrored.Filled.QueueMusic,
-                    text = "Eliminar de la cola",
-                    onClick = { onRemoveFromQueue(); onDismissRequest() }
+                    text = stringResource(Res.string.track_menu_remove_from_queue),
+                    onClick = {
+                        onRemoveFromQueue()
+                        onDismissRequest()
+                    },
                 )
             } else {
                 ContextMenuItem(
                     icon = Icons.AutoMirrored.Filled.QueueMusic,
-                    text = "Añadir a la cola",
-                    onClick = { onAddToQueue(); onDismissRequest() }
+                    text = stringResource(Res.string.common_action_add_to_queue),
+                    onClick = {
+                        onAddToQueue()
+                        onDismissRequest()
+                    },
                 )
             }
             ContextMenuItem(
                 icon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder,
-                text = if (isLiked) "Eliminar de Me Gusta" else "Añadir a Me Gusta",
-                onClick = { onToggleLike(); onDismissRequest() }
+                text =
+                    if (isLiked) {
+                        stringResource(Res.string.track_menu_remove_from_likes)
+                    } else {
+                        stringResource(Res.string.track_menu_add_to_likes)
+                    },
+                onClick = {
+                    onToggleLike()
+                    onDismissRequest()
+                },
             )
 
             if (isDownloaded) {
                 ContextMenuItem(
                     icon = Icons.Default.DeleteOutline,
-                    text = "Eliminar de descargas",
-                    onClick = { onDeleteDownload?.invoke(); onDismissRequest() },
-                    iconTint = MaterialTheme.colorScheme.error
+                    text = stringResource(Res.string.track_menu_remove_download),
+                    onClick = {
+                        onDeleteDownload?.invoke()
+                        onDismissRequest()
+                    },
+                    iconTint = MaterialTheme.colorScheme.error,
                 )
             } else if (isDownloading) {
                 ContextMenuItem(
                     icon = Icons.Default.Downloading,
-                    text = "Descargando... ${downloadProgress?.let { "${(it * 100).toInt()}%" } ?: ""}",
+                    text =
+                        stringResource(
+                            Res.string.track_menu_downloading,
+                            downloadProgress?.let { "${(it * 100).toInt()}%" } ?: "",
+                        ),
                     onClick = {},
-                    iconTint = MaterialTheme.colorScheme.primary
+                    iconTint = MaterialTheme.colorScheme.primary,
                 )
             } else if (onDownload != null && !track.id.startsWith("local:")) {
                 ContextMenuItem(
                     icon = Icons.Default.Download,
-                    text = "Descargar canción",
-                    onClick = { onDownload(); onDismissRequest() }
+                    text = stringResource(Res.string.track_menu_download),
+                    onClick = {
+                        onDownload()
+                        onDismissRequest()
+                    },
                 )
             }
 
             ContextMenuItem(
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                text = "Añadir a playlist...",
-                onClick = { onAddToPlaylist(); onDismissRequest() }
+                text = stringResource(Res.string.track_menu_add_to_playlist),
+                onClick = {
+                    onAddToPlaylist()
+                    onDismissRequest()
+                },
             )
 
             if (onRemoveFromPlaylist != null) {
                 ContextMenuItem(
                     icon = Icons.Default.DeleteOutline,
-                    text = "Quitar de esta playlist",
-                    onClick = { onRemoveFromPlaylist(); onDismissRequest() },
-                    iconTint = MaterialTheme.colorScheme.error
+                    text = stringResource(Res.string.track_menu_remove_from_playlist),
+                    onClick = {
+                        onRemoveFromPlaylist()
+                        onDismissRequest()
+                    },
+                    iconTint = MaterialTheme.colorScheme.error,
                 )
             }
 
             ContextMenuItem(
                 icon = Icons.Default.Person,
-                text = "Ir al artista",
-                onClick = { onGoToArtist(); onDismissRequest() }
+                text = stringResource(Res.string.track_menu_go_to_artist),
+                onClick = {
+                    onGoToArtist()
+                    onDismissRequest()
+                },
             )
             ContextMenuItem(
                 icon = Icons.Default.Album,
-                text = "Ir al álbum",
-                onClick = { onGoToAlbum(); onDismissRequest() }
+                text = stringResource(Res.string.track_menu_go_to_album),
+                onClick = {
+                    onGoToAlbum()
+                    onDismissRequest()
+                },
             )
             ContextMenuItem(
                 icon = Icons.Default.Share,
-                text = "Compartir",
-                onClick = { onShare(); onDismissRequest() }
+                text = stringResource(Res.string.common_action_share),
+                onClick = {
+                    onShare()
+                    onDismissRequest()
+                },
             )
         }
     }
@@ -264,7 +323,7 @@ fun TrackInteractionContextMenu(
             },
             isDownloaded = isDownloaded,
             isDownloading = isDownloading,
-            downloadProgress = downloadProgress
+            downloadProgress = downloadProgress,
         )
     }
 
@@ -287,22 +346,22 @@ fun TrackInteractionContextMenu(
                 if (playlistTracks.size == 1) {
                     interaction.libraryViewModel.addTrackToPlaylist(
                         playlist.id,
-                        playlistTracks.first()
+                        playlistTracks.first(),
                     ) {
                         interaction.showAddedToPlaylistSnackbar(
                             playlist.name,
-                            activeAccent
+                            activeAccent,
                         )
                     }
                 } else {
                     interaction.libraryViewModel.addTracksToPlaylist(
                         playlist.id,
-                        playlistTracks
+                        playlistTracks,
                     ) { count ->
                         interaction.showBatchAddedToPlaylistSnackbar(
                             count,
                             playlist.name,
-                            activeAccent
+                            activeAccent,
                         )
                     }
                 }
@@ -312,23 +371,23 @@ fun TrackInteractionContextMenu(
                     if (playlistTracks.size == 1) {
                         interaction.libraryViewModel.addTrackToPlaylist(
                             id,
-                            playlistTracks.first()
+                            playlistTracks.first(),
                         ) {
                             interaction.showAddedToPlaylistSnackbar(
                                 name,
-                                activeAccent
+                                activeAccent,
                             )
                         }
                     } else {
                         interaction.libraryViewModel.addTracksToPlaylist(
                             id,
-                            playlistTracks
+                            playlistTracks,
                         ) { count ->
                             interaction.showBatchAddedToPlaylistSnackbar(count, name, activeAccent)
                         }
                     }
                 }
-            }
+            },
         )
     }
 }
@@ -338,26 +397,27 @@ private fun ContextMenuItem(
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
-    iconTint: Color = MeloColors.textPrimary
+    iconTint: Color = MeloColors.textPrimary,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = iconTint,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
         )
         Text(
             text = text,
             style = MeloType.body,
-            color = MeloColors.textPrimary
+            color = MeloColors.textPrimary,
         )
     }
 }

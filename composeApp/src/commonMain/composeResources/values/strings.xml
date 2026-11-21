@@ -2,6 +2,12 @@
 <resources>
     <!-- Acciones comunes -->
     <string name="common_action_retry">Reintentar</string>
+    <string name="common_action_create">Crear</string>
+    <string name="common_action_cancel">Cancelar</string>
+    <string name="common_action_share">Compartir</string>
+    <string name="common_action_add_to_playlist">Añadir a playlist</string>
+    <string name="common_action_add_to_queue">Añadir a la cola</string>
+    <string name="common_action_undo">Deshacer</string>
 
     <!-- Errores -->
     <string name="common_error_with_detail">Error: %1$s</string>
@@ -12,8 +18,89 @@
     <string name="a11y_clear_search">Limpiar</string>
     <string name="a11y_account">Cuenta</string>
     <string name="a11y_account_update_available">Cuenta (actualización disponible)</string>
+    <string name="a11y_more_options">Más opciones</string>
+    <string name="a11y_play_all">Reproducir todo</string>
+    <string name="a11y_radio">Radio</string>
+    <string name="a11y_save_to_library">Guardar en la biblioteca</string>
+    <string name="a11y_dismiss">Descartar</string>
+    <string name="a11y_selected">Seleccionada</string>
+    <string name="a11y_not_selected">No seleccionada</string>
+    <string name="a11y_now_playing">Reproduciendo</string>
+    <string name="a11y_downloaded">Descargado</string>
+    <string name="a11y_clear_selection">Cancelar selección</string>
+    <string name="a11y_select_all">Seleccionar todo</string>
+    <string name="a11y_deselect_all">Deseleccionar todo</string>
+    <string name="a11y_download_selected">Descargar seleccionadas</string>
+    <string name="a11y_delete_selected">Eliminar seleccionadas</string>
+    <string name="a11y_play_next">Reproducir a continuación</string>
+    <string name="a11y_remove_folder">Eliminar carpeta</string>
+    <string name="a11y_add_folder">Añadir carpeta</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
     <string name="search_placeholder_library">Buscar canciones, artistas, álbumes...</string>
+    <string name="search_type_artist">Artista</string>
+
+    <!-- Modo sin conexión -->
+    <string name="offline_manual_title">Modo sin conexión</string>
+    <string name="offline_title">Sin conexión a internet</string>
+    <string name="offline_manual_subtitle">Reproduciendo únicamente pistas descargadas y locales</string>
+    <string name="offline_subtitle">Comprueba tu conexión para acceder a todo el catálogo</string>
+    <string name="offline_disable">Desactivar</string>
+
+    <!-- Playlists -->
+    <string name="playlist_sheet_add_selection_title">Añadir selección a playlist</string>
+    <string name="playlist_sheet_add_title">Añadir a playlist</string>
+    <string name="playlist_sheet_unknown_track">Canción</string>
+    <string name="playlist_sheet_more_artists">%1$s y más</string>
+    <string name="playlist_sheet_new_name_placeholder">Nombre de la playlist...</string>
+    <string name="playlist_sheet_create_new">Crear nueva playlist</string>
+    <string name="playlist_sheet_empty">Aún no tienes playlists creadas. ¡Crea una para comenzar!</string>
+    <string name="playlist_sheet_all_contain">Esta canción ya está agregada en todas tus playlists.</string>
+    <plurals name="playlist_track_count">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
+    <plurals name="playlist_selected_count">
+        <item quantity="one">%1$d canción seleccionada</item>
+        <item quantity="other">%1$d canciones seleccionadas</item>
+    </plurals>
+
+    <!-- Selección múltiple -->
+    <plurals name="selection_count">
+        <item quantity="one">%1$d seleccionada</item>
+        <item quantity="other">%1$d seleccionadas</item>
+    </plurals>
+
+    <!-- Carpetas locales -->
+    <string name="folders_choose">Elegir carpeta</string>
+    <string name="folders_manual_path">Escribir ruta manualmente</string>
+    <string name="folders_path_label">Ruta de la carpeta</string>
+    <string name="folders_empty">No hay carpetas configuradas.</string>
+
+    <!-- Menú de pista -->
+    <string name="track_menu_play_next">Reproducir siguiente</string>
+    <string name="track_menu_remove_from_queue">Eliminar de la cola</string>
+    <string name="track_menu_add_to_likes">Añadir a Me Gusta</string>
+    <string name="track_menu_remove_from_likes">Eliminar de Me Gusta</string>
+    <string name="track_menu_remove_download">Eliminar de descargas</string>
+    <string name="track_menu_downloading">Descargando... %1$s</string>
+    <string name="track_menu_download">Descargar canción</string>
+    <string name="track_menu_add_to_playlist">Añadir a playlist...</string>
+    <string name="track_menu_remove_from_playlist">Quitar de esta playlist</string>
+    <string name="track_menu_go_to_artist">Ir al artista</string>
+    <string name="track_menu_go_to_album">Ir al álbum</string>
+
+    <!-- Notificaciones de pista -->
+    <string name="track_snackbar_added_to_playlist">Añadida a %1$s</string>
+    <plurals name="track_snackbar_batch_added_to_playlist">
+        <item quantity="one">%1$d canción añadida a %2$s</item>
+        <item quantity="other">%1$d canciones añadidas a %2$s</item>
+    </plurals>
+    <string name="track_snackbar_play_next">Se reproducirá a continuación</string>
+    <string name="track_snackbar_added_to_queue">Añadida a la cola</string>
+    <string name="track_snackbar_added_to_likes">Añadida a tus Me Gusta</string>
+    <string name="track_snackbar_removed_from_likes">Eliminada de tus Me Gusta</string>
+    <string name="track_snackbar_downloading">Descargando %1$s...</string>
+    <string name="track_snackbar_download_removed">Descarga eliminada</string>
 </resources>

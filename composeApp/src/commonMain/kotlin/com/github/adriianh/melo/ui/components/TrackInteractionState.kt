@@ -13,6 +13,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_undo
+import com.github.adriianh.melo.resources.track_snackbar_added_to_likes
+import com.github.adriianh.melo.resources.track_snackbar_added_to_playlist
+import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_batch_added_to_playlist
+import com.github.adriianh.melo.resources.track_snackbar_download_removed
+import com.github.adriianh.melo.resources.track_snackbar_downloading
+import com.github.adriianh.melo.resources.track_snackbar_play_next
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.ColorUtils
@@ -55,94 +66,115 @@ class TrackInteractionState(
 
     fun showAddedToPlaylistSnackbar(
         playlistName: String,
-        actionColor: Color? = null
+        actionColor: Color? = null,
     ) {
         snackbar.show(
-            msg = "Añadida a $playlistName",
+            msg = UiText.Resource(Res.string.track_snackbar_added_to_playlist, listOf(playlistName)),
             vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-            actionColor = actionColor
+            actionColor = actionColor,
         )
     }
 
     fun showBatchAddedToPlaylistSnackbar(
         count: Int,
         playlistName: String,
-        actionColor: Color? = null
+        actionColor: Color? = null,
     ) {
         snackbar.show(
-            msg = if (count == 1) "1 canción añadida a $playlistName" else "$count canciones añadidas a $playlistName",
+            msg =
+                UiText.Plural(
+                    res = Res.plurals.track_snackbar_batch_added_to_playlist,
+                    quantity = count,
+                    args = listOf(count, playlistName),
+                ),
             vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-            actionColor = actionColor
+            actionColor = actionColor,
         )
     }
 
-    fun showPlayNextSnackbar(track: Track, actionColor: Color? = null) {
+    fun showPlayNextSnackbar(
+        track: Track,
+        actionColor: Color? = null,
+    ) {
         val insertIndex = queueViewModel.queueState.value.currentIndex + 1
         queueViewModel.insertTrackNext(track)
         snackbar.show(
-            msg = "Se reproducirá a continuación",
+            msg = UiText.Resource(Res.string.track_snackbar_play_next),
             vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-            action = "Deshacer",
+            action = UiText.Resource(Res.string.common_action_undo),
             actionColor = actionColor,
-            onAction = { queueViewModel.removeTrackAt(insertIndex) }
+            onAction = { queueViewModel.removeTrackAt(insertIndex) },
         )
     }
 
-    fun showAddedToQueueSnackbar(track: Track, actionColor: Color? = null) {
+    fun showAddedToQueueSnackbar(
+        track: Track,
+        actionColor: Color? = null,
+    ) {
         queueViewModel.addToQueue(track)
         snackbar.show(
-            msg = "Añadida a la cola",
+            msg = UiText.Resource(Res.string.track_snackbar_added_to_queue),
             vector = Icons.AutoMirrored.Filled.QueueMusic,
-            action = "Deshacer",
+            action = UiText.Resource(Res.string.common_action_undo),
             actionColor = actionColor,
-            onAction = { queueViewModel.removeTrackFromQueue(track) }
+            onAction = { queueViewModel.removeTrackFromQueue(track) },
         )
     }
 
     fun showToggledLikeSnackbar(
         track: Track,
         isCurrentlyLiked: Boolean,
-        actionColor: Color? = null
+        actionColor: Color? = null,
     ) {
         libraryViewModel.toggleLike(track.id, !isCurrentlyLiked)
         snackbar.show(
-            msg = if (isCurrentlyLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
+            msg =
+                UiText.Resource(
+                    if (isCurrentlyLiked) {
+                        Res.string.track_snackbar_removed_from_likes
+                    } else {
+                        Res.string.track_snackbar_added_to_likes
+                    },
+                ),
             vector = if (isCurrentlyLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-            action = "Deshacer",
+            action = UiText.Resource(Res.string.common_action_undo),
             actionColor = actionColor,
-            onAction = { libraryViewModel.toggleLike(track.id, isCurrentlyLiked) }
+            onAction = { libraryViewModel.toggleLike(track.id, isCurrentlyLiked) },
         )
     }
 
-    fun downloadTrack(track: Track, actionColor: Color? = null) {
+    fun downloadTrack(
+        track: Track,
+        actionColor: Color? = null,
+    ) {
         libraryViewModel.downloadTrack(track)
         snackbar.show(
-            msg = "Descargando ${track.title}...",
-            actionColor = actionColor
+            msg = UiText.Resource(Res.string.track_snackbar_downloading, listOf(track.title)),
+            actionColor = actionColor,
         )
     }
 
-    fun deleteDownloadedTrack(trackId: String, actionColor: Color? = null) {
+    fun deleteDownloadedTrack(
+        trackId: String,
+        actionColor: Color? = null,
+    ) {
         libraryViewModel.deleteDownloadedTrack(trackId)
         snackbar.show(
-            msg = "Descarga eliminada",
-            actionColor = actionColor
+            msg = UiText.Resource(Res.string.track_snackbar_download_removed),
+            actionColor = actionColor,
         )
     }
 
     @Composable
-    fun resolveActiveAccent(accentColor: Color): Color {
-        return if (accentColor != Color.Transparent && accentColor != MeloColors.textMuted && accentColor != Color.Black) {
+    fun resolveActiveAccent(accentColor: Color): Color =
+        if (accentColor != Color.Transparent && accentColor != MeloColors.textMuted && accentColor != Color.Black) {
             ColorUtils.harmonize(accentColor, MeloColors.isDark)
         } else {
             MeloColors.brandAccent
         }
-    }
 
     @Composable
-    fun resolveActiveAccent(playerState: PlayerUiState): Color {
-        return resolveActiveAccent(playerState.accentColor)
-    }
+    fun resolveActiveAccent(playerState: PlayerUiState): Color = resolveActiveAccent(playerState.accentColor)
 }
 
 @Composable
