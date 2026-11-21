@@ -53,6 +53,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_delete_download
+import com.github.adriianh.melo.resources.a11y_downloaded
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_play_all
+import com.github.adriianh.melo.resources.library_downloads_albums_empty
+import com.github.adriianh.melo.resources.library_downloads_artists_empty
+import com.github.adriianh.melo.resources.library_downloads_downloading_count
+import com.github.adriianh.melo.resources.library_downloads_empty_subtitle
+import com.github.adriianh.melo.resources.library_downloads_empty_title
+import com.github.adriianh.melo.resources.library_downloads_pending_hint
+import com.github.adriianh.melo.resources.library_downloads_various_artists
+import com.github.adriianh.melo.resources.playlist_track_count
+import com.github.adriianh.melo.resources.section_albums
+import com.github.adriianh.melo.resources.section_artists
+import com.github.adriianh.melo.resources.section_songs
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.MeloEmptyState
@@ -61,13 +77,16 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 private enum class DownloadsFilter(
-    val label: String,
+    val labelRes: StringResource,
 ) {
-    SONGS("Canciones"),
-    ALBUMS("Álbumes"),
-    ARTISTS("Artistas"),
+    SONGS(Res.string.section_songs),
+    ALBUMS(Res.string.section_albums),
+    ARTISTS(Res.string.section_artists),
 }
 
 @Composable
@@ -100,14 +119,19 @@ fun DownloadsTabContent(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "Descargando ${activeDownloads.size} canción(es)...",
+                        text =
+                            pluralStringResource(
+                                Res.plurals.library_downloads_downloading_count,
+                                activeDownloads.size,
+                                activeDownloads.size,
+                            ),
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = "Las canciones aparecerán aquí en cuanto finalice la descarga.",
+                        text = stringResource(Res.string.library_downloads_pending_hint),
                         style = MeloType.body,
                         color = MeloColors.textSecondary,
                         textAlign = TextAlign.Center,
@@ -120,14 +144,14 @@ fun DownloadsTabContent(
                         modifier = Modifier.size(56.dp),
                     )
                     Text(
-                        text = "No tienes canciones descargadas",
+                        text = stringResource(Res.string.library_downloads_empty_title),
                         style = MeloType.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MeloColors.textPrimary,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        text = "Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos.",
+                        text = stringResource(Res.string.library_downloads_empty_subtitle),
                         style = MeloType.body,
                         color = MeloColors.textSecondary,
                         textAlign = TextAlign.Center,
@@ -145,6 +169,7 @@ fun DownloadsTabContent(
 
     listState.autoScrollOnNewItem(downloadedTracks) { "${it.track.id}_${it.track.artist}" }
 
+    val variousArtistsLabel = stringResource(Res.string.library_downloads_various_artists)
     val downloadedAlbums =
         remember(downloadedTracks) {
             downloadedTracks
@@ -165,7 +190,7 @@ fun DownloadsTabContent(
                                 ?.track
                                 ?.artist
                                 ?.takeIf { it.isNotBlank() }
-                                ?: "Varios Artistas",
+                                ?: variousArtistsLabel,
                         artworkUrl = tracks.firstOrNull()?.track?.artworkUrl,
                         tracks = tracks.map { it.track },
                     )
@@ -212,7 +237,7 @@ fun DownloadsTabContent(
                                 DownloadsFilter.ALBUMS -> downloadedAlbums.size
                                 DownloadsFilter.ARTISTS -> downloadedArtists.size
                             }
-                        Text("${filter.label} ($count)")
+                        Text("${stringResource(filter.labelRes)} ($count)")
                     },
                     colors =
                         FilterChipDefaults.filterChipColors(
@@ -315,7 +340,7 @@ fun DownloadsTabContent(
                                         modifier = Modifier.size(18.dp),
                                     )
                                     Spacer(modifier = Modifier.size(8.dp))
-                                    Text("Reproducir todo")
+                                    Text(stringResource(Res.string.a11y_play_all))
                                 }
                             }
                         }
@@ -335,7 +360,7 @@ fun DownloadsTabContent(
             DownloadsFilter.ALBUMS -> {
                 if (downloadedAlbums.isEmpty()) {
                     MeloEmptyState(
-                        message = "No tienes álbumes entre tus descargas",
+                        message = stringResource(Res.string.library_downloads_albums_empty),
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
@@ -348,9 +373,15 @@ fun DownloadsTabContent(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(downloadedAlbums, key = { it.name }) { album ->
+                            val trackCountLabel =
+                                pluralStringResource(
+                                    Res.plurals.playlist_track_count,
+                                    album.tracks.size,
+                                    album.tracks.size,
+                                )
                             AlbumCard(
                                 title = album.name,
-                                subtitle = "${album.artist} • ${album.tracks.size} canciones",
+                                subtitle = "${album.artist} • $trackCountLabel",
                                 artworkUrl = album.artworkUrl,
                                 cardWidth = 140.dp,
                                 onClick = {
@@ -370,7 +401,7 @@ fun DownloadsTabContent(
             DownloadsFilter.ARTISTS -> {
                 if (downloadedArtists.isEmpty()) {
                     MeloEmptyState(
-                        message = "No tienes artistas entre tus descargas",
+                        message = stringResource(Res.string.library_downloads_artists_empty),
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
@@ -461,7 +492,7 @@ private fun DownloadedTrackRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.DownloadDone,
-                        contentDescription = "Descargado",
+                        contentDescription = stringResource(Res.string.a11y_downloaded),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(14.dp),
                     )
@@ -478,7 +509,7 @@ private fun DownloadedTrackRow(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "Eliminar descarga",
+                    contentDescription = stringResource(Res.string.a11y_delete_download),
                     tint = MeloColors.textSecondary,
                     modifier = Modifier.size(20.dp),
                 )
@@ -487,7 +518,7 @@ private fun DownloadedTrackRow(
             IconButton(onClick = onMoreClick) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Más opciones",
+                    contentDescription = stringResource(Res.string.a11y_more_options),
                     tint = MeloColors.textSecondary,
                     modifier = Modifier.size(20.dp),
                 )

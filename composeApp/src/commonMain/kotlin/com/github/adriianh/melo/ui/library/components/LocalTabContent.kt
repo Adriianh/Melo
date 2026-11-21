@@ -48,6 +48,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.platform.PlatformFileSystem
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_manage_folders
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_play_all
+import com.github.adriianh.melo.resources.a11y_rescan
+import com.github.adriianh.melo.resources.common_action_close
+import com.github.adriianh.melo.resources.library_local_default_folders
+import com.github.adriianh.melo.resources.library_local_device_audio
+import com.github.adriianh.melo.resources.library_local_empty_subtitle
+import com.github.adriianh.melo.resources.library_local_empty_title
+import com.github.adriianh.melo.resources.library_local_folders_button
+import com.github.adriianh.melo.resources.library_local_folders_subtitle
+import com.github.adriianh.melo.resources.library_local_folders_title
+import com.github.adriianh.melo.resources.library_local_scan_button
+import com.github.adriianh.melo.resources.library_local_scan_now
+import com.github.adriianh.melo.resources.library_local_scanning
+import com.github.adriianh.melo.resources.library_local_track_count
 import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -55,6 +72,8 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
 import com.github.adriianh.melo.util.formatDuration
 import com.github.adriianh.melo.util.rememberAudioPermissionRequester
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LocalTabContent(
@@ -70,11 +89,12 @@ fun LocalTabContent(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
-    val requestAudioPermission = rememberAudioPermissionRequester { isGranted ->
-        if (isGranted) {
-            onRescan()
+    val requestAudioPermission =
+        rememberAudioPermissionRequester { isGranted ->
+            if (isGranted) {
+                onRescan()
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         requestAudioPermission()
@@ -91,25 +111,25 @@ fun LocalTabContent(
             onRescan = {
                 requestAudioPermission()
                 showFoldersDialog = false
-            }
+            },
         )
     }
 
     if (isScanning) {
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Text(
-                    text = "Buscando archivos locales...",
+                    text = stringResource(Res.string.library_local_scanning),
                     style = MeloType.body,
                     color = MeloColors.textSecondary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -119,61 +139,61 @@ fun LocalTabContent(
     if (localTracks.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(32.dp)
+                modifier = Modifier.padding(32.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Folder,
                     contentDescription = null,
                     tint = MeloColors.textMuted,
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(56.dp),
                 )
                 Text(
-                    text = "No se encontraron archivos locales",
+                    text = stringResource(Res.string.library_local_empty_title),
                     style = MeloType.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MeloColors.textPrimary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Añade tus carpetas de música o escanea las carpetas por defecto para reproducir tus archivos MP3, FLAC, M4A y AAC.",
+                    text = stringResource(Res.string.library_local_empty_subtitle),
                     style = MeloType.body,
                     color = MeloColors.textSecondary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedButton(
                         onClick = { showFoldersDialog = true },
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(20.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.FolderOpen,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.size(6.dp))
-                        Text("Carpetas")
+                        Text(stringResource(Res.string.library_local_folders_button))
                     }
                     Button(
                         onClick = requestAudioPermission,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(20.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.size(6.dp))
-                        Text("Escanear")
+                        Text(stringResource(Res.string.library_local_scan_button))
                     }
                 }
             }
@@ -187,58 +207,64 @@ fun LocalTabContent(
         state = listState,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxSize().desktopScroll(listState)
+        modifier = modifier.fillMaxSize().desktopScroll(listState),
     ) {
         item {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "${localTracks.size} archivos locales",
+                            text =
+                                pluralStringResource(
+                                    Res.plurals.library_local_track_count,
+                                    localTracks.size,
+                                    localTracks.size,
+                                ),
                             style = MeloType.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
+                            color = MeloColors.textPrimary,
                         )
                         Text(
-                            text = "Archivos de audio en tu dispositivo",
+                            text = stringResource(Res.string.library_local_device_audio),
                             style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary
+                            color = MeloColors.textSecondary,
                         )
                     }
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         IconButton(
                             onClick = { showFoldersDialog = true },
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FolderOpen,
-                                contentDescription = "Gestionar carpetas",
+                                contentDescription = stringResource(Res.string.a11y_manage_folders),
                                 tint = MeloColors.textSecondary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                         IconButton(
                             onClick = requestAudioPermission,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Volver a escanear",
+                                contentDescription = stringResource(Res.string.a11y_rescan),
                                 tint = MeloColors.textSecondary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                     }
@@ -249,15 +275,15 @@ fun LocalTabContent(
                         onClick = onPlayAll,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.size(8.dp))
-                        Text("Reproducir todo")
+                        Text(stringResource(Res.string.a11y_play_all))
                     }
                 }
             }
@@ -267,7 +293,7 @@ fun LocalTabContent(
             LocalTrackRow(
                 track = track,
                 onClick = { onPlayTrack(track) },
-                onMoreClick = { onMoreClick(track) }
+                onMoreClick = { onMoreClick(track) },
             )
         }
     }
@@ -288,61 +314,62 @@ private fun ManageFoldersDialog(
         containerColor = MeloColors.surface1,
         title = {
             Text(
-                text = "Carpetas de música local",
+                text = stringResource(Res.string.library_local_folders_title),
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Añade rutas de carpetas de tu dispositivo para incluir tus pistas locales.",
+                    text = stringResource(Res.string.library_local_folders_subtitle),
                     style = MeloType.labelSmall,
-                    color = MeloColors.textSecondary
+                    color = MeloColors.textSecondary,
                 )
 
                 LocalFolderPathsEditor(
                     configuredPaths = configuredPaths,
                     onAddPath = onAddPath,
-                    onRemovePath = onRemovePath
+                    onRemovePath = onRemovePath,
                 )
 
                 if (defaultPaths.isNotEmpty()) {
                     Text(
-                        text = "Carpetas por defecto del sistema:",
+                        text = stringResource(Res.string.library_local_default_folders),
                         style = MeloType.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = MeloColors.textPrimary
+                        color = MeloColors.textPrimary,
                     )
                     defaultPaths.forEach { path ->
                         Surface(
                             color = MeloColors.surface2.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Folder,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                                 Text(
                                     text = path,
                                     style = MeloType.labelSmall,
                                     color = MeloColors.textSecondary,
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -353,16 +380,16 @@ private fun ManageFoldersDialog(
         confirmButton = {
             Button(
                 onClick = onRescan,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
-                Text("Escanear ahora")
+                Text(stringResource(Res.string.library_local_scan_now))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cerrar", color = MeloColors.textSecondary)
+                Text(stringResource(Res.string.common_action_close), color = MeloColors.textSecondary)
             }
-        }
+        },
     )
 }
 
@@ -370,30 +397,32 @@ private fun ManageFoldersDialog(
 private fun LocalTrackRow(
     track: Track,
     onClick: () -> Unit,
-    onMoreClick: () -> Unit
+    onMoreClick: () -> Unit,
 ) {
     val durationMinSec = formatDuration(track.durationMs)
 
     Surface(
         color = MeloColors.surface1,
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MeloAsyncImage(
                 url = track.artworkUrl,
                 contentDescription = track.title,
                 size = 48.dp,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -403,7 +432,7 @@ private fun LocalTrackRow(
                     fontWeight = FontWeight.SemiBold,
                     color = MeloColors.textPrimary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -411,16 +440,16 @@ private fun LocalTrackRow(
                     style = MeloType.labelSmall,
                     color = MeloColors.textSecondary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
             IconButton(onClick = onMoreClick) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Más opciones",
+                    contentDescription = stringResource(Res.string.a11y_more_options),
                     tint = MeloColors.textSecondary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }

@@ -17,7 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_create
+import com.github.adriianh.melo.resources.common_action_save
+import com.github.adriianh.melo.resources.common_action_you
+import com.github.adriianh.melo.resources.library_playlist_new_placeholder
+import com.github.adriianh.melo.resources.library_playlist_new_title
+import com.github.adriianh.melo.resources.library_playlist_rename_placeholder
+import com.github.adriianh.melo.resources.library_playlist_rename_title
 import com.github.adriianh.melo.ui.library.LibraryViewMode
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PlaylistsTabContent(
@@ -41,9 +50,9 @@ fun PlaylistsTabContent(
 
     if (showCreateDialog) {
         PlaylistNameDialog(
-            title = "Nueva playlist",
-            placeholder = "Nombre de la playlist",
-            confirmLabel = "Crear",
+            title = stringResource(Res.string.library_playlist_new_title),
+            placeholder = stringResource(Res.string.library_playlist_new_placeholder),
+            confirmLabel = stringResource(Res.string.common_action_create),
             existingPlaylistNames = customPlaylists.map { it.name } + remotePlaylists.map { it.title },
             userArtists = userArtists,
             onConfirm = { name ->
@@ -56,9 +65,9 @@ fun PlaylistsTabContent(
 
     playlistToRename?.let { target ->
         PlaylistNameDialog(
-            title = "Renombrar playlist",
-            placeholder = "Nuevo nombre",
-            confirmLabel = "Guardar",
+            title = stringResource(Res.string.library_playlist_rename_title),
+            placeholder = stringResource(Res.string.library_playlist_rename_placeholder),
+            confirmLabel = stringResource(Res.string.common_action_save),
             initialValue = target.name,
             onConfirm = { newName ->
                 onRenamePlaylist(target.id, newName)
@@ -79,6 +88,7 @@ fun PlaylistsTabContent(
         )
     }
 
+    val ownerLabel = stringResource(Res.string.common_action_you)
     if (viewMode == LibraryViewMode.GRID) {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(150.dp),
@@ -101,7 +111,7 @@ fun PlaylistsTabContent(
                             "local:${playlist.id}",
                             playlist.name,
                             playlist.artworks.firstOrNull(),
-                            "Tú",
+                            ownerLabel,
                         )
                     },
                     onRename = { playlistToRename = playlist },
@@ -149,7 +159,7 @@ fun PlaylistsTabContent(
                             "local:${playlist.id}",
                             playlist.name,
                             playlist.artworks.firstOrNull(),
-                            "Tú",
+                            ownerLabel,
                         )
                     },
                     onRename = { playlistToRename = playlist },

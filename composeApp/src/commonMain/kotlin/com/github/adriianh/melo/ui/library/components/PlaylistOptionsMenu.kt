@@ -13,8 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_delete
+import com.github.adriianh.melo.resources.common_action_rename
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PlaylistOptionsMenu(
@@ -27,29 +31,29 @@ fun PlaylistOptionsMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        modifier = modifier.background(MeloColors.surface1)
+        modifier = modifier.background(MeloColors.surface1),
     ) {
         DropdownMenuItem(
-            text = { Text("Renombrar", style = MeloType.body) },
+            text = { Text(stringResource(Res.string.common_action_rename), style = MeloType.body) },
             leadingIcon = {
                 Icon(
                     Icons.Default.Edit,
                     contentDescription = null,
                     tint = MeloColors.textPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             },
             onClick = {
                 onDismiss()
                 onRename()
-            }
+            },
         )
         DropdownMenuItem(
             text = {
                 Text(
-                    "Eliminar",
+                    stringResource(Res.string.common_action_delete),
                     style = MeloType.body,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             },
             leadingIcon = {
@@ -57,13 +61,13 @@ fun PlaylistOptionsMenu(
                     Icons.Default.DeleteOutline,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             },
             onClick = {
                 onDismiss()
                 onDelete()
-            }
+            },
         )
     }
 }

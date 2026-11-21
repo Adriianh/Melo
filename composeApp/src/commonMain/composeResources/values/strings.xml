@@ -8,6 +8,11 @@
     <string name="common_action_add_to_playlist">Añadir a playlist</string>
     <string name="common_action_add_to_queue">Añadir a la cola</string>
     <string name="common_action_undo">Deshacer</string>
+    <string name="common_action_save">Guardar</string>
+    <string name="common_action_delete">Eliminar</string>
+    <string name="common_action_rename">Renombrar</string>
+    <string name="common_action_close">Cerrar</string>
+    <string name="common_action_you">Tú</string>
 
     <!-- Errores -->
     <string name="common_error_with_detail">Error: %1$s</string>
@@ -64,6 +69,17 @@
     <string name="a11y_melo_logo">Logo de Melo</string>
     <string name="a11y_new_playlist">Nueva lista</string>
     <string name="a11y_toggle_theme">Cambiar tema</string>
+    <string name="a11y_remove_recent_search">Eliminar de búsquedas</string>
+    <string name="a11y_available_offline">Disponible sin conexión</string>
+    <string name="a11y_delete_download">Eliminar descarga</string>
+    <string name="a11y_search_library">Buscar en biblioteca</string>
+    <string name="a11y_close_search">Cerrar búsqueda</string>
+    <string name="a11y_sort">Ordenar</string>
+    <string name="a11y_change_view">Cambiar vista</string>
+    <string name="a11y_refresh">Actualizar</string>
+    <string name="a11y_manage_folders">Gestionar carpetas</string>
+    <string name="a11y_rescan">Volver a escanear</string>
+    <string name="a11y_dynamic_inspiration">Inspiración dinámica</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
@@ -174,4 +190,120 @@
     <string name="player_artist_biography">Biografía</string>
     <string name="player_artist_view_full_profile">Ver perfil completo</string>
     <string name="player_artist_view_profile">Ver perfil</string>
+
+    <!-- Secciones e Inicio -->
+    <string name="section_trending">Tendencias</string>
+    <string name="section_recently_played">Escuchado recientemente</string>
+    <string name="section_downloads">Tus descargas</string>
+    <string name="section_cached_music">Música en caché</string>
+    <string name="section_local_files">Archivos locales</string>
+    <string name="section_songs">Canciones</string>
+    <string name="section_albums">Álbumes</string>
+    <string name="section_artists">Artistas</string>
+    <string name="home_offline_empty_title">Sin música disponible sin conexión</string>
+    <string name="home_offline_empty_subtitle">Descarga canciones o añade carpetas locales en la Biblioteca para escuchar cuando no tengas internet.</string>
+    <string name="home_search_empty">No se encontraron resultados</string>
+
+    <!-- Búsqueda -->
+    <string name="search_filter_all">Todos</string>
+    <string name="search_filter_songs">Canciones</string>
+    <string name="search_filter_albums">Álbumes</string>
+    <string name="search_filter_artists">Artistas</string>
+    <string name="search_filter_playlists">Playlists</string>
+    <string name="search_filter_videos">Videos</string>
+    <string name="search_section_more_songs">Más canciones</string>
+    <string name="search_section_top_result">Mejor resultado</string>
+    <string name="search_section_top_songs">Canciones principales</string>
+    <string name="search_recent_title">Búsquedas recientes</string>
+    <string name="search_explore_offline_title">Sin contenido sin conexión</string>
+    <string name="search_explore_error_title">No se pudo cargar contenido</string>
+    <string name="search_explore_offline_subtitle">Descarga canciones o añade archivos locales para explorarlos sin conexión</string>
+    <string name="search_explore_error_subtitle">Verifica tu conexión a internet o intenta de nuevo más tarde</string>
+    <string name="search_results_offline_empty_title">No se encontraron descargas ni archivos locales</string>
+    <string name="search_results_empty_title">No se encontraron resultados</string>
+    <string name="search_results_offline_empty_message">Intenta buscar el título de una canción guardada en tu dispositivo</string>
+    <string name="search_results_empty_message">Intenta buscar con otras palabras o cambiar de filtro</string>
+    <string name="search_badge_artist">ARTISTA</string>
+    <string name="search_badge_song">CANCIÓN</string>
+    <string name="search_badge_album">ÁLBUM</string>
+    <string name="search_badge_playlist">PLAYLIST</string>
+
+    <!-- Biblioteca -->
+    <string name="library_tab_playlists">Playlists</string>
+    <string name="library_tab_liked">Me Gusta</string>
+    <string name="library_tab_downloads">Descargas</string>
+    <string name="library_tab_local">Archivos locales</string>
+    <string name="library_tab_artists">Artistas</string>
+    <string name="library_tab_albums">Álbumes</string>
+    <string name="library_tab_history">Historial</string>
+    <string name="library_sort_recently_added">Añadido recientemente</string>
+    <string name="library_sort_title_az">Título (A-Z)</string>
+    <string name="library_sort_artist_az">Artista (A-Z)</string>
+    <string name="library_sort_duration">Duración</string>
+    <string name="library_group_collection">Colección</string>
+    <string name="library_group_device">Dispositivo</string>
+    <string name="library_group_history">Historial</string>
+    <string name="library_error_load">No se pudo cargar la biblioteca. Verifica tu conexión o sesión.</string>
+    <string name="library_header_default_title">Mi Biblioteca</string>
+    <string name="library_header_search_placeholder">Buscar en %1$s...</string>
+    <string name="library_login_title">Tu Biblioteca de YouTube Music</string>
+    <string name="library_login_subtitle">Inicia sesión para sincronizar y reproducir tus playlists guardadas, canciones con \'Me Gusta\', artistas favoritos e historial.</string>
+    <string name="library_login_action">Iniciar sesión</string>
+    <string name="library_albums_empty">No tienes álbumes guardados.</string>
+    <string name="library_artists_empty">No sigues a ningún artista actualmente.</string>
+    <string name="library_artists_in_library">En tu biblioteca</string>
+    <string name="library_history_empty">No hay reproducciones recientes registradas.</string>
+    <string name="library_liked_empty">Aún no tienes canciones en tus \'Me Gusta\'.</string>
+    <string name="library_downloads_pending_hint">Las canciones aparecerán aquí en cuanto finalice la descarga.</string>
+    <plurals name="library_downloads_downloading_count">
+        <item quantity="one">Descargando %1$d canción...</item>
+        <item quantity="other">Descargando %1$d canciones...</item>
+    </plurals>
+    <string name="library_downloads_empty_title">No tienes canciones descargadas</string>
+    <string name="library_downloads_empty_subtitle">Descarga tus canciones, álbumes o playlists favoritas para escucharlas sin conexión y sin consumir datos.</string>
+    <string name="library_downloads_various_artists">Varios Artistas</string>
+    <string name="library_downloads_albums_empty">No tienes álbumes entre tus descargas</string>
+    <string name="library_downloads_artists_empty">No tienes artistas entre tus descargas</string>
+    <string name="library_local_scanning">Buscando archivos locales...</string>
+    <string name="library_local_empty_title">No se encontraron archivos locales</string>
+    <string name="library_local_empty_subtitle">Añade tus carpetas de música o escanea las carpetas por defecto para reproducir tus archivos MP3, FLAC, M4A y AAC.</string>
+    <string name="library_local_folders_button">Carpetas</string>
+    <string name="library_local_scan_button">Escanear</string>
+    <string name="library_local_scan_now">Escanear ahora</string>
+    <string name="library_local_device_audio">Archivos de audio en tu dispositivo</string>
+    <string name="library_local_folders_title">Carpetas de música local</string>
+    <string name="library_local_folders_subtitle">Añade rutas de carpetas de tu dispositivo para incluir tus pistas locales.</string>
+    <string name="library_local_default_folders">Carpetas por defecto del sistema:</string>
+    <plurals name="library_local_track_count">
+        <item quantity="one">%1$d archivo local</item>
+        <item quantity="other">%1$d archivos locales</item>
+    </plurals>
+    <string name="library_playlist_preset_music">Música</string>
+    <string name="library_playlist_preset_headphones">Audífonos</string>
+    <string name="library_playlist_preset_favorite">Favorito</string>
+    <string name="library_playlist_preset_fire">Energía</string>
+    <string name="library_playlist_preset_night">Noche</string>
+    <string name="library_playlist_preset_bolt">Entreno</string>
+    <string name="library_playlist_preset_coffee">Chill</string>
+    <string name="library_playlist_preset_trip">Viaje</string>
+    <string name="library_playlist_preset_radio">Radio</string>
+    <string name="library_playlist_preset_star">Especial</string>
+    <string name="library_playlist_dialog_edit_subtitle">Cambia el nombre visible de tu lista</string>
+    <string name="library_playlist_dialog_create_subtitle">Personaliza el nombre y estilo de tu lista</string>
+    <string name="library_playlist_dialog_style_label">Estilo / Icono temático</string>
+    <string name="library_playlist_delete_title">Eliminar playlist</string>
+    <string name="library_playlist_delete_warning">Acción permanente</string>
+    <string name="library_playlist_delete_confirm">¿Estás seguro de que deseas eliminar \"%1$s\"?</string>
+    <string name="library_playlist_delete_message">Esta lista se borrará de tu biblioteca. Las canciones guardadas o descargadas en tu dispositivo no se verán afectadas.</string>
+    <string name="library_playlist_create_title">Crear playlist</string>
+    <string name="library_playlist_custom_subtitle">Lista personalizada</string>
+    <string name="library_playlist_create_hint">Crea una lista personalizada con tus canciones favoritas</string>
+    <string name="library_playlist_new_title">Nueva playlist</string>
+    <string name="library_playlist_new_placeholder">Nombre de la playlist</string>
+    <string name="library_playlist_rename_title">Renombrar playlist</string>
+    <string name="library_playlist_rename_placeholder">Nuevo nombre</string>
+    <plurals name="library_playlist_owned_track_count">
+        <item quantity="one">Tuya • %1$d canción</item>
+        <item quantity="other">Tuya • %1$d canciones</item>
+    </plurals>
 </resources>

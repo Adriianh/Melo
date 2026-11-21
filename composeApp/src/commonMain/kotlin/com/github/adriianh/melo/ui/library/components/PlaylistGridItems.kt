@@ -37,10 +37,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_available_offline
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.library_playlist_create_title
+import com.github.adriianh.melo.resources.library_playlist_custom_subtitle
 import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CreatePlaylistGridCard(
@@ -75,14 +81,14 @@ fun CreatePlaylistGridCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Crear playlist",
+                    contentDescription = stringResource(Res.string.library_playlist_create_title),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(30.dp),
                 )
             }
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "Crear playlist",
+                text = stringResource(Res.string.library_playlist_create_title),
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -90,7 +96,7 @@ fun CreatePlaylistGridCard(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Lista personalizada",
+                text = stringResource(Res.string.library_playlist_custom_subtitle),
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -154,7 +160,7 @@ fun CustomPlaylistGridCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.DownloadDone,
-                            contentDescription = "Disponible sin conexión",
+                            contentDescription = stringResource(Res.string.a11y_available_offline),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp),
                         )
@@ -173,7 +179,7 @@ fun CustomPlaylistGridCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Opciones",
+                            contentDescription = stringResource(Res.string.a11y_more_options),
                             tint = MeloColors.textSecondary,
                             modifier = Modifier.size(18.dp),
                         )
@@ -294,7 +300,7 @@ private fun remotePlaylistGridCover(
             ) {
                 Icon(
                     imageVector = Icons.Default.DownloadDone,
-                    contentDescription = "Disponible sin conexión",
+                    contentDescription = stringResource(Res.string.a11y_available_offline),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp),
                 )

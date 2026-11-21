@@ -40,6 +40,9 @@ import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.itemKey
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.home_offline_empty_subtitle
+import com.github.adriianh.melo.resources.home_offline_empty_title
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
@@ -48,10 +51,12 @@ import com.github.adriianh.melo.ui.components.SongFourRowCarousel
 import com.github.adriianh.melo.ui.components.SpeedDialGrid
 import com.github.adriianh.melo.ui.components.VideoCard
 import com.github.adriianh.melo.ui.home.HomeUiState
+import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.desktopScroll
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,22 +80,27 @@ fun HomeContent(
         val containerWidth = maxWidth
         val listState = rememberLazyListState()
 
-        val sectionKeys = remember(uiState.sections) {
-            uiState.sections.mapIndexed { index, section ->
-                if (section.title.isNotBlank()) "sec_${section.type}_${section.title}"
-                else "sec_${section.type}_$index"
+        val sectionKeys =
+            remember(uiState.sections) {
+                uiState.sections.mapIndexed { index, section ->
+                    val id = section.titleKey ?: section.title
+                    if (id.isNotBlank()) "sec_${section.type}_$id" else "sec_${section.type}_$index"
+                }
             }
-        }
-        val sectionStates = remember(sectionKeys) {
-            sectionKeys.associateWith { LazyListState() }
-                .toMutableMap()
-        }
+        val sectionStates =
+            remember(sectionKeys) {
+                sectionKeys
+                    .associateWith { LazyListState() }
+                    .toMutableMap()
+            }
 
         val shouldLoadMore by remember {
             derivedStateOf {
                 val totalItems = listState.layoutInfo.totalItemsCount
                 val lastVisibleIndex =
-                    listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                    listState.layoutInfo.visibleItemsInfo
+                        .lastOrNull()
+                        ?.index ?: 0
                 listState.firstVisibleItemIndex > 0 && totalItems > 3 && lastVisibleIndex >= totalItems - 2
             }
         }
@@ -105,39 +115,41 @@ fun HomeContent(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + 16.dp
-            )
+            contentPadding =
+                PaddingValues(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                ),
         ) {
             if (uiState.isOfflineFeed && uiState.sections.isEmpty()) {
                 item {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 48.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 48.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.CloudOff,
                             contentDescription = null,
                             tint = MeloColors.textMuted,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(56.dp),
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Sin música disponible sin conexión",
+                            text = stringResource(Res.string.home_offline_empty_title),
                             style = MeloType.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
+                            color = MeloColors.textPrimary,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Descarga canciones o añade carpetas locales en la Biblioteca para escuchar cuando no tengas internet.",
+                            text = stringResource(Res.string.home_offline_empty_subtitle),
                             style = MeloType.body,
                             color = MeloColors.textSecondary,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
@@ -150,33 +162,37 @@ fun HomeContent(
                         state = chipState,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(horizontal = 24.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .desktopScroll(chipState)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .desktopScroll(chipState),
                     ) {
                         items(
                             items = uiState.chips,
-                            key = { it.title }
+                            key = { it.title },
                         ) { chip ->
                             FilterChip(
                                 selected = uiState.selectedChip == chip,
                                 onClick = { onChipClick(chip) },
                                 label = { Text(chip.title, style = MeloType.labelMedium) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = MeloColors.glassSurface.copy(alpha = 0.5f),
-                                    labelColor = MeloColors.textPrimary,
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(
-                                        alpha = 0.25f
+                                colors =
+                                    FilterChipDefaults.filterChipColors(
+                                        containerColor = MeloColors.glassSurface.copy(alpha = 0.5f),
+                                        labelColor = MeloColors.textPrimary,
+                                        selectedContainerColor =
+                                            MaterialTheme.colorScheme.primary.copy(
+                                                alpha = 0.25f,
+                                            ),
+                                        selectedLabelColor = MaterialTheme.colorScheme.primary,
                                     ),
-                                    selectedLabelColor = MaterialTheme.colorScheme.primary
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    enabled = true,
-                                    selected = uiState.selectedChip == chip,
-                                    borderColor = MeloColors.glassBorder,
-                                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                                )
+                                border =
+                                    FilterChipDefaults.filterChipBorder(
+                                        enabled = true,
+                                        selected = uiState.selectedChip == chip,
+                                        borderColor = MeloColors.glassBorder,
+                                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                    ),
                             )
                         }
                     }
@@ -184,17 +200,19 @@ fun HomeContent(
             }
 
             uiState.sections.forEachIndexed { index, section ->
+                val sectionId = section.titleKey ?: section.title
                 val sectionKey =
-                    if (section.title.isNotBlank()) "sec_${section.type}_${section.title}" else "sec_${section.type}_$index"
+                    if (sectionId.isNotBlank()) "sec_${section.type}_$sectionId" else "sec_${section.type}_$index"
                 val rowState =
                     sectionStates.getOrPut(sectionKey) { LazyListState() }
                 when (section.type) {
                     HomeSectionType.SONGS -> {
                         item(key = sectionKey, contentType = "section_songs") {
-                            val tracks = remember(section.items) {
-                                section.items.filterIsInstance<SearchResult.Song>().map { it.track }
-                            }
-                            SectionHeader(title = section.title)
+                            val tracks =
+                                remember(section.items) {
+                                    section.items.filterIsInstance<SearchResult.Song>().map { it.track }
+                                }
+                            SectionHeader(title = section.displayTitle())
                             SongFourRowCarousel(
                                 tracks = tracks,
                                 containerWidth = containerWidth,
@@ -204,67 +222,71 @@ fun HomeContent(
                                 isSelectionMode = isSelectionMode,
                                 selectedTrackIds = selectedTrackIds,
                                 onToggleSelectTrack = onToggleSelectTrack,
-                                onTrackLongClick = onTrackLongClick
+                                onTrackLongClick = onTrackLongClick,
                             )
                         }
                     }
 
                     HomeSectionType.ALBUMS -> {
                         item(key = sectionKey, contentType = "section_albums") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(title = section.displayTitle())
                             AdaptiveLazyRow(
                                 items = section.items,
                                 containerWidth = containerWidth,
                                 minCardWidth = 140.dp,
                                 spacing = 12.dp,
                                 key = { it.itemKey() },
-                                listState = rowState
+                                listState = rowState,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Album -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onAlbumClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Album ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onAlbumClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Song -> AlbumCard(
-                                        title = item.track.title,
-                                        subtitle = item.track.artist,
-                                        artworkUrl = item.track.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = { queueViewModel.playTrack(item.track) }
-                                    )
+                                    is SearchResult.Song ->
+                                        AlbumCard(
+                                            title = item.track.title,
+                                            subtitle = item.track.artist,
+                                            artworkUrl = item.track.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = { queueViewModel.playTrack(item.track) },
+                                        )
 
-                                    is SearchResult.Playlist -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onPlaylistClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Playlist ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onPlaylistClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Artist -> ArtistCircle(
-                                        name = item.name,
-                                        artworkUrl = item.artworkUrl,
-                                        size = cardWidth,
-                                        onClick = { onArtistClick(item.id) }
-                                    )
+                                    is SearchResult.Artist ->
+                                        ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            size = cardWidth,
+                                            onClick = { onArtistClick(item.id) },
+                                        )
                                 }
                             }
                         }
@@ -272,60 +294,64 @@ fun HomeContent(
 
                     HomeSectionType.PLAYLISTS -> {
                         item(key = sectionKey, contentType = "section_playlists") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(title = section.displayTitle())
                             AdaptiveLazyRow(
                                 items = section.items,
                                 containerWidth = containerWidth,
                                 minCardWidth = 140.dp,
                                 spacing = 14.dp,
                                 key = { it.itemKey() },
-                                listState = rowState
+                                listState = rowState,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Playlist -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onPlaylistClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Playlist ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onPlaylistClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Album -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onAlbumClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Album ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onAlbumClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Song -> AlbumCard(
-                                        title = item.track.title,
-                                        subtitle = item.track.artist,
-                                        artworkUrl = item.track.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = { queueViewModel.playTrack(item.track) }
-                                    )
+                                    is SearchResult.Song ->
+                                        AlbumCard(
+                                            title = item.track.title,
+                                            subtitle = item.track.artist,
+                                            artworkUrl = item.track.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = { queueViewModel.playTrack(item.track) },
+                                        )
 
-                                    is SearchResult.Artist -> ArtistCircle(
-                                        name = item.name,
-                                        artworkUrl = item.artworkUrl,
-                                        size = cardWidth,
-                                        onClick = { onArtistClick(item.id) }
-                                    )
+                                    is SearchResult.Artist ->
+                                        ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            size = cardWidth,
+                                            onClick = { onArtistClick(item.id) },
+                                        )
                                 }
                             }
                         }
@@ -333,60 +359,64 @@ fun HomeContent(
 
                     HomeSectionType.ARTISTS -> {
                         item(key = sectionKey, contentType = "section_artists") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(title = section.displayTitle())
                             AdaptiveLazyRow(
                                 items = section.items,
                                 containerWidth = containerWidth,
                                 minCardWidth = 140.dp,
                                 spacing = 12.dp,
                                 key = { it.itemKey() },
-                                listState = rowState
+                                listState = rowState,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Artist -> ArtistCircle(
-                                        name = item.name,
-                                        artworkUrl = item.artworkUrl,
-                                        size = cardWidth,
-                                        onClick = { onArtistClick(item.id) }
-                                    )
+                                    is SearchResult.Artist ->
+                                        ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            size = cardWidth,
+                                            onClick = { onArtistClick(item.id) },
+                                        )
 
-                                    is SearchResult.Song -> AlbumCard(
-                                        title = item.track.title,
-                                        subtitle = item.track.artist,
-                                        artworkUrl = item.track.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = { queueViewModel.playTrack(item.track) }
-                                    )
+                                    is SearchResult.Song ->
+                                        AlbumCard(
+                                            title = item.track.title,
+                                            subtitle = item.track.artist,
+                                            artworkUrl = item.track.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = { queueViewModel.playTrack(item.track) },
+                                        )
 
-                                    is SearchResult.Album -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onAlbumClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Album ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onAlbumClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Playlist -> AlbumCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onPlaylistClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Playlist ->
+                                        AlbumCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onPlaylistClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
                                 }
                             }
                         }
@@ -394,60 +424,64 @@ fun HomeContent(
 
                     HomeSectionType.VIDEOS -> {
                         item(key = sectionKey, contentType = "section_videos") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(title = section.displayTitle())
                             AdaptiveLazyRow(
                                 items = section.items,
                                 containerWidth = containerWidth,
                                 minCardWidth = 220.dp,
                                 spacing = 12.dp,
                                 key = { it.itemKey() },
-                                listState = rowState
+                                listState = rowState,
                             ) { item, cardWidth ->
                                 when (item) {
-                                    is SearchResult.Song -> VideoCard(
-                                        title = item.track.title,
-                                        subtitle = item.track.artist,
-                                        artworkUrl = item.track.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = { queueViewModel.playTrack(item.track) }
-                                    )
+                                    is SearchResult.Song ->
+                                        VideoCard(
+                                            title = item.track.title,
+                                            subtitle = item.track.artist,
+                                            artworkUrl = item.track.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = { queueViewModel.playTrack(item.track) },
+                                        )
 
-                                    is SearchResult.Album -> VideoCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onAlbumClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Album ->
+                                        VideoCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onAlbumClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Playlist -> VideoCard(
-                                        title = item.title,
-                                        subtitle = item.author,
-                                        artworkUrl = item.artworkUrl,
-                                        cardWidth = cardWidth,
-                                        onClick = {
-                                            onPlaylistClick(
-                                                item.id,
-                                                item.title,
-                                                item.artworkUrl,
-                                                item.author
-                                            )
-                                        }
-                                    )
+                                    is SearchResult.Playlist ->
+                                        VideoCard(
+                                            title = item.title,
+                                            subtitle = item.author,
+                                            artworkUrl = item.artworkUrl,
+                                            cardWidth = cardWidth,
+                                            onClick = {
+                                                onPlaylistClick(
+                                                    item.id,
+                                                    item.title,
+                                                    item.artworkUrl,
+                                                    item.author,
+                                                )
+                                            },
+                                        )
 
-                                    is SearchResult.Artist -> ArtistCircle(
-                                        name = item.name,
-                                        artworkUrl = item.artworkUrl,
-                                        size = cardWidth,
-                                        onClick = { onArtistClick(item.id) }
-                                    )
+                                    is SearchResult.Artist ->
+                                        ArtistCircle(
+                                            name = item.name,
+                                            artworkUrl = item.artworkUrl,
+                                            size = cardWidth,
+                                            onClick = { onArtistClick(item.id) },
+                                        )
                                 }
                             }
                         }
@@ -455,7 +489,7 @@ fun HomeContent(
 
                     HomeSectionType.MIXED -> {
                         item(key = sectionKey, contentType = "section_mixed") {
-                            SectionHeader(title = section.title)
+                            SectionHeader(title = section.displayTitle())
                             SpeedDialGrid(
                                 items = section.items,
                                 containerWidth = containerWidth,
@@ -463,23 +497,25 @@ fun HomeContent(
                                 onItemClick = { item ->
                                     when (item) {
                                         is SearchResult.Song -> queueViewModel.playTrack(item.track)
-                                        is SearchResult.Album -> onAlbumClick(
-                                            item.id,
-                                            item.title,
-                                            item.artworkUrl,
-                                            item.author
-                                        )
+                                        is SearchResult.Album ->
+                                            onAlbumClick(
+                                                item.id,
+                                                item.title,
+                                                item.artworkUrl,
+                                                item.author,
+                                            )
 
-                                        is SearchResult.Playlist -> onPlaylistClick(
-                                            item.id,
-                                            item.title,
-                                            item.artworkUrl,
-                                            item.author
-                                        )
+                                        is SearchResult.Playlist ->
+                                            onPlaylistClick(
+                                                item.id,
+                                                item.title,
+                                                item.artworkUrl,
+                                                item.author,
+                                            )
 
                                         is SearchResult.Artist -> onArtistClick(item.id)
                                     }
-                                }
+                                },
                             )
                         }
                     }
@@ -490,11 +526,11 @@ fun HomeContent(
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(32.dp),
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }

@@ -24,16 +24,24 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.search_explore_error_subtitle
+import com.github.adriianh.melo.resources.search_explore_error_title
+import com.github.adriianh.melo.resources.search_explore_offline_subtitle
+import com.github.adriianh.melo.resources.search_explore_offline_title
+import com.github.adriianh.melo.resources.section_recently_played
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.CategoryCard
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.SectionHeader
 import com.github.adriianh.melo.ui.components.SongFourRowCarousel
+import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ExploreContent(
@@ -44,11 +52,12 @@ fun ExploreContent(
     onBrowseCategory: (String, String?) -> Unit,
     queueViewModel: QueueViewModel,
     onMoreClick: (Track) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val isEmpty = uiState.recentHistory.isEmpty() &&
-        uiState.exploreSections.isEmpty() &&
-        uiState.moodAndGenres.isEmpty()
+    val isEmpty =
+        uiState.recentHistory.isEmpty() &&
+            uiState.exploreSections.isEmpty() &&
+            uiState.moodAndGenres.isEmpty()
 
     if (uiState.isLoadingExplore && isEmpty) {
         Box(
@@ -62,16 +71,22 @@ fun ExploreContent(
 
     if (isEmpty) {
         MeloEmptyState(
-            title = if (uiState.isOffline) {
-                "Sin contenido sin conexión"
-            } else {
-                "No se pudo cargar contenido"
-            },
-            message = if (uiState.isOffline) {
-                "Descarga canciones o añade archivos locales para explorarlos sin conexión"
-            } else {
-                "Verifica tu conexión a internet o intenta de nuevo más tarde"
-            },
+            title =
+                stringResource(
+                    if (uiState.isOffline) {
+                        Res.string.search_explore_offline_title
+                    } else {
+                        Res.string.search_explore_error_title
+                    },
+                ),
+            message =
+                stringResource(
+                    if (uiState.isOffline) {
+                        Res.string.search_explore_offline_subtitle
+                    } else {
+                        Res.string.search_explore_error_subtitle
+                    },
+                ),
             modifier = modifier,
         )
         return
@@ -79,23 +94,24 @@ fun ExploreContent(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top = 8.dp,
-            bottom = paddingValues.calculateBottomPadding() + 16.dp,
-        ),
+        contentPadding =
+            PaddingValues(
+                top = 8.dp,
+                bottom = paddingValues.calculateBottomPadding() + 16.dp,
+            ),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         if (uiState.recentHistory.isNotEmpty()) {
             item {
                 SectionHeader(
-                    title = "Escuchado recientemente",
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    title = stringResource(Res.string.section_recently_played),
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
                 SongFourRowCarousel(
                     tracks = uiState.recentHistory,
                     onTrackClick = { track -> queueViewModel.playTrack(track) },
                     modifier = Modifier.padding(top = 8.dp),
-                    onMoreClick = onMoreClick
+                    onMoreClick = onMoreClick,
                 )
             }
         }
@@ -108,14 +124,14 @@ fun ExploreContent(
                     if (songs.isNotEmpty()) {
                         item {
                             SectionHeader(
-                                title = section.title,
-                                modifier = Modifier.padding(horizontal = 24.dp)
+                                title = section.displayTitle(),
+                                modifier = Modifier.padding(horizontal = 24.dp),
                             )
                             SongFourRowCarousel(
                                 tracks = songs,
                                 onTrackClick = { track -> queueViewModel.playTrack(track) },
                                 modifier = Modifier.padding(top = 8.dp),
-                                onMoreClick = onMoreClick
+                                onMoreClick = onMoreClick,
                             )
                         }
                     }
@@ -124,38 +140,40 @@ fun ExploreContent(
                 HomeSectionType.MIXED -> {
                     item {
                         SectionHeader(
-                            title = section.title,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            title = section.displayTitle(),
+                            modifier = Modifier.padding(horizontal = 24.dp),
                         )
                         AdaptiveLazyRow(
                             items = section.items,
                             minCardWidth = 140.dp,
                             spacing = 12.dp,
-                            horizontalPadding = 24.dp
+                            horizontalPadding = 24.dp,
                         ) { item, cardWidth ->
                             when (item) {
-                                is SearchResult.Playlist -> AlbumCard(
-                                    item.title,
-                                    item.author,
-                                    item.artworkUrl,
-                                    onClick = {
-                                        onPlaylistClick(
-                                            item.id,
-                                            item.title,
-                                            item.artworkUrl,
-                                            item.author
-                                        )
-                                    },
-                                    cardWidth = cardWidth
-                                )
+                                is SearchResult.Playlist ->
+                                    AlbumCard(
+                                        item.title,
+                                        item.author,
+                                        item.artworkUrl,
+                                        onClick = {
+                                            onPlaylistClick(
+                                                item.id,
+                                                item.title,
+                                                item.artworkUrl,
+                                                item.author,
+                                            )
+                                        },
+                                        cardWidth = cardWidth,
+                                    )
 
-                                is SearchResult.Album -> AlbumCard(
-                                    item.title,
-                                    item.author,
-                                    item.artworkUrl,
-                                    onClick = { onAlbumClick(item.id) },
-                                    cardWidth = cardWidth
-                                )
+                                is SearchResult.Album ->
+                                    AlbumCard(
+                                        item.title,
+                                        item.author,
+                                        item.artworkUrl,
+                                        onClick = { onAlbumClick(item.id) },
+                                        cardWidth = cardWidth,
+                                    )
 
                                 else -> {}
                             }
@@ -171,7 +189,7 @@ fun ExploreContent(
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
@@ -185,25 +203,27 @@ fun ExploreContent(
                             style = MeloType.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MeloColors.textPrimary,
-                            modifier = Modifier.padding(horizontal = 24.dp)
+                            modifier = Modifier.padding(horizontal = 24.dp),
                         )
                         BoxWithConstraints(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp)
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp),
                         ) {
                             val availableWidth = maxWidth
                             val minCardWidth = 140.dp
                             val spacing = 10.dp
-                            val columns = ((availableWidth + spacing) / (minCardWidth + spacing))
-                                .toInt()
-                                .coerceIn(2, 6)
+                            val columns =
+                                ((availableWidth + spacing) / (minCardWidth + spacing))
+                                    .toInt()
+                                    .coerceIn(2, 6)
 
                             Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                                 group.items.chunked(columns).forEach { rowItems ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(spacing)
+                                        horizontalArrangement = Arrangement.spacedBy(spacing),
                                     ) {
                                         rowItems.forEach { category ->
                                             CategoryCard(
@@ -212,10 +232,10 @@ fun ExploreContent(
                                                 onClick = {
                                                     onBrowseCategory(
                                                         category.browseId,
-                                                        category.params
+                                                        category.params,
                                                     )
                                                 },
-                                                modifier = Modifier.weight(1f)
+                                                modifier = Modifier.weight(1f),
                                             )
                                         }
                                         repeat(columns - rowItems.size) {

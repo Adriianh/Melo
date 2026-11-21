@@ -14,12 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.library_history_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll
 import com.github.adriianh.melo.util.formatRelativeTime
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HistoryTabContent(
@@ -42,7 +45,7 @@ fun HistoryTabContent(
 ) {
     if (history.isEmpty()) {
         MeloEmptyState(
-            message = "No hay reproducciones recientes registradas.",
+            message = stringResource(Res.string.library_history_empty),
             modifier = modifier,
         )
         return

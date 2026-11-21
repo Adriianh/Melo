@@ -12,11 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.library_liked_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LikedSongsTabContent(
@@ -37,7 +40,7 @@ fun LikedSongsTabContent(
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     if (songs.isEmpty()) {
-        MeloEmptyState(message = "Aún no tienes canciones en tus 'Me Gusta'.", modifier = modifier)
+        MeloEmptyState(message = stringResource(Res.string.library_liked_empty), modifier = modifier)
         return
     }
 

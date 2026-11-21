@@ -18,12 +18,22 @@ import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.search_filter_albums
+import com.github.adriianh.melo.resources.search_filter_artists
+import com.github.adriianh.melo.resources.search_filter_playlists
+import com.github.adriianh.melo.resources.search_section_more_songs
+import com.github.adriianh.melo.resources.search_section_top_result
+import com.github.adriianh.melo.resources.search_section_top_songs
+import com.github.adriianh.melo.resources.section_songs
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SectionHeader
+import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun AllResultsContent(
@@ -43,18 +53,24 @@ fun AllResultsContent(
     onToggleSelectTrack: ((Track) -> Unit)? = null,
     onTrackLongClick: ((Track) -> Unit)? = null,
 ) {
-    val allSongs = remember(uiState.summarySections) {
-        uiState.summarySections
-            .flatMap { it.items }
-            .filterIsInstance<SearchResult.Song>()
-            .map { it.track }
-            .distinctBy { it.id }
-    }
+    val allSongs =
+        remember(uiState.summarySections) {
+            uiState.summarySections
+                .flatMap { it.items }
+                .filterIsInstance<SearchResult.Song>()
+                .map { it.track }
+                .distinctBy { it.id }
+        }
 
-    val topResult = uiState.summarySections.firstOrNull()?.items?.firstOrNull()
-    val otherSections = uiState.summarySections.filter { section ->
-        section.type != HomeSectionType.SONGS && section.type != HomeSectionType.VIDEOS
-    }
+    val topResult =
+        uiState.summarySections
+            .firstOrNull()
+            ?.items
+            ?.firstOrNull()
+    val otherSections =
+        uiState.summarySections.filter { section ->
+            section.type != HomeSectionType.SONGS && section.type != HomeSectionType.VIDEOS
+        }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val isWide = maxWidth >= 760.dp
@@ -62,7 +78,7 @@ fun AllResultsContent(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = searchResultContentPadding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item {
                 if (topResult != null) {
@@ -81,7 +97,7 @@ fun AllResultsContent(
                             isSelectionMode = isSelectionMode,
                             selectedTrackIds = selectedTrackIds,
                             onToggleSelectTrack = onToggleSelectTrack,
-                            onTrackLongClick = onTrackLongClick
+                            onTrackLongClick = onTrackLongClick,
                         )
                     } else {
                         NarrowTopResultColumn(
@@ -98,13 +114,13 @@ fun AllResultsContent(
                             isSelectionMode = isSelectionMode,
                             selectedTrackIds = selectedTrackIds,
                             onToggleSelectTrack = onToggleSelectTrack,
-                            onTrackLongClick = onTrackLongClick
+                            onTrackLongClick = onTrackLongClick,
                         )
                     }
                 } else if (allSongs.isNotEmpty()) {
                     SongListSections(
                         listOf(
-                            "Canciones" to allSongs.take(5)
+                            stringResource(Res.string.section_songs) to allSongs.take(5),
                         ),
                         onMoreClick = onMoreClick,
                         onSwipeLeft = onSwipeLeft,
@@ -114,7 +130,7 @@ fun AllResultsContent(
                         isSelectionMode = isSelectionMode,
                         selectedTrackIds = selectedTrackIds,
                         onToggleSelectTrack = onToggleSelectTrack,
-                        onTrackLongClick = onTrackLongClick
+                        onTrackLongClick = onTrackLongClick,
                     )
                 }
             }
@@ -123,7 +139,7 @@ fun AllResultsContent(
                 item {
                     Spacer(modifier = Modifier.height(4.dp))
                     SearchResultSongList(
-                        title = "Más canciones",
+                        title = stringResource(Res.string.search_section_more_songs),
                         tracks = allSongs.drop(4).take(6),
                         spaced = true,
                         onPlay = queueViewModel::playTrack,
@@ -134,50 +150,54 @@ fun AllResultsContent(
                         isSelectionMode = isSelectionMode,
                         selectedTrackIds = selectedTrackIds,
                         onToggleSelectTrack = onToggleSelectTrack,
-                        onTrackLongClick = onTrackLongClick
+                        onTrackLongClick = onTrackLongClick,
                     )
                 }
             }
 
             otherSections.forEach { section ->
                 when (section.type) {
-                    HomeSectionType.ALBUMS -> item {
-                        AlbumResultCarousel(
-                            section = section,
-                            onAlbumClick = onAlbumClick
-                        )
-                    }
+                    HomeSectionType.ALBUMS ->
+                        item {
+                            AlbumResultCarousel(
+                                section = section,
+                                onAlbumClick = onAlbumClick,
+                            )
+                        }
 
-                    HomeSectionType.ARTISTS -> item {
-                        ArtistResultCarousel(
-                            section = section,
-                            onArtistClick = onArtistClick
-                        )
-                    }
+                    HomeSectionType.ARTISTS ->
+                        item {
+                            ArtistResultCarousel(
+                                section = section,
+                                onArtistClick = onArtistClick,
+                            )
+                        }
 
-                    HomeSectionType.PLAYLISTS -> item {
-                        PlaylistResultCarousel(
-                            section = section,
-                            onPlaylistClick = onPlaylistClick
-                        )
-                    }
+                    HomeSectionType.PLAYLISTS ->
+                        item {
+                            PlaylistResultCarousel(
+                                section = section,
+                                onPlaylistClick = onPlaylistClick,
+                            )
+                        }
 
-                    HomeSectionType.MIXED -> item {
-                        MixedResultSection(
-                            section = section,
-                            queueViewModel = queueViewModel,
-                            onAlbumClick = onAlbumClick,
-                            onArtistClick = onArtistClick,
-                            onPlaylistClick = onPlaylistClick,
-                            onMoreClick = onMoreClick,
-                            onSwipeLeft = onSwipeLeft,
-                            isLiked = isLiked,
-                            isSelectionMode = isSelectionMode,
-                            selectedTrackIds = selectedTrackIds,
-                            onToggleSelectTrack = onToggleSelectTrack,
-                            onTrackLongClick = onTrackLongClick
-                        )
-                    }
+                    HomeSectionType.MIXED ->
+                        item {
+                            MixedResultSection(
+                                section = section,
+                                queueViewModel = queueViewModel,
+                                onAlbumClick = onAlbumClick,
+                                onArtistClick = onArtistClick,
+                                onPlaylistClick = onPlaylistClick,
+                                onMoreClick = onMoreClick,
+                                onSwipeLeft = onSwipeLeft,
+                                isLiked = isLiked,
+                                isSelectionMode = isSelectionMode,
+                                selectedTrackIds = selectedTrackIds,
+                                onToggleSelectTrack = onToggleSelectTrack,
+                                onTrackLongClick = onTrackLongClick,
+                            )
+                        }
 
                     else -> {}
                 }
@@ -205,10 +225,10 @@ private fun WideTopResultRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(20.dp)
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Column(modifier = Modifier.weight(1.1f)) {
-            SectionHeader(title = "Mejor resultado")
+            SectionHeader(title = stringResource(Res.string.search_section_top_result))
             Spacer(modifier = Modifier.height(10.dp))
             TopResultHeroCard(
                 item = topResult,
@@ -216,13 +236,13 @@ private fun WideTopResultRow(
                 onArtistClick = onArtistClick,
                 onPlaylistClick = onPlaylistClick,
                 queueViewModel = queueViewModel,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
         if (allSongs.isNotEmpty()) {
             Column(modifier = Modifier.weight(1.5f)) {
-                SectionHeader(title = "Canciones principales")
+                SectionHeader(title = stringResource(Res.string.search_section_top_songs))
                 Spacer(modifier = Modifier.height(10.dp))
                 SongListSections(
                     listOf("" to allSongs.take(4)),
@@ -234,7 +254,7 @@ private fun WideTopResultRow(
                     isSelectionMode = isSelectionMode,
                     selectedTrackIds = selectedTrackIds,
                     onToggleSelectTrack = onToggleSelectTrack,
-                    onTrackLongClick = onTrackLongClick
+                    onTrackLongClick = onTrackLongClick,
                 )
             }
         }
@@ -260,7 +280,7 @@ private fun NarrowTopResultColumn(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column {
-            SectionHeader(title = "Mejor resultado")
+            SectionHeader(title = stringResource(Res.string.search_section_top_result))
             Spacer(modifier = Modifier.height(10.dp))
             TopResultHeroCard(
                 item = topResult,
@@ -268,13 +288,13 @@ private fun NarrowTopResultColumn(
                 onArtistClick = onArtistClick,
                 onPlaylistClick = onPlaylistClick,
                 queueViewModel = queueViewModel,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
         if (allSongs.isNotEmpty()) {
             Column {
-                SectionHeader(title = "Canciones")
+                SectionHeader(title = stringResource(Res.string.section_songs))
                 Spacer(modifier = Modifier.height(8.dp))
                 SongListSections(
                     listOf("" to allSongs.take(4)),
@@ -286,7 +306,7 @@ private fun NarrowTopResultColumn(
                     isSelectionMode = isSelectionMode,
                     selectedTrackIds = selectedTrackIds,
                     onToggleSelectTrack = onToggleSelectTrack,
-                    onTrackLongClick = onTrackLongClick
+                    onTrackLongClick = onTrackLongClick,
                 )
             }
         }
@@ -324,7 +344,7 @@ private fun SongListSections(
                     isSelectionMode = isSelectionMode,
                     isSelected = isSelected,
                     onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
                 )
             }
         }
@@ -362,7 +382,7 @@ private fun SearchResultSongList(
                     isSelectionMode = isSelectionMode,
                     isSelected = isSelected,
                     onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
+                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
                 )
             }
         }
@@ -377,20 +397,20 @@ private fun AlbumResultCarousel(
     val albums = section.items.filterIsInstance<SearchResult.Album>()
     if (albums.isEmpty()) return
 
-    SectionHeader(title = section.title.ifBlank { "Álbumes" })
+    SectionHeader(title = section.displayTitle().ifBlank { stringResource(Res.string.search_filter_albums) })
     Spacer(modifier = Modifier.height(8.dp))
     AdaptiveLazyRow(
         items = albums,
         minCardWidth = 140.dp,
         spacing = 12.dp,
-        horizontalPadding = 0.dp
+        horizontalPadding = 0.dp,
     ) { album, width ->
         AlbumCard(
             title = album.title,
             subtitle = album.author,
             artworkUrl = album.artworkUrl,
             cardWidth = width,
-            onClick = { onAlbumClick(album.id) }
+            onClick = { onAlbumClick(album.id) },
         )
     }
 }
@@ -403,19 +423,19 @@ private fun ArtistResultCarousel(
     val artists = section.items.filterIsInstance<SearchResult.Artist>()
     if (artists.isEmpty()) return
 
-    SectionHeader(title = section.title.ifBlank { "Artistas" })
+    SectionHeader(title = section.displayTitle().ifBlank { stringResource(Res.string.search_filter_artists) })
     Spacer(modifier = Modifier.height(8.dp))
     AdaptiveLazyRow(
         items = artists,
         minCardWidth = 110.dp,
         spacing = 12.dp,
-        horizontalPadding = 0.dp
+        horizontalPadding = 0.dp,
     ) { artist, width ->
         ArtistCircle(
             name = artist.name,
             artworkUrl = artist.artworkUrl,
             onClick = { onArtistClick(artist.id) },
-            size = width
+            size = width,
         )
     }
 }
@@ -428,13 +448,13 @@ private fun PlaylistResultCarousel(
     val playlists = section.items.filterIsInstance<SearchResult.Playlist>()
     if (playlists.isEmpty()) return
 
-    SectionHeader(title = section.title.ifBlank { "Playlists" })
+    SectionHeader(title = section.displayTitle().ifBlank { stringResource(Res.string.search_filter_playlists) })
     Spacer(modifier = Modifier.height(8.dp))
     AdaptiveLazyRow(
         items = playlists,
         minCardWidth = 140.dp,
         spacing = 12.dp,
-        horizontalPadding = 0.dp
+        horizontalPadding = 0.dp,
     ) { playlist, width ->
         AlbumCard(
             title = playlist.title,
@@ -446,9 +466,9 @@ private fun PlaylistResultCarousel(
                     playlist.id,
                     playlist.title,
                     playlist.artworkUrl,
-                    playlist.author
+                    playlist.author,
                 )
-            }
+            },
         )
     }
 }
@@ -485,37 +505,40 @@ private fun MixedResultSection(
                         isSelectionMode = isSelectionMode,
                         isSelected = isSelected,
                         onSelectionToggle = { onToggleSelectTrack?.invoke(item.track) },
-                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } }
+                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } },
                     )
                 }
 
-                is SearchResult.Album -> AlbumCard(
-                    item.title,
-                    item.author,
-                    item.artworkUrl,
-                    onClick = { onAlbumClick(item.id) },
-                )
+                is SearchResult.Album ->
+                    AlbumCard(
+                        item.title,
+                        item.author,
+                        item.artworkUrl,
+                        onClick = { onAlbumClick(item.id) },
+                    )
 
-                is SearchResult.Artist -> ArtistCircle(
-                    item.name,
-                    item.artworkUrl,
-                    onClick = { onArtistClick(item.id) },
-                    size = 80.dp
-                )
+                is SearchResult.Artist ->
+                    ArtistCircle(
+                        item.name,
+                        item.artworkUrl,
+                        onClick = { onArtistClick(item.id) },
+                        size = 80.dp,
+                    )
 
-                is SearchResult.Playlist -> AlbumCard(
-                    item.title,
-                    item.author,
-                    item.artworkUrl,
-                    onClick = {
-                        onPlaylistClick(
-                            item.id,
-                            item.title,
-                            item.artworkUrl,
-                            item.author
-                        )
-                    },
-                )
+                is SearchResult.Playlist ->
+                    AlbumCard(
+                        item.title,
+                        item.author,
+                        item.artworkUrl,
+                        onClick = {
+                            onPlaylistClick(
+                                item.id,
+                                item.title,
+                                item.artworkUrl,
+                                item.author,
+                            )
+                        },
+                    )
             }
         }
     }

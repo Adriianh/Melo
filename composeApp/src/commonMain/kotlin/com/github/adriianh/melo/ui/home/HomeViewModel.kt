@@ -22,6 +22,7 @@ import com.github.adriianh.core.domain.usecase.search.GetTrendingUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.util.MeloDispatchers
+import com.github.adriianh.melo.ui.i18n.SectionTitleKeys
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -303,7 +304,7 @@ class HomeViewModel(
                             it.copy(
                                 isLoading = true,
                                 error = null,
-                                selectedChip = null
+                                selectedChip = null,
                             )
                         }
                     } else {
@@ -326,19 +327,19 @@ class HomeViewModel(
                                     val exp =
                                         async {
                                             runCatching { getExploreUseCase() }.getOrDefault(
-                                                emptyList()
+                                                emptyList(),
                                             )
                                         }
                                     val chr =
                                         async {
                                             runCatching { getChartsUseCase() }.getOrDefault(
-                                                emptyList()
+                                                emptyList(),
                                             )
                                         }
                                     val trn =
                                         async {
                                             runCatching { getTrendingUseCase() }.getOrDefault(
-                                                emptyList()
+                                                emptyList(),
                                             )
                                         }
                                     Triple(exp.await(), chr.await(), trn.await())
@@ -358,10 +359,11 @@ class HomeViewModel(
                                                 title = "Trending",
                                                 type = HomeSectionType.SONGS,
                                                 items = trending.map { SearchResult.Song(it) },
+                                                titleKey = SectionTitleKeys.TRENDING,
                                             ),
                                         )
                                     }
-                                }.distinctBy { it.title }
+                                }.distinctBy { it.titleKey ?: it.title }
                             }
 
                         if (combinedSections.isEmpty()) {
@@ -476,6 +478,7 @@ class HomeViewModel(
                         title = "Escuchado recientemente",
                         type = HomeSectionType.SONGS,
                         items = offlineRecentTracks.map { SearchResult.Song(it) },
+                        titleKey = SectionTitleKeys.RECENTLY_PLAYED,
                     ),
                 )
             }
@@ -485,6 +488,7 @@ class HomeViewModel(
                         title = "Tus descargas",
                         type = HomeSectionType.SONGS,
                         items = manualDownloads.map { SearchResult.Song(it) },
+                        titleKey = SectionTitleKeys.DOWNLOADS,
                     ),
                 )
             }
@@ -494,6 +498,7 @@ class HomeViewModel(
                         title = "Música en caché",
                         type = HomeSectionType.SONGS,
                         items = cachedTracks.map { SearchResult.Song(it) },
+                        titleKey = SectionTitleKeys.CACHED_MUSIC,
                     ),
                 )
             }
@@ -503,6 +508,7 @@ class HomeViewModel(
                         title = "Archivos locales",
                         type = HomeSectionType.SONGS,
                         items = localTracks.map { SearchResult.Song(it) },
+                        titleKey = SectionTitleKeys.LOCAL_FILES,
                     ),
                 )
             }
@@ -536,7 +542,7 @@ class HomeViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Error al filtrar")
+                    it.copy(isLoading = false, error = e.message ?: "")
                 }
             }
         }
@@ -551,7 +557,7 @@ class HomeViewModel(
             try {
                 val nextFeed = getHomeUseCase(continuation = currentContinuation)
                 val newSections =
-                    (_uiState.value.sections + nextFeed.sections).distinctBy { it.title }
+                    (_uiState.value.sections + nextFeed.sections).distinctBy { it.titleKey ?: it.title }
                 _uiState.update {
                     it.copy(
                         isLoadingMore = false,

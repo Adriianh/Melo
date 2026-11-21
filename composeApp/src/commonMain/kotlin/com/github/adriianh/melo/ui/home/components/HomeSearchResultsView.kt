@@ -21,12 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.home_search_empty
+import com.github.adriianh.melo.resources.section_songs
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackInteractionState
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HomeSearchResultsView(
@@ -51,9 +55,9 @@ fun HomeSearchResultsView(
     } else if (results.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                "No se encontraron resultados",
+                stringResource(Res.string.home_search_empty),
                 style = MeloType.body,
-                color = MeloColors.textMuted
+                color = MeloColors.textMuted,
             )
         }
     } else {
@@ -66,15 +70,15 @@ fun HomeSearchResultsView(
                     top = 8.dp,
                     bottom = paddingValues.calculateBottomPadding() + 16.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             item {
                 Text(
-                    "Canciones",
+                    stringResource(Res.string.section_songs),
                     style = MeloType.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MeloColors.textPrimary,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(vertical = 8.dp),
                 )
             }
             items(results, key = { it.id }) { track ->
@@ -82,10 +86,12 @@ fun HomeSearchResultsView(
                 val isSelected = track.id in selectedTrackIds
                 MeloSwipeableItem(
                     onSwipeLeft = {
-                        if (!isSelectionMode) interaction.showAddedToQueueSnackbar(
-                            track,
-                            activeAccent
-                        )
+                        if (!isSelectionMode) {
+                            interaction.showAddedToQueueSnackbar(
+                                track,
+                                activeAccent,
+                            )
+                        }
                     },
                     onSwipeRight = {
                         if (!isSelectionMode) {
@@ -94,18 +100,21 @@ fun HomeSearchResultsView(
                     },
                     swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
                     swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
-                    swipeLeftColor = MeloColors.brandAccent
+                    swipeLeftColor = MeloColors.brandAccent,
                 ) {
                     TrackRow(
                         track = track,
                         onClick = { queueViewModel.playTrack(track) },
-                        onMoreClick = if (isSelectionMode) null else {
-                            { onMoreClick(track) }
-                        },
+                        onMoreClick =
+                            if (isSelectionMode) {
+                                null
+                            } else {
+                                { onMoreClick(track) }
+                            },
                         isSelectionMode = isSelectionMode,
                         isSelected = isSelected,
                         onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
+                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
                     )
                 }
             }
