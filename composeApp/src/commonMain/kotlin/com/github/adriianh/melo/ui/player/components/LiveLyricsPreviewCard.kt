@@ -42,8 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.TrackLyrics
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_expand_lyrics
+import com.github.adriianh.melo.resources.player_lyrics_expand
+import com.github.adriianh.melo.resources.player_lyrics_header
+import com.github.adriianh.melo.resources.player_lyrics_unavailable
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LiveLyricsPreviewCard(
@@ -52,95 +58,112 @@ fun LiveLyricsPreviewCard(
     showTranslation: Boolean,
     activeAccent: Color,
     onExpand: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val currentLine =
         if (trackLyrics != null && trackLyrics.hasSync && activeLyricIndex in trackLyrics.syncedLyrics.indices) {
             trackLyrics.syncedLyrics[activeLyricIndex]
-        } else null
+        } else {
+            null
+        }
 
     val nextLine =
         if (trackLyrics != null && trackLyrics.hasSync && activeLyricIndex + 1 in trackLyrics.syncedLyrics.indices) {
             trackLyrics.syncedLyrics[activeLyricIndex + 1]
-        } else null
+        } else {
+            null
+        }
 
     val cardShape = RoundedCornerShape(18.dp)
-    val glassBg = Brush.verticalGradient(
-        colors = listOf(
-            activeAccent.copy(alpha = 0.18f),
-            MeloColors.glassFill.copy(alpha = 0.50f)
+    val glassBg =
+        Brush.verticalGradient(
+            colors =
+                listOf(
+                    activeAccent.copy(alpha = 0.18f),
+                    MeloColors.glassFill.copy(alpha = 0.50f),
+                ),
         )
-    )
-    val glassBorder = Brush.horizontalGradient(
-        colors = listOf(
-            activeAccent.copy(alpha = 0.40f),
-            MeloColors.glassBorder.copy(alpha = 0.25f)
+    val glassBorder =
+        Brush.horizontalGradient(
+            colors =
+                listOf(
+                    activeAccent.copy(alpha = 0.40f),
+                    MeloColors.glassBorder.copy(alpha = 0.25f),
+                ),
         )
-    )
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(122.dp)
-            .clip(cardShape)
-            .background(glassBg)
-            .border(width = 1.dp, brush = glassBorder, shape = cardShape)
-            .clickable { onExpand() }
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(122.dp)
+                .clip(cardShape)
+                .background(glassBg)
+                .border(width = 1.dp, brush = glassBorder, shape = cardShape)
+                .clickable { onExpand() }
+                .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             LyricsPreviewHeader(activeAccent)
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.CenterStart
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 if (trackLyrics != null && trackLyrics.hasSync) {
                     AnimatedContent(
                         targetState = activeLyricIndex to currentLine,
                         transitionSpec = {
-                            (slideInVertically(
-                                animationSpec = tween(280, easing = FastOutSlowInEasing),
-                                initialOffsetY = { it / 2 }
-                            ) + fadeIn(tween(280))).togetherWith(
+                            (
+                                slideInVertically(
+                                    animationSpec = tween(280, easing = FastOutSlowInEasing),
+                                    initialOffsetY = { it / 2 },
+                                ) + fadeIn(tween(280))
+                            ).togetherWith(
                                 slideOutVertically(
                                     animationSpec = tween(200, easing = FastOutSlowInEasing),
-                                    targetOffsetY = { -it / 2 }
-                                ) + fadeOut(tween(200))
+                                    targetOffsetY = { -it / 2 },
+                                ) + fadeOut(tween(200)),
                             )
                         },
-                        label = "LiveLyricsTransition"
+                        label = "LiveLyricsTransition",
                     ) { (_, line) ->
                         LyricsPreviewLines(
                             line = line,
                             nextLine = nextLine,
                             showTranslation = showTranslation,
-                            activeAccent = activeAccent
+                            activeAccent = activeAccent,
                         )
                     }
                 } else if (trackLyrics != null && !trackLyrics.plainLyrics.isNullOrBlank()) {
                     val plain = trackLyrics.plainLyrics ?: ""
                     val previewSnippet =
-                        plain.lines().filter { it.isNotBlank() }.take(2).joinToString("\n")
+                        plain
+                            .lines()
+                            .filter { it.isNotBlank() }
+                            .take(2)
+                            .joinToString("\n")
                     Text(
                         text = previewSnippet,
-                        style = MeloType.body.copy(
-                            fontSize = 13.5.sp,
-                            lineHeight = 18.sp
-                        ),
+                        style =
+                            MeloType.body.copy(
+                                fontSize = 13.5.sp,
+                                lineHeight = 18.sp,
+                            ),
                         color = MeloColors.textSecondary,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 } else {
                     LyricsUnavailableMessage(
                         error = trackLyrics?.error,
-                        activeAccent = activeAccent
+                        activeAccent = activeAccent,
                     )
                 }
             }
@@ -153,41 +176,43 @@ private fun LyricsPreviewHeader(activeAccent: Color) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.Mic,
                 contentDescription = null,
                 tint = activeAccent,
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(15.dp),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "LETRA",
-                style = MeloType.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                ),
-                color = activeAccent
+                text = stringResource(Res.string.player_lyrics_header),
+                style =
+                    MeloType.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                    ),
+                color = activeAccent,
             )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "EXPANDIR",
-                style = MeloType.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
-                ),
-                color = MeloColors.textSecondary
+                text = stringResource(Res.string.player_lyrics_expand),
+                style =
+                    MeloType.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                    ),
+                color = MeloColors.textSecondary,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Icon(
                 imageVector = Icons.Default.OpenInFull,
-                contentDescription = "Expandir letra",
+                contentDescription = stringResource(Res.string.a11y_expand_lyrics),
                 tint = MeloColors.textSecondary,
-                modifier = Modifier.size(12.dp)
+                modifier = Modifier.size(12.dp),
             )
         }
     }
@@ -202,19 +227,20 @@ private fun LyricsPreviewLines(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         if (line != null && line.text.isNotBlank()) {
             Text(
                 text = line.text,
-                style = MeloType.titleMedium.copy(
-                    fontSize = 16.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 21.sp
-                ),
+                style =
+                    MeloType.titleMedium.copy(
+                        fontSize = 16.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 21.sp,
+                    ),
                 color = MeloColors.textPrimary,
                 maxLines = if (showTranslation && !line.translation.isNullOrBlank()) 1 else 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
 
             val translation = line.translation
@@ -222,14 +248,15 @@ private fun LyricsPreviewLines(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = translation,
-                    style = MeloType.body.copy(
-                        fontStyle = FontStyle.Italic,
-                        fontSize = 13.sp,
-                        lineHeight = 16.sp
-                    ),
+                    style =
+                        MeloType.body.copy(
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 13.sp,
+                            lineHeight = 16.sp,
+                        ),
                     color = activeAccent.copy(alpha = 0.90f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -237,20 +264,21 @@ private fun LyricsPreviewLines(
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = nextLine.text.ifBlank { "♪ ♫ ♪" },
-                    style = MeloType.body.copy(
-                        fontSize = 13.5.sp,
-                        lineHeight = 17.sp
-                    ),
+                    style =
+                        MeloType.body.copy(
+                            fontSize = 13.5.sp,
+                            lineHeight = 17.sp,
+                        ),
                     color = MeloColors.textMuted.copy(alpha = 0.55f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         } else {
             DancingMelodyIndicator(
                 isActive = true,
                 tint = activeAccent,
-                baseFontSize = 17.sp
+                baseFontSize = 17.sp,
             )
         }
     }
@@ -263,21 +291,22 @@ private fun LyricsUnavailableMessage(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
             imageVector = Icons.Default.MusicNote,
             contentDescription = null,
             tint = activeAccent.copy(alpha = 0.8f),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(18.dp),
         )
         Text(
-            text = error ?: "Letra no disponible para esta canción",
-            style = MeloType.body.copy(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            color = MeloColors.textMuted
+            text = error?.takeIf { it.isNotBlank() } ?: stringResource(Res.string.player_lyrics_unavailable),
+            style =
+                MeloType.body.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+            color = MeloColors.textMuted,
         )
     }
 }

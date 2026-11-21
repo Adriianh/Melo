@@ -27,14 +27,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_undo
+import com.github.adriianh.melo.resources.player_sheet_artist_title
+import com.github.adriianh.melo.resources.player_sheet_queue_title
+import com.github.adriianh.melo.resources.track_snackbar_added_to_likes
+import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_play_next
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost
 import com.github.adriianh.melo.ui.components.MeloSnackbarState
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,114 +80,126 @@ fun ExpandedSectionSheet(
         tonalElevation = 12.dp,
         dragHandle = {
             Box(
-                modifier = Modifier
-                    .padding(vertical = 12.dp)
-                    .size(width = 36.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(MeloColors.textMuted.copy(alpha = 0.4f))
+                modifier =
+                    Modifier
+                        .padding(vertical = 12.dp)
+                        .size(width = 36.dp, height = 4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MeloColors.textMuted.copy(alpha = 0.4f)),
             )
-        }
+        },
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .padding(bottom = 24.dp)
-                    .fillMaxHeight(0.70f)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 24.dp)
+                        .fillMaxHeight(0.70f),
             ) {
                 Text(
-                    text = when (section) {
-                        PanelSection.QUEUE -> "Cola de reproducción"
-                        PanelSection.ARTIST -> "Acerca del Artista"
-                        else -> ""
-                    },
+                    text =
+                        when (section) {
+                            PanelSection.QUEUE -> stringResource(Res.string.player_sheet_queue_title)
+                            PanelSection.ARTIST -> stringResource(Res.string.player_sheet_artist_title)
+                            else -> ""
+                        },
                     style = MeloType.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MeloColors.textPrimary,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 12.dp),
                 )
 
                 when (section) {
-                    PanelSection.QUEUE -> NowPlayingQueueSection(
-                        state = state,
-                        activeAccent = activeAccent,
-                        onMoreClick = onMoreClick,
-                        onSwipeQueueItem = { trackIndex ->
-                            val removedTrack = queueViewModel.removeTrackAt(trackIndex)
-                            if (removedTrack != null) {
-                                snackbarState.show(
-                                    msg = "Eliminada de la cola",
-                                    vector = Icons.Default.Delete,
-                                    action = "Deshacer",
-                                    actionColor = activeAccent,
-                                    onAction = {
-                                        queueViewModel.insertTrackAt(
-                                            removedTrack,
-                                            trackIndex
-                                        )
-                                    }
-                                )
-                            }
-                        },
-                        onSwipeSuggestionItem = { track ->
-                            queueViewModel.addToQueue(track)
-                            snackbarState.show(
-                                msg = "Añadida a la cola",
-                                vector = Icons.AutoMirrored.Filled.QueueMusic,
-                                action = "Deshacer",
-                                actionColor = activeAccent,
-                                onAction = { queueViewModel.removeTrackFromQueue(track) }
-                            )
-                        },
-                        onPlayNextSuggestionItem = { track ->
-                            val insertIndex =
-                                queueViewModel.queueState.value.currentIndex + 1
-                            queueViewModel.insertTrackNext(track)
-                            snackbarState.show(
-                                msg = "Se reproducirá a continuación",
-                                vector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                                action = "Deshacer",
-                                actionColor = activeAccent,
-                                onAction = { queueViewModel.removeTrackAt(insertIndex) }
-                            )
-                        },
-                        onSwipeRight = { track ->
-                            val trackIsLiked = isLiked(track)
-                            libraryViewModel.toggleLike(track.id, !trackIsLiked)
-                            snackbarState.show(
-                                msg = if (trackIsLiked) "Eliminada de tus Me Gusta" else "Añadida a tus Me Gusta",
-                                vector = if (trackIsLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                                action = "Deshacer",
-                                actionColor = activeAccent,
-                                onAction = {
-                                    libraryViewModel.toggleLike(
-                                        track.id,
-                                        trackIsLiked
+                    PanelSection.QUEUE ->
+                        NowPlayingQueueSection(
+                            state = state,
+                            activeAccent = activeAccent,
+                            onMoreClick = onMoreClick,
+                            onSwipeQueueItem = { trackIndex ->
+                                val removedTrack = queueViewModel.removeTrackAt(trackIndex)
+                                if (removedTrack != null) {
+                                    snackbarState.show(
+                                        msg = UiText.Resource(Res.string.track_snackbar_removed_from_queue),
+                                        vector = Icons.Default.Delete,
+                                        action = UiText.Resource(Res.string.common_action_undo),
+                                        actionColor = activeAccent,
+                                        onAction = {
+                                            queueViewModel.insertTrackAt(
+                                                removedTrack,
+                                                trackIndex,
+                                            )
+                                        },
                                     )
                                 }
-                            )
-                        },
-                        isLiked = isLiked
-                    )
+                            },
+                            onSwipeSuggestionItem = { track ->
+                                queueViewModel.addToQueue(track)
+                                snackbarState.show(
+                                    msg = UiText.Resource(Res.string.track_snackbar_added_to_queue),
+                                    vector = Icons.AutoMirrored.Filled.QueueMusic,
+                                    action = UiText.Resource(Res.string.common_action_undo),
+                                    actionColor = activeAccent,
+                                    onAction = { queueViewModel.removeTrackFromQueue(track) },
+                                )
+                            },
+                            onPlayNextSuggestionItem = { track ->
+                                val insertIndex =
+                                    queueViewModel.queueState.value.currentIndex + 1
+                                queueViewModel.insertTrackNext(track)
+                                snackbarState.show(
+                                    msg = UiText.Resource(Res.string.track_snackbar_play_next),
+                                    vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                                    action = UiText.Resource(Res.string.common_action_undo),
+                                    actionColor = activeAccent,
+                                    onAction = { queueViewModel.removeTrackAt(insertIndex) },
+                                )
+                            },
+                            onSwipeRight = { track ->
+                                val trackIsLiked = isLiked(track)
+                                libraryViewModel.toggleLike(track.id, !trackIsLiked)
+                                snackbarState.show(
+                                    msg =
+                                        UiText.Resource(
+                                            if (trackIsLiked) {
+                                                Res.string.track_snackbar_removed_from_likes
+                                            } else {
+                                                Res.string.track_snackbar_added_to_likes
+                                            },
+                                        ),
+                                    vector = if (trackIsLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
+                                    action = UiText.Resource(Res.string.common_action_undo),
+                                    actionColor = activeAccent,
+                                    onAction = {
+                                        libraryViewModel.toggleLike(
+                                            track.id,
+                                            trackIsLiked,
+                                        )
+                                    },
+                                )
+                            },
+                            isLiked = isLiked,
+                        )
 
-                    PanelSection.ARTIST -> NowPlayingArtistSection(
-                        state = state,
-                        artistDetails = artistDetails,
-                        activeAccent = activeAccent,
-                        onArtistClick = { id ->
-                            snackbarState.dismiss()
-                            onArtistClick(id)
-                        },
-                        onAlbumClick = { id ->
-                            snackbarState.dismiss()
-                            onAlbumClick(id)
-                        },
-                        onPlaylistClick = { id ->
-                            snackbarState.dismiss()
-                            onPlaylistClick(id)
-                        }
-                    )
+                    PanelSection.ARTIST ->
+                        NowPlayingArtistSection(
+                            state = state,
+                            artistDetails = artistDetails,
+                            activeAccent = activeAccent,
+                            onArtistClick = { id ->
+                                snackbarState.dismiss()
+                                onArtistClick(id)
+                            },
+                            onAlbumClick = { id ->
+                                snackbarState.dismiss()
+                                onAlbumClick(id)
+                            },
+                            onPlaylistClick = { id ->
+                                snackbarState.dismiss()
+                                onPlaylistClick(id)
+                            },
+                        )
 
                     else -> {}
                 }
@@ -184,7 +207,7 @@ fun ExpandedSectionSheet(
             MeloSnackbarHost(
                 state = snackbarState,
                 modifier = Modifier.align(Alignment.BottomCenter),
-                bottomPadding = 24.dp
+                bottomPadding = 24.dp,
             )
         }
     }

@@ -30,36 +30,37 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun FloatingNavigationBar(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .width(260.dp)
-            .height(58.dp)
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(29.dp)
-            )
-            .background(MeloColors.glassSurface, RoundedCornerShape(29.dp))
-            .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(29.dp)),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .width(260.dp)
+                .height(58.dp)
+                .shadow(
+                    elevation = 4.dp,
+                    shape = RoundedCornerShape(29.dp),
+                ).background(MeloColors.glassSurface, RoundedCornerShape(29.dp))
+                .border(0.5.dp, MeloColors.glassBorder, RoundedCornerShape(29.dp)),
+        contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             MainTab.entries.forEach { tab ->
                 FloatingNavItem(
                     selected = selectedTab == tab,
                     onClick = { onTabSelected(tab) },
                     icon = tab.icon,
-                    label = tab.title
+                    label = stringResource(tab.titleRes),
                 )
             }
         }
@@ -71,34 +72,34 @@ private fun FloatingNavItem(
     selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
-    label: String
+    label: String,
 ) {
     val contentColor = if (selected) MaterialTheme.colorScheme.primary else MeloColors.textMuted
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(horizontal = 16.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ).padding(horizontal = 16.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = contentColor,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(22.dp),
         )
         Text(
             text = label,
             style = MeloType.labelSmall.copy(fontSize = 10.sp),
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = contentColor
+            color = contentColor,
         )
     }
 }

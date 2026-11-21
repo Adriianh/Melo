@@ -26,12 +26,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.player_tab_artist
+import com.github.adriianh.melo.resources.player_tab_lyrics
+import com.github.adriianh.melo.resources.player_tab_queue
 import com.github.adriianh.melo.ui.components.GlassPanel
 import com.github.adriianh.melo.ui.components.SegmentedControl
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.PlayerUiState
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun NowPlayingDesktopLayout(
@@ -51,39 +56,42 @@ internal fun NowPlayingDesktopLayout(
     onAlbumClick: (String) -> Unit,
     onPlaylistClick: (String) -> Unit,
     viewModel: PlayerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(36.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1.2f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Box(
-                modifier = Modifier
-                    .size(340.dp)
-                    .shadow(28.dp, RoundedCornerShape(22.dp))
-                    .clip(RoundedCornerShape(22.dp)),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .size(340.dp)
+                        .shadow(28.dp, RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(22.dp)),
+                contentAlignment = Alignment.Center,
             ) {
                 MeloAsyncImage(
                     url = state.albumArt,
                     contentDescription = state.title,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable { onSelectSection(PanelSection.LYRICS) },
-                    shape = RoundedCornerShape(22.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clickable { onSelectSection(PanelSection.LYRICS) },
+                    shape = RoundedCornerShape(22.dp),
                 )
                 if (state.isBuffering) {
                     Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(Color.Black.copy(alpha = 0.3f)),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.Black.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = activeAccent)
                     }
@@ -105,7 +113,7 @@ internal fun NowPlayingDesktopLayout(
                 },
                 onToggleFavorite = onToggleFavorite,
                 onArtistClick = { state.currentTrack?.artist?.let { onArtistClick(it) } },
-                modifier = Modifier.widthIn(max = 420.dp)
+                modifier = Modifier.widthIn(max = 420.dp),
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -123,47 +131,53 @@ internal fun NowPlayingDesktopLayout(
             PlayerTransportControls(
                 state = state,
                 activeAccent = activeAccent,
-                viewModel = viewModel
+                viewModel = viewModel,
             )
         }
 
         Box(
-            modifier = Modifier
-                .width(440.dp)
-                .fillMaxHeight()
-                .padding(vertical = 8.dp)
+            modifier =
+                Modifier
+                    .width(440.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 8.dp),
         ) {
             GlassPanel(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
+                    val queueLabel = stringResource(Res.string.player_tab_queue)
+                    val lyricsLabel = stringResource(Res.string.player_tab_lyrics)
+                    val artistLabel = stringResource(Res.string.player_tab_artist)
+
                     SegmentedControl(
                         options = PanelSection.entries,
                         selected = selectedSection,
                         onSelect = { onSelectSection(it) },
                         label = {
                             when (it) {
-                                PanelSection.QUEUE -> "Cola"
-                                PanelSection.LYRICS -> "Letra"
-                                PanelSection.ARTIST -> "Artista"
+                                PanelSection.QUEUE -> queueLabel
+                                PanelSection.LYRICS -> lyricsLabel
+                                PanelSection.ARTIST -> artistLabel
                             }
-                        }
+                        },
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when (selectedSection) {
-                            PanelSection.QUEUE -> NowPlayingQueueSection(
-                                state = state,
-                                activeAccent = activeAccent,
-                                onMoreClick = onMoreClick,
-                                onSwipeQueueItem = onSwipeQueueItem,
-                                onSwipeSuggestionItem = onSwipeSuggestionItem,
-                                onPlayNextSuggestionItem = onPlayNextSuggestionItem,
-                                onSwipeRight = onSwipeRight,
-                                isLiked = isLiked
-                            )
+                            PanelSection.QUEUE ->
+                                NowPlayingQueueSection(
+                                    state = state,
+                                    activeAccent = activeAccent,
+                                    onMoreClick = onMoreClick,
+                                    onSwipeQueueItem = onSwipeQueueItem,
+                                    onSwipeSuggestionItem = onSwipeSuggestionItem,
+                                    onPlayNextSuggestionItem = onPlayNextSuggestionItem,
+                                    onSwipeRight = onSwipeRight,
+                                    isLiked = isLiked,
+                                )
 
                             PanelSection.LYRICS ->
                                 IsolatedNowPlayingLyricsCard(
@@ -173,14 +187,15 @@ internal fun NowPlayingDesktopLayout(
                                     modifier = Modifier.fillMaxSize(),
                                 )
 
-                            PanelSection.ARTIST -> NowPlayingArtistSection(
-                                state = state,
-                                artistDetails = artistDetails,
-                                activeAccent = activeAccent,
-                                onArtistClick = onArtistClick,
-                                onAlbumClick = onAlbumClick,
-                                onPlaylistClick = onPlaylistClick
-                            )
+                            PanelSection.ARTIST ->
+                                NowPlayingArtistSection(
+                                    state = state,
+                                    artistDetails = artistDetails,
+                                    activeAccent = activeAccent,
+                                    onArtistClick = onArtistClick,
+                                    onAlbumClick = onAlbumClick,
+                                    onPlaylistClick = onPlaylistClick,
+                                )
                         }
                     }
                 }

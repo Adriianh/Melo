@@ -17,9 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_melody
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.rememberSharedAnimationTime
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -70,7 +73,7 @@ private fun AnimatedMelodyRow(
     ) {
         Icon(
             imageVector = Icons.Default.MusicNote,
-            contentDescription = "Melodía",
+            contentDescription = stringResource(Res.string.a11y_melody),
             tint = tint,
             modifier =
                 Modifier
@@ -124,7 +127,7 @@ private fun StaticMelodyRow(
     ) {
         Icon(
             imageVector = Icons.Default.MusicNote,
-            contentDescription = "Melodía",
+            contentDescription = stringResource(Res.string.a11y_melody),
             tint = tint,
             modifier = Modifier.size(15.dp),
         )

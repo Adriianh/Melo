@@ -36,6 +36,11 @@ import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.app_cache_cleared_snackbar
+import com.github.adriianh.melo.resources.app_offline_disabled_snackbar
+import com.github.adriianh.melo.resources.app_update_action
+import com.github.adriianh.melo.resources.app_update_available_banner
 import com.github.adriianh.melo.theme.MeloTheme
 import com.github.adriianh.melo.theme.resolveDarkTheme
 import com.github.adriianh.melo.theme.toAccentColor
@@ -52,6 +57,7 @@ import com.github.adriianh.melo.ui.detail.AlbumDetailScreen
 import com.github.adriianh.melo.ui.detail.ArtistDetailScreen
 import com.github.adriianh.melo.ui.detail.PlaylistDetailScreen
 import com.github.adriianh.melo.ui.home.HomeScreen
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryScreen
 import com.github.adriianh.melo.ui.login.LoginDialog
 import com.github.adriianh.melo.ui.login.LoginViewModel
@@ -73,6 +79,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Duration.Companion.milliseconds
@@ -81,9 +88,7 @@ import kotlin.time.Duration.Companion.milliseconds
 expect fun InitImageLoader()
 
 @Composable
-fun App(
-    titleBar: @Composable () -> Unit = {}
-) {
+fun App(titleBar: @Composable () -> Unit = {}) {
     InitImageLoader()
 
     val playerViewModel: PlayerViewModel = koinViewModel()
@@ -121,14 +126,16 @@ fun App(
     val isSystemDark = isSystemInDarkTheme()
     val isDarkTheme = settings.themeMode.resolveDarkTheme(isSystemDark)
     val themeAccent = remember(settings.theme) { settings.theme.toAccentColor() }
-    val savedAccent: Color? = remember(settings.lastAccentColor) {
-        settings.lastAccentColor?.let { Color(it.toULong()) }
-    }
-    val finalAccent = when {
-        settings.dynamicColor && hasTrack -> accentPalette.dominant
-        settings.dynamicColor && savedAccent != null -> savedAccent
-        else -> themeAccent
-    }
+    val savedAccent: Color? =
+        remember(settings.lastAccentColor) {
+            settings.lastAccentColor?.let { Color(it.toULong()) }
+        }
+    val finalAccent =
+        when {
+            settings.dynamicColor && hasTrack -> accentPalette.dominant
+            settings.dynamicColor && savedAccent != null -> savedAccent
+            else -> themeAccent
+        }
     var showSettingsSheet by remember { mutableStateOf(false) }
     val snackbarState = remember { MeloSnackbarState() }
 
@@ -171,7 +178,8 @@ fun App(
             }
         }
 
-        val isDetailScreen = currentScreen is ScreenRoute.Album ||
+        val isDetailScreen =
+            currentScreen is ScreenRoute.Album ||
                 currentScreen is ScreenRoute.Playlist ||
                 currentScreen is ScreenRoute.Artist
         val isAmbientCanvasEnabled = !isDetailScreen && !isNowPlayingExpanded
@@ -202,20 +210,22 @@ fun App(
                         Column(modifier = Modifier.fillMaxSize()) {
                             titleBar()
                             Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth(),
                             ) {
                                 AdaptiveScaffold(
                                     selectedTab = selectedTab,
                                     isSelectionMode = isSelectionMode.value,
                                     onTabSelected = { tab ->
                                         selectedTab = tab
-                                        navigationStack = when (tab) {
-                                            MainTab.HOME -> listOf(ScreenRoute.Home)
-                                            MainTab.SEARCH -> listOf(ScreenRoute.Search)
-                                            MainTab.LIBRARY -> listOf(ScreenRoute.Library)
-                                        }
+                                        navigationStack =
+                                            when (tab) {
+                                                MainTab.HOME -> listOf(ScreenRoute.Home)
+                                                MainTab.SEARCH -> listOf(ScreenRoute.Search)
+                                                MainTab.LIBRARY -> listOf(ScreenRoute.Library)
+                                            }
                                     },
                                     onOpenNowPlaying = { isNowPlayingExpanded = true },
                                     onOpenSettings = { showSettingsSheet = true },
@@ -232,21 +242,22 @@ fun App(
                                     onToggleTheme = {
                                         coroutineScope.launch {
                                             updateSettingsUseCase { current ->
-                                                val nextMode = when (current.themeMode) {
-                                                    ThemeMode.SYSTEM -> if (isSystemDark) ThemeMode.LIGHT else ThemeMode.DARK
-                                                    ThemeMode.LIGHT -> ThemeMode.DARK
-                                                    ThemeMode.DARK -> ThemeMode.LIGHT
-                                                }
+                                                val nextMode =
+                                                    when (current.themeMode) {
+                                                        ThemeMode.SYSTEM -> if (isSystemDark) ThemeMode.LIGHT else ThemeMode.DARK
+                                                        ThemeMode.LIGHT -> ThemeMode.DARK
+                                                        ThemeMode.DARK -> ThemeMode.LIGHT
+                                                    }
                                                 current.copy(themeMode = nextMode)
                                             }
                                         }
-                                    }
+                                    },
                                 ) { _, paddingValues ->
                                     Column(
                                         modifier =
                                             Modifier
                                                 .fillMaxSize()
-                                                .statusBarsPadding()
+                                                .statusBarsPadding(),
                                     ) {
                                         OfflineModeBanner(
                                             visible = isOfflineMode,
@@ -256,7 +267,9 @@ fun App(
                                                     updateSettingsUseCase { current ->
                                                         current.copy(offlineMode = false)
                                                     }
-                                                    snackbarState.show("Modo sin conexión desactivado")
+                                                    snackbarState.show(
+                                                        UiText.Resource(Res.string.app_offline_disabled_snackbar),
+                                                    )
                                                 }
                                             },
                                             onRetry = {
@@ -269,20 +282,27 @@ fun App(
                                         val currentUpdate = updateState
                                         val availableUpdate = currentUpdate as? UpdateState.UpdateAvailable
                                         MeloBanner(
-                                            visible = availableUpdate != null &&
-                                                availableUpdate.release.version != dismissedUpdateVersion,
-                                            title = availableUpdate?.let { update ->
-                                                val channelTag = if (
-                                                    update.release.channel == UpdateChannel.NIGHTLY
-                                                ) {
-                                                    " (Nightly)"
-                                                } else {
-                                                    ""
-                                                }
-                                                "Nueva versión ${update.release.version}$channelTag disponible"
-                                            } ?: "",
+                                            visible =
+                                                availableUpdate != null &&
+                                                    availableUpdate.release.version != dismissedUpdateVersion,
+                                            title =
+                                                availableUpdate?.let { update ->
+                                                    val channelTag =
+                                                        if (
+                                                            update.release.channel == UpdateChannel.NIGHTLY
+                                                        ) {
+                                                            " (Nightly)"
+                                                        } else {
+                                                            ""
+                                                        }
+                                                    stringResource(
+                                                        Res.string.app_update_available_banner,
+                                                        update.release.version,
+                                                        channelTag,
+                                                    )
+                                                } ?: "",
                                             icon = Icons.Default.SystemUpdate,
-                                            actionLabel = "Actualizar",
+                                            actionLabel = stringResource(Res.string.app_update_action),
                                             onAction = { showSettingsSheet = true },
                                             onDismiss = {
                                                 availableUpdate?.let {
@@ -292,180 +312,187 @@ fun App(
                                         )
 
                                         Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .fillMaxWidth()
+                                            modifier =
+                                                Modifier
+                                                    .weight(1f)
+                                                    .fillMaxWidth(),
                                         ) {
                                             when (currentScreen) {
-                                                ScreenRoute.Home -> HomeScreen(
-                                                    onAlbumClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Album(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                ScreenRoute.Home ->
+                                                    HomeScreen(
+                                                        onAlbumClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Album(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onPlaylistClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Playlist(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                        },
+                                                        onPlaylistClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Playlist(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onArtistClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id
+                                                        },
+                                                        onArtistClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onOpenSettings = { showSettingsSheet = true },
-                                                    paddingValues = paddingValues
-                                                )
+                                                        },
+                                                        onOpenSettings = { showSettingsSheet = true },
+                                                        paddingValues = paddingValues,
+                                                    )
 
-                                                ScreenRoute.Search -> SearchScreen(
-                                                    onAlbumClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Album(
-                                                                id
+                                                ScreenRoute.Search ->
+                                                    SearchScreen(
+                                                        onAlbumClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Album(
+                                                                    id,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onPlaylistClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Playlist(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                        },
+                                                        onPlaylistClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Playlist(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onArtistClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id
+                                                        },
+                                                        onArtistClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onOpenSettings = { showSettingsSheet = true },
-                                                    paddingValues = paddingValues
-                                                )
+                                                        },
+                                                        onOpenSettings = { showSettingsSheet = true },
+                                                        paddingValues = paddingValues,
+                                                    )
 
-                                                ScreenRoute.Library -> LibraryScreen(
-                                                    onOpenSettings = { showSettingsSheet = true },
-                                                    onAlbumClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Album(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                ScreenRoute.Library ->
+                                                    LibraryScreen(
+                                                        onOpenSettings = { showSettingsSheet = true },
+                                                        onAlbumClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Album(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onPlaylistClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Playlist(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                        },
+                                                        onPlaylistClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Playlist(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onArtistClick = { id, name, artwork ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id = id,
-                                                                name = name,
-                                                                artwork = artwork,
-                                                            ),
-                                                        )
-                                                    },
-                                                    paddingValues = paddingValues
-                                                )
+                                                        },
+                                                        onArtistClick = { id, name, artwork ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id = id,
+                                                                    name = name,
+                                                                    artwork = artwork,
+                                                                ),
+                                                            )
+                                                        },
+                                                        paddingValues = paddingValues,
+                                                    )
 
-                                                is ScreenRoute.Album -> AlbumDetailScreen(
-                                                    albumId = currentScreen.id,
-                                                    initialTitle = currentScreen.title,
-                                                    initialArtwork = currentScreen.artwork,
-                                                    initialAuthor = currentScreen.author,
-                                                    bottomPadding = paddingValues,
-                                                    onBack = ::navigateBack,
-                                                    onArtistClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id = id,
-                                                                name = id,
-                                                            ),
-                                                        )
-                                                    },
-                                                    onAlbumClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Album(
-                                                                id
+                                                is ScreenRoute.Album ->
+                                                    AlbumDetailScreen(
+                                                        albumId = currentScreen.id,
+                                                        initialTitle = currentScreen.title,
+                                                        initialArtwork = currentScreen.artwork,
+                                                        initialAuthor = currentScreen.author,
+                                                        bottomPadding = paddingValues,
+                                                        onBack = ::navigateBack,
+                                                        onArtistClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id = id,
+                                                                    name = id,
+                                                                ),
                                                             )
-                                                        )
-                                                    }
-                                                )
+                                                        },
+                                                        onAlbumClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Album(
+                                                                    id,
+                                                                ),
+                                                            )
+                                                        },
+                                                    )
 
-                                                is ScreenRoute.Playlist -> PlaylistDetailScreen(
-                                                    playlistId = currentScreen.id,
-                                                    initialTitle = currentScreen.title,
-                                                    initialArtwork = currentScreen.artwork,
-                                                    initialAuthor = currentScreen.author,
-                                                    bottomPadding = paddingValues,
-                                                    onBack = ::navigateBack,
-                                                    onArtistClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id
+                                                is ScreenRoute.Playlist ->
+                                                    PlaylistDetailScreen(
+                                                        playlistId = currentScreen.id,
+                                                        initialTitle = currentScreen.title,
+                                                        initialArtwork = currentScreen.artwork,
+                                                        initialAuthor = currentScreen.author,
+                                                        bottomPadding = paddingValues,
+                                                        onBack = ::navigateBack,
+                                                        onArtistClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id,
+                                                                ),
                                                             )
-                                                        )
-                                                    }
-                                                )
+                                                        },
+                                                    )
 
-                                                is ScreenRoute.Artist -> ArtistDetailScreen(
-                                                    artistId = currentScreen.id,
-                                                    initialName = currentScreen.name,
-                                                    initialArtwork = currentScreen.artwork,
-                                                    bottomPadding = paddingValues,
-                                                    onBack = ::navigateBack,
-                                                    onAlbumClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Album(
-                                                                id = id,
-                                                                title = title,
-                                                                artwork = artwork,
-                                                                author = author,
-                                                            ),
-                                                        )
-                                                    },
-                                                    onArtistClick = { id ->
-                                                        navigateTo(
-                                                            ScreenRoute.Artist(
-                                                                id
+                                                is ScreenRoute.Artist ->
+                                                    ArtistDetailScreen(
+                                                        artistId = currentScreen.id,
+                                                        initialName = currentScreen.name,
+                                                        initialArtwork = currentScreen.artwork,
+                                                        bottomPadding = paddingValues,
+                                                        onBack = ::navigateBack,
+                                                        onAlbumClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Album(
+                                                                    id = id,
+                                                                    title = title,
+                                                                    artwork = artwork,
+                                                                    author = author,
+                                                                ),
                                                             )
-                                                        )
-                                                    },
-                                                    onPlaylistClick = { id, title, artwork, author ->
-                                                        navigateTo(
-                                                            ScreenRoute.Playlist(
-                                                                id,
-                                                                title,
-                                                                artwork,
-                                                                author
+                                                        },
+                                                        onArtistClick = { id ->
+                                                            navigateTo(
+                                                                ScreenRoute.Artist(
+                                                                    id,
+                                                                ),
                                                             )
-                                                        )
-                                                    }
-                                                )
+                                                        },
+                                                        onPlaylistClick = { id, title, artwork, author ->
+                                                            navigateTo(
+                                                                ScreenRoute.Playlist(
+                                                                    id,
+                                                                    title,
+                                                                    artwork,
+                                                                    author,
+                                                                ),
+                                                            )
+                                                        },
+                                                    )
                                             }
                                         }
                                     }
@@ -475,19 +502,23 @@ fun App(
 
                         AnimatedVisibility(
                             visible = isNowPlayingExpanded,
-                            enter = slideInVertically(
-                                initialOffsetY = { it },
-                                animationSpec = MeloMotion.slow()
-                            ) + fadeIn(
-                                animationSpec = MeloMotion.medium()
-                            ),
-                            exit = slideOutVertically(
-                                targetOffsetY = { it },
-                                animationSpec = MeloMotion.slow()
-                            ) + fadeOut(
-                                animationSpec = MeloMotion.medium()
-                            ),
-                            modifier = Modifier.fillMaxSize()
+                            enter =
+                                slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = MeloMotion.slow(),
+                                ) +
+                                    fadeIn(
+                                        animationSpec = MeloMotion.medium(),
+                                    ),
+                            exit =
+                                slideOutVertically(
+                                    targetOffsetY = { it },
+                                    animationSpec = MeloMotion.slow(),
+                                ) +
+                                    fadeOut(
+                                        animationSpec = MeloMotion.medium(),
+                                    ),
+                            modifier = Modifier.fillMaxSize(),
                         ) {
                             NowPlayingScreen(
                                 titleBar = titleBar,
@@ -506,206 +537,209 @@ fun App(
                                 onPlaylistClick = { id ->
                                     isNowPlayingExpanded = false
                                     navigateTo(ScreenRoute.Playlist(id))
-                                }
+                                },
                             )
                         }
 
                         if (showLoginDialog) {
                             LoginDialog(
                                 viewModel = loginViewModel,
-                                onDismiss = { showLoginDialog = false }
+                                onDismiss = { showLoginDialog = false },
                             )
                         }
 
                         if (showSettingsSheet) {
-                            val settingsActions = SettingsActions(
-                                onThemeModeSelected = { themeMode ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(themeMode = themeMode)
+                            val settingsActions =
+                                SettingsActions(
+                                    onThemeModeSelected = { themeMode ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(themeMode = themeMode)
+                                            }
                                         }
-                                    }
-                                },
-                                onThemePresetSelected = { preset ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(theme = preset)
+                                    },
+                                    onThemePresetSelected = { preset ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(theme = preset)
+                                            }
                                         }
-                                    }
-                                },
-                                onDynamicColorToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dynamicColor = enabled)
+                                    },
+                                    onDynamicColorToggle = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(dynamicColor = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onAmbientMotionToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(ambientMotion = enabled)
+                                    },
+                                    onAmbientMotionToggle = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(ambientMotion = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onNowPlayingBlurIntensitySelected = { intensity ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(
-                                                nowPlayingBlur = intensity != NowPlayingBlurIntensity.OFF,
-                                                nowPlayingBlurIntensity = intensity,
-                                            )
+                                    },
+                                    onNowPlayingBlurIntensitySelected = { intensity ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(
+                                                    nowPlayingBlur = intensity != NowPlayingBlurIntensity.OFF,
+                                                    nowPlayingBlurIntensity = intensity,
+                                                )
+                                            }
                                         }
-                                    }
-                                },
-                                onNowPlayingBackdropScrimSelected = { scrim ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(nowPlayingBackdropScrim = scrim)
+                                    },
+                                    onNowPlayingBackdropScrimSelected = { scrim ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(nowPlayingBackdropScrim = scrim)
+                                            }
                                         }
-                                    }
-                                },
-                                onReduceTransparencyToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(reduceTransparency = enabled)
+                                    },
+                                    onReduceTransparencyToggle = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(reduceTransparency = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onDataSaverToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(dataSaver = enabled)
+                                    },
+                                    onDataSaverToggle = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(dataSaver = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onAudioQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(audioQuality = quality)
+                                    },
+                                    onAudioQualitySelected = { quality ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(audioQuality = quality)
+                                            }
                                         }
-                                    }
-                                },
-                                onDownloadFormatSelected = { format ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadFormat = format)
+                                    },
+                                    onDownloadFormatSelected = { format ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(downloadFormat = format)
+                                            }
                                         }
-                                    }
-                                },
-                                onDownloadQualitySelected = { quality ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(downloadQuality = quality)
+                                    },
+                                    onDownloadQualitySelected = { quality ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(downloadQuality = quality)
+                                            }
                                         }
-                                    }
-                                },
-                                onCacheSizeLimitSelected = { limit ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(maxOfflineSizeMb = limit.sizeMb)
+                                    },
+                                    onCacheSizeLimitSelected = { limit ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(maxOfflineSizeMb = limit.sizeMb)
+                                            }
                                         }
-                                    }
-                                },
-                                onOfflineModeToggle = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(offlineMode = enabled)
+                                    },
+                                    onOfflineModeToggle = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(offlineMode = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onClearCache = {
-                                    coroutineScope.launch {
-                                        offlineRepository.cleanupCache(0)
-                                        snackbarState.show("Caché de audio liberada correctamente")
-                                    }
-                                },
-                                onAutoplayToggle = { autoplay ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(autoplay = autoplay)
+                                    },
+                                    onClearCache = {
+                                        coroutineScope.launch {
+                                            offlineRepository.cleanupCache(0)
+                                            snackbarState.show(UiText.Resource(Res.string.app_cache_cleared_snackbar))
                                         }
-                                    }
-                                },
-                                onResumeLastActiveSessionToggle = { resume ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(resumeLastActiveSession = resume)
+                                    },
+                                    onAutoplayToggle = { autoplay ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(autoplay = autoplay)
+                                            }
                                         }
-                                    }
-                                },
-                                onStopPlaybackOnTaskRemovalToggle = { stop ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(stopPlaybackOnTaskRemoval = stop)
+                                    },
+                                    onResumeLastActiveSessionToggle = { resume ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(resumeLastActiveSession = resume)
+                                            }
                                         }
-                                    }
-                                },
-                                onDiscordRpcToggle = { rpc ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(discordRpcEnabled = rpc)
+                                    },
+                                    onStopPlaybackOnTaskRemovalToggle = { stop ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(stopPlaybackOnTaskRemoval = stop)
+                                            }
                                         }
-                                    }
-                                },
-                                onDiscordTokenChanged = { token ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(discordRpcToken = token)
+                                    },
+                                    onDiscordRpcToggle = { rpc ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(discordRpcEnabled = rpc)
+                                            }
                                         }
-                                    }
-                                },
-                                onAddLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            if (path !in current.localLibraryPaths) {
-                                                current.copy(localLibraryPaths = current.localLibraryPaths + path)
-                                            } else current
+                                    },
+                                    onDiscordTokenChanged = { token ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(discordRpcToken = token)
+                                            }
                                         }
-                                    }
-                                },
-                                onRemoveLocalPath = { path ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
+                                    },
+                                    onAddLocalPath = { path ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                if (path !in current.localLibraryPaths) {
+                                                    current.copy(localLibraryPaths = current.localLibraryPaths + path)
+                                                } else {
+                                                    current
+                                                }
+                                            }
                                         }
-                                    }
-                                },
-                                onSyncHistoryToYouTubeChanged = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(syncHistoryToYouTube = enabled)
+                                    },
+                                    onRemoveLocalPath = { path ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(localLibraryPaths = current.localLibraryPaths.filter { it != path })
+                                            }
                                         }
-                                    }
-                                },
-                                onToggleAutoCheckUpdates = { enabled ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(autoCheckUpdates = enabled)
+                                    },
+                                    onSyncHistoryToYouTubeChanged = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(syncHistoryToYouTube = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onUpdateChannelSelected = { channel ->
-                                    coroutineScope.launch {
-                                        updateSettingsUseCase { current ->
-                                            current.copy(updateChannel = channel)
+                                    },
+                                    onToggleAutoCheckUpdates = { enabled ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(autoCheckUpdates = enabled)
+                                            }
                                         }
-                                    }
-                                },
-                                onSelectAccountProfile = { pageId ->
-                                    loginViewModel.selectProfile(pageId)
-                                },
-                                onRefreshAccountProfiles = {
-                                    loginViewModel.loadProfiles()
-                                },
-                                onOpenLogin = {
-                                    showSettingsSheet = false
-                                    showLoginDialog = true
-                                },
-                                onLogout = {
-                                    showSettingsSheet = false
-                                    loginViewModel.logout()
-                                }
-                            )
+                                    },
+                                    onUpdateChannelSelected = { channel ->
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(updateChannel = channel)
+                                            }
+                                        }
+                                    },
+                                    onSelectAccountProfile = { pageId ->
+                                        loginViewModel.selectProfile(pageId)
+                                    },
+                                    onRefreshAccountProfiles = {
+                                        loginViewModel.loadProfiles()
+                                    },
+                                    onOpenLogin = {
+                                        showSettingsSheet = false
+                                        showLoginDialog = true
+                                    },
+                                    onLogout = {
+                                        showSettingsSheet = false
+                                        loginViewModel.logout()
+                                    },
+                                )
 
                             SettingsModal(
                                 settings = settings,
@@ -722,11 +756,10 @@ fun App(
 
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.BottomCenter
+                            contentAlignment = Alignment.BottomCenter,
                         ) {
                             MeloSnackbarHost(state = snackbarState)
                         }
-
                     }
                 }
             }

@@ -54,6 +54,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_melo_logo
+import com.github.adriianh.melo.resources.a11y_new_playlist
+import com.github.adriianh.melo.resources.a11y_sidebar_collapse
+import com.github.adriianh.melo.resources.a11y_sidebar_expand
+import com.github.adriianh.melo.resources.a11y_toggle_theme
+import com.github.adriianh.melo.resources.nav_settings
+import com.github.adriianh.melo.resources.nav_settings_update_available
+import com.github.adriianh.melo.resources.sidebar_section_playlists
 import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
 import com.github.adriianh.melo.ui.settings.SettingsEntryUpdateBadge
@@ -61,6 +70,7 @@ import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -74,51 +84,62 @@ internal fun MainSidebar(
     onToggleTheme: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: SidebarViewModel = koinViewModel()
+    viewModel: SidebarViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val meloColors = LocalMeloColors.current
     val instanceLabel = LocalInstanceLabel.current
-    val sidebarWidthState = animateDpAsState(
-        targetValue = if (collapsed) 72.dp else 240.dp,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
-        label = "sidebarWidth"
-    )
+    val sidebarWidthState =
+        animateDpAsState(
+            targetValue = if (collapsed) 72.dp else 240.dp,
+            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            label = "sidebarWidth",
+        )
 
     Column(
-        modifier = modifier
-            .layout { measurable, constraints ->
-                val width = sidebarWidthState.value.roundToPx()
-                val placeable = measurable.measure(
-                    constraints.copy(minWidth = width, maxWidth = width)
-                )
-                layout(width, placeable.height) {
-                    placeable.placeRelative(0, 0)
-                }
-            }
-            .fillMaxHeight()
-            .padding(top = 12.dp, bottom = 12.dp, start = 12.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(meloColors.playerBarFill)
-            .border(0.5.dp, meloColors.playerBarBorder, RoundedCornerShape(20.dp)),
-        verticalArrangement = Arrangement.SpaceBetween
+        modifier =
+            modifier
+                .layout { measurable, constraints ->
+                    val width = sidebarWidthState.value.roundToPx()
+                    val placeable =
+                        measurable.measure(
+                            constraints.copy(minWidth = width, maxWidth = width),
+                        )
+                    layout(width, placeable.height) {
+                        placeable.placeRelative(0, 0)
+                    }
+                }.fillMaxHeight()
+                .padding(top = 12.dp, bottom = 12.dp, start = 12.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(meloColors.playerBarFill)
+                .border(0.5.dp, meloColors.playerBarBorder, RoundedCornerShape(20.dp)),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (collapsed) Arrangement.Center else Arrangement.spacedBy(
-                    12.dp
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = if (collapsed) 0.dp else 12.dp, vertical = 14.dp)
+                horizontalArrangement =
+                    if (collapsed) {
+                        Arrangement.Center
+                    } else {
+                        Arrangement.spacedBy(
+                            12.dp,
+                        )
+                    },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (collapsed) 0.dp else 12.dp, vertical = 14.dp),
             ) {
                 IconButton(onClick = onToggleCollapsed, modifier = Modifier.size(36.dp)) {
                     Icon(
                         Icons.Default.Menu,
-                        contentDescription = if (collapsed) "Expandir barra lateral" else "Colapsar barra lateral",
+                        contentDescription =
+                            stringResource(
+                                if (collapsed) Res.string.a11y_sidebar_expand else Res.string.a11y_sidebar_collapse,
+                            ),
                         tint = MeloColors.textPrimary,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(22.dp),
                     )
                 }
 
@@ -126,20 +147,22 @@ internal fun MainSidebar(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = { onTabSelected(MainTab.HOME) })
+                        modifier =
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = { onTabSelected(MainTab.HOME) }),
                     ) {
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(28.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     Icons.Default.MusicNote,
-                                    contentDescription = "Melo Logo",
+                                    contentDescription = stringResource(Res.string.a11y_melo_logo),
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                             }
                         }
@@ -147,7 +170,7 @@ internal fun MainSidebar(
                             "Melo",
                             style = MeloType.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary
+                            color = MeloColors.textPrimary,
                         )
                         if (instanceLabel != null) {
                             Text(
@@ -167,68 +190,70 @@ internal fun MainSidebar(
             Crossfade(
                 targetState = collapsed,
                 animationSpec = tween(durationMillis = 150),
-                label = "sidebarContent"
+                label = "sidebarContent",
             ) { isCollapsed ->
                 if (isCollapsed) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         MainTab.entries.forEach { tab ->
                             SidebarNavItem(
-                                label = tab.title,
+                                label = stringResource(tab.titleRes),
                                 icon = tab.icon,
                                 isSelected = selectedTab == tab,
                                 onClick = { onTabSelected(tab) },
-                                collapsed = true
+                                collapsed = true,
                             )
                         }
                     }
                 } else {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             MainTab.entries.forEach { tab ->
                                 SidebarNavItem(
-                                    label = tab.title,
+                                    label = stringResource(tab.titleRes),
                                     icon = tab.icon,
                                     isSelected = selectedTab == tab,
                                     onClick = { onTabSelected(tab) },
-                                    collapsed = false
+                                    collapsed = false,
                                 )
                             }
                         }
 
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    "PLAYLISTS",
+                                    stringResource(Res.string.sidebar_section_playlists),
                                     style = MeloType.labelSmall,
                                     letterSpacing = 1.2.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MeloColors.textMuted
+                                    color = MeloColors.textMuted,
                                 )
                                 IconButton(
                                     onClick = { onTabSelected(MainTab.LIBRARY) },
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp),
                                 ) {
                                     Icon(
                                         Icons.Default.Add,
-                                        contentDescription = "Nueva lista",
+                                        contentDescription = stringResource(Res.string.a11y_new_playlist),
                                         tint = MeloColors.textMuted,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(16.dp),
                                     )
                                 }
                             }
@@ -243,9 +268,9 @@ internal fun MainSidebar(
                                                 playlist.id,
                                                 playlist.title,
                                                 playlist.artworkUrl,
-                                                playlist.author
+                                                playlist.author,
                                             )
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -259,7 +284,7 @@ internal fun MainSidebar(
             isDarkTheme = isDarkTheme,
             onToggleTheme = onToggleTheme,
             onOpenSettings = onOpenSettings,
-            collapsed = collapsed
+            collapsed = collapsed,
         )
     }
 }
@@ -269,19 +294,22 @@ private fun SidebarUtils(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onOpenSettings: () -> Unit,
-    collapsed: Boolean
+    collapsed: Boolean,
 ) {
     val hasAvailableUpdate = LocalHasAvailableUpdate.current
     val settingsDescription =
-        if (hasAvailableUpdate) "Ajustes (actualización disponible)" else "Ajustes"
+        stringResource(
+            if (hasAvailableUpdate) Res.string.nav_settings_update_available else Res.string.nav_settings,
+        )
     Column(modifier = Modifier.fillMaxWidth()) {
         if (collapsed) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 UtilIconButton(
                     icon = Icons.Default.Settings,
@@ -292,16 +320,17 @@ private fun SidebarUtils(
                 UtilIconButton(
                     icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
                     onClick = onToggleTheme,
-                    contentDescription = "Cambiar tema"
+                    contentDescription = stringResource(Res.string.a11y_toggle_theme),
                 )
             }
         } else {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 UtilIconButton(
                     icon = Icons.Default.Settings,
@@ -312,7 +341,7 @@ private fun SidebarUtils(
                 UtilIconButton(
                     icon = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
                     onClick = onToggleTheme,
-                    contentDescription = "Cambiar tema"
+                    contentDescription = stringResource(Res.string.a11y_toggle_theme),
                 )
             }
         }
@@ -332,33 +361,39 @@ private fun UtilIconButton(
     val meloColors = LocalMeloColors.current
 
     Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(10.dp))
-            .background(
-                if (isHovered) meloColors.glassSurface.copy(alpha = 0.35f)
-                else meloColors.glassSurface.copy(alpha = 0.15f)
-            )
-            .border(
-                width = 0.5.dp,
-                color = if (isHovered) meloColors.glassBorder.copy(alpha = 0.5f)
-                else meloColors.glassBorder.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(10.dp)
-            )
-            .hoverable(interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .size(size)
+                .clip(RoundedCornerShape(10.dp))
+                .background(
+                    if (isHovered) {
+                        meloColors.glassSurface.copy(alpha = 0.35f)
+                    } else {
+                        meloColors.glassSurface.copy(alpha = 0.15f)
+                    },
+                ).border(
+                    width = 0.5.dp,
+                    color =
+                        if (isHovered) {
+                            meloColors.glassBorder.copy(alpha = 0.5f)
+                        } else {
+                            meloColors.glassBorder.copy(alpha = 0.2f)
+                        },
+                    shape = RoundedCornerShape(10.dp),
+                ).hoverable(interactionSource)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         SettingsEntryUpdateBadge(showDot = showBadge, dotSize = 7.dp) {
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
                 tint = if (isHovered) meloColors.textPrimary else meloColors.textSecondary,
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(19.dp),
             )
         }
     }
@@ -374,33 +409,36 @@ private fun SidebarNavItem(
 ) {
     val iconTint = if (isSelected) MaterialTheme.colorScheme.primary else MeloColors.textSecondary
     val labelStyle = if (collapsed) MeloType.labelSmall.copy(fontSize = 10.sp) else MeloType.body
-    val labelWeight = when {
-        isSelected && collapsed -> FontWeight.Bold
-        isSelected -> FontWeight.SemiBold
-        else -> FontWeight.Normal
-    }
-    val labelColor = if (isSelected) {
-        if (collapsed) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
-    } else {
-        if (collapsed) MeloColors.textMuted else MeloColors.textSecondary
-    }
+    val labelWeight =
+        when {
+            isSelected && collapsed -> FontWeight.Bold
+            isSelected -> FontWeight.SemiBold
+            else -> FontWeight.Normal
+        }
+    val labelColor =
+        if (isSelected) {
+            if (collapsed) MaterialTheme.colorScheme.primary else MeloColors.textPrimary
+        } else {
+            if (collapsed) MeloColors.textMuted else MeloColors.textSecondary
+        }
 
     if (collapsed) {
         Column(
-            modifier = Modifier
-                .width(64.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
-                .clickable(onClick = onClick)
-                .padding(vertical = 8.dp),
+            modifier =
+                Modifier
+                    .width(64.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
+                    .clickable(onClick = onClick)
+                    .padding(vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Icon(
                 icon,
                 contentDescription = label,
                 tint = iconTint,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(22.dp),
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -409,17 +447,18 @@ private fun SidebarNavItem(
                 fontWeight = labelWeight,
                 color = labelColor,
                 textAlign = TextAlign.Center,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     } else {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 9.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isSelected) MeloColors.surface2 else Color.Transparent)
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -427,7 +466,7 @@ private fun SidebarNavItem(
                 icon,
                 contentDescription = label,
                 tint = iconTint,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Text(
                 label,
@@ -435,7 +474,7 @@ private fun SidebarNavItem(
                 fontWeight = labelWeight,
                 color = labelColor,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -448,11 +487,12 @@ private fun SidebarPlaylistRow(
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -461,20 +501,20 @@ private fun SidebarPlaylistRow(
                 url = artworkUrl,
                 contentDescription = title,
                 size = 28.dp,
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(4.dp),
             )
         } else {
             Surface(
                 shape = RoundedCornerShape(4.dp),
                 color = MeloColors.surface2,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(28.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.AutoMirrored.Filled.PlaylistPlay,
                         contentDescription = null,
                         tint = MeloColors.textMuted,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
@@ -484,7 +524,7 @@ private fun SidebarPlaylistRow(
             style = MeloType.body,
             color = MeloColors.textSecondary,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

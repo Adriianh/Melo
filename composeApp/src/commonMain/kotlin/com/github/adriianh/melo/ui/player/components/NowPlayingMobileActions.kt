@@ -23,10 +23,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.player_tab_artist
+import com.github.adriianh.melo.resources.player_tab_queue
+import com.github.adriianh.melo.resources.player_tab_radio
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
-import com.github.adriianh.core.domain.model.Track
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun NowPlayingMobileActions(
@@ -35,11 +40,11 @@ internal fun NowPlayingMobileActions(
     onOpenQueue: () -> Unit,
     onStartRadio: (Track) -> Unit,
     onOpenArtist: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         MobileActionChip(
             icon = {
@@ -47,12 +52,15 @@ internal fun NowPlayingMobileActions(
                     Icons.AutoMirrored.Filled.QueueMusic,
                     contentDescription = null,
                     tint = activeAccent,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             },
-            label = "Cola",
-            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
-                .clickable { onOpenQueue() }
+            label = stringResource(Res.string.player_tab_queue),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenQueue() },
         )
 
         MobileActionChip(
@@ -61,13 +69,14 @@ internal fun NowPlayingMobileActions(
                     Icons.Default.GraphicEq,
                     contentDescription = null,
                     tint = activeAccent,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             },
-            label = "Radio",
-            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable {
-                state.currentTrack?.let { onStartRadio(it) }
-            }
+            label = stringResource(Res.string.player_tab_radio),
+            modifier =
+                Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable {
+                    state.currentTrack?.let { onStartRadio(it) }
+                },
         )
 
         MobileActionChip(
@@ -76,12 +85,15 @@ internal fun NowPlayingMobileActions(
                     Icons.Default.Person,
                     contentDescription = null,
                     tint = activeAccent,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             },
-            label = "Artista",
-            modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
-                .clickable { onOpenArtist() }
+            label = stringResource(Res.string.player_tab_artist),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenArtist() },
         )
     }
 }
@@ -90,18 +102,18 @@ internal fun NowPlayingMobileActions(
 private fun MobileActionChip(
     icon: @Composable () -> Unit,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MeloColors.surface1.copy(alpha = 0.7f),
         border = BorderStroke(1.dp, MeloColors.border),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
         ) {
             icon()
             Spacer(modifier = Modifier.width(6.dp))
@@ -109,7 +121,7 @@ private fun MobileActionChip(
                 label,
                 style = MeloType.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
         }
     }
