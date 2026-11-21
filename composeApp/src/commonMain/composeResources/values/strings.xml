@@ -394,7 +394,8 @@
     <string name="settings_title">Ajustes</string>
     <string name="settings_breadcrumb_prefix">Ajustes  &gt;  </string>
     <string name="settings_group_experience">Experiencia</string>
-    <string name="settings_group_account_app">Cuenta y app</string>
+    <string name="settings_group_account">Cuenta</string>
+    <string name="settings_group_app">Aplicación</string>
     <string name="settings_cat_appearance">Apariencia</string>
     <string name="settings_cat_playback">Reproducción</string>
     <string name="settings_cat_library">Biblioteca</string>

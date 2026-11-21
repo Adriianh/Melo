@@ -80,7 +80,8 @@ import com.github.adriianh.melo.resources.settings_cat_library
 import com.github.adriianh.melo.resources.settings_cat_playback
 import com.github.adriianh.melo.resources.settings_cat_updates
 import com.github.adriianh.melo.resources.settings_data_saver_title
-import com.github.adriianh.melo.resources.settings_group_account_app
+import com.github.adriianh.melo.resources.settings_group_account
+import com.github.adriianh.melo.resources.settings_group_app
 import com.github.adriianh.melo.resources.settings_group_experience
 import com.github.adriianh.melo.resources.settings_summary_account_connected
 import com.github.adriianh.melo.resources.settings_summary_account_disconnected
@@ -108,7 +109,8 @@ internal enum class SettingsCategoryGroup(
     val captionRes: StringResource,
 ) {
     EXPERIENCE(Res.string.settings_group_experience),
-    ACCOUNT_AND_APP(Res.string.settings_group_account_app),
+    ACCOUNT(Res.string.settings_group_account),
+    APP(Res.string.settings_group_app),
 }
 
 internal enum class SettingsCategory(
@@ -119,10 +121,10 @@ internal enum class SettingsCategory(
     APPEARANCE(Res.string.settings_cat_appearance, Icons.Default.ColorLens, SettingsCategoryGroup.EXPERIENCE),
     PLAYBACK(Res.string.settings_cat_playback, Icons.Default.Headphones, SettingsCategoryGroup.EXPERIENCE),
     LIBRARY(Res.string.settings_cat_library, Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
-    ACCOUNT(Res.string.settings_cat_account, Icons.Default.Person, SettingsCategoryGroup.ACCOUNT_AND_APP),
-    INTEGRATIONS(Res.string.settings_cat_integrations, Icons.Default.Share, SettingsCategoryGroup.ACCOUNT_AND_APP),
-    GENERAL(Res.string.settings_cat_general, Icons.Default.Tune, SettingsCategoryGroup.ACCOUNT_AND_APP),
-    UPDATES(Res.string.settings_cat_updates, Icons.Default.SystemUpdate, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    ACCOUNT(Res.string.settings_cat_account, Icons.Default.Person, SettingsCategoryGroup.ACCOUNT),
+    INTEGRATIONS(Res.string.settings_cat_integrations, Icons.Default.Share, SettingsCategoryGroup.ACCOUNT),
+    GENERAL(Res.string.settings_cat_general, Icons.Default.Tune, SettingsCategoryGroup.APP),
+    UPDATES(Res.string.settings_cat_updates, Icons.Default.SystemUpdate, SettingsCategoryGroup.APP),
     ;
 
     companion object {
