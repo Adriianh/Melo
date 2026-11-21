@@ -41,8 +41,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_back
+import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.common_action_close
+import com.github.adriianh.melo.resources.login_browser_hint
+import com.github.adriianh.melo.resources.login_browser_status_capture
+import com.github.adriianh.melo.resources.login_browser_status_default
+import com.github.adriianh.melo.resources.login_complete_action
+import com.github.adriianh.melo.resources.login_connect_action
+import com.github.adriianh.melo.resources.login_connected_as
+import com.github.adriianh.melo.resources.login_cookies_label
+import com.github.adriianh.melo.resources.login_cookies_placeholder
+import com.github.adriianh.melo.resources.login_desktop_prompt
+import com.github.adriianh.melo.resources.login_embedded_window
+import com.github.adriianh.melo.resources.login_google_action
+import com.github.adriianh.melo.resources.login_google_browser
+import com.github.adriianh.melo.resources.login_import_browser
+import com.github.adriianh.melo.resources.login_logout_action
+import com.github.adriianh.melo.resources.login_manual_hide
+import com.github.adriianh.melo.resources.login_manual_hint
+import com.github.adriianh.melo.resources.login_manual_show
+import com.github.adriianh.melo.resources.login_mobile_prompt
+import com.github.adriianh.melo.resources.login_open_ytm
+import com.github.adriianh.melo.resources.login_synced_subtitle
+import com.github.adriianh.melo.resources.login_title_browser
+import com.github.adriianh.melo.resources.login_title_default
+import com.github.adriianh.melo.resources.login_title_logged_in
+import com.github.adriianh.melo.resources.login_verifying
+import com.github.adriianh.melo.ui.i18n.UiText
+import com.github.adriianh.melo.ui.i18n.resolve
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -68,40 +99,45 @@ fun LoginDialog(
         textContentColor = MeloColors.textPrimary,
         titleContentColor = MeloColors.textPrimary,
         tonalElevation = 10.dp,
-        modifier = Modifier
-            .border(
-                BorderStroke(1.dp, MeloColors.borderStrong),
-                RoundedCornerShape(24.dp)
-            ),
+        modifier =
+            Modifier
+                .border(
+                    BorderStroke(1.dp, MeloColors.borderStrong),
+                    RoundedCornerShape(24.dp),
+                ),
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (isShowingInAppBrowser) {
                     IconButton(
                         onClick = { isShowingInAppBrowser = false },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = MeloColors.textPrimary
+                            contentDescription = stringResource(Res.string.a11y_back),
+                            tint = MeloColors.textPrimary,
                         )
                     }
                 } else {
                     Icon(
                         Icons.Default.AccountCircle,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Text(
-                    if (state.isLoggedIn) "Cuenta de YouTube Music"
-                    else if (isShowingInAppBrowser) "Acceso con Google"
-                    else "Iniciar sesión en YouTube Music",
+                    stringResource(
+                        when {
+                            state.isLoggedIn -> Res.string.login_title_logged_in
+                            isShowingInAppBrowser -> Res.string.login_title_browser
+                            else -> Res.string.login_title_default
+                        },
+                    ),
                     style = MeloType.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         },
@@ -114,27 +150,28 @@ fun LoginDialog(
                     isShowingInAppBrowser -> {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = "Inicia sesión con tu cuenta de Google. Melo detectará tu sesión automáticamente.",
+                                text = stringResource(Res.string.login_browser_hint),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
 
                             Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(400.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                color = MeloColors.surface1
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(400.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                color = MeloColors.surface1,
                             ) {
                                 InAppSignInBrowser(
                                     modifier = Modifier.fillMaxWidth().height(400.dp),
                                     onCookiesCaptured = { capturedCookies ->
                                         isShowingInAppBrowser = false
                                         viewModel.saveSessionCookies(capturedCookies)
-                                    }
+                                    },
                                 )
                             }
 
@@ -147,27 +184,31 @@ fun LoginDialog(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                colors =
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                    ),
                             ) {
-                                Text("Completar inicio de sesión")
+                                Text(stringResource(Res.string.login_complete_action))
                             }
                         }
                     }
 
                     state.isLoggedIn -> LoggedInContent(accountName = state.accountName)
 
-                    else -> NotLoggedInContent(
-                        error = state.error,
-                        cookies = cookies,
-                        onCookiesChange = { cookies = it },
-                        showManualInput = showManualInput,
-                        onToggleManualInput = { showManualInput = !showManualInput },
-                        autoBrowserAvailable = autoBrowserAvailable,
-                        inAppBrowserAvailable = inAppBrowserAvailable,
-                        onInAppLogin = { isShowingInAppBrowser = true },
-                        onAutomatedLogin = viewModel::startAutomatedBrowserLogin,
-                        onQuickImport = viewModel::startQuickImport
-                    )
+                    else ->
+                        NotLoggedInContent(
+                            error = state.error,
+                            cookies = cookies,
+                            onCookiesChange = { cookies = it },
+                            showManualInput = showManualInput,
+                            onToggleManualInput = { showManualInput = !showManualInput },
+                            autoBrowserAvailable = autoBrowserAvailable,
+                            inAppBrowserAvailable = inAppBrowserAvailable,
+                            onInAppLogin = { isShowingInAppBrowser = true },
+                            onAutomatedLogin = viewModel::startAutomatedBrowserLogin,
+                            onQuickImport = viewModel::startQuickImport,
+                        )
                 }
             }
         },
@@ -175,34 +216,35 @@ fun LoginDialog(
             when {
                 state.isLoggedIn ->
                     TextButton(onClick = viewModel::logout) {
-                        Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(Res.string.login_logout_action), color = MaterialTheme.colorScheme.error)
                     }
 
                 state.isVerifying || state.isWaitingBrowserAuth ->
                     TextButton(onClick = viewModel::cancelWaitingBrowserAuth) {
-                        Text("Cancelar")
+                        Text(stringResource(Res.string.common_action_cancel))
                     }
 
                 isShowingInAppBrowser ->
                     TextButton(onClick = { isShowingInAppBrowser = false }) {
-                        Text("Cancelar")
+                        Text(stringResource(Res.string.common_action_cancel))
                     }
 
-                showManualInput -> Row {
-                    TextButton(
-                        enabled = cookies.isNotBlank(),
-                        onClick = { viewModel.saveSessionCookies(cookies) },
-                    ) {
-                        Text("Conectar")
+                showManualInput ->
+                    Row {
+                        TextButton(
+                            enabled = cookies.isNotBlank(),
+                            onClick = { viewModel.saveSessionCookies(cookies) },
+                        ) {
+                            Text(stringResource(Res.string.login_connect_action))
+                        }
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(Res.string.common_action_close))
+                        }
                     }
-                    TextButton(onClick = onDismiss) {
-                        Text("Cerrar")
-                    }
-                }
 
                 else ->
                     TextButton(onClick = onDismiss) {
-                        Text("Cerrar")
+                        Text(stringResource(Res.string.common_action_close))
                     }
             }
         },
@@ -210,25 +252,25 @@ fun LoginDialog(
 }
 
 @Composable
-private fun WaitingBrowserContent(status: String?) {
+private fun WaitingBrowserContent(status: UiText?) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(36.dp),
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = status ?: "Inicia sesión en la ventana de tu navegador.",
+            text = status?.resolve() ?: stringResource(Res.string.login_browser_status_default),
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
         Text(
-            text = "Melo capturará tu sesión automáticamente en cuanto completes el acceso.",
+            text = stringResource(Res.string.login_browser_status_capture),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -242,9 +284,9 @@ private fun VerifyingContent() {
     ) {
         CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
         )
-        Text("Verificando tu cuenta de YouTube Music...")
+        Text(stringResource(Res.string.login_verifying))
     }
 }
 
@@ -253,22 +295,22 @@ private fun LoggedInContent(accountName: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (accountName != null) {
             Text(
-                text = "¡Conectado como $accountName!",
+                text = stringResource(Res.string.login_connected_as, accountName),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
         }
         Text(
-            text = "Tu feed de inicio, playlists y biblioteca están sincronizados con tu cuenta.",
-            style = MaterialTheme.typography.bodyMedium
+            text = stringResource(Res.string.login_synced_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
 
 @Composable
 private fun NotLoggedInContent(
-    error: String?,
+    error: UiText?,
     cookies: String,
     onCookiesChange: (String) -> Unit,
     showManualInput: Boolean,
@@ -284,22 +326,22 @@ private fun NotLoggedInContent(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (autoBrowserAvailable) {
             Text(
-                text = "Inicia sesión con tu cuenta de Google de forma automática y 100% segura:",
+                text = stringResource(Res.string.login_desktop_prompt),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
             Button(
                 onClick = onAutomatedLogin,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(
                     Icons.Default.Language,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.size(8.dp))
-                Text("Iniciar sesión con Google (Navegador)")
+                Text(stringResource(Res.string.login_google_browser))
             }
 
             FilledTonalButton(
@@ -309,40 +351,40 @@ private fun NotLoggedInContent(
                 Icon(
                     Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.size(8.dp))
-                Text("Importar sesión de navegador local")
+                Text(stringResource(Res.string.login_import_browser))
             }
 
             if (inAppBrowserAvailable) {
                 TextButton(
                     onClick = onInAppLogin,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {
-                    Text("O iniciar sesión en la ventana integrada")
+                    Text(stringResource(Res.string.login_embedded_window))
                 }
             }
 
             HorizontalDivider(modifier = Modifier.height(8.dp))
         } else if (inAppBrowserAvailable) {
             Text(
-                text = "Inicia sesión con tu cuenta de Google para acceder a tus playlists y biblioteca:",
+                text = stringResource(Res.string.login_mobile_prompt),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
             Button(
                 onClick = onInAppLogin,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Login,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.size(8.dp))
-                Text("Iniciar sesión con Google")
+                Text(stringResource(Res.string.login_google_action))
             }
 
             HorizontalDivider(modifier = Modifier.height(8.dp))
@@ -350,7 +392,7 @@ private fun NotLoggedInContent(
 
         if (error != null) {
             Text(
-                text = error,
+                text = error.resolve(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -360,12 +402,16 @@ private fun NotLoggedInContent(
             onClick = onToggleManualInput,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
-            Text(if (showManualInput) "Ocultar ingreso manual" else "Opciones avanzadas (ingreso manual)")
+            Text(
+                stringResource(
+                    if (showManualInput) Res.string.login_manual_hide else Res.string.login_manual_show,
+                ),
+            )
         }
 
         if (showManualInput) {
             Text(
-                text = "Pega aquí tus cookies de sesión si prefieres ingresarlas manualmente:",
+                text = stringResource(Res.string.login_manual_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -374,8 +420,8 @@ private fun NotLoggedInContent(
                 value = cookies,
                 onValueChange = onCookiesChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Cookies de sesión") },
-                placeholder = { Text("SAPISID=...; __Secure-3PSID=...") },
+                label = { Text(stringResource(Res.string.login_cookies_label)) },
+                placeholder = { Text(stringResource(Res.string.login_cookies_placeholder)) },
                 minLines = 2,
             )
 
@@ -383,7 +429,7 @@ private fun NotLoggedInContent(
                 onClick = { uriHandler.openUri("https://music.youtube.com") },
                 modifier = Modifier.align(Alignment.End),
             ) {
-                Text("Abrir music.youtube.com")
+                Text(stringResource(Res.string.login_open_ytm))
             }
         }
     }

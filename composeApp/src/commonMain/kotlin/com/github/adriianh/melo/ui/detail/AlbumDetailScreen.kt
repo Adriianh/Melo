@@ -47,6 +47,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_back
+import com.github.adriianh.melo.resources.a11y_clear_selection
+import com.github.adriianh.melo.resources.a11y_deselect_all
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_select_all
+import com.github.adriianh.melo.resources.detail_about_album
+import com.github.adriianh.melo.resources.detail_album_offline_empty_message
+import com.github.adriianh.melo.resources.detail_menu_add_all_to_playlist
+import com.github.adriianh.melo.resources.detail_menu_select_tracks
+import com.github.adriianh.melo.resources.detail_offline_empty_title
+import com.github.adriianh.melo.resources.detail_other_versions
+import com.github.adriianh.melo.resources.detail_type_album
+import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
@@ -67,6 +81,8 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.formatCollectionDuration
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,12 +125,13 @@ fun AlbumDetailScreen(
 
     val album = (uiState.entity as? SearchResult.Album)?.takeIf { it.id == albumId }
     val songs = remember(album) { album?.songs.orEmpty() }
+    val fallbackAlbumTitle = stringResource(Res.string.detail_type_album)
     val effectiveTitle =
-        remember(album, initialTitle, songs) {
+        remember(album, initialTitle, songs, fallbackAlbumTitle) {
             album?.title?.takeIf { it.isNotBlank() }
                 ?: initialTitle.takeIf { it.isNotBlank() }
                 ?: songs.firstOrNull()?.album?.takeIf { it.isNotBlank() }
-                ?: "Álbum"
+                ?: fallbackAlbumTitle
         }
 
     var selectedTrackIds by remember { mutableStateOf(setOf<String>()) }
@@ -146,7 +163,15 @@ fun AlbumDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isSelectionMode) "${selectedTrackIds.size} seleccionadas" else effectiveTitle,
+                        if (isSelectionMode) {
+                            pluralStringResource(
+                                Res.plurals.selection_count,
+                                selectedTrackIds.size,
+                                selectedTrackIds.size,
+                            )
+                        } else {
+                            effectiveTitle
+                        },
                         style = MeloType.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -157,7 +182,7 @@ fun AlbumDetailScreen(
                         IconButton(onClick = { selectedTrackIds = emptySet() }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Cancelar selección",
+                                contentDescription = stringResource(Res.string.a11y_clear_selection),
                                 tint = MeloColors.textPrimary,
                             )
                         }
@@ -165,7 +190,7 @@ fun AlbumDetailScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Atrás",
+                                contentDescription = stringResource(Res.string.a11y_back),
                                 tint = MeloColors.textPrimary,
                             )
                         }
@@ -182,7 +207,10 @@ fun AlbumDetailScreen(
                         ) {
                             Icon(
                                 Icons.Default.SelectAll,
-                                contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
+                                contentDescription =
+                                    stringResource(
+                                        if (isAllSelected) Res.string.a11y_deselect_all else Res.string.a11y_select_all,
+                                    ),
                                 tint = if (isAllSelected) accentColor else MeloColors.textPrimary,
                             )
                         }
@@ -190,7 +218,7 @@ fun AlbumDetailScreen(
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
                                 Icons.Default.MoreVert,
-                                contentDescription = "Más opciones",
+                                contentDescription = stringResource(Res.string.a11y_more_options),
                                 tint = MeloColors.textPrimary,
                             )
                         }
@@ -199,7 +227,12 @@ fun AlbumDetailScreen(
                             onDismissRequest = { showTopMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Añadir todo a playlist...", style = MeloType.body) },
+                                text = {
+                                    Text(
+                                        stringResource(Res.string.detail_menu_add_all_to_playlist),
+                                        style = MeloType.body,
+                                    )
+                                },
                                 leadingIcon = {
                                     Icon(
                                         Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -213,7 +246,12 @@ fun AlbumDetailScreen(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Seleccionar canciones", style = MeloType.body) },
+                                text = {
+                                    Text(
+                                        stringResource(Res.string.detail_menu_select_tracks),
+                                        style = MeloType.body,
+                                    )
+                                },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.Checklist,
@@ -250,8 +288,8 @@ fun AlbumDetailScreen(
             if (uiState.isOffline) {
                 MeloEmptyState(
                     icon = Icons.Default.CloudOff,
-                    title = "Sin contenido disponible",
-                    message = "No hay canciones descargadas para este álbum.",
+                    title = stringResource(Res.string.detail_offline_empty_title),
+                    message = stringResource(Res.string.detail_album_offline_empty_message),
                     modifier = Modifier.padding(paddingValues),
                 )
             } else {
@@ -371,7 +409,7 @@ fun AlbumDetailScreen(
                     if (!description.isNullOrBlank()) {
                         item {
                             ExpandableDescriptionCard(
-                                title = "Acerca de este álbum",
+                                title = stringResource(Res.string.detail_about_album),
                                 description = description,
                                 accentColor = accentColor,
                             )
@@ -449,8 +487,8 @@ fun AlbumDetailScreen(
                         item {
                             MeloEmptyState(
                                 icon = Icons.Default.CloudOff,
-                                title = "Sin contenido disponible",
-                                message = "No hay canciones descargadas para este álbum.",
+                                title = stringResource(Res.string.detail_offline_empty_title),
+                                message = stringResource(Res.string.detail_album_offline_empty_message),
                                 modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
@@ -460,7 +498,7 @@ fun AlbumDetailScreen(
                     if (otherVersions.isNotEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
-                            SectionHeader(title = "Otras versiones")
+                            SectionHeader(title = stringResource(Res.string.detail_other_versions))
                             AdaptiveLazyRow(
                                 items = otherVersions,
                                 minCardWidth = 130.dp,

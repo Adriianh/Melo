@@ -20,29 +20,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.detail_read_less
+import com.github.adriianh.melo.resources.detail_read_more
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ExpandableDescriptionCard(
     title: String,
     description: String,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = MeloColors.glassFill.copy(alpha = 0.3f),
         border = BorderStroke(0.5.dp, MeloColors.glassBorder),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = title,
                 style = MeloType.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = MeloColors.textPrimary
+                color = MeloColors.textPrimary,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -50,15 +54,19 @@ fun ExpandableDescriptionCard(
                 style = MeloType.body.copy(lineHeight = 18.sp),
                 color = MeloColors.textSecondary,
                 maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = if (expanded) "Leer menos" else "Leer más",
+                text =
+                    stringResource(
+                        if (expanded) Res.string.detail_read_less else Res.string.detail_read_more,
+                    ),
                 style = MeloType.labelSmall,
                 color = accentColor,
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .clickable { expanded = !expanded }
+                modifier =
+                    Modifier
+                        .padding(top = 6.dp)
+                        .clickable { expanded = !expanded },
             )
         }
     }

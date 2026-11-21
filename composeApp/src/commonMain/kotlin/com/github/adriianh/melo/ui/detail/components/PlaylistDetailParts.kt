@@ -40,10 +40,27 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_deselect_all
+import com.github.adriianh.melo.resources.a11y_more_options
+import com.github.adriianh.melo.resources.a11y_reorder_track
+import com.github.adriianh.melo.resources.a11y_select_all
+import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.common_action_delete
+import com.github.adriianh.melo.resources.common_action_rename
+import com.github.adriianh.melo.resources.common_action_save
+import com.github.adriianh.melo.resources.detail_menu_add_all_to_local_playlist
+import com.github.adriianh.melo.resources.detail_menu_merge_playlist
+import com.github.adriianh.melo.resources.detail_menu_select_tracks
+import com.github.adriianh.melo.resources.library_playlist_delete_confirm
+import com.github.adriianh.melo.resources.library_playlist_delete_title
+import com.github.adriianh.melo.resources.library_playlist_rename_placeholder
+import com.github.adriianh.melo.resources.library_playlist_rename_title
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
@@ -58,13 +75,17 @@ fun RenamePlaylistDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Renombrar playlist", style = MeloType.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(Res.string.library_playlist_rename_title),
+                style = MeloType.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
         },
         text = {
             OutlinedTextField(
                 value = newName,
                 onValueChange = { newName = it },
-                placeholder = { Text("Nuevo nombre") },
+                placeholder = { Text(stringResource(Res.string.library_playlist_rename_placeholder)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors =
@@ -87,12 +108,12 @@ fun RenamePlaylistDialog(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
-                Text("Guardar", style = MeloType.labelMedium)
+                Text(stringResource(Res.string.common_action_save), style = MeloType.labelMedium)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = MeloColors.textSecondary)
+                Text(stringResource(Res.string.common_action_cancel), color = MeloColors.textSecondary)
             }
         },
         containerColor = MeloColors.surface1,
@@ -108,11 +129,15 @@ fun DeletePlaylistDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Eliminar playlist", style = MeloType.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(Res.string.library_playlist_delete_title),
+                style = MeloType.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
         },
         text = {
             Text(
-                "¿Estás seguro de que deseas eliminar \"$playlistName\"? Esta acción no se puede deshacer.",
+                stringResource(Res.string.library_playlist_delete_confirm, playlistName),
                 style = MeloType.body,
                 color = MeloColors.textSecondary,
             )
@@ -124,7 +149,7 @@ fun DeletePlaylistDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
             ) {
                 Text(
-                    "Eliminar",
+                    stringResource(Res.string.common_action_delete),
                     style = MeloType.labelMedium,
                     color = MaterialTheme.colorScheme.onError,
                 )
@@ -132,7 +157,7 @@ fun DeletePlaylistDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = MeloColors.textSecondary)
+                Text(stringResource(Res.string.common_action_cancel), color = MeloColors.textSecondary)
             }
         },
         containerColor = MeloColors.surface1,
@@ -157,7 +182,10 @@ fun PlaylistTopBarActions(
         IconButton(onClick = onToggleSelectAll) {
             Icon(
                 Icons.Default.SelectAll,
-                contentDescription = if (isAllSelected) "Deseleccionar todo" else "Seleccionar todo",
+                contentDescription =
+                    stringResource(
+                        if (isAllSelected) Res.string.a11y_deselect_all else Res.string.a11y_select_all,
+                    ),
                 tint = if (isAllSelected) accentColor else MeloColors.textPrimary,
             )
         }
@@ -167,7 +195,7 @@ fun PlaylistTopBarActions(
             IconButton(onClick = { showMenu = true }) {
                 Icon(
                     Icons.Default.MoreVert,
-                    contentDescription = "Opciones",
+                    contentDescription = stringResource(Res.string.a11y_more_options),
                     tint = MeloColors.textPrimary,
                 )
             }
@@ -178,7 +206,7 @@ fun PlaylistTopBarActions(
             ) {
                 if (isCustomPlaylist) {
                     DropdownMenuItem(
-                        text = { Text("Renombrar", style = MeloType.body) },
+                        text = { Text(stringResource(Res.string.common_action_rename), style = MeloType.body) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Edit,
@@ -194,7 +222,12 @@ fun PlaylistTopBarActions(
                     )
                 } else {
                     DropdownMenuItem(
-                        text = { Text("Añadir todo a playlist local...", style = MeloType.body) },
+                        text = {
+                            Text(
+                                stringResource(Res.string.detail_menu_add_all_to_local_playlist),
+                                style = MeloType.body,
+                            )
+                        },
                         leadingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -211,7 +244,12 @@ fun PlaylistTopBarActions(
                 }
                 if (isCustomPlaylist) {
                     DropdownMenuItem(
-                        text = { Text("Añadir / Fusionar con playlist...", style = MeloType.body) },
+                        text = {
+                            Text(
+                                stringResource(Res.string.detail_menu_merge_playlist),
+                                style = MeloType.body,
+                            )
+                        },
                         leadingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -227,7 +265,7 @@ fun PlaylistTopBarActions(
                     )
                 }
                 DropdownMenuItem(
-                    text = { Text("Seleccionar canciones", style = MeloType.body) },
+                    text = { Text(stringResource(Res.string.detail_menu_select_tracks), style = MeloType.body) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Checklist,
@@ -245,7 +283,7 @@ fun PlaylistTopBarActions(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                "Eliminar",
+                                stringResource(Res.string.common_action_delete),
                                 style = MeloType.body,
                                 color = MaterialTheme.colorScheme.error,
                             )
@@ -365,7 +403,7 @@ private fun ReorderableCollectionItemScope.reorderDragHandle(
 ) {
     Icon(
         imageVector = Icons.Default.DragHandle,
-        contentDescription = "Reordenar pista",
+        contentDescription = stringResource(Res.string.a11y_reorder_track),
         tint = if (isDragging) activeAccent else MeloColors.textMuted,
         modifier =
             Modifier

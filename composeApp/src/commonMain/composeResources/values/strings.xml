@@ -12,6 +12,7 @@
     <string name="common_action_delete">Eliminar</string>
     <string name="common_action_rename">Renombrar</string>
     <string name="common_action_close">Cerrar</string>
+    <string name="common_action_back">Volver</string>
     <string name="common_action_you">Tú</string>
 
     <!-- Errores -->
@@ -80,6 +81,9 @@
     <string name="a11y_manage_folders">Gestionar carpetas</string>
     <string name="a11y_rescan">Volver a escanear</string>
     <string name="a11y_dynamic_inspiration">Inspiración dinámica</string>
+    <string name="a11y_back">Atrás</string>
+    <string name="a11y_download">Descargar</string>
+    <string name="a11y_reorder_track">Reordenar pista</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
@@ -306,4 +310,83 @@
         <item quantity="one">Tuya • %1$d canción</item>
         <item quantity="other">Tuya • %1$d canciones</item>
     </plurals>
+
+    <!-- Detalle de entidad -->
+    <string name="detail_type_album">Álbum</string>
+    <string name="detail_type_playlist">Playlist</string>
+    <string name="detail_my_playlist">Mi playlist</string>
+    <string name="detail_menu_add_all_to_playlist">Añadir todo a playlist...</string>
+    <string name="detail_menu_add_all_to_local_playlist">Añadir todo a playlist local...</string>
+    <string name="detail_menu_merge_playlist">Añadir / Fusionar con playlist...</string>
+    <string name="detail_menu_select_tracks">Seleccionar canciones</string>
+    <string name="detail_offline_empty_title">Sin contenido disponible</string>
+    <string name="detail_album_offline_empty_message">No hay canciones descargadas para este álbum.</string>
+    <string name="detail_artist_offline_empty_tracks">No hay canciones descargadas para este artista.</string>
+    <string name="detail_artist_offline_empty_content">No hay contenido descargado para este artista.</string>
+    <string name="detail_playlist_offline_empty_message">No hay canciones descargadas para esta playlist.</string>
+    <string name="detail_about_album">Acerca de este álbum</string>
+    <string name="detail_other_versions">Otras versiones</string>
+    <string name="detail_in_your_downloads">En tus descargas</string>
+    <string name="detail_show_less">Ver menos</string>
+    <string name="detail_show_all_count">Ver todas (%1$d)</string>
+    <string name="detail_description_title">Descripción</string>
+    <string name="detail_read_more">Leer más</string>
+    <string name="detail_read_less">Leer menos</string>
+    <string name="detail_action_follow">Seguir</string>
+    <string name="detail_action_following">Siguiendo</string>
+    <string name="detail_action_save">Guardar</string>
+    <string name="detail_action_saved">Guardado</string>
+    <string name="detail_downloading_progress">Descargando %1$d de %2$d canciones (%3$d restantes)</string>
+    <string name="detail_downloading_track">Descargando: %1$s</string>
+    <string name="detail_snackbar_removed_from_playlist">Eliminada de la playlist</string>
+    <string name="detail_error_no_offline_content">No hay contenido descargado para este elemento.</string>
+    <string name="detail_error_load_failed">No se pudieron obtener los detalles del elemento.</string>
+
+    <!-- Inicio de sesión -->
+    <string name="login_title_logged_in">Cuenta de YouTube Music</string>
+    <string name="login_title_browser">Acceso con Google</string>
+    <string name="login_title_default">Iniciar sesión en YouTube Music</string>
+    <string name="login_browser_hint">Inicia sesión con tu cuenta de Google. Melo detectará tu sesión automáticamente.</string>
+    <string name="login_complete_action">Completar inicio de sesión</string>
+    <string name="login_connect_action">Conectar</string>
+    <string name="login_browser_status_default">Inicia sesión en la ventana de tu navegador.</string>
+    <string name="login_browser_status_capture">Melo capturará tu sesión automáticamente en cuanto completes el acceso.</string>
+    <string name="login_verifying">Verificando tu cuenta de YouTube Music...</string>
+    <string name="login_connected_as">¡Conectado como %1$s!</string>
+    <string name="login_logout_action">Cerrar sesión</string>
+    <string name="login_synced_subtitle">Tu feed de inicio, playlists y biblioteca están sincronizados con tu cuenta.</string>
+    <string name="login_desktop_prompt">Inicia sesión con tu cuenta de Google de forma automática y 100% segura:</string>
+    <string name="login_google_browser">Iniciar sesión con Google (Navegador)</string>
+    <string name="login_import_browser">Importar sesión de navegador local</string>
+    <string name="login_embedded_window">O iniciar sesión en la ventana integrada</string>
+    <string name="login_mobile_prompt">Inicia sesión con tu cuenta de Google para acceder a tus playlists y biblioteca:</string>
+    <string name="login_google_action">Iniciar sesión con Google</string>
+    <string name="login_manual_hide">Ocultar ingreso manual</string>
+    <string name="login_manual_show">Opciones avanzadas (ingreso manual)</string>
+    <string name="login_manual_hint">Pega aquí tus cookies de sesión si prefieres ingresarlas manualmente:</string>
+    <string name="login_cookies_label">Cookies de sesión</string>
+    <string name="login_cookies_placeholder">SAPISID=...; __Secure-3PSID=...</string>
+    <string name="login_open_ytm">Abrir music.youtube.com</string>
+    <string name="login_error_invalid_cookies">Las cookies no pudieron autenticar la sesión. Asegúrate de tener una sesión activa en music.youtube.com o inicia sesión con el navegador.</string>
+    <string name="login_error_verification_failed">Error de verificación</string>
+    <string name="login_status_opening_window">Abriendo ventana de inicio de sesión seguro...</string>
+    <string name="login_status_scanning_browsers">Buscando sesión en navegadores locales (Chrome, Edge, Brave, Firefox)...</string>
+    <string name="login_status_starting_browser">Iniciando ventana de navegador...</string>
+    <string name="login_error_load_channels">No se pudieron cargar los canales de la cuenta.</string>
+    <string name="login_error_activate_channel">No se pudo activar el canal seleccionado.</string>
+    <string name="login_error_switch_channel">No se pudo cambiar de canal.</string>
+    <string name="login_error_browser_failed">No se pudo iniciar sesión con el navegador. Prueba a importar la sesión de un navegador local o a ingresar las cookies manualmente.</string>
+    <string name="login_error_no_local_session">No se encontró una sesión activa en tus navegadores. Inicia sesión en music.youtube.com o ingresa las cookies manualmente.</string>
+
+    <!-- Discord Login -->
+    <string name="discord_login_disclaimer">Discord no admite Rich Presence local en Android. Esta integración conecta con el Gateway usando tu token de sesión. El uso de clientes no oficiales va contra los Términos de Servicio de Discord. Se ofrece exclusivamente con fines educativos y bajo tu propia responsabilidad.</string>
+    <string name="discord_login_title_browser">Acceso a Discord</string>
+    <string name="discord_login_title_default">Vincular Discord en Android</string>
+    <string name="discord_login_browser_hint">Inicia sesión con tu cuenta de Discord. Tu token de sesión será capturado automáticamente.</string>
+    <string name="discord_login_action">Iniciar sesión en Discord</string>
+    <string name="discord_login_manual_action">Ingresar token manualmente</string>
+    <string name="discord_login_manual_prompt">Pega tu token:</string>
+    <string name="discord_login_token_label">Token de Discord</string>
+    <string name="discord_login_token_placeholder">OTQ... o mfa....</string>
+    <string name="discord_login_save_token">Guardar token</string>
 </resources>

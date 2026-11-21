@@ -41,6 +41,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_back
+import com.github.adriianh.melo.resources.detail_artist_offline_empty_content
+import com.github.adriianh.melo.resources.detail_artist_offline_empty_tracks
+import com.github.adriianh.melo.resources.detail_in_your_downloads
+import com.github.adriianh.melo.resources.detail_offline_empty_title
+import com.github.adriianh.melo.resources.detail_show_all_count
+import com.github.adriianh.melo.resources.detail_show_less
+import com.github.adriianh.melo.resources.player_artist_biography
+import com.github.adriianh.melo.resources.player_artist_popular_songs
+import com.github.adriianh.melo.resources.search_type_artist
 import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
@@ -60,6 +71,7 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val DOWNLOADED_PREVIEW_COUNT = 4
@@ -106,12 +118,13 @@ fun ArtistDetailScreen(
     val artist = (uiState.entity as? SearchResult.Artist)?.takeIf { it.id == artistId }
     val downloadedTracks = uiState.downloadedArtistTracks
     val fallbackArtistName = downloadedTracks.firstOrNull()?.artist
+    val fallbackArtistLabel = stringResource(Res.string.search_type_artist)
     val effectiveName =
-        remember(artist, initialName, downloadedTracks) {
+        remember(artist, initialName, downloadedTracks, fallbackArtistLabel) {
             artist?.name?.takeIf { it.isNotBlank() }
                 ?: initialName.takeIf { it.isNotBlank() }
                 ?: fallbackArtistName?.takeIf { it.isNotBlank() }
-                ?: "Artista"
+                ?: fallbackArtistLabel
         }
 
     TrackInteractionContextMenu(
@@ -137,7 +150,7 @@ fun ArtistDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
+                            contentDescription = stringResource(Res.string.a11y_back),
                             tint = MeloColors.textPrimary,
                         )
                     }
@@ -183,8 +196,8 @@ fun ArtistDetailScreen(
             if (uiState.isOffline) {
                 MeloEmptyState(
                     icon = Icons.Default.CloudOff,
-                    title = "Sin contenido disponible",
-                    message = "No hay canciones descargadas para este artista.",
+                    title = stringResource(Res.string.detail_offline_empty_title),
+                    message = stringResource(Res.string.detail_artist_offline_empty_tracks),
                     modifier = Modifier.padding(paddingValues),
                 )
             } else {
@@ -255,7 +268,7 @@ fun ArtistDetailScreen(
                     if (!bio.isNullOrBlank()) {
                         item {
                             ExpandableDescriptionCard(
-                                title = "Biografía",
+                                title = stringResource(Res.string.player_artist_biography),
                                 description = bio,
                                 accentColor = accentColor,
                                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -267,8 +280,8 @@ fun ArtistDetailScreen(
                         item {
                             MeloEmptyState(
                                 icon = Icons.Default.CloudOff,
-                                title = "Sin contenido disponible",
-                                message = "No hay contenido descargado para este artista.",
+                                title = stringResource(Res.string.detail_offline_empty_title),
+                                message = stringResource(Res.string.detail_artist_offline_empty_content),
                                 modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
@@ -285,16 +298,19 @@ fun ArtistDetailScreen(
                             }
                         item {
                             SectionHeader(
-                                title = "En tus descargas",
+                                title = stringResource(Res.string.detail_in_your_downloads),
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 action =
                                     if (downloadedSongs.size > DOWNLOADED_PREVIEW_COUNT) {
                                         {
                                             val label =
                                                 if (showAllDownloads) {
-                                                    "Ver menos"
+                                                    stringResource(Res.string.detail_show_less)
                                                 } else {
-                                                    "Ver todas (${downloadedSongs.size})"
+                                                    stringResource(
+                                                        Res.string.detail_show_all_count,
+                                                        downloadedSongs.size,
+                                                    )
                                                 }
                                             TextButton(onClick = { showAllDownloads = !showAllDownloads }) {
                                                 Text(label)
@@ -344,7 +360,7 @@ fun ArtistDetailScreen(
                     if (topSongs.isNotEmpty()) {
                         item {
                             SectionHeader(
-                                title = "Canciones populares",
+                                title = stringResource(Res.string.player_artist_popular_songs),
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
@@ -398,7 +414,7 @@ fun ArtistDetailScreen(
                     } else if (uiState.isLoading && downloadedSongs.isEmpty()) {
                         item {
                             SectionHeader(
-                                title = "Canciones populares",
+                                title = stringResource(Res.string.player_artist_popular_songs),
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }

@@ -45,6 +45,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_back
+import com.github.adriianh.melo.resources.a11y_clear_selection
+import com.github.adriianh.melo.resources.common_action_undo
+import com.github.adriianh.melo.resources.common_action_you
+import com.github.adriianh.melo.resources.detail_description_title
+import com.github.adriianh.melo.resources.detail_my_playlist
+import com.github.adriianh.melo.resources.detail_offline_empty_title
+import com.github.adriianh.melo.resources.detail_playlist_offline_empty_message
+import com.github.adriianh.melo.resources.detail_snackbar_removed_from_playlist
+import com.github.adriianh.melo.resources.detail_type_playlist
+import com.github.adriianh.melo.resources.playlist_track_count
+import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloEmptyState
@@ -58,6 +71,7 @@ import com.github.adriianh.melo.ui.detail.components.PlaylistTopBarActions
 import com.github.adriianh.melo.ui.detail.components.RenamePlaylistDialog
 import com.github.adriianh.melo.ui.detail.components.ReorderablePlaylistTrackItem
 import com.github.adriianh.melo.ui.detail.components.detailTrackItems
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
@@ -66,6 +80,8 @@ import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.formatCollectionDuration
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -143,11 +159,15 @@ fun PlaylistDetailScreen(
                 it.id.removePrefix("local:") == playlistId.removePrefix("local:")
         }
     val songs = remember(playlist) { playlist?.songs.orEmpty() }
+    val fallbackTitle =
+        stringResource(
+            if (isCustomPlaylist) Res.string.detail_my_playlist else Res.string.detail_type_playlist,
+        )
     val effectiveTitle =
-        remember(playlist, initialTitle) {
+        remember(playlist, initialTitle, fallbackTitle) {
             playlist?.title?.takeIf { it.isNotBlank() }
                 ?: initialTitle.takeIf { it.isNotBlank() }
-                ?: "Playlist"
+                ?: fallbackTitle
         }
 
     if (showRenameDialog) {
@@ -183,9 +203,9 @@ fun PlaylistDetailScreen(
                 { track ->
                     viewModel.removeTrackFromLocalPlaylist(track.id)
                     interaction.snackbar.show(
-                        msg = "Eliminada de la playlist",
+                        msg = UiText.Resource(Res.string.detail_snackbar_removed_from_playlist),
                         vector = Icons.Default.DeleteOutline,
-                        action = "Deshacer",
+                        action = UiText.Resource(Res.string.common_action_undo),
                         actionColor = activeAccent,
                         onAction = {
                             val playlistIdLong =
@@ -207,7 +227,15 @@ fun PlaylistDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        if (isSelectionMode) "${selectedTrackIds.size} seleccionadas" else effectiveTitle,
+                        if (isSelectionMode) {
+                            pluralStringResource(
+                                Res.plurals.selection_count,
+                                selectedTrackIds.size,
+                                selectedTrackIds.size,
+                            )
+                        } else {
+                            effectiveTitle
+                        },
                         style = MeloType.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -218,7 +246,7 @@ fun PlaylistDetailScreen(
                         IconButton(onClick = { selectedTrackIds = emptySet() }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "Cancelar selección",
+                                contentDescription = stringResource(Res.string.a11y_clear_selection),
                                 tint = MeloColors.textPrimary,
                             )
                         }
@@ -226,7 +254,7 @@ fun PlaylistDetailScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Atrás",
+                                contentDescription = stringResource(Res.string.a11y_back),
                                 tint = MeloColors.textPrimary,
                             )
                         }
@@ -274,8 +302,8 @@ fun PlaylistDetailScreen(
             if (uiState.isOffline) {
                 MeloEmptyState(
                     icon = Icons.Default.CloudOff,
-                    title = "Sin contenido disponible",
-                    message = "No hay canciones descargadas para esta playlist.",
+                    title = stringResource(Res.string.detail_offline_empty_title),
+                    message = stringResource(Res.string.detail_playlist_offline_empty_message),
                     modifier = Modifier.padding(paddingValues),
                 )
             } else {
@@ -323,18 +351,23 @@ fun PlaylistDetailScreen(
                         c == "youtube music"
                 }
 
+                val youLabel = stringResource(Res.string.common_action_you)
                 val authorText =
                     playlist?.author?.takeIf { !isGenericAuthor(it) }
                         ?: initialAuthor.takeIf { !isGenericAuthor(it) }
                         ?: if (isCustomPlaylist) {
-                            "Tú"
+                            youLabel
                         } else {
                             playlist?.author?.takeIf { it.isNotBlank() }
                                 ?: initialAuthor.takeIf { it.isNotBlank() } ?: "YouTube Music"
                         }
                 val metaParts =
                     listOfNotNull(
-                        if (songs.isNotEmpty()) "${songs.size} canciones" else null,
+                        if (songs.isNotEmpty()) {
+                            pluralStringResource(Res.plurals.playlist_track_count, songs.size, songs.size)
+                        } else {
+                            null
+                        },
                         totalDurationFormatted.takeIf { it.isNotBlank() },
                     ).joinToString(" • ")
 
@@ -390,7 +423,7 @@ fun PlaylistDetailScreen(
                             onSubtitleClick =
                                 if (isCustomPlaylist ||
                                     authorText.equals(
-                                        "Tú",
+                                        youLabel,
                                         ignoreCase = true,
                                     )
                                 ) {
@@ -437,7 +470,7 @@ fun PlaylistDetailScreen(
                     if (!description.isNullOrBlank()) {
                         item {
                             ExpandableDescriptionCard(
-                                title = "Descripción",
+                                title = stringResource(Res.string.detail_description_title),
                                 description = description,
                                 accentColor = accentColor,
                             )
@@ -580,8 +613,8 @@ fun PlaylistDetailScreen(
                         item {
                             MeloEmptyState(
                                 icon = Icons.Default.CloudOff,
-                                title = "Sin contenido disponible",
-                                message = "No hay canciones descargadas para esta playlist.",
+                                title = stringResource(Res.string.detail_offline_empty_title),
+                                message = stringResource(Res.string.detail_playlist_offline_empty_message),
                                 modifier = Modifier.padding(vertical = 32.dp),
                             )
                         }
