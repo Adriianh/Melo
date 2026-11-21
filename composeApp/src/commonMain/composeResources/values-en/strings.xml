@@ -581,4 +581,61 @@
     <string name="settings_update_status_title">Update status</string>
     <string name="settings_update_status_desc">Download, release notes, and update installation.</string>
     <string name="settings_kw_update_status">status, changelog, release notes, download, install, update</string>
+
+    <!-- Downloads (QA) -->
+    <plurals name="library_downloads_count">
+        <item quantity="one">%1$d downloaded song</item>
+        <item quantity="other">%1$d downloaded songs</item>
+    </plurals>
+    <string name="library_downloads_space_used">Space used: %1$s MB</string>
+    <plurals name="library_downloads_background_count">
+        <item quantity="one">Downloading %1$d song in the background...</item>
+        <item quantity="other">Downloading %1$d songs in the background...</item>
+    </plurals>
+
+    <!-- Updates -->
+    <string name="update_check_a11y">Check for updates</string>
+    <string name="update_checking_title">Checking for new versions...</string>
+    <string name="update_up_to_date_title">Melo is up to date</string>
+    <string name="update_ready_title">Download complete</string>
+    <string name="update_ready_body">v%1$s · The new version of Melo is ready to install.</string>
+    <string name="update_restart_action">Restart and update now</string>
+    <string name="update_error_title">Update error</string>
+    <string name="update_available_title">New version available</string>
+    <string name="update_installer_fallback">Update installer</string>
+    <string name="update_download_install_action">Download and install</string>
+    <string name="update_manual_package_manager">Melo was installed from a system package: update it with your package manager.</string>
+    <string name="update_manual_default">This installation does not support automatic updates. Use the link to download it.</string>
+    <string name="update_open_download_page">Open download page</string>
+    <string name="update_downloading_title">Downloading update</string>
+    <string name="update_installed_version_line">Installed: v%1$s</string>
+    <string name="update_new_version_line">New: v%1$s</string>
+    <string name="update_changelog_title">What\'s new</string>
+    <string name="update_error_check">Could not check for updates</string>
+    <string name="update_error_check_with_detail">Could not check for updates: %1$s</string>
+    <string name="update_error_download">Download error</string>
+    <string name="update_error_download_with_detail">Download error: %1$s</string>
+    <string name="update_error_install">Could not install update</string>
+    <string name="update_error_install_with_detail">Could not install update: %1$s</string>
+    <string name="update_error_unknown">Unknown error</string>
+    <string name="install_error_no_android_context">Could not access application context</string>
+    <string name="install_error_package_not_found">Downloaded package not found at %1$s</string>
+    <string name="install_error_android_open_failed">Could not open Android installer: %1$s</string>
+    <string name="install_error_appimage_not_found">Could not locate the running AppImage</string>
+    <string name="install_error_no_write_permission">No permission to replace %1$s</string>
+    <string name="install_error_portable_not_found">Could not locate the Melo installation</string>
+    <string name="install_error_portable_no_permission">No permission to update %1$s</string>
+    <string name="install_error_helper_prepare_failed">Could not prepare update helper (%1$s)</string>
+    <string name="install_error_start_system_failed">Could not start system installer: %1$s</string>
+    <string name="install_error_start_helper_failed">Could not start update helper: %1$s</string>
+    <string name="install_error_unsupported_platform">Built-in updates are not available on this platform</string>
+
+    <!-- Relative time -->
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_yesterday">Yesterday</string>
+    <string name="time_days_ago">%1$d d ago</string>
+    <string name="time_weeks_ago">%1$d wk ago</string>
+    <string name="time_months_ago">%1$d mo ago</string>
 </resources>

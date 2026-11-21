@@ -60,10 +60,13 @@ import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_play_all
 import com.github.adriianh.melo.resources.library_downloads_albums_empty
 import com.github.adriianh.melo.resources.library_downloads_artists_empty
+import com.github.adriianh.melo.resources.library_downloads_background_count
+import com.github.adriianh.melo.resources.library_downloads_count
 import com.github.adriianh.melo.resources.library_downloads_downloading_count
 import com.github.adriianh.melo.resources.library_downloads_empty_subtitle
 import com.github.adriianh.melo.resources.library_downloads_empty_title
 import com.github.adriianh.melo.resources.library_downloads_pending_hint
+import com.github.adriianh.melo.resources.library_downloads_space_used
 import com.github.adriianh.melo.resources.library_downloads_various_artists
 import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.resources.section_albums
@@ -281,13 +284,22 @@ fun DownloadsTabContent(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "${downloadedTracks.size} canciones descargadas",
+                                        text =
+                                            pluralStringResource(
+                                                Res.plurals.library_downloads_count,
+                                                downloadedTracks.size,
+                                                downloadedTracks.size,
+                                            ),
                                         style = MeloType.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MeloColors.textPrimary,
                                     )
                                     Text(
-                                        text = "Espacio ocupado: ${"%.1f".format(totalSizeMb)} MB",
+                                        text =
+                                            stringResource(
+                                                Res.string.library_downloads_space_used,
+                                                "%.1f".format(totalSizeMb),
+                                            ),
                                         style = MeloType.labelSmall,
                                         color = MeloColors.textSecondary,
                                     )
@@ -319,7 +331,12 @@ fun DownloadsTabContent(
                                             color = MaterialTheme.colorScheme.primary,
                                         )
                                         Text(
-                                            text = "Descargando ${activeDownloads.size} canción(es) en segundo plano...",
+                                            text =
+                                                pluralStringResource(
+                                                    Res.plurals.library_downloads_background_count,
+                                                    activeDownloads.size,
+                                                    activeDownloads.size,
+                                                ),
                                             style = MeloType.labelMedium,
                                             color = MeloColors.textPrimary,
                                         )

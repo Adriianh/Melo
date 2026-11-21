@@ -40,6 +40,7 @@ import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.library_playlist_create_hint
 import com.github.adriianh.melo.resources.library_playlist_create_title
 import com.github.adriianh.melo.resources.library_playlist_owned_track_count
+import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -216,8 +217,10 @@ fun RemotePlaylistCompactRow(
                 color = MeloColors.textPrimary,
             )
             Spacer(modifier = Modifier.height(2.dp))
+            val trackCount = playlist.trackCount ?: 0
+            val countLabel = pluralStringResource(Res.plurals.playlist_track_count, trackCount, trackCount)
             Text(
-                text = "${playlist.author} • ${playlist.trackCount ?: 0} canciones",
+                text = "${playlist.author} • $countLabel",
                 style = MeloType.labelSmall,
                 color = MeloColors.textSecondary,
                 maxLines = 1,

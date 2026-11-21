@@ -19,9 +19,9 @@ import com.github.adriianh.melo.resources.library_history_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.i18n.formatRelativeTime
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll
-import com.github.adriianh.melo.util.formatRelativeTime
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
