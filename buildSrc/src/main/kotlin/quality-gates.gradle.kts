@@ -1,5 +1,7 @@
 package buildsrc.convention
 
+import dev.detekt.gradle.Detekt
+
 plugins {
     // Plugin jars are resolved from the buildSrc classpath (see buildSrc/build.gradle.kts),
     // so no versions are allowed here.
@@ -16,8 +18,18 @@ detekt {
 ktlint {
     baseline.set(file("$projectDir/ktlint-baseline.xml"))
     filter {
-        exclude("**/build/**")
-        exclude("**/generated/**")
+        // Generated Compose resources live under build/generated and must not be linted.
+        // Compare against invariant separators so the filter also works on Windows.
+        exclude { element ->
+            element.file.invariantSeparatorsPath.contains("/build/generated/")
+        }
+    }
+}
+
+tasks.withType<Detekt>().configureEach {
+    // Same exclusion for detekt: generated Compose resource accessors are not source code.
+    exclude { element ->
+        element.file.invariantSeparatorsPath.contains("/build/generated/")
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.github.adriianh.core.domain.player.MediaSessionManager
 import com.github.adriianh.core.domain.repository.SettingsRepository
+import com.github.adriianh.melo.R
 import org.koin.android.ext.android.inject
 
 /**
@@ -25,7 +26,6 @@ import org.koin.android.ext.android.inject
 class MeloMediaSessionService : MediaSessionService() {
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "melo_playback_channel"
-        const val NOTIFICATION_CHANNEL_NAME = "Melo Playback"
 
         private const val TAG = "MeloMediaSession"
     }
@@ -96,10 +96,10 @@ class MeloMediaSessionService : MediaSessionService() {
             val channel =
                 NotificationChannel(
                     NOTIFICATION_CHANNEL_ID,
-                    NOTIFICATION_CHANNEL_NAME,
+                    getString(R.string.notification_channel_playback),
                     NotificationManager.IMPORTANCE_LOW,
                 ).apply {
-                    description = "Melo media playback controls"
+                    description = getString(R.string.notification_channel_playback_description)
                     setShowBadge(false)
                 }
             notificationManager?.createNotificationChannel(channel)

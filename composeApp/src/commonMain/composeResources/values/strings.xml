@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Acciones comunes -->
+    <string name="common_action_retry">Reintentar</string>
+
+    <!-- Errores -->
+    <string name="common_error_with_detail">Error: %1$s</string>
+    <string name="common_error_unknown">No se pudo completar la operación</string>
+
+    <!-- Accesibilidad -->
+    <string name="a11y_search">Buscar</string>
+    <string name="a11y_clear_search">Limpiar</string>
+    <string name="a11y_account">Cuenta</string>
+    <string name="a11y_account_update_available">Cuenta (actualización disponible)</string>
+
+    <!-- Búsqueda -->
+    <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
+    <string name="search_placeholder_library">Buscar canciones, artistas, álbumes...</string>
+</resources>
