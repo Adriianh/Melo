@@ -80,6 +80,31 @@ jobs:
       - name: Run quality gates (detekt + ktlint)
         run: ./gradlew detektCheck ktlintCheck --no-daemon --continue
 
+      - name: Check Compose Resources i18n key parity
+        run: |
+          python3 - <<'EOF'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          import sys
+
+          base = Path("composeApp/src/commonMain/composeResources")
+          es_root = ET.parse(base / "values/strings.xml").getroot()
+          en_root = ET.parse(base / "values-en/strings.xml").getroot()
+
+          es_keys = {(e.tag, e.attrib["name"]) for e in es_root if "name" in e.attrib}
+          en_keys = {(e.tag, e.attrib["name"]) for e in en_root if "name" in e.attrib}
+
+          missing_en = sorted(es_keys - en_keys)
+          extra_en = sorted(en_keys - es_keys)
+          if missing_en or extra_en:
+              if missing_en:
+                  print("Missing in values-en/strings.xml:", missing_en)
+              if extra_en:
+                  print("Extra in values-en/strings.xml:", extra_en)
+              sys.exit(1)
+          print(f"i18n parity OK ({len(es_keys)} keys)")
+          EOF
+
   compose:
     name: Compose (ubuntu-latest)
     runs-on: ubuntu-latest

@@ -60,8 +60,32 @@ import com.github.adriianh.core.domain.model.update.UpdateInstallMethod
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.util.MeloVersion
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.common_action_retry
+import com.github.adriianh.melo.resources.settings_installed_version_title
+import com.github.adriianh.melo.resources.update_available_title
+import com.github.adriianh.melo.resources.update_changelog_title
+import com.github.adriianh.melo.resources.update_check_a11y
+import com.github.adriianh.melo.resources.update_checking_title
+import com.github.adriianh.melo.resources.update_download_install_action
+import com.github.adriianh.melo.resources.update_downloading_title
+import com.github.adriianh.melo.resources.update_error_title
+import com.github.adriianh.melo.resources.update_installed_version_line
+import com.github.adriianh.melo.resources.update_installer_fallback
+import com.github.adriianh.melo.resources.update_manual_default
+import com.github.adriianh.melo.resources.update_manual_package_manager
+import com.github.adriianh.melo.resources.update_new_version_line
+import com.github.adriianh.melo.resources.update_open_download_page
+import com.github.adriianh.melo.resources.update_ready_body
+import com.github.adriianh.melo.resources.update_ready_title
+import com.github.adriianh.melo.resources.update_restart_action
+import com.github.adriianh.melo.resources.update_up_to_date_title
+import com.github.adriianh.melo.ui.i18n.localizedMessage
+import com.github.adriianh.melo.ui.i18n.uiLabel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -160,10 +184,11 @@ internal fun UpdateVersionHeaderRow(
             ) {
                 val searchQuery = LocalSettingsSearchQuery.current
                 val primary = MaterialTheme.colorScheme.primary
+                val installedVersionTitle = stringResource(Res.string.settings_installed_version_title)
                 val titleText =
-                    remember(searchQuery, primary) {
+                    remember(installedVersionTitle, searchQuery, primary) {
                         buildHighlightedTitle(
-                            title = "Versión instalada",
+                            title = installedVersionTitle,
                             query = searchQuery,
                             highlightColor = primary,
                         )
@@ -206,7 +231,7 @@ internal fun UpdateVersionHeaderRow(
             if (canCheck) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Buscar actualizaciones",
+                    contentDescription = stringResource(Res.string.update_check_a11y),
                     modifier = Modifier.size(20.dp),
                 )
             } else {
@@ -260,7 +285,7 @@ internal fun UpdateStatusContent(
 
         is UpdateState.Checking -> {
             SettingsStatusBanner(
-                title = "Comprobando nuevas versiones...",
+                title = stringResource(Res.string.update_checking_title),
                 isLoading = true,
                 tone = StatusTone.NEUTRAL,
             )
@@ -269,8 +294,8 @@ internal fun UpdateStatusContent(
         is UpdateState.UpToDate -> {
             SettingsStatusBanner(
                 icon = Icons.Default.CheckCircle,
-                title = "Melo está actualizado",
-                body = "v${state.currentVersion} · ${state.channel.displayName}",
+                title = stringResource(Res.string.update_up_to_date_title),
+                body = "v${state.currentVersion} · ${state.channel.uiLabel()}",
                 tone = StatusTone.SUCCESS,
             )
         }
@@ -301,12 +326,12 @@ internal fun UpdateStatusContent(
         is UpdateState.ReadyToInstall -> {
             SettingsStatusBanner(
                 icon = Icons.Default.CheckCircle,
-                title = "Descarga completa",
-                body = "v${state.release.version} · La nueva versión de Melo está lista para instalarse.",
+                title = stringResource(Res.string.update_ready_title),
+                body = stringResource(Res.string.update_ready_body, state.release.version),
                 tone = StatusTone.PRIMARY,
                 extraContent = {
                     SettingActionButton(
-                        text = "Reiniciar y actualizar ahora",
+                        text = stringResource(Res.string.update_restart_action),
                         onClick = { onInstallUpdate(state.installerPath) },
                         emphasis = SettingActionEmphasis.PRIMARY,
                         modifier = Modifier.fillMaxWidth(),
@@ -318,14 +343,14 @@ internal fun UpdateStatusContent(
         is UpdateState.Error -> {
             SettingsStatusBanner(
                 icon = Icons.Default.Info,
-                title = "Error de actualización",
-                body = state.message,
+                title = stringResource(Res.string.update_error_title),
+                body = state.localizedMessage(),
                 tone = StatusTone.ERROR,
                 extraContent =
                     if (state.canRetry) {
                         {
                             SettingActionButton(
-                                text = "Reintentar",
+                                text = stringResource(Res.string.common_action_retry),
                                 onClick = { onCheckForUpdates(updateChannel) },
                                 emphasis = SettingActionEmphasis.SECONDARY,
                                 icon = Icons.Default.Refresh,
@@ -353,11 +378,11 @@ private fun UpdateAvailableBanner(
         state.targetAsset?.let { asset ->
             val sizePart = if (asset.sizeBytes > 0) " · ${formatMegabytes(asset.sizeBytes)}" else ""
             "${asset.name}$sizePart"
-        } ?: "Instalador de actualización"
+        } ?: stringResource(Res.string.update_installer_fallback)
 
     SettingsStatusBanner(
         icon = Icons.Default.SystemUpdate,
-        title = "Nueva versión disponible",
+        title = stringResource(Res.string.update_available_title),
         tone = StatusTone.PRIMARY,
         titleBadge =
             if (isNightly) {
@@ -390,7 +415,7 @@ private fun UpdateAvailableBanner(
             val targetAsset = state.targetAsset
             if (targetAsset != null) {
                 SettingActionButton(
-                    text = "Descargar e instalar",
+                    text = stringResource(Res.string.update_download_install_action),
                     onClick = { onStartDownload(state.release, targetAsset) },
                     emphasis = SettingActionEmphasis.PRIMARY,
                     icon = Icons.Default.CloudDownload,
@@ -409,15 +434,17 @@ private fun ManualUpdateBanner(
     val uriHandler = LocalUriHandler.current
     val isNightly = state.release.channel == UpdateChannel.NIGHTLY
     val hint =
-        if (state.method == UpdateInstallMethod.PACKAGE_MANAGER) {
-            "Melo se instaló desde un paquete del sistema: actualízalo con tu gestor."
-        } else {
-            "Esta instalación no admite actualizaciones automáticas. Usa el enlace para descargarla."
-        }
+        stringResource(
+            if (state.method == UpdateInstallMethod.PACKAGE_MANAGER) {
+                Res.string.update_manual_package_manager
+            } else {
+                Res.string.update_manual_default
+            },
+        )
 
     SettingsStatusBanner(
         icon = Icons.Default.CloudDownload,
-        title = "Nueva versión disponible",
+        title = stringResource(Res.string.update_available_title),
         body = hint,
         tone = StatusTone.PRIMARY,
         titleBadge =
@@ -432,7 +459,7 @@ private fun ManualUpdateBanner(
                 newVersion = state.release.version,
             )
             SettingActionButton(
-                text = "Abrir página de descarga",
+                text = stringResource(Res.string.update_open_download_page),
                 onClick = { uriHandler.openUri(state.release.htmlUrl) },
                 emphasis = SettingActionEmphasis.PRIMARY,
                 icon = Icons.Default.CloudDownload,
@@ -450,7 +477,7 @@ private fun DownloadingUpdateBanner(
     val percent = (state.progressFraction * 100).toInt()
     SettingsStatusBanner(
         isLoading = true,
-        title = "Descargando actualización",
+        title = stringResource(Res.string.update_downloading_title),
         body = "v${state.release.version}",
         tone = StatusTone.NEUTRAL,
         titleBadge = {
@@ -485,7 +512,7 @@ private fun DownloadingUpdateBanner(
                     modifier = Modifier.weight(1f),
                 )
                 SettingActionButton(
-                    text = "Cancelar",
+                    text = stringResource(Res.string.common_action_cancel),
                     onClick = onCancelDownload,
                     emphasis = SettingActionEmphasis.SECONDARY,
                 )
@@ -504,14 +531,14 @@ private fun UpdateVersionComparisonBlock(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
-            text = "Instalada: v$installedVersion",
+            text = stringResource(Res.string.update_installed_version_line, installedVersion),
             style = MeloType.labelSmall,
             color = MeloColors.textSecondary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "Nueva: v$newVersion",
+            text = stringResource(Res.string.update_new_version_line, newVersion),
             style = MeloType.labelSmall,
             fontWeight = FontWeight.Medium,
             color = MeloColors.textPrimary,
@@ -555,7 +582,7 @@ private fun ChangelogExpanderSection(
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "Novedades",
+                    text = stringResource(Res.string.update_changelog_title),
                     style = MeloType.labelMedium,
                     fontWeight = FontWeight.Medium,
                     color = MeloColors.textPrimary,

@@ -27,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_back
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.MeloSwipeableItem
@@ -35,6 +37,7 @@ import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CategoryBrowsingContent(
@@ -63,28 +66,37 @@ fun CategoryBrowsingContent(
         val browseResult = uiState.browseCategoryResult
         LazyColumn(
             modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 24.dp,
-                end = 24.dp,
-                top = 8.dp,
-                bottom = paddingValues.calculateBottomPadding() + 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding =
+                PaddingValues(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = 8.dp,
+                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                        .clickable { onBack() }.padding(vertical = 8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onBack() }
+                            .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
-                    Text("Volver", style = MeloType.body, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        text = stringResource(Res.string.common_action_back),
+                        style = MeloType.body,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
 
@@ -97,51 +109,57 @@ fun CategoryBrowsingContent(
                             MeloSwipeableItem(
                                 onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(item.track) },
                                 onSwipeRight = { if (!isSelectionMode) onSwipeRight(item.track) },
-                                swipeRightIcon = if (isLiked(item.track)) Icons.Default.HeartBroken else Icons.Default.Favorite
+                                swipeRightIcon = if (isLiked(item.track)) Icons.Default.HeartBroken else Icons.Default.Favorite,
                             ) {
                                 TrackRow(
                                     track = item.track,
                                     onClick = { queueViewModel.playTrack(item.track) },
-                                    onMoreClick = if (isSelectionMode) null else {
-                                        { onMoreClick(item.track) }
-                                    },
+                                    onMoreClick =
+                                        if (isSelectionMode) {
+                                            null
+                                        } else {
+                                            { onMoreClick(item.track) }
+                                        },
                                     isSelectionMode = isSelectionMode,
                                     isSelected = isSelected,
                                     onSelectionToggle = { onToggleSelectTrack?.invoke(item.track) },
-                                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } }
+                                    onLongClick = onTrackLongClick?.let { onLong -> { onLong(item.track) } },
                                 )
                             }
                         }
 
-                        is SearchResult.Album -> AlbumCard(
-                            item.title,
-                            item.author,
-                            item.artworkUrl,
-                            onClick = { onAlbumClick(item.id) },
-                            cardWidth = 140.dp
-                        )
+                        is SearchResult.Album ->
+                            AlbumCard(
+                                item.title,
+                                item.author,
+                                item.artworkUrl,
+                                onClick = { onAlbumClick(item.id) },
+                                cardWidth = 140.dp,
+                            )
 
-                        is SearchResult.Artist -> ArtistCircle(
-                            item.name,
-                            item.artworkUrl,
-                            onClick = { onArtistClick(item.id) },
-                            size = 80.dp
-                        )
+                        is SearchResult.Artist ->
+                            ArtistCircle(
+                                item.name,
+                                item.artworkUrl,
+                                onClick = { onArtistClick(item.id) },
+                                size = 80.dp,
+                            )
 
-                        is SearchResult.Playlist -> AlbumCard(
-                            item.title,
-                            item.author,
-                            item.artworkUrl,
-                            onClick = {
-                                onPlaylistClick(
-                                    item.id,
-                                    item.title,
-                                    item.artworkUrl,
-                                    item.author
-                                )
-                            },
-                            cardWidth = 140.dp
-                        )
+                        is SearchResult.Playlist ->
+                            AlbumCard(
+                                item.title,
+                                item.author,
+                                item.artworkUrl,
+                                onClick = {
+                                    onPlaylistClick(
+                                        item.id,
+                                        item.title,
+                                        item.artworkUrl,
+                                        item.author,
+                                    )
+                                },
+                                cardWidth = 140.dp,
+                            )
                     }
                 }
             }

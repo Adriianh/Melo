@@ -9,11 +9,14 @@ actual class PlatformUpdateInstaller actual constructor() {
     actual fun installAndRestart(installerPath: String): UpdateInstallResult {
         val context =
             ContextHolder.context
-                ?: return UpdateInstallResult.Failed("No se pudo acceder al contexto de la aplicación")
+                ?: return UpdateInstallResult.Failed(reason = InstallErrorReason.NO_ANDROID_CONTEXT)
 
         val file = File(installerPath)
         if (!file.exists()) {
-            return UpdateInstallResult.Failed("No se encontró el paquete descargado en $installerPath")
+            return UpdateInstallResult.Failed(
+                reason = InstallErrorReason.PACKAGE_NOT_FOUND,
+                detail = installerPath,
+            )
         }
 
         return try {
@@ -33,7 +36,10 @@ actual class PlatformUpdateInstaller actual constructor() {
             context.startActivity(intent)
             UpdateInstallResult.Started
         } catch (e: Exception) {
-            UpdateInstallResult.Failed("No se pudo abrir el instalador de Android: ${e.message}")
+            UpdateInstallResult.Failed(
+                reason = InstallErrorReason.ANDROID_INSTALLER_OPEN_FAILED,
+                detail = e.message.orEmpty(),
+            )
         }
     }
 }

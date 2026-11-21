@@ -581,4 +581,61 @@
     <string name="settings_update_status_title">Estado de actualización</string>
     <string name="settings_update_status_desc">Descarga, notas de versión e instalación de actualizaciones.</string>
     <string name="settings_kw_update_status">estado, novedades, changelog, notas, descargar, instalar, actualizar</string>
+
+    <!-- Descargas (QA) -->
+    <plurals name="library_downloads_count">
+        <item quantity="one">%1$d canción descargada</item>
+        <item quantity="other">%1$d canciones descargadas</item>
+    </plurals>
+    <string name="library_downloads_space_used">Espacio ocupado: %1$s MB</string>
+    <plurals name="library_downloads_background_count">
+        <item quantity="one">Descargando %1$d canción en segundo plano...</item>
+        <item quantity="other">Descargando %1$d canciones en segundo plano...</item>
+    </plurals>
+
+    <!-- Actualizaciones -->
+    <string name="update_check_a11y">Buscar actualizaciones</string>
+    <string name="update_checking_title">Comprobando nuevas versiones...</string>
+    <string name="update_up_to_date_title">Melo está actualizado</string>
+    <string name="update_ready_title">Descarga completa</string>
+    <string name="update_ready_body">v%1$s · La nueva versión de Melo está lista para instalarse.</string>
+    <string name="update_restart_action">Reiniciar y actualizar ahora</string>
+    <string name="update_error_title">Error de actualización</string>
+    <string name="update_available_title">Nueva versión disponible</string>
+    <string name="update_installer_fallback">Instalador de actualización</string>
+    <string name="update_download_install_action">Descargar e instalar</string>
+    <string name="update_manual_package_manager">Melo se instaló desde un paquete del sistema: actualízalo con tu gestor.</string>
+    <string name="update_manual_default">Esta instalación no admite actualizaciones automáticas. Usa el enlace para descargarla.</string>
+    <string name="update_open_download_page">Abrir página de descarga</string>
+    <string name="update_downloading_title">Descargando actualización</string>
+    <string name="update_installed_version_line">Instalada: v%1$s</string>
+    <string name="update_new_version_line">Nueva: v%1$s</string>
+    <string name="update_changelog_title">Novedades</string>
+    <string name="update_error_check">No se pudo verificar actualizaciones</string>
+    <string name="update_error_check_with_detail">No se pudo verificar actualizaciones: %1$s</string>
+    <string name="update_error_download">Error en la descarga</string>
+    <string name="update_error_download_with_detail">Error en la descarga: %1$s</string>
+    <string name="update_error_install">No se pudo instalar la actualización</string>
+    <string name="update_error_install_with_detail">No se pudo instalar la actualización: %1$s</string>
+    <string name="update_error_unknown">Error desconocido</string>
+    <string name="install_error_no_android_context">No se pudo acceder al contexto de la aplicación</string>
+    <string name="install_error_package_not_found">No se encontró el paquete descargado en %1$s</string>
+    <string name="install_error_android_open_failed">No se pudo abrir el instalador de Android: %1$s</string>
+    <string name="install_error_appimage_not_found">No se pudo localizar el AppImage en ejecución</string>
+    <string name="install_error_no_write_permission">Sin permisos para reemplazar %1$s</string>
+    <string name="install_error_portable_not_found">No se pudo localizar la instalación de Melo</string>
+    <string name="install_error_portable_no_permission">Sin permisos para actualizar %1$s</string>
+    <string name="install_error_helper_prepare_failed">No se pudo preparar el asistente de actualización (%1$s)</string>
+    <string name="install_error_start_system_failed">No se pudo iniciar el instalador del sistema: %1$s</string>
+    <string name="install_error_start_helper_failed">No se pudo iniciar el asistente de actualización: %1$s</string>
+    <string name="install_error_unsupported_platform">La actualización integrada no está disponible en esta plataforma</string>
+
+    <!-- Tiempo relativo -->
+    <string name="time_just_now">Hace un momento</string>
+    <string name="time_minutes_ago">Hace %1$d min</string>
+    <string name="time_hours_ago">Hace %1$d h</string>
+    <string name="time_yesterday">Ayer</string>
+    <string name="time_days_ago">Hace %1$d d</string>
+    <string name="time_weeks_ago">Hace %1$d sem</string>
+    <string name="time_months_ago">Hace %1$d m</string>
 </resources>

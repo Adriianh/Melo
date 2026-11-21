@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_clear_search
 import com.github.adriianh.melo.resources.a11y_dynamic_inspiration
+import com.github.adriianh.melo.resources.common_action_cancel
 import com.github.adriianh.melo.resources.common_action_delete
 import com.github.adriianh.melo.resources.library_playlist_delete_confirm
 import com.github.adriianh.melo.resources.library_playlist_delete_message
@@ -327,7 +328,11 @@ fun PlaylistNameDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Cancelar", style = MeloType.labelMedium, color = MeloColors.textSecondary)
+                Text(
+                    text = stringResource(Res.string.common_action_cancel),
+                    style = MeloType.labelMedium,
+                    color = MeloColors.textSecondary,
+                )
             }
         },
     )
@@ -422,7 +427,11 @@ fun PlaylistDeleteDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(12.dp),
             ) {
-                Text("Cancelar", style = MeloType.labelMedium, color = MeloColors.textSecondary)
+                Text(
+                    text = stringResource(Res.string.common_action_cancel),
+                    style = MeloType.labelMedium,
+                    color = MeloColors.textSecondary,
+                )
             }
         },
     )

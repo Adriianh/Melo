@@ -24,7 +24,10 @@ actual class PlatformUpdateInstaller actual constructor() {
     actual fun installAndRestart(installerPath: String): UpdateInstallResult {
         val packageFile = File(installerPath)
         return if (!packageFile.isFile) {
-            UpdateInstallResult.Failed("No se encontró el paquete descargado en $installerPath")
+            UpdateInstallResult.Failed(
+                reason = InstallErrorReason.PACKAGE_NOT_FOUND,
+                detail = installerPath,
+            )
         } else {
             install(packageFile)
         }
@@ -48,10 +51,13 @@ actual class PlatformUpdateInstaller actual constructor() {
         exists: (String) -> Boolean,
     ): UpdateInstallResult =
         when (val target = DesktopInstall.appImagePath(env, exists)?.let(::File)) {
-            null -> UpdateInstallResult.Failed("No se pudo localizar el AppImage en ejecución")
+            null -> UpdateInstallResult.Failed(reason = InstallErrorReason.APPIMAGE_NOT_FOUND)
             else ->
                 if (target.parentFile?.canWrite() != true) {
-                    UpdateInstallResult.Failed("Sin permisos para reemplazar ${target.absolutePath}")
+                    UpdateInstallResult.Failed(
+                        reason = InstallErrorReason.NO_WRITE_PERMISSION,
+                        detail = target.absolutePath,
+                    )
                 } else {
                     startReplacement(
                         resourceName = APPIMAGE_HELPER,
@@ -66,10 +72,13 @@ actual class PlatformUpdateInstaller actual constructor() {
         readText: (String) -> String?,
     ): UpdateInstallResult =
         when (val install = DesktopInstall.portableInstall(environment, readText)) {
-            null -> UpdateInstallResult.Failed("No se pudo localizar la instalación de Melo")
+            null -> UpdateInstallResult.Failed(reason = InstallErrorReason.PORTABLE_INSTALL_NOT_FOUND)
             else ->
                 if (File(install.installDir).parentFile?.canWrite() != true) {
-                    UpdateInstallResult.Failed("Sin permisos para actualizar ${install.installDir}")
+                    UpdateInstallResult.Failed(
+                        reason = InstallErrorReason.PORTABLE_NO_PERMISSION,
+                        detail = install.installDir,
+                    )
                 } else {
                     startReplacement(
                         resourceName = PORTABLE_HELPER,
@@ -102,7 +111,7 @@ actual class PlatformUpdateInstaller actual constructor() {
                 else -> listOf("xdg-open", packageFile.absolutePath)
             }
 
-        val result = start(command, "el instalador del sistema")
+        val result = start(command, InstallErrorReason.START_SYSTEM_FAILED)
 
         // Windows installers replace the running app themselves, so Melo steps aside.
         return if (osName.contains("win") && result == UpdateInstallResult.Started) {
@@ -118,11 +127,14 @@ actual class PlatformUpdateInstaller actual constructor() {
     ): UpdateInstallResult {
         val script = materialize(resourceName)
         if (script == null) {
-            return UpdateInstallResult.Failed("No se pudo preparar el asistente de actualización ($resourceName)")
+            return UpdateInstallResult.Failed(
+                reason = InstallErrorReason.HELPER_PREPARE_FAILED,
+                detail = resourceName,
+            )
         }
 
         val command = listOf("sh", script.absolutePath, currentPid().toString()) + arguments
-        val result = start(command, "el asistente de actualización")
+        val result = start(command, InstallErrorReason.START_HELPER_FAILED)
         if (result is UpdateInstallResult.Failed) {
             return result
         }
@@ -133,7 +145,7 @@ actual class PlatformUpdateInstaller actual constructor() {
 
     private fun start(
         command: List<String>,
-        label: String,
+        errorReason: InstallErrorReason,
     ): UpdateInstallResult =
         try {
             ProcessBuilder(command)
@@ -142,7 +154,10 @@ actual class PlatformUpdateInstaller actual constructor() {
                 .start()
             UpdateInstallResult.Started
         } catch (e: IOException) {
-            UpdateInstallResult.Failed("No se pudo iniciar $label: ${e.message}")
+            UpdateInstallResult.Failed(
+                reason = errorReason,
+                detail = e.message.orEmpty(),
+            )
         }
 
     private fun materialize(resourceName: String): File? {
