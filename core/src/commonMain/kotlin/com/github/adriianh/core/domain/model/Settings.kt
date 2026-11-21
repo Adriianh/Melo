@@ -78,6 +78,15 @@ enum class ThemeMode {
 }
 
 @Serializable
+enum class AppLanguage(
+    val languageTag: String?,
+) {
+    SYSTEM(null),
+    SPANISH("es"),
+    ENGLISH("en"),
+}
+
+@Serializable
 enum class CacheSizeLimit(val sizeMb: Int, val displayName: String) {
     MB_500(512, "500 MB"),
     GB_1(1024, "1 GB"),
@@ -133,6 +142,7 @@ data class Settings(
     val sessionCookies: String? = null,
     val accountPageId: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val dynamicColor: Boolean = true,
     val ambientMotion: Boolean = false,
     val nowPlayingBlur: Boolean = true,

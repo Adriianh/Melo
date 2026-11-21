@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -73,6 +74,7 @@ import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.settings_cat_account
 import com.github.adriianh.melo.resources.settings_cat_appearance
+import com.github.adriianh.melo.resources.settings_cat_general
 import com.github.adriianh.melo.resources.settings_cat_integrations
 import com.github.adriianh.melo.resources.settings_cat_library
 import com.github.adriianh.melo.resources.settings_cat_playback
@@ -119,6 +121,7 @@ internal enum class SettingsCategory(
     LIBRARY(Res.string.settings_cat_library, Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
     ACCOUNT(Res.string.settings_cat_account, Icons.Default.Person, SettingsCategoryGroup.ACCOUNT_AND_APP),
     INTEGRATIONS(Res.string.settings_cat_integrations, Icons.Default.Share, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    GENERAL(Res.string.settings_cat_general, Icons.Default.Tune, SettingsCategoryGroup.ACCOUNT_AND_APP),
     UPDATES(Res.string.settings_cat_updates, Icons.Default.SystemUpdate, SettingsCategoryGroup.ACCOUNT_AND_APP),
     ;
 
@@ -165,6 +168,8 @@ internal fun SettingsCategory.summary(
                     Res.string.settings_summary_discord_disabled
                 },
             )
+
+        SettingsCategory.GENERAL -> settings.appLanguage.uiLabel()
 
         SettingsCategory.UPDATES -> updatesSummary(settings, updateState)
     }

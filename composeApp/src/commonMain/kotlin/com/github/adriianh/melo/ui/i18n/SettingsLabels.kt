@@ -3,6 +3,7 @@
 package com.github.adriianh.melo.ui.i18n
 
 import androidx.compose.runtime.Composable
+import com.github.adriianh.core.domain.model.AppLanguage
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
@@ -21,6 +22,9 @@ import com.github.adriianh.melo.resources.settings_cache_hint_500mb
 import com.github.adriianh.melo.resources.settings_cache_hint_5gb
 import com.github.adriianh.melo.resources.settings_cache_hint_unlimited
 import com.github.adriianh.melo.resources.settings_cache_unlimited
+import com.github.adriianh.melo.resources.settings_language_english
+import com.github.adriianh.melo.resources.settings_language_spanish
+import com.github.adriianh.melo.resources.settings_language_system
 import com.github.adriianh.melo.resources.settings_quality_auto
 import com.github.adriianh.melo.resources.settings_quality_high
 import com.github.adriianh.melo.resources.settings_quality_hint_auto
@@ -116,3 +120,13 @@ internal fun UpdateChannel.labelRes(): StringResource =
 
 @Composable
 internal fun UpdateChannel.uiLabel(): String = stringResource(labelRes())
+
+internal fun AppLanguage.labelRes(): StringResource =
+    when (this) {
+        AppLanguage.SYSTEM -> Res.string.settings_language_system
+        AppLanguage.SPANISH -> Res.string.settings_language_spanish
+        AppLanguage.ENGLISH -> Res.string.settings_language_english
+    }
+
+@Composable
+internal fun AppLanguage.uiLabel(): String = stringResource(labelRes())

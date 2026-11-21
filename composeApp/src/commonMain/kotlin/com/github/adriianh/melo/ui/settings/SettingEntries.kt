@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.core.domain.model.AppLanguage
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
@@ -49,6 +50,8 @@ import com.github.adriianh.melo.resources.settings_account_disconnected_desc
 import com.github.adriianh.melo.resources.settings_account_disconnected_title
 import com.github.adriianh.melo.resources.settings_ambient_motion_desc
 import com.github.adriianh.melo.resources.settings_ambient_motion_title
+import com.github.adriianh.melo.resources.settings_app_language_desc
+import com.github.adriianh.melo.resources.settings_app_language_title
 import com.github.adriianh.melo.resources.settings_audio_quality_desc
 import com.github.adriianh.melo.resources.settings_audio_quality_disabled
 import com.github.adriianh.melo.resources.settings_audio_quality_title
@@ -85,6 +88,7 @@ import com.github.adriianh.melo.resources.settings_installed_version_title
 import com.github.adriianh.melo.resources.settings_kw_account_channels
 import com.github.adriianh.melo.resources.settings_kw_account_session
 import com.github.adriianh.melo.resources.settings_kw_ambient_motion
+import com.github.adriianh.melo.resources.settings_kw_app_language
 import com.github.adriianh.melo.resources.settings_kw_audio_quality
 import com.github.adriianh.melo.resources.settings_kw_auto_check
 import com.github.adriianh.melo.resources.settings_kw_autoplay
@@ -126,6 +130,7 @@ import com.github.adriianh.melo.resources.settings_section_channel
 import com.github.adriianh.melo.resources.settings_section_discord
 import com.github.adriianh.melo.resources.settings_section_downloads
 import com.github.adriianh.melo.resources.settings_section_effects
+import com.github.adriianh.melo.resources.settings_section_language
 import com.github.adriianh.melo.resources.settings_section_now_playing
 import com.github.adriianh.melo.resources.settings_section_playback
 import com.github.adriianh.melo.resources.settings_section_theme_color
@@ -225,6 +230,10 @@ internal fun rememberSettingEntries(
             settings = settings,
             actions = actions,
             platformType = platformType,
+        )
+        addGeneralEntries(
+            settings = settings,
+            actions = actions,
         )
         addUpdateEntries(
             autoCheckUpdates = settings.autoCheckUpdates,
@@ -956,6 +965,42 @@ private fun MutableList<SettingEntry>.addIntegrationsEntries(
                 enabled = platformType != PlatformType.ANDROID || isLinked,
                 disabledNote = stringResource(Res.string.settings_discord_rpc_disabled),
             )
+        },
+    )
+}
+
+@Composable
+private fun MutableList<SettingEntry>.addGeneralEntries(
+    settings: Settings,
+    actions: SettingsActions,
+) {
+    val categoryTitle = stringResource(SettingsCategory.GENERAL.titleRes)
+    val section = stringResource(Res.string.settings_section_language)
+    val languageTitle = stringResource(Res.string.settings_app_language_title)
+    val languageDesc = stringResource(Res.string.settings_app_language_desc)
+    add(
+        SettingEntry(
+            id = "general_app_language",
+            category = SettingsCategory.GENERAL,
+            section = section,
+            title = languageTitle,
+            description = languageDesc,
+            keywords = keywordsResource(Res.string.settings_kw_app_language),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingInlineChoiceRow(
+                title = languageTitle,
+                subtitle = languageDesc,
+            ) { isInline ->
+                val languageLabels = AppLanguage.entries.associateWith { it.uiLabel() }
+                SegmentedControl(
+                    options = AppLanguage.entries,
+                    selected = settings.appLanguage,
+                    onSelect = actions.onAppLanguageSelected,
+                    label = { languageLabels.getValue(it) },
+                    fillMaxWidth = !isInline,
+                )
+            }
         },
     )
 }

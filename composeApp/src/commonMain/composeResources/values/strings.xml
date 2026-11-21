@@ -400,6 +400,7 @@
     <string name="settings_cat_library">Biblioteca</string>
     <string name="settings_cat_account">Cuenta</string>
     <string name="settings_cat_integrations">Integraciones</string>
+    <string name="settings_cat_general">General</string>
     <string name="settings_cat_updates">Actualizaciones</string>
     <string name="settings_summary_account_connected">YouTube Music conectado</string>
     <string name="settings_summary_account_disconnected">Sin sesión iniciada</string>
@@ -441,6 +442,9 @@
     <string name="settings_scrim_dark">Oscuro</string>
     <string name="settings_update_channel_stable">Estable</string>
     <string name="settings_update_channel_nightly">Nightly</string>
+    <string name="settings_language_system">Sistema</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_english">English</string>
 
     <!-- Navegación y búsqueda en Ajustes -->
     <string name="settings_search_results_title">Resultados</string>
@@ -565,6 +569,12 @@
     <string name="settings_discord_rpc_desktop_desc">Muestra en tiempo real tu música en reproducción en tu estado de Discord Desktop.</string>
     <string name="settings_discord_rpc_disabled">Vincula tu cuenta para activarlo</string>
     <string name="settings_kw_discord_rpc">discord, rich presence, rpc, actividad, estado, integraciones</string>
+
+    <!-- Entradas: General -->
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_app_language_title">Idioma de la aplicación</string>
+    <string name="settings_app_language_desc">Elige el idioma de la interfaz o usa el del sistema.</string>
+    <string name="settings_kw_app_language">idioma, lenguaje, language, locale, español, spanish, english, inglés, sistema, system</string>
 
     <!-- Entradas: Actualizaciones -->
     <string name="settings_section_version">Versión</string>
