@@ -67,8 +67,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_search_clear
+import com.github.adriianh.melo.resources.settings_search_empty_subtitle
+import com.github.adriianh.melo.resources.settings_search_empty_title
+import com.github.adriianh.melo.resources.settings_search_go_to_category
+import com.github.adriianh.melo.resources.settings_search_placeholder
+import com.github.adriianh.melo.resources.settings_search_results_count
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 
 internal val LocalSettingsSearchQuery = compositionLocalOf { "" }
 
@@ -125,7 +134,9 @@ internal fun filterSettingEntries(
                         append(entry.section)
                         append(' ')
                     }
-                    append(entry.category.title)
+                    if (entry.categoryTitle.isNotBlank()) {
+                        append(entry.categoryTitle)
+                    }
                     entry.keywords.forEach { keyword ->
                         append(' ')
                         append(keyword)
@@ -224,13 +235,14 @@ internal fun SettingsSearchField(
                 modifier = Modifier.size(18.dp),
             )
 
+            val searchPlaceholder = stringResource(Res.string.settings_search_placeholder)
             Box(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 if (query.isEmpty()) {
                     Text(
-                        text = "Buscar en ajustes",
+                        text = searchPlaceholder,
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         color = MeloColors.textMuted,
@@ -265,7 +277,7 @@ internal fun SettingsSearchField(
                         Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
-                            .semantics { contentDescription = "Buscar en ajustes" }
+                            .semantics { contentDescription = searchPlaceholder }
                             .onPreviewKeyEvent { event ->
                                 if (event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
                                     if (query.isNotEmpty()) {
@@ -291,7 +303,7 @@ internal fun SettingsSearchField(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Limpiar búsqueda",
+                        contentDescription = stringResource(Res.string.settings_search_clear),
                         tint = MeloColors.textSecondary,
                         modifier = Modifier.size(18.dp),
                     )
@@ -323,11 +335,11 @@ internal fun SettingSearchResultsPane(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             val countText =
-                when (matches.size) {
-                    0 -> "0 resultados"
-                    1 -> "1 resultado"
-                    else -> "${matches.size} resultados"
-                }
+                pluralStringResource(
+                    Res.plurals.settings_search_results_count,
+                    matches.size,
+                    matches.size,
+                )
 
             Text(
                 text = countText,
@@ -343,7 +355,7 @@ internal fun SettingSearchResultsPane(
                 SettingsSearchEmptyState(query = query.trim())
             } else {
                 grouped.forEach { (category, categoryEntries) ->
-                    SettingsSection(caption = category.title) {
+                    SettingsSection(caption = stringResource(category.titleRes)) {
                         categoryEntries.forEachIndexed { index, entry ->
                             if (index > 0) {
                                 SettingsRowDivider()
@@ -412,7 +424,11 @@ private fun SettingSearchLinkRow(
 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = "Ir a ${entry.category.title}",
+            contentDescription =
+                stringResource(
+                    Res.string.settings_search_go_to_category,
+                    stringResource(entry.category.titleRes),
+                ),
             tint = MeloColors.textMuted,
             modifier = Modifier.size(20.dp),
         )
@@ -447,7 +463,7 @@ private fun SettingsSearchEmptyState(query: String) {
         }
 
         Text(
-            text = "Sin resultados para “$query”",
+            text = stringResource(Res.string.settings_search_empty_title, query),
             fontSize = 16.sp,
             lineHeight = 22.sp,
             fontWeight = FontWeight.SemiBold,
@@ -456,7 +472,7 @@ private fun SettingsSearchEmptyState(query: String) {
         )
 
         Text(
-            text = "Prueba con otra palabra",
+            text = stringResource(Res.string.settings_search_empty_subtitle),
             style = MeloType.labelSmall,
             color = MeloColors.textSecondary,
             textAlign = TextAlign.Center,

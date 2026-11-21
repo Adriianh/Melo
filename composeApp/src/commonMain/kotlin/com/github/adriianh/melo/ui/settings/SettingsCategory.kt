@@ -67,33 +67,59 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.Settings
-import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_cat_account
+import com.github.adriianh.melo.resources.settings_cat_appearance
+import com.github.adriianh.melo.resources.settings_cat_integrations
+import com.github.adriianh.melo.resources.settings_cat_library
+import com.github.adriianh.melo.resources.settings_cat_playback
+import com.github.adriianh.melo.resources.settings_cat_updates
+import com.github.adriianh.melo.resources.settings_data_saver_title
+import com.github.adriianh.melo.resources.settings_group_account_app
+import com.github.adriianh.melo.resources.settings_group_experience
+import com.github.adriianh.melo.resources.settings_summary_account_connected
+import com.github.adriianh.melo.resources.settings_summary_account_disconnected
+import com.github.adriianh.melo.resources.settings_summary_cache
+import com.github.adriianh.melo.resources.settings_summary_discord_active
+import com.github.adriianh.melo.resources.settings_summary_discord_disabled
+import com.github.adriianh.melo.resources.settings_summary_dynamic_color
+import com.github.adriianh.melo.resources.settings_summary_offline_suffix
+import com.github.adriianh.melo.resources.settings_summary_quality
+import com.github.adriianh.melo.resources.settings_summary_queue_continuous
+import com.github.adriianh.melo.resources.settings_summary_queue_fixed
+import com.github.adriianh.melo.resources.settings_summary_update_available
+import com.github.adriianh.melo.resources.settings_summary_update_channel
+import com.github.adriianh.melo.resources.settings_summary_update_downloading
+import com.github.adriianh.melo.resources.settings_summary_update_ready
+import com.github.adriianh.melo.ui.i18n.uiLabel
+import com.github.adriianh.melo.ui.i18n.uiTitle
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 internal enum class SettingsCategoryGroup(
-    val caption: String,
+    val captionRes: StringResource,
 ) {
-    EXPERIENCE("Experiencia"),
-    ACCOUNT_AND_APP("Cuenta y app"),
+    EXPERIENCE(Res.string.settings_group_experience),
+    ACCOUNT_AND_APP(Res.string.settings_group_account_app),
 }
 
 internal enum class SettingsCategory(
-    val title: String,
+    val titleRes: StringResource,
     val icon: ImageVector,
     val group: SettingsCategoryGroup,
 ) {
-    APPEARANCE("Apariencia", Icons.Default.ColorLens, SettingsCategoryGroup.EXPERIENCE),
-    PLAYBACK("Reproducción", Icons.Default.Headphones, SettingsCategoryGroup.EXPERIENCE),
-    LIBRARY("Biblioteca", Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
-    ACCOUNT("Cuenta", Icons.Default.Person, SettingsCategoryGroup.ACCOUNT_AND_APP),
-    INTEGRATIONS("Integraciones", Icons.Default.Share, SettingsCategoryGroup.ACCOUNT_AND_APP),
-    UPDATES("Actualizaciones", Icons.Default.SystemUpdate, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    APPEARANCE(Res.string.settings_cat_appearance, Icons.Default.ColorLens, SettingsCategoryGroup.EXPERIENCE),
+    PLAYBACK(Res.string.settings_cat_playback, Icons.Default.Headphones, SettingsCategoryGroup.EXPERIENCE),
+    LIBRARY(Res.string.settings_cat_library, Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
+    ACCOUNT(Res.string.settings_cat_account, Icons.Default.Person, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    INTEGRATIONS(Res.string.settings_cat_integrations, Icons.Default.Share, SettingsCategoryGroup.ACCOUNT_AND_APP),
+    UPDATES(Res.string.settings_cat_updates, Icons.Default.SystemUpdate, SettingsCategoryGroup.ACCOUNT_AND_APP),
     ;
 
     companion object {
@@ -112,6 +138,7 @@ internal enum class SettingsCategory(
     }
 }
 
+@Composable
 internal fun SettingsCategory.summary(
     settings: Settings,
     isLoggedIn: Boolean,
@@ -121,45 +148,80 @@ internal fun SettingsCategory.summary(
         SettingsCategory.APPEARANCE -> appearanceSummary(settings)
         SettingsCategory.PLAYBACK -> playbackSummary(settings)
         SettingsCategory.LIBRARY -> librarySummary(settings)
-        SettingsCategory.ACCOUNT -> if (isLoggedIn) "YouTube Music conectado" else "Sin sesión iniciada"
-        SettingsCategory.INTEGRATIONS -> if (settings.discordRpcEnabled) "Discord activo" else "Discord desactivado"
+        SettingsCategory.ACCOUNT ->
+            stringResource(
+                if (isLoggedIn) {
+                    Res.string.settings_summary_account_connected
+                } else {
+                    Res.string.settings_summary_account_disconnected
+                },
+            )
+
+        SettingsCategory.INTEGRATIONS ->
+            stringResource(
+                if (settings.discordRpcEnabled) {
+                    Res.string.settings_summary_discord_active
+                } else {
+                    Res.string.settings_summary_discord_disabled
+                },
+            )
+
         SettingsCategory.UPDATES -> updatesSummary(settings, updateState)
     }
 
+@Composable
 private fun appearanceSummary(settings: Settings): String {
     val mode = settings.themeMode.uiLabel()
-    val palette = if (settings.dynamicColor) "Color dinámico" else settings.theme.displayName
+    val palette =
+        if (settings.dynamicColor) {
+            stringResource(Res.string.settings_summary_dynamic_color)
+        } else {
+            settings.theme.displayName
+        }
     return "$mode · $palette"
 }
 
+@Composable
 private fun playbackSummary(settings: Settings): String {
     val quality =
         if (settings.dataSaver) {
-            "Ahorro de datos"
+            stringResource(Res.string.settings_data_saver_title)
         } else {
-            "Calidad ${settings.audioQuality.uiTitle().lowercase()}"
+            stringResource(Res.string.settings_summary_quality, settings.audioQuality.uiTitle().lowercase())
         }
-    val queue = if (settings.autoplay) "Continua" else "Cola fija"
+    val queue =
+        stringResource(
+            if (settings.autoplay) {
+                Res.string.settings_summary_queue_continuous
+            } else {
+                Res.string.settings_summary_queue_fixed
+            },
+        )
     return "$quality · $queue"
 }
 
+@Composable
 private fun librarySummary(settings: Settings): String {
-    val cache = "Caché ${CacheSizeLimit.fromSizeMb(settings.maxOfflineSizeMb).displayName}"
+    val cacheLabel = CacheSizeLimit.fromSizeMb(settings.maxOfflineSizeMb).uiTitle()
+    val cache = stringResource(Res.string.settings_summary_cache, cacheLabel)
     val format = settings.downloadFormat.name
-    val offline = if (settings.offlineMode) " · Sin conexión" else ""
+    val offline = if (settings.offlineMode) stringResource(Res.string.settings_summary_offline_suffix) else ""
     return "$cache · $format$offline"
 }
 
+@Composable
 private fun updatesSummary(
     settings: Settings,
     updateState: UpdateState?,
 ): String =
     when (updateState) {
-        is UpdateState.UpdateAvailable -> "v${updateState.release.version} disponible"
-        is UpdateState.ManualUpdate -> "v${updateState.release.version} disponible"
-        is UpdateState.ReadyToInstall -> "Lista para instalar"
-        is UpdateState.Downloading -> "Descargando actualización..."
-        else -> "Canal ${settings.updateChannel.displayName}"
+        is UpdateState.UpdateAvailable ->
+            stringResource(Res.string.settings_summary_update_available, updateState.release.version)
+        is UpdateState.ManualUpdate ->
+            stringResource(Res.string.settings_summary_update_available, updateState.release.version)
+        is UpdateState.ReadyToInstall -> stringResource(Res.string.settings_summary_update_ready)
+        is UpdateState.Downloading -> stringResource(Res.string.settings_summary_update_downloading)
+        else -> stringResource(Res.string.settings_summary_update_channel, settings.updateChannel.uiLabel())
     }
 
 internal fun UpdateState?.hasAvailableUpdate(): Boolean =
@@ -192,39 +254,6 @@ internal fun SettingsEntryUpdateBadge(
     }
 }
 
-internal fun ThemeMode.uiLabel(): String =
-    when (this) {
-        ThemeMode.SYSTEM -> "Sistema"
-        ThemeMode.LIGHT -> "Claro"
-        ThemeMode.DARK -> "Oscuro"
-    }
-
-internal fun AudioQuality.uiTitle(): String =
-    when (this) {
-        AudioQuality.AUTO -> "Automática"
-        AudioQuality.HIGH -> "Alta"
-        AudioQuality.MEDIUM -> "Estándar"
-        AudioQuality.LOW -> "Baja"
-    }
-
-internal fun AudioQuality.uiHint(): String =
-    when (this) {
-        AudioQuality.AUTO -> "Adaptativa"
-        AudioQuality.HIGH -> "160–256 kbps"
-        AudioQuality.MEDIUM -> "128 kbps"
-        AudioQuality.LOW -> "48–64 kbps"
-    }
-
-internal fun CacheSizeLimit.uiHint(): String =
-    when (this) {
-        CacheSizeLimit.MB_500 -> "Mínimo"
-        CacheSizeLimit.GB_1 -> "Estándar"
-        CacheSizeLimit.GB_2 -> "Equilibrado"
-        CacheSizeLimit.GB_5 -> "Amplio"
-        CacheSizeLimit.GB_10 -> "Extenso"
-        CacheSizeLimit.UNLIMITED -> "Sin restricción"
-    }
-
 @Composable
 internal fun SettingsCategoryList(
     categories: List<SettingsCategory>,
@@ -251,7 +280,7 @@ internal fun SettingsCategoryList(
         grouped.forEach { (group, groupCategories) ->
             Column(modifier = Modifier.fillMaxWidth()) {
                 if (showCaptions) {
-                    SettingsSectionCaption(text = group.caption)
+                    SettingsSectionCaption(text = stringResource(group.captionRes))
                 }
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -318,7 +347,7 @@ private fun SettingsCategoryListRow(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = category.title,
+                    text = stringResource(category.titleRes),
                     fontSize = 16.sp,
                     lineHeight = 22.sp,
                     fontWeight = FontWeight.Medium,
@@ -441,7 +470,7 @@ internal fun SettingsSidebar(
             grouped.forEach { (group, groupCategories) ->
                 Column(modifier = Modifier.fillMaxWidth()) {
                     if (showCaptions) {
-                        SettingsSectionCaption(text = group.caption)
+                        SettingsSectionCaption(text = stringResource(group.captionRes))
                     }
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -519,7 +548,7 @@ private fun SettingsSidebarItem(
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = category.title,
+            text = stringResource(category.titleRes),
             fontSize = 14.sp,
             lineHeight = 20.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,

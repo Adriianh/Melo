@@ -39,8 +39,12 @@ import androidx.compose.ui.window.DialogProperties
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_title
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.getPlatform
+import org.jetbrains.compose.resources.stringResource
 
 private val MODAL_DIALOG_MIN_WIDTH = 600.dp
 private val MODAL_DIALOG_MIN_HEIGHT = 480.dp
@@ -54,7 +58,7 @@ internal fun SettingsModal(
     activePageId: String?,
     isLoadingProfiles: Boolean,
     isSwitchingProfile: Boolean,
-    profilesError: String?,
+    profilesError: UiText?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
     initialCategory: SettingsCategory? = null,
@@ -126,7 +130,7 @@ internal fun SettingsFullScreenSurface(
     activePageId: String?,
     isLoadingProfiles: Boolean,
     isSwitchingProfile: Boolean,
-    profilesError: String?,
+    profilesError: UiText?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
     initialCategory: SettingsCategory? = null,
@@ -138,13 +142,14 @@ internal fun SettingsFullScreenSurface(
     onCompactSearchOpenChange: ((Boolean) -> Unit)? = null,
     updateState: UpdateState? = null,
 ) {
+    val settingsTitle = stringResource(Res.string.settings_title)
     Surface(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(MeloColors.surface1)
                 .pointerInput(Unit) {}
-                .semantics { paneTitle = "Ajustes" },
+                .semantics { paneTitle = settingsTitle },
         color = MeloColors.surface1,
     ) {
         Box(
@@ -187,7 +192,7 @@ internal fun SettingsDialog(
     activePageId: String?,
     isLoadingProfiles: Boolean,
     isSwitchingProfile: Boolean,
-    profilesError: String?,
+    profilesError: UiText?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
     dialogHeight: Dp = MODAL_DIALOG_MAX_HEIGHT,
@@ -239,7 +244,7 @@ internal fun SettingsDialogSurface(
     activePageId: String?,
     isLoadingProfiles: Boolean,
     isSwitchingProfile: Boolean,
-    profilesError: String?,
+    profilesError: UiText?,
     actions: SettingsActions,
     onDismiss: () -> Unit,
     dialogHeight: Dp = MODAL_DIALOG_MAX_HEIGHT,

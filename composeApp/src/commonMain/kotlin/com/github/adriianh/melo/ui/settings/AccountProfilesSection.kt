@@ -32,9 +32,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.AccountProfile
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_account_channel_active
+import com.github.adriianh.melo.resources.settings_account_channels_desc
+import com.github.adriianh.melo.resources.settings_account_channels_refresh
+import com.github.adriianh.melo.resources.settings_account_channels_title
+import com.github.adriianh.melo.ui.i18n.UiText
+import com.github.adriianh.melo.ui.i18n.resolve
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
@@ -43,14 +51,14 @@ internal fun AccountProfilesList(
     activePageId: String?,
     isLoading: Boolean,
     isSwitching: Boolean,
-    error: String?,
+    error: UiText?,
     onSelect: (String?) -> Unit,
     onRefresh: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SettingActionRow(
-            title = "Canales de la cuenta",
-            subtitle = "Cambia el canal activo para sincronizar su biblioteca, likes y playlists.",
+            title = stringResource(Res.string.settings_account_channels_title),
+            subtitle = stringResource(Res.string.settings_account_channels_desc),
         ) {
             if (isLoading || isSwitching) {
                 Box(
@@ -65,7 +73,7 @@ internal fun AccountProfilesList(
                 }
             } else {
                 SettingActionButton(
-                    text = "Actualizar",
+                    text = stringResource(Res.string.settings_account_channels_refresh),
                     onClick = onRefresh,
                     emphasis = SettingActionEmphasis.SECONDARY,
                     icon = Icons.Default.Refresh,
@@ -76,7 +84,7 @@ internal fun AccountProfilesList(
 
         if (error != null) {
             Text(
-                text = error,
+                text = error.resolve(),
                 style = MeloType.labelSmall,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 10.dp),
@@ -161,7 +169,7 @@ private fun AccountProfileRow(
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Canal activo",
+                contentDescription = stringResource(Res.string.settings_account_channel_active),
                 tint = accent,
                 modifier = Modifier.size(18.dp),
             )
