@@ -389,4 +389,196 @@
     <string name="discord_login_token_label">Token de Discord</string>
     <string name="discord_login_token_placeholder">OTQ... o mfa....</string>
     <string name="discord_login_save_token">Guardar token</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_breadcrumb_prefix">Ajustes  &gt;  </string>
+    <string name="settings_group_experience">Experiencia</string>
+    <string name="settings_group_account_app">Cuenta y app</string>
+    <string name="settings_cat_appearance">Apariencia</string>
+    <string name="settings_cat_playback">Reproducción</string>
+    <string name="settings_cat_library">Biblioteca</string>
+    <string name="settings_cat_account">Cuenta</string>
+    <string name="settings_cat_integrations">Integraciones</string>
+    <string name="settings_cat_updates">Actualizaciones</string>
+    <string name="settings_summary_account_connected">YouTube Music conectado</string>
+    <string name="settings_summary_account_disconnected">Sin sesión iniciada</string>
+    <string name="settings_summary_discord_active">Discord activo</string>
+    <string name="settings_summary_discord_disabled">Discord desactivado</string>
+    <string name="settings_summary_dynamic_color">Color dinámico</string>
+    <string name="settings_summary_quality">Calidad %1$s</string>
+    <string name="settings_summary_queue_continuous">Continua</string>
+    <string name="settings_summary_queue_fixed">Cola fija</string>
+    <string name="settings_summary_cache">Caché %1$s</string>
+    <string name="settings_summary_offline_suffix"> · Sin conexión</string>
+    <string name="settings_summary_update_available">v%1$s disponible</string>
+    <string name="settings_summary_update_ready">Lista para instalar</string>
+    <string name="settings_summary_update_downloading">Descargando actualización...</string>
+    <string name="settings_summary_update_channel">Canal %1$s</string>
+
+    <!-- Etiquetas de enums en Ajustes -->
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_quality_auto">Automática</string>
+    <string name="settings_quality_high">Alta</string>
+    <string name="settings_quality_medium">Estándar</string>
+    <string name="settings_quality_low">Baja</string>
+    <string name="settings_quality_hint_auto">Adaptativa</string>
+    <string name="settings_cache_unlimited">Sin límite</string>
+    <string name="settings_cache_hint_500mb">Mínimo</string>
+    <string name="settings_cache_hint_1gb">Estándar</string>
+    <string name="settings_cache_hint_2gb">Equilibrado</string>
+    <string name="settings_cache_hint_5gb">Amplio</string>
+    <string name="settings_cache_hint_10gb">Extenso</string>
+    <string name="settings_cache_hint_unlimited">Sin restricción</string>
+    <string name="settings_blur_off">Desactivado</string>
+    <string name="settings_blur_soft">Suave</string>
+    <string name="settings_blur_medium">Medio</string>
+    <string name="settings_blur_intense">Intenso</string>
+    <string name="settings_scrim_light">Ligero</string>
+    <string name="settings_scrim_normal">Normal</string>
+    <string name="settings_scrim_dark">Oscuro</string>
+    <string name="settings_update_channel_stable">Estable</string>
+    <string name="settings_update_channel_nightly">Nightly</string>
+
+    <!-- Navegación y búsqueda en Ajustes -->
+    <string name="settings_search_results_title">Resultados</string>
+    <string name="settings_search_placeholder">Buscar en ajustes</string>
+    <string name="settings_search_clear">Limpiar búsqueda</string>
+    <string name="settings_search_close">Cerrar búsqueda</string>
+    <string name="settings_back_to_categories">Volver a categorías</string>
+    <string name="settings_close">Cerrar ajustes</string>
+    <string name="settings_empty_title">Selecciona una categoría</string>
+    <string name="settings_empty_subtitle">Elige una opción del menú lateral o usa la búsqueda para encontrar un ajuste.</string>
+    <plurals name="settings_search_results_count">
+        <item quantity="one">%1$d resultado</item>
+        <item quantity="other">%1$d resultados</item>
+    </plurals>
+    <string name="settings_search_go_to_category">Ir a %1$s</string>
+    <string name="settings_search_empty_title">Sin resultados para “%1$s”</string>
+    <string name="settings_search_empty_subtitle">Prueba con otra palabra</string>
+
+    <!-- Entradas: Apariencia -->
+    <string name="settings_section_theme_color">Tema y color</string>
+    <string name="settings_theme_mode_title">Modo de tema</string>
+    <string name="settings_theme_mode_desc">Sigue la configuración del sistema o fuerza claro/oscuro.</string>
+    <string name="settings_kw_theme_mode">tema, oscuro, claro, sistema, modo</string>
+    <string name="settings_dynamic_color_title">Color dinámico</string>
+    <string name="settings_dynamic_color_desc">Armoniza la interfaz con los colores de la carátula actual.</string>
+    <string name="settings_kw_dynamic_color">color, dinámico, carátula, acento, material you</string>
+    <string name="settings_theme_preset_title">Paleta de color</string>
+    <string name="settings_theme_preset_desc">Selecciona una paleta de acento fija para la interfaz.</string>
+    <string name="settings_theme_preset_disabled">Controlado por Color dinámico</string>
+    <string name="settings_kw_theme_preset">paleta, color, tema, catppuccin, mocha, gruvbox, nord, tokyo night, acento</string>
+    <string name="settings_section_now_playing">Pantalla Reproduciendo</string>
+    <string name="settings_blur_intensity_title">Desenfoque de carátula</string>
+    <string name="settings_blur_intensity_desc">Muestra la carátula difuminada de fondo o la desactiva por un degradado de acento.</string>
+    <string name="settings_kw_blur_intensity">blur, desenfoque, fondo, intensidad, suave, medio, intenso, carátula, reproduciendo, gpu, rendimiento</string>
+    <string name="settings_backdrop_scrim_title">Oscurecimiento del fondo</string>
+    <string name="settings_backdrop_scrim_desc">Ajusta el contraste del velo sobre la carátula difuminada.</string>
+    <string name="settings_backdrop_scrim_disabled">Requiere activar Desenfoque de carátula</string>
+    <string name="settings_kw_backdrop_scrim">scrim, oscurecimiento, contraste, brillo, ligero, normal, oscuro, fondo, reproduciendo, carátula</string>
+    <string name="settings_section_effects">Efectos y rendimiento</string>
+    <string name="settings_ambient_motion_title">Fondo ambiental animado</string>
+    <string name="settings_ambient_motion_desc">Mueve suavemente el fondo durante la reproducción (usa más GPU).</string>
+    <string name="settings_kw_ambient_motion">fondo, ambiental, animación, movimiento, gpu, rendimiento, canvas</string>
+    <string name="settings_reduce_transparency_title">Reducir transparencia</string>
+    <string name="settings_reduce_transparency_desc">Usa superficies sólidas en paneles y barras para mayor contraste y menor sobre-dibujado.</string>
+    <string name="settings_kw_reduce_transparency">transparencia, glass, opaco, sólido, contraste, accesibilidad, rendimiento, gpu</string>
+
+    <!-- Entradas: Reproducción -->
+    <string name="settings_section_playback">Reproducción y streaming</string>
+    <string name="settings_data_saver_title">Ahorro de datos</string>
+    <string name="settings_data_saver_desc">Prioriza bitrates más bajos para minimizar el consumo móvil.</string>
+    <string name="settings_kw_data_saver">ahorro, datos, móvil, bitrate, consumo, red</string>
+    <string name="settings_audio_quality_title">Calidad de streaming</string>
+    <string name="settings_audio_quality_desc">Tasa de bits para la reproducción online.</string>
+    <string name="settings_audio_quality_disabled">Controlado por Ahorro de datos</string>
+    <string name="settings_kw_audio_quality">calidad, audio, streaming, bitrate, kbps, sonido</string>
+    <string name="settings_autoplay_title">Reproducción continua</string>
+    <string name="settings_autoplay_desc">Añade canciones similares al finalizar la cola.</string>
+    <string name="settings_kw_autoplay">reproducción, continua, autoplay, cola, radio, similares</string>
+    <string name="settings_resume_session_title">Reanudar la última sesión activa</string>
+    <string name="settings_resume_session_desc">Al arrancar, recupera la cola más reciente aunque pertenezca a otra instancia de Melo.</string>
+    <string name="settings_kw_resume_session">reanudar, sesión, cola, arranque, última</string>
+    <string name="settings_stop_on_close_title">Detener al cerrar la app</string>
+    <string name="settings_stop_on_close_desc">Al quitar Melo de recientes, pausa la reproducción y cierra el servicio en segundo plano. Puedes reanudar al volver a abrir la app.</string>
+    <string name="settings_kw_stop_on_close">cerrar, recientes, deslizar, segundo plano, notificación, servicio, detener</string>
+
+    <!-- Entradas: Biblioteca -->
+    <string name="settings_section_downloads">Descargas y caché offline</string>
+    <string name="settings_offline_mode_title">Modo sin conexión</string>
+    <string name="settings_offline_mode_desc">Bloquea peticiones de red y prioriza únicamente contenido descargado y local.</string>
+    <string name="settings_kw_offline_mode">sin conexión, offline, red, descargado, local, avión</string>
+    <string name="settings_cache_size_title">Límite de tamaño de caché</string>
+    <string name="settings_cache_size_desc">Espacio máximo para canciones escuchadas recientemente (limpieza LRU automática).</string>
+    <string name="settings_kw_cache_size">caché, tamaño, límite, almacenamiento, espacio</string>
+    <string name="settings_download_format_title">Formato de descarga</string>
+    <string name="settings_download_format_desc">Extensión y contenedor preferido para guardar pistas.</string>
+    <string name="settings_kw_download_format">formato, descarga, mp3, opus, flac, aac, m4a, ogg, wav</string>
+    <string name="settings_download_quality_title">Calidad de descarga</string>
+    <string name="settings_download_quality_desc">Tasa de bits máxima al descargar.</string>
+    <string name="settings_kw_download_quality">calidad, descarga, bitrate, kbps, audio</string>
+    <string name="settings_clear_cache_title">Limpiar caché de audio</string>
+    <string name="settings_clear_cache_desc">Libera espacio eliminando las pistas cacheadas temporalmente.</string>
+    <string name="settings_clear_cache_action">Limpiar caché</string>
+    <string name="settings_kw_clear_cache">limpiar, caché, borrar, espacio</string>
+    <string name="settings_local_folders_title">Carpetas de música local</string>
+    <string name="settings_local_folders_desc">Configura carpetas de tu dispositivo para indexar canciones locales.</string>
+    <string name="settings_kw_local_folders">carpetas, local, música, ruta, directorio, indexar</string>
+
+    <!-- Entradas: Cuenta -->
+    <string name="settings_section_account">Cuenta y sesión</string>
+    <string name="settings_account_connected_title">Sesión iniciada con YouTube Music</string>
+    <string name="settings_account_disconnected_title">Sin conexión de cuenta</string>
+    <string name="settings_account_connected_desc">Tus playlists, likes y biblioteca están sincronizados.</string>
+    <string name="settings_account_disconnected_desc">Inicia sesión para sincronizar tus playlists y favoritos.</string>
+    <string name="settings_kw_account_session">cuenta, sesión, iniciar sesión, cerrar sesión, youtube music</string>
+    <string name="settings_account_channels_title">Canales de la cuenta</string>
+    <string name="settings_account_channels_desc">Cambia el canal activo para sincronizar su biblioteca, likes y playlists.</string>
+    <string name="settings_account_channels_refresh">Actualizar</string>
+    <string name="settings_account_channel_active">Canal activo</string>
+    <string name="settings_kw_account_channels">canales, perfil, cuentas, cambiar, youtube</string>
+    <string name="settings_sync_history_title">Registrar reproducciones en YouTube</string>
+    <string name="settings_sync_history_desc">Sincroniza automáticamente las pistas que escuchas con tu historial de YouTube Music.</string>
+    <string name="settings_sync_history_disabled">Inicia sesión para activarlo</string>
+    <string name="settings_kw_sync_history">historial, sincronizar, youtube, reproducciones, scrobble, registrar</string>
+    <string name="settings_logout_confirm_title">Cerrar sesión</string>
+    <string name="settings_logout_confirm_message">¿Estás seguro de que deseas cerrar tu sesión de YouTube Music? Dejarás de sincronizar tu biblioteca, listas y recomendaciones hasta que vuelvas a iniciar sesión.</string>
+    <string name="settings_logout_action">Cerrar sesión</string>
+    <string name="settings_login_action">Iniciar sesión</string>
+
+    <!-- Entradas: Integraciones -->
+    <string name="settings_section_discord">Discord Rich Presence</string>
+    <string name="settings_discord_account_title">Estado de la cuenta</string>
+    <string name="settings_discord_linked_desc">Cuenta vinculada con token de sesión activo.</string>
+    <string name="settings_discord_unlinked_desc">Requiere inicio de sesión para conectar con el Gateway de Discord.</string>
+    <string name="settings_discord_unlink_title">Desvincular cuenta de Discord</string>
+    <string name="settings_discord_unlink_message">¿Estás seguro de que deseas desvincular tu cuenta de Discord? Se eliminará el token de sesión guardado y dejará de mostrarse tu actividad.</string>
+    <string name="settings_discord_unlink_action">Desvincular</string>
+    <string name="settings_discord_change_action">Cambiar</string>
+    <string name="settings_discord_link_action">Vincular</string>
+    <string name="settings_kw_discord_account">discord, cuenta, vincular, desvincular, token, rpc, rich presence</string>
+    <string name="settings_discord_rpc_title">Mostrar actividad en Discord</string>
+    <string name="settings_discord_rpc_android_desc">Muestra en tiempo real tu música en reproducción usando la API de Discord.</string>
+    <string name="settings_discord_rpc_desktop_desc">Muestra en tiempo real tu música en reproducción en tu estado de Discord Desktop.</string>
+    <string name="settings_discord_rpc_disabled">Vincula tu cuenta para activarlo</string>
+    <string name="settings_kw_discord_rpc">discord, rich presence, rpc, actividad, estado, integraciones</string>
+
+    <!-- Entradas: Actualizaciones -->
+    <string name="settings_section_version">Versión</string>
+    <string name="settings_installed_version_title">Versión instalada</string>
+    <string name="settings_kw_installed_version">versión, instalada, actualización, buscar, nightly, estable</string>
+    <string name="settings_auto_check_title">Buscar automáticamente</string>
+    <string name="settings_auto_check_desc">Comprueba si hay nuevas versiones al abrir la app.</string>
+    <string name="settings_kw_auto_check">buscar, automáticamente, auto, actualizaciones, al abrir</string>
+    <string name="settings_section_channel">Canal</string>
+    <string name="settings_update_channel_title">Canal de actualización</string>
+    <string name="settings_update_channel_nightly_desc">Novedades continuas y correcciones automáticas de desarrollo.</string>
+    <string name="settings_update_channel_stable_desc">Versiones oficiales recomendadas y probadas.</string>
+    <string name="settings_kw_update_channel">canal, nightly, estable, beta, desarrollo, actualización</string>
+    <string name="settings_update_status_title">Estado de actualización</string>
+    <string name="settings_update_status_desc">Descarga, notas de versión e instalación de actualizaciones.</string>
+    <string name="settings_kw_update_status">estado, novedades, changelog, notas, descargar, instalar, actualizar</string>
 </resources>

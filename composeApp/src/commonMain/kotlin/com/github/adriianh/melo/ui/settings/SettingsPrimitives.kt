@@ -67,8 +67,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_cancel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import org.jetbrains.compose.resources.stringResource
 
 private const val DISABLED_ALPHA = 0.4f
 private val ACTION_ROW_INLINE_BREAKPOINT = 480.dp
@@ -858,7 +861,7 @@ internal fun SettingsConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     icon: ImageVector = Icons.Default.DeleteOutline,
-    dismissText: String = "Cancelar",
+    dismissText: String = stringResource(Res.string.common_action_cancel),
 ) {
     val errorColor = MaterialTheme.colorScheme.error
     val dialogShape = RoundedCornerShape(24.dp)

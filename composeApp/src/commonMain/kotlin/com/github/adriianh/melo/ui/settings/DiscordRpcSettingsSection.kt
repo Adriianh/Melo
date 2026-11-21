@@ -11,6 +11,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_discord_account_title
+import com.github.adriianh.melo.resources.settings_discord_change_action
+import com.github.adriianh.melo.resources.settings_discord_link_action
+import com.github.adriianh.melo.resources.settings_discord_linked_desc
+import com.github.adriianh.melo.resources.settings_discord_unlink_action
+import com.github.adriianh.melo.resources.settings_discord_unlink_message
+import com.github.adriianh.melo.resources.settings_discord_unlink_title
+import com.github.adriianh.melo.resources.settings_discord_unlinked_desc
+import org.jetbrains.compose.resources.stringResource
 
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
@@ -49,11 +59,9 @@ private fun DiscordRpcAccountRow(
 
     if (showUnlinkConfirm) {
         SettingsConfirmDialog(
-            title = "Desvincular cuenta de Discord",
-            message =
-                "¿Estás seguro de que deseas desvincular tu cuenta de Discord? " +
-                    "Se eliminará el token de sesión guardado y dejará de mostrarse tu actividad.",
-            confirmText = "Desvincular",
+            title = stringResource(Res.string.settings_discord_unlink_title),
+            message = stringResource(Res.string.settings_discord_unlink_message),
+            confirmText = stringResource(Res.string.settings_discord_unlink_action),
             icon = Icons.Default.LinkOff,
             onConfirm = {
                 showUnlinkConfirm = false
@@ -64,24 +72,26 @@ private fun DiscordRpcAccountRow(
     }
 
     SettingActionRow(
-        title = "Estado de la cuenta",
+        title = stringResource(Res.string.settings_discord_account_title),
         subtitle =
-            if (isLinked) {
-                "Cuenta vinculada con token de sesión activo."
-            } else {
-                "Requiere inicio de sesión para conectar con el Gateway de Discord."
-            },
+            stringResource(
+                if (isLinked) {
+                    Res.string.settings_discord_linked_desc
+                } else {
+                    Res.string.settings_discord_unlinked_desc
+                },
+            ),
     ) {
         if (isLinked) {
             SettingActionButton(
-                text = "Cambiar",
+                text = stringResource(Res.string.settings_discord_change_action),
                 onClick = onOpenLogin,
                 emphasis = SettingActionEmphasis.SECONDARY,
                 icon = Icons.Default.SwapHoriz,
                 modifier = Modifier.actionWidth(),
             )
             SettingActionButton(
-                text = "Desvincular",
+                text = stringResource(Res.string.settings_discord_unlink_action),
                 onClick = { showUnlinkConfirm = true },
                 emphasis = SettingActionEmphasis.DESTRUCTIVE,
                 icon = Icons.Default.LinkOff,
@@ -89,7 +99,7 @@ private fun DiscordRpcAccountRow(
             )
         } else {
             SettingActionButton(
-                text = "Vincular",
+                text = stringResource(Res.string.settings_discord_link_action),
                 onClick = onOpenLogin,
                 emphasis = SettingActionEmphasis.PRIMARY,
                 icon = Icons.Default.Link,

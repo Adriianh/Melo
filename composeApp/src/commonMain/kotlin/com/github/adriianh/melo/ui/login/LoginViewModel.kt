@@ -10,9 +10,12 @@ import com.github.adriianh.core.domain.usecase.login.VerifySessionUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.login_error_activate_channel
 import com.github.adriianh.melo.resources.login_error_browser_failed
 import com.github.adriianh.melo.resources.login_error_invalid_cookies
+import com.github.adriianh.melo.resources.login_error_load_channels
 import com.github.adriianh.melo.resources.login_error_no_local_session
+import com.github.adriianh.melo.resources.login_error_switch_channel
 import com.github.adriianh.melo.resources.login_error_verification_failed
 import com.github.adriianh.melo.resources.login_status_opening_window
 import com.github.adriianh.melo.resources.login_status_scanning_browsers
@@ -35,7 +38,7 @@ data class LoginUiState(
     val activePageId: String? = null,
     val isLoadingProfiles: Boolean = false,
     val isSwitchingProfile: Boolean = false,
-    val profilesError: String? = null,
+    val profilesError: UiText? = null,
     val error: UiText? = null,
 )
 
@@ -192,8 +195,8 @@ class LoginViewModel(
                         it.copy(
                             isLoadingProfiles = false,
                             profilesError =
-                                throwable.message
-                                    ?: "No se pudieron cargar los canales de la cuenta.",
+                                throwable.message?.let { UiText.Dynamic(it) }
+                                    ?: UiText.Resource(Res.string.login_error_load_channels),
                         )
                     }
                 }
@@ -216,7 +219,7 @@ class LoginViewModel(
                         isSwitchingProfile = false,
                         profilesError =
                             if (accountName == null) {
-                                "No se pudo activar el canal seleccionado."
+                                UiText.Resource(Res.string.login_error_activate_channel)
                             } else {
                                 null
                             },
@@ -228,7 +231,9 @@ class LoginViewModel(
                 _uiState.update {
                     it.copy(
                         isSwitchingProfile = false,
-                        profilesError = e.message ?: "No se pudo cambiar de canal.",
+                        profilesError =
+                            e.message?.let { msg -> UiText.Dynamic(msg) }
+                                ?: UiText.Resource(Res.string.login_error_switch_channel),
                     )
                 }
             }

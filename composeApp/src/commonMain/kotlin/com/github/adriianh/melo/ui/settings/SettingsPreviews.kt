@@ -25,8 +25,13 @@ import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_logout_action
+import com.github.adriianh.melo.resources.settings_logout_confirm_message
+import com.github.adriianh.melo.resources.settings_logout_confirm_title
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.PlatformType
+import org.jetbrains.compose.resources.stringResource
 
 private fun previewSettingsActions() =
     SettingsActions(
@@ -365,12 +370,9 @@ private fun PreviewExpandedDialogHost(
 internal fun PreviewSettingsConfirmDialog() {
     MaterialTheme {
         SettingsConfirmDialog(
-            title = "Cerrar sesión",
-            message =
-                "¿Estás seguro de que deseas cerrar tu sesión de YouTube Music? " +
-                    "Dejarás de sincronizar tu biblioteca, listas y recomendaciones " +
-                    "hasta que vuelvas a iniciar sesión.",
-            confirmText = "Cerrar sesión",
+            title = stringResource(Res.string.settings_logout_confirm_title),
+            message = stringResource(Res.string.settings_logout_confirm_message),
+            confirmText = stringResource(Res.string.settings_logout_action),
             icon = Icons.AutoMirrored.Filled.Logout,
             onConfirm = {},
             onDismiss = {},

@@ -73,9 +73,23 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.common_action_close
+import com.github.adriianh.melo.resources.settings_back_to_categories
+import com.github.adriianh.melo.resources.settings_breadcrumb_prefix
+import com.github.adriianh.melo.resources.settings_close
+import com.github.adriianh.melo.resources.settings_empty_subtitle
+import com.github.adriianh.melo.resources.settings_empty_title
+import com.github.adriianh.melo.resources.settings_search_clear
+import com.github.adriianh.melo.resources.settings_search_close
+import com.github.adriianh.melo.resources.settings_search_placeholder
+import com.github.adriianh.melo.resources.settings_search_results_title
+import com.github.adriianh.melo.resources.settings_title
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.getPlatform
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 private val EXPANDED_SETTINGS_BREAKPOINT = 540.dp
@@ -88,7 +102,7 @@ internal fun SettingsContent(
     activePageId: String?,
     isLoadingProfiles: Boolean,
     isSwitchingProfile: Boolean,
-    profilesError: String?,
+    profilesError: UiText?,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
     initialCategory: SettingsCategory? = null,
@@ -248,8 +262,8 @@ private fun SettingsExpandedLayout(
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
             val trailingBreadcrumb =
                 when {
-                    isSearching -> "Resultados"
-                    selectedCategory != null -> selectedCategory.title
+                    isSearching -> stringResource(Res.string.settings_search_results_title)
+                    selectedCategory != null -> stringResource(selectedCategory.titleRes)
                     else -> null
                 }
 
@@ -516,7 +530,7 @@ private fun SettingsCompactTopBar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Cerrar búsqueda",
+                    contentDescription = stringResource(Res.string.settings_search_close),
                     tint = MeloColors.textPrimary,
                 )
             }
@@ -543,7 +557,13 @@ private fun SettingsCompactTopBar(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription =
-                        if (searchQuery.isNotEmpty()) "Limpiar búsqueda" else "Cerrar búsqueda",
+                        stringResource(
+                            if (searchQuery.isNotEmpty()) {
+                                Res.string.settings_search_clear
+                            } else {
+                                Res.string.settings_search_close
+                            },
+                        ),
                     tint = MeloColors.textSecondary,
                 )
             }
@@ -554,13 +574,13 @@ private fun SettingsCompactTopBar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver a categorías",
+                    contentDescription = stringResource(Res.string.settings_back_to_categories),
                     tint = MeloColors.textPrimary,
                 )
             }
 
             Text(
-                text = selectedCategory.title,
+                text = stringResource(selectedCategory.titleRes),
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
                 fontWeight = FontWeight.Bold,
@@ -577,14 +597,14 @@ private fun SettingsCompactTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Cerrar ajustes",
+                        contentDescription = stringResource(Res.string.settings_close),
                         tint = MeloColors.textPrimary,
                     )
                 }
             }
 
             Text(
-                text = "Ajustes",
+                text = stringResource(Res.string.settings_title),
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
                 fontWeight = FontWeight.Bold,
@@ -603,7 +623,7 @@ private fun SettingsCompactTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Buscar en ajustes",
+                    contentDescription = stringResource(Res.string.settings_search_placeholder),
                     tint = MeloColors.textPrimary,
                 )
             }
@@ -621,17 +641,19 @@ private fun SettingsExpandedDetailHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        val settingsTitle = stringResource(Res.string.settings_title)
+        val breadcrumbPrefix = stringResource(Res.string.settings_breadcrumb_prefix)
         val headerText =
             if (trailingSegment == null) {
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = MeloColors.textPrimary, fontWeight = FontWeight.Bold)) {
-                        append("Ajustes")
+                        append(settingsTitle)
                     }
                 }
             } else {
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = MeloColors.textMuted, fontWeight = FontWeight.Medium)) {
-                        append("Ajustes  >  ")
+                        append(breadcrumbPrefix)
                     }
                     withStyle(SpanStyle(color = MeloColors.textPrimary, fontWeight = FontWeight.Bold)) {
                         append(trailingSegment)
@@ -654,7 +676,7 @@ private fun SettingsExpandedDetailHeader(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Cerrar",
+                    contentDescription = stringResource(Res.string.common_action_close),
                     tint = MeloColors.textSecondary,
                 )
             }
@@ -689,7 +711,7 @@ private fun SettingsEmptyCategoryPane() {
         }
 
         Text(
-            text = "Selecciona una categoría",
+            text = stringResource(Res.string.settings_empty_title),
             fontSize = 18.sp,
             lineHeight = 24.sp,
             fontWeight = FontWeight.SemiBold,
@@ -698,7 +720,7 @@ private fun SettingsEmptyCategoryPane() {
         )
 
         Text(
-            text = "Elige una opción del menú lateral o usa la búsqueda para encontrar un ajuste.",
+            text = stringResource(Res.string.settings_empty_subtitle),
             style = MeloType.labelSmall,
             color = MeloColors.textSecondary,
             textAlign = TextAlign.Center,
