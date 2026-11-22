@@ -40,6 +40,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun NowPlayingDesktopLayout(
+    modifier: Modifier = Modifier,
     state: PlayerUiState,
     activeAccent: Color,
     selectedSection: PanelSection,
@@ -56,7 +57,6 @@ internal fun NowPlayingDesktopLayout(
     onAlbumClick: (String) -> Unit,
     onPlaylistClick: (String) -> Unit,
     viewModel: PlayerViewModel,
-    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),

@@ -75,6 +75,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 internal fun MainSidebar(
+    modifier: Modifier = Modifier,
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
     onPlaylistClick: (String, String, String?, String) -> Unit,
@@ -83,7 +84,6 @@ internal fun MainSidebar(
     isDarkTheme: Boolean = true,
     onToggleTheme: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: SidebarViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
