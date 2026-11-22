@@ -35,7 +35,7 @@ import com.github.adriianh.melo.ui.components.cards.AlbumCard
 import com.github.adriianh.melo.ui.components.cards.CategoryCard
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
-import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.track.TrackFourRowCarousel
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
@@ -107,7 +107,7 @@ fun ExploreContent(
                     title = stringResource(Res.string.section_recently_played),
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
-                SongFourRowCarousel(
+                TrackFourRowCarousel(
                     tracks = uiState.recentHistory,
                     onTrackClick = { track -> queueViewModel.playTrack(track) },
                     modifier = Modifier.padding(top = 8.dp),
@@ -127,7 +127,7 @@ fun ExploreContent(
                                 title = section.displayTitle(),
                                 modifier = Modifier.padding(horizontal = 24.dp),
                             )
-                            SongFourRowCarousel(
+                            TrackFourRowCarousel(
                                 tracks = songs,
                                 onTrackClick = { track -> queueViewModel.playTrack(track) },
                                 modifier = Modifier.padding(top = 8.dp),

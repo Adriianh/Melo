@@ -47,7 +47,7 @@ import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.cards.AlbumCard
 import com.github.adriianh.melo.ui.components.cards.ArtistCircle
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
-import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.track.TrackFourRowCarousel
 import com.github.adriianh.melo.ui.components.layout.SpeedDialGrid
 import com.github.adriianh.melo.ui.components.cards.VideoCard
 import com.github.adriianh.melo.ui.home.HomeUiState
@@ -213,7 +213,7 @@ fun HomeContent(
                                     section.items.filterIsInstance<SearchResult.Song>().map { it.track }
                                 }
                             SectionHeader(title = section.displayTitle())
-                            SongFourRowCarousel(
+                            TrackFourRowCarousel(
                                 tracks = tracks,
                                 containerWidth = containerWidth,
                                 listState = rowState,
