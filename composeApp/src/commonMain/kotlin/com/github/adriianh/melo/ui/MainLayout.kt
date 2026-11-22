@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -46,7 +45,6 @@ import com.github.adriianh.melo.util.getPlatform
 
 val LocalSelectionMode = compositionLocalOf { mutableStateOf(false) }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdaptiveScaffold(
     selectedTab: MainTab,
@@ -87,7 +85,6 @@ fun AdaptiveScaffold(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DesktopMainLayout(
     selectedTab: MainTab,
