@@ -28,7 +28,6 @@ import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.ColorUtils
 import com.github.adriianh.melo.util.MeloColors
-import com.github.adriianh.melo.util.PlayerUiState
 import org.koin.compose.viewmodel.koinViewModel
 
 class TrackInteractionState(
@@ -172,9 +171,6 @@ class TrackInteractionState(
         } else {
             MeloColors.brandAccent
         }
-
-    @Composable
-    fun resolveActiveAccent(playerState: PlayerUiState): Color = resolveActiveAccent(playerState.accentColor)
 }
 
 @Composable

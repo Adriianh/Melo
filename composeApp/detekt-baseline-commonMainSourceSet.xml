@@ -119,8 +119,16 @@
     <ID>FunctionNaming:NowPlayingArtistSection.kt:@Composable fun NowPlayingArtistSection</ID>
     <ID>FunctionNaming:NowPlayingDesktopLayout.kt:@Composable internal fun NowPlayingDesktopLayout</ID>
     <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPane</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPaneContent</ID>
     <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable private fun DockedPaneHeader</ID>
     <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable private fun DockedPaneTrackInfo</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Composable private fun SimulatedDockedQueueContent</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDesktopNowPlayingDockedPaneArtist</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDesktopNowPlayingDockedPaneLyrics</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDesktopNowPlayingDockedPaneSimulatedQueueCyan</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDesktopNowPlayingDockedPaneSimulatedQueuePink</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDockedPaneHeader</ID>
+    <ID>FunctionNaming:NowPlayingDockedPane.kt:@Preview @Composable private fun PreviewDockedPaneTrackInfo</ID>
     <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable fun NowPlayingLyricsCard</ID>
     <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun BoxScope.LibraryShaderOverlay</ID>
     <ID>FunctionNaming:NowPlayingLyricsCard.kt:@Composable private fun LanguageMenu</ID>
@@ -244,7 +252,8 @@
     <ID>LongMethod:MeloTheme.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun MeloTheme</ID>
     <ID>LongMethod:NowPlayingArtistSection.kt:@Composable fun NowPlayingArtistSection</ID>
     <ID>LongMethod:NowPlayingDesktopLayout.kt:@Composable internal fun NowPlayingDesktopLayout</ID>
-    <ID>LongMethod:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPane</ID>
+    <ID>LongMethod:NowPlayingDockedPane.kt:@Composable fun DesktopNowPlayingDockedPaneContent</ID>
+    <ID>LongMethod:NowPlayingDockedPane.kt:@Composable private fun SimulatedDockedQueueContent</ID>
     <ID>LongMethod:NowPlayingMobileLayout.kt:@Composable internal fun NowPlayingMobileLayout</ID>
     <ID>LongMethod:NowPlayingQueueSection.kt:@Composable fun NowPlayingQueueSection</ID>
     <ID>LongMethod:NowPlayingScreen.kt:@Composable fun NowPlayingScreen</ID>

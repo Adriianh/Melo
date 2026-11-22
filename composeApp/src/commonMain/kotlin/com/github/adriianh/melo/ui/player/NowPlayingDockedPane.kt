@@ -6,13 +6,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -22,6 +26,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,8 +38,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_close_panel
 import com.github.adriianh.melo.resources.a11y_expand_fullscreen
@@ -45,6 +53,7 @@ import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
 import com.github.adriianh.melo.ui.components.SegmentedControl
+import com.github.adriianh.melo.ui.components.SuggestionTrackCard
 import com.github.adriianh.melo.ui.player.components.DockedArtistContent
 import com.github.adriianh.melo.ui.player.components.DockedLyricsContent
 import com.github.adriianh.melo.ui.player.components.DockedQueueContent
@@ -57,24 +66,62 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DesktopNowPlayingDockedPane(
+    modifier: Modifier = Modifier,
     onExpandToFullscreen: () -> Unit,
     onClose: () -> Unit,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
     selectedSection: PanelSection = PanelSection.QUEUE,
     onSectionChange: (PanelSection) -> Unit = {},
-    modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
 ) {
     val state by viewModel.stableUiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
-    val activeAccent =
-        if (state.accentColor != Color.Transparent && state.accentColor != MeloColors.textMuted) {
-            state.accentColor
-        } else {
-            MeloColors.brandAccent
-        }
+
+    DesktopNowPlayingDockedPaneContent(
+        state = state,
+        artistDetails = artistDetails,
+        modifier = modifier,
+        selectedSection = selectedSection,
+        onSectionChange = onSectionChange,
+        onExpandToFullscreen = onExpandToFullscreen,
+        onClose = onClose,
+        onArtistClick = onArtistClick,
+        onStartRadio = { state.currentTrack?.let(queueViewModel::startRadio) },
+        onToggleFavorite = { viewModel.toggleFavorite() },
+        queueContent = { activeAccent -> DockedQueueContent(state, activeAccent, queueViewModel) },
+        lyricsContent = { activeAccent -> DockedLyricsContent(state, activeAccent, viewModel) },
+        artistContent = { activeAccent ->
+            DockedArtistContent(
+                state = state,
+                artistDetails = artistDetails,
+                activeAccent = activeAccent,
+                onArtistClick = onArtistClick,
+                onAlbumClick = onAlbumClick,
+                queueViewModel = queueViewModel,
+            )
+        },
+    )
+}
+
+@Composable
+fun DesktopNowPlayingDockedPaneContent(
+    modifier: Modifier = Modifier,
+    state: PlayerUiState,
+    artistDetails: SearchResult.Artist?,
+    selectedSection: PanelSection = PanelSection.QUEUE,
+    onSectionChange: (PanelSection) -> Unit = {},
+    onExpandToFullscreen: () -> Unit = {},
+    onClose: () -> Unit = {},
+    onArtistClick: (String) -> Unit = {},
+    onStartRadio: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
+    queueContent: @Composable (Color) -> Unit = {},
+    lyricsContent: @Composable (Color) -> Unit = {},
+    artistContent: @Composable (Color) -> Unit = {},
+) {
+    val activeAccent = MaterialTheme.colorScheme.primary
 
     if (!state.hasTrack) return
 
@@ -113,8 +160,8 @@ fun DesktopNowPlayingDockedPane(
             activeAccent = activeAccent,
             onArtistClick = onArtistClick,
             artistId = artistDetails?.id,
-            onStartRadio = { state.currentTrack?.let(queueViewModel::startRadio) },
-            onToggleFavorite = { viewModel.toggleFavorite() },
+            onStartRadio = onStartRadio,
+            onToggleFavorite = onToggleFavorite,
         )
 
         val queueLabel = stringResource(Res.string.player_tab_queue)
@@ -141,17 +188,9 @@ fun DesktopNowPlayingDockedPane(
                     .weight(1f),
         ) {
             when (selectedSection) {
-                PanelSection.QUEUE -> DockedQueueContent(state, activeAccent, queueViewModel)
-                PanelSection.LYRICS -> DockedLyricsContent(state, activeAccent, viewModel)
-                PanelSection.ARTIST ->
-                    DockedArtistContent(
-                        state = state,
-                        artistDetails = artistDetails,
-                        activeAccent = activeAccent,
-                        onArtistClick = onArtistClick,
-                        onAlbumClick = onAlbumClick,
-                        queueViewModel = queueViewModel,
-                    )
+                PanelSection.QUEUE -> queueContent(activeAccent)
+                PanelSection.LYRICS -> lyricsContent(activeAccent)
+                PanelSection.ARTIST -> artistContent(activeAccent)
             }
         }
     }
@@ -255,6 +294,248 @@ private fun DockedPaneTrackInfo(
                     modifier = Modifier.size(20.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SimulatedDockedQueueContent(activeAccent: Color) {
+    val upNextTrack =
+        Track(
+            id = "q1",
+            title = "Instant Crush",
+            artist = "Daft Punk feat. Julian Casablancas",
+            album = "Random Access Memories",
+            durationMs = 337000L,
+            genres = emptyList(),
+            artworkUrl = null,
+            sourceId = null,
+        )
+    val suggestionTrack =
+        Track(
+            id = "s1",
+            title = "Starboy",
+            artist = "The Weeknd feat. Daft Punk",
+            album = "Starboy",
+            durationMs = 230000L,
+            genres = emptyList(),
+            artworkUrl = null,
+            sourceId = null,
+        )
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 16.dp),
+    ) {
+        item {
+            Text(
+                text = "UP NEXT",
+                style = MeloType.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = activeAccent,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            SuggestionTrackCard(
+                track = upNextTrack,
+                activeAccent = activeAccent,
+                onClick = {},
+                onAddClick = {},
+            )
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "SUGGESTIONS",
+                style = MeloType.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MeloColors.textSecondary,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            SuggestionTrackCard(
+                track = suggestionTrack,
+                activeAccent = activeAccent,
+                onClick = {},
+                onAddClick = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDockedPaneHeader() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .width(290.dp)
+                    .background(MeloColors.glassSurface)
+                    .padding(14.dp),
+        ) {
+            DockedPaneHeader(
+                onExpandToFullscreen = {},
+                onClose = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDockedPaneTrackInfo() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .width(290.dp)
+                    .background(MeloColors.glassSurface)
+                    .padding(14.dp),
+        ) {
+            DockedPaneTrackInfo(
+                state =
+                    PlayerUiState(
+                        title = "Midnight City",
+                        artist = "M83",
+                        isFavorite = true,
+                        elapsedLabel = "2:15",
+                        remainingLabel = "1:45",
+                        progressFraction = 0.56f,
+                    ),
+                activeAccent = MeloColors.brandAccent,
+                onArtistClick = {},
+                artistId = "artist_m83",
+                onStartRadio = {},
+                onToggleFavorite = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDesktopNowPlayingDockedPaneSimulatedQueuePink() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .height(650.dp)
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            DesktopNowPlayingDockedPaneContent(
+                state =
+                    PlayerUiState(
+                        title = "Get Lucky",
+                        artist = "Daft Punk feat. Pharrell Williams",
+                        albumArt = "https://example.com/art.jpg",
+                        isFavorite = true,
+                        accentColor = Color(0xFFEC407A), // Dynamic vibrant pink
+                        elapsedLabel = "1:20",
+                        remainingLabel = "2:48",
+                        progressFraction = 0.32f,
+                    ),
+                artistDetails = null,
+                selectedSection = PanelSection.QUEUE,
+                queueContent = { activeAccent ->
+                    SimulatedDockedQueueContent(activeAccent)
+                },
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDesktopNowPlayingDockedPaneSimulatedQueueCyan() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .height(650.dp)
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            DesktopNowPlayingDockedPaneContent(
+                state =
+                    PlayerUiState(
+                        title = "Starboy",
+                        artist = "The Weeknd feat. Daft Punk",
+                        albumArt = "https://example.com/starboy.jpg",
+                        isFavorite = false,
+                        accentColor = Color(0xFF00E5FF), // Dynamic electric cyan
+                        elapsedLabel = "2:10",
+                        remainingLabel = "1:40",
+                        progressFraction = 0.56f,
+                    ),
+                artistDetails = null,
+                selectedSection = PanelSection.QUEUE,
+                queueContent = { activeAccent ->
+                    SimulatedDockedQueueContent(activeAccent)
+                },
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDesktopNowPlayingDockedPaneLyrics() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .height(650.dp)
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            DesktopNowPlayingDockedPaneContent(
+                state =
+                    PlayerUiState(
+                        title = "Starboy",
+                        artist = "The Weeknd",
+                        albumArt = "https://example.com/starboy.jpg",
+                        isFavorite = false,
+                        accentColor = Color(0xFFFFB300), // Dynamic amber
+                        elapsedLabel = "2:10",
+                        remainingLabel = "1:40",
+                        progressFraction = 0.56f,
+                        lyrics = "I'm tryna put you in the worst mood, ah\nP1 cleaner than your church shoes, ah",
+                    ),
+                artistDetails = null,
+                selectedSection = PanelSection.LYRICS,
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDesktopNowPlayingDockedPaneArtist() {
+    MaterialTheme {
+        Box(
+            modifier =
+                Modifier
+                    .height(650.dp)
+                    .background(MeloColors.surface1)
+                    .padding(16.dp),
+        ) {
+            DesktopNowPlayingDockedPaneContent(
+                state =
+                    PlayerUiState(
+                        title = "Midnight City",
+                        artist = "M83",
+                        albumArt = "https://example.com/m83.jpg",
+                        isFavorite = true,
+                        accentColor = Color(0xFFAB47BC), // Dynamic purple
+                        elapsedLabel = "3:00",
+                        remainingLabel = "1:03",
+                        progressFraction = 0.75f,
+                    ),
+                artistDetails = null,
+                selectedSection = PanelSection.ARTIST,
+            )
         }
     }
 }
