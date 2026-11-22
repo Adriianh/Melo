@@ -1,6 +1,6 @@
 @file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
 
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.dialogs
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
