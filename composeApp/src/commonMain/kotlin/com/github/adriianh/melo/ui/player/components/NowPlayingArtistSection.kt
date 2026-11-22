@@ -35,11 +35,11 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_artist_biography
 import com.github.adriianh.melo.resources.player_artist_popular_songs
 import com.github.adriianh.melo.resources.player_artist_view_full_profile
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.ArtistCircle
-import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
+import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage

@@ -53,8 +53,8 @@
     <ID>FunctionNaming:ArtistsTabContent.kt:@Composable fun ArtistsTabContent</ID>
     <ID>FunctionNaming:BatchSelectionBottomBar.kt:@Composable fun BatchSelectionBottomBar</ID>
     <ID>FunctionNaming:BatchSelectionBottomBar.kt:@Composable private fun BatchActionButton</ID>
-    <ID>FunctionNaming:CarouselScrollButtons.kt:@Composable fun CarouselScrollContainer</ID>
-    <ID>FunctionNaming:CarouselScrollButtons.kt:@Composable private fun ScrollButton</ID>
+    <ID>FunctionNaming:CarouselScrollContainer.kt:@Composable fun CarouselScrollContainer</ID>
+    <ID>FunctionNaming:CarouselScrollContainer.kt:@Composable private fun ScrollButton</ID>
     <ID>FunctionNaming:CategoryBrowsingContent.kt:@Composable fun CategoryBrowsingContent</ID>
     <ID>FunctionNaming:CategoryCard.kt:@Composable fun CategoryCard</ID>
     <ID>FunctionNaming:CuratedHighlightCard.kt:@Composable fun CuratedHighlightCard</ID>
@@ -114,6 +114,7 @@
     <ID>FunctionNaming:MeloSplashScreen.kt:@Composable private fun SplashWaveBar</ID>
     <ID>FunctionNaming:MeloSwipeableItem.kt:@Composable fun MeloSwipeableItem</ID>
     <ID>FunctionNaming:MeloTheme.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun MeloTheme</ID>
+    <ID>FunctionNaming:MultiRowHorizontalCarousel.kt:@Composable fun &lt;T&gt; MultiRowHorizontalCarousel</ID>
     <ID>FunctionNaming:Navigation.kt:@Composable internal fun FloatingNavigationBar</ID>
     <ID>FunctionNaming:Navigation.kt:@Composable private fun FloatingNavItem</ID>
     <ID>FunctionNaming:NowPlayingArtistSection.kt:@Composable fun NowPlayingArtistSection</ID>
@@ -185,7 +186,6 @@
     <ID>FunctionNaming:Sidebar.kt:@Composable private fun SidebarPlaylistRow</ID>
     <ID>FunctionNaming:Sidebar.kt:@Composable private fun SidebarUtils</ID>
     <ID>FunctionNaming:Sidebar.kt:@Composable private fun UtilIconButton</ID>
-    <ID>FunctionNaming:SongFourRowCarousel.kt:@Composable fun SongFourRowCarousel</ID>
     <ID>FunctionNaming:SongsResultsContent.kt:@Composable fun SongsResultsContent</ID>
     <ID>FunctionNaming:SpeedDialGrid.kt:@Composable fun SpeedDialGrid</ID>
     <ID>FunctionNaming:SpeedDialGrid.kt:@Composable private fun SpeedDialRowContent</ID>
@@ -205,6 +205,7 @@
     <ID>FunctionNaming:TrackContextMenu.kt:@Composable fun TrackInteractionContextMenu</ID>
     <ID>FunctionNaming:TrackContextMenu.kt:@Composable private fun ContextMenuItem</ID>
     <ID>FunctionNaming:TrackContextMenu.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun TrackContextMenu</ID>
+    <ID>FunctionNaming:TrackFourRowCarousel.kt:@Composable fun TrackFourRowCarousel</ID>
     <ID>FunctionNaming:TrackInfoBar.kt:@Composable internal fun TrackInfoBar</ID>
     <ID>FunctionNaming:TrackRow.kt:@OptIn(ExperimentalFoundationApi::class) @Composable fun TrackRow</ID>
     <ID>FunctionNaming:VideoCard.kt:@Composable fun VideoCard</ID>
@@ -216,7 +217,7 @@
     <ID>LongMethod:ArtistDetailScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun ArtistDetailScreen</ID>
     <ID>LongMethod:ArtistHeaderCard.kt:@Composable fun ArtistHeaderCard</ID>
     <ID>LongMethod:BatchSelectionBottomBar.kt:@Composable fun BatchSelectionBottomBar</ID>
-    <ID>LongMethod:CarouselScrollButtons.kt:@Composable fun CarouselScrollContainer</ID>
+    <ID>LongMethod:CarouselScrollContainer.kt:@Composable fun CarouselScrollContainer</ID>
     <ID>LongMethod:CategoryBrowsingContent.kt:@Composable fun CategoryBrowsingContent</ID>
     <ID>LongMethod:CuratedHighlightCard.kt:@Composable fun CuratedHighlightCard</ID>
     <ID>LongMethod:DockedArtistContent.kt:@Composable internal fun DockedArtistContent</ID>
@@ -273,7 +274,6 @@
     <ID>LongMethod:SearchViewModel.kt:SearchViewModel$private suspend fun performSearch</ID>
     <ID>LongMethod:Sidebar.kt:@Composable internal fun MainSidebar</ID>
     <ID>LongMethod:Sidebar.kt:@Composable private fun SidebarNavItem</ID>
-    <ID>LongMethod:SongFourRowCarousel.kt:@Composable fun SongFourRowCarousel</ID>
     <ID>LongMethod:SpeedDialGrid.kt:@Composable private fun SpeedDialRowContent</ID>
     <ID>LongMethod:String0.commonMain.kt:@InternalResourceApi internal fun _collectCommonMainString0Resources</ID>
     <ID>LongMethod:String1.commonMain.kt:@InternalResourceApi internal fun _collectCommonMainString1Resources</ID>

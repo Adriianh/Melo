@@ -43,13 +43,13 @@ import com.github.adriianh.core.domain.model.search.itemKey
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.home_offline_empty_subtitle
 import com.github.adriianh.melo.resources.home_offline_empty_title
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.ArtistCircle
-import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.SongFourRowCarousel
-import com.github.adriianh.melo.ui.components.SpeedDialGrid
-import com.github.adriianh.melo.ui.components.VideoCard
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
+import com.github.adriianh.melo.ui.components.track.TrackFourRowCarousel
+import com.github.adriianh.melo.ui.components.layout.SpeedDialGrid
+import com.github.adriianh.melo.ui.components.cards.VideoCard
 import com.github.adriianh.melo.ui.home.HomeUiState
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
@@ -213,7 +213,7 @@ fun HomeContent(
                                     section.items.filterIsInstance<SearchResult.Song>().map { it.track }
                                 }
                             SectionHeader(title = section.displayTitle())
-                            SongFourRowCarousel(
+                            TrackFourRowCarousel(
                                 tracks = tracks,
                                 containerWidth = containerWidth,
                                 listState = rowState,

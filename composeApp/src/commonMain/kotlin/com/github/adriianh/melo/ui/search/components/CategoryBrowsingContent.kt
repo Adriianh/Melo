@@ -29,11 +29,11 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.common_action_back
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.ArtistCircle
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
+import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
 import com.github.adriianh.melo.util.MeloType

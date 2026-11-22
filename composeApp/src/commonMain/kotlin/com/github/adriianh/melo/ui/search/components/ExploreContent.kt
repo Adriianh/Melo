@@ -30,12 +30,12 @@ import com.github.adriianh.melo.resources.search_explore_error_title
 import com.github.adriianh.melo.resources.search_explore_offline_subtitle
 import com.github.adriianh.melo.resources.search_explore_offline_title
 import com.github.adriianh.melo.resources.section_recently_played
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.CategoryCard
-import com.github.adriianh.melo.ui.components.MeloEmptyState
-import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.CategoryCard
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
+import com.github.adriianh.melo.ui.components.track.TrackFourRowCarousel
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
@@ -107,7 +107,7 @@ fun ExploreContent(
                     title = stringResource(Res.string.section_recently_played),
                     modifier = Modifier.padding(horizontal = 24.dp),
                 )
-                SongFourRowCarousel(
+                TrackFourRowCarousel(
                     tracks = uiState.recentHistory,
                     onTrackClick = { track -> queueViewModel.playTrack(track) },
                     modifier = Modifier.padding(top = 8.dp),
@@ -127,7 +127,7 @@ fun ExploreContent(
                                 title = section.displayTitle(),
                                 modifier = Modifier.padding(horizontal = 24.dp),
                             )
-                            SongFourRowCarousel(
+                            TrackFourRowCarousel(
                                 tracks = songs,
                                 onTrackClick = { track -> queueViewModel.playTrack(track) },
                                 modifier = Modifier.padding(top = 8.dp),

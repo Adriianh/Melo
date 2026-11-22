@@ -24,9 +24,9 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.home_search_empty
 import com.github.adriianh.melo.resources.section_songs
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.TrackInteractionState
-import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.track.TrackInteractionState
+import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

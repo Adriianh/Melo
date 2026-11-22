@@ -51,9 +51,9 @@ import com.github.adriianh.melo.resources.player_section_now_playing
 import com.github.adriianh.melo.resources.player_section_suggestions
 import com.github.adriianh.melo.resources.player_section_up_next
 import com.github.adriianh.melo.resources.player_suggestions_empty
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
-import com.github.adriianh.melo.ui.components.SuggestionTrackCard
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.cards.SuggestionSkeletonCard
+import com.github.adriianh.melo.ui.components.cards.SuggestionTrackCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors

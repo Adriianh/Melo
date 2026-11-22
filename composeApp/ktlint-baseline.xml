@@ -67,6 +67,7 @@
         <error line="1" column="1" source="standard:filename" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/App.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="89" column="12" source="standard:function-naming" />
         <error line="92" column="5" source="standard:function-naming" />
     </file>
@@ -209,68 +210,19 @@
         <error line="129" column="108" source="standard:trailing-comma-on-call-site" />
         <error line="130" column="22" source="standard:trailing-comma-on-call-site" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/AdaptiveLazyRow.kt">
-        <error line="30" column="9" source="standard:function-naming" />
-        <error line="43" column="29" source="standard:multiline-expression-wrapping" />
-        <error line="50" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="52" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="57" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="64" column="33" source="standard:multiline-expression-wrapping" />
-        <error line="68" column="38" source="standard:trailing-comma-on-call-site" />
-        <error line="74" column="32" source="standard:multiline-expression-wrapping" />
-        <error line="76" column="50" source="standard:trailing-comma-on-call-site" />
-        <error line="81" column="58" source="standard:trailing-comma-on-call-site" />
-        <error line="89" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/AddToPlaylistSheet.kt">
-        <error line="75" column="5" source="standard:function-naming" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/AlbumCard.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/AlbumCard.kt">
         <error line="22" column="5" source="standard:function-naming" />
         <error line="31" column="20" source="standard:multiline-expression-wrapping" />
         <error line="35" column="27" source="standard:trailing-comma-on-call-site" />
         <error line="41" column="45" source="standard:trailing-comma-on-call-site" />
-        <error line="60" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/AmbientCanvas.kt">
-        <error line="30" column="5" source="standard:function-naming" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/ArtistCircle.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/ArtistCircle.kt">
         <error line="24" column="5" source="standard:function-naming" />
         <error line="33" column="20" source="standard:multiline-expression-wrapping" />
         <error line="36" column="27" source="standard:trailing-comma-on-call-site" />
         <error line="42" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="54" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/BatchSelectionBottomBar.kt">
-        <error line="57" column="5" source="standard:function-naming" />
-        <error line="187" column="13" source="standard:function-naming" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/CarouselScrollButtons.kt">
-        <error line="42" column="5" source="standard:function-naming" />
-        <error line="45" column="45" source="standard:trailing-comma-on-declaration-site" />
-        <error line="61" column="57" source="standard:trailing-comma-on-call-site" />
-        <error line="69" column="83" source="standard:trailing-comma-on-call-site" />
-        <error line="78" column="45" source="standard:multiline-expression-wrapping" />
-        <error line="80" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="81" column="30" source="standard:trailing-comma-on-call-site" />
-        <error line="84" column="18" source="standard:trailing-comma-on-call-site" />
-        <error line="92" column="79" source="standard:trailing-comma-on-call-site" />
-        <error line="101" column="45" source="standard:multiline-expression-wrapping" />
-        <error line="103" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="104" column="30" source="standard:trailing-comma-on-call-site" />
-        <error line="107" column="18" source="standard:trailing-comma-on-call-site" />
-        <error line="114" column="13" source="standard:function-naming" />
-        <error line="116" column="24" source="standard:trailing-comma-on-declaration-site" />
-        <error line="123" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="128" column="29" source="standard:trailing-comma-on-call-site" />
-        <error line="130" column="13" source="standard:chain-method-continuation" />
-        <error line="137" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="139" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="145" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="148" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/CategoryCard.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/CategoryCard.kt">
         <error line="24" column="5" source="standard:function-naming" />
         <error line="28" column="34" source="standard:trailing-comma-on-declaration-site" />
         <error line="31" column="20" source="standard:multiline-expression-wrapping" />
@@ -282,16 +234,10 @@
         <error line="45" column="44" source="standard:trailing-comma-on-call-site" />
         <error line="54" column="41" source="standard:trailing-comma-on-call-site" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/CuratedHighlightCard.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/CuratedHighlightCard.kt">
         <error line="45" column="5" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/GlassPanel.kt">
-        <error line="19" column="5" source="standard:function-naming" />
-        <error line="29" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="34" column="26" source="standard:trailing-comma-on-call-site" />
-        <error line="36" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/HeroDiscoverCard.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/HeroDiscoverCard.kt">
         <error line="31" column="5" source="standard:function-naming" />
         <error line="41" column="20" source="standard:multiline-expression-wrapping" />
         <error line="47" column="79" source="standard:trailing-comma-on-call-site" />
@@ -307,30 +253,47 @@
         <error line="85" column="57" source="standard:trailing-comma-on-call-site" />
         <error line="93" column="57" source="standard:trailing-comma-on-call-site" />
         <error line="104" column="57" source="standard:trailing-comma-on-call-site" />
-        <error line="110" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloBanner.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/PlaylistMosaicCover.kt">
+        <error line="29" column="5" source="standard:function-naming" />
+        <error line="39" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="42" column="44" source="standard:trailing-comma-on-call-site" />
+        <error line="48" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="50" column="40" source="standard:trailing-comma-on-call-site" />
+        <error line="53" column="40" source="standard:multiline-expression-wrapping" />
+        <error line="55" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="61" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="65" column="40" source="standard:multiline-expression-wrapping" />
+        <error line="67" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="73" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="78" column="36" source="standard:multiline-expression-wrapping" />
+        <error line="80" column="40" source="standard:trailing-comma-on-call-site" />
+        <error line="83" column="40" source="standard:multiline-expression-wrapping" />
+        <error line="85" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="91" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="95" column="40" source="standard:multiline-expression-wrapping" />
+        <error line="97" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="103" column="66" source="standard:trailing-comma-on-call-site" />
+        <error line="115" column="54" source="standard:trailing-comma-on-call-site" />
+        <error line="124" column="66" source="standard:trailing-comma-on-call-site" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/SuggestionTrackCard.kt">
+        <error line="49" column="5" source="standard:function-naming" />
+        <error line="154" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/cards/VideoCard.kt">
+        <error line="24" column="5" source="standard:function-naming" />
+        <error line="33" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="37" column="27" source="standard:trailing-comma-on-call-site" />
+        <error line="42" column="24" source="standard:multiline-expression-wrapping" />
+        <error line="47" column="46" source="standard:trailing-comma-on-call-site" />
+        <error line="56" column="45" source="standard:trailing-comma-on-call-site" />
+        <error line="64" column="45" source="standard:trailing-comma-on-call-site" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/controls/MeloSearchBar.kt">
         <error line="45" column="5" source="standard:function-naming" />
-        <error line="96" column="22" source="standard:function-naming" />
-        <error line="129" column="13" source="standard:function-naming" />
-        <error line="151" column="13" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloEmptyState.kt">
-        <error line="25" column="5" source="standard:function-naming" />
-        <error line="32" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="35" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="39" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="46" column="52" source="standard:trailing-comma-on-call-site" />
-        <error line="56" column="49" source="standard:trailing-comma-on-call-site" />
-        <error line="63" column="45" source="standard:trailing-comma-on-call-site" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloErrorState.kt">
-        <error line="25" column="5" source="standard:function-naming" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloSearchBar.kt">
-        <error line="45" column="5" source="standard:function-naming" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloSlider.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/controls/MeloSlider.kt">
         <error line="33" column="5" source="standard:function-naming" />
         <error line="57" column="40" source="standard:trailing-comma-on-call-site" />
         <error line="63" column="40" source="standard:trailing-comma-on-call-site" />
@@ -342,12 +305,54 @@
         <error line="141" column="64" source="standard:trailing-comma-on-call-site" />
         <error line="151" column="69" source="standard:trailing-comma-on-call-site" />
         <error line="157" column="53" source="standard:trailing-comma-on-call-site" />
-        <error line="162" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloSnackbar.kt">
-        <error line="95" column="5" source="standard:function-naming" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/controls/MeloSwipeableItem.kt">
+        <error line="39" column="5" source="standard:function-naming" />
+        <error line="48" column="36" source="standard:trailing-comma-on-declaration-site" />
+        <error line="60" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="67" column="61" source="standard:trailing-comma-on-call-site" />
+        <error line="73" column="62" source="standard:trailing-comma-on-call-site" />
+        <error line="77" column="13" source="standard:chain-method-continuation" />
+        <error line="105" column="49" source="standard:multiline-expression-wrapping" />
+        <error line="107" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="108" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="117" column="49" source="standard:multiline-expression-wrapping" />
+        <error line="119" column="71" source="standard:trailing-comma-on-call-site" />
+        <error line="120" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="123" column="22" source="standard:trailing-comma-on-call-site" />
+        <error line="125" column="14" source="standard:trailing-comma-on-call-site" />
+        <error line="132" column="57" source="standard:trailing-comma-on-call-site" />
+        <error line="136" column="56" source="standard:trailing-comma-on-call-site" />
+        <error line="144" column="55" source="standard:trailing-comma-on-call-site" />
+        <error line="148" column="56" source="standard:trailing-comma-on-call-site" />
+        <error line="156" column="24" source="standard:multiline-expression-wrapping" />
+        <error line="158" column="32" source="standard:trailing-comma-on-call-site" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloSplashScreen.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/dialogs/AddToPlaylistSheet.kt">
+        <error line="76" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/MeloBanner.kt">
+        <error line="45" column="5" source="standard:function-naming" />
+        <error line="96" column="22" source="standard:function-naming" />
+        <error line="129" column="13" source="standard:function-naming" />
+        <error line="151" column="13" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/MeloEmptyState.kt">
+        <error line="25" column="5" source="standard:function-naming" />
+        <error line="32" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="35" column="44" source="standard:trailing-comma-on-call-site" />
+        <error line="39" column="61" source="standard:trailing-comma-on-call-site" />
+        <error line="46" column="52" source="standard:trailing-comma-on-call-site" />
+        <error line="56" column="49" source="standard:trailing-comma-on-call-site" />
+        <error line="63" column="45" source="standard:trailing-comma-on-call-site" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/MeloErrorState.kt">
+        <error line="25" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/MeloSnackbar.kt">
+        <error line="98" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/MeloSplashScreen.kt">
         <error line="39" column="5" source="standard:function-naming" />
         <error line="50" column="25" source="standard:multiline-expression-wrapping" />
         <error line="52" column="44" source="standard:trailing-comma-on-call-site" />
@@ -393,123 +398,89 @@
         <error line="191" column="20" source="standard:multiline-expression-wrapping" />
         <error line="197" column="13" source="standard:chain-method-continuation" />
         <error line="198" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="200" column="1" source="standard:final-newline" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/MeloSwipeableItem.kt">
-        <error line="38" column="5" source="standard:function-naming" />
-        <error line="47" column="36" source="standard:trailing-comma-on-declaration-site" />
-        <error line="59" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="66" column="61" source="standard:trailing-comma-on-call-site" />
-        <error line="72" column="62" source="standard:trailing-comma-on-call-site" />
-        <error line="76" column="13" source="standard:chain-method-continuation" />
-        <error line="104" column="49" source="standard:multiline-expression-wrapping" />
-        <error line="106" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="107" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="116" column="49" source="standard:multiline-expression-wrapping" />
-        <error line="118" column="71" source="standard:trailing-comma-on-call-site" />
-        <error line="119" column="34" source="standard:trailing-comma-on-call-site" />
-        <error line="122" column="22" source="standard:trailing-comma-on-call-site" />
-        <error line="124" column="14" source="standard:trailing-comma-on-call-site" />
-        <error line="131" column="57" source="standard:trailing-comma-on-call-site" />
-        <error line="135" column="56" source="standard:trailing-comma-on-call-site" />
-        <error line="143" column="55" source="standard:trailing-comma-on-call-site" />
-        <error line="147" column="56" source="standard:trailing-comma-on-call-site" />
-        <error line="155" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="157" column="32" source="standard:trailing-comma-on-call-site" />
-        <error line="162" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/OfflineModeBanner.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/feedback/OfflineModeBanner.kt">
         <error line="17" column="5" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/PlaylistMosaicCover.kt">
-        <error line="29" column="5" source="standard:function-naming" />
-        <error line="39" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="42" column="44" source="standard:trailing-comma-on-call-site" />
-        <error line="48" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="50" column="40" source="standard:trailing-comma-on-call-site" />
-        <error line="53" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="55" column="49" source="standard:trailing-comma-on-call-site" />
-        <error line="61" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="65" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="67" column="49" source="standard:trailing-comma-on-call-site" />
-        <error line="73" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="78" column="36" source="standard:multiline-expression-wrapping" />
-        <error line="80" column="40" source="standard:trailing-comma-on-call-site" />
-        <error line="83" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="85" column="49" source="standard:trailing-comma-on-call-site" />
-        <error line="91" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="95" column="40" source="standard:multiline-expression-wrapping" />
-        <error line="97" column="49" source="standard:trailing-comma-on-call-site" />
-        <error line="103" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="115" column="54" source="standard:trailing-comma-on-call-site" />
-        <error line="124" column="66" source="standard:trailing-comma-on-call-site" />
-        <error line="129" column="1" source="standard:final-newline" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/AdaptiveLazyRow.kt">
+        <error line="30" column="9" source="standard:function-naming" />
+        <error line="43" column="29" source="standard:multiline-expression-wrapping" />
+        <error line="50" column="28" source="standard:multiline-expression-wrapping" />
+        <error line="52" column="46" source="standard:trailing-comma-on-call-site" />
+        <error line="57" column="54" source="standard:trailing-comma-on-call-site" />
+        <error line="64" column="33" source="standard:multiline-expression-wrapping" />
+        <error line="68" column="38" source="standard:trailing-comma-on-call-site" />
+        <error line="74" column="32" source="standard:multiline-expression-wrapping" />
+        <error line="76" column="50" source="standard:trailing-comma-on-call-site" />
+        <error line="81" column="58" source="standard:trailing-comma-on-call-site" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SectionHeader.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/AmbientCanvas.kt">
+        <error line="30" column="5" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/CarouselScrollContainer.kt">
+        <error line="42" column="5" source="standard:function-naming" />
+        <error line="45" column="45" source="standard:trailing-comma-on-declaration-site" />
+        <error line="61" column="57" source="standard:trailing-comma-on-call-site" />
+        <error line="69" column="83" source="standard:trailing-comma-on-call-site" />
+        <error line="78" column="45" source="standard:multiline-expression-wrapping" />
+        <error line="80" column="61" source="standard:trailing-comma-on-call-site" />
+        <error line="81" column="30" source="standard:trailing-comma-on-call-site" />
+        <error line="84" column="18" source="standard:trailing-comma-on-call-site" />
+        <error line="92" column="79" source="standard:trailing-comma-on-call-site" />
+        <error line="101" column="45" source="standard:multiline-expression-wrapping" />
+        <error line="103" column="61" source="standard:trailing-comma-on-call-site" />
+        <error line="104" column="30" source="standard:trailing-comma-on-call-site" />
+        <error line="107" column="18" source="standard:trailing-comma-on-call-site" />
+        <error line="114" column="13" source="standard:function-naming" />
+        <error line="116" column="24" source="standard:trailing-comma-on-declaration-site" />
+        <error line="123" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="128" column="29" source="standard:trailing-comma-on-call-site" />
+        <error line="130" column="13" source="standard:chain-method-continuation" />
+        <error line="137" column="34" source="standard:trailing-comma-on-call-site" />
+        <error line="139" column="44" source="standard:trailing-comma-on-call-site" />
+        <error line="145" column="44" source="standard:trailing-comma-on-call-site" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/GlassPanel.kt">
+        <error line="19" column="5" source="standard:function-naming" />
+        <error line="29" column="20" source="standard:multiline-expression-wrapping" />
+        <error line="34" column="26" source="standard:trailing-comma-on-call-site" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/MultiRowHorizontalCarousel.kt">
+        <error line="21" column="9" source="standard:function-naming" />
+    </file>
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/SectionHeader.kt">
         <error line="17" column="5" source="standard:function-naming" />
         <error line="22" column="26" source="standard:multiline-expression-wrapping" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SongFourRowCarousel.kt">
-        <error line="22" column="5" source="standard:function-naming" />
-        <error line="38" column="31" source="standard:multiline-expression-wrapping" />
-        <error line="43" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="51" column="28" source="standard:multiline-expression-wrapping" />
-        <error line="53" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="58" column="52" source="standard:trailing-comma-on-call-site" />
-        <error line="62" column="73" source="standard:trailing-comma-on-call-site" />
-        <error line="70" column="47" source="standard:multiline-expression-wrapping" />
-        <error line="72" column="35" source="standard:if-else-wrapping" />
-        <error line="72" column="40" source="standard:if-else-bracing" />
-        <error line="72" column="40" source="standard:if-else-wrapping" />
-        <error line="72" column="40" source="standard:multiline-if-else" />
-        <error line="76" column="100" source="standard:trailing-comma-on-call-site" />
-        <error line="84" column="35" source="standard:multiline-expression-wrapping" />
-        <error line="88" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="95" column="32" source="standard:multiline-expression-wrapping" />
-        <error line="97" column="50" source="standard:trailing-comma-on-call-site" />
-        <error line="102" column="56" source="standard:trailing-comma-on-call-site" />
-        <error line="106" column="77" source="standard:trailing-comma-on-call-site" />
-        <error line="114" column="51" source="standard:multiline-expression-wrapping" />
-        <error line="116" column="39" source="standard:if-else-wrapping" />
-        <error line="116" column="44" source="standard:if-else-bracing" />
-        <error line="116" column="44" source="standard:if-else-wrapping" />
-        <error line="116" column="44" source="standard:multiline-if-else" />
-        <error line="120" column="104" source="standard:trailing-comma-on-call-site" />
-        <error line="129" column="1" source="standard:final-newline" />
-    </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SpeedDialGrid.kt">
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/layout/SpeedDialGrid.kt">
         <error line="38" column="5" source="standard:function-naming" />
         <error line="87" column="13" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/SuggestionTrackCard.kt">
-        <error line="48" column="5" source="standard:function-naming" />
-        <error line="153" column="5" source="standard:function-naming" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/track/BatchSelectionBottomBar.kt">
+        <error line="57" column="5" source="standard:function-naming" />
+        <error line="187" column="13" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/TrackContextMenu.kt">
-        <error line="67" column="5" source="standard:function-naming" />
-        <error line="263" column="5" source="standard:function-naming" />
-        <error line="396" column="13" source="standard:function-naming" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/track/TrackContextMenu.kt">
+        <error line="69" column="5" source="standard:function-naming" />
+        <error line="265" column="5" source="standard:function-naming" />
+        <error line="398" column="13" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/TrackRow.kt">
-        <error line="52" column="5" source="standard:function-naming" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/track/TrackFourRowCarousel.kt">
+        <error line="13" column="5" source="standard:function-naming" />
     </file>
-    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/VideoCard.kt">
-        <error line="24" column="5" source="standard:function-naming" />
-        <error line="33" column="20" source="standard:multiline-expression-wrapping" />
-        <error line="37" column="27" source="standard:trailing-comma-on-call-site" />
-        <error line="42" column="24" source="standard:multiline-expression-wrapping" />
-        <error line="47" column="46" source="standard:trailing-comma-on-call-site" />
-        <error line="56" column="45" source="standard:trailing-comma-on-call-site" />
-        <error line="64" column="45" source="standard:trailing-comma-on-call-site" />
-        <error line="67" column="1" source="standard:final-newline" />
+    <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/components/track/TrackRow.kt">
+        <error line="53" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/AlbumDetailScreen.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="90" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/ArtistDetailScreen.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="81" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/PlaylistDetailScreen.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="90" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/detail/components/ArtistHeaderCard.kt">
@@ -546,6 +517,7 @@
         <error line="311" column="19" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/HomeScreen.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="51" column="5" source="standard:function-naming" />
         <error line="68" column="27" source="standard:multiline-expression-wrapping" />
         <error line="69" column="1" source="standard:indent" />
@@ -589,6 +561,7 @@
         <error line="268" column="66" source="standard:trailing-comma-on-call-site" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/components/HomeContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="63" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/home/components/HomeSearchResultsView.kt">
@@ -681,6 +654,7 @@
         <error line="463" column="13" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/library/components/HistoryTabContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="28" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/library/components/LibraryHeader.kt">
@@ -693,6 +667,7 @@
         <error line="31" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/library/components/LikedSongsTabContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="25" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/library/components/LocalTabContent.kt">
@@ -781,6 +756,7 @@
         <error line="28" column="50" source="standard:function-expression-body" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/NowPlayingDockedPane.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="68" column="5" source="standard:function-naming" />
         <error line="109" column="5" source="standard:function-naming" />
         <error line="200" column="13" source="standard:function-naming" />
@@ -825,9 +801,11 @@
         <error line="288" column="13" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/NowPlayingArtistSection.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="53" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/NowPlayingDesktopLayout.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="42" column="14" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/NowPlayingLyricsCard.kt">
@@ -872,6 +850,7 @@
         <error line="212" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/NowPlayingQueueSection.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="68" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/player/components/NowPlayingTopBar.kt">
@@ -915,9 +894,11 @@
         <error line="31" column="14" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/SearchScreen.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="52" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/AllResultsContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="39" column="5" source="standard:function-naming" />
         <error line="210" column="13" source="standard:function-naming" />
         <error line="265" column="13" source="standard:function-naming" />
@@ -932,6 +913,7 @@
         <error line="43" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/ExploreContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="47" column="5" source="standard:function-naming" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/SearchActiveOverlay.kt">
@@ -956,9 +938,9 @@
         <error line="95" column="5" source="standard:function-naming" />
         <error line="108" column="63" source="standard:trailing-comma-on-call-site" />
         <error line="114" column="58" source="standard:trailing-comma-on-call-site" />
-        <error line="117" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/SearchResultsContent.kt">
+        <error line="3" column="1" source="standard:import-ordering" />
         <error line="24" column="5" source="standard:function-naming" />
         <error line="134" column="13" source="standard:function-naming" />
     </file>
@@ -977,13 +959,11 @@
         <error line="40" column="24" source="standard:if-else-wrapping" />
         <error line="40" column="24" source="standard:multiline-if-else" />
         <error line="44" column="84" source="standard:trailing-comma-on-call-site" />
-        <error line="48" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/SwipeableTrackRow.kt">
         <error line="13" column="5" source="standard:function-naming" />
         <error line="30" column="28" source="standard:trailing-comma-on-call-site" />
         <error line="39" column="38" source="standard:trailing-comma-on-call-site" />
-        <error line="42" column="1" source="standard:final-newline" />
     </file>
     <file name="src/commonMain/kotlin/com/github/adriianh/melo/ui/search/components/TopResultHeroCard.kt">
         <error line="48" column="5" source="standard:function-naming" />

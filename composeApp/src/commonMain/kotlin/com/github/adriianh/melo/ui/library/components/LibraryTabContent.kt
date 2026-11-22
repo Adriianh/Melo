@@ -18,8 +18,8 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.common_action_undo
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
-import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
-import com.github.adriianh.melo.ui.components.TrackInteractionState
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.track.TrackInteractionState
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryFilters
 import com.github.adriianh.melo.ui.library.LibraryTab

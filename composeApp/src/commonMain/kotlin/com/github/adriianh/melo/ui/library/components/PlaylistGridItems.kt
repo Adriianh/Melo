@@ -44,7 +44,7 @@ import com.github.adriianh.melo.resources.library_playlist_create_title
 import com.github.adriianh.melo.resources.library_playlist_custom_subtitle
 import com.github.adriianh.melo.resources.library_playlist_owned_track_count
 import com.github.adriianh.melo.resources.playlist_track_count
-import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
+import com.github.adriianh.melo.ui.components.cards.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformAsyncImage
