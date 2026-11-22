@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.controls
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

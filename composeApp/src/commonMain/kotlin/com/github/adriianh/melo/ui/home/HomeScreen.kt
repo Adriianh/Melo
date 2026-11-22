@@ -29,7 +29,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloErrorState
-import com.github.adriianh.melo.ui.components.MeloSearchBar
+import com.github.adriianh.melo.ui.components.controls.MeloSearchBar
 import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.rememberTrackInteraction
 import com.github.adriianh.melo.ui.home.components.HomeContent

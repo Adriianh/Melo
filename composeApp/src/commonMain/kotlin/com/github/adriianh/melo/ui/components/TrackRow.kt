@@ -41,6 +41,7 @@ import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_not_selected
 import com.github.adriianh.melo.resources.a11y_now_playing
 import com.github.adriianh.melo.resources.a11y_selected
+import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

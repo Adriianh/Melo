@@ -56,7 +56,7 @@ import com.github.adriianh.melo.resources.library_playlist_delete_confirm
 import com.github.adriianh.melo.resources.library_playlist_delete_title
 import com.github.adriianh.melo.resources.library_playlist_rename_placeholder
 import com.github.adriianh.melo.resources.library_playlist_rename_title
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

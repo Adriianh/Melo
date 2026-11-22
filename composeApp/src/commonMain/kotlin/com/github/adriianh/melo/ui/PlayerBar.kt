@@ -77,8 +77,8 @@ import com.github.adriianh.melo.resources.a11y_previous
 import com.github.adriianh.melo.resources.a11y_repeat
 import com.github.adriianh.melo.resources.a11y_shuffle
 import com.github.adriianh.melo.resources.a11y_unmute
-import com.github.adriianh.melo.ui.components.AnimatedEqualizerBars
-import com.github.adriianh.melo.ui.components.MeloSlider
+import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
+import com.github.adriianh.melo.ui.components.controls.MeloSlider
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloAsyncImage

@@ -39,6 +39,7 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_play_next
+import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

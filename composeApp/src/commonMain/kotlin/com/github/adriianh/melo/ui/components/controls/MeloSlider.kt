@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.controls
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState

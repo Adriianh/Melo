@@ -52,7 +52,7 @@ import com.github.adriianh.melo.resources.player_header_now_playing
 import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
-import com.github.adriianh.melo.ui.components.SegmentedControl
+import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.components.SuggestionTrackCard
 import com.github.adriianh.melo.ui.player.components.DockedArtistContent
 import com.github.adriianh.melo.ui.player.components.DockedLyricsContent

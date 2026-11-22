@@ -6,7 +6,7 @@ import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 
 @Composable

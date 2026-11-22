@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.controls
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
@@ -82,10 +83,10 @@ fun MeloSwipeableItem(
                                 (offsetX.value + dragAmount).coerceIn(-maxDragPx, maxDragPx)
                             offsetX.snapTo(newOffset)
 
-                            if (!hasVibrated.value && kotlin.math.abs(newOffset) >= thresholdPx) {
+                            if (!hasVibrated.value && abs(newOffset) >= thresholdPx) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 hasVibrated.value = true
-                            } else if (hasVibrated.value && kotlin.math.abs(newOffset) < thresholdPx) {
+                            } else if (hasVibrated.value && abs(newOffset) < thresholdPx) {
                                 hasVibrated.value = false
                             }
                         }

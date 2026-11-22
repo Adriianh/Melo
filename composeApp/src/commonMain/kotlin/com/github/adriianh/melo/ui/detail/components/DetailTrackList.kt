@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.ui.components.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.TrackRow
 import com.github.adriianh.melo.util.MeloColors
 
