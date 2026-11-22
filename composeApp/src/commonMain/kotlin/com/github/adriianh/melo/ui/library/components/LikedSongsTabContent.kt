@@ -16,7 +16,7 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.library_liked_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll
 import org.jetbrains.compose.resources.stringResource

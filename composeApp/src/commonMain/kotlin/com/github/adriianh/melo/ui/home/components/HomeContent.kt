@@ -47,7 +47,7 @@ import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
 import com.github.adriianh.melo.ui.components.SpeedDialGrid
 import com.github.adriianh.melo.ui.components.VideoCard
 import com.github.adriianh.melo.ui.home.HomeUiState

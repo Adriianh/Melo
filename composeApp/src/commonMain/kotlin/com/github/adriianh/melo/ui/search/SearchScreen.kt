@@ -33,10 +33,10 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.search_placeholder_library
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.controls.MeloSearchBar
-import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
-import com.github.adriianh.melo.ui.components.rememberTrackInteraction
+import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
+import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel

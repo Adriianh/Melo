@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.track
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +61,7 @@ import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -334,7 +335,7 @@ fun TrackInteractionContextMenu(
             if (playlistTracks.size == 1) {
                 interaction.libraryViewModel.getPlaylistIdsForTrack(playlistTracks.first().id)
             } else {
-                kotlinx.coroutines.flow.flowOf(emptySet())
+                flowOf(emptySet())
             }
         }.collectAsState(initial = emptySet())
 

@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.track
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
@@ -23,6 +23,8 @@ import com.github.adriianh.melo.resources.track_snackbar_download_removed
 import com.github.adriianh.melo.resources.track_snackbar_downloading
 import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
+import com.github.adriianh.melo.ui.components.LocalMeloSnackbar
+import com.github.adriianh.melo.ui.components.MeloSnackbarState
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel

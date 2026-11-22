@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.track
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

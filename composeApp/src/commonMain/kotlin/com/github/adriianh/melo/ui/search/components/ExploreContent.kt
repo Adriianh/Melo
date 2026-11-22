@@ -35,7 +35,7 @@ import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.CategoryCard
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.SongFourRowCarousel
+import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState

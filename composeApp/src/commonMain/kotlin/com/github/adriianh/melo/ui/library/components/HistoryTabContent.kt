@@ -18,7 +18,7 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.library_history_empty
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
-import com.github.adriianh.melo.ui.components.TrackRow
+import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.i18n.formatRelativeTime
 import com.github.adriianh.melo.util.autoScrollOnNewItem
 import com.github.adriianh.melo.util.desktopScroll

@@ -59,11 +59,11 @@ import com.github.adriianh.melo.resources.detail_type_playlist
 import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
-import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
-import com.github.adriianh.melo.ui.components.rememberTrackInteraction
+import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
+import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.DeletePlaylistDialog
 import com.github.adriianh.melo.ui.detail.components.EntityHeaderCard
 import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard

@@ -58,9 +58,9 @@ import com.github.adriianh.melo.ui.components.ArtistCircle
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
 import com.github.adriianh.melo.ui.components.SectionHeader
-import com.github.adriianh.melo.ui.components.TrackInteractionContextMenu
-import com.github.adriianh.melo.ui.components.TrackRow
-import com.github.adriianh.melo.ui.components.rememberTrackInteraction
+import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
+import com.github.adriianh.melo.ui.components.track.TrackRow
+import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.ArtistHeaderCard
 import com.github.adriianh.melo.ui.detail.components.ExpandableDescriptionCard
 import com.github.adriianh.melo.ui.detail.components.detailTrackItems
