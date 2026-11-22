@@ -63,7 +63,7 @@ import com.github.adriianh.melo.resources.detail_type_album
 import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
-import com.github.adriianh.melo.ui.components.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
 import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.feedback.MeloErrorState

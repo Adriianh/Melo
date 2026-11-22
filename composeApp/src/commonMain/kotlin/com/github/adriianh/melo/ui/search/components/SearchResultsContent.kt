@@ -14,7 +14,7 @@ import com.github.adriianh.melo.resources.search_results_empty_title
 import com.github.adriianh.melo.resources.search_results_offline_empty_message
 import com.github.adriianh.melo.resources.search_results_offline_empty_title
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
-import com.github.adriianh.melo.ui.components.SuggestionSkeletonCard
+import com.github.adriianh.melo.ui.components.cards.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchFilterType
 import com.github.adriianh.melo.ui.search.SearchUiState

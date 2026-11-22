@@ -55,7 +55,7 @@ import com.github.adriianh.melo.resources.detail_action_save
 import com.github.adriianh.melo.resources.detail_action_saved
 import com.github.adriianh.melo.resources.detail_downloading_progress
 import com.github.adriianh.melo.resources.detail_downloading_track
-import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
+import com.github.adriianh.melo.ui.components.cards.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

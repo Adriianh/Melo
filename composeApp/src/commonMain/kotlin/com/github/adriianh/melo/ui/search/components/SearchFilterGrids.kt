@@ -5,9 +5,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.ArtistCircle
-import com.github.adriianh.melo.ui.components.VideoCard
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.cards.VideoCard
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
 

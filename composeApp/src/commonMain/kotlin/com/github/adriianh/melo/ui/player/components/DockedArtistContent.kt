@@ -40,7 +40,7 @@ import com.github.adriianh.melo.resources.player_artist_albums
 import com.github.adriianh.melo.resources.player_artist_popular
 import com.github.adriianh.melo.resources.player_artist_view_full_profile
 import com.github.adriianh.melo.resources.player_artist_view_profile
-import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors

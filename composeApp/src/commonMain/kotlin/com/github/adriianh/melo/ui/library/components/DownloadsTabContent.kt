@@ -72,8 +72,8 @@ import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.resources.section_albums
 import com.github.adriianh.melo.resources.section_artists
 import com.github.adriianh.melo.resources.section_songs
-import com.github.adriianh.melo.ui.components.AlbumCard
-import com.github.adriianh.melo.ui.components.ArtistCircle
+import com.github.adriianh.melo.ui.components.cards.AlbumCard
+import com.github.adriianh.melo.ui.components.cards.ArtistCircle
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors

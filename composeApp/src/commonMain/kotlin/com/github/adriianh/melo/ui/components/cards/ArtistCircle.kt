@@ -1,18 +1,18 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.cards
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -21,47 +21,34 @@ import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 
 @Composable
-fun VideoCard(
-    title: String,
-    subtitle: String,
+fun ArtistCircle(
+    name: String,
     artworkUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    cardWidth: Dp = 260.dp,
+    size: Dp = 130.dp,
 ) {
     Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .width(cardWidth)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(4.dp)
     ) {
         MeloAsyncImage(
             url = artworkUrl,
-            contentDescription = title,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(146.dp)
-                .clip(RoundedCornerShape(10.dp)),
-            size = cardWidth,
-            shape = RoundedCornerShape(10.dp)
+            contentDescription = name,
+            size = size,
+            shape = CircleShape
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = title,
-            style = MeloType.body,
-            fontWeight = FontWeight.SemiBold,
+            text = name,
+            style = MeloType.labelMedium,
             color = MeloColors.textPrimary,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = subtitle,
-            style = MeloType.labelSmall,
-            color = MeloColors.textMuted,
+            textAlign = TextAlign.Center,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

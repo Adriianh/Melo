@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.cards
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode

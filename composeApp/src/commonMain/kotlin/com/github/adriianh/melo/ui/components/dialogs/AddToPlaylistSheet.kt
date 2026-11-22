@@ -64,7 +64,7 @@ import com.github.adriianh.melo.resources.playlist_sheet_more_artists
 import com.github.adriianh.melo.resources.playlist_sheet_new_name_placeholder
 import com.github.adriianh.melo.resources.playlist_sheet_unknown_track
 import com.github.adriianh.melo.resources.playlist_track_count
-import com.github.adriianh.melo.ui.components.PlaylistMosaicCover
+import com.github.adriianh.melo.ui.components.cards.PlaylistMosaicCover
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
