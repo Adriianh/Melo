@@ -5,6 +5,7 @@ package com.github.adriianh.melo.ui.i18n
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -27,8 +28,10 @@ internal actual fun ProvideAppLocale(
             AppLanguage.SPANISH -> Locale.forLanguageTag("es")
             AppLanguage.ENGLISH -> Locale.forLanguageTag("en")
         }
-    if (Locale.getDefault() != targetLocale) {
-        Locale.setDefault(targetLocale)
+    SideEffect {
+        if (Locale.getDefault() != targetLocale) {
+            Locale.setDefault(targetLocale)
+        }
     }
 
     val localizedConfiguration =

@@ -298,7 +298,7 @@ fun DownloadsTabContent(
                                         text =
                                             stringResource(
                                                 Res.string.library_downloads_space_used,
-                                                "%.1f".format(totalSizeMb),
+                                                formatOneDecimal(totalSizeMb),
                                             ),
                                         style = MeloType.labelSmall,
                                         color = MeloColors.textSecondary,
@@ -514,7 +514,7 @@ private fun DownloadedTrackRow(
                         modifier = Modifier.size(14.dp),
                     )
                     Text(
-                        text = "${track.artist} • ${"%.1f".format(sizeMb)} MB",
+                        text = "${track.artist} • ${formatOneDecimal(sizeMb)} MB",
                         style = MeloType.labelSmall,
                         color = MeloColors.textSecondary,
                         maxLines = 1,
@@ -542,4 +542,13 @@ private fun DownloadedTrackRow(
             }
         }
     }
+}
+
+private fun formatOneDecimal(value: Double): String {
+    val tenths =
+        kotlin.math
+            .round(value * 10.0)
+            .toLong()
+            .coerceAtLeast(0L)
+    return "${tenths / 10L}.${tenths % 10L}"
 }
