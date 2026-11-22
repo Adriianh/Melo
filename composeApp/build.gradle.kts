@@ -12,7 +12,7 @@ plugins {
 
 // Single source of truth for the app version (stable default from gradle.properties,
 // overridden by CI for nightly builds). jpackage uses only the numeric base for MSI.
-val meloVersion: String = providers.gradleProperty("melo.version").getOrElse("2.4.1")
+val meloVersion: String = providers.gradleProperty("melo.version").getOrElse("2.5.0")
 val meloPackageVersion: String = meloVersion.substringBefore('-')
 
 kotlin {

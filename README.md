@@ -50,17 +50,17 @@
 
 ## Downloads
 
-Pre-built binaries and packages for **v2.4.1** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
+Pre-built binaries and packages for **v2.5.0** are available on the [GitHub Releases](https://github.com/Adriianh/Melo/releases/latest) page:
 
 | Platform | Format | Package |
 |---|---|---|
 | **Android** | APK | `composeApp-release.apk` |
-| **Linux — GUI** | AppImage / Debian / Tarball | `Melo-2.4.1-x86_64.AppImage` • `melo_2.4.1_amd64.deb` • `melo-2.4.1-linux-x64.tar.gz` |
-| **Linux — TUI** | Tarball | `melo-2.4.1-linux.tar.gz` |
-| **Windows — GUI** | Setup / MSI | `Melo-Setup.exe` • `Melo-2.4.1.msi` |
-| **Windows — TUI** | Zip | `melo-2.4.1-windows.zip` |
-| **macOS — GUI** | DMG | `Melo-2.4.1.dmg` |
-| **macOS — TUI** | Tarball | `melo-2.4.1-macos.tar.gz` |
+| **Linux — GUI** | AppImage / Debian / Tarball | `Melo-2.5.0-x86_64.AppImage` • `melo_2.5.0_amd64.deb` • `melo-2.5.0-linux-x64.tar.gz` |
+| **Linux — TUI** | Tarball | `melo-2.5.0-linux.tar.gz` |
+| **Windows — GUI** | Setup / MSI | `Melo-Setup.exe` • `Melo-2.5.0.msi` |
+| **Windows — TUI** | Zip | `melo-2.5.0-windows.zip` |
+| **macOS — GUI** | DMG | `Melo-2.5.0.dmg` |
+| **macOS — TUI** | Tarball | `melo-2.5.0-macos.tar.gz` |
 
 Nightly development builds of the TUI are also published for every push to `master` — see [Installation](#installation) for how to install them.
 
@@ -176,9 +176,9 @@ Download and install `composeApp-release.apk` from [Releases](https://github.com
 Choose your preferred installation format:
 
 - **Debian / Ubuntu / Mint / Pop!_OS (`.deb`)**:
-  Download `melo_2.4.1_amd64.deb` from Releases and install via `apt`:
+  Download `melo_2.5.0_amd64.deb` from Releases and install via `apt`:
   ```bash
-  sudo apt install ./melo_2.4.1_amd64.deb
+  sudo apt install ./melo_2.5.0_amd64.deb
   ```
 
 - **Arch Linux (AUR)** *(Coming soon)*:
@@ -195,17 +195,17 @@ Choose your preferred installation format:
   *(Or use the standalone AppImage or Portable Tarball below)*.
 
 - **Universal AppImage (Standalone)**:
-  Download `Melo-2.4.1-x86_64.AppImage`, make it executable, and run directly without installation:
+  Download `Melo-2.5.0-x86_64.AppImage`, make it executable, and run directly without installation:
   ```bash
-  chmod +x Melo-2.4.1-x86_64.AppImage
-  ./Melo-2.4.1-x86_64.AppImage
+  chmod +x Melo-2.5.0-x86_64.AppImage
+  ./Melo-2.5.0-x86_64.AppImage
   ```
 
 - **Portable Tarball (`.tar.gz`)**:
-  Download `melo-2.4.1-linux-x64.tar.gz`, unpack it, and run the automated installer:
+  Download `melo-2.5.0-linux-x64.tar.gz`, unpack it, and run the automated installer:
   ```bash
-  tar -xzf melo-2.4.1-linux-x64.tar.gz
-  cd melo-2.4.1
+  tar -xzf melo-2.5.0-linux-x64.tar.gz
+  cd melo-2.5.0
 
   # User installation (~/.local/share/melo-gui and ~/.local/bin/melo-gui):
   ./install.sh
@@ -219,10 +219,10 @@ Choose your preferred installation format:
 The GUI's `.desktop` entry integrates into your application launcher and includes an "Open Terminal UI (TUI)" action for quick terminal access.
 
 #### Windows
-Download and run the installer wizard `Melo-Setup.exe` or deploy the enterprise-friendly `Melo-2.4.1.msi`.
+Download and run the installer wizard `Melo-Setup.exe` or deploy the enterprise-friendly `Melo-2.5.0.msi`.
 
 #### macOS
-Download `Melo-2.4.1.dmg`, open it, and drag Melo to your `/Applications` folder.
+Download `Melo-2.5.0.dmg`, open it, and drag Melo to your `/Applications` folder.
 
 ---
 

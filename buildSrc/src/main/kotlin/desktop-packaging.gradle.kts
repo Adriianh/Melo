@@ -4,7 +4,7 @@ import java.net.URI
 import java.util.zip.ZipFile
 
 val desktopAppVersion: String =
-    project.providers.gradleProperty("melo.version").getOrElse("2.4.1")
+    project.providers.gradleProperty("melo.version").getOrElse("2.5.0")
 
 /**
  * Whether [path] (relative to the packaged application root) must stay executable.
