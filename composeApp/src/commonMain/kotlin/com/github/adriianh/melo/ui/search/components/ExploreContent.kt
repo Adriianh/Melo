@@ -33,7 +33,7 @@ import com.github.adriianh.melo.resources.section_recently_played
 import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.CategoryCard
-import com.github.adriianh.melo.ui.components.MeloEmptyState
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
 import com.github.adriianh.melo.ui.i18n.displayTitle

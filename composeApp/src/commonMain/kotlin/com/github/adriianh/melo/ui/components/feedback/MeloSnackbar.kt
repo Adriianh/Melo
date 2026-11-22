@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.feedback
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -23,7 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.i18n.resolve
@@ -44,7 +47,7 @@ class MeloSnackbarState {
 
     var actionLabel = mutableStateOf<UiText?>(null)
         private set
-    var actionColor = mutableStateOf<androidx.compose.ui.graphics.Color?>(null)
+    var actionColor = mutableStateOf<Color?>(null)
         private set
     var onActionClick = mutableStateOf<(() -> Unit)?>(null)
         private set
@@ -56,7 +59,7 @@ class MeloSnackbarState {
         msg: String,
         vector: ImageVector? = null,
         action: String? = null,
-        actionColor: androidx.compose.ui.graphics.Color? = null,
+        actionColor: Color? = null,
         onAction: (() -> Unit)? = null,
     ) {
         show(
@@ -72,7 +75,7 @@ class MeloSnackbarState {
         msg: UiText,
         vector: ImageVector? = null,
         action: UiText? = null,
-        actionColor: androidx.compose.ui.graphics.Color? = null,
+        actionColor: Color? = null,
         onAction: (() -> Unit)? = null,
     ) {
         message.value = msg
@@ -95,7 +98,7 @@ val LocalMeloSnackbar = compositionLocalOf<MeloSnackbarState> { error("No Snackb
 fun MeloSnackbarHost(
     state: MeloSnackbarState,
     modifier: Modifier = Modifier,
-    bottomPadding: androidx.compose.ui.unit.Dp? = null,
+    bottomPadding: Dp? = null,
 ) {
     val platform = remember { getPlatform() }
 
@@ -149,7 +152,7 @@ fun MeloSnackbarHost(
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = actionLabel.resolve(),
-                    style = MeloType.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                    style = MeloType.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = actionColor,
                     modifier =
                         Modifier

@@ -38,7 +38,7 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_available_offline
 import com.github.adriianh.melo.resources.library_albums_empty
-import com.github.adriianh.melo.ui.components.MeloEmptyState
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.library.LibraryViewMode
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType

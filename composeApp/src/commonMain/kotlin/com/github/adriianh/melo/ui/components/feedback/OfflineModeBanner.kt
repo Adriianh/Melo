@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.feedback
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff

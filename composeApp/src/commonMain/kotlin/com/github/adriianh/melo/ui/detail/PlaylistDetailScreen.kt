@@ -60,8 +60,8 @@ import com.github.adriianh.melo.resources.playlist_track_count
 import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
-import com.github.adriianh.melo.ui.components.MeloEmptyState
-import com.github.adriianh.melo.ui.components.MeloErrorState
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
+import com.github.adriianh.melo.ui.components.feedback.MeloErrorState
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.DeletePlaylistDialog

@@ -42,7 +42,7 @@ import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
 import com.github.adriianh.melo.ui.components.dialogs.AddToPlaylistSheet
-import com.github.adriianh.melo.ui.components.MeloSnackbarState
+import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.track.TrackContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.i18n.UiText

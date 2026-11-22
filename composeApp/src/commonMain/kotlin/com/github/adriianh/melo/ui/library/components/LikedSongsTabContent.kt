@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.library_liked_empty
-import com.github.adriianh.melo.ui.components.MeloEmptyState
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.util.autoScrollOnNewItem
