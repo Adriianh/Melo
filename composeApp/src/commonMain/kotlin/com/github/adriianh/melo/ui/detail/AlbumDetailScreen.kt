@@ -62,12 +62,12 @@ import com.github.adriianh.melo.resources.detail_other_versions
 import com.github.adriianh.melo.resources.detail_type_album
 import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.MeloEmptyState
 import com.github.adriianh.melo.ui.components.MeloErrorState
-import com.github.adriianh.melo.ui.components.SectionHeader
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.EntityHeaderCard

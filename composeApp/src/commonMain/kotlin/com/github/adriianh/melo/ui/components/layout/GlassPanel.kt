@@ -1,4 +1,4 @@
-package com.github.adriianh.melo.ui.components
+package com.github.adriianh.melo.ui.components.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -30,7 +30,7 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
-import com.github.adriianh.melo.ui.components.GlassPanel
+import com.github.adriianh.melo.ui.components.layout.GlassPanel
 import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.ui.player.PlayerViewModel

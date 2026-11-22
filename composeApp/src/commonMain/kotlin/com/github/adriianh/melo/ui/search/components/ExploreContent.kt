@@ -30,11 +30,11 @@ import com.github.adriianh.melo.resources.search_explore_error_title
 import com.github.adriianh.melo.resources.search_explore_offline_subtitle
 import com.github.adriianh.melo.resources.search_explore_offline_title
 import com.github.adriianh.melo.resources.section_recently_played
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.CategoryCard
 import com.github.adriianh.melo.ui.components.MeloEmptyState
-import com.github.adriianh.melo.ui.components.SectionHeader
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.components.track.SongFourRowCarousel
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel

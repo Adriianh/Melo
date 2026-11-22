@@ -26,10 +26,10 @@ import com.github.adriianh.melo.resources.search_section_more_songs
 import com.github.adriianh.melo.resources.search_section_top_result
 import com.github.adriianh.melo.resources.search_section_top_songs
 import com.github.adriianh.melo.resources.section_songs
-import com.github.adriianh.melo.ui.components.AdaptiveLazyRow
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.AlbumCard
 import com.github.adriianh.melo.ui.components.ArtistCircle
-import com.github.adriianh.melo.ui.components.SectionHeader
+import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.i18n.displayTitle
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState

@@ -46,7 +46,7 @@ import com.github.adriianh.melo.theme.resolveDarkTheme
 import com.github.adriianh.melo.theme.toAccentColor
 import com.github.adriianh.melo.ui.AdaptiveScaffold
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.AmbientCanvas
+import com.github.adriianh.melo.ui.components.layout.AmbientCanvas
 import com.github.adriianh.melo.ui.components.LocalMeloSnackbar
 import com.github.adriianh.melo.ui.components.MeloBanner
 import com.github.adriianh.melo.ui.components.MeloSnackbarHost

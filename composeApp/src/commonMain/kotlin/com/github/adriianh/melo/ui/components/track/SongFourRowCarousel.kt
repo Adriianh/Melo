@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.ui.components.CarouselScrollContainer
-import com.github.adriianh.melo.ui.components.calculateAdaptiveCardWidth
+import com.github.adriianh.melo.ui.components.layout.CarouselScrollContainer
+import com.github.adriianh.melo.ui.components.layout.calculateAdaptiveCardWidth
 import com.github.adriianh.melo.util.desktopScroll
 
 @Composable
