@@ -150,7 +150,7 @@ import com.github.adriianh.melo.resources.settings_update_channel_stable_desc
 import com.github.adriianh.melo.resources.settings_update_channel_title
 import com.github.adriianh.melo.resources.settings_update_status_desc
 import com.github.adriianh.melo.resources.settings_update_status_title
-import com.github.adriianh.melo.ui.components.dialogs.LocalFolderPathsEditor
+import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.i18n.uiHint

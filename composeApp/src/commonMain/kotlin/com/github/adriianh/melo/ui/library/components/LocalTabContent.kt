@@ -65,7 +65,7 @@ import com.github.adriianh.melo.resources.library_local_scan_button
 import com.github.adriianh.melo.resources.library_local_scan_now
 import com.github.adriianh.melo.resources.library_local_scanning
 import com.github.adriianh.melo.resources.library_local_track_count
-import com.github.adriianh.melo.ui.components.dialogs.LocalFolderPathsEditor
+import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
