@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,11 +63,11 @@ enum class PanelSection {
 
 @Composable
 fun NowPlayingScreen(
+    modifier: Modifier = Modifier,
     onCollapse: () -> Unit,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
     onPlaylistClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier,
     titleBar: @Composable () -> Unit = {},
     blurEnabled: Boolean = true,
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
@@ -84,7 +85,7 @@ fun NowPlayingScreen(
     var expandedBottomSection by remember { mutableStateOf<PanelSection?>(null) }
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
-    val activeAccent = interaction.resolveActiveAccent(state)
+    val activeAccent = MaterialTheme.colorScheme.primary
 
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -284,6 +285,7 @@ fun NowPlayingScreen(
 
                 if (platform.type == PlatformType.DESKTOP) {
                     NowPlayingDesktopLayout(
+                        modifier = Modifier.weight(1f),
                         state = effectiveState,
                         activeAccent = activeAccent,
                         selectedSection = selectedSection,
@@ -314,7 +316,6 @@ fun NowPlayingScreen(
                             onPlaylistClick(id)
                         },
                         viewModel = viewModel,
-                        modifier = Modifier.weight(1f),
                     )
                 } else {
                     NowPlayingMobileLayout(
