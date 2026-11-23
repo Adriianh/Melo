@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.foundation.clickable
@@ -34,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +69,10 @@ import com.github.adriianh.melo.resources.library_local_scan_now
 import com.github.adriianh.melo.resources.library_local_scanning
 import com.github.adriianh.melo.resources.library_local_track_count
 import com.github.adriianh.melo.ui.components.LocalFolderPathsEditor
+import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -87,6 +94,9 @@ fun LocalTabContent(
     onPlayAll: () -> Unit,
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    isLiked: (Track) -> Boolean = { false },
+    onSwipeLeft: (Track) -> Unit = {},
+    onSwipeRight: (Track) -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val requestAudioPermission =
@@ -202,99 +212,109 @@ fun LocalTabContent(
     }
 
     val listState = rememberLazyListState()
+    val revealGroup = rememberSwipeRevealGroup()
 
-    LazyColumn(
-        state = listState,
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxSize().desktopScroll(listState),
-    ) {
-        item {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+    CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
+        LazyColumn(
+            state = listState,
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = modifier.fillMaxSize().desktopScroll(listState),
+        ) {
+            item {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text =
-                                pluralStringResource(
-                                    Res.plurals.library_local_track_count,
-                                    localTracks.size,
-                                    localTracks.size,
-                                ),
-                            style = MeloType.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MeloColors.textPrimary,
-                        )
-                        Text(
-                            text = stringResource(Res.string.library_local_device_audio),
-                            style = MeloType.labelSmall,
-                            color = MeloColors.textSecondary,
-                        )
-                    }
-
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        IconButton(
-                            onClick = { showFoldersDialog = true },
-                            modifier = Modifier.size(36.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FolderOpen,
-                                contentDescription = stringResource(Res.string.a11y_manage_folders),
-                                tint = MeloColors.textSecondary,
-                                modifier = Modifier.size(20.dp),
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text =
+                                    pluralStringResource(
+                                        Res.plurals.library_local_track_count,
+                                        localTracks.size,
+                                        localTracks.size,
+                                    ),
+                                style = MeloType.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MeloColors.textPrimary,
+                            )
+                            Text(
+                                text = stringResource(Res.string.library_local_device_audio),
+                                style = MeloType.labelSmall,
+                                color = MeloColors.textSecondary,
                             )
                         }
-                        IconButton(
-                            onClick = requestAudioPermission,
-                            modifier = Modifier.size(36.dp),
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(Res.string.a11y_rescan),
-                                tint = MeloColors.textSecondary,
-                                modifier = Modifier.size(20.dp),
-                            )
+                            IconButton(
+                                onClick = { showFoldersDialog = true },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FolderOpen,
+                                    contentDescription = stringResource(Res.string.a11y_manage_folders),
+                                    tint = MeloColors.textSecondary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            IconButton(
+                                onClick = requestAudioPermission,
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = stringResource(Res.string.a11y_rescan),
+                                    tint = MeloColors.textSecondary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                     }
-                }
 
-                if (localTracks.isNotEmpty()) {
-                    Button(
-                        onClick = onPlayAll,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(stringResource(Res.string.a11y_play_all))
+                    if (localTracks.isNotEmpty()) {
+                        Button(
+                            onClick = onPlayAll,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(stringResource(Res.string.a11y_play_all))
+                        }
                     }
                 }
             }
-        }
 
-        items(localTracks, key = { it.id }) { track ->
-            LocalTrackRow(
-                track = track,
-                onClick = { onPlayTrack(track) },
-                onMoreClick = { onMoreClick(track) },
-            )
+            items(localTracks, key = { it.id }) { track ->
+                MeloSwipeableItem(
+                    onSwipeRight = { onSwipeRight(track) },
+                    trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft(track) }),
+                    leadingAction = MeloSwipeActions.like(isLiked(track)),
+                    cornerRadius = 12,
+                ) {
+                    LocalTrackRow(
+                        track = track,
+                        onClick = { onPlayTrack(track) },
+                        onMoreClick = { onMoreClick(track) },
+                    )
+                }
+            }
         }
     }
 }
@@ -435,8 +455,13 @@ private fun LocalTrackRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
+                val metaSuffix =
+                    buildString {
+                        if (track.album.isNotBlank()) append(" • ${track.album}")
+                        if (durationMinSec.isNotBlank()) append(" • $durationMinSec")
+                    }
                 Text(
-                    text = "${track.artist}${if (track.album.isNotBlank()) " • ${track.album}" else ""}${if (durationMinSec.isNotBlank()) " • $durationMinSec" else ""}",
+                    text = "${track.artist}$metaSuffix",
                     style = MeloType.labelSmall,
                     color = MeloColors.textSecondary,
                     maxLines = 1,

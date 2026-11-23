@@ -36,12 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -66,14 +63,16 @@ import kotlin.math.roundToInt
 private val TrailingButtonWidth = 76.dp
 private val LeadingThreshold = 56.dp
 private val LeadingMaxDrag = 80.dp
+private val TrailingCommitExtra = 44.dp
+private val TrailingMaxExtra = 24.dp
 private const val TRAILING_SNAP_FRACTION = 0.5f
 private const val MAX_TRAILING_ACTIONS = 2
 
 @Composable
 fun MeloSwipeableItem(
-    modifier: Modifier = Modifier,
     onSwipeRight: () -> Unit,
     trailingActions: List<Pair<SwipeAction, () -> Unit>> = emptyList(),
+    modifier: Modifier = Modifier,
     leadingAction: SwipeAction = MeloSwipeActions.like(),
     state: SwipeRevealState = rememberSwipeRevealState(initialOffsetDp = 0f),
     enabled: Boolean = true,
@@ -90,16 +89,16 @@ fun MeloSwipeableItem(
     val maxLeadingPx = with(density) { LeadingMaxDrag.toPx() }
     val thresholdPx = with(density) { LeadingThreshold.toPx() }
     val maxRevealPx = with(density) { TrailingButtonWidth.toPx() } * effectiveTrailing.size
+    val trailingCommitPx = maxRevealPx + with(density) { TrailingCommitExtra.toPx() }
+    val trailingMaxDragPx = trailingCommitPx + with(density) { TrailingMaxExtra.toPx() }
     val resolvedState = resolveSwipeState(state, initialOffsetDp, coroutineScope, maxRevealPx)
     val hasVibrated = remember { mutableStateOf(false) }
 
-    SwipeRevealBackHandler(
-        enabled = resolvedState.isOpen,
-        onBack = { resolvedState.close() },
-    )
+    SwipeRevealBackHandler(enabled = resolvedState.isOpen, onBack = { resolvedState.close() })
 
     val logicalOffset = resolvedState.offsetX.value
     val isLeadingCommitted = logicalOffset >= thresholdPx
+    val isTrailingCommitted = effectiveTrailing.isNotEmpty() && -logicalOffset >= trailingCommitPx
     val leadingBgColor by animateColorAsState(
         targetValue = if (isLeadingCommitted) leadingAction.commitColor else leadingAction.containerColor,
         label = "leadingBg",
@@ -128,8 +127,9 @@ fun MeloSwipeableItem(
                 }.swipeItemGestures(
                     enabled = enabled,
                     isRtl = isRtl,
-                    hasTrailing = effectiveTrailing.isNotEmpty(),
                     maxRevealPx = maxRevealPx,
+                    trailingCommitPx = if (effectiveTrailing.isEmpty()) 0f else trailingCommitPx,
+                    trailingMaxDragPx = if (effectiveTrailing.isEmpty()) 0f else trailingMaxDragPx,
                     maxLeadingPx = maxLeadingPx,
                     thresholdPx = thresholdPx,
                     state = resolvedState,
@@ -137,6 +137,7 @@ fun MeloSwipeableItem(
                     hasVibrated = hasVibrated,
                     haptic = haptic,
                     onSwipeRight = onSwipeRight,
+                    onTrailingCommit = { effectiveTrailing.lastOrNull()?.second?.invoke() },
                 ),
     ) {
         SwipeBackgroundLayer(
@@ -146,71 +147,50 @@ fun MeloSwipeableItem(
             leadingBgColor = leadingBgColor,
             leadingContentColor = leadingContentColor,
             trailingActions = effectiveTrailing,
+            isTrailingCommitted = isTrailingCommitted,
             onTrailingClick = { callback ->
                 resolvedState.close()
                 callback()
             },
         )
 
-        Box(
-            modifier =
-                Modifier
-                    .offset { IntOffset(physicalOffsetPx.roundToInt(), 0) }
-                    .fillMaxWidth(),
-        ) {
-            content()
-            if (resolvedState.isOpen) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .clickable(
-                                interactionSource = null,
-                                indication = null,
-                                onClick = { resolvedState.close() },
-                            ),
-                )
-            }
-        }
+        SwipeForegroundContent(
+            physicalOffsetPx = physicalOffsetPx,
+            isOpen = resolvedState.isOpen,
+            onClose = { resolvedState.close() },
+            content = content,
+        )
     }
 }
 
 @Composable
-private fun resolveSwipeState(
-    state: SwipeRevealState,
-    initialOffsetDp: Float,
-    coroutineScope: CoroutineScope,
-    maxRevealPx: Float,
-): SwipeRevealState {
-    val initialOffsetPx = with(LocalDensity.current) { initialOffsetDp.dp.toPx() }
-    val resolved =
-        if (initialOffsetDp != 0f && state.offsetX.value == 0f && !state.isOpen) {
-            remember(initialOffsetPx, state.group) {
-                SwipeRevealState(initialOffsetPx = initialOffsetPx, group = state.group)
-            }
-        } else {
-            state
-        }
-    resolved.scope = coroutineScope
-    resolved.maxRevealPx = maxRevealPx
-    return resolved
-}
-
-@Composable
-private fun rememberSwipeNestedScrollConnection(state: SwipeRevealState): NestedScrollConnection =
-    remember(state) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                if (state.isOpen && abs(available.y) > 0.5f) {
-                    state.close()
-                }
-                return Offset.Zero
-            }
+private fun SwipeForegroundContent(
+    physicalOffsetPx: Float,
+    isOpen: Boolean,
+    onClose: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .offset { IntOffset(physicalOffsetPx.roundToInt(), 0) }
+                .fillMaxWidth(),
+    ) {
+        content()
+        if (isOpen) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            onClick = onClose,
+                        ),
+            )
         }
     }
+}
 
 @Composable
 private fun BoxScope.SwipeBackgroundLayer(
@@ -220,6 +200,7 @@ private fun BoxScope.SwipeBackgroundLayer(
     leadingBgColor: Color,
     leadingContentColor: Color,
     trailingActions: List<Pair<SwipeAction, () -> Unit>>,
+    isTrailingCommitted: Boolean,
     onTrailingClick: (() -> Unit) -> Unit,
 ) {
     if (logicalOffset > 0f) {
@@ -233,6 +214,7 @@ private fun BoxScope.SwipeBackgroundLayer(
         TrailingSwipeActions(
             revealWidthDp = revealWidthDp,
             actions = trailingActions,
+            isTrailingCommitted = isTrailingCommitted,
             onActionClick = onTrailingClick,
         )
     }
@@ -265,8 +247,9 @@ private fun buildSwipeCustomActions(
 private fun Modifier.swipeItemGestures(
     enabled: Boolean,
     isRtl: Boolean,
-    hasTrailing: Boolean,
     maxRevealPx: Float,
+    trailingCommitPx: Float,
+    trailingMaxDragPx: Float,
     maxLeadingPx: Float,
     thresholdPx: Float,
     state: SwipeRevealState,
@@ -274,8 +257,9 @@ private fun Modifier.swipeItemGestures(
     hasVibrated: MutableState<Boolean>,
     haptic: HapticFeedback,
     onSwipeRight: () -> Unit,
+    onTrailingCommit: () -> Unit,
 ): Modifier =
-    pointerInput(enabled, isRtl, maxRevealPx, maxLeadingPx, thresholdPx) {
+    pointerInput(enabled, isRtl, maxRevealPx, trailingCommitPx, trailingMaxDragPx, maxLeadingPx, thresholdPx) {
         if (!enabled) return@pointerInput
         detectHorizontalDragGestures(
             onDragStart = {
@@ -285,13 +269,14 @@ private fun Modifier.swipeItemGestures(
                 change.consume()
                 val logicalDelta = if (isRtl) -dragAmount else dragAmount
                 coroutineScope.launch {
-                    val minOffset = if (hasTrailing) -maxRevealPx else 0f
-                    val newOffset = (state.offsetX.value + logicalDelta).coerceIn(minOffset, maxLeadingPx)
+                    val newOffset = (state.offsetX.value + logicalDelta).coerceIn(-trailingMaxDragPx, maxLeadingPx)
                     state.offsetX.snapTo(newOffset)
-                    if (newOffset >= thresholdPx && !hasVibrated.value) {
+                    val pastCommit =
+                        newOffset >= thresholdPx || (trailingCommitPx > 0f && -newOffset >= trailingCommitPx)
+                    if (pastCommit && !hasVibrated.value) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         hasVibrated.value = true
-                    } else if (newOffset < thresholdPx && hasVibrated.value) {
+                    } else if (!pastCommit && hasVibrated.value) {
                         hasVibrated.value = false
                     }
                 }
@@ -299,7 +284,7 @@ private fun Modifier.swipeItemGestures(
             onDragEnd = {
                 coroutineScope.launch {
                     hasVibrated.value = false
-                    settleSwipeOffset(state, thresholdPx, maxRevealPx, onSwipeRight)
+                    settleSwipeOffset(state, thresholdPx, maxRevealPx, trailingCommitPx, onSwipeRight, onTrailingCommit)
                 }
             },
             onDragCancel = {
@@ -316,27 +301,38 @@ private suspend fun settleSwipeOffset(
     state: SwipeRevealState,
     thresholdPx: Float,
     maxRevealPx: Float,
+    trailingCommitPx: Float,
     onSwipeRight: () -> Unit,
+    onTrailingCommit: () -> Unit,
 ) {
     val current = state.offsetX.value
     when {
         current >= thresholdPx -> {
             onSwipeRight()
-            state.isOpen = false
-            state.group?.clearIfCurrent(state)
-            state.offsetX.animateTo(
-                targetValue = 0f,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
-            )
+            resetSwipeToIdle(state)
+        }
+
+        trailingCommitPx > 0f && -current >= trailingCommitPx -> {
+            onTrailingCommit()
+            resetSwipeToIdle(state)
         }
 
         current <= -maxRevealPx * TRAILING_SNAP_FRACTION && maxRevealPx > 0f -> state.open()
         else -> state.close()
     }
+}
+
+private suspend fun resetSwipeToIdle(state: SwipeRevealState) {
+    state.isOpen = false
+    state.group?.clearIfCurrent(state)
+    state.offsetX.animateTo(
+        targetValue = 0f,
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMedium,
+            ),
+    )
 }
 
 @Composable
@@ -389,8 +385,14 @@ private fun BoxScope.LeadingSwipeBackground(
 private fun BoxScope.TrailingSwipeActions(
     revealWidthDp: Dp,
     actions: List<Pair<SwipeAction, () -> Unit>>,
+    isTrailingCommitted: Boolean,
     onActionClick: (() -> Unit) -> Unit,
 ) {
+    val outerAction = actions.last().first
+    val outerCommitBg by animateColorAsState(
+        targetValue = if (isTrailingCommitted) outerAction.commitColor else outerAction.containerColor,
+        label = "trailingCommitBg",
+    )
     Box(
         modifier = Modifier.matchParentSize(),
         contentAlignment = Alignment.CenterEnd,
@@ -400,13 +402,16 @@ private fun BoxScope.TrailingSwipeActions(
                 Modifier
                     .width(revealWidthDp)
                     .fillMaxHeight()
+                    .background(outerCommitBg)
                     .clipToBounds(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            actions.forEach { (action, callback) ->
+            actions.forEachIndexed { index, (action, callback) ->
+                val isOuterCommitted = isTrailingCommitted && index == actions.lastIndex
                 SwipeTrailingActionButton(
                     action = action,
+                    isCommitted = isOuterCommitted,
                     onClick = { onActionClick(callback) },
                 )
             }
@@ -417,15 +422,24 @@ private fun BoxScope.TrailingSwipeActions(
 @Composable
 private fun SwipeTrailingActionButton(
     action: SwipeAction,
+    isCommitted: Boolean,
     onClick: () -> Unit,
 ) {
+    val bgColor by animateColorAsState(
+        targetValue = if (isCommitted) action.commitColor else action.containerColor,
+        label = "trailingBtnBg",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isCommitted) action.onCommitColor else action.contentColor,
+        label = "trailingBtnContent",
+    )
     Box(
         modifier =
             Modifier
                 .width(TrailingButtonWidth)
                 .fillMaxHeight()
                 .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
-                .background(action.containerColor)
+                .background(bgColor)
                 .clickable(
                     role = Role.Button,
                     onClick = onClick,
@@ -442,14 +456,14 @@ private fun SwipeTrailingActionButton(
             Icon(
                 imageVector = action.icon,
                 contentDescription = null,
-                tint = action.contentColor,
+                tint = contentColor,
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = action.label,
                 style = MaterialTheme.typography.labelSmall,
-                color = action.contentColor,
+                color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -457,9 +471,3 @@ private fun SwipeTrailingActionButton(
         }
     }
 }
-
-@Composable
-internal expect fun SwipeRevealBackHandler(
-    enabled: Boolean,
-    onBack: () -> Unit,
-)

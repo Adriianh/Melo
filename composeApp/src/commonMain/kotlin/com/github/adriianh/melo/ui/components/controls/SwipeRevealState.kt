@@ -18,8 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.resources.Res
@@ -30,6 +33,7 @@ import com.github.adriianh.melo.resources.swipe_action_unlike
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.abs
 
 @Immutable
 data class SwipeAction(
@@ -172,3 +176,40 @@ fun rememberSwipeRevealState(
         SwipeRevealState(initialOffsetPx = initialOffsetPx, group = group)
     }
 }
+
+@Composable
+internal fun resolveSwipeState(
+    state: SwipeRevealState,
+    initialOffsetDp: Float,
+    coroutineScope: CoroutineScope,
+    maxRevealPx: Float,
+): SwipeRevealState {
+    val initialOffsetPx = with(LocalDensity.current) { initialOffsetDp.dp.toPx() }
+    val resolved =
+        if (initialOffsetDp != 0f && state.offsetX.value == 0f && !state.isOpen) {
+            remember(initialOffsetPx, state.group) {
+                SwipeRevealState(initialOffsetPx = initialOffsetPx, group = state.group)
+            }
+        } else {
+            state
+        }
+    resolved.scope = coroutineScope
+    resolved.maxRevealPx = maxRevealPx
+    return resolved
+}
+
+@Composable
+internal fun rememberSwipeNestedScrollConnection(state: SwipeRevealState): NestedScrollConnection =
+    remember(state) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (state.isOpen && abs(available.y) > 0.5f) {
+                    state.close()
+                }
+                return Offset.Zero
+            }
+        }
+    }

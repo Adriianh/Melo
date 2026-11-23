@@ -146,6 +146,18 @@ fun LibraryTabContent(
 
                     DownloadsTabContent(
                         downloadedTracks = manualDownloads,
+                        isLiked = { track -> track.id in likedTrackIds },
+                        onSwipeLeft = {
+                            interaction.showAddedToQueueSnackbar(it, activeAccent)
+                        },
+                        onSwipeRight = { track ->
+                            val trackIsLiked = track.id in likedTrackIds
+                            interaction.showToggledLikeSnackbar(
+                                track,
+                                trackIsLiked,
+                                activeAccent,
+                            )
+                        },
                         activeDownloads = state.activeDownloads,
                         onPlayTrack = { track ->
                             viewModel.playTrack(track, prioritizedOfflineQueue)
@@ -171,6 +183,18 @@ fun LibraryTabContent(
                         localTracks = filters.localTracks,
                         localLibraryPaths = state.localLibraryPaths,
                         isScanning = state.isScanningLocal,
+                        isLiked = { track -> track.id in likedTrackIds },
+                        onSwipeLeft = {
+                            interaction.showAddedToQueueSnackbar(it, activeAccent)
+                        },
+                        onSwipeRight = { track ->
+                            val trackIsLiked = track.id in likedTrackIds
+                            interaction.showToggledLikeSnackbar(
+                                track,
+                                trackIsLiked,
+                                activeAccent,
+                            )
+                        },
                         onRescan = viewModel::scanLocalTracks,
                         onAddFolder = viewModel::addLocalLibraryPath,
                         onRemoveFolder = viewModel::removeLocalLibraryPath,
