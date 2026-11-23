@@ -388,11 +388,7 @@ private fun BoxScope.TrailingSwipeActions(
     isTrailingCommitted: Boolean,
     onActionClick: (() -> Unit) -> Unit,
 ) {
-    val outerAction = actions.last().first
-    val outerCommitBg by animateColorAsState(
-        targetValue = if (isTrailingCommitted) outerAction.commitColor else outerAction.containerColor,
-        label = "trailingCommitBg",
-    )
+    val extraWidth = (revealWidthDp - TrailingButtonWidth * actions.size).coerceAtLeast(0.dp)
     Box(
         modifier = Modifier.matchParentSize(),
         contentAlignment = Alignment.CenterEnd,
@@ -402,16 +398,16 @@ private fun BoxScope.TrailingSwipeActions(
                 Modifier
                     .width(revealWidthDp)
                     .fillMaxHeight()
-                    .background(outerCommitBg)
                     .clipToBounds(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             actions.forEachIndexed { index, (action, callback) ->
-                val isOuterCommitted = isTrailingCommitted && index == actions.lastIndex
+                val isLast = index == actions.lastIndex
                 SwipeTrailingActionButton(
                     action = action,
-                    isCommitted = isOuterCommitted,
+                    width = if (isLast) TrailingButtonWidth + extraWidth else TrailingButtonWidth,
+                    isCommitted = isTrailingCommitted && isLast,
                     onClick = { onActionClick(callback) },
                 )
             }
@@ -422,6 +418,7 @@ private fun BoxScope.TrailingSwipeActions(
 @Composable
 private fun SwipeTrailingActionButton(
     action: SwipeAction,
+    width: Dp,
     isCommitted: Boolean,
     onClick: () -> Unit,
 ) {
@@ -436,7 +433,7 @@ private fun SwipeTrailingActionButton(
     Box(
         modifier =
             Modifier
-                .width(TrailingButtonWidth)
+                .width(width)
                 .fillMaxHeight()
                 .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                 .background(bgColor)
