@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.search.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -5,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
@@ -13,8 +16,10 @@ import com.github.adriianh.melo.resources.search_results_empty_message
 import com.github.adriianh.melo.resources.search_results_empty_title
 import com.github.adriianh.melo.resources.search_results_offline_empty_message
 import com.github.adriianh.melo.resources.search_results_offline_empty_title
-import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.cards.SuggestionSkeletonCard
+import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchFilterType
 import com.github.adriianh.melo.ui.search.SearchUiState
@@ -62,71 +67,78 @@ fun SearchResultsContent(
                 modifier = modifier,
             )
 
-        else ->
-            when (uiState.selectedFilter) {
-                SearchFilterType.ALL ->
-                    AllResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        queueViewModel = queueViewModel,
-                        onAlbumClick = onAlbumClick,
-                        onArtistClick = onArtistClick,
-                        onPlaylistClick = onPlaylistClick,
-                        onMoreClick = onMoreClick,
-                        onSwipeLeft = onSwipeLeft,
-                        onSwipeRight = onSwipeRight,
-                        isLiked = isLiked,
-                        isSelectionMode = isSelectionMode,
-                        selectedTrackIds = selectedTrackIds,
-                        onToggleSelectTrack = onToggleSelectTrack,
-                        onTrackLongClick = onTrackLongClick,
-                        modifier = modifier,
-                    )
+        else -> {
+            val revealGroup = rememberSwipeRevealGroup()
+            CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
+                when (uiState.selectedFilter) {
+                    SearchFilterType.ALL ->
+                        AllResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            queueViewModel = queueViewModel,
+                            onAlbumClick = onAlbumClick,
+                            onArtistClick = onArtistClick,
+                            onPlaylistClick = onPlaylistClick,
+                            onMoreClick = onMoreClick,
+                            onSwipeLeft = onSwipeLeft,
+                            onSwipeRight = onSwipeRight,
+                            isLiked = isLiked,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick,
+                            modifier = modifier,
+                        )
 
-                SearchFilterType.SONGS ->
-                    SongsResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        queueViewModel = queueViewModel,
-                        onMoreClick = onMoreClick,
-                        isSelectionMode = isSelectionMode,
-                        selectedTrackIds = selectedTrackIds,
-                        onToggleSelectTrack = onToggleSelectTrack,
-                        onTrackLongClick = onTrackLongClick,
-                        modifier = modifier,
-                    )
+                    SearchFilterType.SONGS ->
+                        SongsResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            queueViewModel = queueViewModel,
+                            onMoreClick = onMoreClick,
+                            onSwipeLeft = onSwipeLeft,
+                            onSwipeRight = onSwipeRight,
+                            isLiked = isLiked,
+                            isSelectionMode = isSelectionMode,
+                            selectedTrackIds = selectedTrackIds,
+                            onToggleSelectTrack = onToggleSelectTrack,
+                            onTrackLongClick = onTrackLongClick,
+                            modifier = modifier,
+                        )
 
-                SearchFilterType.ALBUMS ->
-                    AlbumsResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        onAlbumClick = onAlbumClick,
-                    )
+                    SearchFilterType.ALBUMS ->
+                        AlbumsResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            onAlbumClick = onAlbumClick,
+                        )
 
-                SearchFilterType.ARTISTS ->
-                    ArtistsResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        onArtistClick = onArtistClick,
-                        modifier = modifier,
-                    )
+                    SearchFilterType.ARTISTS ->
+                        ArtistsResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            onArtistClick = onArtistClick,
+                            modifier = modifier,
+                        )
 
-                SearchFilterType.PLAYLISTS ->
-                    PlaylistsResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        onPlaylistClick = onPlaylistClick,
-                        modifier = modifier,
-                    )
+                    SearchFilterType.PLAYLISTS ->
+                        PlaylistsResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            onPlaylistClick = onPlaylistClick,
+                            modifier = modifier,
+                        )
 
-                SearchFilterType.VIDEOS ->
-                    VideosResultsContent(
-                        uiState = uiState,
-                        paddingValues = paddingValues,
-                        queueViewModel = queueViewModel,
-                        modifier = modifier,
-                    )
+                    SearchFilterType.VIDEOS ->
+                        VideosResultsContent(
+                            uiState = uiState,
+                            paddingValues = paddingValues,
+                            queueViewModel = queueViewModel,
+                            modifier = modifier,
+                        )
+                }
             }
+        }
     }
 }
 

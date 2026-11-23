@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.search.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.ui.search.SearchUiState
 
@@ -20,6 +21,9 @@ fun SongsResultsContent(
     queueViewModel: QueueViewModel,
     modifier: Modifier = Modifier,
     onMoreClick: ((Track) -> Unit)? = null,
+    onSwipeLeft: (Track) -> Unit = {},
+    onSwipeRight: (Track) -> Unit = {},
+    isLiked: (Track) -> Boolean = { false },
     isSelectionMode: Boolean = false,
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
@@ -28,20 +32,26 @@ fun SongsResultsContent(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = searchResultContentPadding(paddingValues),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         items(uiState.songResults, key = { it.id }) { track ->
             val isSelected = track.id in selectedTrackIds
-            TrackRow(
+            SwipeableTrackRow(
                 track = track,
-                onClick = { queueViewModel.playTrack(track) },
-                onMoreClick = if (onMoreClick != null && !isSelectionMode) {
-                    { onMoreClick(track) }
-                } else null,
+                isLiked = isLiked(track),
+                onPlay = { queueViewModel.playTrack(track) },
+                onSwipeLeft = onSwipeLeft,
+                onSwipeRight = onSwipeRight,
+                onMoreClick =
+                    if (onMoreClick != null && !isSelectionMode) {
+                        { onMoreClick(track) }
+                    } else {
+                        null
+                    },
                 isSelectionMode = isSelectionMode,
                 isSelected = isSelected,
                 onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } }
+                onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
             )
         }
     }
