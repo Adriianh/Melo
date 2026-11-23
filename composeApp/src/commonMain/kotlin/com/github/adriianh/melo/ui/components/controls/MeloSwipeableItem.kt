@@ -63,8 +63,8 @@ import kotlin.math.roundToInt
 private val TrailingButtonWidth = 76.dp
 private val LeadingThreshold = 56.dp
 private val LeadingMaxDrag = 80.dp
-private val TrailingCommitExtra = 44.dp
-private val TrailingMaxExtra = 24.dp
+private val TrailingCommitExtra = 8.dp
+private val TrailingMaxExtra = 8.dp
 private const val TRAILING_SNAP_FRACTION = 0.5f
 private const val MAX_TRAILING_ACTIONS = 2
 
