@@ -7,14 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +21,10 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.home_search_empty
 import com.github.adriianh.melo.resources.section_songs
+import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
 import com.github.adriianh.melo.ui.components.track.TrackInteractionState
 import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.ui.player.QueueViewModel
@@ -61,61 +61,59 @@ fun HomeSearchResultsView(
             )
         }
     } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding =
-                PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 8.dp,
-                    bottom = paddingValues.calculateBottomPadding() + 16.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            item {
-                Text(
-                    stringResource(Res.string.section_songs),
-                    style = MeloType.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MeloColors.textPrimary,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-            }
-            items(results, key = { it.id }) { track ->
-                val isLiked = likedSongs.any { it.id == track.id }
-                val isSelected = track.id in selectedTrackIds
-                MeloSwipeableItem(
-                    onSwipeLeft = {
-                        if (!isSelectionMode) {
-                            interaction.showAddedToQueueSnackbar(
-                                track,
-                                activeAccent,
-                            )
-                        }
-                    },
-                    onSwipeRight = {
-                        if (!isSelectionMode) {
-                            interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
-                        }
-                    },
-                    swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                    swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
-                    swipeLeftColor = MeloColors.brandAccent,
-                ) {
-                    TrackRow(
-                        track = track,
-                        onClick = { queueViewModel.playTrack(track) },
-                        onMoreClick =
-                            if (isSelectionMode) {
-                                null
-                            } else {
-                                { onMoreClick(track) }
-                            },
-                        isSelectionMode = isSelectionMode,
-                        isSelected = isSelected,
-                        onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
-                        onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
+        val revealGroup = rememberSwipeRevealGroup()
+        CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
+            LazyColumn(
+                modifier = modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = paddingValues.calculateBottomPadding() + 16.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                item {
+                    Text(
+                        stringResource(Res.string.section_songs),
+                        style = MeloType.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MeloColors.textPrimary,
+                        modifier = Modifier.padding(vertical = 8.dp),
                     )
+                }
+                items(results, key = { it.id }) { track ->
+                    val isLiked = likedSongs.any { it.id == track.id }
+                    val isSelected = track.id in selectedTrackIds
+                    MeloSwipeableItem(
+                        onSwipeRight = {
+                            interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
+                        },
+                        trailingActions =
+                            listOf(
+                                MeloSwipeActions.queue() to {
+                                    interaction.showAddedToQueueSnackbar(track, activeAccent)
+                                },
+                            ),
+                        leadingAction = MeloSwipeActions.like(isLiked),
+                        enabled = !isSelectionMode,
+                    ) {
+                        TrackRow(
+                            track = track,
+                            onClick = { queueViewModel.playTrack(track) },
+                            onMoreClick =
+                                if (isSelectionMode) {
+                                    null
+                                } else {
+                                    { onMoreClick(track) }
+                                },
+                            isSelectionMode = isSelectionMode,
+                            isSelected = isSelected,
+                            onSelectionToggle = { onToggleSelectTrack?.invoke(track) },
+                            onLongClick = onTrackLongClick?.let { onLong -> { onLong(track) } },
+                        )
+                    }
                 }
             }
         }

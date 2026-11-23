@@ -6,18 +6,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.track.TrackRow
-import com.github.adriianh.melo.util.MeloColors
 
 fun LazyListScope.detailTrackItems(
     tracks: List<Track>,
@@ -43,7 +39,7 @@ fun LazyListScope.detailTrackItems(
     itemsIndexed(
         items = tracks,
         key = { index, song -> "${keyPrefix}_${song.id}_$index" },
-        contentType = { _, _ -> "detail_track_row" }
+        contentType = { _, _ -> "detail_track_row" },
     ) { index, song ->
         val isPlayingThis = currentTrackId == song.id
         val liked = isLiked(song)
@@ -55,21 +51,23 @@ fun LazyListScope.detailTrackItems(
 
         Box(modifier = itemModifier) {
             MeloSwipeableItem(
-                onSwipeLeft = { if (!isSelectionMode && isTrackEnabled) onSwipeLeft(song) },
-                onSwipeRight = { if (!isSelectionMode && isTrackEnabled) onSwipeRight(song) },
-                swipeRightIcon = if (liked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
-                swipeLeftColor = MeloColors.brandAccent
+                onSwipeRight = { onSwipeRight(song) },
+                trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft(song) }),
+                leadingAction = MeloSwipeActions.like(liked),
+                enabled = !isSelectionMode && isTrackEnabled,
             ) {
+                val rowBg =
+                    when {
+                        isSelected -> accentColor.copy(alpha = 0.18f)
+                        isPlayingThis -> accentColor.copy(alpha = 0.15f)
+                        else -> Color.Transparent
+                    }
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (isSelected) accentColor.copy(alpha = 0.18f)
-                            else if (isPlayingThis) accentColor.copy(alpha = 0.15f)
-                            else Color.Transparent
-                        )
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(rowBg),
                 ) {
                     TrackRow(
                         track = song,
@@ -84,14 +82,8 @@ fun LazyListScope.detailTrackItems(
                         isSelected = isSelected,
                         onSelectionToggle = { onToggleSelectTrack?.invoke(song) },
                         onLongClick = onTrackLongClick?.let { onLong -> { onLong(song) } },
-                        onClick = {
-                            if (!downloading) {
-                                onTrackClick(index, song)
-                            }
-                        },
-                        onMoreClick = if (isSelectionMode) null else {
-                            { onMoreClick(song) }
-                        }
+                        onClick = { if (!downloading) onTrackClick(index, song) },
+                        onMoreClick = if (isSelectionMode) null else ({ onMoreClick(song) }),
                     )
                 }
             }

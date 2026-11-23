@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.detail.components
 
 import androidx.compose.foundation.background
@@ -9,11 +11,11 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.AlertDialog
@@ -56,6 +58,7 @@ import com.github.adriianh.melo.resources.library_playlist_delete_confirm
 import com.github.adriianh.melo.resources.library_playlist_delete_title
 import com.github.adriianh.melo.resources.library_playlist_rename_placeholder
 import com.github.adriianh.melo.resources.library_playlist_rename_title
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.track.TrackRow
 import com.github.adriianh.melo.util.MeloColors
@@ -338,11 +341,10 @@ fun LazyItemScope.ReorderablePlaylistTrackItem(
     ) { isDragging ->
         val bgColor = playlistItemBg(isDragging, isSelected, isCurrent, accentColor, activeAccent)
         MeloSwipeableItem(
-            onSwipeLeft = { if (!isSelectionMode && isEnabled) onSwipeLeft() },
-            onSwipeRight = { if (!isSelectionMode && isEnabled) onSwipeRight() },
-            swipeRightIcon = swipeRightIcon,
-            swipeLeftIcon = Icons.AutoMirrored.Filled.QueueMusic,
-            swipeLeftColor = MeloColors.brandAccent,
+            onSwipeRight = { onSwipeRight() },
+            trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft() }),
+            leadingAction = MeloSwipeActions.like(isLiked = swipeRightIcon == Icons.Default.HeartBroken),
+            enabled = !isSelectionMode && isEnabled,
         ) {
             Box(
                 modifier =
