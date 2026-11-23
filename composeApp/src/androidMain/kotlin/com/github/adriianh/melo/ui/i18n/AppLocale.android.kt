@@ -2,7 +2,9 @@
 
 package com.github.adriianh.melo.ui.i18n
 
+import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -42,7 +44,10 @@ internal actual fun ProvideAppLocale(
         }
     val localizedContext =
         remember(baseContext, localizedConfiguration) {
-            baseContext.createConfigurationContext(localizedConfiguration)
+            val configurationContext = baseContext.createConfigurationContext(localizedConfiguration)
+            object : ContextWrapper(baseContext) {
+                override fun getResources(): Resources = configurationContext.resources
+            }
         }
 
     CompositionLocalProvider(
