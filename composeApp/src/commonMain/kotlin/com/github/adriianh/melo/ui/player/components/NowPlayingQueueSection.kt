@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.background
@@ -18,10 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -51,9 +51,12 @@ import com.github.adriianh.melo.resources.player_section_now_playing
 import com.github.adriianh.melo.resources.player_section_suggestions
 import com.github.adriianh.melo.resources.player_section_up_next
 import com.github.adriianh.melo.resources.player_suggestions_empty
-import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.cards.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.cards.SuggestionTrackCard
+import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -123,228 +126,242 @@ fun NowPlayingQueueSection(
             }
         }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            Text(
-                stringResource(Res.string.player_section_now_playing).uppercase(),
-                style = MeloType.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = activeAccent,
-                letterSpacing = 1.sp,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(activeAccent.copy(alpha = 0.15f))
-                        .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                        .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(
-                    modifier = Modifier.size(42.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    MeloAsyncImage(
-                        url = state.albumArt,
-                        contentDescription = state.title,
-                        size = 42.dp,
-                        shape = RoundedCornerShape(6.dp),
-                    )
-                    if (state.isBuffering) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .matchParentSize()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color.Black.copy(alpha = 0.45f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp,
-                            )
-                        }
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        state.title,
-                        style = MeloType.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        state.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-
-        if (upNextTracks.isNotEmpty()) {
+    val revealGroup = rememberSwipeRevealGroup()
+    CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
+        LazyColumn(
+            state = listState,
+            modifier = modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             item {
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    stringResource(Res.string.player_section_up_next).uppercase(),
+                    stringResource(Res.string.player_section_now_playing).uppercase(),
                     style = MeloType.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    color = MeloColors.textMuted,
+                    fontWeight = FontWeight.Bold,
+                    color = activeAccent,
+                    letterSpacing = 1.sp,
                 )
-            }
-
-            itemsIndexed(
-                upNextTracks,
-                key = { index, _ -> upNextKeys.getOrElse(index) { "screen_q_$index" } },
-            ) { index, track ->
-                val itemKey = upNextKeys.getOrElse(index) { "screen_q_$index" }
-                ReorderableItem(
-                    state = reorderState,
-                    key = itemKey,
-                ) { isDragging ->
-                    MeloSwipeableItem(
-                        onSwipeLeft = { onSwipeQueueItem(queueState.currentIndex + 1 + index) },
-                        onSwipeRight = { onSwipeRight(track) },
-                        swipeRightIcon = if (isLiked(track)) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                        swipeLeftIcon = Icons.Default.Delete,
-                        swipeLeftColor = Color(0xFFE91E63),
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(activeAccent.copy(alpha = 0.15f))
+                            .border(0.5.dp, activeAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier.size(42.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (isDragging) activeAccent.copy(alpha = 0.2f) else Color.Transparent)
-                                    .clickable { queueViewModel.playTrackInQueue(track) }
-                                    .padding(horizontal = 4.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            MeloAsyncImage(
-                                url = track.artworkUrl,
-                                contentDescription = track.title,
-                                size = 36.dp,
-                                shape = RoundedCornerShape(6.dp),
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    track.title,
-                                    style = MeloType.labelMedium,
-                                    color = if (isDragging) activeAccent else MeloColors.textPrimary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    track.artist,
-                                    style = MeloType.labelSmall,
-                                    color = MeloColors.textMuted,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            IconButton(onClick = { onMoreClick(track, true) }) {
-                                Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(Res.string.a11y_more_options),
-                                    tint = MeloColors.textMuted,
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.DragHandle,
-                                contentDescription = stringResource(Res.string.a11y_reorder),
-                                tint = if (isDragging) activeAccent else MeloColors.textMuted,
+                        MeloAsyncImage(
+                            url = state.albumArt,
+                            contentDescription = state.title,
+                            size = 42.dp,
+                            shape = RoundedCornerShape(6.dp),
+                        )
+                        if (state.isBuffering) {
+                            Box(
                                 modifier =
                                     Modifier
-                                        .size(28.dp)
-                                        .padding(4.dp)
-                                        .draggableHandle(
-                                            onDragStarted = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        .matchParentSize()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color.Black.copy(alpha = 0.45f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp,
+                                )
+                            }
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            state.title,
+                            style = MeloType.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MeloColors.textPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            state.artist,
+                            style = MeloType.labelSmall,
+                            color = MeloColors.textMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+
+            if (upNextTracks.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        stringResource(Res.string.player_section_up_next).uppercase(),
+                        style = MeloType.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        color = MeloColors.textMuted,
+                    )
+                }
+
+                itemsIndexed(
+                    upNextTracks,
+                    key = { index, _ -> upNextKeys.getOrElse(index) { "screen_q_$index" } },
+                ) { index, track ->
+                    val itemKey = upNextKeys.getOrElse(index) { "screen_q_$index" }
+                    ReorderableItem(
+                        state = reorderState,
+                        key = itemKey,
+                    ) { isDragging ->
+                        MeloSwipeableItem(
+                            onSwipeRight = { onSwipeRight(track) },
+                            trailingActions =
+                                listOf(
+                                    MeloSwipeActions.remove() to {
+                                        onSwipeQueueItem(queueState.currentIndex + 1 + index)
+                                    },
+                                ),
+                            leadingAction = MeloSwipeActions.like(isLiked(track)),
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(
+                                            if (isDragging) {
+                                                activeAccent.copy(alpha = 0.2f)
+                                            } else {
+                                                Color.Transparent
                                             },
-                                        ),
-                            )
+                                        ).clickable { queueViewModel.playTrackInQueue(track) }
+                                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                MeloAsyncImage(
+                                    url = track.artworkUrl,
+                                    contentDescription = track.title,
+                                    size = 36.dp,
+                                    shape = RoundedCornerShape(6.dp),
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        track.title,
+                                        style = MeloType.labelMedium,
+                                        color = if (isDragging) activeAccent else MeloColors.textPrimary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        track.artist,
+                                        style = MeloType.labelSmall,
+                                        color = MeloColors.textMuted,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                IconButton(onClick = { onMoreClick(track, true) }) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = stringResource(Res.string.a11y_more_options),
+                                        tint = MeloColors.textMuted,
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.DragHandle,
+                                    contentDescription = stringResource(Res.string.a11y_reorder),
+                                    tint = if (isDragging) activeAccent else MeloColors.textMuted,
+                                    modifier =
+                                        Modifier
+                                            .size(28.dp)
+                                            .padding(4.dp)
+                                            .draggableHandle(
+                                                onDragStarted = {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                },
+                                            ),
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(Res.string.player_section_suggestions).uppercase(),
-                    style = MeloType.labelSmall,
-                    letterSpacing = 1.2.sp,
-                    color = MeloColors.textMuted,
-                )
-                IconButton(
-                    onClick = { queueViewModel.refreshSuggestions() },
-                    modifier = Modifier.size(24.dp),
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = stringResource(Res.string.a11y_refresh_suggestions),
-                        tint = MeloColors.textMuted,
-                        modifier = Modifier.size(16.dp),
+                    Text(
+                        stringResource(Res.string.player_section_suggestions).uppercase(),
+                        style = MeloType.labelSmall,
+                        letterSpacing = 1.2.sp,
+                        color = MeloColors.textMuted,
                     )
+                    IconButton(
+                        onClick = { queueViewModel.refreshSuggestions() },
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = stringResource(Res.string.a11y_refresh_suggestions),
+                            tint = MeloColors.textMuted,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
             }
-        }
 
-        if (isLoadingSuggestions && suggestions.isEmpty()) {
-            items(4) {
-                SuggestionSkeletonCard()
-            }
-        } else if (suggestions.isEmpty()) {
-            item {
-                Text(
-                    stringResource(Res.string.player_suggestions_empty),
-                    style = MeloType.labelSmall,
-                    color = MeloColors.textMuted,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
-            }
-        } else {
-            itemsIndexed(
-                suggestions,
-                key = { index, _ -> suggestionKeys.getOrElse(index) { "screen_sugg_$index" } },
-            ) { _, track ->
-                MeloSwipeableItem(
-                    onSwipeLeft = { onSwipeSuggestionItem(track) },
-                    onSwipeRight = { onSwipeRight(track) },
-                    swipeRightIcon = if (isLiked(track)) Icons.Default.HeartBroken else Icons.Default.Favorite,
-                ) {
-                    Box {
-                        SuggestionTrackCard(
-                            track = track,
-                            activeAccent = activeAccent,
-                            isCurrent = state.currentTrack?.id == track.id,
-                            isPlaying = state.isPlaying && state.currentTrack?.id == track.id,
-                            onClick = { queueViewModel.playTrack(track) },
-                            onAddClick = {
-                                onPlayNextSuggestionItem?.invoke(track)
-                                    ?: queueViewModel.insertTrackNext(track)
-                            },
-                            onMoreClick = { onMoreClick(track, false) },
-                        )
+            if (isLoadingSuggestions && suggestions.isEmpty()) {
+                items(4) {
+                    SuggestionSkeletonCard()
+                }
+            } else if (suggestions.isEmpty()) {
+                item {
+                    Text(
+                        stringResource(Res.string.player_suggestions_empty),
+                        style = MeloType.labelSmall,
+                        color = MeloColors.textMuted,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    suggestions,
+                    key = { index, _ -> suggestionKeys.getOrElse(index) { "screen_sugg_$index" } },
+                ) { _, track ->
+                    MeloSwipeableItem(
+                        onSwipeRight = { onSwipeRight(track) },
+                        trailingActions =
+                            listOf(
+                                MeloSwipeActions.queue() to { onSwipeSuggestionItem(track) },
+                            ),
+                        leadingAction = MeloSwipeActions.like(isLiked(track)),
+                    ) {
+                        Box {
+                            SuggestionTrackCard(
+                                track = track,
+                                activeAccent = activeAccent,
+                                isCurrent = state.currentTrack?.id == track.id,
+                                isPlaying = state.isPlaying && state.currentTrack?.id == track.id,
+                                onClick = { queueViewModel.playTrack(track) },
+                                onAddClick = {
+                                    onPlayNextSuggestionItem?.invoke(track)
+                                        ?: queueViewModel.insertTrackNext(track)
+                                },
+                                onMoreClick = { onMoreClick(track, false) },
+                            )
+                        }
                     }
                 }
             }

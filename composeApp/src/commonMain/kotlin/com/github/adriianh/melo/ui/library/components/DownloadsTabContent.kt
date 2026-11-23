@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.foundation.BorderStroke
@@ -40,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +77,10 @@ import com.github.adriianh.melo.resources.section_artists
 import com.github.adriianh.melo.resources.section_songs
 import com.github.adriianh.melo.ui.components.cards.AlbumCard
 import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
+import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -100,6 +107,9 @@ fun DownloadsTabContent(
     onDeleteDownload: (String) -> Unit,
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    isLiked: (Track) -> Boolean = { false },
+    onSwipeLeft: (Track) -> Unit = {},
+    onSwipeRight: (Track) -> Unit = {},
     activeDownloads: Map<String, Float> = emptyMap(),
     onAlbumClick: (id: String, title: String, artwork: String?, author: String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (id: String, name: String, artwork: String?) -> Unit = { _, _, _ -> },
@@ -263,113 +273,128 @@ fun DownloadsTabContent(
 
         when (selectedFilter) {
             DownloadsFilter.SONGS -> {
-                LazyColumn(
-                    state = listState,
-                    contentPadding = contentPadding,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize().desktopScroll(listState),
-                ) {
-                    item {
-                        Column(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+                val revealGroup = rememberSwipeRevealGroup()
+                CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = contentPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize().desktopScroll(listState),
+                    ) {
+                        item {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text =
-                                            pluralStringResource(
-                                                Res.plurals.library_downloads_count,
-                                                downloadedTracks.size,
-                                                downloadedTracks.size,
-                                            ),
-                                        style = MeloType.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MeloColors.textPrimary,
-                                    )
-                                    Text(
-                                        text =
-                                            stringResource(
-                                                Res.string.library_downloads_space_used,
-                                                formatOneDecimal(totalSizeMb),
-                                            ),
-                                        style = MeloType.labelSmall,
-                                        color = MeloColors.textSecondary,
-                                    )
-                                }
-                            }
-
-                            if (activeDownloads.isNotEmpty()) {
-                                Surface(
-                                    color = MeloColors.surface1,
-                                    shape = RoundedCornerShape(10.dp),
-                                    border =
-                                        BorderStroke(
-                                            0.5.dp,
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                                        ),
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                        )
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text =
                                                 pluralStringResource(
-                                                    Res.plurals.library_downloads_background_count,
-                                                    activeDownloads.size,
-                                                    activeDownloads.size,
+                                                    Res.plurals.library_downloads_count,
+                                                    downloadedTracks.size,
+                                                    downloadedTracks.size,
                                                 ),
-                                            style = MeloType.labelMedium,
+                                            style = MeloType.titleMedium,
+                                            fontWeight = FontWeight.Bold,
                                             color = MeloColors.textPrimary,
+                                        )
+                                        Text(
+                                            text =
+                                                stringResource(
+                                                    Res.string.library_downloads_space_used,
+                                                    formatOneDecimal(totalSizeMb),
+                                                ),
+                                            style = MeloType.labelSmall,
+                                            color = MeloColors.textSecondary,
                                         )
                                     }
                                 }
-                            }
 
-                            if (downloadedTracks.isNotEmpty()) {
-                                Button(
-                                    onClick = onPlayAll,
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Spacer(modifier = Modifier.size(8.dp))
-                                    Text(stringResource(Res.string.a11y_play_all))
+                                if (activeDownloads.isNotEmpty()) {
+                                    Surface(
+                                        color = MeloColors.surface1,
+                                        shape = RoundedCornerShape(10.dp),
+                                        border =
+                                            BorderStroke(
+                                                0.5.dp,
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                            ),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    ) {
+                                        Row(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                            )
+                                            Text(
+                                                text =
+                                                    pluralStringResource(
+                                                        Res.plurals.library_downloads_background_count,
+                                                        activeDownloads.size,
+                                                        activeDownloads.size,
+                                                    ),
+                                                style = MeloType.labelMedium,
+                                                color = MeloColors.textPrimary,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (downloadedTracks.isNotEmpty()) {
+                                    Button(
+                                        onClick = onPlayAll,
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Spacer(modifier = Modifier.size(8.dp))
+                                        Text(stringResource(Res.string.a11y_play_all))
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    items(downloadedTracks, key = { it.track.id }) { offlineTrack ->
-                        DownloadedTrackRow(
-                            offlineTrack = offlineTrack,
-                            onClick = { onPlayTrack(offlineTrack.track) },
-                            onDelete = { onDeleteDownload(offlineTrack.track.id) },
-                            onMoreClick = { onMoreClick(offlineTrack.track) },
-                        )
+                        items(downloadedTracks, key = { it.track.id }) { offlineTrack ->
+                            val track = offlineTrack.track
+                            MeloSwipeableItem(
+                                onSwipeRight = { onSwipeRight(track) },
+                                trailingActions =
+                                    listOf(
+                                        MeloSwipeActions.queue() to { onSwipeLeft(track) },
+                                        MeloSwipeActions.remove() to { onDeleteDownload(track.id) },
+                                    ),
+                                leadingAction = MeloSwipeActions.like(isLiked(track)),
+                                cornerRadius = 12,
+                            ) {
+                                DownloadedTrackRow(
+                                    offlineTrack = offlineTrack,
+                                    onClick = { onPlayTrack(track) },
+                                    onDelete = { onDeleteDownload(track.id) },
+                                    onMoreClick = { onMoreClick(track) },
+                                )
+                            }
+                        }
                     }
                 }
             }

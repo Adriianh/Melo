@@ -3,9 +3,11 @@ package com.github.adriianh.melo.ui.components.track
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +25,8 @@ import com.github.adriianh.melo.resources.track_snackbar_download_removed
 import com.github.adriianh.melo.resources.track_snackbar_downloading
 import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
+import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
+import com.github.adriianh.melo.ui.components.controls.QueueSwipeContext
 import com.github.adriianh.melo.ui.components.feedback.LocalMeloSnackbar
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarState
 import com.github.adriianh.melo.ui.i18n.UiText
@@ -120,6 +124,47 @@ class TrackInteractionState(
             actionColor = actionColor,
             onAction = { queueViewModel.removeTrackFromQueue(track) },
         )
+    }
+
+    fun showRemovedFromQueueSnackbar(
+        track: Track,
+        actionColor: Color? = null,
+    ) {
+        val removedIndex = queueViewModel.removeTrackFromQueue(track)
+        if (removedIndex == -1) return
+        snackbar.show(
+            msg = UiText.Resource(Res.string.track_snackbar_removed_from_queue),
+            vector = Icons.Default.Delete,
+            action = UiText.Resource(Res.string.common_action_undo),
+            actionColor = actionColor,
+            onAction = { queueViewModel.insertTrackAt(track, removedIndex) },
+        )
+    }
+
+    @Composable
+    fun rememberQueuedTrackIds(): Set<String> {
+        val queueState by queueViewModel.queueState.collectAsState()
+        return remember(queueState.tracks, queueState.currentIndex) {
+            if (queueState.currentIndex >= 0 && queueState.currentIndex < queueState.tracks.size) {
+                queueState.tracks
+                    .drop(queueState.currentIndex + 1)
+                    .map { it.id }
+                    .toSet()
+            } else {
+                queueState.tracks.map { it.id }.toSet()
+            }
+        }
+    }
+
+    @Composable
+    fun rememberQueueSwipeContext(actionColor: Color? = null): QueueSwipeContext {
+        val queuedIds = rememberQueuedTrackIds()
+        return remember(queuedIds, actionColor) {
+            QueueSwipeContext(
+                queuedTrackIds = queuedIds,
+                onRemoveFromQueue = { track -> showRemovedFromQueueSnackbar(track, actionColor) },
+            )
+        }
     }
 
     fun showToggledLikeSnackbar(

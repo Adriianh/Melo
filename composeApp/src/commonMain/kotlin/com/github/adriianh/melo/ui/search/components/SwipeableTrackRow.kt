@@ -1,11 +1,11 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.search.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.track.TrackRow
 
@@ -24,10 +24,11 @@ fun SwipeableTrackRow(
     onLongClick: (() -> Unit)? = null,
 ) {
     MeloSwipeableItem(
-        onSwipeLeft = { if (!isSelectionMode) onSwipeLeft(track) },
-        onSwipeRight = { if (!isSelectionMode) onSwipeRight(track) },
-        swipeRightIcon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.Favorite,
-        modifier = modifier
+        onSwipeRight = { onSwipeRight(track) },
+        trailingActions = MeloSwipeActions.queueTrailingActions(track) { onSwipeLeft(track) },
+        leadingAction = MeloSwipeActions.like(isLiked),
+        enabled = !isSelectionMode,
+        modifier = modifier,
     ) {
         TrackRow(
             track = track,
@@ -36,7 +37,7 @@ fun SwipeableTrackRow(
             isSelectionMode = isSelectionMode,
             isSelected = isSelected,
             onSelectionToggle = onSelectionToggle,
-            onLongClick = onLongClick
+            onLongClick = onLongClick,
         )
     }
 }
