@@ -110,6 +110,7 @@ fun ArtistDetailScreen(
         remember(libraryState.likedSongs) {
             libraryState.likedSongs.map { it.id }.toSet()
         }
+    val queuedTrackIds = interaction.rememberQueuedTrackIds()
 
     LaunchedEffect(artistId) {
         viewModel.loadArtist(artistId, initialName, initialArtwork)
@@ -351,6 +352,8 @@ fun ArtistDetailScreen(
                                     activeAccent,
                                 )
                             },
+                            isQueued = { song -> song.id in queuedTrackIds },
+                            onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                             accentColor = accentColor,
                             keyPrefix = "artist_downloaded",
                             itemModifier = Modifier.padding(horizontal = 16.dp),
@@ -407,6 +410,8 @@ fun ArtistDetailScreen(
                                     activeAccent,
                                 )
                             },
+                            isQueued = { song -> song.id in queuedTrackIds },
+                            onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                             accentColor = accentColor,
                             keyPrefix = "artist_top",
                             itemModifier = Modifier.padding(horizontal = 16.dp),

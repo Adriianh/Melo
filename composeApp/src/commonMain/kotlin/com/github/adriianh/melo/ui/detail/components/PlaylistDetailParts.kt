@@ -332,6 +332,8 @@ fun LazyItemScope.ReorderablePlaylistTrackItem(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     swipeRightIcon: ImageVector,
+    isQueued: Boolean = false,
+    onRemoveFromQueue: (() -> Unit)? = null,
     isEnabled: Boolean = true,
 ) {
     ReorderableItem(
@@ -342,7 +344,12 @@ fun LazyItemScope.ReorderablePlaylistTrackItem(
         val bgColor = playlistItemBg(isDragging, isSelected, isCurrent, accentColor, activeAccent)
         MeloSwipeableItem(
             onSwipeRight = { onSwipeRight() },
-            trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft() }),
+            trailingActions =
+                MeloSwipeActions.queueTrailingActions(
+                    isQueued = isQueued,
+                    onQueue = { onSwipeLeft() },
+                    onRemove = onRemoveFromQueue,
+                ),
             leadingAction = MeloSwipeActions.like(isLiked = swipeRightIcon == Icons.Default.HeartBroken),
             enabled = !isSelectionMode && isEnabled,
         ) {

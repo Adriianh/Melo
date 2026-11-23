@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.search
 
 import androidx.compose.animation.AnimatedVisibility
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,8 +36,9 @@ import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.search_placeholder_library
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.controls.LocalQueueSwipeContext
 import com.github.adriianh.melo.ui.components.controls.MeloSearchBar
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryViewModel
@@ -177,78 +181,89 @@ fun SearchScreen(
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            Crossfade(
-                targetState =
-                    when {
-                        uiState.isBrowsingCategory || uiState.browseCategoryResult != null -> "category"
-                        uiState.query.isNotBlank() -> "results"
-                        else -> "explore"
-                    },
-            ) { state ->
-                when (state) {
-                    "category" ->
-                        CategoryBrowsingContent(
-                            uiState = uiState,
-                            paddingValues = paddingValues,
-                            onBack = viewModel::exitBrowsing,
-                            onAlbumClick = onAlbumClick,
-                            onArtistClick = onArtistClick,
-                            onPlaylistClick = onPlaylistClick,
-                            queueViewModel = queueViewModel,
-                            onMoreClick = { interaction.openContextMenu(it) },
-                            onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
-                            isLiked = { track -> track.id in likedTrackIds },
-                            onSwipeRight = { track ->
-                                val trackIsLiked = track.id in likedTrackIds
-                                interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
-                            },
-                            isSelectionMode = isSelectionMode,
-                            selectedTrackIds = selectedTrackIds,
-                            onToggleSelectTrack = { track ->
-                                selectedTrackIds =
-                                    if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
-                            },
-                            onTrackLongClick = { track ->
-                                if (!isSelectionMode) selectedTrackIds = setOf(track.id)
-                            },
-                        )
+            val queueSwipeContext = interaction.rememberQueueSwipeContext(activeAccent)
+            CompositionLocalProvider(LocalQueueSwipeContext provides queueSwipeContext) {
+                Crossfade(
+                    targetState =
+                        when {
+                            uiState.isBrowsingCategory || uiState.browseCategoryResult != null -> "category"
+                            uiState.query.isNotBlank() -> "results"
+                            else -> "explore"
+                        },
+                ) { state ->
+                    when (state) {
+                        "category" ->
+                            CategoryBrowsingContent(
+                                uiState = uiState,
+                                paddingValues = paddingValues,
+                                onBack = viewModel::exitBrowsing,
+                                onAlbumClick = onAlbumClick,
+                                onArtistClick = onArtistClick,
+                                onPlaylistClick = onPlaylistClick,
+                                queueViewModel = queueViewModel,
+                                onMoreClick = { interaction.openContextMenu(it) },
+                                onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
+                                isLiked = { track -> track.id in likedTrackIds },
+                                onSwipeRight = { track ->
+                                    val trackIsLiked = track.id in likedTrackIds
+                                    interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
+                                },
+                                isSelectionMode = isSelectionMode,
+                                selectedTrackIds = selectedTrackIds,
+                                onToggleSelectTrack = { track ->
+                                    selectedTrackIds =
+                                        if (track.id in selectedTrackIds) {
+                                            selectedTrackIds - track.id
+                                        } else {
+                                            selectedTrackIds + track.id
+                                        }
+                                },
+                                onTrackLongClick = { track ->
+                                    if (!isSelectionMode) selectedTrackIds = setOf(track.id)
+                                },
+                            )
 
-                    "results" ->
-                        SearchResultsContent(
-                            uiState = uiState,
-                            paddingValues = paddingValues,
-                            onAlbumClick = onAlbumClick,
-                            onArtistClick = onArtistClick,
-                            onPlaylistClick = onPlaylistClick,
-                            queueViewModel = queueViewModel,
-                            onMoreClick = { interaction.openContextMenu(it) },
-                            onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
-                            isLiked = { track -> track.id in likedTrackIds },
-                            onSwipeRight = { track ->
-                                val trackIsLiked = track.id in likedTrackIds
-                                interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
-                            },
-                            isSelectionMode = isSelectionMode,
-                            selectedTrackIds = selectedTrackIds,
-                            onToggleSelectTrack = { track ->
-                                selectedTrackIds =
-                                    if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
-                            },
-                            onTrackLongClick = { track ->
-                                if (!isSelectionMode) selectedTrackIds = setOf(track.id)
-                            },
-                        )
+                        "results" ->
+                            SearchResultsContent(
+                                uiState = uiState,
+                                paddingValues = paddingValues,
+                                onAlbumClick = onAlbumClick,
+                                onArtistClick = onArtistClick,
+                                onPlaylistClick = onPlaylistClick,
+                                queueViewModel = queueViewModel,
+                                onMoreClick = { interaction.openContextMenu(it) },
+                                onSwipeLeft = { interaction.showAddedToQueueSnackbar(it, activeAccent) },
+                                isLiked = { track -> track.id in likedTrackIds },
+                                onSwipeRight = { track ->
+                                    val trackIsLiked = track.id in likedTrackIds
+                                    interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
+                                },
+                                isSelectionMode = isSelectionMode,
+                                selectedTrackIds = selectedTrackIds,
+                                onToggleSelectTrack = { track ->
+                                    selectedTrackIds =
+                                        if (track.id in selectedTrackIds) {
+                                            selectedTrackIds - track.id
+                                        } else {
+                                            selectedTrackIds + track.id
+                                        }
+                                },
+                                onTrackLongClick = { track ->
+                                    if (!isSelectionMode) selectedTrackIds = setOf(track.id)
+                                },
+                            )
 
-                    "explore" ->
-                        ExploreContent(
-                            uiState = uiState,
-                            paddingValues = paddingValues,
-                            onAlbumClick = onAlbumClick,
-                            onPlaylistClick = onPlaylistClick,
-                            onBrowseCategory = viewModel::browseCategory,
-                            queueViewModel = queueViewModel,
-                            onMoreClick = { interaction.openContextMenu(it) },
-                        )
+                        "explore" ->
+                            ExploreContent(
+                                uiState = uiState,
+                                paddingValues = paddingValues,
+                                onAlbumClick = onAlbumClick,
+                                onPlaylistClick = onPlaylistClick,
+                                onBrowseCategory = viewModel::browseCategory,
+                                queueViewModel = queueViewModel,
+                                onMoreClick = { interaction.openContextMenu(it) },
+                            )
+                    }
                 }
             }
 

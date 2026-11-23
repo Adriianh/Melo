@@ -95,8 +95,10 @@ fun LocalTabContent(
     onMoreClick: (Track) -> Unit,
     modifier: Modifier = Modifier,
     isLiked: (Track) -> Boolean = { false },
+    isQueued: (Track) -> Boolean = { false },
     onSwipeLeft: (Track) -> Unit = {},
     onSwipeRight: (Track) -> Unit = {},
+    onRemoveFromQueue: ((Track) -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val requestAudioPermission =
@@ -304,7 +306,12 @@ fun LocalTabContent(
             items(localTracks, key = { it.id }) { track ->
                 MeloSwipeableItem(
                     onSwipeRight = { onSwipeRight(track) },
-                    trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft(track) }),
+                    trailingActions =
+                        MeloSwipeActions.queueTrailingActions(
+                            isQueued = isQueued(track),
+                            onQueue = { onSwipeLeft(track) },
+                            onRemove = onRemoveFromQueue?.let { remove -> { remove(track) } },
+                        ),
                     leadingAction = MeloSwipeActions.like(isLiked(track)),
                     cornerRadius = 12,
                 ) {

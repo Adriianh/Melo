@@ -62,6 +62,7 @@ fun HomeSearchResultsView(
         }
     } else {
         val revealGroup = rememberSwipeRevealGroup()
+        val queuedTrackIds = interaction.rememberQueuedTrackIds()
         CompositionLocalProvider(LocalSwipeRevealGroup provides revealGroup) {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
@@ -91,10 +92,10 @@ fun HomeSearchResultsView(
                             interaction.showToggledLikeSnackbar(track, isLiked, activeAccent)
                         },
                         trailingActions =
-                            listOf(
-                                MeloSwipeActions.queue() to {
-                                    interaction.showAddedToQueueSnackbar(track, activeAccent)
-                                },
+                            MeloSwipeActions.queueTrailingActions(
+                                isQueued = track.id in queuedTrackIds,
+                                onQueue = { interaction.showAddedToQueueSnackbar(track, activeAccent) },
+                                onRemove = { interaction.showRemovedFromQueueSnackbar(track, activeAccent) },
                             ),
                         leadingAction = MeloSwipeActions.like(isLiked),
                         enabled = !isSelectionMode,

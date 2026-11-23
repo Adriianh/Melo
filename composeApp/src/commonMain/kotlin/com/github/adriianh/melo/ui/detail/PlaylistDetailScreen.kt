@@ -118,6 +118,7 @@ fun PlaylistDetailScreen(
         remember(libraryState.likedSongs) {
             libraryState.likedSongs.map { it.id }.toSet()
         }
+    val queuedTrackIds = interaction.rememberQueuedTrackIds()
 
     val isCustomPlaylist =
         remember(playlistId) {
@@ -524,6 +525,10 @@ fun PlaylistDetailScreen(
                                     onSwipeLeft = {
                                         interaction.showAddedToQueueSnackbar(song, activeAccent)
                                     },
+                                    isQueued = song.id in queuedTrackIds,
+                                    onRemoveFromQueue = {
+                                        interaction.showRemovedFromQueueSnackbar(song, activeAccent)
+                                    },
                                     onSwipeRight = {
                                         interaction.showToggledLikeSnackbar(
                                             song,
@@ -593,6 +598,10 @@ fun PlaylistDetailScreen(
                                         isLiked,
                                         activeAccent,
                                     )
+                                },
+                                isQueued = { song -> song.id in queuedTrackIds },
+                                onRemoveFromQueue = {
+                                    interaction.showRemovedFromQueueSnackbar(it, activeAccent)
                                 },
                                 accentColor = accentColor,
                                 keyPrefix = "playlist",

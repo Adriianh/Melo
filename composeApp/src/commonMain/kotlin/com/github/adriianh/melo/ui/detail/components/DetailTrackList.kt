@@ -26,6 +26,8 @@ fun LazyListScope.detailTrackItems(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     accentColor: Color,
+    isQueued: (Track) -> Boolean = { false },
+    onRemoveFromQueue: ((Track) -> Unit)? = null,
     keyPrefix: String = "detail",
     itemModifier: Modifier = Modifier,
     isDownloaded: (Track) -> Boolean = { false },
@@ -52,7 +54,12 @@ fun LazyListScope.detailTrackItems(
         Box(modifier = itemModifier) {
             MeloSwipeableItem(
                 onSwipeRight = { onSwipeRight(song) },
-                trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft(song) }),
+                trailingActions =
+                    MeloSwipeActions.queueTrailingActions(
+                        isQueued = isQueued(song),
+                        onQueue = { onSwipeLeft(song) },
+                        onRemove = onRemoveFromQueue?.let { remove -> { remove(song) } },
+                    ),
                 leadingAction = MeloSwipeActions.like(liked),
                 enabled = !isSelectionMode && isTrackEnabled,
             ) {

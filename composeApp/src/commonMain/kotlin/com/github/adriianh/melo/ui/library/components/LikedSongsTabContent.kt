@@ -33,6 +33,8 @@ fun LikedSongsTabContent(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    isQueued: (Track) -> Boolean = { false },
+    onRemoveFromQueue: ((Track) -> Unit)? = null,
     isSelectionMode: Boolean = false,
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
@@ -69,31 +71,26 @@ fun LikedSongsTabContent(
                 MeloSwipeableItem(
                     onSwipeRight = { onSwipeRight(track) },
                     trailingActions =
-                        if (isTrackEnabled) {
-                            listOf(MeloSwipeActions.queue() to { onSwipeLeft(track) })
-                        } else {
+                        if (!isTrackEnabled) {
                             emptyList()
+                        } else {
+                            MeloSwipeActions.queueTrailingActions(
+                                isQueued = isQueued(track),
+                                onQueue = { onSwipeLeft(track) },
+                                onRemove = onRemoveFromQueue?.let { remove -> { remove(track) } },
+                            )
                         },
                     leadingAction = MeloSwipeActions.like(isLiked = true),
                     enabled = !isSelectionMode,
                 ) {
                     TrackRow(
                         track = track,
-                        onClick = {
-                            if (isTrackEnabled && !downloading) {
-                                onPlayTrack(track)
-                            }
-                        },
+                        onClick = { if (isTrackEnabled && !downloading) onPlayTrack(track) },
                         isEnabled = isTrackEnabled,
                         isDownloaded = downloaded,
                         isDownloading = downloading,
                         downloadProgress = progress,
-                        onMoreClick =
-                            if (isSelectionMode) {
-                                null
-                            } else {
-                                { onMoreClick(track) }
-                            },
+                        onMoreClick = if (isSelectionMode) null else ({ onMoreClick(track) }),
                         isSelectionMode = isSelectionMode,
                         isSelected = isSelected,
                         onSelectionToggle = { onToggleSelectTrack?.invoke(track) },

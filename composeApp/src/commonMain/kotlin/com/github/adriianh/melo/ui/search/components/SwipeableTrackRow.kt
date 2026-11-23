@@ -25,7 +25,7 @@ fun SwipeableTrackRow(
 ) {
     MeloSwipeableItem(
         onSwipeRight = { onSwipeRight(track) },
-        trailingActions = listOf(MeloSwipeActions.queue() to { onSwipeLeft(track) }),
+        trailingActions = MeloSwipeActions.queueTrailingActions(track) { onSwipeLeft(track) },
         leadingAction = MeloSwipeActions.like(isLiked),
         enabled = !isSelectionMode,
         modifier = modifier,

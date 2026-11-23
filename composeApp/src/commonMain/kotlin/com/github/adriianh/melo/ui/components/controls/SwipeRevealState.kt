@@ -25,6 +25,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.swipe_action_like
 import com.github.adriianh.melo.resources.swipe_action_queue
@@ -90,7 +91,42 @@ object MeloSwipeActions {
             contentColor = RemoveContent,
             commitColor = RemoveCommit,
         )
+
+    @Composable
+    fun queueTrailingActions(
+        isQueued: Boolean,
+        onQueue: () -> Unit,
+        onRemove: (() -> Unit)? = null,
+    ): List<Pair<SwipeAction, () -> Unit>> =
+        buildList {
+            add(queue() to onQueue)
+            if (isQueued && onRemove != null) {
+                add(remove() to onRemove)
+            }
+        }
+
+    @Composable
+    fun queueTrailingActions(
+        track: Track,
+        onQueue: () -> Unit,
+    ): List<Pair<SwipeAction, () -> Unit>> {
+        val queueContext = LocalQueueSwipeContext.current
+        val onRemove = queueContext.onRemoveFromQueue
+        return queueTrailingActions(
+            isQueued = track.id in queueContext.queuedTrackIds,
+            onQueue = onQueue,
+            onRemove = onRemove?.let { remove -> { remove(track) } },
+        )
+    }
 }
+
+@Immutable
+data class QueueSwipeContext(
+    val queuedTrackIds: Set<String> = emptySet(),
+    val onRemoveFromQueue: ((Track) -> Unit)? = null,
+)
+
+val LocalQueueSwipeContext = compositionLocalOf { QueueSwipeContext() }
 
 @Stable
 class SwipeRevealGroup {

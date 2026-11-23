@@ -115,9 +115,9 @@ fun CategoryBrowsingContent(
                                 MeloSwipeableItem(
                                     onSwipeRight = { onSwipeRight(item.track) },
                                     trailingActions =
-                                        listOf(
-                                            MeloSwipeActions.queue() to { onSwipeLeft(item.track) },
-                                        ),
+                                        MeloSwipeActions.queueTrailingActions(item.track) {
+                                            onSwipeLeft(item.track)
+                                        },
                                     leadingAction = MeloSwipeActions.like(isLiked(item.track)),
                                     enabled = !isSelectionMode,
                                 ) {

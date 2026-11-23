@@ -118,6 +118,7 @@ fun AlbumDetailScreen(
         remember(libraryState.likedSongs) {
             libraryState.likedSongs.map { it.id }.toSet()
         }
+    val queuedTrackIds = interaction.rememberQueuedTrackIds()
 
     LaunchedEffect(albumId) {
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
@@ -469,6 +470,8 @@ fun AlbumDetailScreen(
                                     activeAccent,
                                 )
                             },
+                            isQueued = { song -> song.id in queuedTrackIds },
+                            onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                             accentColor = accentColor,
                             keyPrefix = "album",
                         )

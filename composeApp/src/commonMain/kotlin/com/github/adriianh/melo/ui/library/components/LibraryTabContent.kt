@@ -52,6 +52,7 @@ fun LibraryTabContent(
         remember(state.likedSongs) {
             state.likedSongs.map { it.id }.toSet()
         }
+    val queuedTrackIds = interaction.rememberQueuedTrackIds()
     val isTrackDownloaded: (Track) -> Boolean = { track ->
         track.id in state.downloadedTrackIds ||
             track.id.removePrefix("piped:") in state.downloadedTrackIds ||
@@ -111,6 +112,8 @@ fun LibraryTabContent(
                         onSwipeLeft = {
                             interaction.showAddedToQueueSnackbar(it, activeAccent)
                         },
+                        isQueued = { track -> track.id in queuedTrackIds },
+                        onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                         onSwipeRight = { track ->
                             viewModel.toggleLike(track.id, false)
                             interaction.snackbar.show(
@@ -187,6 +190,8 @@ fun LibraryTabContent(
                         onSwipeLeft = {
                             interaction.showAddedToQueueSnackbar(it, activeAccent)
                         },
+                        isQueued = { track -> track.id in queuedTrackIds },
+                        onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                         onSwipeRight = { track ->
                             val trackIsLiked = track.id in likedTrackIds
                             interaction.showToggledLikeSnackbar(
@@ -244,6 +249,8 @@ fun LibraryTabContent(
                         onSwipeLeft = {
                             interaction.showAddedToQueueSnackbar(it, activeAccent)
                         },
+                        isQueued = { track -> track.id in queuedTrackIds },
+                        onRemoveFromQueue = { interaction.showRemovedFromQueueSnackbar(it, activeAccent) },
                         onSwipeRight = { track ->
                             val trackIsLiked = track.id in likedTrackIds
                             interaction.showToggledLikeSnackbar(

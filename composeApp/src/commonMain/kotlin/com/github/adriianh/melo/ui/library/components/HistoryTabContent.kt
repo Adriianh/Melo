@@ -36,6 +36,8 @@ fun HistoryTabContent(
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
     modifier: Modifier = Modifier,
+    isQueued: (Track) -> Boolean = { false },
+    onRemoveFromQueue: ((Track) -> Unit)? = null,
     isSelectionMode: Boolean = false,
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
@@ -86,6 +88,8 @@ fun HistoryTabContent(
                     onMoreClick = onMoreClick,
                     onSwipeLeft = onSwipeLeft,
                     onSwipeRight = onSwipeRight,
+                    isQueued = isQueued(track),
+                    onRemoveFromQueue = onRemoveFromQueue,
                     onToggleSelectTrack = onToggleSelectTrack,
                     onTrackLongClick = onTrackLongClick,
                 )
@@ -108,6 +112,8 @@ private fun historyItemRow(
     onMoreClick: (Track) -> Unit,
     onSwipeLeft: (Track) -> Unit,
     onSwipeRight: (Track) -> Unit,
+    isQueued: Boolean,
+    onRemoveFromQueue: ((Track) -> Unit)?,
     onToggleSelectTrack: ((Track) -> Unit)?,
     onTrackLongClick: ((Track) -> Unit)?,
 ) {
@@ -130,7 +136,11 @@ private fun historyItemRow(
         onSwipeRight = { onSwipeRight(track) },
         trailingActions =
             if (isTrackEnabled) {
-                listOf(MeloSwipeActions.queue() to { onSwipeLeft(track) })
+                MeloSwipeActions.queueTrailingActions(
+                    isQueued = isQueued,
+                    onQueue = { onSwipeLeft(track) },
+                    onRemove = onRemoveFromQueue?.let { remove -> { remove(track) } },
+                )
             } else {
                 emptyList()
             },
