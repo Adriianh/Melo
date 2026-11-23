@@ -7,6 +7,22 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target to run (partial runs skip publishing)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - tui
+          - desktop
+          - android
+      quick_build:
+        description: 'Use GraalVM -Ob quick build for TUI (faster, less RAM)'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -47,6 +63,7 @@ jobs:
   # ─── Build TUI CLI (GraalVM native) ───────────────────────────────────────
   build-tui:
     needs: resolve-version
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'tui'
     strategy:
       fail-fast: false
       matrix:
@@ -101,7 +118,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build distribution
-        run: ./gradlew :tui:${{ matrix.task }} -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }}
+        run: |
+          extra_args=""
+          if [[ "${GITHUB_REF}" != refs/tags/v* ]] && [[ "${{ github.event_name != 'workflow_dispatch' || inputs.quick_build }}" == "true" ]]; then
+            extra_args="-Pgraalvm.quickBuild=true"
+          fi
+          ./gradlew :tui:${{ matrix.task }} \
+            --no-daemon \
+            -Dkotlin.compiler.execution.strategy=in-process \
+            -Pmelo.version=${{ needs.resolve-version.outputs.melo_version }} \
+            $extra_args
         shell: bash
 
       - name: Upload artifact
@@ -115,6 +141,7 @@ jobs:
   # (jpackage cannot cross-compile).
   build-desktop:
     needs: resolve-version
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'desktop'
     strategy:
       fail-fast: false
       matrix:
@@ -187,6 +214,7 @@ jobs:
   # in-app update with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
   build-android:
     needs: resolve-version
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'android'
     runs-on: ubuntu-latest
 
     steps:
@@ -246,6 +274,7 @@ jobs:
   #   - tag v*           -> publish the official release
   release:
     needs: [ build-tui, build-desktop, build-android ]
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all'
     runs-on: ubuntu-latest
 
     steps:

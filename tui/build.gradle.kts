@@ -34,6 +34,7 @@ dependencies {
 }
 
 val appVersion: String = providers.gradleProperty("melo.version").getOrElse("2.5.0")
+val useQuickBuild: Boolean = providers.gradleProperty("graalvm.quickBuild").map { it.toBoolean() }.getOrElse(false)
 val appName = "melo"
 
 // Root of the distribution script templates
@@ -92,6 +93,7 @@ graalvmNative {
             verbose.set(true)
 
             // Optimized for modern GraalVM
+            quickBuild.set(useQuickBuild)
             buildArgs.addAll(
                 "-H:+JNI",
                 "--no-fallback",
