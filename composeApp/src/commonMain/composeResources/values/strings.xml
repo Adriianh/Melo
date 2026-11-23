@@ -15,6 +15,12 @@
     <string name="common_action_back">Volver</string>
     <string name="common_action_you">Tú</string>
 
+    <!-- Acciones de deslizamiento -->
+    <string name="swipe_action_like">Me gusta</string>
+    <string name="swipe_action_unlike">Quitar</string>
+    <string name="swipe_action_queue">Cola</string>
+    <string name="swipe_action_remove">Eliminar</string>
+
     <!-- Errores -->
     <string name="common_error_with_detail">Error: %1$s</string>
     <string name="common_error_unknown">No se pudo completar la operación</string>
