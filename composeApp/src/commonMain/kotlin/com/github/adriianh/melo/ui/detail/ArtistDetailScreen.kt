@@ -116,7 +116,7 @@ fun ArtistDetailScreen(
         viewModel.loadArtist(artistId, initialName, initialArtwork)
     }
 
-    val artist = (uiState.entity as? SearchResult.Artist)?.takeIf { it.id == artistId }
+    val artist = uiState.entity as? SearchResult.Artist
     val downloadedTracks = uiState.downloadedArtistTracks
     val fallbackArtistName = downloadedTracks.firstOrNull()?.artist
     val fallbackArtistLabel = stringResource(Res.string.search_type_artist)

@@ -124,7 +124,7 @@ fun AlbumDetailScreen(
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
     }
 
-    val album = (uiState.entity as? SearchResult.Album)?.takeIf { it.id == albumId }
+    val album = uiState.entity as? SearchResult.Album
     val songs = remember(album) { album?.songs.orEmpty() }
     val fallbackAlbumTitle = stringResource(Res.string.detail_type_album)
     val effectiveTitle =

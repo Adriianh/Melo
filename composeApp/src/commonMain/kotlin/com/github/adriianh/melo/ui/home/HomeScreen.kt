@@ -112,7 +112,8 @@ fun HomeScreen(
         interaction = interaction,
         libraryState = libraryState,
         activeAccent = activeAccent,
-        onArtistClick = onArtistClick
+        onArtistClick = onArtistClick,
+        onAlbumClick = { album -> onAlbumClick(album, album, null, "") },
     )
 
     Column(

@@ -8,35 +8,8 @@ class GetEntityDetailsUseCase(
 ) {
     suspend operator fun invoke(entity: SearchResult): SearchResult {
         return when (entity) {
-            is SearchResult.Album -> {
-                var details = musicProvider.getAlbumDetails(entity.id)
-                if (details == null && entity.title.isNotBlank()) {
-                    val query =
-                        if (entity.author.isNotBlank()) "${entity.author} ${entity.title}" else entity.title
-                    details = musicProvider.getAlbumDetails(query)
-                }
-                if (details == null) return entity
-                details.copy(
-                    title = details.title.takeIf { it.isNotBlank() }
-                        ?: entity.title.takeIf { it.isNotBlank() }
-                        ?: details.songs?.firstOrNull()?.album?.takeIf { it.isNotBlank() }
-                        ?: "Álbum",
-                    author = if (details.author == "Unknown" && entity.author.isNotBlank()) entity.author else details.author,
-                    description = details.description ?: entity.description,
-                    artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
-                )
-            }
-
-            is SearchResult.Artist -> {
-                val details = musicProvider.getArtistDetails(entity.id) ?: return entity
-                details.copy(
-                    name = details.name.takeIf { it.isNotBlank() }
-                        ?: entity.name.takeIf { it.isNotBlank() } ?: "Artista",
-                    description = details.description ?: entity.description,
-                    artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
-                )
-            }
-
+            is SearchResult.Album -> resolveAlbumDetails(entity)
+            is SearchResult.Artist -> resolveArtistDetails(entity)
             is SearchResult.Playlist -> {
                 val details = musicProvider.getPlaylistDetails(entity.id) ?: return entity
                 val isGeneric = { s: String? ->
@@ -64,5 +37,50 @@ class GetEntityDetailsUseCase(
 
             is SearchResult.Song -> entity
         }
+    }
+
+    private suspend fun resolveAlbumDetails(entity: SearchResult.Album): SearchResult.Album {
+        val details =
+            musicProvider.getAlbumDetails(entity.id)
+                ?: albumSearchQuery(entity).takeIf { it.isNotBlank() }?.let { query ->
+                    musicProvider.searchAlbums(query).firstOrNull()?.let { found ->
+                        musicProvider.getAlbumDetails(found.id) ?: found
+                    }
+                }
+                ?: return entity
+        return details.copy(
+            title = details.title.takeIf { it.isNotBlank() }
+                ?: entity.title.takeIf { it.isNotBlank() }
+                ?: details.songs?.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+                ?: "Álbum",
+            author = if (details.author == "Unknown" && entity.author.isNotBlank()) entity.author else details.author,
+            description = details.description ?: entity.description,
+            artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
+        )
+    }
+
+    private fun albumSearchQuery(entity: SearchResult.Album): String =
+        when {
+            entity.title.isNotBlank() && entity.author.isNotBlank() -> "${entity.author} ${entity.title}"
+            entity.title.isNotBlank() -> entity.title
+            else -> entity.id
+        }
+
+    private suspend fun resolveArtistDetails(entity: SearchResult.Artist): SearchResult.Artist {
+        var details = musicProvider.getArtistDetails(entity.id)
+        if (details == null) {
+            val query = entity.name.takeIf { it.isNotBlank() } ?: entity.id
+            if (query.isNotBlank()) {
+                val found = musicProvider.searchArtists(query).firstOrNull()
+                details = found?.let { musicProvider.getArtistDetails(it.id) ?: it }
+            }
+        }
+        if (details == null) return entity
+        return details.copy(
+            name = details.name.takeIf { it.isNotBlank() }
+                ?: entity.name.takeIf { it.isNotBlank() } ?: "Artista",
+            description = details.description ?: entity.description,
+            artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
+        )
     }
 }
