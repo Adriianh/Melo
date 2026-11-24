@@ -1,3 +1,8 @@
+@file:Suppress(
+    "FunctionNaming",
+    "ktlint:standard:function-naming",
+)
+
 package com.github.adriianh.melo
 
 import androidx.compose.animation.AnimatedVisibility
@@ -36,6 +41,7 @@ import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.repository.OfflineRepository
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
+import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.app_cache_cleared_snackbar
 import com.github.adriianh.melo.resources.app_offline_disabled_snackbar
@@ -46,13 +52,13 @@ import com.github.adriianh.melo.theme.resolveDarkTheme
 import com.github.adriianh.melo.theme.toAccentColor
 import com.github.adriianh.melo.ui.AdaptiveScaffold
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.layout.AmbientCanvas
 import com.github.adriianh.melo.ui.components.feedback.LocalMeloSnackbar
 import com.github.adriianh.melo.ui.components.feedback.MeloBanner
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarHost
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarState
 import com.github.adriianh.melo.ui.components.feedback.MeloSplashScreen
 import com.github.adriianh.melo.ui.components.feedback.OfflineModeBanner
+import com.github.adriianh.melo.ui.components.layout.AmbientCanvas
 import com.github.adriianh.melo.ui.detail.AlbumDetailScreen
 import com.github.adriianh.melo.ui.detail.ArtistDetailScreen
 import com.github.adriianh.melo.ui.detail.PlaylistDetailScreen
@@ -67,7 +73,6 @@ import com.github.adriianh.melo.ui.navigation.ScreenRoute
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
-import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.ui.settings.ChangelogDialog
 import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
 import com.github.adriianh.melo.ui.settings.SettingsActions
