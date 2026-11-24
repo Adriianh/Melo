@@ -1,9 +1,16 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +29,18 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,12 +48,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.getPlatform
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_artist_albums
 import com.github.adriianh.melo.resources.player_artist_popular
 import com.github.adriianh.melo.resources.player_artist_view_full_profile
 import com.github.adriianh.melo.resources.player_artist_view_profile
 import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.track.RowContextMenuButton
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -57,6 +75,7 @@ internal fun DockedArtistContent(
     onArtistClick: (String) -> Unit,
     onAlbumClick: (String) -> Unit,
     queueViewModel: QueueViewModel = koinViewModel(),
+    onOpenTrackContextMenu: ((Track, SongMenuAnchor?) -> Unit)? = null,
 ) {
     if (artistDetails == null) {
         DockedArtistLoading(state, activeAccent)
@@ -116,6 +135,8 @@ internal fun DockedArtistContent(
                     isPlayingThis = isPlayingThis,
                     activeAccent = activeAccent,
                     onClick = { queueViewModel.playTrack(track) },
+                    onOpenContextMenu =
+                        onOpenTrackContextMenu?.let { open -> { anchor -> open(track, anchor) } },
                 )
             }
         }
@@ -269,26 +290,38 @@ private fun DockedArtistHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DockedArtistTopSongRow(
     track: Track,
     isPlayingThis: Boolean,
     activeAccent: Color,
     onClick: () -> Unit,
+    onOpenContextMenu: ((SongMenuAnchor?) -> Unit)? = null,
 ) {
+    val isDesktop = remember { getPlatform().type == PlatformType.DESKTOP }
+    val hoverSource = remember { MutableInteractionSource() }
+    val isHovered by hoverSource.collectIsHoveredAsState()
+    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .background(
-                    if (isPlayingThis) {
-                        activeAccent.copy(alpha = 0.15f)
-                    } else {
-                        Color.Transparent
-                    },
-                ).clickable(onClick = onClick)
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .background(if (isPlayingThis) activeAccent.copy(alpha = 0.15f) else Color.Transparent)
+                .hoverable(hoverSource)
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                .songMenuRightClick(
+                    enabled = onOpenContextMenu != null,
+                    onOpenMenu = { anchor -> onOpenContextMenu?.invoke(anchor) },
+                ).combinedClickable(
+                    onClick = onClick,
+                    onLongClick =
+                        onOpenContextMenu?.let { open ->
+                            { open(rowBounds?.let { SongMenuAnchor.Bounds(it) }) }
+                        },
+                ).padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -313,6 +346,12 @@ private fun DockedArtistTopSongRow(
                 color = MeloColors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (onOpenContextMenu != null) {
+            RowContextMenuButton(
+                isVisible = !isDesktop || isHovered,
+                onOpenMenu = onOpenContextMenu,
             )
         }
     }

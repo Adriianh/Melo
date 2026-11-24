@@ -200,6 +200,9 @@ internal fun NowPlayingDesktopLayout(
                                     onArtistClick = onArtistClick,
                                     onAlbumClick = onAlbumClick,
                                     onPlaylistClick = onPlaylistClick,
+                                    onOpenTrackContextMenu = { track, anchor ->
+                                        onOpenContextMenu?.invoke(track, false, anchor)
+                                    },
                                 )
                         }
                     }

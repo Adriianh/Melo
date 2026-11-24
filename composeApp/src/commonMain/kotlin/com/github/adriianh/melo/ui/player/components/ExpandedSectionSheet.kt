@@ -204,6 +204,9 @@ fun ExpandedSectionSheet(
                                 snackbarState.dismiss()
                                 onPlaylistClick(id)
                             },
+                            onOpenTrackContextMenu = { track, anchor ->
+                                onOpenContextMenu?.invoke(track, false, anchor)
+                            },
                         )
 
                     else -> {}
