@@ -66,7 +66,7 @@ object DesktopInstall {
         val candidates =
             buildList {
                 environment.env["MELO_INSTALL_DIR"]?.takeIf { it.isNotBlank() }?.let { add(it) }
-                if (home.isNotBlank()) add(File(File(home, ".local/share"), GUI_DIR_NAME).path)
+                if (home.isNotBlank()) add(joinPath(joinPath(home, ".local/share"), GUI_DIR_NAME))
                 add("/opt/$GUI_DIR_NAME")
             }
         return candidates.firstNotNullOfOrNull { portableInstallAt(it, home, readFile) }
@@ -94,20 +94,20 @@ object DesktopInstall {
             ?: classpath.split(File.pathSeparator).firstNotNullOfOrNull { appDirBefore(it, LIB_APP_MARKER) }
 
     private fun userGuiDir(home: String): String? =
-        home.takeIf { it.isNotBlank() }?.let { File(File(it, ".local/share"), GUI_DIR_NAME).path }
+        home.takeIf { it.isNotBlank() }?.let { joinPath(joinPath(it, ".local/share"), GUI_DIR_NAME) }
 
     private fun portableInstallAt(
         dir: String,
         home: String,
         readFile: (String) -> String?,
     ): MeloPortableInstall? =
-        readFile(File(dir, MARKER_FILE).path)
+        readFile(joinPath(dir, MARKER_FILE))
             ?.let(::parseMarker)
             ?.takeIf { it["MELO_COMPONENT"] == GUI_COMPONENT }
             ?.let { values ->
                 MeloPortableInstall(
                     installDir = values["MELO_INSTALL_DIR"] ?: dir,
-                    binDir = values["MELO_BIN_DIR"] ?: File(File(home, ".local"), BIN_DIR_NAME).path,
+                    binDir = values["MELO_BIN_DIR"] ?: joinPath(joinPath(home, ".local"), BIN_DIR_NAME),
                     scope = values["MELO_SCOPE"] ?: DEFAULT_SCOPE,
                 )
             }
@@ -122,7 +122,7 @@ object DesktopInstall {
             ?.let {
                 MeloPortableInstall(
                     installDir = it,
-                    binDir = File(File(environment.home, ".local"), BIN_DIR_NAME).path,
+                    binDir = joinPath(joinPath(environment.home, ".local"), BIN_DIR_NAME),
                     scope = DEFAULT_SCOPE,
                 )
             }
@@ -145,12 +145,20 @@ object DesktopInstall {
     private fun launcherDir(command: String): String? {
         val launcher = File(command)
         return if (launcher.name == LAUNCHER_NAME && launcher.parentFile?.name == BIN_DIR_NAME) {
-            launcher.parentFile?.parentFile?.path
+            launcher.parentFile
+                ?.parentFile
+                ?.path
+                ?.replace('\\', '/')
         } else {
             null
         }
     }
 }
+
+private fun joinPath(
+    parent: String,
+    child: String,
+): String = File(parent, child).path.replace('\\', '/')
 
 /** Reads the environment and process facts of the running JVM. */
 fun currentDesktopInstallEnvironment(): DesktopInstallEnvironment =
