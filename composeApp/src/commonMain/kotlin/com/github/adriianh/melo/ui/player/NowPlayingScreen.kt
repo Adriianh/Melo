@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -419,15 +420,32 @@ fun NowPlayingScreen(
                 }.idleCursorHidden(isDesktop && !controlsVisible)
                 .pointerInput(isDesktop) {
                     if (!isDesktop) return@pointerInput
+                    var lastPosition: Offset? = null
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Initial)
-                            if (
-                                event.type == PointerEventType.Move ||
-                                event.type == PointerEventType.Press ||
-                                event.type == PointerEventType.Enter
-                            ) {
-                                lastActivityTick++
+                            val position = event.changes.firstOrNull()?.position
+                            when (event.type) {
+                                PointerEventType.Enter -> {
+                                    if (lastPosition == null) {
+                                        lastPosition = position
+                                    }
+                                }
+
+                                PointerEventType.Press -> {
+                                    lastPosition = position
+                                    lastActivityTick++
+                                }
+
+                                PointerEventType.Move -> {
+                                    val prev = lastPosition
+                                    if (prev == null) {
+                                        lastPosition = position
+                                    } else if (position != null && (position - prev).getDistanceSquared() > 4f) {
+                                        lastPosition = position
+                                        lastActivityTick++
+                                    }
+                                }
                             }
                         }
                     }
