@@ -8,11 +8,8 @@
 
 package com.github.adriianh.melo.ui.settings
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,8 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -48,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -65,7 +59,7 @@ import com.github.adriianh.melo.resources.common_action_cancel
 import com.github.adriianh.melo.resources.common_action_retry
 import com.github.adriianh.melo.resources.settings_installed_version_title
 import com.github.adriianh.melo.resources.update_available_title
-import com.github.adriianh.melo.resources.update_changelog_title
+import com.github.adriianh.melo.resources.update_changelog_view_action
 import com.github.adriianh.melo.resources.update_check_a11y
 import com.github.adriianh.melo.resources.update_checking_title
 import com.github.adriianh.melo.resources.update_download_install_action
@@ -278,7 +272,15 @@ internal fun UpdateStatusContent(
     onCancelDownload: () -> Unit,
     onInstallUpdate: (String) -> Unit,
 ) {
-    var showChangelog by remember { mutableStateOf(false) }
+    var changelogRelease by remember { mutableStateOf<AppRelease?>(null) }
+
+    changelogRelease?.let { release ->
+        ChangelogDialog(
+            release = release,
+            isInstalledVersion = false,
+            onDismiss = { changelogRelease = null },
+        )
+    }
 
     when (state) {
         is UpdateState.Idle -> Unit
@@ -303,8 +305,7 @@ internal fun UpdateStatusContent(
         is UpdateState.UpdateAvailable -> {
             UpdateAvailableBanner(
                 state = state,
-                showChangelog = showChangelog,
-                onToggleChangelog = { showChangelog = !showChangelog },
+                onOpenChangelog = { changelogRelease = state.release },
                 onStartDownload = onStartDownload,
             )
         }
@@ -313,6 +314,7 @@ internal fun UpdateStatusContent(
             ManualUpdateBanner(
                 state = state,
                 currentVersion = currentVersion,
+                onOpenChangelog = { changelogRelease = state.release },
             )
         }
 
@@ -368,8 +370,7 @@ internal fun UpdateStatusContent(
 @Composable
 private fun UpdateAvailableBanner(
     state: UpdateState.UpdateAvailable,
-    showChangelog: Boolean,
-    onToggleChangelog: () -> Unit,
+    onOpenChangelog: () -> Unit,
     onStartDownload: (AppRelease, ReleaseAsset) -> Unit,
 ) {
     val isNightly = state.release.channel == UpdateChannel.NIGHTLY
@@ -405,10 +406,12 @@ private fun UpdateAvailableBanner(
             )
 
             if (hasNotes) {
-                ChangelogExpanderSection(
-                    releaseNotes = state.release.releaseNotes,
-                    expanded = showChangelog,
-                    onToggle = onToggleChangelog,
+                SettingActionButton(
+                    text = stringResource(Res.string.update_changelog_view_action),
+                    onClick = onOpenChangelog,
+                    emphasis = SettingActionEmphasis.SECONDARY,
+                    icon = Icons.Default.Info,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
@@ -430,9 +433,11 @@ private fun UpdateAvailableBanner(
 private fun ManualUpdateBanner(
     state: UpdateState.ManualUpdate,
     currentVersion: String,
+    onOpenChangelog: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
     val isNightly = state.release.channel == UpdateChannel.NIGHTLY
+    val hasNotes = state.release.releaseNotes.isNotBlank()
     val hint =
         stringResource(
             if (state.method == UpdateInstallMethod.PACKAGE_MANAGER) {
@@ -458,6 +463,15 @@ private fun ManualUpdateBanner(
                 installedVersion = currentVersion,
                 newVersion = state.release.version,
             )
+            if (hasNotes) {
+                SettingActionButton(
+                    text = stringResource(Res.string.update_changelog_view_action),
+                    onClick = onOpenChangelog,
+                    emphasis = SettingActionEmphasis.SECONDARY,
+                    icon = Icons.Default.Info,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             SettingActionButton(
                 text = stringResource(Res.string.update_open_download_page),
                 onClick = { uriHandler.openUri(state.release.htmlUrl) },
@@ -545,71 +559,6 @@ private fun UpdateVersionComparisonBlock(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun ChangelogExpanderSection(
-    releaseNotes: String,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-) {
-    val shape = RoundedCornerShape(10.dp)
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Surface(
-            shape = shape,
-            color = MeloColors.surface1.copy(alpha = 0.6f),
-            border = BorderStroke(1.dp, MeloColors.border),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clip(shape)
-                    .clickable(role = Role.Button, onClick = onToggle),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = MeloColors.textSecondary,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    text = stringResource(Res.string.update_changelog_title),
-                    style = MeloType.labelMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MeloColors.textPrimary,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = MeloColors.textSecondary,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-
-        AnimatedVisibility(visible = expanded) {
-            Text(
-                text = releaseNotes,
-                style = MeloType.labelSmall,
-                color = MeloColors.textSecondary,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MeloColors.surface1)
-                        .padding(10.dp),
-            )
-        }
     }
 }
 

@@ -628,6 +628,12 @@
     <string name="update_installed_version_line">Instalada: v%1$s</string>
     <string name="update_new_version_line">Nueva: v%1$s</string>
     <string name="update_changelog_title">Novedades</string>
+    <string name="update_changelog_view_action">Ver novedades</string>
+    <string name="update_changelog_dialog_subtitle">Versión v%1$s</string>
+    <string name="update_changelog_installed_title">Novedades en v%1$s</string>
+    <string name="update_changelog_open_github">Ver en GitHub</string>
+    <string name="update_changelog_empty">No hay notas de cambios disponibles para esta versión.</string>
+    <string name="common_action_got_it">Entendido</string>
     <string name="update_error_check">No se pudo verificar actualizaciones</string>
     <string name="update_error_check_with_detail">No se pudo verificar actualizaciones: %1$s</string>
     <string name="update_error_download">Error en la descarga</string>

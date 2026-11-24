@@ -67,6 +67,8 @@ import com.github.adriianh.melo.ui.navigation.ScreenRoute
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.ui.search.SearchScreen
+import com.github.adriianh.core.util.MeloVersion
+import com.github.adriianh.melo.ui.settings.ChangelogDialog
 import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
 import com.github.adriianh.melo.ui.settings.SettingsActions
 import com.github.adriianh.melo.ui.settings.SettingsModal
@@ -116,7 +118,22 @@ fun App(titleBar: @Composable () -> Unit = {}) {
     val loginState by loginViewModel.uiState.collectAsState()
     val isOfflineMode = settings.offlineMode || !isOnline
     val updateState by updateViewModel.uiState.collectAsState()
+    val postUpdateRelease by updateViewModel.postUpdateRelease.collectAsState()
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(settings.lastSeenVersion, isOfflineMode) {
+        val lastSeen = settings.lastSeenVersion
+        if (lastSeen == null) {
+            updateSettingsUseCase { current ->
+                current.copy(lastSeenVersion = MeloVersion.CURRENT)
+            }
+        } else if (lastSeen != MeloVersion.CURRENT && !isOfflineMode) {
+            updateViewModel.loadInstalledChangelog(
+                version = MeloVersion.CURRENT,
+                channel = settings.updateChannel,
+            )
+        }
+    }
 
     LaunchedEffect(settings.autoCheckUpdates, settings.updateChannel) {
         if (settings.autoCheckUpdates) {
@@ -547,6 +564,21 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                     viewModel = loginViewModel,
                                     onDismiss = { showLoginDialog = false },
                                 )
+                            } else {
+                                postUpdateRelease?.let { release ->
+                                    ChangelogDialog(
+                                        release = release,
+                                        isInstalledVersion = true,
+                                        onDismiss = {
+                                            updateViewModel.dismissPostUpdateChangelog()
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lastSeenVersion = MeloVersion.CURRENT)
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
 
                             if (showSettingsSheet) {
