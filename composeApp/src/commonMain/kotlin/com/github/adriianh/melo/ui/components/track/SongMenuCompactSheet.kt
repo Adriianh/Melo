@@ -45,6 +45,24 @@ internal fun SongMenuCompactSheet(
     entries: List<SongMenuEntry>,
     onDismissRequest: () -> Unit,
 ) {
+    SongMenuCompactSheet(
+        title = track.title,
+        subtitle = track.artist,
+        artworkUrl = track.artworkUrl,
+        entries = entries,
+        onDismissRequest = onDismissRequest,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SongMenuCompactSheet(
+    title: String,
+    subtitle: String,
+    artworkUrl: String?,
+    entries: List<SongMenuEntry>,
+    onDismissRequest: () -> Unit,
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -55,7 +73,9 @@ internal fun SongMenuCompactSheet(
         dragHandle = { BottomSheetDefaults.DragHandle(color = MeloColors.textMuted) },
     ) {
         SongMenuCompactSheetContent(
-            track = track,
+            title = title,
+            subtitle = subtitle,
+            artworkUrl = artworkUrl,
             entries = entries,
             onDismissRequest = onDismissRequest,
         )
@@ -69,6 +89,25 @@ internal fun SongMenuCompactSheetContent(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    SongMenuCompactSheetContent(
+        title = track.title,
+        subtitle = track.artist,
+        artworkUrl = track.artworkUrl,
+        entries = entries,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun SongMenuCompactSheetContent(
+    title: String,
+    subtitle: String,
+    artworkUrl: String?,
+    entries: List<SongMenuEntry>,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier =
             modifier
@@ -76,7 +115,7 @@ internal fun SongMenuCompactSheetContent(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 24.dp),
     ) {
-        SongMenuHeader(track = track)
+        SongMenuHeader(title = title, subtitle = subtitle, artworkUrl = artworkUrl)
 
         HorizontalDivider(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp),
@@ -129,7 +168,11 @@ internal fun SongMenuCompactSheetContent(
 }
 
 @Composable
-private fun SongMenuHeader(track: Track) {
+private fun SongMenuHeader(
+    title: String,
+    subtitle: String,
+    artworkUrl: String?,
+) {
     Row(
         modifier =
             Modifier
@@ -139,27 +182,29 @@ private fun SongMenuHeader(track: Track) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         MeloAsyncImage(
-            url = track.artworkUrl,
-            contentDescription = track.title,
+            url = artworkUrl,
+            contentDescription = title,
             size = 56.dp,
             shape = RoundedCornerShape(8.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = track.title,
+                text = title,
                 style = MeloType.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MeloColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = track.artist,
-                style = MeloType.labelSmall,
-                color = MeloColors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (subtitle.isNotBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MeloType.labelSmall,
+                    color = MeloColors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

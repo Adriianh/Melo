@@ -148,6 +148,10 @@
     <string name="track_menu_new_playlist">New playlist...</string>
     <string name="track_menu_go_to_artist">Go to artist</string>
     <string name="track_menu_go_to_album">Go to album</string>
+    <string name="menu_action_play">Play</string>
+    <string name="menu_action_shuffle">Shuffle</string>
+    <string name="menu_action_save_to_library">Save to library</string>
+    <string name="menu_action_start_radio">Start radio</string>
 
     <!-- Track snackbars -->
     <string name="track_snackbar_added_to_playlist">Added to %1$s</string>

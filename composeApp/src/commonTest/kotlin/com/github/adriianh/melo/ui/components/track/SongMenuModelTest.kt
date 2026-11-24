@@ -150,4 +150,79 @@ class SongMenuModelTest {
         assertEquals(SongMenuWindowSize.Expanded, songMenuWindowSizeForWidth(840.dp))
         assertTrue(songMenuWindowSizeForWidth(1280.dp) == SongMenuWindowSize.Expanded)
     }
+
+    @Test
+    fun `album menu builds playback, library, artist, and share groups`() {
+        val entries =
+            buildAlbumOrPlaylistMenuEntries(
+                isAlbum = true,
+                author = "M83",
+                context =
+                    EntityMenuContext(
+                        isSaved = false,
+                        onPlay = {},
+                        onShuffle = {},
+                        onPlayNext = {},
+                        onAddToQueue = {},
+                        onToggleSave = {},
+                        onGoToArtist = {},
+                        onShare = {},
+                    ),
+            )
+
+        val ids =
+            entries.map { entry ->
+                when (entry) {
+                    is SongMenuEntry.Action -> entry.id
+                    is SongMenuEntry.Submenu -> entry.id
+                    SongMenuEntry.Divider -> "|"
+                }
+            }
+
+        assertEquals(
+            listOf(
+                "play",
+                "shuffle",
+                "play_next",
+                "add_to_queue",
+                "|",
+                "toggle_save",
+                "|",
+                "go_to_artist",
+                "|",
+                "share",
+            ),
+            ids,
+        )
+    }
+
+    @Test
+    fun `playlist menu omits go to artist and artist menu includes radio and profile`() {
+        val playlistEntries =
+            buildAlbumOrPlaylistMenuEntries(
+                isAlbum = false,
+                author = "Curator",
+                context =
+                    EntityMenuContext(
+                        isSaved = true,
+                        onPlay = {},
+                        onToggleSave = {},
+                        onGoToArtist = {},
+                    ),
+            )
+        val playlistIds = playlistEntries.filterIsInstance<SongMenuEntry.Action>().map { it.id }
+        assertFalse("go_to_artist" in playlistIds)
+
+        val artistEntries =
+            buildArtistMenuEntries(
+                EntityMenuContext(
+                    onPlay = {},
+                    onStartRadio = {},
+                    onGoToArtist = {},
+                    onShare = {},
+                ),
+            )
+        val artistIds = artistEntries.filterIsInstance<SongMenuEntry.Action>().map { it.id }
+        assertEquals(listOf("play", "start_radio", "go_to_artist", "share"), artistIds)
+    }
 }

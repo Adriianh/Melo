@@ -5,6 +5,9 @@ package com.github.adriianh.melo.ui.components.track
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,7 +57,9 @@ import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.formatDuration
+import com.github.adriianh.melo.util.getPlatform
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -82,6 +87,9 @@ fun TrackRow(
 ) {
     var rowBounds by remember { mutableStateOf<Rect?>(null) }
     var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
+    val hoverSource = remember { MutableInteractionSource() }
+    val isRowHovered by hoverSource.collectIsHoveredAsState()
+    val isDesktop = remember { getPlatform().type == PlatformType.DESKTOP }
     val hasContextMenu = onOpenContextMenu != null || onMoreClick != null
 
     val backgroundColor =
@@ -99,6 +107,7 @@ fun TrackRow(
                 .clip(RoundedCornerShape(8.dp))
                 .alpha(if (isEnabled) 1f else 0.45f)
                 .background(backgroundColor)
+                .hoverable(hoverSource)
                 .onGloballyPositioned { rowBounds = it.boundsInWindow() }
                 .songMenuRightClick(
                     enabled = isEnabled && !isSelectionMode && hasContextMenu,
@@ -280,6 +289,7 @@ fun TrackRow(
         }
 
         if (hasContextMenu) {
+            val showMoreButton = !isDesktop || isRowHovered
             IconButton(
                 onClick = {
                     val anchor = moreButtonBounds?.let { SongMenuAnchor.Bounds(it) }
@@ -290,9 +300,11 @@ fun TrackRow(
                         onMoreClick?.invoke()
                     }
                 },
+                enabled = showMoreButton,
                 modifier =
                     Modifier
                         .size(32.dp)
+                        .alpha(if (showMoreButton) 1f else 0f)
                         .onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
             ) {
                 Icon(
