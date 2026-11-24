@@ -607,27 +607,3 @@ private class SongMenuPopupPositionProvider(
             }
         }
 }
-
-@Composable
-private fun SongMenuFocusOnOpenEffect(
-    isExpandedDesktop: Boolean,
-    interactiveEntries: List<SongMenuEntry>,
-    inputModeManager: androidx.compose.ui.input.InputModeManager,
-    containerFocusRequester: FocusRequester,
-    focusRequesters: List<FocusRequester>,
-    onFocusedIndexResolved: (Int) -> Unit,
-) {
-    LaunchedEffect(interactiveEntries.size) {
-        if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
-        if (inputModeManager.inputMode != InputMode.Keyboard) {
-            runCatching { containerFocusRequester.requestFocus() }
-            return@LaunchedEffect
-        }
-        val firstEnabled =
-            interactiveEntries
-                .indexOfFirst { it !is SongMenuEntry.Action || it.enabled }
-                .coerceAtLeast(0)
-        onFocusedIndexResolved(firstEnabled)
-        runCatching { focusRequesters[firstEnabled].requestFocus() }
-    }
-}

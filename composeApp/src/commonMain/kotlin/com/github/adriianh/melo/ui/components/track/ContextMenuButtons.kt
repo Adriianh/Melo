@@ -9,14 +9,18 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
@@ -75,5 +79,29 @@ internal fun RowContextMenuButton(
             tint = MeloColors.textMuted,
             modifier = Modifier.size(iconSize),
         )
+    }
+}
+
+@Composable
+internal fun SongMenuFocusOnOpenEffect(
+    isExpandedDesktop: Boolean,
+    interactiveEntries: List<SongMenuEntry>,
+    inputModeManager: InputModeManager,
+    containerFocusRequester: FocusRequester,
+    focusRequesters: List<FocusRequester>,
+    onFocusedIndexResolved: (Int) -> Unit,
+) {
+    LaunchedEffect(interactiveEntries.size) {
+        if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
+        if (inputModeManager.inputMode != InputMode.Keyboard) {
+            runCatching { containerFocusRequester.requestFocus() }
+            return@LaunchedEffect
+        }
+        val firstEnabled =
+            interactiveEntries
+                .indexOfFirst { it !is SongMenuEntry.Action || it.enabled }
+                .coerceAtLeast(0)
+        onFocusedIndexResolved(firstEnabled)
+        runCatching { focusRequesters[firstEnabled].requestFocus() }
     }
 }
