@@ -73,7 +73,7 @@ class FullscreenLyricsTimelineTest {
     }
 
     @Test
-    fun `gap larger than 4s between two non-blank lines inserts virtual instrumental gap`() {
+    fun `normal lines with large delta do not insert spurious virtual gaps`() {
         val lines =
             listOf(
                 SyncedLine(timeMs = 2_000L, text = "Verse end"),
@@ -82,31 +82,11 @@ class FullscreenLyricsTimelineTest {
 
         val entries = buildFullscreenLyricEntries(lines)
 
-        assertEquals(3, entries.size)
-        assertIs<FullscreenLyricEntry.LyricLine>(entries[0])
-        val gap = assertIs<FullscreenLyricEntry.InstrumentalGap>(entries[1])
-        assertEquals(4_500L, gap.startTimeMs)
-        assertEquals(10_000L, gap.endTimeMs)
-        assertIs<FullscreenLyricEntry.LyricLine>(entries[2])
-
-        assertEquals(0, resolveActiveFullscreenEntryIndex(entries, 3_000L))
-        assertEquals(1, resolveActiveFullscreenEntryIndex(entries, 5_000L))
-        assertEquals(2, resolveActiveFullscreenEntryIndex(entries, 10_000L))
-    }
-
-    @Test
-    fun `gap of 4s or less between lines does not insert virtual gap`() {
-        val lines =
-            listOf(
-                SyncedLine(timeMs = 2_000L, text = "Line A"),
-                SyncedLine(timeMs = 6_000L, text = "Line B"),
-            )
-
-        val entries = buildFullscreenLyricEntries(lines)
-
         assertEquals(2, entries.size)
         assertIs<FullscreenLyricEntry.LyricLine>(entries[0])
         assertIs<FullscreenLyricEntry.LyricLine>(entries[1])
+        assertEquals(0, resolveActiveFullscreenEntryIndex(entries, 5_000L))
+        assertEquals(1, resolveActiveFullscreenEntryIndex(entries, 10_000L))
     }
 
     @Test

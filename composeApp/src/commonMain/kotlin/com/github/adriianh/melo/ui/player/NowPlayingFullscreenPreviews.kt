@@ -41,6 +41,7 @@ private val PREVIEW_SYNCED_LYRICS =
             listOf(
                 SyncedLine(timeMs = 1_000L, text = "Waiting in a car, waiting for a ride in the dark"),
                 SyncedLine(timeMs = 5_000L, text = "The night city grows, look and see her eyes, they glow"),
+                SyncedLine(timeMs = 8_500L, text = ""),
                 SyncedLine(
                     timeMs = 14_000L,
                     text = "Waiting in a car, waiting for the right time",

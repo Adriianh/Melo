@@ -4,11 +4,11 @@ package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +22,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -51,7 +51,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -70,21 +74,15 @@ import com.github.adriianh.melo.resources.player_lyrics_loading
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerProgressState
-import com.github.adriianh.melo.util.rememberSharedAnimationTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.PI
 import kotlin.math.abs
-import kotlin.math.sin
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val ANCHOR_VIEWPORT_FRACTION = 0.35f
 private const val USER_SCROLL_RESUME_DELAY_MS = 3_500L
-private const val DOT_CYCLE_SECONDS = 1.25f
-private const val DOT_TWO_PI = (2.0 * PI).toFloat()
 
 internal data class FullscreenLyricsStyle(
     val activeFontSize: TextUnit,
@@ -312,54 +310,55 @@ private fun FullscreenSyncedLyricsList(
     modifier: Modifier = Modifier,
 ) {
     val entries = remember(trackLyrics.syncedLyrics) { buildFullscreenLyricEntries(trackLyrics.syncedLyrics) }
-    val isWindowVisible = LocalWindowActivity.current.isVisible
     val activeEntryIndex =
-        if (progressFlow != null && isWindowVisible) {
-            remember(progressFlow, entries) {
-                progressFlow
-                    .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs) }
-                    .distinctUntilChanged()
-            }.collectAsState(
-                initial = resolveActiveFullscreenEntryIndex(entries, progressFlow.value.progressMs),
-            ).value
-        } else {
-            remember(entries, positionMs) {
-                derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
-            }.value
-        }
+        rememberActiveFullscreenEntryIndex(
+            entries = entries,
+            positionMs = positionMs,
+            progressFlow = progressFlow,
+        )
 
     val listState = rememberLazyListState()
+    val density = LocalDensity.current
     var viewportHeightPx by remember { mutableIntStateOf(0) }
+    val isUserDragging by listState.interactionSource.collectIsDraggedAsState()
+    var manualWheelTick by remember { mutableIntStateOf(0) }
     var userScrolledRecently by remember { mutableStateOf(false) }
 
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress) {
+    LaunchedEffect(isUserDragging, manualWheelTick) {
+        if (isUserDragging || manualWheelTick > 0) {
             userScrolledRecently = true
-        } else if (userScrolledRecently) {
-            delay(USER_SCROLL_RESUME_DELAY_MS.milliseconds)
-            userScrolledRecently = false
-        }
-    }
-
-    LaunchedEffect(activeEntryIndex, viewportHeightPx, reducedMotion, userScrolledRecently) {
-        val canScrollToActive = activeEntryIndex in entries.indices && viewportHeightPx > 0
-        if (canScrollToActive && !listState.isScrollInProgress && !userScrolledRecently) {
-            val anchorOffset = -(viewportHeightPx * ANCHOR_VIEWPORT_FRACTION).toInt()
-            val firstVisible = listState.firstVisibleItemIndex
-            if (reducedMotion || abs(activeEntryIndex - firstVisible) > 8) {
-                listState.scrollToItem(index = activeEntryIndex, scrollOffset = anchorOffset)
-            } else {
-                listState.animateScrollToItem(index = activeEntryIndex, scrollOffset = anchorOffset)
+            if (!isUserDragging) {
+                delay(USER_SCROLL_RESUME_DELAY_MS.milliseconds)
+                userScrolledRecently = false
+                manualWheelTick = 0
             }
         }
     }
+
+    val estimatedActiveHeightPx = with(density) { style.activeLineHeight.toPx().toInt() }
+    AutoCenterActiveLyricEffect(
+        listState = listState,
+        activeEntryIndex = activeEntryIndex,
+        entryCount = entries.size,
+        viewportHeightPx = viewportHeightPx,
+        estimatedActiveHeightPx = estimatedActiveHeightPx,
+        reducedMotion = reducedMotion,
+        userScrolledRecently = userScrolledRecently,
+    )
+
+    val verticalCenterPadding =
+        if (viewportHeightPx > 0) {
+            with(density) { (viewportHeightPx / 2).toDp() }
+        } else {
+            160.dp
+        }
 
     LazyColumn(
         state = listState,
         contentPadding =
             PaddingValues(
-                top = 72.dp,
-                bottom = 220.dp,
+                top = verticalCenterPadding,
+                bottom = verticalCenterPadding,
                 start = style.horizontalPadding,
                 end = style.horizontalPadding,
             ),
@@ -367,7 +366,16 @@ private fun FullscreenSyncedLyricsList(
         modifier =
             modifier
                 .onSizeChanged { viewportHeightPx = it.height }
-                .verticalEdgeFadeMask(),
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (event.type == PointerEventType.Scroll) {
+                                manualWheelTick++
+                            }
+                        }
+                    }
+                }.verticalEdgeFadeMask(),
     ) {
         itemsIndexed(
             items = entries,
@@ -450,39 +458,24 @@ private fun FullscreenLyricEntryRow(
     ) {
         when (entry) {
             is FullscreenLyricEntry.LyricLine -> {
-                Text(
-                    text = entry.line.text,
-                    style =
-                        MeloType.body.copy(
-                            fontSize = if (isActive) style.activeFontSize else style.neighborFontSize,
-                            lineHeight = if (isActive) style.activeLineHeight else style.neighborLineHeight,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
-                        ),
-                    color = Color.White,
+                FullscreenLyricLineContent(
+                    entry = entry,
+                    isActive = isActive,
+                    showTranslation = showTranslation,
+                    style = style,
                 )
-
-                val translation = entry.line.translation
-                if (showTranslation && !translation.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = translation,
-                        style =
-                            MeloType.body.copy(
-                                fontStyle = FontStyle.Italic,
-                                fontSize = style.translationFontSize,
-                                lineHeight = style.translationLineHeight,
-                                fontWeight = FontWeight.Normal,
-                            ),
-                        color = Color.White.copy(alpha = if (isActive) 0.84f else 0.72f),
-                    )
-                }
             }
 
             is FullscreenLyricEntry.InstrumentalGap -> {
-                InstrumentalDotsIndicator(
-                    isActive = isActive,
-                    reducedMotion = reducedMotion,
-                    modifier = Modifier.padding(vertical = 10.dp),
+                val instrumentalLabel = stringResource(Res.string.a11y_instrumental_break)
+                DancingMelodyIndicator(
+                    isActive = isActive && !reducedMotion,
+                    tint = Color.White,
+                    baseFontSize = if (isActive) 28.sp else 20.sp,
+                    modifier =
+                        Modifier
+                            .padding(vertical = 8.dp)
+                            .semantics { contentDescription = instrumentalLabel },
                 )
             }
         }
@@ -490,42 +483,88 @@ private fun FullscreenLyricEntryRow(
 }
 
 @Composable
-internal fun InstrumentalDotsIndicator(
-    isActive: Boolean,
+private fun AutoCenterActiveLyricEffect(
+    listState: LazyListState,
+    activeEntryIndex: Int,
+    entryCount: Int,
+    viewportHeightPx: Int,
+    estimatedActiveHeightPx: Int,
     reducedMotion: Boolean,
-    modifier: Modifier = Modifier,
+    userScrolledRecently: Boolean,
 ) {
-    val a11yLabel = stringResource(Res.string.a11y_instrumental_break)
-    val shouldAnimate = isActive && !reducedMotion && LocalWindowActivity.current.isVisible
-    val elapsed = if (shouldAnimate) rememberSharedAnimationTime(enabled = true) else null
-
-    Row(
-        modifier = modifier.semantics { contentDescription = a11yLabel },
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for (dotIndex in 0 until 3) {
-            val dotModifier =
-                if (elapsed != null) {
-                    Modifier
-                        .size(12.dp)
-                        .graphicsLayer {
-                            val phase = (elapsed.floatValue - dotIndex * 0.18f).coerceAtLeast(0f)
-                            val wave = 0.5f + 0.5f * sin(phase * (DOT_TWO_PI / DOT_CYCLE_SECONDS))
-                            val s = 0.78f + 0.36f * wave
-                            scaleX = s
-                            scaleY = s
-                            alpha = 0.45f + 0.55f * wave
-                        }.clip(CircleShape)
-                        .background(Color.White)
-                } else {
-                    Modifier
-                        .size(11.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = if (isActive) 0.9f else 0.55f))
-                }
-            Box(modifier = dotModifier)
+    LaunchedEffect(activeEntryIndex, viewportHeightPx, reducedMotion, userScrolledRecently) {
+        val canScrollToActive = activeEntryIndex in 0 until entryCount && viewportHeightPx > 0
+        if (canScrollToActive && !userScrolledRecently) {
+            val activeItemHeightPx =
+                listState.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.index == activeEntryIndex }
+                    ?.size
+                    ?: estimatedActiveHeightPx
+            val centerOffset = activeItemHeightPx / 2
+            val firstVisible = listState.firstVisibleItemIndex
+            if (reducedMotion || abs(activeEntryIndex - firstVisible) > 8) {
+                listState.scrollToItem(index = activeEntryIndex, scrollOffset = centerOffset)
+            } else {
+                listState.animateScrollToItem(index = activeEntryIndex, scrollOffset = centerOffset)
+            }
         }
+    }
+}
+
+@Composable
+private fun rememberActiveFullscreenEntryIndex(
+    entries: List<FullscreenLyricEntry>,
+    positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
+): Int {
+    val isWindowVisible = LocalWindowActivity.current.isVisible
+    return if (progressFlow != null && isWindowVisible) {
+        remember(progressFlow, entries) {
+            progressFlow
+                .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs) }
+                .distinctUntilChanged()
+        }.collectAsState(
+            initial = resolveActiveFullscreenEntryIndex(entries, progressFlow.value.progressMs),
+        ).value
+    } else {
+        remember(entries, positionMs) {
+            derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
+        }.value
+    }
+}
+
+@Composable
+private fun FullscreenLyricLineContent(
+    entry: FullscreenLyricEntry.LyricLine,
+    isActive: Boolean,
+    showTranslation: Boolean,
+    style: FullscreenLyricsStyle,
+) {
+    Text(
+        text = entry.line.text,
+        style =
+            MeloType.body.copy(
+                fontSize = if (isActive) style.activeFontSize else style.neighborFontSize,
+                lineHeight = if (isActive) style.activeLineHeight else style.neighborLineHeight,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
+            ),
+        color = Color.White,
+    )
+
+    val translation = entry.line.translation
+    if (showTranslation && !translation.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = translation,
+            style =
+                MeloType.body.copy(
+                    fontStyle = FontStyle.Italic,
+                    fontSize = style.translationFontSize,
+                    lineHeight = style.translationLineHeight,
+                    fontWeight = FontWeight.Normal,
+                ),
+            color = Color.White.copy(alpha = if (isActive) 0.84f else 0.72f),
+        )
     }
 }
 

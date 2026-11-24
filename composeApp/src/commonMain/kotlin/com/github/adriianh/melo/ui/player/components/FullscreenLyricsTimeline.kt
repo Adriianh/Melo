@@ -6,7 +6,6 @@ import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.TrackLyrics
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
-private const val VIRTUAL_GAP_LEAD_IN_MS = 2_500L
 private const val LYRIC_SYNC_LEAD_MS = 150L
 
 internal sealed interface FullscreenLyricEntry {
@@ -67,20 +66,6 @@ internal fun buildFullscreenLyricEntries(
                     lineIndex = index,
                     line = line,
                 )
-
-            if (next != null && next.text.isNotBlank()) {
-                val deltaMs = next.timeMs - line.timeMs
-                if (deltaMs > gapThresholdMs) {
-                    val gapStartMs = line.timeMs + minOf(VIRTUAL_GAP_LEAD_IN_MS, deltaMs / 2L)
-                    entries +=
-                        FullscreenLyricEntry.InstrumentalGap(
-                            startTimeMs = gapStartMs,
-                            endTimeMs = next.timeMs,
-                            sourceLineIndex = null,
-                            key = "gap_virtual_${gapStartMs}_$index",
-                        )
-                }
-            }
         }
     }
 

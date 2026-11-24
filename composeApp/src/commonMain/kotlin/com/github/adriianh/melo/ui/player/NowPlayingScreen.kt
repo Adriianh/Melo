@@ -2,6 +2,8 @@
 
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
@@ -439,6 +442,12 @@ fun NowPlayingScreen(
             extraDarkScrimAlpha = FULLSCREEN_DARK_SCRIM_ALPHA,
         )
 
+        val titleBarAlpha by animateFloatAsState(
+            targetValue = if (!isDesktop || controlsVisible) 1f else 0f,
+            animationSpec = tween(durationMillis = if (reducedMotion) 0 else 240),
+            label = "FullscreenTitleBarAlpha",
+        )
+
         Column(
             modifier =
                 Modifier
@@ -447,7 +456,7 @@ fun NowPlayingScreen(
                     .navigationBarsPadding(),
             verticalArrangement = Arrangement.Top,
         ) {
-            if (!isDesktop || controlsVisible) {
+            Box(modifier = Modifier.alpha(titleBarAlpha)) {
                 titleBar()
             }
 
