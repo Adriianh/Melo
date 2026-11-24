@@ -38,8 +38,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.model.search.itemKey
-import com.github.adriianh.melo.util.PlatformType
-import com.github.adriianh.melo.util.getPlatform
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.search_type_artist
 import com.github.adriianh.melo.ui.components.track.RowContextMenuButton
@@ -48,7 +46,9 @@ import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.desktopScroll
+import com.github.adriianh.melo.util.getPlatform
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalFoundationApi::class)
