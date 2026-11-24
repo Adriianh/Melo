@@ -92,6 +92,22 @@ internal fun resolveActiveFullscreenEntryIndex(
 
 internal fun TrackLyrics?.hasDisplayableLyrics(): Boolean = this != null && (hasSync || !plainLyrics.isNullOrBlank())
 
+internal fun shouldShowLyricsFloatingControls(
+    showFloatingControls: Boolean,
+    hasLyrics: Boolean,
+    showControlsOnHoverOnly: Boolean,
+    isHovered: Boolean,
+    hasFocus: Boolean,
+    showLanguageMenu: Boolean,
+    isIdleHidden: Boolean,
+): Boolean =
+    when {
+        !showFloatingControls || !hasLyrics -> false
+        showLanguageMenu -> true
+        isIdleHidden -> false
+        else -> !showControlsOnHoverOnly || isHovered || hasFocus
+    }
+
 internal fun lyricAlphaForDistance(distance: Int): Float =
     when (distance) {
         0 -> 1.0f

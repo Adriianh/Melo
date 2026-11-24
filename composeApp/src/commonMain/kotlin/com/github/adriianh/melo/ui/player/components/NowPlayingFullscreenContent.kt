@@ -304,6 +304,7 @@ private fun ExpandedNowPlayingLayout(
                                 onSelectLanguage = actions.onSelectLanguage,
                                 style = FullscreenLyricsStyle.Expanded,
                                 showControlsOnHoverOnly = isDesktop,
+                                isIdleHidden = isIdleHidden,
                                 reducedMotion = reducedMotion,
                                 modifier = Modifier.fillMaxSize(),
                             )

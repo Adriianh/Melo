@@ -2,6 +2,7 @@
 
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -143,6 +144,7 @@ internal fun FullscreenLyricsPane(
     progressFlow: StateFlow<PlayerProgressState>? = null,
     style: FullscreenLyricsStyle = FullscreenLyricsStyle.Expanded,
     showControlsOnHoverOnly: Boolean = false,
+    isIdleHidden: Boolean = false,
     reducedMotion: Boolean = false,
     showFloatingControls: Boolean = true,
 ) {
@@ -152,11 +154,28 @@ internal fun FullscreenLyricsPane(
     var showLanguageMenu by remember { mutableStateOf(false) }
 
     val hasLyrics = trackLyrics.hasDisplayableLyrics()
-    val controlsRevealed = !showControlsOnHoverOnly || isHovered || hasFocus || showLanguageMenu
-    val controlsVisible = showFloatingControls && hasLyrics && controlsRevealed
+    val controlsVisible =
+        shouldShowLyricsFloatingControls(
+            showFloatingControls = showFloatingControls,
+            hasLyrics = hasLyrics,
+            showControlsOnHoverOnly = showControlsOnHoverOnly,
+            isHovered = isHovered,
+            hasFocus = hasFocus,
+            showLanguageMenu = showLanguageMenu,
+            isIdleHidden = isIdleHidden,
+        )
     val controlsAlpha by animateFloatAsState(
         targetValue = if (controlsVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 180),
+        animationSpec =
+            tween(
+                durationMillis =
+                    when {
+                        reducedMotion -> 0
+                        controlsVisible -> 220
+                        else -> 650
+                    },
+                easing = FastOutSlowInEasing,
+            ),
         label = "FullscreenLyricsControlsAlpha",
     )
 
