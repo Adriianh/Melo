@@ -55,6 +55,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchScreen(
     onAlbumClick: (String) -> Unit = {},
+    onAlbumWithArtistClick: (album: String, artist: String) -> Unit = { album, _ -> onAlbumClick(album) },
     onPlaylistClick: (String, String, String?, String) -> Unit = { _, _, _, _ -> },
     onArtistClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
@@ -125,6 +126,7 @@ fun SearchScreen(
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
         onAlbumClick = onAlbumClick,
+        onAlbumWithArtistClick = onAlbumWithArtistClick,
     )
 
     Column(

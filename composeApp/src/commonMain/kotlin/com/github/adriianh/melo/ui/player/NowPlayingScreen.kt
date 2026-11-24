@@ -71,6 +71,7 @@ fun NowPlayingScreen(
     onCollapse: () -> Unit,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
+    onAlbumWithArtistClick: (album: String, artist: String) -> Unit = { album, _ -> onAlbumClick(album) },
     onPlaylistClick: (String) -> Unit = {},
     titleBar: @Composable () -> Unit = {},
     blurEnabled: Boolean = true,
@@ -206,7 +207,7 @@ fun NowPlayingScreen(
             },
             onGoToAlbum = {
                 interaction.dismissContextMenu()
-                if (track.album.isNotBlank()) onAlbumClick(track.album)
+                if (track.album.isNotBlank()) onAlbumWithArtistClick(track.album, track.artist)
             },
             onShare = { /* TODO */ },
             onDownload = {

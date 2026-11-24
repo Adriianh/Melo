@@ -40,10 +40,16 @@ class GetEntityDetailsUseCase(
     }
 
     private suspend fun resolveAlbumDetails(entity: SearchResult.Album): SearchResult.Album {
+        val directDetails =
+            if (isDirectAlbumBrowseId(entity.id) || entity.author.isBlank()) {
+                musicProvider.getAlbumDetails(entity.id)
+            } else {
+                null
+            }
         val details =
-            musicProvider.getAlbumDetails(entity.id)
+            directDetails
                 ?: albumSearchQuery(entity).takeIf { it.isNotBlank() }?.let { query ->
-                    findMatchingAlbum(query, entity.author)
+                    findMatchingAlbum(query, entity.title.ifBlank { entity.id }, entity.author)
                 }
                 ?: return entity
         return details.copy(
@@ -57,20 +63,40 @@ class GetEntityDetailsUseCase(
         )
     }
 
+    private fun isDirectAlbumBrowseId(id: String): Boolean =
+        id.startsWith("MPRE") ||
+            id.startsWith("OLAK") ||
+            id.startsWith("piped:") ||
+            id.startsWith("itunes:")
+
     private suspend fun findMatchingAlbum(
         query: String,
+        expectedTitle: String,
         expectedAuthor: String,
     ): SearchResult.Album? {
         val candidates = musicProvider.searchAlbums(query)
-        val matched =
-            if (expectedAuthor.isNotBlank()) {
-                candidates.firstOrNull { album ->
-                    album.author.contains(expectedAuthor, ignoreCase = true) ||
-                        expectedAuthor.contains(album.author, ignoreCase = true)
+        val authorTokens =
+            expectedAuthor
+                .split(",", "&", "feat.", "ft.", " x ", " X ")
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+        val byAuthor =
+            if (authorTokens.isNotEmpty()) {
+                candidates.filter { album ->
+                    album.author.isNotBlank() &&
+                        !album.author.equals("Unknown", ignoreCase = true) &&
+                        authorTokens.any { token ->
+                            album.author.contains(token, ignoreCase = true) ||
+                                token.contains(album.author, ignoreCase = true)
+                        }
                 }
             } else {
-                candidates.firstOrNull()
+                candidates
             }
+        val matched =
+            byAuthor.firstOrNull { it.title.equals(expectedTitle, ignoreCase = true) }
+                ?: byAuthor.firstOrNull { it.title.contains(expectedTitle, ignoreCase = true) }
+                ?: byAuthor.firstOrNull()
         return matched?.let { musicProvider.getAlbumDetails(it.id) ?: it }
     }
 

@@ -383,6 +383,15 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                                     ),
                                                                 )
                                                             },
+                                                            onAlbumWithArtistClick = { album, artist ->
+                                                                navigateTo(
+                                                                    ScreenRoute.Album(
+                                                                        id = album,
+                                                                        title = album,
+                                                                        author = artist,
+                                                                    ),
+                                                                )
+                                                            },
                                                             onPlaylistClick = { id, title, artwork, author ->
                                                                 navigateTo(
                                                                     ScreenRoute.Playlist(
@@ -486,6 +495,15 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                                     ),
                                                                 )
                                                             },
+                                                            onAlbumWithArtistClick = { album, artist ->
+                                                                navigateTo(
+                                                                    ScreenRoute.Album(
+                                                                        id = album,
+                                                                        title = album,
+                                                                        author = artist,
+                                                                    ),
+                                                                )
+                                                            },
                                                         )
 
                                                     is ScreenRoute.Artist ->
@@ -563,6 +581,16 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                     onAlbumClick = { id ->
                                         isNowPlayingExpanded = false
                                         navigateTo(ScreenRoute.Album(id))
+                                    },
+                                    onAlbumWithArtistClick = { album, artist ->
+                                        isNowPlayingExpanded = false
+                                        navigateTo(
+                                            ScreenRoute.Album(
+                                                id = album,
+                                                title = album,
+                                                author = artist,
+                                            ),
+                                        )
                                     },
                                     onPlaylistClick = { id ->
                                         isNowPlayingExpanded = false

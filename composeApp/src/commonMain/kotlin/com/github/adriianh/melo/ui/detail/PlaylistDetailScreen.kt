@@ -92,6 +92,7 @@ fun PlaylistDetailScreen(
     onBack: () -> Unit,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
+    onAlbumWithArtistClick: (album: String, artist: String) -> Unit = { album, _ -> onAlbumClick(album) },
     initialTitle: String = "",
     initialArtwork: String? = null,
     initialAuthor: String = "",
@@ -199,6 +200,7 @@ fun PlaylistDetailScreen(
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
         onAlbumClick = onAlbumClick,
+        onAlbumWithArtistClick = onAlbumWithArtistClick,
         onRemoveFromPlaylist =
             if (isCustomPlaylist) {
                 { track ->
