@@ -2,6 +2,7 @@
 
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
@@ -460,9 +461,19 @@ fun NowPlayingScreen(
             extraDarkScrimAlpha = FULLSCREEN_DARK_SCRIM_ALPHA,
         )
 
+        val titleBarVisible = !isDesktop || controlsVisible
         val titleBarAlpha by animateFloatAsState(
-            targetValue = if (!isDesktop || controlsVisible) 1f else 0f,
-            animationSpec = tween(durationMillis = if (reducedMotion) 0 else 240),
+            targetValue = if (titleBarVisible) 1f else 0f,
+            animationSpec =
+                tween(
+                    durationMillis =
+                        when {
+                            reducedMotion -> 0
+                            titleBarVisible -> 220
+                            else -> 650
+                        },
+                    easing = FastOutSlowInEasing,
+                ),
             label = "FullscreenTitleBarAlpha",
         )
 

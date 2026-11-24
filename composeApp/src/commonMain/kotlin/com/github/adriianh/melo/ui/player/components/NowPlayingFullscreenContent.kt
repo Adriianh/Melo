@@ -3,6 +3,7 @@
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -26,13 +27,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.resources.Res
@@ -88,9 +92,19 @@ internal fun NowPlayingFullscreenContent(
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isIdleHidden = isDesktop && !controlsVisible
     val chromeAlpha by animateFloatAsState(
-        targetValue = if (controlsVisible || !isDesktop) 1f else 0f,
-        animationSpec = tween(durationMillis = if (reducedMotion) 0 else 240),
+        targetValue = if (!isIdleHidden) 1f else 0f,
+        animationSpec =
+            tween(
+                durationMillis =
+                    when {
+                        reducedMotion -> 0
+                        !isIdleHidden -> 220
+                        else -> 650
+                    },
+                easing = FastOutSlowInEasing,
+            ),
         label = "FullscreenChromeAlpha",
     )
 
@@ -106,6 +120,7 @@ internal fun NowPlayingFullscreenContent(
                 reducedMotion = reducedMotion,
                 showLyrics = showLyrics,
                 showQueue = showQueue,
+                isIdleHidden = isIdleHidden,
                 chromeAlpha = chromeAlpha,
                 actions = actions,
                 queueSidePanelContent = queueSidePanelContent,
@@ -154,6 +169,7 @@ private fun ExpandedNowPlayingLayout(
     reducedMotion: Boolean,
     showLyrics: Boolean,
     showQueue: Boolean,
+    isIdleHidden: Boolean,
     chromeAlpha: Float,
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
@@ -162,6 +178,21 @@ private fun ExpandedNowPlayingLayout(
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
     val showRightPane = showQueue || (showLyrics && (hasLyrics || state.isLyricsLoading))
     val artworkSize = if (showRightPane) EXPANDED_ARTWORK_SIZE else CENTERED_ARTWORK_SIZE
+    var controlsBlockHeightPx by remember { mutableIntStateOf(0) }
+    val heroTranslationY by animateFloatAsState(
+        targetValue = if (isIdleHidden) controlsBlockHeightPx * 0.5f else 0f,
+        animationSpec =
+            tween(
+                durationMillis =
+                    when {
+                        reducedMotion -> 0
+                        isIdleHidden -> 650
+                        else -> 280
+                    },
+                easing = FastOutSlowInEasing,
+            ),
+        label = "FullscreenHeroIdleCenterY",
+    )
 
     Column(
         modifier =
@@ -194,23 +225,23 @@ private fun ExpandedNowPlayingLayout(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                FullscreenArtworkCard(
-                    albumArt = state.albumArt,
-                    title = state.title,
-                    isBuffering = state.isBuffering,
-                    activeAccent = activeAccent,
-                    modifier = Modifier.size(artworkSize),
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
                 Column(
                     modifier =
                         Modifier
-                            .widthIn(max = EXPANDED_CONTROLS_MAX_WIDTH)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .graphicsLayer { translationY = heroTranslationY },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    FullscreenArtworkCard(
+                        albumArt = state.albumArt,
+                        title = state.title,
+                        isBuffering = state.isBuffering,
+                        activeAccent = activeAccent,
+                        modifier = Modifier.size(artworkSize),
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     FullscreenTrackTitleRow(
                         title = state.title,
                         artist = state.artist,
@@ -218,66 +249,22 @@ private fun ExpandedNowPlayingLayout(
                         activeAccent = activeAccent,
                         onArtistClick = actions.onArtistClick,
                         onToggleFavorite = actions.onToggleFavorite,
+                        modifier = Modifier.widthIn(max = EXPANDED_CONTROLS_MAX_WIDTH),
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Column(modifier = Modifier.fillMaxWidth().alpha(chromeAlpha)) {
-                        PlayerSlider(
-                            state = state,
-                            activeAccent = activeAccent,
-                            onSeekTo = actions.onSeekTo,
-                            progressState = progressFlow,
-                            timeLabelColor = Color.White.copy(alpha = 0.72f),
-                            inactiveTrackColor = Color.White.copy(alpha = 0.22f),
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        PlayerTransportControls(
-                            isPlaying = state.isPlaying,
-                            isBuffering = state.isBuffering,
-                            shuffleEnabled = state.shuffleEnabled,
-                            repeatMode = state.repeatMode,
-                            hasPrevious = state.hasPrevious,
-                            hasNext = state.hasNext,
-                            activeAccent = activeAccent,
-                            onToggleShuffle = actions.onToggleShuffle,
-                            onPlayPrevious = actions.onPlayPrevious,
-                            onTogglePlayPause = actions.onTogglePlayPause,
-                            onPlayNext = actions.onPlayNext,
-                            onToggleRepeat = actions.onToggleRepeat,
-                            playButtonSize = 68.dp,
-                            primaryIconTint = Color.White,
-                            mutedIconTint = Color.White.copy(alpha = 0.68f),
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        ExpandedUtilityRow(
-                            volume = volume,
-                            onVolumeChange = actions.onVolumeChange,
-                            onToggleMute = actions.onToggleMute,
-                            hasLyrics = hasLyrics,
-                            isLyricsActive = showLyrics && !showQueue,
-                            isQueueActive = showQueue,
-                            activeAccent = activeAccent,
-                            onToggleLyrics = actions.onToggleLyrics,
-                            onToggleQueue = actions.onToggleQueue,
-                        )
-
-                        if (!hasLyrics && !state.isLyricsLoading) {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = stringResource(Res.string.player_lyrics_unavailable),
-                                style = MeloType.labelSmall,
-                                color = Color.White.copy(alpha = 0.68f),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
                 }
+
+                ExpandedControlsBlock(
+                    state = state,
+                    progressFlow = progressFlow,
+                    volume = volume,
+                    activeAccent = activeAccent,
+                    hasLyrics = hasLyrics,
+                    showLyrics = showLyrics,
+                    showQueue = showQueue,
+                    chromeAlpha = chromeAlpha,
+                    actions = actions,
+                    onHeightChanged = { controlsBlockHeightPx = it },
+                )
             }
 
             if (showRightPane) {
@@ -324,6 +311,86 @@ private fun ExpandedNowPlayingLayout(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ExpandedControlsBlock(
+    state: PlayerUiState,
+    progressFlow: StateFlow<PlayerProgressState>?,
+    volume: Float,
+    activeAccent: Color,
+    hasLyrics: Boolean,
+    showLyrics: Boolean,
+    showQueue: Boolean,
+    chromeAlpha: Float,
+    actions: FullscreenPlayerActions,
+    onHeightChanged: (Int) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .widthIn(max = EXPANDED_CONTROLS_MAX_WIDTH)
+                .fillMaxWidth()
+                .onSizeChanged { onHeightChanged(it.height) }
+                .alpha(chromeAlpha),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PlayerSlider(
+            state = state,
+            activeAccent = activeAccent,
+            onSeekTo = actions.onSeekTo,
+            progressState = progressFlow,
+            timeLabelColor = Color.White.copy(alpha = 0.72f),
+            inactiveTrackColor = Color.White.copy(alpha = 0.22f),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        PlayerTransportControls(
+            isPlaying = state.isPlaying,
+            isBuffering = state.isBuffering,
+            shuffleEnabled = state.shuffleEnabled,
+            repeatMode = state.repeatMode,
+            hasPrevious = state.hasPrevious,
+            hasNext = state.hasNext,
+            activeAccent = activeAccent,
+            onToggleShuffle = actions.onToggleShuffle,
+            onPlayPrevious = actions.onPlayPrevious,
+            onTogglePlayPause = actions.onTogglePlayPause,
+            onPlayNext = actions.onPlayNext,
+            onToggleRepeat = actions.onToggleRepeat,
+            playButtonSize = 68.dp,
+            primaryIconTint = Color.White,
+            mutedIconTint = Color.White.copy(alpha = 0.68f),
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        ExpandedUtilityRow(
+            volume = volume,
+            onVolumeChange = actions.onVolumeChange,
+            onToggleMute = actions.onToggleMute,
+            hasLyrics = hasLyrics,
+            isLyricsActive = showLyrics && !showQueue,
+            isQueueActive = showQueue,
+            activeAccent = activeAccent,
+            onToggleLyrics = actions.onToggleLyrics,
+            onToggleQueue = actions.onToggleQueue,
+        )
+
+        if (!hasLyrics && !state.isLyricsLoading) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(Res.string.player_lyrics_unavailable),
+                style = MeloType.labelSmall,
+                color = Color.White.copy(alpha = 0.68f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
