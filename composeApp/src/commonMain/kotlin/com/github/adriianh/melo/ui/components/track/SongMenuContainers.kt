@@ -75,13 +75,17 @@ import androidx.compose.ui.window.PopupProperties
 import com.github.adriianh.melo.ui.i18n.resolve
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 private val MEDIUM_POPUP_WIDTH = 300.dp
 private val MEDIUM_ROW_HEIGHT = 48.dp
 private val EXPANDED_POPUP_WIDTH = 256.dp
 private val EXPANDED_ROW_HEIGHT = 36.dp
 private val POPUP_WINDOW_MARGIN = 12.dp
+private const val SUBMENU_OPEN_DELAY_MS = 220L
+private const val SUBMENU_CLOSE_DELAY_MS = 180L
 
 @Composable
 internal fun SongMenuAnchoredPopup(
@@ -278,7 +282,7 @@ private fun PopupActionEntryRow(
         enabled = entry.enabled,
         focusRequester = focusRequester,
         onFocused = onFocused,
-        onHover = onHover,
+        onHoverChanged = { hovered -> if (hovered) onHover() },
         onClick = {
             entry.onClick()
             onDismissRequest()
@@ -299,6 +303,23 @@ private fun PopupSubmenuEntryRow(
     onDismissRequest: () -> Unit,
 ) {
     val isExpanded = rowStyle.isExpandedDesktop
+    var isRowHovered by remember { mutableStateOf(false) }
+    var isFlyoutHovered by remember { mutableStateOf(false) }
+    var openedByHover by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isExpanded, isSubmenuOpen, openedByHover, isRowHovered, isFlyoutHovered) {
+        if (!isExpanded) return@LaunchedEffect
+        val hoverExited = !isRowHovered && !isFlyoutHovered
+        if (isRowHovered && !isSubmenuOpen) {
+            delay(SUBMENU_OPEN_DELAY_MS.milliseconds)
+            openedByHover = true
+            onOpenSubmenuChange(entry.id)
+        } else if (isSubmenuOpen && openedByHover && hoverExited) {
+            delay(SUBMENU_CLOSE_DELAY_MS.milliseconds)
+            onOpenSubmenuChange(null)
+        }
+    }
+
     PopupMenuRow(
         label = entry.label.resolve(),
         icon = entry.icon,
@@ -310,14 +331,18 @@ private fun PopupSubmenuEntryRow(
         hasSubmenu = true,
         isSubmenuExpanded = isSubmenuOpen,
         onFocused = onFocused,
-        onHover = { if (isExpanded) onOpenSubmenuChange(entry.id) },
+        onHoverChanged = { isRowHovered = it },
         onOpenSubmenuKey = {
-            if (isExpanded) onOpenSubmenuChange(entry.id)
+            if (isExpanded) {
+                openedByHover = false
+                onOpenSubmenuChange(entry.id)
+            }
             isExpanded
         },
         onRowPositioned = { rect -> rowBoundsMap[entry.id] = rect },
         onClick = {
             if (isExpanded) {
+                openedByHover = false
                 onOpenSubmenuChange(if (isSubmenuOpen) null else entry.id)
             } else {
                 entry.content.onOpenSheetFallback()
@@ -332,6 +357,8 @@ private fun PopupSubmenuEntryRow(
             content = entry.content,
             onDismissSubmenu = { onOpenSubmenuChange(null) },
             onDismissAll = onDismissRequest,
+            focusable = !openedByHover,
+            onHoverChanged = { isFlyoutHovered = it },
         )
     }
 }
@@ -402,7 +429,7 @@ private fun PopupMenuRow(
     enabled: Boolean,
     focusRequester: FocusRequester,
     onFocused: () -> Unit,
-    onHover: () -> Unit,
+    onHoverChanged: (Boolean) -> Unit,
     onClick: () -> Unit,
     hasSubmenu: Boolean = false,
     isSubmenuExpanded: Boolean = false,
@@ -413,7 +440,7 @@ private fun PopupMenuRow(
     val isHovered by interactionSource.collectIsHoveredAsState()
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    LaunchedEffect(isHovered) { if (isHovered) onHover() }
+    LaunchedEffect(isHovered) { onHoverChanged(isHovered) }
     LaunchedEffect(isFocused) { if (isFocused) onFocused() }
 
     val highlightColor =

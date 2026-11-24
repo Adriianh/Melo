@@ -89,6 +89,8 @@ internal fun PlaylistFlyoutPopup(
     content: PlaylistSubmenuContent,
     onDismissSubmenu: () -> Unit,
     onDismissAll: () -> Unit,
+    focusable: Boolean = true,
+    onHoverChanged: (Boolean) -> Unit = {},
 ) {
     val positionProvider =
         remember(parentMenuBounds, submenuRowBounds) {
@@ -100,13 +102,15 @@ internal fun PlaylistFlyoutPopup(
 
     Popup(
         popupPositionProvider = positionProvider,
-        onDismissRequest = onDismissSubmenu,
-        properties = PopupProperties(focusable = true, dismissOnBackPress = true, dismissOnClickOutside = true),
+        onDismissRequest = onDismissAll,
+        properties = PopupProperties(focusable = focusable, dismissOnBackPress = true, dismissOnClickOutside = true),
     ) {
         PlaylistFlyoutContent(
             content = content,
             onDismissSubmenu = onDismissSubmenu,
             onDismissAll = onDismissAll,
+            autoFocusSearch = focusable,
+            onHoverChanged = onHoverChanged,
         )
     }
 }
@@ -117,17 +121,20 @@ internal fun PlaylistFlyoutContent(
     onDismissSubmenu: () -> Unit,
     onDismissAll: () -> Unit,
     modifier: Modifier = Modifier,
+    autoFocusSearch: Boolean = true,
+    onHoverChanged: (Boolean) -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var isCreatingNew by remember { mutableStateOf(false) }
     var newPlaylistName by remember { mutableStateOf("") }
     val searchFocusRequester = remember { FocusRequester() }
     val newNameFocusRequester = remember { FocusRequester() }
+    val hoverSource = remember { MutableInteractionSource() }
+    val isHovered by hoverSource.collectIsHoveredAsState()
 
-    LaunchedEffect(Unit) { runCatching { searchFocusRequester.requestFocus() } }
-    LaunchedEffect(isCreatingNew) {
-        if (isCreatingNew) runCatching { newNameFocusRequester.requestFocus() }
-    }
+    LaunchedEffect(isHovered) { onHoverChanged(isHovered) }
+    LaunchedEffect(autoFocusSearch) { if (autoFocusSearch) runCatching { searchFocusRequester.requestFocus() } }
+    LaunchedEffect(isCreatingNew) { if (isCreatingNew) runCatching { newNameFocusRequester.requestFocus() } }
 
     val filteredPlaylists =
         remember(content.playlists, searchQuery) {
@@ -140,6 +147,7 @@ internal fun PlaylistFlyoutContent(
             modifier
                 .width(FLYOUT_WIDTH)
                 .heightIn(max = FLYOUT_MAX_HEIGHT)
+                .hoverable(hoverSource)
                 .onPreviewKeyEvent { event ->
                     handleFlyoutKeyEvent(event, !isCreatingNew && searchQuery.isEmpty(), onDismissSubmenu)
                 },
