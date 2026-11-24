@@ -262,6 +262,7 @@ jobs:
       - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8.0.0
@@ -311,7 +312,7 @@ jobs:
             local range="$1"
             local tmp
             tmp=$(mktemp)
-            git log --no-merges --pretty=format:'%s' "$range" > "$tmp" 2>/dev/null || true
+            git log --no-merges --format='%s' "$range" > "$tmp" 2>/dev/null || true
 
             if [ ! -s "$tmp" ]; then
               rm -f "$tmp"
@@ -324,7 +325,7 @@ jobs:
             # [[ =~ ]] expression are a syntax error in bash.
             local re_commit='^([a-z]+)(\([^)]*\))?(!)?:[[:space:]]*(.+)$'
             local re_pr='^(.*)[[:space:]]\(#([0-9]+)\)$'
-            while IFS= read -r subject; do
+            while IFS= read -r subject || [ -n "$subject" ]; do
               [ -n "$subject" ] || continue
               type=""
               desc="$subject"
@@ -463,6 +464,7 @@ jobs:
               url="https://github.com/$GITHUB_REPOSITORY/releases/download/nightly/$name"
               platform="Other"
               type="Binary"
+              order=99
               # Order matters: the most specific patterns must come first, or
               # "melo-nightly-macos.tar.gz" is swallowed by the generic
               # "*.tar.gz" branch and mislabelled as a Linux tarball.
@@ -470,49 +472,64 @@ jobs:
                 *android*|*.apk)
                   platform="🤖 Android"
                   type="APK"
-                  ;;
-                *windows.zip)
-                  platform="🪟 Windows"
-                  type="CLI (TUI)"
-                  ;;
-                *.exe)
-                  platform="🪟 Windows"
-                  type="Setup Installer"
-                  ;;
-                *.msi)
-                  platform="🪟 Windows"
-                  type="MSI Package"
-                  ;;
-                *macos.tar.gz)
-                  platform="🍎 macOS"
-                  type="CLI (TUI)"
-                  ;;
-                *.dmg)
-                  platform="🍎 macOS"
-                  type="DMG Installer"
-                  ;;
-                *linux.tar.gz)
-                  platform="🐧 Linux"
-                  type="CLI (TUI)"
-                  ;;
-                *.deb)
-                  platform="🐧 Linux"
-                  type="DEB Package"
+                  order=10
                   ;;
                 *.AppImage)
                   platform="🐧 Linux"
                   type="AppImage"
+                  order=20
+                  ;;
+                *.deb)
+                  platform="🐧 Linux"
+                  type="DEB Package"
+                  order=21
+                  ;;
+                *linux.tar.gz)
+                  platform="🐧 Linux"
+                  type="CLI (TUI)"
+                  order=23
+                  ;;
+                *macos.tar.gz)
+                  platform="🍎 macOS"
+                  type="CLI (TUI)"
+                  order=41
                   ;;
                 *.tar.gz)
                   platform="🐧 Linux"
                   type="Portable Tarball"
+                  order=22
+                  ;;
+                *.exe)
+                  platform="🪟 Windows"
+                  type="Setup Installer"
+                  order=30
+                  ;;
+                *.msi)
+                  platform="🪟 Windows"
+                  type="MSI Package"
+                  order=31
+                  ;;
+                *windows.zip)
+                  platform="🪟 Windows"
+                  type="CLI (TUI)"
+                  order=32
+                  ;;
+                *.dmg)
+                  platform="🍎 macOS"
+                  type="DMG Installer"
+                  order=40
                   ;;
               esac
-              echo "| $platform | $type | [$name]($url) |"
-            done
+              printf '%s\t| %s | %s | [%s](%s) |\n' "$order" "$platform" "$type" "$name" "$url"
+            done | LC_ALL=C sort -t $'\t' -k1,1n -k2,2 | cut -f2-
           } > nightly_body.md
 
           ls -la nightly_dist/
+
+          # Move the git tag so /tags sorts "nightly" by the latest build commit
+          # instead of staying pinned to the initial release commit.
+          git tag -f nightly "$GITHUB_SHA"
+          git push -f origin refs/tags/nightly
 
       - name: Publish Nightly Release
         if: startsWith(github.ref, 'refs/heads/master')
