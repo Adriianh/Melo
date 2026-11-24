@@ -62,12 +62,12 @@ import com.github.adriianh.melo.resources.detail_other_versions
 import com.github.adriianh.melo.resources.detail_type_album
 import com.github.adriianh.melo.resources.selection_count
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.cards.AlbumCard
-import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.feedback.MeloErrorState
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.detail.components.EntityHeaderCard
@@ -124,7 +124,7 @@ fun AlbumDetailScreen(
         viewModel.loadAlbum(albumId, initialTitle, initialArtwork, initialAuthor)
     }
 
-    val album = (uiState.entity as? SearchResult.Album)?.takeIf { it.id == albumId }
+    val album = uiState.entity as? SearchResult.Album
     val songs = remember(album) { album?.songs.orEmpty() }
     val fallbackAlbumTitle = stringResource(Res.string.detail_type_album)
     val effectiveTitle =
@@ -156,6 +156,7 @@ fun AlbumDetailScreen(
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
         onAlbumClick = onAlbumClick,
+        isOnAlbumScreen = true,
     )
 
     Scaffold(

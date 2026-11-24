@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +14,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,6 +31,7 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_collapse
 import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.player_header_now_playing
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
@@ -30,8 +40,10 @@ import org.jetbrains.compose.resources.stringResource
 internal fun NowPlayingTopBar(
     title: String,
     onCollapse: () -> Unit,
+    onMoreClick: ((SongMenuAnchor?) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -63,7 +75,13 @@ internal fun NowPlayingTopBar(
             )
         }
 
-        IconButton(onClick = { /* options */ }) {
+        IconButton(
+            onClick = {
+                onMoreClick?.invoke(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
+            },
+            enabled = onMoreClick != null,
+            modifier = Modifier.onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
+        ) {
             Icon(
                 Icons.Default.MoreVert,
                 contentDescription = stringResource(Res.string.a11y_more_options),

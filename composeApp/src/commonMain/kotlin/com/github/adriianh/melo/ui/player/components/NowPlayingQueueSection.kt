@@ -1,10 +1,11 @@
-@file:Suppress("ktlint:standard:function-naming")
+@file:Suppress("FunctionNaming", "LongMethod", "CyclomaticComplexMethod", "ktlint:standard:function-naming")
 
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,12 +32,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +63,8 @@ import com.github.adriianh.melo.ui.components.controls.LocalSwipeRevealGroup
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -67,6 +75,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NowPlayingQueueSection(
     state: PlayerUiState,
@@ -74,6 +83,7 @@ fun NowPlayingQueueSection(
     modifier: Modifier = Modifier,
     queueViewModel: QueueViewModel = koinViewModel(),
     onMoreClick: (Track, Boolean) -> Unit = { _, _ -> },
+    onOpenContextMenu: ((Track, Boolean, SongMenuAnchor?) -> Unit)? = null,
     onSwipeQueueItem: (Int) -> Unit = {},
     onSwipeSuggestionItem: (Track) -> Unit = {},
     onPlayNextSuggestionItem: ((Track) -> Unit)? = null,
@@ -230,6 +240,8 @@ fun NowPlayingQueueSection(
                                 ),
                             leadingAction = MeloSwipeActions.like(isLiked(track)),
                         ) {
+                            var rowBounds by remember { mutableStateOf<Rect?>(null) }
+                            var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
                             Row(
                                 modifier =
                                     Modifier
@@ -241,8 +253,22 @@ fun NowPlayingQueueSection(
                                             } else {
                                                 Color.Transparent
                                             },
-                                        ).clickable { queueViewModel.playTrackInQueue(track) }
-                                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                                        ).onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                                        .songMenuRightClick(
+                                            onOpenMenu = { anchor ->
+                                                onOpenContextMenu?.invoke(track, true, anchor)
+                                                    ?: onMoreClick(track, true)
+                                            },
+                                        ).combinedClickable(
+                                            onClick = { queueViewModel.playTrackInQueue(track) },
+                                            onLongClick = {
+                                                onOpenContextMenu?.invoke(
+                                                    track,
+                                                    true,
+                                                    rowBounds?.let { SongMenuAnchor.Bounds(it) },
+                                                ) ?: onMoreClick(track, true)
+                                            },
+                                        ).padding(horizontal = 4.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
@@ -268,7 +294,16 @@ fun NowPlayingQueueSection(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
-                                IconButton(onClick = { onMoreClick(track, true) }) {
+                                IconButton(
+                                    onClick = {
+                                        onOpenContextMenu?.invoke(
+                                            track,
+                                            true,
+                                            moreButtonBounds?.let { SongMenuAnchor.Bounds(it) },
+                                        ) ?: onMoreClick(track, true)
+                                    },
+                                    modifier = Modifier.onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
+                                ) {
                                     Icon(
                                         Icons.Default.MoreVert,
                                         contentDescription = stringResource(Res.string.a11y_more_options),
@@ -360,6 +395,10 @@ fun NowPlayingQueueSection(
                                         ?: queueViewModel.insertTrackNext(track)
                                 },
                                 onMoreClick = { onMoreClick(track, false) },
+                                onOpenContextMenu = { anchor ->
+                                    onOpenContextMenu?.invoke(track, false, anchor)
+                                        ?: onMoreClick(track, false)
+                                },
                             )
                         }
                     }

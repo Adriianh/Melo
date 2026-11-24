@@ -143,8 +143,15 @@
     <string name="track_menu_download">Download song</string>
     <string name="track_menu_add_to_playlist">Add to playlist...</string>
     <string name="track_menu_remove_from_playlist">Remove from this playlist</string>
+    <string name="track_menu_remove_from_library">Remove from library</string>
+    <string name="track_menu_playlist_search_placeholder">Search playlists...</string>
+    <string name="track_menu_new_playlist">New playlist...</string>
     <string name="track_menu_go_to_artist">Go to artist</string>
     <string name="track_menu_go_to_album">Go to album</string>
+    <string name="menu_action_play">Play</string>
+    <string name="menu_action_shuffle">Shuffle</string>
+    <string name="menu_action_save_to_library">Save to library</string>
+    <string name="menu_action_start_radio">Start radio</string>
 
     <!-- Track snackbars -->
     <string name="track_snackbar_added_to_playlist">Added to %1$s</string>
@@ -661,4 +668,7 @@
     <string name="time_days_ago">%1$d d ago</string>
     <string name="time_weeks_ago">%1$d wk ago</string>
     <string name="time_months_ago">%1$d mo ago</string>
+
+    <!-- Share -->
+    <string name="track_snackbar_link_copied">Link copied to clipboard</string>
 </resources>

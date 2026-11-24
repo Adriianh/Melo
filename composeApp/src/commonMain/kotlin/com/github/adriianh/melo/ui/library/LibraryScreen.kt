@@ -108,6 +108,7 @@ fun LibraryScreen(
         libraryState = state,
         activeAccent = activeAccent,
         onArtistClick = { id -> onArtistClick(id, id, null) },
+        onAlbumWithArtistClick = { album, artist -> onAlbumClick(album, album, null, artist) },
     )
 
     val platform = remember { getPlatform() }

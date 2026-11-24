@@ -23,6 +23,13 @@ interface MeloColorScheme {
     val chromePillBorder: Color
     val brandAccent: Color get() = Color(0xFFFF2D55)
     val reduceTransparency: Boolean get() = false
+    val menuLikeTint: Color get() = Color(0xFFFFA8C9)
+    val menuQueueTint: Color get() = Color(0xFF9FC9F5)
+    val menuDestructive: Color get() = Color(0xFFFFB4A8)
+    val menuSheetSurface: Color get() = Color(0xFF262626)
+    val menuPopupSurface: Color get() = Color(0xFF2B2B2B)
+    val menuPopupBorder: Color get() = Color(0xFF3D3D3D)
+    val menuDivider: Color get() = Color(0xFF333333)
 }
 
 object DarkMeloColors : MeloColorScheme {

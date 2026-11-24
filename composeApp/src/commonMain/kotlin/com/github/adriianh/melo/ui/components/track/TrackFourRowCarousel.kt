@@ -17,6 +17,7 @@ fun TrackFourRowCarousel(
     containerWidth: Dp? = null,
     listState: LazyListState = rememberLazyListState(),
     onMoreClick: ((Track) -> Unit)? = null,
+    onOpenContextMenu: ((Track, SongMenuAnchor?) -> Unit)? = null,
     isSelectionMode: Boolean = false,
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
@@ -39,6 +40,12 @@ fun TrackFourRowCarousel(
             onMoreClick =
                 if (onMoreClick != null && !isSelectionMode) {
                     { onMoreClick(track) }
+                } else {
+                    null
+                },
+            onOpenContextMenu =
+                if (onOpenContextMenu != null && !isSelectionMode) {
+                    { anchor -> onOpenContextMenu(track, anchor) }
                 } else {
                     null
                 },

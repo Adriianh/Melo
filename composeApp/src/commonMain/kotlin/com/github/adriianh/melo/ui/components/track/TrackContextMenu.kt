@@ -1,70 +1,24 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components.track
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Downloading
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HeartBroken
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.DividerDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
-import com.github.adriianh.melo.resources.common_action_add_to_queue
-import com.github.adriianh.melo.resources.common_action_share
-import com.github.adriianh.melo.resources.track_menu_add_to_likes
-import com.github.adriianh.melo.resources.track_menu_add_to_playlist
-import com.github.adriianh.melo.resources.track_menu_download
-import com.github.adriianh.melo.resources.track_menu_downloading
-import com.github.adriianh.melo.resources.track_menu_go_to_album
-import com.github.adriianh.melo.resources.track_menu_go_to_artist
-import com.github.adriianh.melo.resources.track_menu_play_next
-import com.github.adriianh.melo.resources.track_menu_remove_download
-import com.github.adriianh.melo.resources.track_menu_remove_from_likes
-import com.github.adriianh.melo.resources.track_menu_remove_from_playlist
-import com.github.adriianh.melo.resources.track_menu_remove_from_queue
+import com.github.adriianh.melo.resources.track_snackbar_link_copied
 import com.github.adriianh.melo.ui.components.dialogs.AddToPlaylistSheet
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryUiState
-import com.github.adriianh.melo.util.MeloAsyncImage
-import com.github.adriianh.melo.util.MeloColors
-import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.buildTrackShareUrl
+import com.github.adriianh.melo.util.rememberPlatformShareHandler
 import kotlinx.coroutines.flow.flowOf
-import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackContextMenu(
     track: Track,
@@ -78,186 +32,87 @@ fun TrackContextMenu(
     onAddToPlaylist: () -> Unit,
     onGoToArtist: () -> Unit,
     onGoToAlbum: () -> Unit,
-    onShare: () -> Unit,
+    onShare: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    onRemoveFromLibrary: (() -> Unit)? = null,
     isDownloaded: Boolean = false,
     isDownloading: Boolean = false,
     downloadProgress: Float? = null,
+    isOnArtistScreen: Boolean = false,
+    isOnAlbumScreen: Boolean = false,
+    anchor: SongMenuAnchor? = null,
+    playlists: List<Playlist> = emptyList(),
+    containingPlaylistIds: Set<Long> = emptySet(),
+    onSelectPlaylist: (Playlist) -> Unit = {},
+    onCreatePlaylistAndAdd: (String) -> Unit = {},
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        containerColor = MeloColors.surface1,
-        dragHandle = { BottomSheetDefaults.DragHandle(color = MeloColors.textMuted) },
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
+    val windowSize = rememberSongMenuWindowSize()
+    val entries =
+        remember(
+            track,
+            isLiked,
+            isDownloaded,
+            isDownloading,
+            downloadProgress,
+            inQueue,
+            isOnArtistScreen,
+            isOnAlbumScreen,
+            playlists,
+            containingPlaylistIds,
+            onShare,
+            onRemoveFromPlaylist,
+            onRemoveFromLibrary,
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                MeloAsyncImage(
-                    url = track.artworkUrl,
-                    contentDescription = track.title,
-                    size = 56.dp,
-                    shape = RoundedCornerShape(8.dp),
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = track.title,
-                        style = MeloType.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = track.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                color = MeloColors.border.copy(alpha = 0.5f),
-                thickness = DividerDefaults.Thickness,
-            )
-
-            ContextMenuItem(
-                icon = Icons.AutoMirrored.Filled.PlaylistPlay,
-                text = stringResource(Res.string.track_menu_play_next),
-                onClick = {
-                    onPlayNext()
-                    onDismissRequest()
-                },
-            )
-            if (inQueue) {
-                ContextMenuItem(
-                    icon = Icons.AutoMirrored.Filled.QueueMusic,
-                    text = stringResource(Res.string.track_menu_remove_from_queue),
-                    onClick = {
-                        onRemoveFromQueue()
-                        onDismissRequest()
-                    },
-                )
-            } else {
-                ContextMenuItem(
-                    icon = Icons.AutoMirrored.Filled.QueueMusic,
-                    text = stringResource(Res.string.common_action_add_to_queue),
-                    onClick = {
-                        onAddToQueue()
-                        onDismissRequest()
-                    },
-                )
-            }
-            ContextMenuItem(
-                icon = if (isLiked) Icons.Default.HeartBroken else Icons.Default.FavoriteBorder,
-                text =
-                    if (isLiked) {
-                        stringResource(Res.string.track_menu_remove_from_likes)
-                    } else {
-                        stringResource(Res.string.track_menu_add_to_likes)
-                    },
-                onClick = {
-                    onToggleLike()
-                    onDismissRequest()
-                },
-            )
-
-            if (isDownloaded) {
-                ContextMenuItem(
-                    icon = Icons.Default.DeleteOutline,
-                    text = stringResource(Res.string.track_menu_remove_download),
-                    onClick = {
-                        onDeleteDownload?.invoke()
-                        onDismissRequest()
-                    },
-                    iconTint = MaterialTheme.colorScheme.error,
-                )
-            } else if (isDownloading) {
-                ContextMenuItem(
-                    icon = Icons.Default.Downloading,
-                    text =
-                        stringResource(
-                            Res.string.track_menu_downloading,
-                            downloadProgress?.let { "${(it * 100).toInt()}%" } ?: "",
-                        ),
-                    onClick = {},
-                    iconTint = MaterialTheme.colorScheme.primary,
-                )
-            } else if (onDownload != null && !track.id.startsWith("local:")) {
-                ContextMenuItem(
-                    icon = Icons.Default.Download,
-                    text = stringResource(Res.string.track_menu_download),
-                    onClick = {
-                        onDownload()
-                        onDismissRequest()
-                    },
-                )
-            }
-
-            ContextMenuItem(
-                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                text = stringResource(Res.string.track_menu_add_to_playlist),
-                onClick = {
-                    onAddToPlaylist()
-                    onDismissRequest()
-                },
-            )
-
-            if (onRemoveFromPlaylist != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.DeleteOutline,
-                    text = stringResource(Res.string.track_menu_remove_from_playlist),
-                    onClick = {
-                        onRemoveFromPlaylist()
-                        onDismissRequest()
-                    },
-                    iconTint = MaterialTheme.colorScheme.error,
-                )
-            }
-
-            ContextMenuItem(
-                icon = Icons.Default.Person,
-                text = stringResource(Res.string.track_menu_go_to_artist),
-                onClick = {
-                    onGoToArtist()
-                    onDismissRequest()
-                },
-            )
-            ContextMenuItem(
-                icon = Icons.Default.Album,
-                text = stringResource(Res.string.track_menu_go_to_album),
-                onClick = {
-                    onGoToAlbum()
-                    onDismissRequest()
-                },
-            )
-            ContextMenuItem(
-                icon = Icons.Default.Share,
-                text = stringResource(Res.string.common_action_share),
-                onClick = {
-                    onShare()
-                    onDismissRequest()
-                },
+            buildSongMenuEntries(
+                track = track,
+                context =
+                    SongMenuContext(
+                        isLiked = isLiked,
+                        isDownloaded = isDownloaded,
+                        isDownloading = isDownloading,
+                        downloadProgress = downloadProgress,
+                        inQueue = inQueue,
+                        isOnArtistScreen = isOnArtistScreen,
+                        isOnAlbumScreen = isOnAlbumScreen,
+                        onPlayNext = onPlayNext,
+                        onAddToQueue = onAddToQueue,
+                        onRemoveFromQueue = onRemoveFromQueue,
+                        onToggleLike = onToggleLike,
+                        onAddToPlaylist = onAddToPlaylist,
+                        playlists = playlists,
+                        containingPlaylistIds = containingPlaylistIds,
+                        onSelectPlaylist = onSelectPlaylist,
+                        onCreatePlaylistAndAdd = onCreatePlaylistAndAdd,
+                        onDownload = onDownload,
+                        onDeleteDownload = onDeleteDownload,
+                        onGoToArtist = onGoToArtist,
+                        onGoToAlbum = onGoToAlbum,
+                        onShare = onShare,
+                        onRemoveFromPlaylist = onRemoveFromPlaylist,
+                        onRemoveFromLibrary = onRemoveFromLibrary,
+                    ),
             )
         }
+
+    when (windowSize) {
+        SongMenuWindowSize.Compact ->
+            SongMenuCompactSheet(
+                track = track,
+                entries = entries,
+                onDismissRequest = onDismissRequest,
+            )
+
+        SongMenuWindowSize.Medium,
+        SongMenuWindowSize.Expanded,
+        ->
+            SongMenuAnchoredPopup(
+                entries = entries,
+                anchor = anchor,
+                windowSize = windowSize,
+                onDismissRequest = onDismissRequest,
+            )
     }
 }
 
@@ -268,17 +123,32 @@ fun TrackInteractionContextMenu(
     activeAccent: Color,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
+    onAlbumWithArtistClick: ((album: String, artist: String) -> Unit)? = null,
     inQueue: Boolean = false,
     onRemoveFromQueue: () -> Unit = {},
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
+    onRemoveFromLibrary: ((Track) -> Unit)? = null,
+    isOnArtistScreen: Boolean = false,
+    isOnAlbumScreen: Boolean = false,
 ) {
     val track = interaction.contextMenuTrack
+    val shareHandler =
+        rememberPlatformShareHandler {
+            interaction.snackbar.show(
+                msg = UiText.Resource(Res.string.track_snackbar_link_copied),
+                actionColor = activeAccent,
+            )
+        }
     if (track != null) {
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
         val isDownloaded =
             libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
         val isDownloading = libraryState.activeDownloads.containsKey(track.id)
         val downloadProgress = libraryState.activeDownloads[track.id]
+        val containingPlaylistIds by remember(track.id) {
+            interaction.libraryViewModel.getPlaylistIdsForTrack(track.id)
+        }.collectAsState(initial = emptySet())
+        val shareUrl = remember(track.id) { buildTrackShareUrl(track) }
 
         TrackContextMenu(
             track = track,
@@ -306,15 +176,24 @@ fun TrackInteractionContextMenu(
                 interaction.dismissContextMenu()
             },
             onRemoveFromPlaylist = onRemoveFromPlaylist?.let { rem -> { rem(track) } },
+            onRemoveFromLibrary = onRemoveFromLibrary?.let { rem -> { rem(track) } },
             onGoToArtist = {
                 interaction.dismissContextMenu()
                 onArtistClick(track.artist)
             },
             onGoToAlbum = {
                 interaction.dismissContextMenu()
-                if (track.album.isNotBlank()) onAlbumClick(track.album)
+                if (track.album.isNotBlank()) {
+                    onAlbumWithArtistClick?.invoke(track.album, track.artist) ?: onAlbumClick(track.album)
+                }
             },
-            onShare = { /* TODO */ },
+            onShare =
+                shareUrl?.let { url ->
+                    {
+                        shareHandler(url)
+                        interaction.dismissContextMenu()
+                    }
+                },
             onDownload = {
                 interaction.downloadTrack(track, activeAccent)
                 interaction.dismissContextMenu()
@@ -326,6 +205,23 @@ fun TrackInteractionContextMenu(
             isDownloaded = isDownloaded,
             isDownloading = isDownloading,
             downloadProgress = downloadProgress,
+            isOnArtistScreen = isOnArtistScreen,
+            isOnAlbumScreen = isOnAlbumScreen,
+            anchor = interaction.contextMenuAnchor,
+            playlists = libraryState.customPlaylists,
+            containingPlaylistIds = containingPlaylistIds,
+            onSelectPlaylist = { playlist ->
+                interaction.libraryViewModel.addTrackToPlaylist(playlist.id, track) {
+                    interaction.showAddedToPlaylistSnackbar(playlist.name, activeAccent)
+                }
+            },
+            onCreatePlaylistAndAdd = { name ->
+                interaction.libraryViewModel.createPlaylist(name) { id ->
+                    interaction.libraryViewModel.addTrackToPlaylist(id, track) {
+                        interaction.showAddedToPlaylistSnackbar(name, activeAccent)
+                    }
+                }
+            },
         )
     }
 
@@ -390,36 +286,6 @@ fun TrackInteractionContextMenu(
                     }
                 }
             },
-        )
-    }
-}
-
-@Composable
-private fun ContextMenuItem(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    iconTint: Color = MeloColors.textPrimary,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(24.dp),
-        )
-        Text(
-            text = text,
-            style = MeloType.body,
-            color = MeloColors.textPrimary,
         )
     }
 }

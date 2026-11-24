@@ -1,7 +1,14 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,11 +39,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_refresh_suggestions
 import com.github.adriianh.melo.resources.a11y_remove_from_queue
@@ -48,11 +59,16 @@ import com.github.adriianh.melo.resources.player_section_up_next
 import com.github.adriianh.melo.resources.player_suggestions_empty
 import com.github.adriianh.melo.ui.components.cards.SuggestionSkeletonCard
 import com.github.adriianh.melo.ui.components.cards.SuggestionTrackCard
+import com.github.adriianh.melo.ui.components.track.RowContextMenuButton
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.PlayerUiState
+import com.github.adriianh.melo.util.getPlatform
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -61,6 +77,7 @@ internal fun DockedQueueContent(
     state: PlayerUiState,
     activeAccent: Color,
     queueViewModel: QueueViewModel = koinViewModel(),
+    onOpenContextMenu: ((Track, Boolean, SongMenuAnchor?) -> Unit)? = null,
 ) {
     val queueState by queueViewModel.queueState.collectAsState()
     val suggestions by queueViewModel.suggestions.collectAsState()
@@ -82,68 +99,7 @@ internal fun DockedQueueContent(
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
         item {
-            Text(
-                stringResource(Res.string.player_section_now_playing),
-                style = MeloType.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = activeAccent,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(activeAccent.copy(alpha = 0.15f))
-                        .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(
-                    modifier = Modifier.size(42.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    MeloAsyncImage(
-                        url = state.albumArt,
-                        contentDescription = state.title,
-                        size = 42.dp,
-                        shape = RoundedCornerShape(6.dp),
-                    )
-                    if (state.isBuffering) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .matchParentSize()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color.Black.copy(alpha = 0.45f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp,
-                            )
-                        }
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        state.title,
-                        style = MeloType.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MeloColors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        state.artist,
-                        style = MeloType.labelSmall,
-                        color = MeloColors.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            DockedQueueNowPlayingCard(state = state, activeAccent = activeAccent)
         }
 
         if (upNextTracks.isNotEmpty()) {
@@ -186,52 +142,13 @@ internal fun DockedQueueContent(
                 visibleQueueTracks,
                 key = { index, track -> "docked_q_${index}_${track.id}" },
             ) { _, track ->
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MeloColors.surface1.copy(alpha = 0.5f))
-                            .clickable { queueViewModel.playTrackInQueue(track) }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    MeloAsyncImage(
-                        url = track.artworkUrl,
-                        contentDescription = track.title,
-                        size = 36.dp,
-                        shape = RoundedCornerShape(6.dp),
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            track.title,
-                            style = MeloType.labelMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MeloColors.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            track.artist,
-                            style = MeloType.labelSmall.copy(fontSize = 10.sp),
-                            color = MeloColors.textMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    IconButton(
-                        onClick = { queueViewModel.removeTrackFromQueue(track) },
-                        modifier = Modifier.size(24.dp),
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = stringResource(Res.string.a11y_remove_from_queue),
-                            tint = MeloColors.textMuted,
-                            modifier = Modifier.size(14.dp),
-                        )
-                    }
-                }
+                DockedUpNextRow(
+                    track = track,
+                    onClick = { queueViewModel.playTrackInQueue(track) },
+                    onRemove = { queueViewModel.removeTrackFromQueue(track) },
+                    onOpenContextMenu =
+                        onOpenContextMenu?.let { open -> { anchor -> open(track, true, anchor) } },
+                )
             }
         }
 
@@ -299,6 +216,161 @@ internal fun DockedQueueContent(
                     isPlaying = state.isPlaying && state.currentTrack?.id == track.id,
                     onClick = { queueViewModel.playTrack(track) },
                     onAddClick = { queueViewModel.insertTrackNext(track) },
+                    onOpenContextMenu =
+                        onOpenContextMenu?.let { open -> { anchor -> open(track, false, anchor) } },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DockedUpNextRow(
+    track: Track,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+    onOpenContextMenu: ((SongMenuAnchor?) -> Unit)?,
+) {
+    val isDesktop = remember { getPlatform().type == PlatformType.DESKTOP }
+    val hoverSource = remember { MutableInteractionSource() }
+    val isHovered by hoverSource.collectIsHoveredAsState()
+    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MeloColors.surface1.copy(alpha = 0.5f))
+                .hoverable(hoverSource)
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                .songMenuRightClick(
+                    enabled = onOpenContextMenu != null,
+                    onOpenMenu = { anchor -> onOpenContextMenu?.invoke(anchor) },
+                ).combinedClickable(
+                    onClick = onClick,
+                    onLongClick =
+                        onOpenContextMenu?.let { open ->
+                            { open(rowBounds?.let { SongMenuAnchor.Bounds(it) }) }
+                        },
+                ).padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        MeloAsyncImage(
+            url = track.artworkUrl,
+            contentDescription = track.title,
+            size = 36.dp,
+            shape = RoundedCornerShape(6.dp),
+        )
+        DockedTrackLabels(
+            title = track.title,
+            artist = track.artist,
+            modifier = Modifier.weight(1f),
+        )
+        if (onOpenContextMenu != null) {
+            RowContextMenuButton(isVisible = !isDesktop || isHovered, onOpenMenu = onOpenContextMenu)
+        }
+        IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = stringResource(Res.string.a11y_remove_from_queue),
+                tint = MeloColors.textMuted,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DockedTrackLabels(
+    title: String,
+    artist: String,
+    modifier: Modifier = Modifier,
+    isBoldTitle: Boolean = false,
+) {
+    Column(modifier = modifier) {
+        Text(
+            title,
+            style = MeloType.labelMedium,
+            fontWeight = if (isBoldTitle) FontWeight.Bold else FontWeight.Medium,
+            color = MeloColors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            artist,
+            style = MeloType.labelSmall.copy(fontSize = 10.sp),
+            color = MeloColors.textMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun DockedQueueNowPlayingCard(
+    state: PlayerUiState,
+    activeAccent: Color,
+) {
+    Text(
+        stringResource(Res.string.player_section_now_playing),
+        style = MeloType.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = activeAccent,
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(activeAccent.copy(alpha = 0.15f))
+                .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        DockedNowPlayingArtwork(
+            albumArt = state.albumArt,
+            title = state.title,
+            isBuffering = state.isBuffering,
+        )
+        DockedTrackLabels(
+            title = state.title,
+            artist = state.artist,
+            modifier = Modifier.weight(1f),
+            isBoldTitle = true,
+        )
+    }
+}
+
+@Composable
+private fun DockedNowPlayingArtwork(
+    albumArt: String?,
+    title: String,
+    isBuffering: Boolean,
+) {
+    Box(modifier = Modifier.size(42.dp), contentAlignment = Alignment.Center) {
+        MeloAsyncImage(
+            url = albumArt,
+            contentDescription = title,
+            size = 42.dp,
+            shape = RoundedCornerShape(6.dp),
+        )
+        if (isBuffering) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.Black.copy(alpha = 0.45f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp,
                 )
             }
         }

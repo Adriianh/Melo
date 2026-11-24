@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.foundation.background
@@ -31,6 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,8 +57,12 @@ import com.github.adriianh.melo.resources.player_header_now_playing
 import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
-import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.components.cards.SuggestionTrackCard
+import com.github.adriianh.melo.ui.components.controls.SegmentedControl
+import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
+import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
+import com.github.adriianh.melo.ui.library.LibraryUiState
+import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.components.DockedArtistContent
 import com.github.adriianh.melo.ui.player.components.DockedLyricsContent
 import com.github.adriianh.melo.ui.player.components.DockedQueueContent
@@ -61,6 +70,7 @@ import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlayerUiState
+import kotlinx.coroutines.flow.flowOf
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -75,9 +85,28 @@ fun DesktopNowPlayingDockedPane(
     onSectionChange: (PanelSection) -> Unit = {},
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
+    libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.stableUiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
+    val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
+    val activeAccent = interaction.resolveActiveAccent(MaterialTheme.colorScheme.primary)
+    var contextMenuInQueue by remember { mutableStateOf(false) }
+
+    val isLibraryNeeded =
+        interaction.contextMenuTrack != null || !interaction.addToPlaylistTracks.isNullOrEmpty()
+    val libraryState by remember(isLibraryNeeded) {
+        if (isLibraryNeeded) libraryViewModel.uiState else flowOf(LibraryUiState())
+    }.collectAsState(initial = LibraryUiState())
+
+    TrackInteractionContextMenu(
+        interaction = interaction,
+        libraryState = libraryState,
+        activeAccent = activeAccent,
+        onArtistClick = onArtistClick,
+        onAlbumWithArtistClick = { album, _ -> onAlbumClick(album) },
+        inQueue = contextMenuInQueue,
+    )
 
     DesktopNowPlayingDockedPaneContent(
         state = state,
@@ -90,16 +119,30 @@ fun DesktopNowPlayingDockedPane(
         onArtistClick = onArtistClick,
         onStartRadio = { state.currentTrack?.let(queueViewModel::startRadio) },
         onToggleFavorite = { viewModel.toggleFavorite() },
-        queueContent = { activeAccent -> DockedQueueContent(state, activeAccent, queueViewModel) },
-        lyricsContent = { activeAccent -> DockedLyricsContent(state, activeAccent, viewModel) },
-        artistContent = { activeAccent ->
+        queueContent = { accent ->
+            DockedQueueContent(
+                state = state,
+                activeAccent = accent,
+                queueViewModel = queueViewModel,
+                onOpenContextMenu = { track, inQueue, anchor ->
+                    contextMenuInQueue = inQueue
+                    interaction.openContextMenu(track, anchor)
+                },
+            )
+        },
+        lyricsContent = { accent -> DockedLyricsContent(state, accent, viewModel) },
+        artistContent = { accent ->
             DockedArtistContent(
                 state = state,
                 artistDetails = artistDetails,
-                activeAccent = activeAccent,
+                activeAccent = accent,
                 onArtistClick = onArtistClick,
                 onAlbumClick = onAlbumClick,
                 queueViewModel = queueViewModel,
+                onOpenTrackContextMenu = { track, anchor ->
+                    contextMenuInQueue = false
+                    interaction.openContextMenu(track, anchor)
+                },
             )
         },
     )

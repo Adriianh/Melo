@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.background
@@ -30,8 +32,9 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
-import com.github.adriianh.melo.ui.components.layout.GlassPanel
 import com.github.adriianh.melo.ui.components.controls.SegmentedControl
+import com.github.adriianh.melo.ui.components.layout.GlassPanel
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.player.PanelSection
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
@@ -47,6 +50,7 @@ internal fun NowPlayingDesktopLayout(
     onSelectSection: (PanelSection) -> Unit,
     artistDetails: SearchResult.Artist?,
     onMoreClick: (Track, Boolean) -> Unit,
+    onOpenContextMenu: ((Track, Boolean, SongMenuAnchor?) -> Unit)? = null,
     onSwipeQueueItem: (Int) -> Unit,
     onSwipeSuggestionItem: (Track) -> Unit,
     onPlayNextSuggestionItem: (Track) -> Unit = {},
@@ -172,6 +176,7 @@ internal fun NowPlayingDesktopLayout(
                                     state = state,
                                     activeAccent = activeAccent,
                                     onMoreClick = onMoreClick,
+                                    onOpenContextMenu = onOpenContextMenu,
                                     onSwipeQueueItem = onSwipeQueueItem,
                                     onSwipeSuggestionItem = onSwipeSuggestionItem,
                                     onPlayNextSuggestionItem = onPlayNextSuggestionItem,
@@ -195,6 +200,9 @@ internal fun NowPlayingDesktopLayout(
                                     onArtistClick = onArtistClick,
                                     onAlbumClick = onAlbumClick,
                                     onPlaylistClick = onPlaylistClick,
+                                    onOpenTrackContextMenu = { track, anchor ->
+                                        onOpenContextMenu?.invoke(track, false, anchor)
+                                    },
                                 )
                         }
                     }
