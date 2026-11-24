@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -53,6 +54,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.Role
@@ -123,9 +125,11 @@ internal fun SongMenuPopupSurface(
     initialSubmenuOpen: Boolean = false,
 ) {
     val width = if (isExpandedDesktop) EXPANDED_POPUP_WIDTH else MEDIUM_POPUP_WIDTH
+    val inputModeManager = LocalInputModeManager.current
     val interactiveEntries = remember(entries) { entries.filter { it !is SongMenuEntry.Divider } }
+    val containerFocusRequester = remember { FocusRequester() }
     val focusRequesters = remember(interactiveEntries.size) { List(interactiveEntries.size) { FocusRequester() } }
-    var focusedIndex by remember(interactiveEntries.size) { mutableStateOf(0) }
+    var focusedIndex by remember(interactiveEntries.size) { mutableStateOf(-1) }
     val initialSubmenu = entries.filterIsInstance<SongMenuEntry.Submenu>().firstOrNull()?.id
     var openSubmenuId by remember {
         mutableStateOf(if (initialSubmenuOpen && isExpandedDesktop) initialSubmenu else null)
@@ -134,10 +138,13 @@ internal fun SongMenuPopupSurface(
     val rowBoundsMap = remember { mutableStateMapOf<String, IntRect>() }
 
     LaunchedEffect(interactiveEntries.size) {
-        if (isExpandedDesktop && interactiveEntries.isNotEmpty()) {
-            val first = interactiveEntries.indexOfFirst { it !is SongMenuEntry.Action || it.enabled }.coerceAtLeast(0)
-            focusedIndex = first
-            runCatching { focusRequesters[first].requestFocus() }
+        if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
+        if (inputModeManager.inputMode == InputMode.Keyboard) {
+            val first = interactiveEntries.indexOfFirst { it !is SongMenuEntry.Action || it.enabled }
+            focusedIndex = first.coerceAtLeast(0)
+            runCatching { focusRequesters[focusedIndex].requestFocus() }
+        } else {
+            runCatching { containerFocusRequester.requestFocus() }
         }
     }
 
@@ -146,19 +153,16 @@ internal fun SongMenuPopupSurface(
             modifier
                 .width(width)
                 .heightIn(max = maxHeight)
+                .focusRequester(containerFocusRequester)
+                .focusable()
                 .onGloballyPositioned { menuBoundsInWindow = it.boundsInWindow().toIntRect() }
-                .onPreviewKeyEvent { event ->
-                    handlePopupKeyEvent(
-                        event = event,
-                        hasOpenSubmenu = openSubmenuId != null,
-                        onCloseSubmenu = { openSubmenuId = null },
-                        onDismiss = onDismissRequest,
-                        onMoveFocus = { delta ->
-                            moveFocusToNextEnabled(interactiveEntries, focusRequesters, focusedIndex, delta) {
-                                focusedIndex = it
-                            }
-                        },
-                    )
+                .onPreviewKeyEvent { ev ->
+                    val closeSub = { openSubmenuId = null }
+                    handlePopupKeyEvent(ev, openSubmenuId != null, closeSub, onDismissRequest) { delta ->
+                        moveFocusToNextEnabled(interactiveEntries, focusRequesters, focusedIndex, delta) {
+                            focusedIndex = it
+                        }
+                    }
                 }.semantics { collectionInfo = CollectionInfo(rowCount = interactiveEntries.size, columnCount = 1) },
         shape = RoundedCornerShape(12.dp),
         color = MeloColors.menuPopupSurface,
@@ -340,7 +344,7 @@ private fun moveFocusToNextEnabled(
     onFocusMoved: (Int) -> Unit,
 ) {
     if (interactiveEntries.isEmpty()) return
-    var candidate = currentIndex
+    var candidate = if (currentIndex < 0) if (delta > 0) -1 else 0 else currentIndex
     repeat(interactiveEntries.size) {
         candidate = (candidate + delta + interactiveEntries.size) % interactiveEntries.size
         val target = interactiveEntries[candidate]
@@ -359,8 +363,7 @@ private fun handlePopupKeyEvent(
     onDismiss: () -> Unit,
     onMoveFocus: (Int) -> Unit,
 ): Boolean {
-    if (event.type != KeyEventType.KeyDown) return false
-    return when (event.key) {
+    return event.type == KeyEventType.KeyDown && when (event.key) {
         Key.Escape -> {
             if (hasOpenSubmenu) onCloseSubmenu() else onDismiss()
             true
@@ -499,8 +502,7 @@ private fun handleRowKeyEvent(
     onClick: () -> Unit,
     onOpenSubmenuKey: () -> Boolean,
 ): Boolean {
-    if (event.type != KeyEventType.KeyDown || !enabled) return false
-    return when (event.key) {
+    return !(event.type != KeyEventType.KeyDown || !enabled) && when (event.key) {
         Key.Enter, Key.Spacebar -> {
             onClick()
             true
