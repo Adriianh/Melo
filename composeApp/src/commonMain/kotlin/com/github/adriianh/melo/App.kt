@@ -479,6 +479,13 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                                     ),
                                                                 )
                                                             },
+                                                            onAlbumClick = { id ->
+                                                                navigateTo(
+                                                                    ScreenRoute.Album(
+                                                                        id,
+                                                                    ),
+                                                                )
+                                                            },
                                                         )
 
                                                     is ScreenRoute.Artist ->

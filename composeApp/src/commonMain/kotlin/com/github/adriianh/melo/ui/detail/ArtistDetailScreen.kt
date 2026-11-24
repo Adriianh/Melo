@@ -132,7 +132,7 @@ fun ArtistDetailScreen(
         interaction = interaction,
         libraryState = libraryState,
         activeAccent = activeAccent,
-        onAlbumClick = { id -> onAlbumClick(id, "", null, "") },
+        onAlbumWithArtistClick = { album, artistName -> onAlbumClick(album, album, null, artistName) },
         isOnArtistScreen = true,
     )
 

@@ -113,7 +113,7 @@ fun HomeScreen(
         libraryState = libraryState,
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
-        onAlbumClick = { album -> onAlbumClick(album, album, null, "") },
+        onAlbumWithArtistClick = { album, artist -> onAlbumClick(album, album, null, artist) },
     )
 
     Column(

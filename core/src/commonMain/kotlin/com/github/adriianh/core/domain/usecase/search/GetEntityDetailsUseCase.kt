@@ -43,9 +43,7 @@ class GetEntityDetailsUseCase(
         val details =
             musicProvider.getAlbumDetails(entity.id)
                 ?: albumSearchQuery(entity).takeIf { it.isNotBlank() }?.let { query ->
-                    musicProvider.searchAlbums(query).firstOrNull()?.let { found ->
-                        musicProvider.getAlbumDetails(found.id) ?: found
-                    }
+                    findMatchingAlbum(query, entity.author)
                 }
                 ?: return entity
         return details.copy(
@@ -57,6 +55,23 @@ class GetEntityDetailsUseCase(
             description = details.description ?: entity.description,
             artworkUrl = details.artworkUrl?.takeIf { it.isNotBlank() } ?: entity.artworkUrl
         )
+    }
+
+    private suspend fun findMatchingAlbum(
+        query: String,
+        expectedAuthor: String,
+    ): SearchResult.Album? {
+        val candidates = musicProvider.searchAlbums(query)
+        val matched =
+            if (expectedAuthor.isNotBlank()) {
+                candidates.firstOrNull { album ->
+                    album.author.contains(expectedAuthor, ignoreCase = true) ||
+                        expectedAuthor.contains(album.author, ignoreCase = true)
+                }
+            } else {
+                candidates.firstOrNull()
+            }
+        return matched?.let { musicProvider.getAlbumDetails(it.id) ?: it }
     }
 
     private fun albumSearchQuery(entity: SearchResult.Album): String =

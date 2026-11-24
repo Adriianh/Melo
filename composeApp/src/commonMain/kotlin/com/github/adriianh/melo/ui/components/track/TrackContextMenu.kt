@@ -117,6 +117,7 @@ fun TrackInteractionContextMenu(
     activeAccent: Color,
     onArtistClick: (String) -> Unit = {},
     onAlbumClick: (String) -> Unit = {},
+    onAlbumWithArtistClick: ((album: String, artist: String) -> Unit)? = null,
     inQueue: Boolean = false,
     onRemoveFromQueue: () -> Unit = {},
     onRemoveFromPlaylist: ((Track) -> Unit)? = null,
@@ -168,7 +169,9 @@ fun TrackInteractionContextMenu(
             },
             onGoToAlbum = {
                 interaction.dismissContextMenu()
-                if (track.album.isNotBlank()) onAlbumClick(track.album)
+                if (track.album.isNotBlank()) {
+                    onAlbumWithArtistClick?.invoke(track.album, track.artist) ?: onAlbumClick(track.album)
+                }
             },
             onShare = { /* TODO */ },
             onDownload = {

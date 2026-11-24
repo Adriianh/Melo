@@ -239,7 +239,8 @@ private fun buildNavigationGroup(
                 ),
             )
         }
-        if (!context.isOnAlbumScreen && track.album.isNotBlank() && context.onGoToAlbum != null) {
+        val hasDistinctAlbum = track.album.isNotBlank() && !track.album.equals(track.title, ignoreCase = true)
+        if (!context.isOnAlbumScreen && hasDistinctAlbum && context.onGoToAlbum != null) {
             add(
                 SongMenuEntry.Action(
                     id = "go_to_album",
