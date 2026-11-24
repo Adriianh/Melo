@@ -158,23 +158,7 @@ class UpdateRepositoryImpl(
                     } else {
                         "https://api.github.com/repos/$repoOwnerAndName/releases/latest"
                     }
-                val response =
-                    httpClient.get(url) {
-                        header(HttpHeaders.Accept, "application/vnd.github.v3+json")
-                        header(HttpHeaders.UserAgent, "Melo-Music-Player")
-                    }
-
-                if (response.status.value == 404) {
-                    return@runCatching null
-                }
-                if (response.status.value !in 200..299) {
-                    throw IllegalStateException(
-                        "GitHub API returned HTTP ${response.status.value}: ${response.status.description}",
-                    )
-                }
-
-                val dto: GitHubReleaseDto =
-                    json.decodeFromString(GitHubReleaseDto.serializer(), response.bodyAsText())
+                val dto = fetchReleaseDto(url) ?: return@runCatching null
 
                 val remoteVersion = resolveRemoteVersion(dto, channel)
                 val isNewer =
@@ -192,28 +176,73 @@ class UpdateRepositoryImpl(
                     return@runCatching null
                 }
 
-                val assets =
-                    dto.assets.map { assetDto ->
-                        ReleaseAsset(
-                            name = assetDto.name,
-                            downloadUrl = assetDto.browserDownloadUrl,
-                            sizeBytes = assetDto.size,
-                            platform = detectPlatformFromFileName(assetDto.name),
-                        )
-                    }
-
-                AppRelease(
-                    version = remoteVersion,
-                    tagName = dto.tagName,
-                    name = dto.name ?: dto.tagName,
-                    releaseNotes = dto.body.orEmpty(),
-                    htmlUrl = dto.htmlUrl,
-                    publishedAt = dto.publishedAt.orEmpty(),
-                    assets = assets,
-                    channel = channel,
-                )
+                dto.toAppRelease(remoteVersion, channel)
             }
         }
+
+    override suspend fun getReleaseForVersion(
+        version: String,
+        channel: UpdateChannel,
+    ): Result<AppRelease?> =
+        withContext(dispatcher) {
+            runCatching {
+                val cleanVersion = version.trim().removePrefix("v").removePrefix("V")
+                val url =
+                    if (channel == UpdateChannel.NIGHTLY) {
+                        "https://api.github.com/repos/$repoOwnerAndName/releases/tags/nightly"
+                    } else {
+                        "https://api.github.com/repos/$repoOwnerAndName/releases/tags/v$cleanVersion"
+                    }
+                val dto = fetchReleaseDto(url) ?: return@runCatching null
+                val remoteVersion = resolveRemoteVersion(dto, channel)
+                dto.toAppRelease(remoteVersion, channel)
+            }
+        }
+
+    private suspend fun fetchReleaseDto(url: String): GitHubReleaseDto? {
+        val response =
+            httpClient.get(url) {
+                header(HttpHeaders.Accept, "application/vnd.github.v3+json")
+                header(HttpHeaders.UserAgent, "Melo-Music-Player")
+            }
+
+        if (response.status.value == 404) {
+            return null
+        }
+        if (response.status.value !in 200..299) {
+            throw IllegalStateException(
+                "GitHub API returned HTTP ${response.status.value}: ${response.status.description}",
+            )
+        }
+
+        return json.decodeFromString(GitHubReleaseDto.serializer(), response.bodyAsText())
+    }
+
+    private fun GitHubReleaseDto.toAppRelease(
+        remoteVersion: String,
+        channel: UpdateChannel,
+    ): AppRelease {
+        val assets =
+            assets.map { assetDto ->
+                ReleaseAsset(
+                    name = assetDto.name,
+                    downloadUrl = assetDto.browserDownloadUrl,
+                    sizeBytes = assetDto.size,
+                    platform = detectPlatformFromFileName(assetDto.name),
+                )
+            }
+
+        return AppRelease(
+            version = remoteVersion,
+            tagName = tagName,
+            name = name ?: tagName,
+            releaseNotes = body.orEmpty(),
+            htmlUrl = htmlUrl,
+            publishedAt = publishedAt.orEmpty(),
+            assets = assets,
+            channel = channel,
+        )
+    }
 
     override fun downloadAsset(
         asset: ReleaseAsset,

@@ -22,6 +22,11 @@ interface UpdateRepository {
         channel: UpdateChannel = UpdateChannel.STABLE,
     ): Result<AppRelease?>
 
+    suspend fun getReleaseForVersion(
+        version: String,
+        channel: UpdateChannel = UpdateChannel.STABLE,
+    ): Result<AppRelease?>
+
     fun downloadAsset(
         asset: ReleaseAsset,
         destinationFilePath: String,

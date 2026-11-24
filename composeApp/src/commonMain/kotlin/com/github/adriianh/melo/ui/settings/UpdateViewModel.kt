@@ -11,6 +11,7 @@ import com.github.adriianh.core.domain.model.update.resolveUpdateState
 import com.github.adriianh.core.domain.repository.DownloadProgress
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
+import com.github.adriianh.core.domain.usecase.update.GetReleaseForVersionUseCase
 import com.github.adriianh.core.platform.PlatformFileSystem
 import com.github.adriianh.core.platform.currentUpdateInstallMethod
 import com.github.adriianh.core.platform.currentUpdatePlatform
@@ -27,12 +28,17 @@ import kotlinx.coroutines.launch
 class UpdateViewModel(
     private val checkForUpdateUseCase: CheckForUpdateUseCase,
     private val downloadUpdateUseCase: DownloadUpdateUseCase,
+    private val getReleaseForVersionUseCase: GetReleaseForVersionUseCase,
     private val installer: PlatformUpdateInstaller,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val uiState: StateFlow<UpdateState> = _uiState.asStateFlow()
 
+    private val _postUpdateRelease = MutableStateFlow<AppRelease?>(null)
+    val postUpdateRelease: StateFlow<AppRelease?> = _postUpdateRelease.asStateFlow()
+
     private var downloadJob: Job? = null
+    private var isLoadingPostUpdateChangelog = false
 
     fun checkForUpdates(
         channel: UpdateChannel =
@@ -151,7 +157,32 @@ class UpdateViewModel(
         }
     }
 
-    fun resetState() {
-        _uiState.value = UpdateState.Idle
+    fun loadInstalledChangelog(
+        version: String = MeloVersion.CURRENT,
+        channel: UpdateChannel =
+            if (version.contains("nightly", ignoreCase = true)) {
+                UpdateChannel.NIGHTLY
+            } else {
+                UpdateChannel.STABLE
+            },
+    ) {
+        if (isLoadingPostUpdateChangelog || _postUpdateRelease.value != null) return
+        isLoadingPostUpdateChangelog = true
+        viewModelScope.launch {
+            try {
+                getReleaseForVersionUseCase(version, channel)
+                    .onSuccess { release ->
+                        if (release != null && release.releaseNotes.isNotBlank()) {
+                            _postUpdateRelease.value = release
+                        }
+                    }
+            } finally {
+                isLoadingPostUpdateChangelog = false
+            }
+        }
+    }
+
+    fun dismissPostUpdateChangelog() {
+        _postUpdateRelease.value = null
     }
 }

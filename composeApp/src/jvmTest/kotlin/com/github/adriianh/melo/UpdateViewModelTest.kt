@@ -7,6 +7,7 @@ import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
+import com.github.adriianh.core.domain.usecase.update.GetReleaseForVersionUseCase
 import com.github.adriianh.melo.ui.settings.UpdateViewModel
 import com.github.adriianh.melo.util.PlatformUpdateInstaller
 import com.github.adriianh.melo.util.UpdateInstallResult
@@ -32,6 +33,7 @@ class UpdateViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val checkForUpdateUseCase = mockk<CheckForUpdateUseCase>()
     private val downloadUpdateUseCase = mockk<DownloadUpdateUseCase>()
+    private val getReleaseForVersionUseCase = mockk<GetReleaseForVersionUseCase>()
     private val installer = mockk<PlatformUpdateInstaller>()
 
     @BeforeTest
@@ -48,6 +50,7 @@ class UpdateViewModelTest {
         UpdateViewModel(
             checkForUpdateUseCase = checkForUpdateUseCase,
             downloadUpdateUseCase = downloadUpdateUseCase,
+            getReleaseForVersionUseCase = getReleaseForVersionUseCase,
             installer = installer,
         )
 
@@ -169,4 +172,34 @@ class UpdateViewModelTest {
         assertIs<UpdateState.Error>(state)
         assertEquals("Sin permisos para actualizar la instalación", state.message)
     }
+
+    @Test
+    fun `loadInstalledChangelog exposes release with notes and dismiss clears it`() =
+        runTest {
+            val release = fakeRelease("2.5.0").copy(releaseNotes = "## What's Changed\n* feat: new player")
+            coEvery { getReleaseForVersionUseCase("2.5.0", UpdateChannel.STABLE) } returns Result.success(release)
+            val viewModel = createViewModel()
+
+            viewModel.loadInstalledChangelog("2.5.0", UpdateChannel.STABLE)
+            advanceUntilIdle()
+
+            assertEquals(release, viewModel.postUpdateRelease.value)
+
+            viewModel.dismissPostUpdateChangelog()
+            assertEquals(null, viewModel.postUpdateRelease.value)
+        }
+
+    @Test
+    fun `loadInstalledChangelog keeps null on failure so startup can retry later`() =
+        runTest {
+            coEvery {
+                getReleaseForVersionUseCase("2.5.0", UpdateChannel.STABLE)
+            } returns Result.failure(RuntimeException("offline"))
+            val viewModel = createViewModel()
+
+            viewModel.loadInstalledChangelog("2.5.0", UpdateChannel.STABLE)
+            advanceUntilIdle()
+
+            assertEquals(null, viewModel.postUpdateRelease.value)
+        }
 }

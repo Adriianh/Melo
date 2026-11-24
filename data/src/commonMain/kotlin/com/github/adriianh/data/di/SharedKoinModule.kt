@@ -109,6 +109,7 @@ import com.github.adriianh.core.domain.usecase.stats.GetTopArtistsUseCase
 import com.github.adriianh.core.domain.usecase.stats.GetTopTracksUseCase
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
+import com.github.adriianh.core.domain.usecase.update.GetReleaseForVersionUseCase
 import com.github.adriianh.core.util.MeloDispatchers
 import com.github.adriianh.data.cache.HomeFeedCacheImpl
 import com.github.adriianh.data.provider.artwork.CompositeArtworkProvider
@@ -330,4 +331,5 @@ val sharedModule: Module =
         singleOf(::ClearSessionUseCase)
         singleOf(::CheckForUpdateUseCase)
         singleOf(::DownloadUpdateUseCase)
+        singleOf(::GetReleaseForVersionUseCase)
     }
