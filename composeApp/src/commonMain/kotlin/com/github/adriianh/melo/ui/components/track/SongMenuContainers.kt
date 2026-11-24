@@ -138,18 +138,20 @@ internal fun SongMenuPopupSurface(
     var openSubmenuId by remember {
         mutableStateOf(if (initialSubmenuOpen && isExpandedDesktop) initialSubmenu else null)
     }
+    var submenuOpenedByHover by remember { mutableStateOf(false) }
     var menuBoundsInWindow by remember { mutableStateOf<IntRect?>(null) }
     val rowBoundsMap = remember { mutableStateMapOf<String, IntRect>() }
 
     LaunchedEffect(interactiveEntries.size) {
         if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
-        if (inputModeManager.inputMode == InputMode.Keyboard) {
-            val first = interactiveEntries.indexOfFirst { it !is SongMenuEntry.Action || it.enabled }
-            focusedIndex = first.coerceAtLeast(0)
-            runCatching { focusRequesters[focusedIndex].requestFocus() }
-        } else {
+        if (inputModeManager.inputMode != InputMode.Keyboard) {
             runCatching { containerFocusRequester.requestFocus() }
+            return@LaunchedEffect
         }
+        focusedIndex = interactiveEntries.indexOfFirst { entry ->
+            entry !is SongMenuEntry.Action || entry.enabled
+        }.coerceAtLeast(0)
+        runCatching { focusRequesters[focusedIndex].requestFocus() }
     }
 
     Surface(
@@ -178,10 +180,11 @@ internal fun SongMenuPopupSurface(
             isExpandedDesktop = isExpandedDesktop,
             focusRequesters = focusRequesters,
             openSubmenuId = openSubmenuId,
+            submenuOpenedByHover = submenuOpenedByHover,
             menuBoundsInWindow = menuBoundsInWindow,
             rowBoundsMap = rowBoundsMap,
             onFocusedIndexChange = { focusedIndex = it },
-            onOpenSubmenuChange = { openSubmenuId = it },
+            onOpenSubmenuChange = { id, byHover -> openSubmenuId = id; submenuOpenedByHover = byHover },
             onDismissRequest = onDismissRequest,
         )
     }
@@ -201,10 +204,11 @@ private fun SongMenuPopupEntriesColumn(
     isExpandedDesktop: Boolean,
     focusRequesters: List<FocusRequester>,
     openSubmenuId: String?,
+    submenuOpenedByHover: Boolean,
     menuBoundsInWindow: IntRect?,
     rowBoundsMap: MutableMap<String, IntRect>,
     onFocusedIndexChange: (Int) -> Unit,
-    onOpenSubmenuChange: (String?) -> Unit,
+    onOpenSubmenuChange: (String?, Boolean) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     val rowStyle =
@@ -231,7 +235,11 @@ private fun SongMenuPopupEntriesColumn(
                         rowStyle = rowStyle,
                         focusRequester = focusRequesters[idx],
                         onFocused = { onFocusedIndexChange(idx) },
-                        onHover = { if (isExpandedDesktop && openSubmenuId != null) onOpenSubmenuChange(null) },
+                        onHover = {
+                            if (isExpandedDesktop && openSubmenuId != null && submenuOpenedByHover) {
+                                onOpenSubmenuChange(null, false)
+                            }
+                        },
                         onDismissRequest = onDismissRequest,
                     )
                 }
@@ -243,6 +251,7 @@ private fun SongMenuPopupEntriesColumn(
                         rowStyle = rowStyle,
                         focusRequester = focusRequesters[idx],
                         isSubmenuOpen = openSubmenuId == entry.id,
+                        openedByHover = submenuOpenedByHover,
                         menuBoundsInWindow = menuBoundsInWindow,
                         rowBoundsMap = rowBoundsMap,
                         onFocused = { onFocusedIndexChange(idx) },
@@ -296,27 +305,26 @@ private fun PopupSubmenuEntryRow(
     rowStyle: PopupRowStyle,
     focusRequester: FocusRequester,
     isSubmenuOpen: Boolean,
+    openedByHover: Boolean,
     menuBoundsInWindow: IntRect?,
     rowBoundsMap: MutableMap<String, IntRect>,
     onFocused: () -> Unit,
-    onOpenSubmenuChange: (String?) -> Unit,
+    onOpenSubmenuChange: (String?, Boolean) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     val isExpanded = rowStyle.isExpandedDesktop
     var isRowHovered by remember { mutableStateOf(false) }
     var isFlyoutHovered by remember { mutableStateOf(false) }
-    var openedByHover by remember { mutableStateOf(false) }
 
     LaunchedEffect(isExpanded, isSubmenuOpen, openedByHover, isRowHovered, isFlyoutHovered) {
         if (!isExpanded) return@LaunchedEffect
         val hoverExited = !isRowHovered && !isFlyoutHovered
         if (isRowHovered && !isSubmenuOpen) {
             delay(SUBMENU_OPEN_DELAY_MS.milliseconds)
-            openedByHover = true
-            onOpenSubmenuChange(entry.id)
+            onOpenSubmenuChange(entry.id, true)
         } else if (isSubmenuOpen && openedByHover && hoverExited) {
             delay(SUBMENU_CLOSE_DELAY_MS.milliseconds)
-            onOpenSubmenuChange(null)
+            onOpenSubmenuChange(null, false)
         }
     }
 
@@ -333,31 +341,27 @@ private fun PopupSubmenuEntryRow(
         onFocused = onFocused,
         onHoverChanged = { isRowHovered = it },
         onOpenSubmenuKey = {
-            if (isExpanded) {
-                openedByHover = false
-                onOpenSubmenuChange(entry.id)
-            }
+            if (isExpanded) onOpenSubmenuChange(entry.id, false)
             isExpanded
         },
         onRowPositioned = { rect -> rowBoundsMap[entry.id] = rect },
         onClick = {
             if (isExpanded) {
-                openedByHover = false
-                onOpenSubmenuChange(if (isSubmenuOpen) null else entry.id)
+                val keepOpen = !isSubmenuOpen || openedByHover
+                onOpenSubmenuChange(if (keepOpen) entry.id else null, false)
             } else {
                 entry.content.onOpenSheetFallback()
                 onDismissRequest()
             }
         },
     )
-    if (isExpanded && isSubmenuOpen && menuBoundsInWindow != null) {
+    menuBoundsInWindow?.takeIf { isExpanded && isSubmenuOpen }?.let { bounds ->
         PlaylistFlyoutPopup(
-            parentMenuBounds = menuBoundsInWindow,
+            parentMenuBounds = bounds,
             submenuRowBounds = rowBoundsMap[entry.id],
             content = entry.content,
-            onDismissSubmenu = { onOpenSubmenuChange(null) },
+            onDismissSubmenu = { onOpenSubmenuChange(null, false) },
             onDismissAll = onDismissRequest,
-            focusable = !openedByHover,
             onHoverChanged = { isFlyoutHovered = it },
         )
     }
@@ -439,13 +443,14 @@ private fun PopupMenuRow(
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val isKeyboardMode = LocalInputModeManager.current.inputMode == InputMode.Keyboard
 
     LaunchedEffect(isHovered) { onHoverChanged(isHovered) }
     LaunchedEffect(isFocused) { if (isFocused) onFocused() }
 
     val highlightColor =
         when {
-            isFocused -> Color.White.copy(alpha = 0.12f)
+            isFocused && isKeyboardMode -> Color.White.copy(alpha = 0.12f)
             isHovered || isSubmenuExpanded -> Color.White.copy(alpha = 0.08f)
             else -> Color.Transparent
         }

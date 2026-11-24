@@ -89,7 +89,6 @@ internal fun PlaylistFlyoutPopup(
     content: PlaylistSubmenuContent,
     onDismissSubmenu: () -> Unit,
     onDismissAll: () -> Unit,
-    focusable: Boolean = true,
     onHoverChanged: (Boolean) -> Unit = {},
 ) {
     val positionProvider =
@@ -103,13 +102,13 @@ internal fun PlaylistFlyoutPopup(
     Popup(
         popupPositionProvider = positionProvider,
         onDismissRequest = onDismissAll,
-        properties = PopupProperties(focusable = focusable, dismissOnBackPress = true, dismissOnClickOutside = true),
+        properties = PopupProperties(focusable = false, dismissOnBackPress = true, dismissOnClickOutside = false),
     ) {
         PlaylistFlyoutContent(
             content = content,
             onDismissSubmenu = onDismissSubmenu,
             onDismissAll = onDismissAll,
-            autoFocusSearch = focusable,
+            autoFocusSearch = false,
             onHoverChanged = onHoverChanged,
         )
     }
