@@ -41,6 +41,7 @@ import com.github.adriianh.melo.resources.common_action_undo
 import com.github.adriianh.melo.resources.track_snackbar_added_to_likes
 import com.github.adriianh.melo.resources.track_snackbar_added_to_playlist
 import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_link_copied
 import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
@@ -134,6 +135,14 @@ fun NowPlayingScreen(
         val downloadProgress = libraryState.activeDownloads[track.id]
         val targetSnackbar =
             if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
+        val shareHandler =
+            com.github.adriianh.melo.util.rememberPlatformShareHandler {
+                targetSnackbar.show(
+                    msg = UiText.Resource(Res.string.track_snackbar_link_copied),
+                    actionColor = activeAccent,
+                )
+            }
+        val shareUrl = remember(track.id) { com.github.adriianh.melo.util.buildTrackShareUrl(track) }
         val containingPlaylistIds by remember(track.id) {
             libraryViewModel.getPlaylistIdsForTrack(track.id)
         }.collectAsState(initial = emptySet())
@@ -209,7 +218,13 @@ fun NowPlayingScreen(
                 interaction.dismissContextMenu()
                 if (track.album.isNotBlank()) onAlbumWithArtistClick(track.album, track.artist)
             },
-            onShare = { /* TODO */ },
+            onShare =
+                shareUrl?.let { url ->
+                    {
+                        shareHandler(url)
+                        interaction.dismissContextMenu()
+                    }
+                },
             onDownload = {
                 interaction.downloadTrack(track, activeAccent)
                 interaction.dismissContextMenu()

@@ -668,4 +668,7 @@
     <string name="time_days_ago">Hace %1$d d</string>
     <string name="time_weeks_ago">Hace %1$d sem</string>
     <string name="time_months_ago">Hace %1$d m</string>
+
+    <!-- Compartir -->
+    <string name="track_snackbar_link_copied">Enlace copiado al portapapeles</string>
 </resources>

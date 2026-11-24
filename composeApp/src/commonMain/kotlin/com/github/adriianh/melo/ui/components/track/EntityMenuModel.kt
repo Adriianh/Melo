@@ -60,16 +60,16 @@ fun buildAlbumOrPlaylistMenuEntries(
             emptyList()
         }
     val shareGroup =
-        context.onShare?.let { onShare ->
-            listOf(
+        listOfNotNull(
+            context.onShare?.let { onShare ->
                 SongMenuEntry.Action(
                     id = "share",
                     icon = Icons.Default.Share,
                     label = UiText.Resource(Res.string.common_action_share),
                     onClick = onShare,
-                ),
-            )
-        }.orEmpty()
+                )
+            },
+        )
     return joinMenuGroups(playbackGroup, libraryGroup, navigationGroup, shareGroup)
 }
 

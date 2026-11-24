@@ -10,8 +10,13 @@ import androidx.compose.ui.graphics.Color
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.Playlist
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.track_snackbar_link_copied
 import com.github.adriianh.melo.ui.components.dialogs.AddToPlaylistSheet
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryUiState
+import com.github.adriianh.melo.util.buildTrackShareUrl
+import com.github.adriianh.melo.util.rememberPlatformShareHandler
 import kotlinx.coroutines.flow.flowOf
 
 @Composable
@@ -27,7 +32,7 @@ fun TrackContextMenu(
     onAddToPlaylist: () -> Unit,
     onGoToArtist: () -> Unit,
     onGoToAlbum: () -> Unit,
-    onShare: () -> Unit,
+    onShare: (() -> Unit)? = null,
     onDownload: (() -> Unit)? = null,
     onDeleteDownload: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
@@ -56,6 +61,7 @@ fun TrackContextMenu(
             isOnAlbumScreen,
             playlists,
             containingPlaylistIds,
+            onShare,
             onRemoveFromPlaylist,
             onRemoveFromLibrary,
         ) {
@@ -126,6 +132,13 @@ fun TrackInteractionContextMenu(
     isOnAlbumScreen: Boolean = false,
 ) {
     val track = interaction.contextMenuTrack
+    val shareHandler =
+        rememberPlatformShareHandler {
+            interaction.snackbar.show(
+                msg = UiText.Resource(Res.string.track_snackbar_link_copied),
+                actionColor = activeAccent,
+            )
+        }
     if (track != null) {
         val isLiked = libraryState.likedSongs.any { it.id == track.id }
         val isDownloaded =
@@ -135,6 +148,7 @@ fun TrackInteractionContextMenu(
         val containingPlaylistIds by remember(track.id) {
             interaction.libraryViewModel.getPlaylistIdsForTrack(track.id)
         }.collectAsState(initial = emptySet())
+        val shareUrl = remember(track.id) { buildTrackShareUrl(track) }
 
         TrackContextMenu(
             track = track,
@@ -173,7 +187,13 @@ fun TrackInteractionContextMenu(
                     onAlbumWithArtistClick?.invoke(track.album, track.artist) ?: onAlbumClick(track.album)
                 }
             },
-            onShare = { /* TODO */ },
+            onShare =
+                shareUrl?.let { url ->
+                    {
+                        shareHandler(url)
+                        interaction.dismissContextMenu()
+                    }
+                },
             onDownload = {
                 interaction.downloadTrack(track, activeAccent)
                 interaction.dismissContextMenu()

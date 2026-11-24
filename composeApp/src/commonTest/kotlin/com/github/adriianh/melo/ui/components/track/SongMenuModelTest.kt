@@ -2,6 +2,7 @@ package com.github.adriianh.melo.ui.components.track
 
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.track_menu_add_to_likes
 import com.github.adriianh.melo.resources.track_menu_remove_download
@@ -9,10 +10,13 @@ import com.github.adriianh.melo.resources.track_menu_remove_from_likes
 import com.github.adriianh.melo.resources.track_menu_remove_from_queue
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.util.DarkMeloColors
+import com.github.adriianh.melo.util.buildEntityShareUrl
+import com.github.adriianh.melo.util.buildTrackShareUrl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SongMenuModelTest {
@@ -224,5 +228,27 @@ class SongMenuModelTest {
             )
         val artistIds = artistEntries.filterIsInstance<SongMenuEntry.Action>().map { it.id }
         assertEquals(listOf("play", "start_radio", "go_to_artist", "share"), artistIds)
+    }
+
+    @Test
+    fun `share url builder builds youtube music urls and returns null for local tracks`() {
+        assertEquals("https://music.youtube.com/watch?v=abc123", buildTrackShareUrl(sampleTrack))
+        assertEquals(
+            "https://music.youtube.com/watch?v=ElvzE2cPclc",
+            buildTrackShareUrl(sampleTrack.copy(id = "piped:ElvzE2cPclc")),
+        )
+        assertNull(buildTrackShareUrl(sampleTrack.copy(id = "local:99")))
+
+        val album = SearchResult.Album(id = "MPREb_123", title = "Album", author = "Artist", year = null, artworkUrl = null)
+        assertEquals("https://music.youtube.com/browse/MPREb_123", buildEntityShareUrl(album))
+
+        val olakAlbum = SearchResult.Album(id = "OLAK5uy_xyz", title = "Single", author = "Artist", year = null, artworkUrl = null)
+        assertEquals("https://music.youtube.com/playlist?list=OLAK5uy_xyz", buildEntityShareUrl(olakAlbum))
+
+        val playlist = SearchResult.Playlist(id = "VLPL123", title = "Mix", author = "YouTube", trackCount = 10, artworkUrl = null)
+        assertEquals("https://music.youtube.com/playlist?list=PL123", buildEntityShareUrl(playlist))
+
+        val artist = SearchResult.Artist(id = "UCabc", name = "Artist", artworkUrl = null)
+        assertEquals("https://music.youtube.com/channel/UCabc", buildEntityShareUrl(artist))
     }
 }

@@ -35,6 +35,7 @@ import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.search_type_artist
 import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_link_copied
 import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.ui.LocalSelectionMode
 import com.github.adriianh.melo.ui.components.controls.MeloSearchBar
@@ -55,7 +56,9 @@ import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.buildEntityShareUrl
 import com.github.adriianh.melo.util.getPlatform
+import com.github.adriianh.melo.util.rememberPlatformShareHandler
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -331,6 +334,17 @@ private fun HomeEntityContextMenuHost(
     val getEntityDetailsUseCase: GetEntityDetailsUseCase = koinInject()
     val toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase = koinInject()
     val toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase = koinInject()
+    val shareHandler =
+        rememberPlatformShareHandler {
+            interaction.snackbar.show(
+                msg = UiText.Resource(Res.string.track_snackbar_link_copied),
+                actionColor = activeAccent,
+            )
+        }
+    val onShareAction =
+        remember(entity, shareHandler) {
+            buildEntityShareUrl(entity)?.let { url -> { shareHandler(url) } }
+        }
 
     val (title, subtitle, artworkUrl) =
         when (entity) {
@@ -351,6 +365,7 @@ private fun HomeEntityContextMenuHost(
             toggleLikeAlbumUseCase = toggleLikeAlbumUseCase,
             toggleLikePlaylistUseCase = toggleLikePlaylistUseCase,
             scope = scope,
+            onShare = onShareAction,
             onArtistClick = onArtistClick,
         )
 
@@ -375,6 +390,7 @@ private fun rememberHomeEntityMenuEntries(
     toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
     toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
     scope: kotlinx.coroutines.CoroutineScope,
+    onShare: (() -> Unit)?,
     onArtistClick: (String) -> Unit,
 ): List<com.github.adriianh.melo.ui.components.track.SongMenuEntry> {
     fun launchTracks(action: (List<com.github.adriianh.core.domain.model.Track>) -> Unit) {
@@ -390,17 +406,15 @@ private fun rememberHomeEntityMenuEntries(
                 onPlay = { launchTracks { queueViewModel.playTracks(it) } },
                 onStartRadio = { queueViewModel.startArtistRadio(entity.name) },
                 onGoToArtist = { onArtistClick(entity.id) },
+                onShare = onShare,
             ),
         )
     }
 
     val isAlbum = entity is SearchResult.Album
     val isSaved =
-        if (isAlbum) {
-            libraryState.albums.any { it.id == (entity as SearchResult.Album).id }
-        } else {
-            libraryState.playlists.any { it.id == (entity as SearchResult.Playlist).id }
-        }
+        if (entity is SearchResult.Album) libraryState.albums.any { it.id == entity.id }
+        else libraryState.playlists.any { it.id == (entity as SearchResult.Playlist).id }
     val author = if (entity is SearchResult.Album) entity.author else ""
     val hasArtist = isAlbum && author.isNotBlank() && !author.equals("Unknown", ignoreCase = true)
 
@@ -416,7 +430,7 @@ private fun rememberHomeEntityMenuEntries(
                     launchTracks { tracks ->
                         tracks.asReversed().forEach { queueViewModel.insertTrackNext(it) }
                         interaction.snackbar.show(
-                            msg = UiText.Resource(Res.string.track_snackbar_play_next),
+                            UiText.Resource(Res.string.track_snackbar_play_next),
                             actionColor = activeAccent,
                         )
                     }
@@ -425,25 +439,42 @@ private fun rememberHomeEntityMenuEntries(
                     launchTracks { tracks ->
                         queueViewModel.addAllToQueue(tracks)
                         interaction.snackbar.show(
-                            msg = UiText.Resource(Res.string.track_snackbar_added_to_queue),
+                            UiText.Resource(Res.string.track_snackbar_added_to_queue),
                             actionColor = activeAccent,
                         )
                     }
                 },
                 onToggleSave = {
                     scope.launch {
-                        if (entity is SearchResult.Album) {
-                            toggleLikeAlbumUseCase(entity.id, !isSaved)
-                            libraryViewModel.refreshAlbums()
-                        } else if (entity is SearchResult.Playlist) {
-                            toggleLikePlaylistUseCase(entity.id, !isSaved)
-                            libraryViewModel.refreshPlaylists()
-                        }
+                        toggleHomeEntitySave(
+                            entity = entity,
+                            isSaved = isSaved,
+                            toggleLikeAlbumUseCase = toggleLikeAlbumUseCase,
+                            toggleLikePlaylistUseCase = toggleLikePlaylistUseCase,
+                            libraryViewModel = libraryViewModel,
+                        )
                     }
                 },
                 onGoToArtist = if (hasArtist) ({ onArtistClick(author) }) else null,
+                onShare = onShare,
             ),
     )
+}
+
+private suspend fun toggleHomeEntitySave(
+    entity: SearchResult,
+    isSaved: Boolean,
+    toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
+    toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
+    libraryViewModel: LibraryViewModel,
+) {
+    if (entity is SearchResult.Album) {
+        toggleLikeAlbumUseCase(entity.id, !isSaved)
+        libraryViewModel.refreshAlbums()
+    } else if (entity is SearchResult.Playlist) {
+        toggleLikePlaylistUseCase(entity.id, !isSaved)
+        libraryViewModel.refreshPlaylists()
+    }
 }
 
 private suspend fun fetchHomeEntityTracks(

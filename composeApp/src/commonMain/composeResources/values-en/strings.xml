@@ -668,4 +668,7 @@
     <string name="time_days_ago">%1$d d ago</string>
     <string name="time_weeks_ago">%1$d wk ago</string>
     <string name="time_months_ago">%1$d mo ago</string>
+
+    <!-- Share -->
+    <string name="track_snackbar_link_copied">Link copied to clipboard</string>
 </resources>
