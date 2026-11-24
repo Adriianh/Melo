@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.home
 
 import androidx.compose.animation.AnimatedContent
@@ -20,27 +22,44 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.usecase.library.ToggleLikeAlbumUseCase
+import com.github.adriianh.core.domain.usecase.library.ToggleLikePlaylistUseCase
+import com.github.adriianh.core.domain.usecase.search.GetEntityDetailsUseCase
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.search_type_artist
+import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
+import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.ui.LocalSelectionMode
-import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
-import com.github.adriianh.melo.ui.components.feedback.MeloErrorState
 import com.github.adriianh.melo.ui.components.controls.MeloSearchBar
+import com.github.adriianh.melo.ui.components.feedback.MeloErrorState
+import com.github.adriianh.melo.ui.components.track.BatchSelectionBottomBar
+import com.github.adriianh.melo.ui.components.track.EntityContextMenu
+import com.github.adriianh.melo.ui.components.track.EntityMenuContext
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
+import com.github.adriianh.melo.ui.components.track.buildAlbumOrPlaylistMenuEntries
+import com.github.adriianh.melo.ui.components.track.buildArtistMenuEntries
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.home.components.HomeContent
 import com.github.adriianh.melo.ui.home.components.HomeSearchResultsView
 import com.github.adriianh.melo.ui.home.components.HomeSkeletonLoading
+import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryUiState
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 /** Represents the four mutually exclusive display states of the home feed. */
@@ -64,8 +83,11 @@ fun HomeScreen(
     val currentAccent = MaterialTheme.colorScheme.primary
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = interaction.resolveActiveAccent(currentAccent)
+    val entityActionScope = rememberCoroutineScope()
+    var contextMenuEntity by remember { mutableStateOf<Pair<SearchResult, SongMenuAnchor?>?>(null) }
 
     val isLibraryNeeded = interaction.contextMenuTrack != null ||
+            contextMenuEntity != null ||
             !interaction.addToPlaylistTracks.isNullOrEmpty() ||
             uiState.searchQuery.isNotBlank()
     val libraryState by remember(isLibraryNeeded) {
@@ -114,6 +136,18 @@ fun HomeScreen(
         activeAccent = activeAccent,
         onArtistClick = onArtistClick,
         onAlbumWithArtistClick = { album, artist -> onAlbumClick(album, album, null, artist) },
+    )
+
+    HomeEntityContextMenuHost(
+        entityPair = contextMenuEntity,
+        libraryState = libraryState,
+        activeAccent = activeAccent,
+        queueViewModel = queueViewModel,
+        libraryViewModel = libraryViewModel,
+        interaction = interaction,
+        scope = entityActionScope,
+        onArtistClick = onArtistClick,
+        onDismiss = { contextMenuEntity = null },
     )
 
     Column(
@@ -200,6 +234,14 @@ fun HomeScreen(
                             queueViewModel = queueViewModel,
                             paddingValues = paddingValues,
                             onMoreClick = { interaction.openContextMenu(it) },
+                            onOpenTrackContextMenu = { track, anchor -> interaction.openContextMenu(track, anchor) },
+                            onOpenEntityContextMenu = { entity, anchor ->
+                                if (entity is SearchResult.Song) {
+                                    interaction.openContextMenu(entity.track, anchor)
+                                } else {
+                                    contextMenuEntity = entity to anchor
+                                }
+                            },
                             isSelectionMode = isSelectionMode,
                             selectedTrackIds = selectedTrackIds,
                             onToggleSelectTrack = { track ->
@@ -271,3 +313,146 @@ fun HomeScreen(
         }
     }
 }
+
+@Composable
+private fun HomeEntityContextMenuHost(
+    entityPair: Pair<SearchResult, SongMenuAnchor?>?,
+    libraryState: LibraryUiState,
+    activeAccent: androidx.compose.ui.graphics.Color,
+    queueViewModel: QueueViewModel,
+    libraryViewModel: LibraryViewModel,
+    interaction: com.github.adriianh.melo.ui.components.track.TrackInteractionState,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onArtistClick: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val (entity, anchor) = entityPair ?: return
+    if (entity is SearchResult.Song) return
+    val getEntityDetailsUseCase: GetEntityDetailsUseCase = koinInject()
+    val toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase = koinInject()
+    val toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase = koinInject()
+
+    val (title, subtitle, artworkUrl) =
+        when (entity) {
+            is SearchResult.Album -> Triple(entity.title, entity.author, entity.artworkUrl)
+            is SearchResult.Playlist -> Triple(entity.title, entity.author, entity.artworkUrl)
+            is SearchResult.Artist ->
+                Triple(entity.name, stringResource(Res.string.search_type_artist), entity.artworkUrl)
+        }
+    val entries =
+        rememberHomeEntityMenuEntries(
+            entity = entity,
+            libraryState = libraryState,
+            activeAccent = activeAccent,
+            queueViewModel = queueViewModel,
+            libraryViewModel = libraryViewModel,
+            interaction = interaction,
+            getEntityDetailsUseCase = getEntityDetailsUseCase,
+            toggleLikeAlbumUseCase = toggleLikeAlbumUseCase,
+            toggleLikePlaylistUseCase = toggleLikePlaylistUseCase,
+            scope = scope,
+            onArtistClick = onArtistClick,
+        )
+
+    EntityContextMenu(
+        title = title,
+        subtitle = subtitle,
+        artworkUrl = artworkUrl,
+        entries = entries,
+        anchor = anchor,
+        onDismissRequest = onDismiss,
+    )
+}
+
+private fun rememberHomeEntityMenuEntries(
+    entity: SearchResult,
+    libraryState: LibraryUiState,
+    activeAccent: androidx.compose.ui.graphics.Color,
+    queueViewModel: QueueViewModel,
+    libraryViewModel: LibraryViewModel,
+    interaction: com.github.adriianh.melo.ui.components.track.TrackInteractionState,
+    getEntityDetailsUseCase: GetEntityDetailsUseCase,
+    toggleLikeAlbumUseCase: ToggleLikeAlbumUseCase,
+    toggleLikePlaylistUseCase: ToggleLikePlaylistUseCase,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onArtistClick: (String) -> Unit,
+): List<com.github.adriianh.melo.ui.components.track.SongMenuEntry> {
+    fun launchTracks(action: (List<com.github.adriianh.core.domain.model.Track>) -> Unit) {
+        scope.launch {
+            val tracks = fetchHomeEntityTracks(entity, getEntityDetailsUseCase)
+            if (tracks.isNotEmpty()) action(tracks)
+        }
+    }
+
+    if (entity is SearchResult.Artist) {
+        return buildArtistMenuEntries(
+            EntityMenuContext(
+                onPlay = { launchTracks { queueViewModel.playTracks(it) } },
+                onStartRadio = { queueViewModel.startArtistRadio(entity.name) },
+                onGoToArtist = { onArtistClick(entity.id) },
+            ),
+        )
+    }
+
+    val isAlbum = entity is SearchResult.Album
+    val isSaved =
+        if (isAlbum) {
+            libraryState.albums.any { it.id == (entity as SearchResult.Album).id }
+        } else {
+            libraryState.playlists.any { it.id == (entity as SearchResult.Playlist).id }
+        }
+    val author = if (entity is SearchResult.Album) entity.author else ""
+    val hasArtist = isAlbum && author.isNotBlank() && !author.equals("Unknown", ignoreCase = true)
+
+    return buildAlbumOrPlaylistMenuEntries(
+        isAlbum = isAlbum,
+        author = author,
+        context =
+            EntityMenuContext(
+                isSaved = isSaved,
+                onPlay = { launchTracks { queueViewModel.playTracks(it) } },
+                onShuffle = { launchTracks { queueViewModel.playShuffled(it) } },
+                onPlayNext = {
+                    launchTracks { tracks ->
+                        tracks.asReversed().forEach { queueViewModel.insertTrackNext(it) }
+                        interaction.snackbar.show(
+                            msg = UiText.Resource(Res.string.track_snackbar_play_next),
+                            actionColor = activeAccent,
+                        )
+                    }
+                },
+                onAddToQueue = {
+                    launchTracks { tracks ->
+                        queueViewModel.addAllToQueue(tracks)
+                        interaction.snackbar.show(
+                            msg = UiText.Resource(Res.string.track_snackbar_added_to_queue),
+                            actionColor = activeAccent,
+                        )
+                    }
+                },
+                onToggleSave = {
+                    scope.launch {
+                        if (entity is SearchResult.Album) {
+                            toggleLikeAlbumUseCase(entity.id, !isSaved)
+                            libraryViewModel.refreshAlbums()
+                        } else if (entity is SearchResult.Playlist) {
+                            toggleLikePlaylistUseCase(entity.id, !isSaved)
+                            libraryViewModel.refreshPlaylists()
+                        }
+                    }
+                },
+                onGoToArtist = if (hasArtist) ({ onArtistClick(author) }) else null,
+            ),
+    )
+}
+
+private suspend fun fetchHomeEntityTracks(
+    entity: SearchResult,
+    getEntityDetailsUseCase: GetEntityDetailsUseCase,
+): List<com.github.adriianh.core.domain.model.Track> =
+    when (val details = runCatching { getEntityDetailsUseCase(entity) }.getOrNull()) {
+        is SearchResult.Album -> details.songs.orEmpty()
+        is SearchResult.Playlist -> details.songs.orEmpty()
+        is SearchResult.Artist -> details.topSongs.orEmpty()
+        else -> emptyList()
+    }
