@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components.cards
 
 import androidx.compose.animation.core.LinearEasing
@@ -6,8 +8,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +30,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,11 +49,14 @@ import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_play_next
 import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SuggestionTrackCard(
     track: Track,
@@ -52,10 +64,13 @@ fun SuggestionTrackCard(
     onClick: () -> Unit,
     onAddClick: () -> Unit,
     onMoreClick: () -> Unit = {},
+    onOpenContextMenu: ((SongMenuAnchor?) -> Unit)? = null,
     modifier: Modifier = Modifier,
     isCurrent: Boolean = false,
     isPlaying: Boolean = false,
 ) {
+    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+    var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
     val backgroundColor =
         if (isCurrent) activeAccent.copy(alpha = 0.18f) else MeloColors.surface1.copy(alpha = 0.55f)
     Row(
@@ -64,8 +79,18 @@ fun SuggestionTrackCard(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(backgroundColor)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                .songMenuRightClick(
+                    onOpenMenu = { anchor ->
+                        onOpenContextMenu?.invoke(anchor) ?: onMoreClick()
+                    },
+                ).combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        onOpenContextMenu?.invoke(rowBounds?.let { SongMenuAnchor.Bounds(it) })
+                            ?: onMoreClick()
+                    },
+                ).padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -125,8 +150,14 @@ fun SuggestionTrackCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             IconButton(
-                onClick = onMoreClick,
-                modifier = Modifier.size(28.dp),
+                onClick = {
+                    onOpenContextMenu?.invoke(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
+                        ?: onMoreClick()
+                },
+                modifier =
+                    Modifier
+                        .size(28.dp)
+                        .onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
             ) {
                 Icon(
                     Icons.Default.MoreVert,

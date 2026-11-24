@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components.track
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -25,12 +27,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,12 +73,17 @@ fun TrackRow(
     downloadProgress: Float = 0f,
     subtitleOverride: String? = null,
     onMoreClick: (() -> Unit)? = null,
+    onOpenContextMenu: ((SongMenuAnchor?) -> Unit)? = null,
     dragHandle: (@Composable () -> Unit)? = null,
     isSelectionMode: Boolean = false,
     isSelected: Boolean = false,
     onSelectionToggle: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
+    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+    var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
+    val hasContextMenu = onOpenContextMenu != null || onMoreClick != null
+
     val backgroundColor =
         when {
             isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
@@ -85,7 +99,18 @@ fun TrackRow(
                 .clip(RoundedCornerShape(8.dp))
                 .alpha(if (isEnabled) 1f else 0.45f)
                 .background(backgroundColor)
-                .combinedClickable(
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                .songMenuRightClick(
+                    enabled = isEnabled && !isSelectionMode && hasContextMenu,
+                    onOpenMenu = { anchor ->
+                        if (onOpenContextMenu != null) {
+                            onOpenContextMenu(anchor)
+                        } else {
+                            SongMenuAnchorRegistry.capture(anchor)
+                            onMoreClick?.invoke()
+                        }
+                    },
+                ).combinedClickable(
                     enabled = isEnabled,
                     onClick = {
                         if (isDownloading) {
@@ -98,7 +123,20 @@ fun TrackRow(
                             onClick()
                         }
                     },
-                    onLongClick = onLongClick,
+                    onLongClick =
+                        onLongClick ?: if (hasContextMenu) {
+                            {
+                                val anchor = rowBounds?.let { SongMenuAnchor.Bounds(it) }
+                                if (onOpenContextMenu != null) {
+                                    onOpenContextMenu(anchor)
+                                } else {
+                                    SongMenuAnchorRegistry.capture(anchor)
+                                    onMoreClick?.invoke()
+                                }
+                            }
+                        } else {
+                            null
+                        },
                 ).padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -241,10 +279,21 @@ fun TrackRow(
             )
         }
 
-        if (onMoreClick != null) {
+        if (hasContextMenu) {
             IconButton(
-                onClick = onMoreClick,
-                modifier = Modifier.size(32.dp),
+                onClick = {
+                    val anchor = moreButtonBounds?.let { SongMenuAnchor.Bounds(it) }
+                    if (onOpenContextMenu != null) {
+                        onOpenContextMenu(anchor)
+                    } else {
+                        SongMenuAnchorRegistry.capture(anchor)
+                        onMoreClick?.invoke()
+                    }
+                },
+                modifier =
+                    Modifier
+                        .size(32.dp)
+                        .onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
             ) {
                 Icon(
                     Icons.Default.MoreVert,

@@ -1,9 +1,10 @@
-@file:Suppress("ktlint:standard:function-naming")
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
 
 package com.github.adriianh.melo.ui.library.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,6 +51,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +86,9 @@ import com.github.adriianh.melo.ui.components.controls.MeloSwipeActions
 import com.github.adriianh.melo.ui.components.controls.MeloSwipeableItem
 import com.github.adriianh.melo.ui.components.controls.rememberSwipeRevealGroup
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchorRegistry
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -484,6 +491,7 @@ private data class DownloadedArtistGroup(
     val tracks: List<Track>,
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DownloadedTrackRow(
     offlineTrack: OfflineTrack,
@@ -493,6 +501,8 @@ private fun DownloadedTrackRow(
 ) {
     val track = offlineTrack.track
     val sizeMb = offlineTrack.fileSize / (1024.0 * 1024.0)
+    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+    var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
 
     Surface(
         color = MeloColors.surface1,
@@ -501,7 +511,19 @@ private fun DownloadedTrackRow(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onClick),
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                .songMenuRightClick(
+                    onOpenMenu = { anchor ->
+                        SongMenuAnchorRegistry.capture(anchor)
+                        onMoreClick()
+                    },
+                ).combinedClickable(
+                    onClick = onClick,
+                    onLongClick = {
+                        SongMenuAnchorRegistry.capture(rowBounds?.let { SongMenuAnchor.Bounds(it) })
+                        onMoreClick()
+                    },
+                ),
     ) {
         Row(
             modifier =
@@ -557,7 +579,13 @@ private fun DownloadedTrackRow(
                 )
             }
 
-            IconButton(onClick = onMoreClick) {
+            IconButton(
+                onClick = {
+                    SongMenuAnchorRegistry.capture(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
+                    onMoreClick()
+                },
+                modifier = Modifier.onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
+            ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = stringResource(Res.string.a11y_more_options),

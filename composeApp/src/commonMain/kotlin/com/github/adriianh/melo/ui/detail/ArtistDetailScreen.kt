@@ -52,11 +52,11 @@ import com.github.adriianh.melo.resources.detail_show_less
 import com.github.adriianh.melo.resources.player_artist_biography
 import com.github.adriianh.melo.resources.player_artist_popular_songs
 import com.github.adriianh.melo.resources.search_type_artist
-import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.cards.AlbumCard
 import com.github.adriianh.melo.ui.components.cards.ArtistCircle
 import com.github.adriianh.melo.ui.components.feedback.MeloEmptyState
 import com.github.adriianh.melo.ui.components.feedback.MeloErrorState
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.TrackRow
@@ -133,6 +133,7 @@ fun ArtistDetailScreen(
         libraryState = libraryState,
         activeAccent = activeAccent,
         onAlbumClick = { id -> onAlbumClick(id, "", null, "") },
+        isOnArtistScreen = true,
     )
 
     Scaffold(

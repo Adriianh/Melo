@@ -42,15 +42,21 @@ class TrackInteractionState(
     val queueViewModel: QueueViewModel,
 ) {
     var contextMenuTrack by mutableStateOf<Track?>(null)
+    var contextMenuAnchor by mutableStateOf<SongMenuAnchor?>(null)
     var addToPlaylistTrack by mutableStateOf<Track?>(null)
     var addToPlaylistTracks by mutableStateOf<List<Track>?>(null)
 
-    fun openContextMenu(track: Track) {
+    fun openContextMenu(
+        track: Track,
+        anchor: SongMenuAnchor? = null,
+    ) {
         contextMenuTrack = track
+        contextMenuAnchor = anchor ?: SongMenuAnchorRegistry.consume()
     }
 
     fun dismissContextMenu() {
         contextMenuTrack = null
+        contextMenuAnchor = null
     }
 
     fun openAddToPlaylist(track: Track) {

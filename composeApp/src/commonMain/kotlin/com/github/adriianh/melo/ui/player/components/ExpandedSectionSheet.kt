@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.foundation.background
@@ -38,6 +40,7 @@ import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarHost
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarState
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.PanelSection
@@ -63,6 +66,7 @@ fun ExpandedSectionSheet(
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel(),
     onMoreClick: (Track, Boolean) -> Unit = { _, _ -> },
+    onOpenContextMenu: ((Track, Boolean, SongMenuAnchor?) -> Unit)? = null,
     isLiked: (Track) -> Boolean = { false },
 ) {
     if (section == null) return
@@ -117,6 +121,7 @@ fun ExpandedSectionSheet(
                             state = state,
                             activeAccent = activeAccent,
                             onMoreClick = onMoreClick,
+                            onOpenContextMenu = onOpenContextMenu,
                             onSwipeQueueItem = { trackIndex ->
                                 val removedTrack = queueViewModel.removeTrackAt(trackIndex)
                                 if (removedTrack != null) {

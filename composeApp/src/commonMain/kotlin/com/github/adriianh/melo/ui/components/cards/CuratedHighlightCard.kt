@@ -1,6 +1,10 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components.cards
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,12 +25,20 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,11 +48,14 @@ import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_play_all
 import com.github.adriianh.melo.resources.a11y_radio
 import com.github.adriianh.melo.resources.a11y_save_to_library
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CuratedHighlightCard(
     modifier: Modifier = Modifier,
@@ -51,6 +66,7 @@ fun CuratedHighlightCard(
     tracks: List<Track>,
     onPlayAll: () -> Unit,
     onTrackClick: (Track) -> Unit,
+    onTrackMoreClick: ((Track, SongMenuAnchor?) -> Unit)? = null,
     onRadioClick: () -> Unit = {},
     onBookmarkClick: () -> Unit = {},
 ) {
@@ -109,13 +125,24 @@ fun CuratedHighlightCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 tracks.take(3).forEach { track ->
+                    var rowBounds by remember { mutableStateOf<Rect?>(null) }
+                    var moreBounds by remember { mutableStateOf<Rect?>(null) }
                     Row(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onTrackClick(track) }
-                                .padding(vertical = 4.dp, horizontal = 2.dp),
+                                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                                .songMenuRightClick(
+                                    enabled = onTrackMoreClick != null,
+                                    onOpenMenu = { anchor -> onTrackMoreClick?.invoke(track, anchor) },
+                                ).combinedClickable(
+                                    onClick = { onTrackClick(track) },
+                                    onLongClick =
+                                        onTrackMoreClick?.let { open ->
+                                            { open(track, rowBounds?.let { SongMenuAnchor.Bounds(it) }) }
+                                        },
+                                ).padding(vertical = 4.dp, horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
@@ -143,12 +170,31 @@ fun CuratedHighlightCard(
                             )
                         }
 
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = stringResource(Res.string.a11y_more_options),
-                            tint = MeloColors.textMuted,
-                            modifier = Modifier.size(18.dp),
-                        )
+                        if (onTrackMoreClick != null) {
+                            IconButton(
+                                onClick = {
+                                    onTrackMoreClick(track, moreBounds?.let { SongMenuAnchor.Bounds(it) })
+                                },
+                                modifier =
+                                    Modifier
+                                        .size(28.dp)
+                                        .onGloballyPositioned { moreBounds = it.boundsInWindow() },
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(Res.string.a11y_more_options),
+                                    tint = MeloColors.textMuted,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        } else {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = stringResource(Res.string.a11y_more_options),
+                                tint = MeloColors.textMuted,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                     }
                 }
             }

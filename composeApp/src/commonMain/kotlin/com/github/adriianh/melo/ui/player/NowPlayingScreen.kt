@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "LongMethod", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -37,12 +39,14 @@ import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.common_action_undo
 import com.github.adriianh.melo.resources.track_snackbar_added_to_likes
+import com.github.adriianh.melo.resources.track_snackbar_added_to_playlist
 import com.github.adriianh.melo.resources.track_snackbar_added_to_queue
 import com.github.adriianh.melo.resources.track_snackbar_play_next
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_likes
 import com.github.adriianh.melo.resources.track_snackbar_removed_from_queue
 import com.github.adriianh.melo.ui.components.dialogs.AddToPlaylistSheet
 import com.github.adriianh.melo.ui.components.feedback.MeloSnackbarState
+import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.components.track.TrackContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.i18n.UiText
@@ -129,6 +133,9 @@ fun NowPlayingScreen(
         val downloadProgress = libraryState.activeDownloads[track.id]
         val targetSnackbar =
             if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
+        val containingPlaylistIds by remember(track.id) {
+            libraryViewModel.getPlaylistIdsForTrack(track.id)
+        }.collectAsState(initial = emptySet())
 
         TrackContextMenu(
             track = track,
@@ -143,7 +150,7 @@ fun NowPlayingScreen(
                     actionColor = activeAccent,
                     onAction = { queueViewModel.removeTrackAt(insertIndex) },
                 )
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             onAddToQueue = {
                 queueViewModel.addToQueue(track)
@@ -154,7 +161,7 @@ fun NowPlayingScreen(
                     actionColor = activeAccent,
                     onAction = { queueViewModel.removeTrackFromQueue(track) },
                 )
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             onRemoveFromQueue = {
                 val removedIndex = queueViewModel.removeTrackFromQueue(track)
@@ -167,7 +174,7 @@ fun NowPlayingScreen(
                         onAction = { queueViewModel.insertTrackAt(track, removedIndex) },
                     )
                 }
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             inQueue = contextMenuInQueue,
             onToggleLike = {
@@ -186,7 +193,7 @@ fun NowPlayingScreen(
                     actionColor = activeAccent,
                     onAction = { libraryViewModel.toggleLike(track.id, isLiked) },
                 )
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             isLiked = isLiked,
             onAddToPlaylist = {
@@ -194,29 +201,57 @@ fun NowPlayingScreen(
                 interaction.dismissContextMenu()
             },
             onGoToArtist = {
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
                 onArtistClick(track.artist)
             },
             onGoToAlbum = {
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
+                if (track.album.isNotBlank()) onAlbumClick(track.album)
             },
             onShare = { /* TODO */ },
             onDownload = {
                 interaction.downloadTrack(track, activeAccent)
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             onDeleteDownload = {
                 interaction.deleteDownloadedTrack(track.id, activeAccent)
-                interaction.contextMenuTrack = null
+                interaction.dismissContextMenu()
             },
             isDownloaded = isDownloaded,
             isDownloading = isDownloading,
             downloadProgress = downloadProgress,
+            anchor = interaction.contextMenuAnchor,
+            playlists = libraryState.customPlaylists,
+            containingPlaylistIds = containingPlaylistIds,
+            onSelectPlaylist = { playlist ->
+                libraryViewModel.addTrackToPlaylist(playlist.id, track) {
+                    targetSnackbar.show(
+                        msg = UiText.Resource(Res.string.track_snackbar_added_to_playlist, listOf(playlist.name)),
+                        vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                        actionColor = activeAccent,
+                    )
+                }
+            },
+            onCreatePlaylistAndAdd = { name ->
+                libraryViewModel.createPlaylist(name) { id ->
+                    libraryViewModel.addTrackToPlaylist(id, track) {
+                        targetSnackbar.show(
+                            msg = UiText.Resource(Res.string.track_snackbar_added_to_playlist, listOf(name)),
+                            vector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                            actionColor = activeAccent,
+                        )
+                    }
+                }
+            },
         )
     }
 
     val onMoreClick: (Track, Boolean) -> Unit = { track, inQueue ->
         interaction.openContextMenu(track)
+        contextMenuInQueue = inQueue
+    }
+    val onOpenContextMenu: (Track, Boolean, SongMenuAnchor?) -> Unit = { track, inQueue, anchor ->
+        interaction.openContextMenu(track, anchor)
         contextMenuInQueue = inQueue
     }
     val onSwipeQueueItem: (Int) -> Unit = { trackIndex ->
@@ -279,6 +314,10 @@ fun NowPlayingScreen(
                 NowPlayingTopBar(
                     title = effectiveState.title,
                     onCollapse = onCollapse,
+                    onMoreClick =
+                        effectiveState.currentTrack?.let { currentTrack ->
+                            { anchor -> onOpenContextMenu(currentTrack, false, anchor) }
+                        },
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -292,6 +331,7 @@ fun NowPlayingScreen(
                         onSelectSection = { selectedSection = it },
                         artistDetails = artistDetails,
                         onMoreClick = onMoreClick,
+                        onOpenContextMenu = onOpenContextMenu,
                         onSwipeQueueItem = onSwipeQueueItem,
                         onSwipeSuggestionItem = onSwipeSuggestionItem,
                         onPlayNextSuggestionItem = { track ->
@@ -363,6 +403,7 @@ fun NowPlayingScreen(
                 onPlaylistClick(id)
             },
             onMoreClick = onMoreClick,
+            onOpenContextMenu = onOpenContextMenu,
             isLiked = isLiked,
         )
 
