@@ -627,10 +627,10 @@
     <string name="update_downloading_title">Downloading update</string>
     <string name="update_installed_version_line">Installed: v%1$s</string>
     <string name="update_new_version_line">New: v%1$s</string>
-    <string name="update_changelog_title">What\'s new</string>
-    <string name="update_changelog_view_action">View what\'s new</string>
+    <string name="update_changelog_title">What's new</string>
+    <string name="update_changelog_view_action">View what's new</string>
     <string name="update_changelog_dialog_subtitle">Version v%1$s</string>
-    <string name="update_changelog_installed_title">What\'s new in v%1$s</string>
+    <string name="update_changelog_installed_title">What's new in v%1$s</string>
     <string name="update_changelog_open_github">View on GitHub</string>
     <string name="update_changelog_empty">No release notes available for this version.</string>
     <string name="common_action_got_it">Got it</string>
