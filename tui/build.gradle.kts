@@ -59,7 +59,7 @@ tasks {
         javaLauncher.set(
             project.extensions.getByType<JavaToolchainService>().launcherFor {
                 languageVersion.set(JavaLanguageVersion.of(25))
-            }
+            },
         )
     }
 
@@ -135,10 +135,10 @@ graalvmNative {
                 // ── Required for JNA / DBus (MediaSessionManager / SMTC) ────────────
                 "--enable-native-access=ALL-UNNAMED",
                 "-Djava.awt.headless=true",
-                "-H:DynamicProxyConfigurationFiles=${projectDir}/src/main/resources/proxy-config.json",
-                "-H:ReflectionConfigurationFiles=${projectDir}/src/main/resources/reflection-config.json",
-                "-H:JNIConfigurationFiles=${projectDir}/src/main/resources/jni-config.json",
-                "-H:ResourceConfigurationFiles=${projectDir}/src/main/resources/resource-config.json",
+                "-H:DynamicProxyConfigurationFiles=$projectDir/src/main/resources/proxy-config.json",
+                "-H:ReflectionConfigurationFiles=$projectDir/src/main/resources/reflection-config.json",
+                "-H:JNIConfigurationFiles=$projectDir/src/main/resources/jni-config.json",
+                "-H:ResourceConfigurationFiles=$projectDir/src/main/resources/resource-config.json",
             )
         }
     }
@@ -148,7 +148,6 @@ graalvmNative {
         dependsOn(tasks.named("shadowJar"))
     }
 }
-
 
 tasks.register("distUnix") {
     description = ""
@@ -162,7 +161,11 @@ tasks.register("distUnix") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-$osTag.tar.gz"))
 
     doLast {
-        val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
+        val nativeDir =
+            layout.buildDirectory
+                .dir("native/nativeCompile")
+                .get()
+                .asFile
         val stageDir = stageOut.get().asFile
         val rootDir = File(stageDir, "$appName-$appVersion")
         val distDir = distOut.get().asFile
@@ -186,16 +189,16 @@ tasks.register("distUnix") {
         }
 
         val tarName = "$appName-$appVersion-$osTag.tar.gz"
-        val result = ProcessBuilder(
-            "tar",
-            "-czf",
-            File(distDir, tarName).absolutePath,
-            "$appName-$appVersion"
-        )
-            .directory(stageDir)
-            .inheritIO()
-            .start()
-            .waitFor()
+        val result =
+            ProcessBuilder(
+                "tar",
+                "-czf",
+                File(distDir, tarName).absolutePath,
+                "$appName-$appVersion",
+            ).directory(stageDir)
+                .inheritIO()
+                .start()
+                .waitFor()
         check(result == 0) { "tar failed with exit code $result" }
 
         println("Distribution ready: ${File(distDir, tarName).absolutePath}")
@@ -213,7 +216,11 @@ tasks.register("distWindows") {
     outputs.file(layout.buildDirectory.file("dist/$appName-$appVersion-windows.zip"))
 
     doLast {
-        val nativeDir = layout.buildDirectory.dir("native/nativeCompile").get().asFile
+        val nativeDir =
+            layout.buildDirectory
+                .dir("native/nativeCompile")
+                .get()
+                .asFile
         val stageDir = stageOut.get().asFile
         val rootDir = File(stageDir, "$appName-$appVersion")
         val distDir = distOut.get().asFile
