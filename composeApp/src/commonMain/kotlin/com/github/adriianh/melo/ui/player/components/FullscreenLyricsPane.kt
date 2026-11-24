@@ -32,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -68,8 +69,12 @@ import com.github.adriianh.melo.resources.a11y_instrumental_break
 import com.github.adriianh.melo.resources.player_lyrics_loading
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlayerProgressState
 import com.github.adriianh.melo.util.rememberSharedAnimationTime
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.PI
 import kotlin.math.abs
@@ -137,6 +142,7 @@ internal fun FullscreenLyricsPane(
     onToggleTranslation: () -> Unit,
     onSelectLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
+    progressFlow: StateFlow<PlayerProgressState>? = null,
     style: FullscreenLyricsStyle = FullscreenLyricsStyle.Expanded,
     showControlsOnHoverOnly: Boolean = false,
     reducedMotion: Boolean = false,
@@ -165,6 +171,7 @@ internal fun FullscreenLyricsPane(
         FullscreenLyricsBody(
             trackLyrics = trackLyrics,
             positionMs = positionMs,
+            progressFlow = progressFlow,
             isLoading = isLoading,
             showTranslation = showTranslation,
             activeAccent = activeAccent,
@@ -198,6 +205,7 @@ internal fun FullscreenLyricsPane(
 private fun FullscreenLyricsBody(
     trackLyrics: TrackLyrics?,
     positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
     isLoading: Boolean,
     showTranslation: Boolean,
     activeAccent: Color,
@@ -212,6 +220,7 @@ private fun FullscreenLyricsBody(
             FullscreenSyncedLyricsList(
                 trackLyrics = trackLyrics,
                 positionMs = positionMs,
+                progressFlow = progressFlow,
                 showTranslation = showTranslation,
                 onSeekTo = onSeekTo,
                 style = style,
@@ -295,6 +304,7 @@ private fun FullscreenLyricsFloatingControls(
 private fun FullscreenSyncedLyricsList(
     trackLyrics: TrackLyrics,
     positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
     showTranslation: Boolean,
     onSeekTo: (Long) -> Unit,
     style: FullscreenLyricsStyle,
@@ -302,9 +312,21 @@ private fun FullscreenSyncedLyricsList(
     modifier: Modifier = Modifier,
 ) {
     val entries = remember(trackLyrics.syncedLyrics) { buildFullscreenLyricEntries(trackLyrics.syncedLyrics) }
-    val activeEntryIndex by remember(entries, positionMs) {
-        derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
-    }
+    val isWindowVisible = LocalWindowActivity.current.isVisible
+    val activeEntryIndex =
+        if (progressFlow != null && isWindowVisible) {
+            remember(progressFlow, entries) {
+                progressFlow
+                    .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs) }
+                    .distinctUntilChanged()
+            }.collectAsState(
+                initial = resolveActiveFullscreenEntryIndex(entries, progressFlow.value.progressMs),
+            ).value
+        } else {
+            remember(entries, positionMs) {
+                derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
+            }.value
+        }
 
     val listState = rememberLazyListState()
     var viewportHeightPx by remember { mutableIntStateOf(0) }

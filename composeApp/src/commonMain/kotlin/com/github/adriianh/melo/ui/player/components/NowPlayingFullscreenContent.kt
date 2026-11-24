@@ -306,6 +306,7 @@ private fun ExpandedNowPlayingLayout(
                             FullscreenLyricsPane(
                                 trackLyrics = state.trackLyrics,
                                 positionMs = positionMs,
+                                progressFlow = progressFlow,
                                 isLoading = state.isLyricsLoading,
                                 showTranslation = state.showTranslation,
                                 isTranslating = state.isTranslating,
@@ -381,6 +382,7 @@ private fun MediumPortraitNowPlayingLayout(
             FullscreenLyricsPane(
                 trackLyrics = state.trackLyrics,
                 positionMs = positionMs,
+                progressFlow = progressFlow,
                 isLoading = state.isLyricsLoading,
                 showTranslation = state.showTranslation,
                 isTranslating = state.isTranslating,
@@ -480,6 +482,7 @@ private fun CompactNowPlayingLayout(
             FullscreenLyricsPane(
                 trackLyrics = state.trackLyrics,
                 positionMs = positionMs,
+                progressFlow = progressFlow,
                 isLoading = state.isLyricsLoading,
                 showTranslation = state.showTranslation,
                 isTranslating = state.isTranslating,

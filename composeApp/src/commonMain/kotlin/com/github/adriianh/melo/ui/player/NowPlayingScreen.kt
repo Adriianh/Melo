@@ -2,16 +2,12 @@
 
 package com.github.adriianh.melo.ui.player
 
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
@@ -24,14 +20,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
@@ -53,12 +59,20 @@ import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.components.ExpandedSectionSheet
-import com.github.adriianh.melo.ui.player.components.NowPlayingDesktopLayout
-import com.github.adriianh.melo.ui.player.components.NowPlayingMobileLayout
-import com.github.adriianh.melo.ui.player.components.NowPlayingTopBar
+import com.github.adriianh.melo.ui.player.components.FullscreenPlayerActions
+import com.github.adriianh.melo.ui.player.components.NowPlayingFullscreenContent
+import com.github.adriianh.melo.ui.player.components.NowPlayingQueueSection
 import com.github.adriianh.melo.util.PlatformType
+import com.github.adriianh.melo.util.buildTrackShareUrl
 import com.github.adriianh.melo.util.getPlatform
+import com.github.adriianh.melo.util.rememberMeloWindowSizeClass
+import com.github.adriianh.melo.util.rememberPlatformShareHandler
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.Duration.Companion.milliseconds
+
+private const val DESKTOP_IDLE_HIDE_DELAY_MS = 3_000L
+private const val FULLSCREEN_DARK_SCRIM_ALPHA = 0.28f
 
 enum class PanelSection {
     QUEUE,
@@ -83,23 +97,62 @@ fun NowPlayingScreen(
     libraryViewModel: LibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.stableUiState.collectAsState()
+    val volume by viewModel.volume.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
     val platform = remember { getPlatform() }
-    var selectedSection by remember { mutableStateOf(PanelSection.QUEUE) }
-    var showLyrics by remember { mutableStateOf(false) }
-    var expandedBottomSection by remember { mutableStateOf<PanelSection?>(null) }
+    val isDesktop = platform.type == PlatformType.DESKTOP
+    val sizeClass = rememberMeloWindowSizeClass()
+    val reducedMotion = rememberPrefersReducedMotion()
+
+    var showLyrics by remember(sizeClass.isExpandedOrMediumLandscape) {
+        mutableStateOf(sizeClass.isExpandedOrMediumLandscape)
+    }
+    var showQueue by remember { mutableStateOf(false) }
+    var predictiveBackProgress by remember { mutableStateOf<Float?>(null) }
+
+    var lastActivityTick by remember { mutableIntStateOf(0) }
+    var controlsVisible by remember { mutableStateOf(true) }
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = MaterialTheme.colorScheme.primary
-
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val rootFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusManager.clearFocus(force = true)
         keyboardController?.hide()
+        if (isDesktop) {
+            runCatching { rootFocusRequester.requestFocus() }
+        }
     }
+
+    val keepControlsVisible =
+        !isDesktop ||
+            showQueue ||
+            interaction.contextMenuTrack != null ||
+            interaction.addToPlaylistTrack != null
+
+    LaunchedEffect(isDesktop, lastActivityTick, keepControlsVisible) {
+        controlsVisible = true
+        if (!keepControlsVisible) {
+            delay(DESKTOP_IDLE_HIDE_DELAY_MS.milliseconds)
+            controlsVisible = false
+        }
+    }
+
+    PlayerPredictiveBackHandler(
+        enabled = true,
+        onProgress = { progress -> predictiveBackProgress = progress },
+        onBack = {
+            if (showQueue) {
+                showQueue = false
+            } else {
+                onCollapse()
+            }
+        },
+    )
 
     val sheetSnackbarState = remember { MeloSnackbarState() }
     var contextMenuInQueue by remember { mutableStateOf(false) }
@@ -133,20 +186,17 @@ fun NowPlayingScreen(
             libraryState.downloadedTracks.any { it.track.id == track.id && it.downloadType == DownloadType.MANUAL }
         val isDownloading = libraryState.activeDownloads.containsKey(track.id)
         val downloadProgress = libraryState.activeDownloads[track.id]
+        val isModalSheetOpen = showQueue && !sizeClass.isExpandedOrMediumLandscape
         val targetSnackbar =
-            if (contextMenuInQueue && expandedBottomSection != null) sheetSnackbarState else interaction.snackbar
+            if (contextMenuInQueue && isModalSheetOpen) sheetSnackbarState else interaction.snackbar
         val shareHandler =
-            com.github.adriianh.melo.util.rememberPlatformShareHandler {
+            rememberPlatformShareHandler {
                 targetSnackbar.show(
                     msg = UiText.Resource(Res.string.track_snackbar_link_copied),
                     actionColor = activeAccent,
                 )
             }
-        val shareUrl =
-            remember(track.id) {
-                com.github.adriianh.melo.util
-                    .buildTrackShareUrl(track)
-            }
+        val shareUrl = remember(track.id) { buildTrackShareUrl(track) }
         val containingPlaylistIds by remember(track.id) {
             libraryViewModel.getPlaylistIdsForTrack(track.id)
         }.collectAsState(initial = emptySet())
@@ -293,14 +343,91 @@ fun NowPlayingScreen(
         val trackIsLiked = isTrackLiked(track)
         interaction.showToggledLikeSnackbar(track, trackIsLiked, activeAccent)
     }
-    val isLiked: (Track) -> Boolean = isTrackLiked
+
+    val actions =
+        FullscreenPlayerActions(
+            onCollapse = onCollapse,
+            onMoreClick =
+                effectiveState.currentTrack?.let { currentTrack ->
+                    { anchor -> onOpenContextMenu(currentTrack, false, anchor) }
+                },
+            onArtistClick = {
+                val target = artistDetails?.id ?: effectiveState.currentTrack?.artist
+                if (!target.isNullOrBlank()) {
+                    onCollapse()
+                    onArtistClick(target)
+                }
+            },
+            onToggleFavorite = viewModel::toggleFavorite,
+            onSeekTo = viewModel::seekTo,
+            onTogglePlayPause = viewModel::togglePlayPause,
+            onPlayNext = viewModel::playNext,
+            onPlayPrevious = viewModel::playPrevious,
+            onToggleShuffle = viewModel::toggleShuffle,
+            onToggleRepeat = viewModel::toggleRepeat,
+            onVolumeChange = viewModel::setVolume,
+            onToggleMute = viewModel::toggleMute,
+            onToggleLyrics = {
+                if (sizeClass.isExpandedOrMediumLandscape) {
+                    if (showQueue) {
+                        showQueue = false
+                        showLyrics = true
+                    } else {
+                        showLyrics = !showLyrics
+                    }
+                } else {
+                    showLyrics = !showLyrics
+                }
+            },
+            onToggleQueue = { showQueue = !showQueue },
+            onCloseQueue = { showQueue = false },
+            onToggleTranslation = viewModel::toggleTranslation,
+            onSelectLanguage = viewModel::setTargetLanguage,
+        )
+
+    val backProgress = if (!showQueue && !reducedMotion) (predictiveBackProgress ?: 0f) else 0f
 
     Box(
         modifier =
             modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures { }
+                .graphicsLayer {
+                    if (backProgress > 0f) {
+                        val s = 1f - 0.04f * backProgress
+                        scaleX = s
+                        scaleY = s
+                        translationY = 48f * backProgress
+                    }
+                }.focusRequester(rootFocusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown) {
+                        lastActivityTick++
+                        if (event.key == Key.Escape) {
+                            if (showQueue) {
+                                showQueue = false
+                            } else {
+                                onCollapse()
+                            }
+                            return@onPreviewKeyEvent true
+                        }
+                    }
+                    false
+                }.idleCursorHidden(isDesktop && !controlsVisible)
+                .pointerInput(isDesktop) {
+                    if (!isDesktop) return@pointerInput
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            if (
+                                event.type == PointerEventType.Move ||
+                                event.type == PointerEventType.Press ||
+                                event.type == PointerEventType.Enter
+                            ) {
+                                lastActivityTick++
+                            }
+                        }
+                    }
                 },
     ) {
         NowPlayingBackground(
@@ -309,6 +436,7 @@ fun NowPlayingScreen(
             blurIntensity = blurIntensity,
             backdropScrim = backdropScrim,
             accentColor = activeAccent,
+            extraDarkScrimAlpha = FULLSCREEN_DARK_SCRIM_ALPHA,
         )
 
         Column(
@@ -319,112 +447,70 @@ fun NowPlayingScreen(
                     .navigationBarsPadding(),
             verticalArrangement = Arrangement.Top,
         ) {
-            titleBar()
+            if (!isDesktop || controlsVisible) {
+                titleBar()
+            }
 
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = if (platform.type == PlatformType.DESKTOP) 24.dp else 16.dp,
-                            vertical = 8.dp,
-                        ),
-            ) {
-                NowPlayingTopBar(
-                    onCollapse = onCollapse,
-                    onMoreClick =
-                        effectiveState.currentTrack?.let { currentTrack ->
-                            { anchor -> onOpenContextMenu(currentTrack, false, anchor) }
-                        },
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                if (platform.type == PlatformType.DESKTOP) {
-                    NowPlayingDesktopLayout(
-                        modifier = Modifier.weight(1f),
+            NowPlayingFullscreenContent(
+                state = effectiveState,
+                positionMs = effectiveState.progressMs,
+                progressFlow = viewModel.progressState,
+                volume = volume,
+                activeAccent = activeAccent,
+                sizeClass = sizeClass,
+                isDesktop = isDesktop,
+                reducedMotion = reducedMotion,
+                showLyrics = showLyrics,
+                showQueue = showQueue,
+                controlsVisible = controlsVisible,
+                actions = actions,
+                queueSidePanelContent = {
+                    NowPlayingQueueSection(
                         state = effectiveState,
                         activeAccent = activeAccent,
-                        selectedSection = selectedSection,
-                        onSelectSection = { selectedSection = it },
-                        artistDetails = artistDetails,
                         onMoreClick = onMoreClick,
                         onOpenContextMenu = onOpenContextMenu,
                         onSwipeQueueItem = onSwipeQueueItem,
                         onSwipeSuggestionItem = onSwipeSuggestionItem,
                         onPlayNextSuggestionItem = { track ->
-                            interaction.showPlayNextSnackbar(
-                                track,
-                                activeAccent,
-                            )
+                            interaction.showPlayNextSnackbar(track, activeAccent)
                         },
                         onSwipeRight = onSwipeRight,
-                        isLiked = isLiked,
-                        onToggleFavorite = viewModel::toggleFavorite,
-                        onArtistClick = { id ->
-                            onCollapse()
-                            onArtistClick(id)
-                        },
-                        onAlbumClick = { id ->
-                            onCollapse()
-                            onAlbumClick(id)
-                        },
-                        onPlaylistClick = { id ->
-                            onCollapse()
-                            onPlaylistClick(id)
-                        },
-                        viewModel = viewModel,
+                        isLiked = isTrackLiked,
                     )
-                } else {
-                    NowPlayingMobileLayout(
-                        state = effectiveState,
-                        activeAccent = activeAccent,
-                        showLyrics = showLyrics,
-                        onToggleLyrics = { showLyrics = !showLyrics },
-                        onToggleFavorite = viewModel::toggleFavorite,
-                        onArtistClick = {
-                            artistDetails?.id?.let { id ->
-                                onCollapse()
-                                onArtistClick(id)
-                            }
-                        },
-                        onOpenQueue = { expandedBottomSection = PanelSection.QUEUE },
-                        onStartRadio = { track -> queueViewModel.startRadio(track) },
-                        onOpenArtist = { expandedBottomSection = PanelSection.ARTIST },
-                        viewModel = viewModel,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+                },
+                modifier = Modifier.weight(1f),
+            )
         }
 
-        ExpandedSectionSheet(
-            section = expandedBottomSection,
-            state = state,
-            artistDetails = artistDetails,
-            activeAccent = activeAccent,
-            snackbarState = sheetSnackbarState,
-            onDismiss = { expandedBottomSection = null },
-            onArtistClick = { id ->
-                expandedBottomSection = null
-                onCollapse()
-                onArtistClick(id)
-            },
-            onAlbumClick = { id ->
-                expandedBottomSection = null
-                onCollapse()
-                onAlbumClick(id)
-            },
-            onPlaylistClick = { id ->
-                expandedBottomSection = null
-                onCollapse()
-                onPlaylistClick(id)
-            },
-            onMoreClick = onMoreClick,
-            onOpenContextMenu = onOpenContextMenu,
-            isLiked = isLiked,
-        )
+        if (!sizeClass.isExpandedOrMediumLandscape) {
+            ExpandedSectionSheet(
+                section = if (showQueue) PanelSection.QUEUE else null,
+                state = effectiveState,
+                artistDetails = artistDetails,
+                activeAccent = activeAccent,
+                snackbarState = sheetSnackbarState,
+                onDismiss = { showQueue = false },
+                onArtistClick = { id ->
+                    showQueue = false
+                    onCollapse()
+                    onArtistClick(id)
+                },
+                onAlbumClick = { id ->
+                    showQueue = false
+                    onCollapse()
+                    onAlbumClick(id)
+                },
+                onPlaylistClick = { id ->
+                    showQueue = false
+                    onCollapse()
+                    onPlaylistClick(id)
+                },
+                onMoreClick = onMoreClick,
+                onOpenContextMenu = onOpenContextMenu,
+                isLiked = isTrackLiked,
+            )
+        }
 
         val playlistTrack = interaction.addToPlaylistTrack
         if (playlistTrack != null) {
@@ -439,19 +525,13 @@ fun NowPlayingScreen(
                 onDismissRequest = interaction::dismissAddToPlaylist,
                 onSelectPlaylist = { playlist ->
                     libraryViewModel.addTrackToPlaylist(playlist.id, playlistTrack) {
-                        interaction.showAddedToPlaylistSnackbar(
-                            playlist.name,
-                            activeAccent,
-                        )
+                        interaction.showAddedToPlaylistSnackbar(playlist.name, activeAccent)
                     }
                 },
                 onCreatePlaylistAndAdd = { name ->
                     libraryViewModel.createPlaylist(name) { id ->
                         libraryViewModel.addTrackToPlaylist(id, playlistTrack) {
-                            interaction.showAddedToPlaylistSnackbar(
-                                name,
-                                activeAccent,
-                            )
+                            interaction.showAddedToPlaylistSnackbar(name, activeAccent)
                         }
                     }
                 },
