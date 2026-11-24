@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -34,7 +34,8 @@ import com.github.adriianh.melo.resources.player_sheet_queue_title
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
 
-private val QUEUE_PANEL_WIDTH = 460.dp
+private val QUEUE_PANEL_MIN_WIDTH = 420.dp
+private val QUEUE_PANEL_MAX_WIDTH = 520.dp
 private val QUEUE_PANEL_RADIUS = 24.dp
 
 @Composable
@@ -47,7 +48,8 @@ internal fun FullscreenQueueSidePanel(
     Column(
         modifier =
             modifier
-                .width(QUEUE_PANEL_WIDTH)
+                .widthIn(min = QUEUE_PANEL_MIN_WIDTH, max = QUEUE_PANEL_MAX_WIDTH)
+                .fillMaxWidth()
                 .fillMaxHeight()
                 .clip(shape)
                 .background(Color.Black.copy(alpha = 0.62f))

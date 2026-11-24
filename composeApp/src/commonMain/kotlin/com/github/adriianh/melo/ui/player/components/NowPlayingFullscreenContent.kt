@@ -3,11 +3,16 @@
 package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +54,8 @@ import com.github.adriianh.melo.util.PlayerUiState
 import kotlinx.coroutines.flow.StateFlow
 import org.jetbrains.compose.resources.stringResource
 
-private val EXPANDED_LEFT_COLUMN_MAX_WIDTH = 640.dp
+private val EXPANDED_CONTENT_MAX_WIDTH = 1280.dp
+private val EXPANDED_LEFT_COLUMN_MAX_WIDTH = 560.dp
 private val EXPANDED_CONTROLS_MAX_WIDTH = 420.dp
 private val EXPANDED_ARTWORK_SIZE = 340.dp
 private val CENTERED_ARTWORK_SIZE = 400.dp
@@ -206,111 +212,171 @@ private fun ExpandedNowPlayingLayout(
             modifier = Modifier.alpha(chromeAlpha),
         )
 
-        Row(
+        Box(
             modifier = Modifier.weight(1f).fillMaxWidth(),
-            horizontalArrangement =
-                if (showRightPane) Arrangement.spacedBy(32.dp) else Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
+            Row(
                 modifier =
                     Modifier
-                        .then(
-                            if (showRightPane) {
-                                Modifier.widthIn(max = EXPANDED_LEFT_COLUMN_MAX_WIDTH).weight(0.46f)
-                            } else {
-                                Modifier.widthIn(max = EXPANDED_LEFT_COLUMN_MAX_WIDTH)
-                            },
-                        ).fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                        .widthIn(max = EXPANDED_CONTENT_MAX_WIDTH)
+                        .fillMaxSize(),
+                horizontalArrangement =
+                    if (showRightPane) Arrangement.spacedBy(40.dp) else Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer { translationY = heroTranslationY },
+                            .then(
+                                if (showRightPane) {
+                                    Modifier.widthIn(max = EXPANDED_LEFT_COLUMN_MAX_WIDTH).weight(0.48f)
+                                } else {
+                                    Modifier.widthIn(max = EXPANDED_LEFT_COLUMN_MAX_WIDTH)
+                                },
+                            ).fillMaxHeight(),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    FullscreenArtworkCard(
-                        albumArt = state.albumArt,
-                        title = state.title,
-                        isBuffering = state.isBuffering,
-                        activeAccent = activeAccent,
-                        modifier = Modifier.size(artworkSize),
-                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer { translationY = heroTranslationY },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        FullscreenArtworkCard(
+                            albumArt = state.albumArt,
+                            title = state.title,
+                            isBuffering = state.isBuffering,
+                            activeAccent = activeAccent,
+                            modifier = Modifier.size(artworkSize),
+                        )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    FullscreenTrackTitleRow(
-                        title = state.title,
-                        artist = state.artist,
-                        isFavorite = state.isFavorite,
-                        activeAccent = activeAccent,
-                        onArtistClick = actions.onArtistClick,
-                        onToggleFavorite = actions.onToggleFavorite,
-                        modifier = Modifier.widthIn(max = EXPANDED_CONTROLS_MAX_WIDTH),
-                    )
-                }
-
-                ExpandedControlsBlock(
-                    state = state,
-                    progressFlow = progressFlow,
-                    volume = volume,
-                    activeAccent = activeAccent,
-                    hasLyrics = hasLyrics,
-                    showLyrics = showLyrics,
-                    showQueue = showQueue,
-                    chromeAlpha = chromeAlpha,
-                    actions = actions,
-                    onHeightChanged = { controlsBlockHeightPx = it },
-                )
-            }
-
-            if (showRightPane) {
-                Box(
-                    modifier =
-                        Modifier
-                            .weight(0.54f)
-                            .fillMaxHeight()
-                            .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.CenterEnd,
-                ) {
-                    AnimatedContent(
-                        targetState = showQueue,
-                        transitionSpec = {
-                            val duration = if (reducedMotion) 0 else 220
-                            fadeIn(tween(duration)) togetherWith fadeOut(tween(duration))
-                        },
-                        label = "ExpandedRightPaneTransition",
-                    ) { queueOpen ->
-                        if (queueOpen) {
-                            FullscreenQueueSidePanel(
-                                onClose = actions.onCloseQueue,
-                                queueContent = queueSidePanelContent,
-                            )
-                        } else {
-                            FullscreenLyricsPane(
-                                trackLyrics = state.trackLyrics,
-                                positionMs = positionMs,
-                                progressFlow = progressFlow,
-                                isLoading = state.isLyricsLoading,
-                                showTranslation = state.showTranslation,
-                                isTranslating = state.isTranslating,
-                                targetLanguage = state.targetLanguage,
-                                activeAccent = activeAccent,
-                                onSeekTo = actions.onSeekTo,
-                                onToggleTranslation = actions.onToggleTranslation,
-                                onSelectLanguage = actions.onSelectLanguage,
-                                style = FullscreenLyricsStyle.Expanded,
-                                showControlsOnHoverOnly = isDesktop,
-                                isIdleHidden = isIdleHidden,
-                                reducedMotion = reducedMotion,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                        FullscreenTrackTitleRow(
+                            title = state.title,
+                            artist = state.artist,
+                            isFavorite = state.isFavorite,
+                            activeAccent = activeAccent,
+                            onArtistClick = actions.onArtistClick,
+                            onToggleFavorite = actions.onToggleFavorite,
+                            modifier = Modifier.widthIn(max = EXPANDED_CONTROLS_MAX_WIDTH),
+                        )
                     }
+
+                    ExpandedControlsBlock(
+                        state = state,
+                        progressFlow = progressFlow,
+                        volume = volume,
+                        activeAccent = activeAccent,
+                        hasLyrics = hasLyrics,
+                        showLyrics = showLyrics,
+                        showQueue = showQueue,
+                        chromeAlpha = chromeAlpha,
+                        actions = actions,
+                        onHeightChanged = { controlsBlockHeightPx = it },
+                    )
                 }
+
+                if (showRightPane) {
+                    ExpandedRightPane(
+                        state = state,
+                        positionMs = positionMs,
+                        progressFlow = progressFlow,
+                        activeAccent = activeAccent,
+                        isDesktop = isDesktop,
+                        isIdleHidden = isIdleHidden,
+                        reducedMotion = reducedMotion,
+                        showQueue = showQueue,
+                        actions = actions,
+                        queueSidePanelContent = queueSidePanelContent,
+                        modifier =
+                            Modifier
+                                .weight(0.52f)
+                                .fillMaxHeight()
+                                .padding(vertical = 8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpandedRightPane(
+    state: PlayerUiState,
+    positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
+    activeAccent: Color,
+    isDesktop: Boolean,
+    isIdleHidden: Boolean,
+    reducedMotion: Boolean,
+    showQueue: Boolean,
+    actions: FullscreenPlayerActions,
+    queueSidePanelContent: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        AnimatedContent(
+            targetState = showQueue,
+            transitionSpec = {
+                val enterMs = if (reducedMotion) 0 else 320
+                val exitMs = if (reducedMotion) 0 else 240
+                val enterSpec = tween<Float>(enterMs, easing = FastOutSlowInEasing)
+                val exitSpec = tween<Float>(exitMs, easing = FastOutSlowInEasing)
+                val transition =
+                    if (targetState) {
+                        val enter =
+                            fadeIn(enterSpec) +
+                                slideInHorizontally(tween(enterMs, easing = FastOutSlowInEasing)) { it / 4 } +
+                                scaleIn(enterSpec, initialScale = 0.96f)
+                        val exit =
+                            fadeOut(exitSpec) +
+                                slideOutHorizontally(tween(exitMs, easing = FastOutSlowInEasing)) { -it / 6 }
+                        enter togetherWith exit
+                    } else {
+                        val enter =
+                            fadeIn(enterSpec) +
+                                slideInHorizontally(tween(enterMs, easing = FastOutSlowInEasing)) { -it / 6 }
+                        val exit =
+                            fadeOut(exitSpec) +
+                                slideOutHorizontally(tween(exitMs, easing = FastOutSlowInEasing)) { it / 4 } +
+                                scaleOut(exitSpec, targetScale = 0.96f)
+                        enter togetherWith exit
+                    }
+                transition using SizeTransform(clip = false)
+            },
+            label = "ExpandedRightPaneTransition",
+        ) { queueOpen ->
+            if (queueOpen) {
+                FullscreenQueueSidePanel(
+                    onClose = actions.onCloseQueue,
+                    queueContent = queueSidePanelContent,
+                )
+            } else {
+                FullscreenLyricsPane(
+                    trackLyrics = state.trackLyrics,
+                    positionMs = positionMs,
+                    progressFlow = progressFlow,
+                    isLoading = state.isLyricsLoading,
+                    showTranslation = state.showTranslation,
+                    isTranslating = state.isTranslating,
+                    targetLanguage = state.targetLanguage,
+                    activeAccent = activeAccent,
+                    onSeekTo = actions.onSeekTo,
+                    onToggleTranslation = actions.onToggleTranslation,
+                    onSelectLanguage = actions.onSelectLanguage,
+                    style = FullscreenLyricsStyle.Expanded,
+                    showControlsOnHoverOnly = isDesktop,
+                    isIdleHidden = isIdleHidden,
+                    reducedMotion = reducedMotion,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }
