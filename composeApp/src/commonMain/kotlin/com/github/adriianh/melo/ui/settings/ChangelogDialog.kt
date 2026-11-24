@@ -6,7 +6,9 @@
 
 package com.github.adriianh.melo.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +40,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ChangelogItem
 import com.github.adriianh.core.domain.model.update.ChangelogSection
@@ -65,6 +68,28 @@ fun ChangelogDialog(
     onDismiss: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+
+    Dialog(onDismissRequest = onDismiss) {
+        ChangelogDialogCard(
+            release = release,
+            isInstalledVersion = isInstalledVersion,
+            onOpenGitHub = {
+                if (release.htmlUrl.isNotBlank()) {
+                    uriHandler.openUri(release.htmlUrl)
+                }
+            },
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+@Composable
+internal fun ChangelogDialogCard(
+    release: AppRelease,
+    isInstalledVersion: Boolean = false,
+    onOpenGitHub: () -> Unit = {},
+    onDismiss: () -> Unit = {},
+) {
     val changelog = remember(release.releaseNotes) { ReleaseChangelogParser.parse(release.releaseNotes) }
     val scrollState = rememberScrollState()
     val isNightly = release.channel == UpdateChannel.NIGHTLY
@@ -76,11 +101,17 @@ fun ChangelogDialog(
             stringResource(Res.string.update_changelog_title)
         }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MeloColors.surface1,
+    Surface(
         shape = RoundedCornerShape(18.dp),
-        title = {
+        color = MeloColors.surface1,
+        border = BorderStroke(1.dp, MeloColors.border),
+        tonalElevation = 6.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -122,8 +153,7 @@ fun ChangelogDialog(
                     )
                 }
             }
-        },
-        text = {
+
             Column(
                 modifier =
                     Modifier
@@ -147,11 +177,14 @@ fun ChangelogDialog(
                     }
                 }
             }
-        },
-        dismissButton =
-            if (release.htmlUrl.isNotBlank()) {
-                {
-                    TextButton(onClick = { uriHandler.openUri(release.htmlUrl) }) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (release.htmlUrl.isNotBlank()) {
+                    TextButton(onClick = onOpenGitHub) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                             contentDescription = null,
@@ -163,24 +196,24 @@ fun ChangelogDialog(
                         )
                     }
                 }
-            } else {
-                null
-            },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text(
-                    text =
-                        stringResource(
-                            if (isInstalledVersion) {
-                                Res.string.common_action_got_it
-                            } else {
-                                Res.string.common_action_close
-                            },
-                        ),
-                )
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (isInstalledVersion) {
+                                    Res.string.common_action_got_it
+                                } else {
+                                    Res.string.common_action_close
+                                },
+                            ),
+                    )
+                }
             }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -303,3 +336,103 @@ private fun buildChangelogAnnotatedString(
             }
         }
     }
+
+@Preview(widthDp = 380)
+@Composable
+private fun PreviewChangelogDialogNightly() {
+    val sampleNotes =
+        """
+        ## Build information
+        | **Version** | `2.5.0-nightly.20261123.0100` |
+
+        > [!WARNING]
+        > Automated development build.
+
+        ## Changes since the last nightly
+        - [`a1b2c3d`](https://github.com/Adriianh/Melo/commit/a1b2c3d) feat(player): soporte para reproducción sin pausas
+        - fix(ui): corrige superposición en el mini reproductor
+
+        ## Changes since the last stable release (`v2.5.0`)
+        - feat(update): nuevo diálogo de novedades con parser propio
+        - perf(cache): mejora carga inicial de portadas `LRU`
+
+        ### CLI (TUI)
+        ```bash
+        curl -fsSL https://example.com/install.sh | bash
+        ```
+        """.trimIndent()
+
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            ChangelogDialogCard(
+                release =
+                    AppRelease(
+                        version = "2.5.0-nightly.20261123.0100",
+                        tagName = "nightly",
+                        name = "Melo Nightly",
+                        releaseNotes = sampleNotes,
+                        htmlUrl = "https://github.com/Adriianh/Melo/releases/tag/nightly",
+                        publishedAt = "2026-11-23T01:00:00Z",
+                        assets = emptyList(),
+                        channel = UpdateChannel.NIGHTLY,
+                    ),
+                isInstalledVersion = false,
+            )
+        }
+    }
+}
+
+@Preview(widthDp = 380)
+@Composable
+private fun PreviewChangelogDialogStableInstalled() {
+    val sampleNotes =
+        """
+        ## What's Changed
+        * feat(library): sincronización de playlists offline by @Adriianh in https://github.com/Adriianh/Melo/pull/42
+        * Soporte para etiquetas `FLAC` en biblioteca local by @Adriianh in https://github.com/Adriianh/Melo/pull/43
+
+        **Full Changelog**: https://github.com/Adriianh/Melo/compare/v2.4.0...v2.5.0
+        """.trimIndent()
+
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            ChangelogDialogCard(
+                release =
+                    AppRelease(
+                        version = "2.5.0",
+                        tagName = "v2.5.0",
+                        name = "Melo 2.5.0",
+                        releaseNotes = sampleNotes,
+                        htmlUrl = "https://github.com/Adriianh/Melo/releases/tag/v2.5.0",
+                        publishedAt = "2026-11-20T12:00:00Z",
+                        assets = emptyList(),
+                        channel = UpdateChannel.STABLE,
+                    ),
+                isInstalledVersion = true,
+            )
+        }
+    }
+}
+
+@Preview(widthDp = 380)
+@Composable
+private fun PreviewChangelogDialogEmpty() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            ChangelogDialogCard(
+                release =
+                    AppRelease(
+                        version = "2.5.0",
+                        tagName = "v2.5.0",
+                        name = "Melo 2.5.0",
+                        releaseNotes = "",
+                        htmlUrl = "https://github.com/Adriianh/Melo/releases/tag/v2.5.0",
+                        publishedAt = "2026-11-20T12:00:00Z",
+                        assets = emptyList(),
+                        channel = UpdateChannel.STABLE,
+                    ),
+                isInstalledVersion = true,
+            )
+        }
+    }
+}
