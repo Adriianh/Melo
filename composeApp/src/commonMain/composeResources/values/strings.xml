@@ -143,6 +143,9 @@
     <string name="track_menu_download">Descargar canción</string>
     <string name="track_menu_add_to_playlist">Añadir a playlist...</string>
     <string name="track_menu_remove_from_playlist">Quitar de esta playlist</string>
+    <string name="track_menu_remove_from_library">Quitar de la biblioteca</string>
+    <string name="track_menu_playlist_search_placeholder">Buscar playlist...</string>
+    <string name="track_menu_new_playlist">Nueva playlist...</string>
     <string name="track_menu_go_to_artist">Ir al artista</string>
     <string name="track_menu_go_to_album">Ir al álbum</string>
 
