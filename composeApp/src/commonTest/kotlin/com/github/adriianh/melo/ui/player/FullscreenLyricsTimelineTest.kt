@@ -1,8 +1,11 @@
 package com.github.adriianh.melo.ui.player
 
+import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.melo.ui.player.components.FullscreenLyricEntry
 import com.github.adriianh.melo.ui.player.components.buildFullscreenLyricEntries
+import com.github.adriianh.melo.ui.player.components.lyricAlphaForDistance
+import com.github.adriianh.melo.ui.player.components.lyricBlurForDistance
 import com.github.adriianh.melo.ui.player.components.resolveActiveFullscreenEntryIndex
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -104,5 +107,21 @@ class FullscreenLyricsTimelineTest {
         assertEquals(2, entries.size)
         assertIs<FullscreenLyricEntry.LyricLine>(entries[0])
         assertIs<FullscreenLyricEntry.LyricLine>(entries[1])
+    }
+
+    @Test
+    fun `alpha and blur follow progressive distance falloff`() {
+        assertEquals(1.0f, lyricAlphaForDistance(0))
+        assertEquals(0.55f, lyricAlphaForDistance(1))
+        assertEquals(0.40f, lyricAlphaForDistance(2))
+        assertEquals(0.30f, lyricAlphaForDistance(3))
+        assertEquals(0.20f, lyricAlphaForDistance(4))
+        assertEquals(0.20f, lyricAlphaForDistance(8))
+
+        assertEquals(0.dp, lyricBlurForDistance(0))
+        assertEquals(0.8.dp, lyricBlurForDistance(1))
+        assertEquals(1.4.dp, lyricBlurForDistance(2))
+        assertEquals(2.0.dp, lyricBlurForDistance(3))
+        assertEquals(2.0.dp, lyricBlurForDistance(6))
     }
 }

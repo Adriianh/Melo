@@ -1,6 +1,9 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.SyncedLine
+import com.github.adriianh.core.domain.model.TrackLyrics
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
 private const val VIRTUAL_GAP_LEAD_IN_MS = 2_500L
@@ -101,3 +104,22 @@ internal fun resolveActiveFullscreenEntryIndex(
     }
     return active
 }
+
+internal fun TrackLyrics?.hasDisplayableLyrics(): Boolean = this != null && (hasSync || !plainLyrics.isNullOrBlank())
+
+internal fun lyricAlphaForDistance(distance: Int): Float =
+    when (distance) {
+        0 -> 1.0f
+        1 -> 0.55f
+        2 -> 0.40f
+        3 -> 0.30f
+        else -> 0.20f
+    }
+
+internal fun lyricBlurForDistance(distance: Int): Dp =
+    when (distance) {
+        0 -> 0.dp
+        1 -> 0.8.dp
+        2 -> 1.4.dp
+        else -> 2.0.dp
+    }

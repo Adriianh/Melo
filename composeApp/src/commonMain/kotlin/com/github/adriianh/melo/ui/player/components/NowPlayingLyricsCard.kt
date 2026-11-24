@@ -1,6 +1,7 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,16 +17,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -46,9 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.melo.resources.Res
-import com.github.adriianh.melo.resources.a11y_change_language
 import com.github.adriianh.melo.resources.a11y_close_lyrics
-import com.github.adriianh.melo.resources.a11y_translate
 import com.github.adriianh.melo.resources.player_lyrics_loading
 import com.github.adriianh.melo.resources.player_lyrics_tap_to_return
 import com.github.adriianh.melo.resources.player_lyrics_title
@@ -363,7 +357,7 @@ private fun LyricsHeaderActions(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        TranslationButton(
+        LyricsTranslationChip(
             showLanguageMenu = showLanguageMenu,
             onShowLanguageMenuChange = onShowLanguageMenuChange,
             showTranslation = showTranslation,
@@ -374,17 +368,9 @@ private fun LyricsHeaderActions(
             onSelectLanguage = onSelectLanguage,
         )
 
-        IconButton(
+        LyricsLanguagePickerButton(
             onClick = { onShowLanguageMenuChange(true) },
-            modifier = Modifier.size(28.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Language,
-                contentDescription = stringResource(Res.string.a11y_change_language),
-                tint = MeloColors.textMuted,
-                modifier = Modifier.size(15.dp),
-            )
-        }
+        )
 
         if (onToggleArtwork != null) {
             IconButton(
@@ -398,115 +384,6 @@ private fun LyricsHeaderActions(
                     modifier = Modifier.size(16.dp),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun TranslationButton(
-    showLanguageMenu: Boolean,
-    onShowLanguageMenuChange: (Boolean) -> Unit,
-    showTranslation: Boolean,
-    isTranslating: Boolean,
-    targetLanguage: String,
-    activeAccent: Color,
-    onToggleTranslation: () -> Unit,
-    onSelectLanguage: (String) -> Unit,
-) {
-    Box {
-        val buttonBg by animateColorAsState(
-            targetValue = if (showTranslation) activeAccent.copy(alpha = 0.22f) else MeloColors.chromePillFill,
-            label = "TranslationBgAnim",
-        )
-        val iconTint by animateColorAsState(
-            targetValue = if (showTranslation) activeAccent else MeloColors.textMuted,
-            label = "TranslationTintAnim",
-        )
-
-        Row(
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .background(buttonBg)
-                    .border(
-                        width = 1.dp,
-                        color = if (showTranslation) activeAccent.copy(alpha = 0.4f) else MeloColors.chromePillBorder,
-                        shape = CircleShape,
-                    ).clickable { onToggleTranslation() }
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (isTranslating) {
-                CircularProgressIndicator(
-                    strokeWidth = 1.5.dp,
-                    color = activeAccent,
-                    modifier = Modifier.size(14.dp),
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Translate,
-                    contentDescription = stringResource(Res.string.a11y_translate),
-                    tint = iconTint,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = targetLanguage.uppercase(),
-                style = MeloType.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
-                color = iconTint,
-            )
-        }
-
-        LanguageMenu(
-            expanded = showLanguageMenu,
-            onDismiss = { onShowLanguageMenuChange(false) },
-            targetLanguage = targetLanguage,
-            activeAccent = activeAccent,
-            onSelectLanguage = { code ->
-                onSelectLanguage(code)
-                onShowLanguageMenuChange(false)
-            },
-            modifier = Modifier.background(MeloColors.surface1),
-        )
-    }
-}
-
-@Composable
-private fun LanguageMenu(
-    expanded: Boolean,
-    onDismiss: () -> Unit,
-    targetLanguage: String,
-    activeAccent: Color,
-    onSelectLanguage: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss,
-        modifier = modifier,
-    ) {
-        val languages =
-            listOf(
-                "es" to "Español",
-                "en" to "English",
-                "pt" to "Português",
-                "fr" to "Français",
-                "de" to "Deutsch",
-                "it" to "Italiano",
-                "ja" to "日本語",
-            )
-        languages.forEach { (code, label) ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = "$label (${code.uppercase()})",
-                        style = MeloType.body,
-                        color = if (targetLanguage == code) activeAccent else MeloColors.textPrimary,
-                    )
-                },
-                onClick = { onSelectLanguage(code) },
-            )
         }
     }
 }
