@@ -15,6 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_playback_progress
 import com.github.adriianh.melo.ui.components.controls.MeloSlider
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloColors
@@ -23,6 +25,7 @@ import com.github.adriianh.melo.util.PlayerProgressState
 import com.github.adriianh.melo.util.PlayerUiState
 import com.github.adriianh.melo.util.formatTime
 import kotlinx.coroutines.flow.StateFlow
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 private fun rememberLiveProgress(
@@ -54,6 +57,8 @@ fun PlayerSlider(
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
     progressState: StateFlow<PlayerProgressState>? = null,
+    timeLabelColor: Color = MeloColors.textMuted,
+    inactiveTrackColor: Color = MeloColors.borderStrong,
 ) {
     val progress = rememberLiveProgress(state = state, progressState = progressState)
     val durationMs = progress.durationMs
@@ -61,6 +66,9 @@ fun PlayerSlider(
     var seekFraction by remember { mutableStateOf(0f) }
 
     val displayFraction = if (isSeeking) seekFraction else progress.progressFraction
+    val (elapsedText, remainingText) = resolveSliderLabels(isSeeking, seekFraction, durationMs, progress)
+    val totalText = if (durationMs > 0) formatTime(durationMs) else progress.remainingLabel
+    val a11yProgressLabel = stringResource(Res.string.a11y_playback_progress)
 
     Column(modifier = modifier.fillMaxWidth()) {
         MeloSlider(
@@ -76,11 +84,14 @@ fun PlayerSlider(
                 isSeeking = false
             },
             activeColor = activeAccent,
-            inactiveColor = MeloColors.borderStrong,
+            inactiveColor = inactiveTrackColor,
             thumbColor = Color.White,
             trackHeight = 4.dp,
             hoverTrackHeight = 6.dp,
             thumbRadius = 6.dp,
+            hitTargetHeight = 28.dp,
+            a11yLabel = a11yProgressLabel,
+            a11yValueDescription = "$elapsedText / $totalText",
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -89,25 +100,29 @@ fun PlayerSlider(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text =
-                    if (isSeeking && durationMs > 0) {
-                        formatTime((seekFraction * durationMs).toLong())
-                    } else {
-                        progress.elapsedLabel
-                    },
+                text = elapsedText,
                 style = MeloType.labelSmall,
-                color = MeloColors.textMuted,
+                color = timeLabelColor,
             )
             Text(
-                text =
-                    if (isSeeking && durationMs > 0) {
-                        formatTime(((1f - seekFraction) * durationMs).toLong().coerceAtLeast(0L))
-                    } else {
-                        progress.remainingLabel
-                    },
+                text = remainingText,
                 style = MeloType.labelSmall,
-                color = MeloColors.textMuted,
+                color = timeLabelColor,
             )
         }
     }
 }
+
+private fun resolveSliderLabels(
+    isSeeking: Boolean,
+    seekFraction: Float,
+    durationMs: Long,
+    progress: PlayerProgressState,
+): Pair<String, String> =
+    if (isSeeking && durationMs > 0) {
+        val elapsed = formatTime((seekFraction * durationMs).toLong())
+        val remaining = formatTime(((1f - seekFraction) * durationMs).toLong().coerceAtLeast(0L))
+        elapsed to remaining
+    } else {
+        progress.elapsedLabel to progress.remainingLabel
+    }

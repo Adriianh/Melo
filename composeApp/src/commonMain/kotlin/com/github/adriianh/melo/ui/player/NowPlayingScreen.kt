@@ -332,7 +332,6 @@ fun NowPlayingScreen(
                         ),
             ) {
                 NowPlayingTopBar(
-                    title = effectiveState.title,
                     onCollapse = onCollapse,
                     onMoreClick =
                         effectiveState.currentTrack?.let { currentTrack ->
