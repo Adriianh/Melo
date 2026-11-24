@@ -28,10 +28,10 @@ permissions:
   contents: write
 
 concurrency:
-  # Serialize publishes so concurrent runs never race updating the same
-  # release/tag (nightly on master, official on v*).
-  group: release
-  cancel-in-progress: false
+  # Serialize nightly builds on master (cancelling superseded runs) while
+  # keeping each official v* tag release isolated and non-cancellable.
+  group: ${{ startsWith(github.ref, 'refs/tags/') && format('release-{0}', github.ref) || 'release-nightly' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   # ─── Resolve build version ────────────────────────────────────────────────

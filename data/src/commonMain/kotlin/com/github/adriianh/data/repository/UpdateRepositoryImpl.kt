@@ -28,12 +28,27 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 object NightlyVersionComparator {
+    private fun extractNumericBaseParts(version: String): List<Int> {
+        val beforeNightly =
+            if (version.contains("nightly", ignoreCase = true)) {
+                val idx = version.indexOf("nightly", ignoreCase = true)
+                version.substring(0, idx)
+            } else {
+                version
+            }
+        return beforeNightly
+            .substringBefore('-')
+            .trimEnd('.', '-', '_')
+            .split('.')
+            .mapNotNull { it.toIntOrNull() }
+    }
+
     fun compareNumericBase(
         v1: String,
         v2: String,
     ): Int {
-        val p1 = v1.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
-        val p2 = v2.substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
+        val p1 = extractNumericBaseParts(v1)
+        val p2 = extractNumericBaseParts(v2)
         val maxLen = maxOf(p1.size, p2.size)
         var result = 0
         for (i in 0 until maxLen) {
@@ -77,7 +92,15 @@ object NightlyVersionComparator {
             return true
         }
 
-        val baseCmp = compareNumericBase(remoteVersion, currentVersion)
+        val hasComparableBase =
+            extractNumericBaseParts(remoteVersion).isNotEmpty() &&
+                extractNumericBaseParts(currentVersion).isNotEmpty()
+        val baseCmp =
+            if (hasComparableBase) {
+                compareNumericBase(remoteVersion, currentVersion)
+            } else {
+                0
+            }
         return when {
             baseCmp > 0 -> true
             baseCmp < 0 -> false
@@ -99,7 +122,15 @@ object NightlyVersionComparator {
         remoteVersion: String,
         currentVersion: String,
     ): Boolean {
-        val baseCmp = compareNumericBase(remoteVersion, currentVersion)
+        val hasComparableBase =
+            extractNumericBaseParts(remoteVersion).isNotEmpty() &&
+                extractNumericBaseParts(currentVersion).isNotEmpty()
+        val baseCmp =
+            if (hasComparableBase) {
+                compareNumericBase(remoteVersion, currentVersion)
+            } else {
+                0
+            }
         return when {
             baseCmp > 0 -> true
             baseCmp < 0 -> false
@@ -259,6 +290,9 @@ class UpdateRepositoryImpl(
         private const val SOCKET_TIMEOUT_MS = 60_000L
         private const val CONNECT_TIMEOUT_MS = 30_000L
 
+        private val NIGHTLY_BODY_VERSION_REGEX =
+            Regex("""(?:\|\s*\*\*Version\*\*\s*\|\s*|Version:\s*)`?([0-9a-zA-Z._-]+)`?""")
+
         private fun resolveRemoteVersion(
             dto: GitHubReleaseDto,
             channel: UpdateChannel,
@@ -269,7 +303,7 @@ class UpdateRepositoryImpl(
                     .removePrefix("v")
                     .removePrefix("V")
             }
-            val match = Regex("""Version:\s*`?([0-9a-zA-Z._-]+)`?""").find(dto.body.orEmpty())
+            val match = NIGHTLY_BODY_VERSION_REGEX.find(dto.body.orEmpty())
             val fromBody = match?.groupValues?.get(1)?.trim()
             val dateStr =
                 dto.publishedAt
