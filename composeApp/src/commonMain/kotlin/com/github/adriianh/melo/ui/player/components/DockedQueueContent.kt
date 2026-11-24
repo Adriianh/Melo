@@ -48,8 +48,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
-import com.github.adriianh.melo.util.PlatformType
-import com.github.adriianh.melo.util.getPlatform
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_refresh_suggestions
 import com.github.adriianh.melo.resources.a11y_remove_from_queue
@@ -68,7 +66,9 @@ import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
+import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.PlayerUiState
+import com.github.adriianh.melo.util.getPlatform
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 

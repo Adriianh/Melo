@@ -147,42 +147,76 @@ internal fun PlaylistFlyoutContent(
                 .width(FLYOUT_WIDTH)
                 .heightIn(max = FLYOUT_MAX_HEIGHT)
                 .hoverable(hoverSource)
-                .onPreviewKeyEvent { event ->
-                    handleFlyoutKeyEvent(event, !isCreatingNew && searchQuery.isEmpty(), onDismissSubmenu)
+                .onPreviewKeyEvent {
+                    handleFlyoutKeyEvent(it, !isCreatingNew && searchQuery.isEmpty(), onDismissSubmenu)
                 },
         shape = RoundedCornerShape(12.dp),
         color = MeloColors.menuPopupSurface,
         border = BorderStroke(1.dp, MeloColors.menuPopupBorder),
         shadowElevation = 12.dp,
     ) {
-        Column(modifier = Modifier.padding(vertical = 6.dp)) {
-            PlaylistFlyoutHeader(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                searchFocusRequester = searchFocusRequester,
-                isCreatingNew = isCreatingNew,
-                onStartCreate = { isCreatingNew = true },
-                newPlaylistName = newPlaylistName,
-                onNewPlaylistNameChange = { newPlaylistName = it },
-                newNameFocusRequester = newNameFocusRequester,
-                onConfirmCreate = {
-                    newPlaylistName.trim().takeIf { it.isNotEmpty() }?.let {
-                        content.onCreatePlaylistAndAdd(it)
-                        onDismissAll()
-                    }
-                },
-                onCancelCreate = {
-                    isCreatingNew = false
-                    newPlaylistName = ""
-                },
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MeloColors.menuDivider)
-            PlaylistFlyoutList(
-                playlists = filteredPlaylists,
-                containingPlaylistIds = content.containingPlaylistIds,
-                onSelectPlaylist = { content.onSelectPlaylist(it); onDismissAll() },
-            )
-        }
+        PlaylistFlyoutBody(
+            content = content,
+            filteredPlaylists = filteredPlaylists,
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            searchFocusRequester = searchFocusRequester,
+            isCreatingNew = isCreatingNew,
+            onStartCreate = { isCreatingNew = true },
+            newPlaylistName = newPlaylistName,
+            onNewPlaylistNameChange = { newPlaylistName = it },
+            newNameFocusRequester = newNameFocusRequester,
+            onCancelCreate = {
+                isCreatingNew = false
+                newPlaylistName = ""
+            },
+            onDismissAll = onDismissAll,
+        )
+    }
+}
+
+@Composable
+private fun PlaylistFlyoutBody(
+    content: PlaylistSubmenuContent,
+    filteredPlaylists: List<Playlist>,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    searchFocusRequester: FocusRequester,
+    isCreatingNew: Boolean,
+    onStartCreate: () -> Unit,
+    newPlaylistName: String,
+    onNewPlaylistNameChange: (String) -> Unit,
+    newNameFocusRequester: FocusRequester,
+    onCancelCreate: () -> Unit,
+    onDismissAll: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+        PlaylistFlyoutHeader(
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange,
+            searchFocusRequester = searchFocusRequester,
+            isCreatingNew = isCreatingNew,
+            onStartCreate = onStartCreate,
+            newPlaylistName = newPlaylistName,
+            onNewPlaylistNameChange = onNewPlaylistNameChange,
+            newNameFocusRequester = newNameFocusRequester,
+            onConfirmCreate = {
+                newPlaylistName.trim().takeIf { it.isNotEmpty() }?.let {
+                    content.onCreatePlaylistAndAdd(it)
+                    onDismissAll()
+                }
+            },
+            onCancelCreate = onCancelCreate,
+        )
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MeloColors.menuDivider)
+        PlaylistFlyoutList(
+            playlists = filteredPlaylists,
+            containingPlaylistIds = content.containingPlaylistIds,
+            onSelectPlaylist = {
+                content.onSelectPlaylist(it)
+                onDismissAll()
+            },
+        )
     }
 }
 

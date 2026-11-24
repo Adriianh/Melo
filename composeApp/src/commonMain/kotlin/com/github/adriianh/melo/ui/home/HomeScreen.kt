@@ -89,7 +89,8 @@ fun HomeScreen(
     val entityActionScope = rememberCoroutineScope()
     var contextMenuEntity by remember { mutableStateOf<Pair<SearchResult, SongMenuAnchor?>?>(null) }
 
-    val isLibraryNeeded = interaction.contextMenuTrack != null ||
+    val isLibraryNeeded =
+        interaction.contextMenuTrack != null ||
             contextMenuEntity != null ||
             !interaction.addToPlaylistTracks.isNullOrEmpty() ||
             uiState.searchQuery.isNotBlank()
@@ -154,107 +155,124 @@ fun HomeScreen(
     )
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier =
+            modifier
+                .fillMaxSize(),
     ) {
         MeloSearchBar(
             query = uiState.searchQuery,
             onQueryChange = viewModel::onSearchQueryChange,
             onClear = viewModel::clearSearch,
             onOpenSettings = onOpenSettings,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            val feedState = when {
-                uiState.searchQuery.isNotBlank() -> HomeFeedState.Search
-                uiState.isLoading -> HomeFeedState.Loading
-                uiState.error != null -> HomeFeedState.Error
-                else -> HomeFeedState.Content
-            }
+            val feedState =
+                when {
+                    uiState.searchQuery.isNotBlank() -> HomeFeedState.Search
+                    uiState.isLoading -> HomeFeedState.Loading
+                    uiState.error != null -> HomeFeedState.Error
+                    else -> HomeFeedState.Content
+                }
 
             val feedContent: @Composable () -> Unit = {
                 AnimatedContent(
                     targetState = feedState,
                     transitionSpec = {
-                        val isLoadingToContent = initialState == HomeFeedState.Loading &&
-                            targetState == HomeFeedState.Content
+                        val isLoadingToContent =
+                            initialState == HomeFeedState.Loading &&
+                                targetState == HomeFeedState.Content
                         if (isLoadingToContent) {
-                            (fadeIn(animationSpec = tween(220)) togetherWith fadeOut(
-                                animationSpec = tween(
-                                    220
-                                )
-                            ))
+                            (
+                                fadeIn(animationSpec = tween(220)) togetherWith
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                220,
+                                            ),
+                                    )
+                            )
                         } else {
-                            (fadeIn(animationSpec = tween(150)) togetherWith fadeOut(
-                                animationSpec = tween(
-                                    150
-                                )
-                            ))
+                            (
+                                fadeIn(animationSpec = tween(150)) togetherWith
+                                    fadeOut(
+                                        animationSpec =
+                                            tween(
+                                                150,
+                                            ),
+                                    )
+                            )
                         }
                     },
-                    label = "HomeFeedState"
+                    label = "HomeFeedState",
                 ) { state ->
                     when (state) {
-                        HomeFeedState.Search -> HomeSearchResultsView(
-                            activeAccent = activeAccent,
-                            isSearching = uiState.isSearching,
-                            results = uiState.searchResults,
-                            likedSongs = libraryState.likedSongs,
-                            queueViewModel = queueViewModel,
-                            onMoreClick = { interaction.openContextMenu(it) },
-                            interaction = interaction,
-                            paddingValues = paddingValues,
-                            isSelectionMode = isSelectionMode,
-                            selectedTrackIds = selectedTrackIds,
-                            onToggleSelectTrack = { track ->
-                                selectedTrackIds =
-                                    if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
-                            },
-                            onTrackLongClick = { track ->
-                                if (!isSelectionMode) selectedTrackIds = setOf(track.id)
-                            }
-                        )
+                        HomeFeedState.Search ->
+                            HomeSearchResultsView(
+                                activeAccent = activeAccent,
+                                isSearching = uiState.isSearching,
+                                results = uiState.searchResults,
+                                likedSongs = libraryState.likedSongs,
+                                queueViewModel = queueViewModel,
+                                onMoreClick = { interaction.openContextMenu(it) },
+                                interaction = interaction,
+                                paddingValues = paddingValues,
+                                isSelectionMode = isSelectionMode,
+                                selectedTrackIds = selectedTrackIds,
+                                onToggleSelectTrack = { track ->
+                                    selectedTrackIds =
+                                        if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
+                                },
+                                onTrackLongClick = { track ->
+                                    if (!isSelectionMode) selectedTrackIds = setOf(track.id)
+                                },
+                            )
 
-                        HomeFeedState.Loading -> HomeSkeletonLoading(
-                            chips = uiState.chips,
-                            onChipClick = viewModel::toggleChip,
-                            selectedChip = uiState.selectedChip
-                        )
+                        HomeFeedState.Loading ->
+                            HomeSkeletonLoading(
+                                chips = uiState.chips,
+                                onChipClick = viewModel::toggleChip,
+                                selectedChip = uiState.selectedChip,
+                            )
 
-                        HomeFeedState.Error -> MeloErrorState(
-                            uiState.error,
-                            onRetry = viewModel::loadFeed
-                        )
+                        HomeFeedState.Error ->
+                            MeloErrorState(
+                                uiState.error,
+                                onRetry = viewModel::loadFeed,
+                            )
 
-                        HomeFeedState.Content -> HomeContent(
-                            uiState = uiState,
-                            onChipClick = viewModel::toggleChip,
-                            onLoadMore = viewModel::loadMore,
-                            onAlbumClick = onAlbumClick,
-                            onPlaylistClick = onPlaylistClick,
-                            onArtistClick = onArtistClick,
-                            queueViewModel = queueViewModel,
-                            paddingValues = paddingValues,
-                            onMoreClick = { interaction.openContextMenu(it) },
-                            onOpenTrackContextMenu = { track, anchor -> interaction.openContextMenu(track, anchor) },
-                            onOpenEntityContextMenu = { entity, anchor ->
-                                if (entity is SearchResult.Song) {
-                                    interaction.openContextMenu(entity.track, anchor)
-                                } else {
-                                    contextMenuEntity = entity to anchor
-                                }
-                            },
-                            isSelectionMode = isSelectionMode,
-                            selectedTrackIds = selectedTrackIds,
-                            onToggleSelectTrack = { track ->
-                                selectedTrackIds =
-                                    if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
-                            },
-                            onTrackLongClick = { track ->
-                                if (!isSelectionMode) selectedTrackIds = setOf(track.id)
-                            }
-                        )
+                        HomeFeedState.Content ->
+                            HomeContent(
+                                uiState = uiState,
+                                onChipClick = viewModel::toggleChip,
+                                onLoadMore = viewModel::loadMore,
+                                onAlbumClick = onAlbumClick,
+                                onPlaylistClick = onPlaylistClick,
+                                onArtistClick = onArtistClick,
+                                queueViewModel = queueViewModel,
+                                paddingValues = paddingValues,
+                                onMoreClick = { interaction.openContextMenu(it) },
+                                onOpenTrackContextMenu = { track, anchor ->
+                                    interaction.openContextMenu(track, anchor)
+                                },
+                                onOpenEntityContextMenu = { entity, anchor ->
+                                    if (entity is SearchResult.Song) {
+                                        interaction.openContextMenu(entity.track, anchor)
+                                    } else {
+                                        contextMenuEntity = entity to anchor
+                                    }
+                                },
+                                isSelectionMode = isSelectionMode,
+                                selectedTrackIds = selectedTrackIds,
+                                onToggleSelectTrack = { track ->
+                                    selectedTrackIds =
+                                        if (track.id in selectedTrackIds) selectedTrackIds - track.id else selectedTrackIds + track.id
+                                },
+                                onTrackLongClick = { track ->
+                                    if (!isSelectionMode) selectedTrackIds = setOf(track.id)
+                                },
+                            )
                     }
                 }
             }
@@ -271,7 +289,7 @@ fun HomeScreen(
                             viewModel.refresh()
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     feedContent()
                 }
@@ -284,8 +302,13 @@ fun HomeScreen(
                 onClearSelection = { selectedTrackIds = emptySet() },
                 onSelectAllToggle = {
                     selectedTrackIds =
-                        if (selectedTrackIds.size == visibleSongs.size) emptySet() else visibleSongs.map { it.id }
-                            .toSet()
+                        if (selectedTrackIds.size == visibleSongs.size) {
+                            emptySet()
+                        } else {
+                            visibleSongs
+                                .map { it.id }
+                                .toSet()
+                        }
                 },
                 onAddToPlaylist = {
                     val selTracks = visibleSongs.filter { it.id in selectedTrackIds }
@@ -297,7 +320,7 @@ fun HomeScreen(
                     queueViewModel.addAllToQueue(selTracks)
                     interaction.snackbar.show(
                         msg = if (selTracks.size == 1) "1 canción añadida a la cola" else "${selTracks.size} canciones añadidas a la cola",
-                        actionColor = activeAccent
+                        actionColor = activeAccent,
                     )
                     selectedTrackIds = emptySet()
                 },
@@ -306,12 +329,12 @@ fun HomeScreen(
                     selTracks.forEach { libraryViewModel.downloadTrack(it) }
                     interaction.snackbar.show(
                         msg = "Descargando ${selTracks.size} canciones...",
-                        actionColor = activeAccent
+                        actionColor = activeAccent,
                     )
                     selectedTrackIds = emptySet()
                 },
                 accentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }
@@ -412,9 +435,7 @@ private fun rememberHomeEntityMenuEntries(
     }
 
     val isAlbum = entity is SearchResult.Album
-    val isSaved =
-        if (entity is SearchResult.Album) libraryState.albums.any { it.id == entity.id }
-        else libraryState.playlists.any { it.id == (entity as SearchResult.Playlist).id }
+    val isSaved = isHomeEntitySaved(entity, libraryState)
     val author = if (entity is SearchResult.Album) entity.author else ""
     val hasArtist = isAlbum && author.isNotBlank() && !author.equals("Unknown", ignoreCase = true)
 
@@ -476,6 +497,16 @@ private suspend fun toggleHomeEntitySave(
         libraryViewModel.refreshPlaylists()
     }
 }
+
+private fun isHomeEntitySaved(
+    entity: SearchResult,
+    libraryState: LibraryUiState,
+): Boolean =
+    when (entity) {
+        is SearchResult.Album -> libraryState.albums.any { it.id == entity.id }
+        is SearchResult.Playlist -> libraryState.playlists.any { it.id == entity.id }
+        else -> false
+    }
 
 private suspend fun fetchHomeEntityTracks(
     entity: SearchResult,

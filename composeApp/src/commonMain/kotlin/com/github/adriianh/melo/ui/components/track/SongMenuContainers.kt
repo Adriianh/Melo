@@ -142,34 +142,32 @@ internal fun SongMenuPopupSurface(
     var menuBoundsInWindow by remember { mutableStateOf<IntRect?>(null) }
     val rowBoundsMap = remember { mutableStateMapOf<String, IntRect>() }
 
-    LaunchedEffect(interactiveEntries.size) {
-        if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
-        if (inputModeManager.inputMode != InputMode.Keyboard) {
-            runCatching { containerFocusRequester.requestFocus() }
-            return@LaunchedEffect
-        }
-        focusedIndex = interactiveEntries.indexOfFirst { entry ->
-            entry !is SongMenuEntry.Action || entry.enabled
-        }.coerceAtLeast(0)
-        runCatching { focusRequesters[focusedIndex].requestFocus() }
-    }
+    SongMenuFocusOnOpenEffect(
+        isExpandedDesktop = isExpandedDesktop,
+        interactiveEntries = interactiveEntries,
+        inputModeManager = inputModeManager,
+        containerFocusRequester = containerFocusRequester,
+        focusRequesters = focusRequesters,
+        onFocusedIndexResolved = { focusedIndex = it },
+    )
+
+    val popupModifier =
+        modifier
+            .width(width)
+            .heightIn(max = maxHeight)
+            .focusRequester(containerFocusRequester)
+            .focusable()
+            .onGloballyPositioned { menuBoundsInWindow = it.boundsInWindow().toIntRect() }
+            .onPreviewKeyEvent { ev ->
+                handlePopupKeyEvent(ev, openSubmenuId != null, { openSubmenuId = null }, onDismissRequest) { delta ->
+                    moveFocusToNextEnabled(interactiveEntries, focusRequesters, focusedIndex, delta) {
+                        focusedIndex = it
+                    }
+                }
+            }.semantics { collectionInfo = CollectionInfo(rowCount = interactiveEntries.size, columnCount = 1) }
 
     Surface(
-        modifier =
-            modifier
-                .width(width)
-                .heightIn(max = maxHeight)
-                .focusRequester(containerFocusRequester)
-                .focusable()
-                .onGloballyPositioned { menuBoundsInWindow = it.boundsInWindow().toIntRect() }
-                .onPreviewKeyEvent { ev ->
-                    val closeSub = { openSubmenuId = null }
-                    handlePopupKeyEvent(ev, openSubmenuId != null, closeSub, onDismissRequest) { delta ->
-                        moveFocusToNextEnabled(interactiveEntries, focusRequesters, focusedIndex, delta) {
-                            focusedIndex = it
-                        }
-                    }
-                }.semantics { collectionInfo = CollectionInfo(rowCount = interactiveEntries.size, columnCount = 1) },
+        modifier = popupModifier,
         shape = RoundedCornerShape(12.dp),
         color = MeloColors.menuPopupSurface,
         border = BorderStroke(1.dp, MeloColors.menuPopupBorder),
@@ -184,7 +182,10 @@ internal fun SongMenuPopupSurface(
             menuBoundsInWindow = menuBoundsInWindow,
             rowBoundsMap = rowBoundsMap,
             onFocusedIndexChange = { focusedIndex = it },
-            onOpenSubmenuChange = { id, byHover -> openSubmenuId = id; submenuOpenedByHover = byHover },
+            onOpenSubmenuChange = { id, byHover ->
+                openSubmenuId = id
+                submenuOpenedByHover = byHover
+            },
             onDismissRequest = onDismissRequest,
         )
     }
@@ -375,7 +376,16 @@ private fun moveFocusToNextEnabled(
     onFocusMoved: (Int) -> Unit,
 ) {
     if (interactiveEntries.isEmpty()) return
-    var candidate = if (currentIndex < 0) if (delta > 0) -1 else 0 else currentIndex
+    var candidate =
+        if (currentIndex < 0) {
+            if (delta > 0) {
+                -1
+            } else {
+                0
+            }
+        } else {
+            currentIndex
+        }
     repeat(interactiveEntries.size) {
         candidate = (candidate + delta + interactiveEntries.size) % interactiveEntries.size
         val target = interactiveEntries[candidate]
@@ -393,35 +403,35 @@ private fun handlePopupKeyEvent(
     onCloseSubmenu: () -> Unit,
     onDismiss: () -> Unit,
     onMoveFocus: (Int) -> Unit,
-): Boolean {
-    return event.type == KeyEventType.KeyDown && when (event.key) {
-        Key.Escape -> {
-            if (hasOpenSubmenu) onCloseSubmenu() else onDismiss()
-            true
-        }
-
-        Key.DirectionDown -> {
-            onMoveFocus(1)
-            true
-        }
-
-        Key.DirectionUp -> {
-            onMoveFocus(-1)
-            true
-        }
-
-        Key.DirectionLeft -> {
-            if (hasOpenSubmenu) {
-                onCloseSubmenu()
+): Boolean =
+    event.type == KeyEventType.KeyDown &&
+        when (event.key) {
+            Key.Escape -> {
+                if (hasOpenSubmenu) onCloseSubmenu() else onDismiss()
                 true
-            } else {
-                false
             }
-        }
 
-        else -> false
-    }
-}
+            Key.DirectionDown -> {
+                onMoveFocus(1)
+                true
+            }
+
+            Key.DirectionUp -> {
+                onMoveFocus(-1)
+                true
+            }
+
+            Key.DirectionLeft -> {
+                if (hasOpenSubmenu) {
+                    onCloseSubmenu()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            else -> false
+        }
 
 @Composable
 private fun PopupMenuRow(
@@ -533,17 +543,17 @@ private fun handleRowKeyEvent(
     enabled: Boolean,
     onClick: () -> Unit,
     onOpenSubmenuKey: () -> Boolean,
-): Boolean {
-    return !(event.type != KeyEventType.KeyDown || !enabled) && when (event.key) {
-        Key.Enter, Key.Spacebar -> {
-            onClick()
-            true
-        }
+): Boolean =
+    !(event.type != KeyEventType.KeyDown || !enabled) &&
+        when (event.key) {
+            Key.Enter, Key.Spacebar -> {
+                onClick()
+                true
+            }
 
-        Key.DirectionRight -> onOpenSubmenuKey()
-        else -> false
-    }
-}
+            Key.DirectionRight -> onOpenSubmenuKey()
+            else -> false
+        }
 
 private class SongMenuPopupPositionProvider(
     private val anchor: SongMenuAnchor?,
@@ -596,4 +606,28 @@ private class SongMenuPopupPositionProvider(
                 IntRect(left = cx, top = cy, right = cx, bottom = cy)
             }
         }
+}
+
+@Composable
+private fun SongMenuFocusOnOpenEffect(
+    isExpandedDesktop: Boolean,
+    interactiveEntries: List<SongMenuEntry>,
+    inputModeManager: androidx.compose.ui.input.InputModeManager,
+    containerFocusRequester: FocusRequester,
+    focusRequesters: List<FocusRequester>,
+    onFocusedIndexResolved: (Int) -> Unit,
+) {
+    LaunchedEffect(interactiveEntries.size) {
+        if (!isExpandedDesktop || interactiveEntries.isEmpty()) return@LaunchedEffect
+        if (inputModeManager.inputMode != InputMode.Keyboard) {
+            runCatching { containerFocusRequester.requestFocus() }
+            return@LaunchedEffect
+        }
+        val firstEnabled =
+            interactiveEntries
+                .indexOfFirst { it !is SongMenuEntry.Action || it.enabled }
+                .coerceAtLeast(0)
+        onFocusedIndexResolved(firstEnabled)
+        runCatching { focusRequesters[firstEnabled].requestFocus() }
+    }
 }

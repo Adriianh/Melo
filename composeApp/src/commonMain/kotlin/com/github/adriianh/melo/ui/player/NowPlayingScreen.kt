@@ -142,7 +142,11 @@ fun NowPlayingScreen(
                     actionColor = activeAccent,
                 )
             }
-        val shareUrl = remember(track.id) { com.github.adriianh.melo.util.buildTrackShareUrl(track) }
+        val shareUrl =
+            remember(track.id) {
+                com.github.adriianh.melo.util
+                    .buildTrackShareUrl(track)
+            }
         val containingPlaylistIds by remember(track.id) {
             libraryViewModel.getPlaylistIdsForTrack(track.id)
         }.collectAsState(initial = emptySet())

@@ -17,9 +17,10 @@ actual fun rememberPlatformShareHandler(onCopiedToClipboard: () -> Unit): (Strin
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TEXT, text)
                 }
-            val chooser = Intent.createChooser(sendIntent, null).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val chooser =
+                Intent.createChooser(sendIntent, null).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
             context.startActivity(chooser)
         }
     }

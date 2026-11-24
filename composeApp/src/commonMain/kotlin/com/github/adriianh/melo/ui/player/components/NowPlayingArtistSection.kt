@@ -32,15 +32,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_artist_biography
 import com.github.adriianh.melo.resources.player_artist_popular_songs
 import com.github.adriianh.melo.resources.player_artist_view_full_profile
-import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.cards.AlbumCard
-import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.ui.components.cards.ArtistCircle
+import com.github.adriianh.melo.ui.components.layout.AdaptiveLazyRow
 import com.github.adriianh.melo.ui.components.layout.SectionHeader
 import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.components.track.TrackRow

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.foundation.background
@@ -55,8 +57,8 @@ import com.github.adriianh.melo.resources.player_header_now_playing
 import com.github.adriianh.melo.resources.player_tab_artist
 import com.github.adriianh.melo.resources.player_tab_lyrics
 import com.github.adriianh.melo.resources.player_tab_queue
-import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.components.cards.SuggestionTrackCard
+import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.ui.components.track.TrackInteractionContextMenu
 import com.github.adriianh.melo.ui.components.track.rememberTrackInteraction
 import com.github.adriianh.melo.ui.library.LibraryUiState
