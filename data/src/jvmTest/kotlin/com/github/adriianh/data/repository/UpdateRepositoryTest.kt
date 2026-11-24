@@ -108,6 +108,18 @@ class UpdateRepositoryTest {
                 "2.2.1-nightly.20261005.1000",
             ),
         )
+        assertFalse(
+            NightlyVersionComparator.isNewerNightly(
+                "nightly.20260922.0244",
+                "2.5.0-nightly.20260922.0244",
+            ),
+        )
+        assertTrue(
+            NightlyVersionComparator.isNewerNightly(
+                "nightly.20260923.0244",
+                "2.5.0-nightly.20260922.0244",
+            ),
+        )
     }
 
     @Test
@@ -168,6 +180,53 @@ class UpdateRepositoryTest {
             assertEquals("2.2.1-nightly.20261005.1430", release.version)
             assertEquals(UpdateChannel.NIGHTLY, release.channel)
             assertEquals(1, release.assets.size)
+        }
+
+    @Test
+    fun `checkForUpdate with NIGHTLY channel parses markdown table version and avoids re-prompting`() =
+        runTest {
+            val mockJson =
+                """
+                {
+                    "tag_name": "nightly",
+                    "name": "Melo Development Build (Nightly)",
+                    "body": "## Build information\n\n| | |\n| :--- | :--- |\n| **Version** | `2.5.0-nightly.20260922.0244` |\n",
+                    "html_url": "https://github.com/Adriianh/Melo/releases/tag/nightly",
+                    "published_at": "2026-09-22T02:44:00Z",
+                    "assets": [
+                        {
+                            "name": "melo-nightly-windows.zip",
+                            "browser_download_url": "https://github.com/Adriianh/Melo/releases/download/nightly/melo-nightly-windows.zip",
+                            "size": 42000000
+                        }
+                    ]
+                }
+                """.trimIndent()
+
+            val mockEngine =
+                MockEngine {
+                    respond(
+                        content = mockJson,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+
+            val client =
+                HttpClient(mockEngine) {
+                    install(ContentNegotiation) {
+                        json(Json { ignoreUnknownKeys = true })
+                    }
+                }
+
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+            val sameResult = repo.checkForUpdate("2.5.0-nightly.20260922.0244", UpdateChannel.NIGHTLY)
+            assertTrue(sameResult.isSuccess)
+            assertNull(sameResult.getOrNull())
+
+            val olderResult = repo.checkForUpdate("2.5.0-nightly.20260921.0244", UpdateChannel.NIGHTLY)
+            assertTrue(olderResult.isSuccess)
+            assertEquals("2.5.0-nightly.20260922.0244", olderResult.getOrNull()?.version)
         }
 
     @Test
