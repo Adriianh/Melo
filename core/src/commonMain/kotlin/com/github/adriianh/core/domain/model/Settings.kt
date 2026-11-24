@@ -164,6 +164,7 @@ data class Settings(
             UpdateChannel.STABLE
         },
     val lastAccentColor: Long? = null,
+    val lastSeenVersion: String? = null,
 )
 
 @Serializable

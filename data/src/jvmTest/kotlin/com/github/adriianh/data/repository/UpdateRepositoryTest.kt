@@ -532,4 +532,64 @@ class UpdateRepositoryTest {
                 File("${tempFile.absolutePath}.tmp").delete()
             }
         }
+
+    @Test
+    fun `getReleaseForVersion fetches stable release by tag even when not newer`() =
+        runTest {
+            val payload =
+                """
+                {
+                  "tag_name": "v2.5.0",
+                  "name": "Melo 2.5.0",
+                  "body": "## What's Changed\n* feat: something",
+                  "html_url": "https://github.com/Adriianh/Melo/releases/tag/v2.5.0",
+                  "published_at": "2026-11-20T12:00:00Z",
+                  "assets": []
+                }
+                """.trimIndent()
+            var requestedUrl = ""
+            val mockEngine =
+                MockEngine { request ->
+                    requestedUrl = request.url.toString()
+                    respond(
+                        content = payload,
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val client =
+                HttpClient(mockEngine) {
+                    install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                }
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+
+            val result = repo.getReleaseForVersion("2.5.0", UpdateChannel.STABLE)
+
+            assertTrue(result.isSuccess)
+            assertEquals("https://api.github.com/repos/Adriianh/Melo/releases/tags/v2.5.0", requestedUrl)
+            val release = result.getOrNull()
+            assertNotNull(release)
+            assertEquals("2.5.0", release.version)
+            assertTrue(release.releaseNotes.contains("What's Changed"))
+        }
+
+    @Test
+    fun `getReleaseForVersion returns null on 404`() =
+        runTest {
+            val mockEngine =
+                MockEngine { _ ->
+                    respond(
+                        content = "{}",
+                        status = HttpStatusCode.NotFound,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val client = HttpClient(mockEngine)
+            val repo = UpdateRepositoryImpl(client, Dispatchers.Unconfined)
+
+            val result = repo.getReleaseForVersion("9.9.9", UpdateChannel.STABLE)
+
+            assertTrue(result.isSuccess)
+            assertNull(result.getOrNull())
+        }
 }

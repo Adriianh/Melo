@@ -41,6 +41,11 @@ class UpdateCommandTest {
             return Result.success(releaseToReturn)
         }
 
+        override suspend fun getReleaseForVersion(
+            version: String,
+            channel: UpdateChannel,
+        ): Result<AppRelease?> = Result.success(releaseToReturn)
+
         override fun downloadAsset(
             asset: ReleaseAsset,
             destinationFilePath: String,
@@ -59,7 +64,7 @@ class UpdateCommandTest {
         var applyUpdateCalled = false
         var cleanedBackups = false
 
-        override fun getCurrentExecutable(): File? = targetExec
+        override fun getCurrentExecutable(): File = targetExec
 
         override fun getDefaultExecutable(): File = targetExec
 
