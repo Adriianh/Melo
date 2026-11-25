@@ -1057,14 +1057,19 @@ class PlaybackManagerTest {
     fun `selectAudioOutput delegates to player and persists preferred device`() =
         runTest {
             var persistedId: String? = "unset"
-            val updateSettings = mockk<com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase>(relaxed = true)
+            val updateSettings =
+                mockk<com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase>(relaxed = true)
             coEvery {
                 updateSettings.invoke(
                     any<(com.github.adriianh.core.domain.model.Settings) -> com.github.adriianh.core.domain.model.Settings>(),
                 )
             } coAnswers {
-                val transform = firstArg<(com.github.adriianh.core.domain.model.Settings) -> com.github.adriianh.core.domain.model.Settings>()
-                persistedId = transform(com.github.adriianh.core.domain.model.Settings()).preferredAudioOutputId
+                val transform =
+                    firstArg<(com.github.adriianh.core.domain.model.Settings) -> com.github.adriianh.core.domain.model.Settings>()
+                val defaults =
+                    com.github.adriianh.core.domain.model
+                        .Settings()
+                persistedId = transform(defaults).preferredAudioOutputId
             }
             val scope = managerScope()
             val manager =
