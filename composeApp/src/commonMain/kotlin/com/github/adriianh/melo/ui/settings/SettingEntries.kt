@@ -31,6 +31,10 @@ import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
+import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Settings
@@ -84,6 +88,8 @@ import com.github.adriianh.melo.resources.settings_download_quality_desc
 import com.github.adriianh.melo.resources.settings_download_quality_title
 import com.github.adriianh.melo.resources.settings_dynamic_color_desc
 import com.github.adriianh.melo.resources.settings_dynamic_color_title
+import com.github.adriianh.melo.resources.settings_idle_hide_desc
+import com.github.adriianh.melo.resources.settings_idle_hide_title
 import com.github.adriianh.melo.resources.settings_installed_version_title
 import com.github.adriianh.melo.resources.settings_kw_account_channels
 import com.github.adriianh.melo.resources.settings_kw_account_session
@@ -102,9 +108,16 @@ import com.github.adriianh.melo.resources.settings_kw_discord_rpc
 import com.github.adriianh.melo.resources.settings_kw_download_format
 import com.github.adriianh.melo.resources.settings_kw_download_quality
 import com.github.adriianh.melo.resources.settings_kw_dynamic_color
+import com.github.adriianh.melo.resources.settings_kw_idle_hide
 import com.github.adriianh.melo.resources.settings_kw_installed_version
 import com.github.adriianh.melo.resources.settings_kw_local_folders
+import com.github.adriianh.melo.resources.settings_kw_lyrics_alignment
+import com.github.adriianh.melo.resources.settings_kw_lyrics_blur
+import com.github.adriianh.melo.resources.settings_kw_lyrics_color
+import com.github.adriianh.melo.resources.settings_kw_lyrics_scale
+import com.github.adriianh.melo.resources.settings_kw_lyrics_zoom
 import com.github.adriianh.melo.resources.settings_kw_offline_mode
+import com.github.adriianh.melo.resources.settings_kw_reduce_motion
 import com.github.adriianh.melo.resources.settings_kw_reduce_transparency
 import com.github.adriianh.melo.resources.settings_kw_resume_session
 import com.github.adriianh.melo.resources.settings_kw_stop_on_close
@@ -119,8 +132,20 @@ import com.github.adriianh.melo.resources.settings_login_action
 import com.github.adriianh.melo.resources.settings_logout_action
 import com.github.adriianh.melo.resources.settings_logout_confirm_message
 import com.github.adriianh.melo.resources.settings_logout_confirm_title
+import com.github.adriianh.melo.resources.settings_lyrics_alignment_desc
+import com.github.adriianh.melo.resources.settings_lyrics_alignment_title
+import com.github.adriianh.melo.resources.settings_lyrics_blur_desc
+import com.github.adriianh.melo.resources.settings_lyrics_blur_title
+import com.github.adriianh.melo.resources.settings_lyrics_color_desc
+import com.github.adriianh.melo.resources.settings_lyrics_color_title
+import com.github.adriianh.melo.resources.settings_lyrics_scale_desc
+import com.github.adriianh.melo.resources.settings_lyrics_scale_title
+import com.github.adriianh.melo.resources.settings_lyrics_zoom_desc
+import com.github.adriianh.melo.resources.settings_lyrics_zoom_title
 import com.github.adriianh.melo.resources.settings_offline_mode_desc
 import com.github.adriianh.melo.resources.settings_offline_mode_title
+import com.github.adriianh.melo.resources.settings_reduce_motion_desc
+import com.github.adriianh.melo.resources.settings_reduce_motion_title
 import com.github.adriianh.melo.resources.settings_reduce_transparency_desc
 import com.github.adriianh.melo.resources.settings_reduce_transparency_title
 import com.github.adriianh.melo.resources.settings_resume_session_desc
@@ -205,7 +230,11 @@ internal fun rememberSettingEntries(
     initialManualFolderExpanded: Boolean = false,
 ): List<SettingEntry> =
     buildList {
-        addAppearanceEntries(settings = settings, actions = actions)
+        addAppearanceEntries(
+            settings = settings,
+            actions = actions,
+            platformType = platformType,
+        )
         addPlaybackEntries(
             settings = settings,
             actions = actions,
@@ -324,6 +353,7 @@ internal fun SettingsEntriesSections(
 private fun MutableList<SettingEntry>.addAppearanceEntries(
     settings: Settings,
     actions: SettingsActions,
+    platformType: PlatformType,
 ) {
     val categoryTitle = stringResource(SettingsCategory.APPEARANCE.titleRes)
     val section = stringResource(Res.string.settings_section_theme_color)
@@ -474,6 +504,14 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
         },
     )
 
+    addNowPlayingCustomizationEntries(
+        settings = settings,
+        actions = actions,
+        platformType = platformType,
+        nowPlayingSection = nowPlayingSection,
+        categoryTitle = categoryTitle,
+    )
+
     val effectsSection = stringResource(Res.string.settings_section_effects)
     val ambientTitle = stringResource(Res.string.settings_ambient_motion_title)
     val ambientDesc = stringResource(Res.string.settings_ambient_motion_desc)
@@ -492,6 +530,26 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
                 subtitle = ambientDesc,
                 checked = settings.ambientMotion,
                 onCheckedChange = actions.onAmbientMotionToggle,
+            )
+        },
+    )
+    val reduceMotionTitle = stringResource(Res.string.settings_reduce_motion_title)
+    val reduceMotionDesc = stringResource(Res.string.settings_reduce_motion_desc)
+    add(
+        SettingEntry(
+            id = "appearance_reduce_motion",
+            category = SettingsCategory.APPEARANCE,
+            section = effectsSection,
+            title = reduceMotionTitle,
+            description = reduceMotionDesc,
+            keywords = keywordsResource(Res.string.settings_kw_reduce_motion),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = reduceMotionTitle,
+                subtitle = reduceMotionDesc,
+                checked = settings.reduceMotion,
+                onCheckedChange = actions.onReduceMotionToggle,
             )
         },
     )
@@ -515,6 +573,171 @@ private fun MutableList<SettingEntry>.addAppearanceEntries(
             )
         },
     )
+}
+
+@Composable
+private fun MutableList<SettingEntry>.addNowPlayingCustomizationEntries(
+    settings: Settings,
+    actions: SettingsActions,
+    platformType: PlatformType,
+    nowPlayingSection: String,
+    categoryTitle: String,
+) {
+    val lyricsBlurTitle = stringResource(Res.string.settings_lyrics_blur_title)
+    val lyricsBlurDesc = stringResource(Res.string.settings_lyrics_blur_desc)
+    add(
+        SettingEntry(
+            id = "appearance_lyrics_blur",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = lyricsBlurTitle,
+            description = lyricsBlurDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_blur),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = lyricsBlurTitle,
+                subtitle = lyricsBlurDesc,
+                checked = settings.lyricsBlurEnabled,
+                onCheckedChange = actions.onLyricsBlurToggle,
+            )
+        },
+    )
+
+    val lyricsZoomTitle = stringResource(Res.string.settings_lyrics_zoom_title)
+    val lyricsZoomDesc = stringResource(Res.string.settings_lyrics_zoom_desc)
+    add(
+        SettingEntry(
+            id = "appearance_lyrics_zoom",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = lyricsZoomTitle,
+            description = lyricsZoomDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_zoom),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = lyricsZoomTitle,
+                subtitle = lyricsZoomDesc,
+                checked = settings.lyricsActiveLineZoom,
+                onCheckedChange = actions.onLyricsActiveLineZoomToggle,
+            )
+        },
+    )
+
+    val lyricsScaleTitle = stringResource(Res.string.settings_lyrics_scale_title)
+    val lyricsScaleDesc = stringResource(Res.string.settings_lyrics_scale_desc)
+    add(
+        SettingEntry(
+            id = "appearance_lyrics_font_scale",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = lyricsScaleTitle,
+            description = lyricsScaleDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_scale),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingInlineChoiceRow(
+                title = lyricsScaleTitle,
+                subtitle = lyricsScaleDesc,
+            ) { isInline ->
+                val labels = LyricsFontScale.entries.associateWith { it.uiLabel() }
+                SegmentedControl(
+                    options = LyricsFontScale.entries,
+                    selected = settings.lyricsFontScale,
+                    onSelect = actions.onLyricsFontScaleSelected,
+                    label = { labels.getValue(it) },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+
+    val lyricsAlignTitle = stringResource(Res.string.settings_lyrics_alignment_title)
+    val lyricsAlignDesc = stringResource(Res.string.settings_lyrics_alignment_desc)
+    add(
+        SettingEntry(
+            id = "appearance_lyrics_alignment",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = lyricsAlignTitle,
+            description = lyricsAlignDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_alignment),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingInlineChoiceRow(
+                title = lyricsAlignTitle,
+                subtitle = lyricsAlignDesc,
+            ) { isInline ->
+                val labels = LyricsAlignment.entries.associateWith { it.uiLabel() }
+                SegmentedControl(
+                    options = LyricsAlignment.entries,
+                    selected = settings.lyricsAlignment,
+                    onSelect = actions.onLyricsAlignmentSelected,
+                    label = { labels.getValue(it) },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+
+    val lyricsColorTitle = stringResource(Res.string.settings_lyrics_color_title)
+    val lyricsColorDesc = stringResource(Res.string.settings_lyrics_color_desc)
+    add(
+        SettingEntry(
+            id = "appearance_lyrics_color",
+            category = SettingsCategory.APPEARANCE,
+            section = nowPlayingSection,
+            title = lyricsColorTitle,
+            description = lyricsColorDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_color),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingInlineChoiceRow(
+                title = lyricsColorTitle,
+                subtitle = lyricsColorDesc,
+            ) { isInline ->
+                val labels = LyricsActiveLineColor.entries.associateWith { it.uiLabel() }
+                SegmentedControl(
+                    options = LyricsActiveLineColor.entries,
+                    selected = settings.lyricsActiveLineColor,
+                    onSelect = actions.onLyricsActiveLineColorSelected,
+                    label = { labels.getValue(it) },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+
+    if (platformType == PlatformType.DESKTOP) {
+        val idleHideTitle = stringResource(Res.string.settings_idle_hide_title)
+        val idleHideDesc = stringResource(Res.string.settings_idle_hide_desc)
+        add(
+            SettingEntry(
+                id = "appearance_fullscreen_idle_hide",
+                category = SettingsCategory.APPEARANCE,
+                section = nowPlayingSection,
+                title = idleHideTitle,
+                description = idleHideDesc,
+                keywords = keywordsResource(Res.string.settings_kw_idle_hide),
+                categoryTitle = categoryTitle,
+            ) {
+                SettingInlineChoiceRow(
+                    title = idleHideTitle,
+                    subtitle = idleHideDesc,
+                ) { isInline ->
+                    val labels = FullscreenIdleHideDelay.entries.associateWith { it.uiLabel() }
+                    SegmentedControl(
+                        options = FullscreenIdleHideDelay.entries,
+                        selected = settings.fullscreenIdleHideDelay,
+                        onSelect = actions.onFullscreenIdleHideDelaySelected,
+                        label = { labels.getValue(it) },
+                        fillMaxWidth = !isInline,
+                    )
+                }
+            },
+        )
+    }
 }
 
 @Composable

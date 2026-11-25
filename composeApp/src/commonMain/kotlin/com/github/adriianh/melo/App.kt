@@ -683,6 +683,55 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onReduceMotionToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(reduceMotion = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsBlurToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsBlurEnabled = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsActiveLineZoomToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsActiveLineZoom = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsFontScaleSelected = { scale ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsFontScale = scale)
+                                                }
+                                            }
+                                        },
+                                        onLyricsAlignmentSelected = { alignment ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsAlignment = alignment)
+                                                }
+                                            }
+                                        },
+                                        onLyricsActiveLineColorSelected = { color ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsActiveLineColor = color)
+                                                }
+                                            }
+                                        },
+                                        onFullscreenIdleHideDelaySelected = { delay ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(fullscreenIdleHideDelay = delay)
+                                                }
+                                            }
+                                        },
                                         onDataSaverToggle = { enabled ->
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
