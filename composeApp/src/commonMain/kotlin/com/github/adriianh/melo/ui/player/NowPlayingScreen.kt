@@ -114,6 +114,8 @@ fun NowPlayingScreen(
 ) {
     val state by viewModel.stableUiState.collectAsState()
     val volume by viewModel.volume.collectAsState()
+    val audioOutputs by viewModel.availableAudioOutputs.collectAsState()
+    val selectedAudioOutputId by viewModel.selectedAudioOutputId.collectAsState()
     val libraryState by libraryViewModel.uiState.collectAsState()
     val artistDetails by viewModel.artistDetails.collectAsState()
     val platform = remember { getPlatform() }
@@ -135,6 +137,7 @@ fun NowPlayingScreen(
 
     var lastActivityTick by remember { mutableIntStateOf(0) }
     var controlsVisible by remember { mutableStateOf(true) }
+    var isAudioOutputMenuOpen by remember { mutableStateOf(false) }
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
     val activeAccent = MaterialTheme.colorScheme.primary
@@ -156,6 +159,7 @@ fun NowPlayingScreen(
         !isDesktop ||
             idleHideDelayMs == null ||
             showQueue ||
+            isAudioOutputMenuOpen ||
             interaction.contextMenuTrack != null ||
             interaction.addToPlaylistTrack != null
 
@@ -409,6 +413,9 @@ fun NowPlayingScreen(
             onToggleTranslation = viewModel::toggleTranslation,
             onSelectLanguage = viewModel::setTargetLanguage,
             onToggleShowRemainingTime = onToggleShowRemainingTime,
+            onRefreshAudioOutputs = viewModel::refreshAudioOutputs,
+            onSelectAudioOutput = viewModel::selectAudioOutput,
+            onAudioOutputMenuOpenChanged = { isAudioOutputMenuOpen = it },
         )
 
     val backProgress = if (!showQueue && !reducedMotion) (predictiveBackProgress ?: 0f) else 0f
@@ -525,6 +532,8 @@ fun NowPlayingScreen(
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
+                audioOutputs = audioOutputs,
+                selectedAudioOutputId = selectedAudioOutputId,
                 lyricsConfig = lyricsConfig,
                 queueSidePanelContent = {
                     NowPlayingQueueSection(

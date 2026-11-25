@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.AccountProfile
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.common_action_close
 import com.github.adriianh.melo.resources.settings_back_to_categories
@@ -86,6 +87,7 @@ import com.github.adriianh.melo.resources.settings_search_placeholder
 import com.github.adriianh.melo.resources.settings_search_results_title
 import com.github.adriianh.melo.resources.settings_title
 import com.github.adriianh.melo.ui.i18n.UiText
+import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.getPlatform
@@ -148,6 +150,23 @@ internal fun SettingsContent(
     val updateViewModel: UpdateViewModel? = if (updateState != null) null else koinViewModel()
     val vmUpdateState = updateViewModel?.uiState?.collectAsState()?.value
     val resolvedUpdateState = updateState ?: vmUpdateState ?: UpdateState.Idle
+    val playerViewModel: PlayerViewModel? = if (updateState != null) null else koinViewModel()
+    val audioOutputs: List<AudioOutputDevice> =
+        playerViewModel
+            ?.availableAudioOutputs
+            ?.collectAsState()
+            ?.value
+            .orEmpty()
+    val selectedAudioOutputId: String? =
+        playerViewModel
+            ?.selectedAudioOutputId
+            ?.collectAsState()
+            ?.value
+            ?: settings.preferredAudioOutputId
+
+    LaunchedEffect(playerViewModel) {
+        playerViewModel?.refreshAudioOutputs()
+    }
 
     val entries =
         rememberSettingEntries(
@@ -161,6 +180,10 @@ internal fun SettingsContent(
             actions = actions,
             platformType = platform.type,
             updateState = resolvedUpdateState,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
+            onRefreshAudioOutputs = { playerViewModel?.refreshAudioOutputs() },
+            onSelectAudioOutput = { deviceId -> playerViewModel?.selectAudioOutput(deviceId) },
             onCheckForUpdates = { channel -> updateViewModel?.checkForUpdates(channel) },
             onUpdateChannelSelected = { channel ->
                 actions.onUpdateChannelSelected(channel)
