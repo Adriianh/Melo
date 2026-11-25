@@ -43,6 +43,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.github.adriianh.core.domain.model.ArtworkCornerStyle
 import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
@@ -99,8 +100,10 @@ fun NowPlayingScreen(
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     reduceMotion: Boolean = false,
+    artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
-    idleHideDelay: FullscreenIdleHideDelay = FullscreenIdleHideDelay.SECONDS_3,
+    idleHideDelayMs: Long? = FullscreenIdleHideDelay.SECONDS_3.delayMs,
+    keepScreenOn: Boolean = false,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel(),
@@ -137,7 +140,8 @@ fun NowPlayingScreen(
         }
     }
 
-    val idleHideDelayMs = idleHideDelay.delayMs
+    KeepScreenOnEffect(enabled = keepScreenOn)
+
     val keepControlsVisible =
         !isDesktop ||
             idleHideDelayMs == null ||
@@ -508,6 +512,7 @@ fun NowPlayingScreen(
                 showQueue = showQueue,
                 controlsVisible = controlsVisible,
                 actions = actions,
+                artworkCornerRadiusDp = artworkCornerRadiusDp,
                 lyricsConfig = lyricsConfig,
                 queueSidePanelContent = {
                     NowPlayingQueueSection(

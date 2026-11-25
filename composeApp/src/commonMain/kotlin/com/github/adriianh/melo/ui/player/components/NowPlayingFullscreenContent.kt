@@ -52,6 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.ArtworkCornerStyle
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_lyrics_unavailable
 import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
@@ -105,6 +106,7 @@ internal fun NowPlayingFullscreenContent(
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val isIdleHidden = isDesktop && !controlsVisible
@@ -139,6 +141,7 @@ internal fun NowPlayingFullscreenContent(
                 chromeAlpha = chromeAlpha,
                 actions = actions,
                 queueSidePanelContent = queueSidePanelContent,
+                artworkCornerRadiusDp = artworkCornerRadiusDp,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -154,6 +157,7 @@ internal fun NowPlayingFullscreenContent(
                 showLyrics = showLyrics,
                 showQueue = showQueue,
                 actions = actions,
+                artworkCornerRadiusDp = artworkCornerRadiusDp,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -169,6 +173,7 @@ internal fun NowPlayingFullscreenContent(
                 showLyrics = showLyrics,
                 showQueue = showQueue,
                 actions = actions,
+                artworkCornerRadiusDp = artworkCornerRadiusDp,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -192,6 +197,7 @@ private fun ExpandedNowPlayingLayout(
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
@@ -268,6 +274,7 @@ private fun ExpandedNowPlayingLayout(
                             title = state.title,
                             isBuffering = state.isBuffering,
                             activeAccent = activeAccent,
+                            cornerRadius = artworkCornerRadiusDp.dp,
                             modifier = Modifier.size(artworkSize),
                         )
 
@@ -512,6 +519,7 @@ private fun MediumPortraitNowPlayingLayout(
     showLyrics: Boolean,
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
+    artworkCornerRadiusDp: Int,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -617,6 +625,7 @@ private fun MediumPortraitNowPlayingLayout(
                             title = state.title,
                             isBuffering = state.isBuffering,
                             activeAccent = activeAccent,
+                            cornerRadius = artworkCornerRadiusDp.dp,
                             onClick = if (hasLyrics) actions.onToggleLyrics else null,
                             modifier = Modifier.size(360.dp),
                         )
@@ -660,6 +669,7 @@ private fun CompactNowPlayingLayout(
     showLyrics: Boolean,
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
+    artworkCornerRadiusDp: Int,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -756,6 +766,7 @@ private fun CompactNowPlayingLayout(
                             title = state.title,
                             isBuffering = state.isBuffering,
                             activeAccent = activeAccent,
+                            cornerRadius = artworkCornerRadiusDp.dp,
                             onClick = if (hasLyrics) actions.onToggleLyrics else null,
                             modifier =
                                 Modifier

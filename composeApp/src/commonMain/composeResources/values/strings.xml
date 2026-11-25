@@ -560,6 +560,7 @@
     <string name="settings_kw_lyrics_auto_translate">letras, traducir, traducción, automático, idioma</string>
     <string name="settings_lyrics_target_language_title">Idioma de traducción por defecto</string>
     <string name="settings_lyrics_target_language_desc">Idioma seleccionado inicialmente al traducir las letras.</string>
+    <string name="settings_lyrics_target_language_disabled">Requiere activar Traducir letras automáticamente</string>
     <string name="settings_kw_lyrics_target_language">letras, idioma, traducción, español, inglés, japonés</string>
     <string name="settings_blur_intensity_title">Desenfoque de carátula</string>
     <string name="settings_blur_intensity_desc">Muestra la carátula difuminada de fondo o la desactiva por un degradado de acento.</string>
@@ -570,6 +571,7 @@
     <string name="settings_kw_backdrop_scrim">scrim, oscurecimiento, contraste, brillo, ligero, normal, oscuro, fondo, reproduciendo, carátula</string>
     <string name="settings_lyrics_blur_title">Desenfoque en letras vecinas</string>
     <string name="settings_lyrics_blur_desc">Difumina progresivamente los versos alejados de la línea actual.</string>
+    <string name="settings_lyrics_blur_disabled_motion">Desactivado por Reducir movimiento</string>
     <string name="settings_kw_lyrics_blur">letras, blur, desenfoque, foco, reproduciendo, gpu</string>
     <string name="settings_lyrics_zoom_title">Ampliar verso actual</string>
     <string name="settings_lyrics_zoom_desc">Aumenta el tamaño de la línea activa para destacarla del resto.</string>

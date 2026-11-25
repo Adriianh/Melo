@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,7 +59,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -974,7 +974,7 @@ internal fun <T> SettingPresetWithCustomRow(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SegmentedControl(
                 options = options,
@@ -1060,97 +1060,86 @@ internal fun SettingSliderControl(
         return (valueRange.start + steps * safeStep).coerceIn(valueRange)
     }
 
-    Column(
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(MeloColors.surface2.copy(alpha = 0.55f))
-                .border(1.dp, MeloColors.border, RoundedCornerShape(14.dp))
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+                .border(1.dp, MeloColors.border, RoundedCornerShape(10.dp))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        IconButton(
+            onClick = { onValueChange(snap(value - safeStep)) },
+            enabled = enabled && value > valueRange.start + safeStep * 0.25f,
+            modifier = Modifier.size(32.dp),
         ) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = accent.copy(alpha = 0.16f),
-                border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
-            ) {
-                Text(
-                    text = valueLabel,
-                    style = MeloType.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = accent,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-
-            if (onReset != null) {
-                TextButton(
-                    onClick = onReset,
-                    enabled = enabled,
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.settings_custom_reset),
-                        style = MeloType.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MeloColors.textSecondary,
-                    )
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(Res.string.a11y_decrease_value),
+                tint = MeloColors.textPrimary,
+                modifier = Modifier.size(16.dp),
+            )
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        MeloSlider(
+            value = value.coerceIn(valueRange),
+            onValueChange = { onValueChange(snap(it)) },
+            enabled = enabled,
+            valueRange = valueRange,
+            activeColor = accent,
+            inactiveColor = MeloColors.borderStrong,
+            thumbColor = Color.White,
+            alwaysShowThumb = true,
+            trackHeight = 4.dp,
+            hoverTrackHeight = 5.dp,
+            thumbRadius = 5.dp,
+            hitTargetHeight = 28.dp,
+            a11yLabel = a11yLabel,
+            a11yValueDescription = valueLabel,
+            modifier = Modifier.weight(1f),
+        )
+
+        IconButton(
+            onClick = { onValueChange(snap(value + safeStep)) },
+            enabled = enabled && value < valueRange.endInclusive - safeStep * 0.25f,
+            modifier = Modifier.size(32.dp),
         ) {
-            IconButton(
-                onClick = { onValueChange(snap(value - safeStep)) },
-                enabled = enabled && value > valueRange.start + safeStep * 0.25f,
-                modifier = Modifier.size(48.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = stringResource(Res.string.a11y_decrease_value),
-                    tint = MeloColors.textPrimary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-
-            MeloSlider(
-                value = value.coerceIn(valueRange),
-                onValueChange = { onValueChange(snap(it)) },
-                enabled = enabled,
-                valueRange = valueRange,
-                activeColor = accent,
-                inactiveColor = MeloColors.borderStrong,
-                thumbColor = Color.White,
-                alwaysShowThumb = true,
-                trackHeight = 4.dp,
-                hoverTrackHeight = 6.dp,
-                thumbRadius = 6.dp,
-                hitTargetHeight = 32.dp,
-                a11yLabel = a11yLabel,
-                a11yValueDescription = valueLabel,
-                modifier = Modifier.weight(1f),
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(Res.string.a11y_increase_value),
+                tint = MeloColors.textPrimary,
+                modifier = Modifier.size(16.dp),
             )
+        }
 
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = accent.copy(alpha = 0.16f),
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+        ) {
+            Text(
+                text = valueLabel,
+                style = MeloType.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
+
+        if (onReset != null) {
             IconButton(
-                onClick = { onValueChange(snap(value + safeStep)) },
-                enabled = enabled && value < valueRange.endInclusive - safeStep * 0.25f,
-                modifier = Modifier.size(48.dp),
+                onClick = onReset,
+                enabled = enabled,
+                modifier = Modifier.size(32.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(Res.string.a11y_increase_value),
-                    tint = MeloColors.textPrimary,
-                    modifier = Modifier.size(18.dp),
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = stringResource(Res.string.settings_custom_reset),
+                    tint = MeloColors.textSecondary,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }

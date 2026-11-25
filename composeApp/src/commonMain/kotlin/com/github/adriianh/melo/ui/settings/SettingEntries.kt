@@ -158,6 +158,7 @@ import com.github.adriianh.melo.resources.settings_lyrics_anchor_title
 import com.github.adriianh.melo.resources.settings_lyrics_auto_translate_desc
 import com.github.adriianh.melo.resources.settings_lyrics_auto_translate_title
 import com.github.adriianh.melo.resources.settings_lyrics_blur_desc
+import com.github.adriianh.melo.resources.settings_lyrics_blur_disabled_motion
 import com.github.adriianh.melo.resources.settings_lyrics_blur_title
 import com.github.adriianh.melo.resources.settings_lyrics_color_desc
 import com.github.adriianh.melo.resources.settings_lyrics_color_title
@@ -172,6 +173,7 @@ import com.github.adriianh.melo.resources.settings_lyrics_source_badge_title
 import com.github.adriianh.melo.resources.settings_lyrics_spacing_desc
 import com.github.adriianh.melo.resources.settings_lyrics_spacing_title
 import com.github.adriianh.melo.resources.settings_lyrics_target_language_desc
+import com.github.adriianh.melo.resources.settings_lyrics_target_language_disabled
 import com.github.adriianh.melo.resources.settings_lyrics_target_language_title
 import com.github.adriianh.melo.resources.settings_lyrics_weight_desc
 import com.github.adriianh.melo.resources.settings_lyrics_weight_title
@@ -926,6 +928,8 @@ private fun MutableList<SettingEntry>.addLyricsAppearanceEntries(
                 subtitle = lyricsBlurDesc,
                 checked = settings.lyricsBlurEnabled,
                 onCheckedChange = actions.onLyricsBlurToggle,
+                enabled = !settings.reduceMotion,
+                disabledNote = stringResource(Res.string.settings_lyrics_blur_disabled_motion),
             )
         },
     )
@@ -1085,15 +1089,19 @@ private fun MutableList<SettingEntry>.addLyricsBehaviorEntries(
             keywords = keywordsResource(Res.string.settings_kw_lyrics_target_language),
             categoryTitle = categoryTitle,
         ) {
+            val targetLangEnabled = settings.lyricsAutoTranslate
             SettingChoiceRow(
                 title = targetLangTitle,
                 subtitle = targetLangDesc,
+                enabled = targetLangEnabled,
+                disabledNote = stringResource(Res.string.settings_lyrics_target_language_disabled),
             ) {
                 SettingOptionGrid(
                     options = SUPPORTED_LYRICS_LANGUAGES,
                     isSelected = { (code, _) -> code == settings.lyricsDefaultTargetLanguage },
                     onSelect = { (code, _) -> actions.onLyricsDefaultTargetLanguageSelected(code) },
                     title = { (_, label) -> label },
+                    enabled = targetLangEnabled,
                 )
             }
         },

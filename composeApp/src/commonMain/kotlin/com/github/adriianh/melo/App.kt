@@ -575,15 +575,23 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                     blurIntensity = settings.nowPlayingBlurIntensity,
                                     backdropScrim = settings.nowPlayingBackdropScrim,
                                     reduceMotion = settings.reduceMotion,
+                                    artworkCornerRadiusDp = settings.resolvedArtworkCornerRadiusDp(),
                                     lyricsConfig =
                                         NowPlayingLyricsConfig(
                                             blurEnabled = settings.lyricsBlurEnabled,
                                             activeLineZoom = settings.lyricsActiveLineZoom,
-                                            fontScale = settings.lyricsFontScale,
+                                            fontScaleFactor = settings.resolvedLyricsFontScale(),
+                                            lineSpacingDp = settings.resolvedLyricsLineSpacingDp(),
+                                            activeLineWeight = settings.lyricsActiveLineWeight,
+                                            inactiveOpacity = settings.resolvedLyricsInactiveOpacity(),
                                             alignment = settings.lyricsAlignment,
                                             activeLineColor = settings.lyricsActiveLineColor,
+                                            anchorPosition = settings.lyricsAnchorPosition,
+                                            syncOffsetMs = settings.lyricsSyncOffsetMs,
+                                            showSourceBadge = settings.lyricsShowSourceBadge,
                                         ),
-                                    idleHideDelay = settings.fullscreenIdleHideDelay,
+                                    idleHideDelayMs = settings.resolvedFullscreenIdleHideDelayMs(),
+                                    keepScreenOn = settings.nowPlayingKeepScreenOn,
                                     onCollapse = { isNowPlayingExpanded = false },
                                     onArtistClick = { id ->
                                         isNowPlayingExpanded = false
@@ -687,6 +695,20 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onArtworkCornerStyleSelected = { style ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(artworkCornerStyle = style)
+                                                }
+                                            }
+                                        },
+                                        onArtworkCustomCornerRadiusChanged = { radiusDp ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(artworkCustomCornerRadiusDp = radiusDp)
+                                                }
+                                            }
+                                        },
                                         onReduceTransparencyToggle = { enabled ->
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
@@ -722,6 +744,48 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onLyricsCustomFontScaleChanged = { scale ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsCustomFontScale = scale)
+                                                }
+                                            }
+                                        },
+                                        onLyricsLineSpacingSelected = { spacing ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsLineSpacing = spacing)
+                                                }
+                                            }
+                                        },
+                                        onLyricsCustomLineSpacingChanged = { spacingDp ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsCustomLineSpacingDp = spacingDp)
+                                                }
+                                            }
+                                        },
+                                        onLyricsActiveLineWeightSelected = { weight ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsActiveLineWeight = weight)
+                                                }
+                                            }
+                                        },
+                                        onLyricsInactiveOpacitySelected = { opacity ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsInactiveOpacity = opacity)
+                                                }
+                                            }
+                                        },
+                                        onLyricsCustomInactiveOpacityChanged = { opacity ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsCustomInactiveOpacity = opacity)
+                                                }
+                                            }
+                                        },
                                         onLyricsAlignmentSelected = { alignment ->
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
@@ -736,10 +800,59 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onLyricsAnchorPositionSelected = { anchor ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsAnchorPosition = anchor)
+                                                }
+                                            }
+                                        },
+                                        onLyricsSyncOffsetChanged = { offsetMs ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsSyncOffsetMs = offsetMs)
+                                                }
+                                            }
+                                        },
+                                        onLyricsShowSourceBadgeToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsShowSourceBadge = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsAutoTranslateToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsAutoTranslate = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsDefaultTargetLanguageSelected = { lang ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsDefaultTargetLanguage = lang)
+                                                }
+                                            }
+                                        },
                                         onFullscreenIdleHideDelaySelected = { delay ->
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
                                                     current.copy(fullscreenIdleHideDelay = delay)
+                                                }
+                                            }
+                                        },
+                                        onFullscreenCustomIdleHideSecondsChanged = { seconds ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(fullscreenCustomIdleHideSeconds = seconds)
+                                                }
+                                            }
+                                        },
+                                        onNowPlayingKeepScreenOnToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(nowPlayingKeepScreenOn = enabled)
                                                 }
                                             }
                                         },

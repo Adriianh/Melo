@@ -560,6 +560,7 @@
     <string name="settings_kw_lyrics_auto_translate">lyrics, translate, translation, auto, language</string>
     <string name="settings_lyrics_target_language_title">Default translation language</string>
     <string name="settings_lyrics_target_language_desc">Initial target language used when translating lyrics.</string>
+    <string name="settings_lyrics_target_language_disabled">Requires Auto-translate lyrics to be enabled</string>
     <string name="settings_kw_lyrics_target_language">lyrics, language, translation, spanish, english, japanese</string>
     <string name="settings_blur_intensity_title">Cover blur</string>
     <string name="settings_blur_intensity_desc">Shows the blurred cover in the background or replaces it with an accent gradient.</string>
@@ -570,6 +571,7 @@
     <string name="settings_kw_backdrop_scrim">scrim, dimming, contrast, brightness, light, normal, dark, background, now playing, cover</string>
     <string name="settings_lyrics_blur_title">Blur surrounding lyrics</string>
     <string name="settings_lyrics_blur_desc">Progressively blurs lines further away from the current lyric.</string>
+    <string name="settings_lyrics_blur_disabled_motion">Disabled by Reduce motion</string>
     <string name="settings_kw_lyrics_blur">lyrics, blur, focus, now playing, gpu</string>
     <string name="settings_lyrics_zoom_title">Enlarge current line</string>
     <string name="settings_lyrics_zoom_desc">Increases the active line size to stand out from neighboring lines.</string>

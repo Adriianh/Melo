@@ -1,20 +1,31 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsAnchorPosition
 import com.github.adriianh.core.domain.model.LyricsFontScale
+import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
+import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.TrackLyrics
 
 data class NowPlayingLyricsConfig(
     val blurEnabled: Boolean = true,
     val activeLineZoom: Boolean = true,
-    val fontScale: LyricsFontScale = LyricsFontScale.NORMAL,
+    val fontScaleFactor: Float = LyricsFontScale.NORMAL.scaleFactor,
+    val lineSpacingDp: Int = LyricsLineSpacing.NORMAL.spacingDp,
+    val activeLineWeight: LyricsActiveLineWeight = LyricsActiveLineWeight.EXTRA_BOLD,
+    val inactiveOpacity: Float = LyricsInactiveOpacity.NORMAL.baseAlpha,
     val alignment: LyricsAlignment = LyricsAlignment.START,
     val activeLineColor: LyricsActiveLineColor = LyricsActiveLineColor.WHITE,
+    val anchorPosition: LyricsAnchorPosition = LyricsAnchorPosition.UPPER,
+    val syncOffsetMs: Int = 0,
+    val showSourceBadge: Boolean = true,
 )
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
@@ -88,9 +99,10 @@ internal fun resolveActiveFullscreenEntryIndex(
     entries: List<FullscreenLyricEntry>,
     positionMs: Long,
     leadMs: Long = LYRIC_SYNC_LEAD_MS,
+    syncOffsetMs: Int = 0,
 ): Int {
     if (entries.isEmpty()) return -1
-    val adjustedMs = positionMs + leadMs
+    val adjustedMs = positionMs + leadMs + syncOffsetMs
     var active = -1
     for (index in entries.indices) {
         if (entries[index].timeMs <= adjustedMs) {
@@ -120,13 +132,27 @@ internal fun shouldShowLyricsFloatingControls(
         else -> !showControlsOnHoverOnly || isHovered || hasFocus
     }
 
-internal fun lyricAlphaForDistance(distance: Int): Float =
-    when (distance) {
+internal fun lyricAlphaForDistance(
+    distance: Int,
+    baseInactiveAlpha: Float = LyricsInactiveOpacity.NORMAL.baseAlpha,
+): Float {
+    val clampedBase = baseInactiveAlpha.coerceIn(0.15f, 0.90f)
+    val ratio = clampedBase / LyricsInactiveOpacity.NORMAL.baseAlpha
+    return when (distance) {
         0 -> 1.0f
-        1 -> 0.55f
-        2 -> 0.40f
-        3 -> 0.30f
-        else -> 0.20f
+        1 -> clampedBase
+        2 -> (0.40f * ratio).coerceIn(0.12f, 0.85f)
+        3 -> (0.30f * ratio).coerceIn(0.10f, 0.75f)
+        else -> (0.20f * ratio).coerceIn(0.08f, 0.65f)
+    }
+}
+
+internal fun LyricsActiveLineWeight.toComposeFontWeight(): FontWeight =
+    when (this) {
+        LyricsActiveLineWeight.NORMAL -> FontWeight.Normal
+        LyricsActiveLineWeight.SEMIBOLD -> FontWeight.SemiBold
+        LyricsActiveLineWeight.BOLD -> FontWeight.Bold
+        LyricsActiveLineWeight.EXTRA_BOLD -> FontWeight.ExtraBold
     }
 
 internal fun lyricBlurForDistance(distance: Int): Dp =
@@ -141,7 +167,7 @@ internal fun resolveFullscreenLyricsStyle(
     base: FullscreenLyricsStyle,
     config: NowPlayingLyricsConfig,
 ): FullscreenLyricsStyle {
-    val scale = config.fontScale.scaleFactor
+    val scale = config.fontScaleFactor.coerceIn(0.75f, 1.40f)
     val scaledNeighborSize = (base.neighborFontSize.value * scale).sp
     val scaledNeighborHeight = (base.neighborLineHeight.value * scale).sp
     val scaledActiveSize =
@@ -165,5 +191,6 @@ internal fun resolveFullscreenLyricsStyle(
         plainLineHeight = (base.plainLineHeight.value * scale).sp,
         translationFontSize = (base.translationFontSize.value * scale).sp,
         translationLineHeight = (base.translationLineHeight.value * scale).sp,
+        itemSpacing = config.lineSpacingDp.coerceIn(8, 40).dp,
     )
 }

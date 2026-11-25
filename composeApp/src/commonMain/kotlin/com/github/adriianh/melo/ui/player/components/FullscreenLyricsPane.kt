@@ -205,6 +205,7 @@ internal fun FullscreenLyricsPane(
 
         if (showFloatingControls && hasLyrics && controlsAlpha > 0.01f) {
             FullscreenLyricsFloatingControls(
+                showSourceBadge = lyricsConfig.showSourceBadge,
                 showLanguageMenu = showLanguageMenu,
                 onShowLanguageMenuChange = { showLanguageMenu = it },
                 showTranslation = showTranslation,
@@ -287,6 +288,7 @@ private fun FullscreenLyricsLoading(activeAccent: Color) {
 
 @Composable
 private fun FullscreenLyricsFloatingControls(
+    showSourceBadge: Boolean,
     showLanguageMenu: Boolean,
     onShowLanguageMenuChange: (Boolean) -> Unit,
     showTranslation: Boolean,
@@ -302,7 +304,9 @@ private fun FullscreenLyricsFloatingControls(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LyricsSourceBadge()
+        if (showSourceBadge) {
+            LyricsSourceBadge()
+        }
 
         LyricsTranslationChip(
             showLanguageMenu = showLanguageMenu,
@@ -346,6 +350,7 @@ private fun FullscreenSyncedLyricsList(
             entries = entries,
             positionMs = positionMs,
             progressFlow = progressFlow,
+            syncOffsetMs = lyricsConfig.syncOffsetMs,
         )
 
     val listState = rememberLazyListState()
@@ -366,6 +371,7 @@ private fun FullscreenSyncedLyricsList(
         }
     }
 
+    val anchorFraction = lyricsConfig.anchorPosition.viewportFraction
     val estimatedActiveHeightPx = with(density) { style.activeLineHeight.toPx().toInt() }
     AutoCenterActiveLyricEffect(
         listState = listState,
@@ -373,13 +379,20 @@ private fun FullscreenSyncedLyricsList(
         entryCount = entries.size,
         viewportHeightPx = viewportHeightPx,
         estimatedActiveHeightPx = estimatedActiveHeightPx,
+        anchorFraction = anchorFraction,
         reducedMotion = reducedMotion,
         userScrolledRecently = userScrolledRecently,
     )
 
-    val verticalCenterPadding =
+    val topAnchorPadding =
         if (viewportHeightPx > 0) {
-            with(density) { (viewportHeightPx / 2).toDp() }
+            with(density) { (viewportHeightPx * anchorFraction).toInt().toDp() }
+        } else {
+            160.dp
+        }
+    val bottomAnchorPadding =
+        if (viewportHeightPx > 0) {
+            with(density) { (viewportHeightPx * (1f - anchorFraction)).toInt().toDp() }
         } else {
             160.dp
         }
@@ -388,8 +401,8 @@ private fun FullscreenSyncedLyricsList(
         state = listState,
         contentPadding =
             PaddingValues(
-                top = verticalCenterPadding,
-                bottom = verticalCenterPadding,
+                top = topAnchorPadding,
+                bottom = bottomAnchorPadding,
                 start = style.horizontalPadding,
                 end = style.horizontalPadding,
             ),
@@ -450,7 +463,7 @@ private fun FullscreenLyricEntryRow(
     reducedMotion: Boolean,
     onSeekTo: () -> Unit,
 ) {
-    val targetAlpha = lyricAlphaForDistance(distance)
+    val targetAlpha = lyricAlphaForDistance(distance, lyricsConfig.inactiveOpacity)
     val alpha =
         if (reducedMotion) {
             targetAlpha
@@ -516,6 +529,7 @@ private fun FullscreenLyricEntryRow(
                     isActive = isActive,
                     showTranslation = showTranslation,
                     style = style,
+                    activeFontWeight = lyricsConfig.activeLineWeight.toComposeFontWeight(),
                     textColor = lineColor,
                     textAlign = textAlign,
                 )
@@ -544,10 +558,11 @@ private fun AutoCenterActiveLyricEffect(
     entryCount: Int,
     viewportHeightPx: Int,
     estimatedActiveHeightPx: Int,
+    anchorFraction: Float,
     reducedMotion: Boolean,
     userScrolledRecently: Boolean,
 ) {
-    LaunchedEffect(activeEntryIndex, viewportHeightPx, reducedMotion, userScrolledRecently) {
+    LaunchedEffect(activeEntryIndex, viewportHeightPx, anchorFraction, reducedMotion, userScrolledRecently) {
         val canScrollToActive = activeEntryIndex in 0 until entryCount && viewportHeightPx > 0
         if (canScrollToActive && !userScrolledRecently) {
             val activeItemHeightPx =
@@ -571,19 +586,25 @@ private fun rememberActiveFullscreenEntryIndex(
     entries: List<FullscreenLyricEntry>,
     positionMs: Long,
     progressFlow: StateFlow<PlayerProgressState>?,
+    syncOffsetMs: Int,
 ): Int {
     val isWindowVisible = LocalWindowActivity.current.isVisible
     return if (progressFlow != null && isWindowVisible) {
-        remember(progressFlow, entries) {
+        remember(progressFlow, entries, syncOffsetMs) {
             progressFlow
-                .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs) }
+                .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs, syncOffsetMs = syncOffsetMs) }
                 .distinctUntilChanged()
         }.collectAsState(
-            initial = resolveActiveFullscreenEntryIndex(entries, progressFlow.value.progressMs),
+            initial =
+                resolveActiveFullscreenEntryIndex(
+                    entries = entries,
+                    positionMs = progressFlow.value.progressMs,
+                    syncOffsetMs = syncOffsetMs,
+                ),
         ).value
     } else {
-        remember(entries, positionMs) {
-            derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
+        remember(entries, positionMs, syncOffsetMs) {
+            derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs, syncOffsetMs = syncOffsetMs) }
         }.value
     }
 }
@@ -594,16 +615,18 @@ private fun FullscreenLyricLineContent(
     isActive: Boolean,
     showTranslation: Boolean,
     style: FullscreenLyricsStyle,
+    activeFontWeight: FontWeight,
     textColor: Color,
     textAlign: TextAlign,
 ) {
+    val inactiveFontWeight = if (activeFontWeight < FontWeight.SemiBold) FontWeight.Normal else FontWeight.SemiBold
     Text(
         text = entry.line.text,
         style =
             MeloType.body.copy(
                 fontSize = if (isActive) style.activeFontSize else style.neighborFontSize,
                 lineHeight = if (isActive) style.activeLineHeight else style.neighborLineHeight,
-                fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
+                fontWeight = if (isActive) activeFontWeight else inactiveFontWeight,
             ),
         color = textColor,
         textAlign = textAlign,
