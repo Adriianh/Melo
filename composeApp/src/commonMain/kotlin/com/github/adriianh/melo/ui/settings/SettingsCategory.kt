@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -77,6 +78,7 @@ import com.github.adriianh.melo.resources.settings_cat_appearance
 import com.github.adriianh.melo.resources.settings_cat_general
 import com.github.adriianh.melo.resources.settings_cat_integrations
 import com.github.adriianh.melo.resources.settings_cat_library
+import com.github.adriianh.melo.resources.settings_cat_now_playing
 import com.github.adriianh.melo.resources.settings_cat_playback
 import com.github.adriianh.melo.resources.settings_cat_updates
 import com.github.adriianh.melo.resources.settings_data_saver_title
@@ -119,6 +121,7 @@ internal enum class SettingsCategory(
     val group: SettingsCategoryGroup,
 ) {
     APPEARANCE(Res.string.settings_cat_appearance, Icons.Default.ColorLens, SettingsCategoryGroup.EXPERIENCE),
+    NOW_PLAYING(Res.string.settings_cat_now_playing, Icons.Default.MusicNote, SettingsCategoryGroup.EXPERIENCE),
     PLAYBACK(Res.string.settings_cat_playback, Icons.Default.Headphones, SettingsCategoryGroup.EXPERIENCE),
     LIBRARY(Res.string.settings_cat_library, Icons.Default.Download, SettingsCategoryGroup.EXPERIENCE),
     ACCOUNT(Res.string.settings_cat_account, Icons.Default.Person, SettingsCategoryGroup.ACCOUNT),
@@ -151,6 +154,7 @@ internal fun SettingsCategory.summary(
 ): String =
     when (this) {
         SettingsCategory.APPEARANCE -> appearanceSummary(settings)
+        SettingsCategory.NOW_PLAYING -> nowPlayingSummary(settings)
         SettingsCategory.PLAYBACK -> playbackSummary(settings)
         SettingsCategory.LIBRARY -> librarySummary(settings)
         SettingsCategory.ACCOUNT ->
@@ -186,6 +190,13 @@ private fun appearanceSummary(settings: Settings): String {
             settings.theme.displayName
         }
     return "$mode · $palette"
+}
+
+@Composable
+private fun nowPlayingSummary(settings: Settings): String {
+    val blur = settings.nowPlayingBlurIntensity.uiLabel()
+    val lyricsScale = settings.lyricsFontScale.uiLabel()
+    return "$blur · $lyricsScale"
 }
 
 @Composable
@@ -417,6 +428,7 @@ private fun CategoryBadgeIcon(
 
 @Composable
 internal fun SettingsSidebar(
+    modifier: Modifier = Modifier,
     categories: List<SettingsCategory>,
     selectedCategory: SettingsCategory?,
     searchQuery: String,
@@ -424,7 +436,6 @@ internal fun SettingsSidebar(
     updateState: UpdateState?,
     onSelectCategory: (SettingsCategory) -> Unit,
     onEscapeClose: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
     val grouped = remember(categories) { SettingsCategory.grouped(categories) }

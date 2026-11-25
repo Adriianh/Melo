@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_close_queue
 import com.github.adriianh.melo.resources.player_sheet_queue_title
+import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
 
@@ -45,6 +46,8 @@ internal fun FullscreenQueueSidePanel(
     queueContent: @Composable () -> Unit,
 ) {
     val shape = RoundedCornerShape(QUEUE_PANEL_RADIUS)
+    val panelFill = if (MeloColors.reduceTransparency) MeloColors.surface1 else Color.Black.copy(alpha = 0.62f)
+    val panelBorder = if (MeloColors.reduceTransparency) MeloColors.border else Color.White.copy(alpha = 0.12f)
     Column(
         modifier =
             modifier
@@ -52,8 +55,8 @@ internal fun FullscreenQueueSidePanel(
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .clip(shape)
-                .background(Color.Black.copy(alpha = 0.62f))
-                .border(width = 1.dp, color = Color.White.copy(alpha = 0.12f), shape = shape)
+                .background(panelFill)
+                .border(width = 1.dp, color = panelBorder, shape = shape)
                 .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         Row(

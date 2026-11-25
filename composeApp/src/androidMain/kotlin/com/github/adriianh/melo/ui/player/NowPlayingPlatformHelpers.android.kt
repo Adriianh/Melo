@@ -2,9 +2,14 @@
 
 package com.github.adriianh.melo.ui.player
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.provider.Settings
+import android.view.WindowManager
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,3 +51,27 @@ internal actual fun rememberPrefersReducedMotion(): Boolean {
 }
 
 internal actual fun Modifier.idleCursorHidden(hidden: Boolean): Modifier = this
+
+@Composable
+internal actual fun KeepScreenOnEffect(enabled: Boolean) {
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+    DisposableEffect(activity, enabled) {
+        val window = activity?.window
+        if (enabled && window != null) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            if (enabled && window != null) {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }

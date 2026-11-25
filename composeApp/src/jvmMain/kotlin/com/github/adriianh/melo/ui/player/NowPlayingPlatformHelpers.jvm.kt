@@ -46,3 +46,6 @@ internal actual fun Modifier.idleCursorHidden(hidden: Boolean): Modifier {
         this
     }
 }
+
+@Composable
+internal actual fun KeepScreenOnEffect(enabled: Boolean) = Unit

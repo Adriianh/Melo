@@ -8,7 +8,13 @@
 
 package com.github.adriianh.melo.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,15 +40,19 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -68,10 +78,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.a11y_decrease_value
+import com.github.adriianh.melo.resources.a11y_increase_value
 import com.github.adriianh.melo.resources.common_action_cancel
+import com.github.adriianh.melo.resources.settings_custom_reset
+import com.github.adriianh.melo.ui.components.controls.MeloSlider
+import com.github.adriianh.melo.ui.components.controls.SegmentedControl
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 private const val DISABLED_ALPHA = 0.4f
 private val ACTION_ROW_INLINE_BREAKPOINT = 480.dp
@@ -928,4 +944,204 @@ internal fun SettingsConfirmDialog(
             )
         },
     )
+}
+
+@Composable
+internal fun <T> SettingPresetWithCustomRow(
+    title: String,
+    subtitle: String,
+    options: List<T>,
+    selected: T,
+    isCustomSelected: Boolean,
+    onSelect: (T) -> Unit,
+    optionLabel: (T) -> String,
+    customValue: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    step: Float,
+    valueLabel: (Float) -> String,
+    onCustomValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    disabledNote: String? = null,
+    onResetCustom: (() -> Unit)? = null,
+) {
+    SettingChoiceRow(
+        title = title,
+        subtitle = subtitle,
+        enabled = enabled,
+        disabledNote = disabledNote,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SegmentedControl(
+                options = options,
+                selected = selected,
+                onSelect = { option ->
+                    if (enabled) onSelect(option)
+                },
+                label = optionLabel,
+                fillMaxWidth = true,
+            )
+
+            AnimatedVisibility(
+                visible = isCustomSelected && enabled,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                SettingSliderControl(
+                    value = customValue,
+                    valueRange = valueRange,
+                    step = step,
+                    valueLabel = valueLabel(customValue),
+                    a11yLabel = title,
+                    onValueChange = onCustomValueChange,
+                    onReset = onResetCustom,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun SettingSliderRow(
+    title: String,
+    subtitle: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    step: Float,
+    valueLabel: (Float) -> String,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    disabledNote: String? = null,
+    onReset: (() -> Unit)? = null,
+) {
+    SettingChoiceRow(
+        title = title,
+        subtitle = subtitle,
+        enabled = enabled,
+        disabledNote = disabledNote,
+        modifier = modifier,
+    ) {
+        SettingSliderControl(
+            value = value,
+            valueRange = valueRange,
+            step = step,
+            valueLabel = valueLabel(value),
+            a11yLabel = title,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            onReset = onReset,
+        )
+    }
+}
+
+@Composable
+internal fun SettingSliderControl(
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    step: Float,
+    valueLabel: String,
+    a11yLabel: String,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onReset: (() -> Unit)? = null,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val safeStep = step.coerceAtLeast(0.001f)
+
+    fun snap(raw: Float): Float {
+        val clamped = raw.coerceIn(valueRange)
+        val steps = ((clamped - valueRange.start) / safeStep).roundToInt()
+        return (valueRange.start + steps * safeStep).coerceIn(valueRange)
+    }
+
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(MeloColors.surface2.copy(alpha = 0.55f))
+                .border(1.dp, MeloColors.border, RoundedCornerShape(10.dp))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        IconButton(
+            onClick = { onValueChange(snap(value - safeStep)) },
+            enabled = enabled && value > valueRange.start + safeStep * 0.25f,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(Res.string.a11y_decrease_value),
+                tint = MeloColors.textPrimary,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        MeloSlider(
+            value = value.coerceIn(valueRange),
+            onValueChange = { onValueChange(snap(it)) },
+            enabled = enabled,
+            valueRange = valueRange,
+            activeColor = accent,
+            inactiveColor = MeloColors.borderStrong,
+            thumbColor = Color.White,
+            alwaysShowThumb = true,
+            trackHeight = 4.dp,
+            hoverTrackHeight = 5.dp,
+            thumbRadius = 5.dp,
+            hitTargetHeight = 28.dp,
+            a11yLabel = a11yLabel,
+            a11yValueDescription = valueLabel,
+            modifier = Modifier.weight(1f),
+        )
+
+        IconButton(
+            onClick = { onValueChange(snap(value + safeStep)) },
+            enabled = enabled && value < valueRange.endInclusive - safeStep * 0.25f,
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(Res.string.a11y_increase_value),
+                tint = MeloColors.textPrimary,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = accent.copy(alpha = 0.16f),
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.35f)),
+        ) {
+            Text(
+                text = valueLabel,
+                style = MeloType.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            )
+        }
+
+        if (onReset != null) {
+            IconButton(
+                onClick = onReset,
+                enabled = enabled,
+                modifier = Modifier.size(32.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = stringResource(Res.string.settings_custom_reset),
+                    tint = MeloColors.textSecondary,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
 }

@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -57,8 +58,8 @@ class PlayerViewModel(
 ) : ViewModel() {
     val playbackState = manager.playbackState
 
-    private val initialAccent =
-        getSettingsUseCase?.getInitial()?.lastAccentColor?.let { Color(it.toULong()) }
+    private val initialSettings = getSettingsUseCase?.getInitial()
+    private val initialAccent = initialSettings?.lastAccentColor?.let { Color(it.toULong()) }
     private val _accentPalette =
         MutableStateFlow(
             initialAccent?.let {
@@ -73,7 +74,7 @@ class PlayerViewModel(
     val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
 
     private val _isFavorite = MutableStateFlow(false)
-    private val _likedTrackIds = MutableStateFlow<Set<String>>(emptySet())
+    private val likedTrackIds = MutableStateFlow<Set<String>>(emptySet())
     private var hasFetchedLikedSongs = false
 
     private val _artistDetails = MutableStateFlow<SearchResult.Artist?>(null)
@@ -81,9 +82,9 @@ class PlayerViewModel(
 
     private val _trackLyrics = MutableStateFlow<TrackLyrics?>(null)
     private val _isLyricsLoading = MutableStateFlow(false)
-    private val _showTranslation = MutableStateFlow(false)
+    private val _showTranslation = MutableStateFlow(initialSettings?.lyricsAutoTranslate ?: false)
     private val _isTranslating = MutableStateFlow(false)
-    private val _targetLanguage = MutableStateFlow("es")
+    private val targetLanguage = MutableStateFlow(initialSettings?.lyricsDefaultTargetLanguage ?: "es")
 
     val progressState: StateFlow<PlayerProgressState> =
         combine(manager.playbackState, manager.queueState) { playback, queue ->
@@ -134,7 +135,7 @@ class PlayerViewModel(
             _isLyricsLoading,
             _showTranslation,
             _isTranslating,
-            _targetLanguage,
+            targetLanguage,
         ) { args: Array<Any?> ->
             val playback = args[0] as com.github.adriianh.core.domain.player.PlaybackState
             val queue = args[1] as com.github.adriianh.core.domain.player.QueueState
@@ -159,12 +160,28 @@ class PlayerViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlayerUiState())
 
     init {
+        getSettingsUseCase?.let { observeSettings ->
+            viewModelScope.launch {
+                observeSettings()
+                    .map { it.lyricsAutoTranslate to it.lyricsDefaultTargetLanguage }
+                    .distinctUntilChanged()
+                    .drop(1)
+                    .collectLatest { (autoTranslate, defaultLang) ->
+                        if (defaultLang != targetLanguage.value) {
+                            setTargetLanguage(defaultLang)
+                        }
+                        if (autoTranslate != _showTranslation.value) {
+                            toggleTranslation()
+                        }
+                    }
+            }
+        }
         observeLibraryUpdatesUseCase?.let { observeUseCase ->
             viewModelScope.launch {
                 observeUseCase().collectLatest { event ->
                     if (event is LibraryUpdateEvent.TrackLiked) {
                         val rawId = event.videoId.removePrefix("piped:")
-                        _likedTrackIds.update { current ->
+                        likedTrackIds.update { current ->
                             if (event.isLiked) {
                                 current + setOf(rawId, event.videoId, "piped:$rawId")
                             } else {
@@ -258,7 +275,7 @@ class PlayerViewModel(
             var lyrics = getTrackLyricsUseCase(artist, title)
             if (_showTranslation.value && (lyrics.hasSync || !lyrics.plainLyrics.isNullOrBlank())) {
                 _isTranslating.value = true
-                lyrics = translateLyricsUseCase(trackId, lyrics, _targetLanguage.value)
+                lyrics = translateLyricsUseCase(trackId, lyrics, targetLanguage.value)
                 _isTranslating.value = false
             }
             _trackLyrics.value = lyrics
@@ -278,13 +295,13 @@ class PlayerViewModel(
         if (currentShow) {
             val hasTranslations =
                 current.syncedLyrics.any { it.translation != null } ||
-                    (current.plainLyrics != null && current.targetLanguage == _targetLanguage.value)
+                    (current.plainLyrics != null && current.targetLanguage == targetLanguage.value)
             if (!hasTranslations) {
                 viewModelScope.launch {
                     _isTranslating.value = true
                     runCatching {
                         val translated =
-                            translateLyricsUseCase(track.id, current, _targetLanguage.value)
+                            translateLyricsUseCase(track.id, current, targetLanguage.value)
                         _trackLyrics.value = translated
                     }
                     _isTranslating.value = false
@@ -294,8 +311,8 @@ class PlayerViewModel(
     }
 
     fun setTargetLanguage(languageCode: String) {
-        if (_targetLanguage.value == languageCode) return
-        _targetLanguage.value = languageCode
+        if (targetLanguage.value == languageCode) return
+        targetLanguage.value = languageCode
         val current = _trackLyrics.value ?: return
         val track = manager.playbackState.value.currentTrack ?: return
 
@@ -356,7 +373,7 @@ class PlayerViewModel(
                                 track.id.removePrefix("piped:").takeIf { it.isNotBlank() },
                             )
                         }.toSet()
-                _likedTrackIds.value = ids
+                likedTrackIds.value = ids
                 updateFavoriteForCurrentTrack()
             }
         }
@@ -369,7 +386,7 @@ class PlayerViewModel(
             return
         }
         val rawId = track.sourceId ?: track.id.removePrefix("piped:")
-        val ids = _likedTrackIds.value
+        val ids = likedTrackIds.value
         _isFavorite.value =
             track.id in ids ||
             (rawId.isNotBlank() && rawId in ids) ||
@@ -386,7 +403,7 @@ class PlayerViewModel(
         val newFavorite = !_isFavorite.value
         _isFavorite.value = newFavorite
         val rawId = videoId.removePrefix("piped:")
-        _likedTrackIds.update { current ->
+        likedTrackIds.update { current ->
             if (newFavorite) {
                 current + setOf(rawId, videoId, "piped:$rawId", track.id)
             } else {
@@ -397,7 +414,7 @@ class PlayerViewModel(
             val result = toggleLikeTrackUseCase(videoId, newFavorite)
             if (result.isFailure) {
                 _isFavorite.value = !newFavorite
-                _likedTrackIds.update { current ->
+                likedTrackIds.update { current ->
                     if (!newFavorite) {
                         current + setOf(rawId, videoId, "piped:$rawId", track.id)
                     } else {

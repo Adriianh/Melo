@@ -16,3 +16,6 @@ internal expect fun PlayerPredictiveBackHandler(
 internal expect fun rememberPrefersReducedMotion(): Boolean
 
 internal expect fun Modifier.idleCursorHidden(hidden: Boolean): Modifier
+
+@Composable
+internal expect fun KeepScreenOnEffect(enabled: Boolean)

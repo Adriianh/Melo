@@ -63,10 +63,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_current_lyric_line
@@ -143,6 +146,7 @@ internal fun FullscreenLyricsPane(
     modifier: Modifier = Modifier,
     progressFlow: StateFlow<PlayerProgressState>? = null,
     style: FullscreenLyricsStyle = FullscreenLyricsStyle.Expanded,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
     showControlsOnHoverOnly: Boolean = false,
     isIdleHidden: Boolean = false,
     reducedMotion: Boolean = false,
@@ -152,6 +156,7 @@ internal fun FullscreenLyricsPane(
     val isHovered by hoverSource.collectIsHoveredAsState()
     var hasFocus by remember { mutableStateOf(false) }
     var showLanguageMenu by remember { mutableStateOf(false) }
+    val resolvedStyle = remember(style, lyricsConfig) { resolveFullscreenLyricsStyle(style, lyricsConfig) }
 
     val hasLyrics = trackLyrics.hasDisplayableLyrics()
     val controlsVisible =
@@ -193,12 +198,14 @@ internal fun FullscreenLyricsPane(
             showTranslation = showTranslation,
             activeAccent = activeAccent,
             onSeekTo = onSeekTo,
-            style = style,
+            style = resolvedStyle,
+            lyricsConfig = lyricsConfig,
             reducedMotion = reducedMotion,
         )
 
         if (showFloatingControls && hasLyrics && controlsAlpha > 0.01f) {
             FullscreenLyricsFloatingControls(
+                showSourceBadge = lyricsConfig.showSourceBadge,
                 showLanguageMenu = showLanguageMenu,
                 onShowLanguageMenuChange = { showLanguageMenu = it },
                 showTranslation = showTranslation,
@@ -228,6 +235,7 @@ private fun FullscreenLyricsBody(
     activeAccent: Color,
     onSeekTo: (Long) -> Unit,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
 ) {
     when {
@@ -239,8 +247,10 @@ private fun FullscreenLyricsBody(
                 positionMs = positionMs,
                 progressFlow = progressFlow,
                 showTranslation = showTranslation,
+                activeAccent = activeAccent,
                 onSeekTo = onSeekTo,
                 style = style,
+                lyricsConfig = lyricsConfig,
                 reducedMotion = reducedMotion,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -250,6 +260,7 @@ private fun FullscreenLyricsBody(
             FullscreenPlainLyricsView(
                 text = trackLyrics.plainLyrics.orEmpty(),
                 style = style,
+                alignment = lyricsConfig.alignment,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -277,6 +288,7 @@ private fun FullscreenLyricsLoading(activeAccent: Color) {
 
 @Composable
 private fun FullscreenLyricsFloatingControls(
+    showSourceBadge: Boolean,
     showLanguageMenu: Boolean,
     onShowLanguageMenuChange: (Boolean) -> Unit,
     showTranslation: Boolean,
@@ -292,7 +304,9 @@ private fun FullscreenLyricsFloatingControls(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LyricsSourceBadge()
+        if (showSourceBadge) {
+            LyricsSourceBadge()
+        }
 
         LyricsTranslationChip(
             showLanguageMenu = showLanguageMenu,
@@ -323,17 +337,26 @@ private fun FullscreenSyncedLyricsList(
     positionMs: Long,
     progressFlow: StateFlow<PlayerProgressState>?,
     showTranslation: Boolean,
+    activeAccent: Color,
     onSeekTo: (Long) -> Unit,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val entries = remember(trackLyrics.syncedLyrics) { buildFullscreenLyricEntries(trackLyrics.syncedLyrics) }
+    val entries =
+        remember(trackLyrics.syncedLyrics, lyricsConfig.showInstrumentalBreaks) {
+            buildFullscreenLyricEntries(
+                lines = trackLyrics.syncedLyrics,
+                includeInstrumentalBreaks = lyricsConfig.showInstrumentalBreaks,
+            )
+        }
     val activeEntryIndex =
         rememberActiveFullscreenEntryIndex(
             entries = entries,
             positionMs = positionMs,
             progressFlow = progressFlow,
+            syncOffsetMs = lyricsConfig.syncOffsetMs,
         )
 
     val listState = rememberLazyListState()
@@ -354,6 +377,7 @@ private fun FullscreenSyncedLyricsList(
         }
     }
 
+    val anchorFraction = lyricsConfig.anchorPosition.viewportFraction
     val estimatedActiveHeightPx = with(density) { style.activeLineHeight.toPx().toInt() }
     AutoCenterActiveLyricEffect(
         listState = listState,
@@ -361,13 +385,20 @@ private fun FullscreenSyncedLyricsList(
         entryCount = entries.size,
         viewportHeightPx = viewportHeightPx,
         estimatedActiveHeightPx = estimatedActiveHeightPx,
+        anchorFraction = anchorFraction,
         reducedMotion = reducedMotion,
         userScrolledRecently = userScrolledRecently,
     )
 
-    val verticalCenterPadding =
+    val topAnchorPadding =
         if (viewportHeightPx > 0) {
-            with(density) { (viewportHeightPx / 2).toDp() }
+            with(density) { (viewportHeightPx * anchorFraction).toInt().toDp() }
+        } else {
+            160.dp
+        }
+    val bottomAnchorPadding =
+        if (viewportHeightPx > 0) {
+            with(density) { (viewportHeightPx * (1f - anchorFraction)).toInt().toDp() }
         } else {
             160.dp
         }
@@ -376,8 +407,8 @@ private fun FullscreenSyncedLyricsList(
         state = listState,
         contentPadding =
             PaddingValues(
-                top = verticalCenterPadding,
-                bottom = verticalCenterPadding,
+                top = topAnchorPadding,
+                bottom = bottomAnchorPadding,
                 start = style.horizontalPadding,
                 end = style.horizontalPadding,
             ),
@@ -413,7 +444,9 @@ private fun FullscreenSyncedLyricsList(
                 isActive = isActive,
                 distance = distance,
                 showTranslation = showTranslation,
+                activeAccent = activeAccent,
                 style = style,
+                lyricsConfig = lyricsConfig,
                 reducedMotion = reducedMotion,
                 onSeekTo = {
                     userScrolledRecently = false
@@ -430,11 +463,13 @@ private fun FullscreenLyricEntryRow(
     isActive: Boolean,
     distance: Int,
     showTranslation: Boolean,
+    activeAccent: Color,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
     onSeekTo: () -> Unit,
 ) {
-    val targetAlpha = lyricAlphaForDistance(distance)
+    val targetAlpha = lyricAlphaForDistance(distance, lyricsConfig.inactiveOpacity)
     val alpha =
         if (reducedMotion) {
             targetAlpha
@@ -446,8 +481,26 @@ private fun FullscreenLyricEntryRow(
             ).value
         }
 
-    val blurRadius = if (reducedMotion) 0.dp else lyricBlurForDistance(distance)
+    val blurRadius = if (reducedMotion || !lyricsConfig.blurEnabled) 0.dp else lyricBlurForDistance(distance)
     val currentLineLabel = stringResource(Res.string.a11y_current_lyric_line)
+    val rowAlignment =
+        if (lyricsConfig.alignment == LyricsAlignment.CENTER) {
+            Alignment.CenterHorizontally
+        } else {
+            Alignment.Start
+        }
+    val textAlign =
+        if (lyricsConfig.alignment == LyricsAlignment.CENTER) {
+            TextAlign.Center
+        } else {
+            TextAlign.Start
+        }
+    val lineColor =
+        if (isActive && lyricsConfig.activeLineColor == LyricsActiveLineColor.ACCENT) {
+            activeAccent
+        } else {
+            Color.White
+        }
 
     val blurModifier =
         if (blurRadius > 0.dp) {
@@ -473,7 +526,7 @@ private fun FullscreenLyricEntryRow(
                 ).then(blurModifier)
                 .alpha(alpha)
                 .padding(vertical = 4.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = rowAlignment,
     ) {
         when (entry) {
             is FullscreenLyricEntry.LyricLine -> {
@@ -482,6 +535,9 @@ private fun FullscreenLyricEntryRow(
                     isActive = isActive,
                     showTranslation = showTranslation,
                     style = style,
+                    activeFontWeight = lyricsConfig.activeLineWeight.toComposeFontWeight(),
+                    textColor = lineColor,
+                    textAlign = textAlign,
                 )
             }
 
@@ -489,7 +545,7 @@ private fun FullscreenLyricEntryRow(
                 val instrumentalLabel = stringResource(Res.string.a11y_instrumental_break)
                 DancingMelodyIndicator(
                     isActive = isActive && !reducedMotion,
-                    tint = Color.White,
+                    tint = lineColor,
                     baseFontSize = if (isActive) 28.sp else 20.sp,
                     modifier =
                         Modifier
@@ -508,10 +564,11 @@ private fun AutoCenterActiveLyricEffect(
     entryCount: Int,
     viewportHeightPx: Int,
     estimatedActiveHeightPx: Int,
+    anchorFraction: Float,
     reducedMotion: Boolean,
     userScrolledRecently: Boolean,
 ) {
-    LaunchedEffect(activeEntryIndex, viewportHeightPx, reducedMotion, userScrolledRecently) {
+    LaunchedEffect(activeEntryIndex, viewportHeightPx, anchorFraction, reducedMotion, userScrolledRecently) {
         val canScrollToActive = activeEntryIndex in 0 until entryCount && viewportHeightPx > 0
         if (canScrollToActive && !userScrolledRecently) {
             val activeItemHeightPx =
@@ -535,19 +592,25 @@ private fun rememberActiveFullscreenEntryIndex(
     entries: List<FullscreenLyricEntry>,
     positionMs: Long,
     progressFlow: StateFlow<PlayerProgressState>?,
+    syncOffsetMs: Int,
 ): Int {
     val isWindowVisible = LocalWindowActivity.current.isVisible
     return if (progressFlow != null && isWindowVisible) {
-        remember(progressFlow, entries) {
+        remember(progressFlow, entries, syncOffsetMs) {
             progressFlow
-                .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs) }
+                .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs, syncOffsetMs = syncOffsetMs) }
                 .distinctUntilChanged()
         }.collectAsState(
-            initial = resolveActiveFullscreenEntryIndex(entries, progressFlow.value.progressMs),
+            initial =
+                resolveActiveFullscreenEntryIndex(
+                    entries = entries,
+                    positionMs = progressFlow.value.progressMs,
+                    syncOffsetMs = syncOffsetMs,
+                ),
         ).value
     } else {
-        remember(entries, positionMs) {
-            derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs) }
+        remember(entries, positionMs, syncOffsetMs) {
+            derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs, syncOffsetMs = syncOffsetMs) }
         }.value
     }
 }
@@ -558,16 +621,22 @@ private fun FullscreenLyricLineContent(
     isActive: Boolean,
     showTranslation: Boolean,
     style: FullscreenLyricsStyle,
+    activeFontWeight: FontWeight,
+    textColor: Color,
+    textAlign: TextAlign,
 ) {
+    val inactiveFontWeight = if (activeFontWeight < FontWeight.SemiBold) FontWeight.Normal else FontWeight.SemiBold
     Text(
         text = entry.line.text,
         style =
             MeloType.body.copy(
                 fontSize = if (isActive) style.activeFontSize else style.neighborFontSize,
                 lineHeight = if (isActive) style.activeLineHeight else style.neighborLineHeight,
-                fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
+                fontWeight = if (isActive) activeFontWeight else inactiveFontWeight,
             ),
-        color = Color.White,
+        color = textColor,
+        textAlign = textAlign,
+        modifier = Modifier.fillMaxWidth(),
     )
 
     val translation = entry.line.translation
@@ -582,7 +651,9 @@ private fun FullscreenLyricLineContent(
                     lineHeight = style.translationLineHeight,
                     fontWeight = FontWeight.Normal,
                 ),
-            color = Color.White.copy(alpha = if (isActive) 0.84f else 0.72f),
+            color = textColor.copy(alpha = if (isActive) 0.84f else 0.72f),
+            textAlign = textAlign,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -591,8 +662,10 @@ private fun FullscreenLyricLineContent(
 private fun FullscreenPlainLyricsView(
     text: String,
     style: FullscreenLyricsStyle,
+    alignment: LyricsAlignment,
     modifier: Modifier = Modifier,
 ) {
+    val isCentered = alignment == LyricsAlignment.CENTER
     Box(
         modifier =
             modifier
@@ -604,7 +677,7 @@ private fun FullscreenPlainLyricsView(
                     start = style.horizontalPadding,
                     end = style.horizontalPadding,
                 ),
-        contentAlignment = Alignment.TopStart,
+        contentAlignment = if (isCentered) Alignment.TopCenter else Alignment.TopStart,
     ) {
         Text(
             text = text,
@@ -615,6 +688,8 @@ private fun FullscreenPlainLyricsView(
                     fontWeight = FontWeight.Medium,
                 ),
             color = Color.White.copy(alpha = 0.92f),
+            textAlign = if (isCentered) TextAlign.Center else TextAlign.Start,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
