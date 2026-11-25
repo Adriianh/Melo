@@ -96,6 +96,8 @@
     <string name="a11y_volume">Volume</string>
     <string name="a11y_close_queue">Close queue</string>
     <string name="a11y_lyrics_source">Lyrics source: %1$s</string>
+    <string name="a11y_decrease_value">Decrease value</string>
+    <string name="a11y_increase_value">Increase value</string>
 
     <!-- Search -->
     <string name="search_placeholder_home">What do you want to listen to?</string>
@@ -417,6 +419,8 @@
     <string name="settings_group_account">Account</string>
     <string name="settings_group_app">App</string>
     <string name="settings_cat_appearance">Appearance</string>
+    <string name="settings_cat_now_playing">Now Playing</string>
+    <string name="settings_custom_reset">Reset</string>
     <string name="settings_cat_playback">Playback</string>
     <string name="settings_cat_library">Library</string>
     <string name="settings_cat_account">Account</string>

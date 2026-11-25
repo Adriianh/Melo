@@ -96,6 +96,8 @@
     <string name="a11y_volume">Volumen</string>
     <string name="a11y_close_queue">Cerrar cola</string>
     <string name="a11y_lyrics_source">Fuente de letras: %1$s</string>
+    <string name="a11y_decrease_value">Disminuir valor</string>
+    <string name="a11y_increase_value">Aumentar valor</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
@@ -417,6 +419,8 @@
     <string name="settings_group_account">Cuenta</string>
     <string name="settings_group_app">Aplicación</string>
     <string name="settings_cat_appearance">Apariencia</string>
+    <string name="settings_cat_now_playing">Reproductor</string>
+    <string name="settings_custom_reset">Restablecer</string>
     <string name="settings_cat_playback">Reproducción</string>
     <string name="settings_cat_library">Biblioteca</string>
     <string name="settings_cat_account">Cuenta</string>
