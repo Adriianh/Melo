@@ -46,24 +46,26 @@ class JvmMeloPlayer : MeloPlayer {
     private var currentVolume = 75
     private val released = AtomicBoolean(false)
 
-    private val initJob: Job = scope.launch(Dispatchers.IO) {
-        initializePlayer()
-    }
+    private val initJob: Job =
+        scope.launch(Dispatchers.IO) {
+            initializePlayer()
+        }
 
     private fun initializePlayer() {
         try {
-            val args = mutableListOf(
-                "--no-video",
-                "--no-xlib",
-                "--no-osd",
-                "--no-sub-autodetect-file",
-                "--no-spu",
-                "--no-stats",
-                "--no-snapshot-preview",
-                "--network-caching=500",
-                "--file-caching=1000",
-                "--clock-jitter=0",
-            )
+            val args =
+                mutableListOf(
+                    "--no-video",
+                    "--no-xlib",
+                    "--no-osd",
+                    "--no-sub-autodetect-file",
+                    "--no-spu",
+                    "--no-stats",
+                    "--no-snapshot-preview",
+                    "--network-caching=500",
+                    "--file-caching=1000",
+                    "--clock-jitter=0",
+                )
             detectedPluginsDir?.let {
                 args.add("--plugin-path=${it.absolutePath}")
             }
@@ -80,7 +82,7 @@ class JvmMeloPlayer : MeloPlayer {
                                 isPlaying = true,
                                 isBuffering = false,
                                 isFinished = false,
-                                error = null
+                                error = null,
                             )
                         }
                         scope.launch {
@@ -98,7 +100,10 @@ class JvmMeloPlayer : MeloPlayer {
                         }
                     }
 
-                    override fun buffering(mediaPlayer: MediaPlayer?, newCache: Float) {
+                    override fun buffering(
+                        mediaPlayer: MediaPlayer?,
+                        newCache: Float,
+                    ) {
                         val isBuffering = newCache < 100f
                         _state.update { it.copy(isBuffering = isBuffering) }
                     }
@@ -113,7 +118,10 @@ class JvmMeloPlayer : MeloPlayer {
                         stopProgressUpdate()
                     }
 
-                    override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) {
+                    override fun lengthChanged(
+                        mediaPlayer: MediaPlayer?,
+                        newLength: Long,
+                    ) {
                         _state.update { it.copy(durationMs = newLength) }
                     }
 
@@ -123,7 +131,7 @@ class JvmMeloPlayer : MeloPlayer {
                                 isPlaying = false,
                                 isBuffering = false,
                                 isFinished = false,
-                                error = "Playback error: Check your internet connection or stream source."
+                                error = "Playback error: Check your internet connection or stream source.",
                             )
                         }
                     }
@@ -132,7 +140,7 @@ class JvmMeloPlayer : MeloPlayer {
                         _state.update { it.copy(isPlaying = false, isFinished = true) }
                         stopProgressUpdate()
                     }
-                }
+                },
             )
             player.audio().setVolume(currentVolume)
             refreshAudioOutputsInternal()
@@ -145,7 +153,11 @@ class JvmMeloPlayer : MeloPlayer {
         }
     }
 
-    override fun load(url: String, track: Track, initialPositionMs: Long) {
+    override fun load(
+        url: String,
+        track: Track,
+        initialPositionMs: Long,
+    ) {
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -153,7 +165,7 @@ class JvmMeloPlayer : MeloPlayer {
                 durationMs = track.durationMs,
                 isBuffering = true,
                 isFinished = false,
-                error = null
+                error = null,
             )
         }
         val now = System.currentTimeMillis()
@@ -168,7 +180,7 @@ class JvmMeloPlayer : MeloPlayer {
                         currentTrack = track,
                         isPlaying = false,
                         isBuffering = false,
-                        error = "VLC media engine is not available. Please install VLC 64-bit."
+                        error = "VLC media engine is not available. Please install VLC 64-bit.",
                     )
                 }
                 return@launch
@@ -176,11 +188,12 @@ class JvmMeloPlayer : MeloPlayer {
             try {
                 player.controls().stop()
                 val (mediaTarget, baseOptions) = resolveMediaTarget(url)
-                val options = if (initialPositionMs > 0) {
-                    baseOptions + ":start-time=${initialPositionMs / 1000.0}"
-                } else {
-                    baseOptions
-                }
+                val options =
+                    if (initialPositionMs > 0) {
+                        baseOptions + ":start-time=${initialPositionMs / 1000.0}"
+                    } else {
+                        baseOptions
+                    }
                 player.media().play(mediaTarget, *options)
                 player.audio().setVolume(currentVolume)
             } catch (e: Throwable) {
@@ -188,7 +201,7 @@ class JvmMeloPlayer : MeloPlayer {
                     it.copy(
                         isBuffering = false,
                         isPlaying = false,
-                        error = "Playback error: ${e.message}"
+                        error = "Playback error: ${e.message}",
                     )
                 }
             }
@@ -196,25 +209,30 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     private fun resolveMediaTarget(url: String): Pair<String, Array<String>> {
-        val localPath = when {
-            url.startsWith("file://") || url.startsWith("file:/") -> {
-                runCatching {
-                    val cleanUri = if (url.startsWith("file://") && !url.startsWith("file:///")) {
-                        "file:///" + url.removePrefix("file://")
-                    } else url
-                    File(java.net.URI(cleanUri.replace('\\', '/'))).absolutePath
-                }.getOrNull() ?: url.removePrefix("file://").removePrefix("file:/")
+        val localPath =
+            when {
+                url.startsWith("file://") || url.startsWith("file:/") -> {
+                    runCatching {
+                        val cleanUri =
+                            if (url.startsWith("file://") && !url.startsWith("file:///")) {
+                                "file:///" + url.removePrefix("file://")
+                            } else {
+                                url
+                            }
+                        File(java.net.URI(cleanUri.replace('\\', '/'))).absolutePath
+                    }.getOrNull() ?: url.removePrefix("file://").removePrefix("file:/")
+                }
+                File(url).exists() -> url
+                else -> null
             }
-            File(url).exists() -> url
-            else -> null
-        }
 
         if (localPath != null && File(localPath).exists()) {
-            val localOptions = arrayOf(
-                ":file-caching=500",
-                ":no-video",
-                ":no-spu",
-            )
+            val localOptions =
+                arrayOf(
+                    ":file-caching=500",
+                    ":no-video",
+                    ":no-spu",
+                )
             return Pair(File(localPath).absolutePath, localOptions)
         }
 
@@ -246,7 +264,7 @@ class JvmMeloPlayer : MeloPlayer {
                 isPlaying = false,
                 isBuffering = false,
                 isFinished = false,
-                error = null
+                error = null,
             )
         }
         scope.launch(Dispatchers.IO) {
@@ -375,7 +393,10 @@ class JvmMeloPlayer : MeloPlayer {
         }
     }
 
-    override fun setIdleTrack(track: Track, initialPositionMs: Long) {
+    override fun setIdleTrack(
+        track: Track,
+        initialPositionMs: Long,
+    ) {
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -384,62 +405,78 @@ class JvmMeloPlayer : MeloPlayer {
                 isPlaying = false,
                 isBuffering = false,
                 isFinished = false,
-                error = null
+                error = null,
             )
         }
     }
 
     private fun buildVlcOptions(url: String): Array<String> {
-        val baseOptions = arrayOf(
-            ":network-caching=1500",
-            ":http-reconnect=true",
-            ":no-check-certificates",
-            ":no-video",
-            ":no-spu",
-        )
-        if (!url.contains("googlevideo.com")) {
-            return baseOptions + arrayOf(
-                ":http-user-agent=$BROWSER_UA",
-                ":user-agent=$BROWSER_UA",
+        val baseOptions =
+            arrayOf(
+                ":network-caching=1500",
+                ":http-reconnect=true",
+                ":no-check-certificates",
+                ":no-video",
+                ":no-spu",
             )
+        if (!url.contains("googlevideo.com")) {
+            return baseOptions +
+                arrayOf(
+                    ":http-user-agent=$BROWSER_UA",
+                    ":user-agent=$BROWSER_UA",
+                )
         }
         val client = extractQueryParam(url, "c") ?: ""
         val userAgent = youTubeUserAgent(client)
         val origin =
             if (client == "ANDROID_MUSIC") "https://music.youtube.com" else "https://www.youtube.com"
-        return baseOptions + arrayOf(
-            ":http-user-agent=$userAgent",
-            ":user-agent=$userAgent",
-            ":http-referrer=$origin/",
-        )
+        return baseOptions +
+            arrayOf(
+                ":http-user-agent=$userAgent",
+                ":user-agent=$userAgent",
+                ":http-referrer=$origin/",
+            )
     }
 
-    private fun extractQueryParam(url: String, param: String): String? {
-        return url.substringAfter("?", "")
+    private fun extractQueryParam(
+        url: String,
+        param: String,
+    ): String? =
+        url
+            .substringAfter("?", "")
             .split("&")
             .map { it.split("=", limit = 2) }
             .firstOrNull { it.size == 2 && it[0] == param }
             ?.get(1)
-    }
 
-    private fun youTubeUserAgent(client: String): String = when (client) {
-        "IOS" -> "com.google.ios.youtube/20.51.39 (iPhone16,2; U; CPU iOS 18_2 like Mac OS X;)"
-        "ANDROID_VR" -> "com.google.android.apps.youtube.vr.oculus/1.61.48 (Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1; Cronet/132.0.6808.3)"
-        "ANDROID_MUSIC" -> "com.google.android.apps.youtube.music/7.21.50 (Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UD1A.231105.004; Cronet/132.0.6808.3) gzip"
-        "TVHTML5" -> "Mozilla/5.0(SMART-TV; Linux; Tizen 4.0.0.2) AppleWebkit/605.1.15 (KHTML, like Gecko) SamsungBrowser/9.2 TV Safari/605.1.15"
-        "TVHTML5_SIMPLY_EMBEDDED_PLAYER" -> "Mozilla/5.0 (PlayStation; PlayStation 4/12.02) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15"
-        else -> BROWSER_UA
-    }
+    private fun youTubeUserAgent(client: String): String =
+        when (client) {
+            "IOS" -> "com.google.ios.youtube/20.51.39 (iPhone16,2; U; CPU iOS 18_2 like Mac OS X;)"
+            "ANDROID_VR" ->
+                "com.google.android.apps.youtube.vr.oculus/1.61.48 " +
+                    "(Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1; Cronet/132.0.6808.3)"
+            "ANDROID_MUSIC" ->
+                "com.google.android.apps.youtube.music/7.21.50 " +
+                    "(Linux; U; Android 14; en_US; Pixel 8 Pro; Build/UD1A.231105.004; Cronet/132.0.6808.3) gzip"
+            "TVHTML5" ->
+                "Mozilla/5.0(SMART-TV; Linux; Tizen 4.0.0.2) " +
+                    "AppleWebkit/605.1.15 (KHTML, like Gecko) SamsungBrowser/9.2 TV Safari/605.1.15"
+            "TVHTML5_SIMPLY_EMBEDDED_PLAYER" ->
+                "Mozilla/5.0 (PlayStation; PlayStation 4/12.02) " +
+                    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15"
+            else -> BROWSER_UA
+        }
 
     private fun startProgressUpdate() {
         progressJob?.cancel()
-        progressJob = scope.launch {
-            while (true) {
-                val time = mediaPlayer?.status()?.time() ?: 0L
-                _state.update { it.copy(progressMs = time) }
-                delay(500.milliseconds)
+        progressJob =
+            scope.launch {
+                while (true) {
+                    val time = mediaPlayer?.status()?.time() ?: 0L
+                    _state.update { it.copy(progressMs = time) }
+                    delay(500.milliseconds)
+                }
             }
-        }
     }
 
     private fun stopProgressUpdate() {
@@ -463,21 +500,21 @@ class JvmMeloPlayer : MeloPlayer {
                 name.contains("default", ignoreCase = true) ||
                 name.contains("predeterminad", ignoreCase = true)
 
+        private val audioOutputKindKeywords =
+            listOf(
+                AudioOutputKind.BLUETOOTH to listOf("bluetooth", "airpods", "buds", "bt "),
+                AudioOutputKind.HEADPHONES to listOf("headphone", "headset", "auricular", "earphone"),
+                AudioOutputKind.USB to listOf("usb", "dac"),
+                AudioOutputKind.HDMI to listOf("hdmi", "displayport", "monitor", "tv"),
+                AudioOutputKind.SPEAKER to listOf("speaker", "altavoz", "realtek", "built-in"),
+            )
+
         private fun inferAudioOutputKind(name: String): AudioOutputKind {
             val lower = name.lowercase()
-            return when {
-                "bluetooth" in lower || "airpods" in lower || "buds" in lower || "bt " in lower ->
-                    AudioOutputKind.BLUETOOTH
-                "headphone" in lower || "headset" in lower || "auricular" in lower || "earphone" in lower ->
-                    AudioOutputKind.HEADPHONES
-                "usb" in lower || "dac" in lower ->
-                    AudioOutputKind.USB
-                "hdmi" in lower || "displayport" in lower || "monitor" in lower || "tv" in lower ->
-                    AudioOutputKind.HDMI
-                "speaker" in lower || "altavoz" in lower || "realtek" in lower || "built-in" in lower ->
-                    AudioOutputKind.SPEAKER
-                else -> AudioOutputKind.OTHER
-            }
+            return audioOutputKindKeywords
+                .firstOrNull { (_, keywords) -> keywords.any { it in lower } }
+                ?.first
+                ?: AudioOutputKind.OTHER
         }
 
         init {
@@ -512,22 +549,27 @@ class JvmMeloPlayer : MeloPlayer {
             val resourcesDir =
                 System.getProperty("compose.application.resources.dir")?.let { File(it) }
             val appDir = resourcesDir?.parentFile
-            val candidates = listOfNotNull(
-                resourcesDir?.resolve("vlc"),
-                resourcesDir?.resolve("windows/vlc"),
-                appDir?.resolve("resources/vlc"),
-                appDir?.resolve("vlc"),
-                File("resources/vlc"),
-                File("app/resources/vlc"),
-                File("vlc"),
-                File("C:\\Program Files\\VideoLAN\\VLC"),
-                File("C:\\Program Files (x86)\\VideoLAN\\VLC"),
-            )
+            val candidates =
+                listOfNotNull(
+                    resourcesDir?.resolve("vlc"),
+                    resourcesDir?.resolve("windows/vlc"),
+                    appDir?.resolve("resources/vlc"),
+                    appDir?.resolve("vlc"),
+                    File("resources/vlc"),
+                    File("app/resources/vlc"),
+                    File("vlc"),
+                    File("C:\\Program Files\\VideoLAN\\VLC"),
+                    File("C:\\Program Files (x86)\\VideoLAN\\VLC"),
+                )
             for (dir in candidates) {
-                if (dir.exists() && (File(dir, "libvlc.dll").exists() || File(
-                        dir,
-                        "libvlc.so"
-                    ).exists())
+                if (dir.exists() &&
+                    (
+                        File(dir, "libvlc.dll").exists() ||
+                            File(
+                                dir,
+                                "libvlc.so",
+                            ).exists()
+                    )
                 ) {
                     log.fine("Found VLC libraries in: ${dir.absolutePath}")
                     try {

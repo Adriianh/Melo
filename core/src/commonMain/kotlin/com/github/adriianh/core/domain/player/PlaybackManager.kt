@@ -21,21 +21,47 @@ interface PlaybackManager {
     val events: SharedFlow<PlaybackEvent>
 
     fun playTrack(track: Track)
+
     fun playTrackInQueue(track: Track)
-    fun setQueue(tracks: List<Track>, startIndex: Int = 0)
+
+    fun setQueue(
+        tracks: List<Track>,
+        startIndex: Int = 0,
+    )
+
     fun addToQueue(track: Track)
-    fun insertToQueue(track: Track, index: Int)
+
+    fun insertToQueue(
+        track: Track,
+        index: Int,
+    )
+
     fun removeFromQueue(index: Int)
-    fun moveQueueItem(fromIndex: Int, toIndex: Int)
+
+    fun moveQueueItem(
+        fromIndex: Int,
+        toIndex: Int,
+    )
+
     fun playNext()
+
     fun playPrevious()
+
     fun togglePlayPause()
+
     fun toggleShuffle()
+
     fun toggleRepeat()
+
     fun seekTo(positionMs: Long)
+
     fun setVolume(volume: Float)
+
     fun toggleMute()
+
     fun refreshAudioOutputs() = Unit
+
     fun selectAudioOutput(deviceId: String?) = Unit
+
     fun release()
 }

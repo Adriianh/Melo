@@ -14,14 +14,30 @@ interface MeloPlayer {
     val selectedAudioOutputId: StateFlow<String?>
         get() = NULL_PLAYER_AUDIO_OUTPUT_ID
 
-    fun load(url: String, track: Track, initialPositionMs: Long = 0)
+    fun load(
+        url: String,
+        track: Track,
+        initialPositionMs: Long = 0,
+    )
+
     fun play()
+
     fun pause()
+
     fun stop()
+
     fun seekTo(positionMs: Long)
+
     fun setVolume(volume: Float)
+
     fun refreshAudioOutputs() = Unit
+
     fun selectAudioOutput(deviceId: String?): Boolean = false
+
     fun release()
-    fun setIdleTrack(track: Track, initialPositionMs: Long = 0)
+
+    fun setIdleTrack(
+        track: Track,
+        initialPositionMs: Long = 0,
+    )
 }
