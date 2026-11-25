@@ -1,18 +1,29 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.LyricsActiveLineColor
 import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.LyricsAnchorPosition
+import com.github.adriianh.core.domain.model.LyricsAutoResumeDelay
 import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.TrackLyrics
+import kotlin.math.abs
 
 data class NowPlayingLyricsConfig(
     val blurEnabled: Boolean = true,
@@ -27,6 +38,9 @@ data class NowPlayingLyricsConfig(
     val syncOffsetMs: Int = 0,
     val showSourceBadge: Boolean = true,
     val showInstrumentalBreaks: Boolean = true,
+    val showCompactPreviewLine: Boolean = true,
+    val autoResumeDelayMs: Long? = LyricsAutoResumeDelay.SECONDS_3.delayMs,
+    val keepSyncButtonOnIdle: Boolean = true,
 )
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
@@ -135,6 +149,127 @@ internal fun shouldShowLyricsFloatingControls(
         isIdleHidden -> false
         else -> !showControlsOnHoverOnly || isHovered || hasFocus
     }
+
+internal val LocalIdleBypassRegistry = staticCompositionLocalOf<IdleBypassRegistry?> { null }
+
+internal class IdleBypassRegistry {
+    private val rects = mutableMapOf<String, Rect>()
+    var rootCoordinates: LayoutCoordinates? = null
+
+    fun register(
+        key: String,
+        coordinates: LayoutCoordinates,
+    ) {
+        val root = rootCoordinates ?: return
+        if (root.isAttached && coordinates.isAttached) {
+            rects[key] = root.localBoundingBoxOf(coordinates, clipBounds = false)
+        }
+    }
+
+    fun unregister(key: String) {
+        rects.remove(key)
+    }
+
+    fun contains(position: Offset?): Boolean = position != null && rects.values.any { it.contains(position) }
+}
+
+internal fun shouldShowResumeLyricsSyncButton(
+    autoResumeDelayMs: Long?,
+    userScrolledRecently: Boolean,
+    activeEntryIndex: Int,
+    keepSyncButtonOnIdle: Boolean,
+    isIdleHidden: Boolean,
+): Boolean =
+    autoResumeDelayMs == null &&
+        userScrolledRecently &&
+        activeEntryIndex >= 0 &&
+        (keepSyncButtonOnIdle || !isIdleHidden)
+
+internal suspend fun LazyListState.animateResumeToLyric(
+    activeEntryIndex: Int,
+    entryCount: Int,
+    estimatedActiveHeightPx: Int,
+) {
+    val visibleTarget = layoutInfo.visibleItemsInfo.firstOrNull { it.index == activeEntryIndex }
+    if (visibleTarget != null) {
+        animateScrollBy(
+            value = (visibleTarget.offset + visibleTarget.size / 2).toFloat(),
+            animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        )
+        return
+    }
+
+    val firstVisible = firstVisibleItemIndex
+    if (abs(activeEntryIndex - firstVisible) > 12) {
+        val step = if (firstVisible > activeEntryIndex) 8 else -8
+        scrollToItem(index = (activeEntryIndex + step).coerceIn(0, entryCount - 1))
+    }
+
+    val visibleItems = layoutInfo.visibleItemsInfo
+    val avgPitchPx =
+        if (visibleItems.isNotEmpty()) {
+            visibleItems.sumOf { it.size }.toFloat() / visibleItems.size + layoutInfo.mainAxisItemSpacing
+        } else {
+            estimatedActiveHeightPx.toFloat()
+        }
+    animateScrollBy(
+        value = (activeEntryIndex - firstVisibleItemIndex) * avgPitchPx,
+        animationSpec = tween(durationMillis = 750, easing = FastOutSlowInEasing),
+    )
+
+    val settledTarget = layoutInfo.visibleItemsInfo.firstOrNull { it.index == activeEntryIndex }
+    if (settledTarget != null) {
+        animateScrollBy(
+            value = (settledTarget.offset + settledTarget.size / 2).toFloat(),
+            animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        )
+    } else {
+        animateScrollToItem(index = activeEntryIndex, scrollOffset = estimatedActiveHeightPx / 2)
+    }
+}
+
+internal data class FullscreenLyricsStyle(
+    val activeFontSize: TextUnit,
+    val activeLineHeight: TextUnit,
+    val neighborFontSize: TextUnit,
+    val neighborLineHeight: TextUnit,
+    val plainFontSize: TextUnit,
+    val plainLineHeight: TextUnit,
+    val translationFontSize: TextUnit,
+    val translationLineHeight: TextUnit,
+    val itemSpacing: Dp,
+    val horizontalPadding: Dp,
+) {
+    companion object {
+        val Expanded =
+            FullscreenLyricsStyle(
+                activeFontSize = 42.sp,
+                activeLineHeight = 52.sp,
+                neighborFontSize = 32.sp,
+                neighborLineHeight = 42.sp,
+                plainFontSize = 24.sp,
+                plainLineHeight = 36.sp,
+                translationFontSize = 18.sp,
+                translationLineHeight = 25.sp,
+                itemSpacing = 20.dp,
+                horizontalPadding = 16.dp,
+            )
+
+        val Compact =
+            FullscreenLyricsStyle(
+                activeFontSize = 30.sp,
+                activeLineHeight = 38.sp,
+                neighborFontSize = 23.sp,
+                neighborLineHeight = 31.sp,
+                plainFontSize = 19.sp,
+                plainLineHeight = 29.sp,
+                translationFontSize = 15.sp,
+                translationLineHeight = 21.sp,
+                itemSpacing = 16.dp,
+                horizontalPadding = 8.dp,
+            )
+    }
+}
 
 internal fun lyricAlphaForDistance(
     distance: Int,

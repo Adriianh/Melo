@@ -20,12 +20,14 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeartBroken
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,6 +43,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.github.adriianh.core.domain.model.ArtworkCornerStyle
@@ -68,6 +71,8 @@ import com.github.adriianh.melo.ui.i18n.UiText
 import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.components.ExpandedSectionSheet
 import com.github.adriianh.melo.ui.player.components.FullscreenPlayerActions
+import com.github.adriianh.melo.ui.player.components.IdleBypassRegistry
+import com.github.adriianh.melo.ui.player.components.LocalIdleBypassRegistry
 import com.github.adriianh.melo.ui.player.components.NowPlayingFullscreenContent
 import com.github.adriianh.melo.ui.player.components.NowPlayingLyricsConfig
 import com.github.adriianh.melo.ui.player.components.NowPlayingQueueSection
@@ -137,6 +142,8 @@ fun NowPlayingScreen(
 
     var lastActivityTick by remember { mutableIntStateOf(0) }
     var controlsVisible by remember { mutableStateOf(true) }
+    val currentControlsVisible by rememberUpdatedState(controlsVisible)
+    val idleBypassRegistry = remember { IdleBypassRegistry() }
     var isAudioOutputMenuOpen by remember { mutableStateOf(false) }
 
     val interaction = rememberTrackInteraction(libraryViewModel, queueViewModel)
@@ -156,14 +163,13 @@ fun NowPlayingScreen(
     KeepScreenOnEffect(enabled = keepScreenOn)
 
     val keepControlsVisible =
-        !isDesktop ||
-            idleHideDelayMs == null ||
+        idleHideDelayMs == null ||
             showQueue ||
             isAudioOutputMenuOpen ||
             interaction.contextMenuTrack != null ||
             interaction.addToPlaylistTrack != null
 
-    LaunchedEffect(isDesktop, lastActivityTick, keepControlsVisible, idleHideDelayMs) {
+    LaunchedEffect(lastActivityTick, keepControlsVisible, idleHideDelayMs) {
         controlsVisible = true
         if (!keepControlsVisible) {
             delay(idleHideDelayMs.milliseconds)
@@ -387,6 +393,14 @@ fun NowPlayingScreen(
                     onArtistClick(target)
                 }
             },
+            onAlbumClick = {
+                val album = effectiveState.currentTrack?.album
+                val artist = effectiveState.currentTrack?.artist.orEmpty()
+                if (!album.isNullOrBlank()) {
+                    onCollapse()
+                    onAlbumWithArtistClick(album, artist)
+                }
+            },
             onToggleFavorite = viewModel::toggleFavorite,
             onSeekTo = viewModel::seekTo,
             onTogglePlayPause = viewModel::togglePlayPause,
@@ -447,32 +461,52 @@ fun NowPlayingScreen(
                     }
                     false
                 }.idleCursorHidden(isDesktop && !controlsVisible)
+                .onGloballyPositioned { idleBypassRegistry.rootCoordinates = it }
                 .pointerInput(isDesktop) {
-                    if (!isDesktop) return@pointerInput
                     var lastPosition: Offset? = null
+                    var consumingWakeGesture = false
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent(PointerEventPass.Initial)
                             val position = event.changes.firstOrNull()?.position
-                            when (event.type) {
-                                PointerEventType.Enter -> {
-                                    if (lastPosition == null) {
-                                        lastPosition = position
+                            if (!isDesktop) {
+                                if (event.type == PointerEventType.Press) {
+                                    val bypassed = !currentControlsVisible && idleBypassRegistry.contains(position)
+                                    if (!bypassed) {
+                                        if (!currentControlsVisible) {
+                                            consumingWakeGesture = true
+                                            event.changes.forEach { it.consume() }
+                                            controlsVisible = true
+                                        }
+                                        lastActivityTick++
+                                    }
+                                } else if (consumingWakeGesture) {
+                                    event.changes.forEach { it.consume() }
+                                    if (event.changes.none { it.pressed }) {
+                                        consumingWakeGesture = false
                                     }
                                 }
+                            } else {
+                                when (event.type) {
+                                    PointerEventType.Enter -> {
+                                        if (lastPosition == null) {
+                                            lastPosition = position
+                                        }
+                                    }
 
-                                PointerEventType.Press -> {
-                                    lastPosition = position
-                                    lastActivityTick++
-                                }
-
-                                PointerEventType.Move -> {
-                                    val prev = lastPosition
-                                    if (prev == null) {
-                                        lastPosition = position
-                                    } else if (position != null && (position - prev).getDistanceSquared() > 4f) {
+                                    PointerEventType.Press -> {
                                         lastPosition = position
                                         lastActivityTick++
+                                    }
+
+                                    PointerEventType.Move -> {
+                                        val prev = lastPosition
+                                        if (prev == null) {
+                                            lastPosition = position
+                                        } else if (position != null && (position - prev).getDistanceSquared() > 4f) {
+                                            lastPosition = position
+                                            lastActivityTick++
+                                        }
                                     }
                                 }
                             }
@@ -517,41 +551,43 @@ fun NowPlayingScreen(
                 titleBar()
             }
 
-            NowPlayingFullscreenContent(
-                state = effectiveState,
-                positionMs = effectiveState.progressMs,
-                progressFlow = viewModel.progressState,
-                volume = volume,
-                activeAccent = activeAccent,
-                sizeClass = sizeClass,
-                isDesktop = isDesktop,
-                reducedMotion = reducedMotion,
-                showLyrics = showLyrics,
-                showQueue = showQueue,
-                controlsVisible = controlsVisible,
-                actions = actions,
-                artworkCornerRadiusDp = artworkCornerRadiusDp,
-                showRemainingTime = showRemainingTime,
-                audioOutputs = audioOutputs,
-                selectedAudioOutputId = selectedAudioOutputId,
-                lyricsConfig = lyricsConfig,
-                queueSidePanelContent = {
-                    NowPlayingQueueSection(
-                        state = effectiveState,
-                        activeAccent = activeAccent,
-                        onMoreClick = onMoreClick,
-                        onOpenContextMenu = onOpenContextMenu,
-                        onSwipeQueueItem = onSwipeQueueItem,
-                        onSwipeSuggestionItem = onSwipeSuggestionItem,
-                        onPlayNextSuggestionItem = { track ->
-                            interaction.showPlayNextSnackbar(track, activeAccent)
-                        },
-                        onSwipeRight = onSwipeRight,
-                        isLiked = isTrackLiked,
-                    )
-                },
-                modifier = Modifier.weight(1f),
-            )
+            CompositionLocalProvider(LocalIdleBypassRegistry provides idleBypassRegistry) {
+                NowPlayingFullscreenContent(
+                    state = effectiveState,
+                    positionMs = effectiveState.progressMs,
+                    progressFlow = viewModel.progressState,
+                    volume = volume,
+                    activeAccent = activeAccent,
+                    sizeClass = sizeClass,
+                    isDesktop = isDesktop,
+                    reducedMotion = reducedMotion,
+                    showLyrics = showLyrics,
+                    showQueue = showQueue,
+                    controlsVisible = controlsVisible,
+                    actions = actions,
+                    artworkCornerRadiusDp = artworkCornerRadiusDp,
+                    showRemainingTime = showRemainingTime,
+                    audioOutputs = audioOutputs,
+                    selectedAudioOutputId = selectedAudioOutputId,
+                    lyricsConfig = lyricsConfig,
+                    queueSidePanelContent = {
+                        NowPlayingQueueSection(
+                            state = effectiveState,
+                            activeAccent = activeAccent,
+                            onMoreClick = onMoreClick,
+                            onOpenContextMenu = onOpenContextMenu,
+                            onSwipeQueueItem = onSwipeQueueItem,
+                            onSwipeSuggestionItem = onSwipeSuggestionItem,
+                            onPlayNextSuggestionItem = { track ->
+                                interaction.showPlayNextSnackbar(track, activeAccent)
+                            },
+                            onSwipeRight = onSwipeRight,
+                            isLiked = isTrackLiked,
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
         if (!sizeClass.isExpandedOrMediumLandscape) {

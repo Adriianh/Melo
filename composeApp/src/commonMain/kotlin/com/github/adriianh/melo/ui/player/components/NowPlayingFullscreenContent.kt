@@ -10,16 +10,19 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,8 +38,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,22 +52,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.ArtworkCornerStyle
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.player_lyrics_header
 import com.github.adriianh.melo.resources.player_lyrics_unavailable
+import com.github.adriianh.melo.resources.player_now_playing_from_album
+import com.github.adriianh.melo.resources.player_now_playing_header_label
 import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
+import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.MeloWindowSizeClass
 import com.github.adriianh.melo.util.PlayerProgressState
 import com.github.adriianh.melo.util.PlayerUiState
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.jetbrains.compose.resources.stringResource
 
 private val EXPANDED_CONTENT_MAX_WIDTH = 1280.dp
@@ -74,6 +95,7 @@ internal data class FullscreenPlayerActions(
     val onCollapse: () -> Unit,
     val onMoreClick: ((SongMenuAnchor?) -> Unit)? = null,
     val onArtistClick: () -> Unit = {},
+    val onAlbumClick: () -> Unit = {},
     val onToggleFavorite: () -> Unit = {},
     val onSeekTo: (Long) -> Unit = {},
     val onTogglePlayPause: () -> Unit = {},
@@ -116,7 +138,7 @@ internal fun NowPlayingFullscreenContent(
     selectedAudioOutputId: String? = null,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
-    val isIdleHidden = isDesktop && !controlsVisible
+    val isIdleHidden = !controlsVisible
     val chromeAlpha by animateFloatAsState(
         targetValue = if (!isIdleHidden) 1f else 0f,
         animationSpec =
@@ -166,6 +188,7 @@ internal fun NowPlayingFullscreenContent(
                 reducedMotion = reducedMotion,
                 showLyrics = showLyrics,
                 showQueue = showQueue,
+                chromeAlpha = chromeAlpha,
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
@@ -185,6 +208,8 @@ internal fun NowPlayingFullscreenContent(
                 reducedMotion = reducedMotion,
                 showLyrics = showLyrics,
                 showQueue = showQueue,
+                isIdleHidden = isIdleHidden,
+                chromeAlpha = chromeAlpha,
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
@@ -550,6 +575,7 @@ private fun MediumPortraitNowPlayingLayout(
     reducedMotion: Boolean,
     showLyrics: Boolean,
     showQueue: Boolean,
+    chromeAlpha: Float,
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
     showRemainingTime: Boolean,
@@ -623,6 +649,8 @@ private fun MediumPortraitNowPlayingLayout(
                         onArtistClick = actions.onArtistClick,
                         onToggleFavorite = actions.onToggleFavorite,
                         onMoreClick = actions.onMoreClick,
+                        showActions = chromeAlpha > 0.01f,
+                        reducedMotion = reducedMotion,
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -646,9 +674,19 @@ private fun MediumPortraitNowPlayingLayout(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                     )
                 } else {
+                    val album = state.currentTrack?.album.orEmpty()
                     NowPlayingTopBar(
                         onCollapse = actions.onCollapse,
                         onMoreClick = actions.onMoreClick,
+                        headerSubtitle =
+                            if (album.isNotBlank()) {
+                                stringResource(Res.string.player_now_playing_from_album)
+                            } else {
+                                stringResource(Res.string.player_now_playing_header_label)
+                            },
+                        headerTitle = album.ifBlank { state.artist },
+                        onHeaderClick = if (album.isNotBlank()) actions.onAlbumClick else actions.onArtistClick,
+                        modifier = Modifier.alpha(chromeAlpha),
                     )
 
                     Box(
@@ -692,7 +730,7 @@ private fun MediumPortraitNowPlayingLayout(
             audioOutputs = audioOutputs,
             selectedAudioOutputId = selectedAudioOutputId,
             actions = actions,
-            modifier = Modifier.widthIn(max = 460.dp),
+            modifier = Modifier.widthIn(max = 460.dp).alpha(chromeAlpha),
         )
     }
 }
@@ -706,6 +744,8 @@ private fun CompactNowPlayingLayout(
     reducedMotion: Boolean,
     showLyrics: Boolean,
     showQueue: Boolean,
+    isIdleHidden: Boolean,
+    chromeAlpha: Float,
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
     showRemainingTime: Boolean,
@@ -716,6 +756,23 @@ private fun CompactNowPlayingLayout(
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
     val effectiveShowLyrics = showLyrics && (hasLyrics || state.isLyricsLoading)
+    val showLiveLyricStrip =
+        lyricsConfig.showCompactPreviewLine && state.trackLyrics?.hasSync == true
+    var controlsBlockHeightPx by remember { mutableIntStateOf(0) }
+    val heroTranslationY by animateFloatAsState(
+        targetValue = if (isIdleHidden && !effectiveShowLyrics) controlsBlockHeightPx * 0.35f else 0f,
+        animationSpec =
+            tween(
+                durationMillis =
+                    when {
+                        reducedMotion -> 0
+                        isIdleHidden -> 650
+                        else -> 280
+                    },
+                easing = FastOutSlowInEasing,
+            ),
+        label = "CompactHeroIdleCenterY",
+    )
 
     Column(
         modifier =
@@ -726,27 +783,7 @@ private fun CompactNowPlayingLayout(
     ) {
         AnimatedContent(
             targetState = effectiveShowLyrics,
-            transitionSpec = {
-                val enterMs = if (reducedMotion) 0 else 300
-                val exitMs = if (reducedMotion) 0 else 220
-                if (targetState) {
-                    (
-                        fadeIn(tween(enterMs, easing = FastOutSlowInEasing)) +
-                            slideInVertically(tween(enterMs, easing = FastOutSlowInEasing)) { it / 10 }
-                    ) togetherWith (
-                        fadeOut(tween(exitMs, easing = FastOutSlowInEasing)) +
-                            slideOutVertically(tween(exitMs, easing = FastOutSlowInEasing)) { -it / 10 }
-                    )
-                } else {
-                    (
-                        fadeIn(tween(enterMs, easing = FastOutSlowInEasing)) +
-                            slideInVertically(tween(enterMs, easing = FastOutSlowInEasing)) { -it / 10 }
-                    ) togetherWith (
-                        fadeOut(tween(exitMs, easing = FastOutSlowInEasing)) +
-                            slideOutVertically(tween(exitMs, easing = FastOutSlowInEasing)) { it / 10 }
-                    )
-                }
-            },
+            transitionSpec = { verticalLyricsTransitionSpec(targetState, reducedMotion) },
             label = "CompactLyricsTransition",
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { showingLyrics ->
@@ -765,6 +802,8 @@ private fun CompactNowPlayingLayout(
                         onArtistClick = actions.onArtistClick,
                         onToggleFavorite = actions.onToggleFavorite,
                         onMoreClick = actions.onMoreClick,
+                        showActions = !isIdleHidden,
+                        reducedMotion = reducedMotion,
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -784,63 +823,310 @@ private fun CompactNowPlayingLayout(
                         style = FullscreenLyricsStyle.Compact,
                         lyricsConfig = lyricsConfig,
                         showControlsOnHoverOnly = false,
+                        isIdleHidden = isIdleHidden,
                         reducedMotion = reducedMotion,
                         showFloatingControls = false,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                     )
                 } else {
-                    NowPlayingTopBar(
-                        onCollapse = actions.onCollapse,
-                        onMoreClick = actions.onMoreClick,
-                    )
-
-                    BoxWithConstraints(
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        val artworkSide = minOf(maxWidth, maxHeight)
-                        FullscreenArtworkCard(
-                            albumArt = state.albumArt,
-                            title = state.title,
-                            isBuffering = state.isBuffering,
-                            activeAccent = activeAccent,
-                            cornerRadius = artworkCornerRadiusDp.dp,
-                            onClick = if (hasLyrics) actions.onToggleLyrics else null,
-                            modifier = Modifier.size(artworkSide),
-                        )
-                    }
-
-                    FullscreenTrackTitleRow(
-                        title = state.title,
-                        artist = state.artist,
-                        isFavorite = state.isFavorite,
+                    CompactArtworkView(
+                        state = state,
+                        positionMs = positionMs,
+                        progressFlow = progressFlow,
                         activeAccent = activeAccent,
-                        onArtistClick = actions.onArtistClick,
-                        onToggleFavorite = actions.onToggleFavorite,
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        hasLyrics = hasLyrics,
+                        showLiveLyricStrip = showLiveLyricStrip,
+                        artworkCornerRadiusDp = artworkCornerRadiusDp,
+                        lyricsConfig = lyricsConfig,
+                        reducedMotion = reducedMotion,
+                        chromeAlpha = chromeAlpha,
+                        heroTranslationY = heroTranslationY,
+                        actions = actions,
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        val bottomEnterMs = if (reducedMotion) 0 else 240
+        val bottomExitMs = if (reducedMotion) 0 else 420
+        AnimatedVisibility(
+            visible = !isIdleHidden || !effectiveShowLyrics,
+            enter =
+                expandVertically(
+                    expandFrom = Alignment.Bottom,
+                    animationSpec = tween(bottomEnterMs, easing = FastOutSlowInEasing),
+                ) + fadeIn(tween(bottomEnterMs, easing = FastOutSlowInEasing)),
+            exit =
+                shrinkVertically(
+                    shrinkTowards = Alignment.Bottom,
+                    animationSpec = tween(bottomExitMs, easing = FastOutSlowInEasing),
+                ) + fadeOut(tween(bottomExitMs, easing = FastOutSlowInEasing)),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(10.dp))
 
-        StackedBottomControls(
-            state = state,
-            progressFlow = progressFlow,
-            activeAccent = activeAccent,
-            hasLyrics = hasLyrics,
-            isLyricsActive = effectiveShowLyrics,
-            isQueueActive = showQueue,
-            showRemainingTime = showRemainingTime,
-            audioOutputs = audioOutputs,
-            selectedAudioOutputId = selectedAudioOutputId,
-            actions = actions,
+                StackedBottomControls(
+                    state = state,
+                    progressFlow = progressFlow,
+                    activeAccent = activeAccent,
+                    hasLyrics = hasLyrics,
+                    isLyricsActive = effectiveShowLyrics,
+                    isQueueActive = showQueue,
+                    showRemainingTime = showRemainingTime,
+                    audioOutputs = audioOutputs,
+                    selectedAudioOutputId = selectedAudioOutputId,
+                    actions = actions,
+                    modifier =
+                        Modifier
+                            .onSizeChanged { controlsBlockHeightPx = it.height }
+                            .alpha(chromeAlpha),
+                )
+            }
+        }
+    }
+}
+
+private fun verticalLyricsTransitionSpec(
+    targetShowingLyrics: Boolean,
+    reducedMotion: Boolean,
+): androidx.compose.animation.ContentTransform {
+    val enterMs = if (reducedMotion) 0 else 300
+    val exitMs = if (reducedMotion) 0 else 220
+    val enterOffsetSign = if (targetShowingLyrics) 1 else -1
+    return (
+        fadeIn(tween(enterMs, easing = FastOutSlowInEasing)) +
+            slideInVertically(tween(enterMs, easing = FastOutSlowInEasing)) { enterOffsetSign * (it / 10) }
+    ) togetherWith (
+        fadeOut(tween(exitMs, easing = FastOutSlowInEasing)) +
+            slideOutVertically(tween(exitMs, easing = FastOutSlowInEasing)) { -enterOffsetSign * (it / 10) }
+    )
+}
+
+@Composable
+private fun CompactArtworkView(
+    state: PlayerUiState,
+    positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
+    activeAccent: Color,
+    hasLyrics: Boolean,
+    showLiveLyricStrip: Boolean,
+    artworkCornerRadiusDp: Int,
+    lyricsConfig: NowPlayingLyricsConfig,
+    reducedMotion: Boolean,
+    chromeAlpha: Float,
+    heroTranslationY: Float,
+    actions: FullscreenPlayerActions,
+) {
+    val album = state.currentTrack?.album.orEmpty()
+    NowPlayingTopBar(
+        onCollapse = actions.onCollapse,
+        onMoreClick = actions.onMoreClick,
+        headerSubtitle =
+            if (album.isNotBlank()) {
+                stringResource(Res.string.player_now_playing_from_album)
+            } else {
+                stringResource(Res.string.player_now_playing_header_label)
+            },
+        headerTitle = album.ifBlank { state.artist },
+        onHeaderClick = if (album.isNotBlank()) actions.onAlbumClick else actions.onArtistClick,
+        modifier = Modifier.alpha(chromeAlpha),
+    )
+
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .graphicsLayer { translationY = heroTranslationY },
+        contentAlignment = Alignment.Center,
+    ) {
+        val reservedTextHeight = if (showLiveLyricStrip) 196.dp else 100.dp
+        val artworkSide = minOf(maxWidth - 16.dp, maxHeight - reservedTextHeight).coerceAtLeast(160.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            FullscreenArtworkCard(
+                albumArt = state.albumArt,
+                title = state.title,
+                isBuffering = state.isBuffering,
+                activeAccent = activeAccent,
+                cornerRadius = artworkCornerRadiusDp.dp,
+                onClick = if (hasLyrics) actions.onToggleLyrics else null,
+                modifier = Modifier.size(artworkSide),
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            FullscreenTrackTitleRow(
+                title = state.title,
+                artist = state.artist,
+                isFavorite = state.isFavorite,
+                activeAccent = activeAccent,
+                onArtistClick = actions.onArtistClick,
+                onToggleFavorite = actions.onToggleFavorite,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+
+            if (showLiveLyricStrip) {
+                Spacer(modifier = Modifier.height(14.dp))
+                CompactLiveLyricStrip(
+                    trackLyrics = state.trackLyrics,
+                    positionMs = positionMs,
+                    progressFlow = progressFlow,
+                    activeAccent = activeAccent,
+                    lyricsConfig = lyricsConfig,
+                    reducedMotion = reducedMotion,
+                    onClick = actions.onToggleLyrics,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactLiveLyricStrip(
+    trackLyrics: com.github.adriianh.core.domain.model.TrackLyrics?,
+    positionMs: Long,
+    progressFlow: StateFlow<PlayerProgressState>?,
+    activeAccent: Color,
+    lyricsConfig: NowPlayingLyricsConfig,
+    reducedMotion: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (trackLyrics == null || !trackLyrics.hasSync) return
+    val entries =
+        remember(trackLyrics.syncedLyrics, lyricsConfig.showInstrumentalBreaks) {
+            buildFullscreenLyricEntries(
+                lines = trackLyrics.syncedLyrics,
+                includeInstrumentalBreaks = lyricsConfig.showInstrumentalBreaks,
+            )
+        }
+    val syncOffsetMs = lyricsConfig.syncOffsetMs
+    val isWindowVisible = LocalWindowActivity.current.isVisible
+    val activeIndex =
+        if (progressFlow != null && isWindowVisible) {
+            remember(progressFlow, entries, syncOffsetMs) {
+                progressFlow
+                    .map { resolveActiveFullscreenEntryIndex(entries, it.progressMs, syncOffsetMs = syncOffsetMs) }
+                    .distinctUntilChanged()
+            }.collectAsState(
+                initial =
+                    resolveActiveFullscreenEntryIndex(
+                        entries = entries,
+                        positionMs = progressFlow.value.progressMs,
+                        syncOffsetMs = syncOffsetMs,
+                    ),
+            ).value
+        } else {
+            remember(entries, positionMs, syncOffsetMs) {
+                derivedStateOf { resolveActiveFullscreenEntryIndex(entries, positionMs, syncOffsetMs = syncOffsetMs) }
+            }.value
+        }
+
+    val lyricLines = remember(entries) { entries.withIndex().filter { it.value is FullscreenLyricEntry.LyricLine } }
+    val activePos =
+        lyricLines
+            .indexOfLast { it.index <= activeIndex }
+            .takeIf { it >= 0 }
+            ?: 0
+    val activeLine = (lyricLines.getOrNull(activePos)?.value as? FullscreenLyricEntry.LyricLine)?.line?.text.orEmpty()
+    val nextLine = (lyricLines.getOrNull(activePos + 1)?.value as? FullscreenLyricEntry.LyricLine)?.line?.text
+    if (activeLine.isBlank()) return
+
+    val textAlign = if (lyricsConfig.alignment == LyricsAlignment.CENTER) TextAlign.Center else TextAlign.Start
+    val activeColor =
+        if (lyricsConfig.activeLineColor == LyricsActiveLineColor.ACCENT) activeAccent else Color.White
+    val activeWeight = lyricsConfig.activeLineWeight.toComposeFontWeight()
+    val nextAlpha = lyricAlphaForDistance(1, lyricsConfig.inactiveOpacity)
+    val nextBlur = if (!reducedMotion && lyricsConfig.blurEnabled) lyricBlurForDistance(1) else 0.dp
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .clickable(onClick = onClick)
+                .padding(top = 2.dp, bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = Color.White.copy(alpha = 0.12f),
         )
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.player_lyrics_header).uppercase(),
+                fontSize = 9.5.sp,
+                lineHeight = 12.sp,
+                letterSpacing = 0.10.em,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.48f),
+                textAlign = textAlign,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            AnimatedContent(
+                targetState = activeLine to nextLine,
+                transitionSpec = {
+                    val animMs = if (reducedMotion) 0 else 260
+                    (
+                        fadeIn(tween(animMs, easing = FastOutSlowInEasing)) +
+                            slideInVertically(tween(animMs, easing = FastOutSlowInEasing)) { it / 3 }
+                    ) togetherWith (
+                        fadeOut(tween(animMs, easing = FastOutSlowInEasing)) +
+                            slideOutVertically(tween(animMs, easing = FastOutSlowInEasing)) { -it / 3 }
+                    )
+                },
+                label = "CompactLiveLyricLine",
+                modifier = Modifier.fillMaxWidth(),
+            ) { (current, upcoming) ->
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = current,
+                        style =
+                            MeloType.body.copy(
+                                fontSize = 17.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = activeWeight,
+                            ),
+                        color = activeColor,
+                        textAlign = textAlign,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (!upcoming.isNullOrBlank()) {
+                        val blurModifier = if (nextBlur > 0.dp) Modifier.blur(nextBlur) else Modifier
+                        Text(
+                            text = upcoming,
+                            style =
+                                MeloType.body.copy(
+                                    fontSize = 14.sp,
+                                    lineHeight = 19.sp,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                            color = Color.White.copy(alpha = nextAlpha),
+                            textAlign = textAlign,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().then(blurModifier),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
