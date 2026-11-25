@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -795,7 +794,7 @@ private fun CompactNowPlayingLayout(
                         onMoreClick = actions.onMoreClick,
                     )
 
-                    Box(
+                    BoxWithConstraints(
                         modifier =
                             Modifier
                                 .weight(1f)
@@ -803,6 +802,7 @@ private fun CompactNowPlayingLayout(
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
+                        val artworkSide = minOf(maxWidth, maxHeight)
                         FullscreenArtworkCard(
                             albumArt = state.albumArt,
                             title = state.title,
@@ -810,10 +810,7 @@ private fun CompactNowPlayingLayout(
                             activeAccent = activeAccent,
                             cornerRadius = artworkCornerRadiusDp.dp,
                             onClick = if (hasLyrics) actions.onToggleLyrics else null,
-                            modifier =
-                                Modifier
-                                    .fillMaxHeight()
-                                    .aspectRatio(1f, matchHeightConstraintsFirst = true),
+                            modifier = Modifier.size(artworkSide),
                         )
                     }
 
