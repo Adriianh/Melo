@@ -26,6 +26,7 @@ data class NowPlayingLyricsConfig(
     val anchorPosition: LyricsAnchorPosition = LyricsAnchorPosition.UPPER,
     val syncOffsetMs: Int = 0,
     val showSourceBadge: Boolean = true,
+    val showInstrumentalBreaks: Boolean = true,
 )
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
@@ -56,12 +57,13 @@ internal sealed interface FullscreenLyricEntry {
 internal fun buildFullscreenLyricEntries(
     lines: List<SyncedLine>,
     gapThresholdMs: Long = INSTRUMENTAL_GAP_THRESHOLD_MS,
+    includeInstrumentalBreaks: Boolean = true,
 ): List<FullscreenLyricEntry> {
     if (lines.isEmpty()) return emptyList()
 
     val entries = ArrayList<FullscreenLyricEntry>(lines.size + 4)
     val first = lines.first()
-    if (first.text.isNotBlank() && first.timeMs > gapThresholdMs) {
+    if (includeInstrumentalBreaks && first.text.isNotBlank() && first.timeMs > gapThresholdMs) {
         entries +=
             FullscreenLyricEntry.InstrumentalGap(
                 startTimeMs = 0L,
@@ -76,13 +78,15 @@ internal fun buildFullscreenLyricEntries(
         val next = lines.getOrNull(index + 1)
 
         if (line.text.isBlank()) {
-            entries +=
-                FullscreenLyricEntry.InstrumentalGap(
-                    startTimeMs = line.timeMs,
-                    endTimeMs = next?.timeMs ?: Long.MAX_VALUE,
-                    sourceLineIndex = index,
-                    key = "gap_blank_${line.timeMs}_$index",
-                )
+            if (includeInstrumentalBreaks) {
+                entries +=
+                    FullscreenLyricEntry.InstrumentalGap(
+                        startTimeMs = line.timeMs,
+                        endTimeMs = next?.timeMs ?: Long.MAX_VALUE,
+                        sourceLineIndex = index,
+                        key = "gap_blank_${line.timeMs}_$index",
+                    )
+            }
         } else {
             entries +=
                 FullscreenLyricEntry.LyricLine(

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +43,7 @@ import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
+import com.github.adriianh.core.domain.model.NowPlayingInitialPanel
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
@@ -97,6 +99,8 @@ import com.github.adriianh.melo.resources.settings_dynamic_color_desc
 import com.github.adriianh.melo.resources.settings_dynamic_color_title
 import com.github.adriianh.melo.resources.settings_idle_hide_desc
 import com.github.adriianh.melo.resources.settings_idle_hide_title
+import com.github.adriianh.melo.resources.settings_initial_panel_desc
+import com.github.adriianh.melo.resources.settings_initial_panel_title
 import com.github.adriianh.melo.resources.settings_installed_version_title
 import com.github.adriianh.melo.resources.settings_keep_screen_on_desc
 import com.github.adriianh.melo.resources.settings_keep_screen_on_title
@@ -119,6 +123,7 @@ import com.github.adriianh.melo.resources.settings_kw_download_format
 import com.github.adriianh.melo.resources.settings_kw_download_quality
 import com.github.adriianh.melo.resources.settings_kw_dynamic_color
 import com.github.adriianh.melo.resources.settings_kw_idle_hide
+import com.github.adriianh.melo.resources.settings_kw_initial_panel
 import com.github.adriianh.melo.resources.settings_kw_installed_version
 import com.github.adriianh.melo.resources.settings_kw_keep_screen_on
 import com.github.adriianh.melo.resources.settings_kw_local_folders
@@ -127,6 +132,7 @@ import com.github.adriianh.melo.resources.settings_kw_lyrics_anchor
 import com.github.adriianh.melo.resources.settings_kw_lyrics_auto_translate
 import com.github.adriianh.melo.resources.settings_kw_lyrics_blur
 import com.github.adriianh.melo.resources.settings_kw_lyrics_color
+import com.github.adriianh.melo.resources.settings_kw_lyrics_instrumental_breaks
 import com.github.adriianh.melo.resources.settings_kw_lyrics_offset
 import com.github.adriianh.melo.resources.settings_kw_lyrics_opacity
 import com.github.adriianh.melo.resources.settings_kw_lyrics_scale
@@ -138,7 +144,9 @@ import com.github.adriianh.melo.resources.settings_kw_lyrics_zoom
 import com.github.adriianh.melo.resources.settings_kw_offline_mode
 import com.github.adriianh.melo.resources.settings_kw_reduce_motion
 import com.github.adriianh.melo.resources.settings_kw_reduce_transparency
+import com.github.adriianh.melo.resources.settings_kw_reset_now_playing
 import com.github.adriianh.melo.resources.settings_kw_resume_session
+import com.github.adriianh.melo.resources.settings_kw_show_remaining_time
 import com.github.adriianh.melo.resources.settings_kw_stop_on_close
 import com.github.adriianh.melo.resources.settings_kw_sync_history
 import com.github.adriianh.melo.resources.settings_kw_theme_mode
@@ -162,6 +170,8 @@ import com.github.adriianh.melo.resources.settings_lyrics_blur_disabled_motion
 import com.github.adriianh.melo.resources.settings_lyrics_blur_title
 import com.github.adriianh.melo.resources.settings_lyrics_color_desc
 import com.github.adriianh.melo.resources.settings_lyrics_color_title
+import com.github.adriianh.melo.resources.settings_lyrics_instrumental_breaks_desc
+import com.github.adriianh.melo.resources.settings_lyrics_instrumental_breaks_title
 import com.github.adriianh.melo.resources.settings_lyrics_offset_desc
 import com.github.adriianh.melo.resources.settings_lyrics_offset_title
 import com.github.adriianh.melo.resources.settings_lyrics_opacity_desc
@@ -185,6 +195,11 @@ import com.github.adriianh.melo.resources.settings_reduce_motion_desc
 import com.github.adriianh.melo.resources.settings_reduce_motion_title
 import com.github.adriianh.melo.resources.settings_reduce_transparency_desc
 import com.github.adriianh.melo.resources.settings_reduce_transparency_title
+import com.github.adriianh.melo.resources.settings_reset_now_playing_action
+import com.github.adriianh.melo.resources.settings_reset_now_playing_confirm_message
+import com.github.adriianh.melo.resources.settings_reset_now_playing_confirm_title
+import com.github.adriianh.melo.resources.settings_reset_now_playing_desc
+import com.github.adriianh.melo.resources.settings_reset_now_playing_title
 import com.github.adriianh.melo.resources.settings_resume_session_desc
 import com.github.adriianh.melo.resources.settings_resume_session_title
 import com.github.adriianh.melo.resources.settings_section_account
@@ -196,9 +211,12 @@ import com.github.adriianh.melo.resources.settings_section_language
 import com.github.adriianh.melo.resources.settings_section_lyrics_appearance
 import com.github.adriianh.melo.resources.settings_section_lyrics_behavior
 import com.github.adriianh.melo.resources.settings_section_now_playing_backdrop
+import com.github.adriianh.melo.resources.settings_section_now_playing_reset
 import com.github.adriianh.melo.resources.settings_section_playback
 import com.github.adriianh.melo.resources.settings_section_theme_color
 import com.github.adriianh.melo.resources.settings_section_version
+import com.github.adriianh.melo.resources.settings_show_remaining_time_desc
+import com.github.adriianh.melo.resources.settings_show_remaining_time_title
 import com.github.adriianh.melo.resources.settings_stop_on_close_desc
 import com.github.adriianh.melo.resources.settings_stop_on_close_title
 import com.github.adriianh.melo.resources.settings_sync_history_desc
@@ -564,6 +582,10 @@ private fun MutableList<SettingEntry>.addNowPlayingEntries(
         actions = actions,
         categoryTitle = categoryTitle,
     )
+    addNowPlayingResetEntry(
+        actions = actions,
+        categoryTitle = categoryTitle,
+    )
 }
 
 @Composable
@@ -670,6 +692,55 @@ private fun MutableList<SettingEntry>.addNowPlayingBackdropEntries(
                 valueLabel = { "${it.roundToInt()} dp" },
                 onCustomValueChange = { actions.onArtworkCustomCornerRadiusChanged(it.roundToInt()) },
                 onResetCustom = { actions.onArtworkCustomCornerRadiusChanged(ArtworkCornerStyle.ROUNDED.radiusDp) },
+            )
+        },
+    )
+
+    val initialPanelTitle = stringResource(Res.string.settings_initial_panel_title)
+    val initialPanelDesc = stringResource(Res.string.settings_initial_panel_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_initial_panel",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = initialPanelTitle,
+            description = initialPanelDesc,
+            keywords = keywordsResource(Res.string.settings_kw_initial_panel),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingInlineChoiceRow(
+                title = initialPanelTitle,
+                subtitle = initialPanelDesc,
+            ) { isInline ->
+                val labels = NowPlayingInitialPanel.entries.associateWith { it.uiLabel() }
+                SegmentedControl(
+                    options = NowPlayingInitialPanel.entries,
+                    selected = settings.nowPlayingInitialPanel,
+                    onSelect = actions.onNowPlayingInitialPanelSelected,
+                    label = { labels.getValue(it) },
+                    fillMaxWidth = !isInline,
+                )
+            }
+        },
+    )
+
+    val remainingTimeTitle = stringResource(Res.string.settings_show_remaining_time_title)
+    val remainingTimeDesc = stringResource(Res.string.settings_show_remaining_time_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_show_remaining_time",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = remainingTimeTitle,
+            description = remainingTimeDesc,
+            keywords = keywordsResource(Res.string.settings_kw_show_remaining_time),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = remainingTimeTitle,
+                subtitle = remainingTimeDesc,
+                checked = settings.playerShowRemainingTime,
+                onCheckedChange = actions.onPlayerShowRemainingTimeToggle,
             )
         },
     )
@@ -1056,6 +1127,27 @@ private fun MutableList<SettingEntry>.addLyricsBehaviorEntries(
         },
     )
 
+    val instrumentalBreaksTitle = stringResource(Res.string.settings_lyrics_instrumental_breaks_title)
+    val instrumentalBreaksDesc = stringResource(Res.string.settings_lyrics_instrumental_breaks_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_lyrics_instrumental_breaks",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = instrumentalBreaksTitle,
+            description = instrumentalBreaksDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_instrumental_breaks),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = instrumentalBreaksTitle,
+                subtitle = instrumentalBreaksDesc,
+                checked = settings.lyricsShowInstrumentalBreaks,
+                onCheckedChange = actions.onLyricsShowInstrumentalBreaksToggle,
+            )
+        },
+    )
+
     val autoTranslateTitle = stringResource(Res.string.settings_lyrics_auto_translate_title)
     val autoTranslateDesc = stringResource(Res.string.settings_lyrics_auto_translate_desc)
     add(
@@ -1102,6 +1194,54 @@ private fun MutableList<SettingEntry>.addLyricsBehaviorEntries(
                     onSelect = { (code, _) -> actions.onLyricsDefaultTargetLanguageSelected(code) },
                     title = { (_, label) -> label },
                     enabled = targetLangEnabled,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun MutableList<SettingEntry>.addNowPlayingResetEntry(
+    actions: SettingsActions,
+    categoryTitle: String,
+) {
+    val resetSection = stringResource(Res.string.settings_section_now_playing_reset)
+    val resetTitle = stringResource(Res.string.settings_reset_now_playing_title)
+    val resetDesc = stringResource(Res.string.settings_reset_now_playing_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_reset_defaults",
+            category = SettingsCategory.NOW_PLAYING,
+            section = resetSection,
+            title = resetTitle,
+            description = resetDesc,
+            keywords = keywordsResource(Res.string.settings_kw_reset_now_playing),
+            categoryTitle = categoryTitle,
+        ) {
+            var confirmReset by rememberSaveable { mutableStateOf(false) }
+            SettingActionRow(
+                title = resetTitle,
+                subtitle = resetDesc,
+            ) {
+                SettingActionButton(
+                    text = stringResource(Res.string.settings_reset_now_playing_action),
+                    onClick = { confirmReset = true },
+                    emphasis = SettingActionEmphasis.DESTRUCTIVE,
+                    icon = Icons.Default.RestartAlt,
+                    modifier = Modifier.actionWidth(),
+                )
+            }
+            if (confirmReset) {
+                SettingsConfirmDialog(
+                    title = stringResource(Res.string.settings_reset_now_playing_confirm_title),
+                    message = stringResource(Res.string.settings_reset_now_playing_confirm_message),
+                    confirmText = stringResource(Res.string.settings_reset_now_playing_action),
+                    icon = Icons.Default.RestartAlt,
+                    onConfirm = {
+                        confirmReset = false
+                        actions.onResetNowPlayingDefaults()
+                    },
+                    onDismiss = { confirmReset = false },
                 )
             }
         },

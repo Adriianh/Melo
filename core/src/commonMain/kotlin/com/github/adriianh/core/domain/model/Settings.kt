@@ -164,10 +164,13 @@ data class Settings(
     val lyricsAnchorPosition: LyricsAnchorPosition = LyricsAnchorPosition.UPPER,
     val lyricsSyncOffsetMs: Int = 0,
     val lyricsShowSourceBadge: Boolean = true,
+    val lyricsShowInstrumentalBreaks: Boolean = true,
     val lyricsAutoTranslate: Boolean = false,
     val lyricsDefaultTargetLanguage: String = "es",
     val artworkCornerStyle: ArtworkCornerStyle = ArtworkCornerStyle.ROUNDED,
     val artworkCustomCornerRadiusDp: Int = 20,
+    val nowPlayingInitialPanel: NowPlayingInitialPanel = NowPlayingInitialPanel.AUTO,
+    val playerShowRemainingTime: Boolean = false,
     val fullscreenIdleHideDelay: FullscreenIdleHideDelay = FullscreenIdleHideDelay.SECONDS_3,
     val fullscreenCustomIdleHideSeconds: Int = 4,
     val nowPlayingKeepScreenOn: Boolean = false,
@@ -218,6 +221,39 @@ data class Settings(
             FullscreenIdleHideDelay.CUSTOM -> fullscreenCustomIdleHideSeconds.coerceIn(1, 30) * 1_000L
             else -> fullscreenIdleHideDelay.delayMs
         }
+
+    fun resetNowPlayingDefaults(): Settings {
+        val defaults = Settings()
+        return copy(
+            nowPlayingBlur = defaults.nowPlayingBlur,
+            nowPlayingBlurIntensity = defaults.nowPlayingBlurIntensity,
+            nowPlayingBackdropScrim = defaults.nowPlayingBackdropScrim,
+            artworkCornerStyle = defaults.artworkCornerStyle,
+            artworkCustomCornerRadiusDp = defaults.artworkCustomCornerRadiusDp,
+            nowPlayingInitialPanel = defaults.nowPlayingInitialPanel,
+            playerShowRemainingTime = defaults.playerShowRemainingTime,
+            fullscreenIdleHideDelay = defaults.fullscreenIdleHideDelay,
+            fullscreenCustomIdleHideSeconds = defaults.fullscreenCustomIdleHideSeconds,
+            nowPlayingKeepScreenOn = defaults.nowPlayingKeepScreenOn,
+            lyricsBlurEnabled = defaults.lyricsBlurEnabled,
+            lyricsActiveLineZoom = defaults.lyricsActiveLineZoom,
+            lyricsFontScale = defaults.lyricsFontScale,
+            lyricsCustomFontScale = defaults.lyricsCustomFontScale,
+            lyricsLineSpacing = defaults.lyricsLineSpacing,
+            lyricsCustomLineSpacingDp = defaults.lyricsCustomLineSpacingDp,
+            lyricsActiveLineWeight = defaults.lyricsActiveLineWeight,
+            lyricsInactiveOpacity = defaults.lyricsInactiveOpacity,
+            lyricsCustomInactiveOpacity = defaults.lyricsCustomInactiveOpacity,
+            lyricsAlignment = defaults.lyricsAlignment,
+            lyricsActiveLineColor = defaults.lyricsActiveLineColor,
+            lyricsAnchorPosition = defaults.lyricsAnchorPosition,
+            lyricsSyncOffsetMs = defaults.lyricsSyncOffsetMs,
+            lyricsShowSourceBadge = defaults.lyricsShowSourceBadge,
+            lyricsShowInstrumentalBreaks = defaults.lyricsShowInstrumentalBreaks,
+            lyricsAutoTranslate = defaults.lyricsAutoTranslate,
+            lyricsDefaultTargetLanguage = defaults.lyricsDefaultTargetLanguage,
+        )
+    }
 }
 
 @Serializable
@@ -300,6 +336,13 @@ enum class ArtworkCornerStyle(val radiusDp: Int) {
     ROUNDED(20),
     PILL(32),
     CUSTOM(20),
+}
+
+@Serializable
+enum class NowPlayingInitialPanel {
+    AUTO,
+    ARTWORK,
+    LYRICS,
 }
 
 @Serializable

@@ -88,6 +88,7 @@ internal data class FullscreenPlayerActions(
     val onCloseQueue: () -> Unit = {},
     val onToggleTranslation: () -> Unit = {},
     val onSelectLanguage: (String) -> Unit = {},
+    val onToggleShowRemainingTime: () -> Unit = {},
 )
 
 @Composable
@@ -107,6 +108,7 @@ internal fun NowPlayingFullscreenContent(
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
+    showRemainingTime: Boolean = false,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val isIdleHidden = isDesktop && !controlsVisible
@@ -142,6 +144,7 @@ internal fun NowPlayingFullscreenContent(
                 actions = actions,
                 queueSidePanelContent = queueSidePanelContent,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
+                showRemainingTime = showRemainingTime,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -158,6 +161,7 @@ internal fun NowPlayingFullscreenContent(
                 showQueue = showQueue,
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
+                showRemainingTime = showRemainingTime,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -174,6 +178,7 @@ internal fun NowPlayingFullscreenContent(
                 showQueue = showQueue,
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
+                showRemainingTime = showRemainingTime,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -198,6 +203,7 @@ private fun ExpandedNowPlayingLayout(
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
+    showRemainingTime: Boolean = false,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
@@ -299,6 +305,7 @@ private fun ExpandedNowPlayingLayout(
                         hasLyrics = hasLyrics,
                         showLyrics = showLyrics,
                         showQueue = showQueue,
+                        showRemainingTime = showRemainingTime,
                         chromeAlpha = chromeAlpha,
                         actions = actions,
                         onHeightChanged = { controlsBlockHeightPx = it },
@@ -438,6 +445,7 @@ private fun ExpandedControlsBlock(
     hasLyrics: Boolean,
     showLyrics: Boolean,
     showQueue: Boolean,
+    showRemainingTime: Boolean,
     chromeAlpha: Float,
     actions: FullscreenPlayerActions,
     onHeightChanged: (Int) -> Unit,
@@ -460,6 +468,8 @@ private fun ExpandedControlsBlock(
             progressState = progressFlow,
             timeLabelColor = Color.White.copy(alpha = 0.72f),
             inactiveTrackColor = Color.White.copy(alpha = 0.22f),
+            showRemainingTime = showRemainingTime,
+            onToggleShowRemainingTime = actions.onToggleShowRemainingTime,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -520,6 +530,7 @@ private fun MediumPortraitNowPlayingLayout(
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
+    showRemainingTime: Boolean,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -653,6 +664,7 @@ private fun MediumPortraitNowPlayingLayout(
             hasLyrics = hasLyrics,
             isLyricsActive = effectiveShowLyrics,
             isQueueActive = showQueue,
+            showRemainingTime = showRemainingTime,
             actions = actions,
             modifier = Modifier.widthIn(max = 460.dp),
         )
@@ -670,6 +682,7 @@ private fun CompactNowPlayingLayout(
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
+    showRemainingTime: Boolean,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -797,6 +810,7 @@ private fun CompactNowPlayingLayout(
             hasLyrics = hasLyrics,
             isLyricsActive = effectiveShowLyrics,
             isQueueActive = showQueue,
+            showRemainingTime = showRemainingTime,
             actions = actions,
         )
     }
@@ -810,6 +824,7 @@ private fun StackedBottomControls(
     hasLyrics: Boolean,
     isLyricsActive: Boolean,
     isQueueActive: Boolean,
+    showRemainingTime: Boolean,
     actions: FullscreenPlayerActions,
     modifier: Modifier = Modifier,
 ) {
@@ -824,6 +839,8 @@ private fun StackedBottomControls(
             progressState = progressFlow,
             timeLabelColor = Color.White.copy(alpha = 0.72f),
             inactiveTrackColor = Color.White.copy(alpha = 0.22f),
+            showRemainingTime = showRemainingTime,
+            onToggleShowRemainingTime = actions.onToggleShowRemainingTime,
         )
 
         Spacer(modifier = Modifier.height(6.dp))

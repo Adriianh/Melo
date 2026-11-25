@@ -16,6 +16,7 @@ import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
+import com.github.adriianh.core.domain.model.NowPlayingInitialPanel
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.ThemePreset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
@@ -47,11 +48,15 @@ data class SettingsActions(
     val onLyricsAnchorPositionSelected: (LyricsAnchorPosition) -> Unit = {},
     val onLyricsSyncOffsetChanged: (Int) -> Unit = {},
     val onLyricsShowSourceBadgeToggle: (Boolean) -> Unit = {},
+    val onLyricsShowInstrumentalBreaksToggle: (Boolean) -> Unit = {},
     val onLyricsAutoTranslateToggle: (Boolean) -> Unit = {},
     val onLyricsDefaultTargetLanguageSelected: (String) -> Unit = {},
+    val onNowPlayingInitialPanelSelected: (NowPlayingInitialPanel) -> Unit = {},
+    val onPlayerShowRemainingTimeToggle: (Boolean) -> Unit = {},
     val onFullscreenIdleHideDelaySelected: (FullscreenIdleHideDelay) -> Unit = {},
     val onFullscreenCustomIdleHideSecondsChanged: (Int) -> Unit = {},
     val onNowPlayingKeepScreenOnToggle: (Boolean) -> Unit = {},
+    val onResetNowPlayingDefaults: () -> Unit = {},
     val onDataSaverToggle: (Boolean) -> Unit,
     val onAudioQualitySelected: (AudioQuality) -> Unit,
     val onDownloadFormatSelected: (DownloadFormat) -> Unit = {},

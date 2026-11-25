@@ -1,5 +1,7 @@
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +61,8 @@ fun PlayerSlider(
     progressState: StateFlow<PlayerProgressState>? = null,
     timeLabelColor: Color = MeloColors.textMuted,
     inactiveTrackColor: Color = MeloColors.borderStrong,
+    showRemainingTime: Boolean = false,
+    onToggleShowRemainingTime: (() -> Unit)? = null,
 ) {
     val progress = rememberLiveProgress(state = state, progressState = progressState)
     val durationMs = progress.durationMs
@@ -68,6 +72,12 @@ fun PlayerSlider(
     val displayFraction = if (isSeeking) seekFraction else progress.progressFraction
     val (elapsedText, remainingText) = resolveSliderLabels(isSeeking, seekFraction, durationMs, progress)
     val totalText = if (durationMs > 0) formatTime(durationMs) else progress.remainingLabel
+    val rightLabel =
+        if (showRemainingTime) {
+            if (remainingText == "0:00") remainingText else "-$remainingText"
+        } else {
+            totalText
+        }
     val a11yProgressLabel = stringResource(Res.string.a11y_playback_progress)
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -95,21 +105,48 @@ fun PlayerSlider(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = elapsedText,
-                style = MeloType.labelSmall,
-                color = timeLabelColor,
-            )
-            Text(
-                text = remainingText,
-                style = MeloType.labelSmall,
-                color = timeLabelColor,
-            )
-        }
+        PlayerSliderTimeLabels(
+            elapsedText = elapsedText,
+            rightLabel = rightLabel,
+            timeLabelColor = timeLabelColor,
+            onToggleShowRemainingTime = onToggleShowRemainingTime,
+        )
+    }
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+private fun PlayerSliderTimeLabels(
+    elapsedText: String,
+    rightLabel: String,
+    timeLabelColor: Color,
+    onToggleShowRemainingTime: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = elapsedText,
+            style = MeloType.labelSmall,
+            color = timeLabelColor,
+        )
+        val rightLabelModifier =
+            if (onToggleShowRemainingTime != null) {
+                Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onToggleShowRemainingTime,
+                )
+            } else {
+                Modifier
+            }
+        Text(
+            text = rightLabel,
+            style = MeloType.labelSmall,
+            color = timeLabelColor,
+            modifier = rightLabelModifier,
+        )
     }
 }
 

@@ -576,6 +576,17 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                     backdropScrim = settings.nowPlayingBackdropScrim,
                                     reduceMotion = settings.reduceMotion,
                                     artworkCornerRadiusDp = settings.resolvedArtworkCornerRadiusDp(),
+                                    initialPanel = settings.nowPlayingInitialPanel,
+                                    showRemainingTime = settings.playerShowRemainingTime,
+                                    onToggleShowRemainingTime = {
+                                        coroutineScope.launch {
+                                            updateSettingsUseCase { current ->
+                                                current.copy(
+                                                    playerShowRemainingTime = !current.playerShowRemainingTime,
+                                                )
+                                            }
+                                        }
+                                    },
                                     lyricsConfig =
                                         NowPlayingLyricsConfig(
                                             blurEnabled = settings.lyricsBlurEnabled,
@@ -589,6 +600,7 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             anchorPosition = settings.lyricsAnchorPosition,
                                             syncOffsetMs = settings.lyricsSyncOffsetMs,
                                             showSourceBadge = settings.lyricsShowSourceBadge,
+                                            showInstrumentalBreaks = settings.lyricsShowInstrumentalBreaks,
                                         ),
                                     idleHideDelayMs = settings.resolvedFullscreenIdleHideDelayMs(),
                                     keepScreenOn = settings.nowPlayingKeepScreenOn,
@@ -821,6 +833,13 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onLyricsShowInstrumentalBreaksToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsShowInstrumentalBreaks = enabled)
+                                                }
+                                            }
+                                        },
                                         onLyricsAutoTranslateToggle = { enabled ->
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
@@ -832,6 +851,20 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
                                                     current.copy(lyricsDefaultTargetLanguage = lang)
+                                                }
+                                            }
+                                        },
+                                        onNowPlayingInitialPanelSelected = { panel ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(nowPlayingInitialPanel = panel)
+                                                }
+                                            }
+                                        },
+                                        onPlayerShowRemainingTimeToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(playerShowRemainingTime = enabled)
                                                 }
                                             }
                                         },
@@ -853,6 +886,13 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
                                                     current.copy(nowPlayingKeepScreenOn = enabled)
+                                                }
+                                            }
+                                        },
+                                        onResetNowPlayingDefaults = {
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.resetNowPlayingDefaults()
                                                 }
                                             }
                                         },

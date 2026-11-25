@@ -344,7 +344,13 @@ private fun FullscreenSyncedLyricsList(
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val entries = remember(trackLyrics.syncedLyrics) { buildFullscreenLyricEntries(trackLyrics.syncedLyrics) }
+    val entries =
+        remember(trackLyrics.syncedLyrics, lyricsConfig.showInstrumentalBreaks) {
+            buildFullscreenLyricEntries(
+                lines = trackLyrics.syncedLyrics,
+                includeInstrumentalBreaks = lyricsConfig.showInstrumentalBreaks,
+            )
+        }
     val activeEntryIndex =
         rememberActiveFullscreenEntryIndex(
             entries = entries,

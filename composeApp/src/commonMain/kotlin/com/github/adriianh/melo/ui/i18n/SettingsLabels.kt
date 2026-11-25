@@ -17,6 +17,7 @@ import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
+import com.github.adriianh.core.domain.model.NowPlayingInitialPanel
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.melo.resources.Res
@@ -38,6 +39,9 @@ import com.github.adriianh.melo.resources.settings_idle_hide_10s
 import com.github.adriianh.melo.resources.settings_idle_hide_3s
 import com.github.adriianh.melo.resources.settings_idle_hide_5s
 import com.github.adriianh.melo.resources.settings_idle_hide_off
+import com.github.adriianh.melo.resources.settings_initial_panel_artwork
+import com.github.adriianh.melo.resources.settings_initial_panel_auto
+import com.github.adriianh.melo.resources.settings_initial_panel_lyrics
 import com.github.adriianh.melo.resources.settings_language_english
 import com.github.adriianh.melo.resources.settings_language_spanish
 import com.github.adriianh.melo.resources.settings_language_system
@@ -248,6 +252,16 @@ internal fun ArtworkCornerStyle.labelRes(): StringResource =
 
 @Composable
 internal fun ArtworkCornerStyle.uiLabel(): String = stringResource(labelRes())
+
+internal fun NowPlayingInitialPanel.labelRes(): StringResource =
+    when (this) {
+        NowPlayingInitialPanel.AUTO -> Res.string.settings_initial_panel_auto
+        NowPlayingInitialPanel.ARTWORK -> Res.string.settings_initial_panel_artwork
+        NowPlayingInitialPanel.LYRICS -> Res.string.settings_initial_panel_lyrics
+    }
+
+@Composable
+internal fun NowPlayingInitialPanel.uiLabel(): String = stringResource(labelRes())
 
 internal fun FullscreenIdleHideDelay.labelRes(): StringResource =
     when (this) {

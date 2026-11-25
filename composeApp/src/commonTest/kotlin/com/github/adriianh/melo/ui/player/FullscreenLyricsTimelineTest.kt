@@ -202,4 +202,42 @@ class FullscreenLyricsTimelineTest {
         assertEquals(7_000L, custom.resolvedFullscreenIdleHideDelayMs())
         assertEquals(null, Settings(fullscreenIdleHideDelay = FullscreenIdleHideDelay.OFF).resolvedFullscreenIdleHideDelayMs())
     }
+
+    @Test
+    fun `disabling instrumental breaks omits intro and blank LRC gaps`() {
+        val lines =
+            listOf(
+                SyncedLine(timeMs = 6_000L, text = "Line one"),
+                SyncedLine(timeMs = 8_000L, text = "   "),
+                SyncedLine(timeMs = 12_000L, text = "Line two"),
+            )
+
+        val entries = buildFullscreenLyricEntries(lines, includeInstrumentalBreaks = false)
+
+        assertEquals(2, entries.size)
+        assertIs<FullscreenLyricEntry.LyricLine>(entries[0])
+        assertIs<FullscreenLyricEntry.LyricLine>(entries[1])
+    }
+
+    @Test
+    fun `resetNowPlayingDefaults restores player and lyrics settings without touching theme`() {
+        val modified =
+            Settings(
+                dynamicColor = false,
+                lyricsFontScale = LyricsFontScale.CUSTOM,
+                lyricsCustomFontScale = 1.35f,
+                lyricsShowInstrumentalBreaks = false,
+                playerShowRemainingTime = true,
+                artworkCornerStyle = ArtworkCornerStyle.SQUARE,
+            )
+
+        val reset = modified.resetNowPlayingDefaults()
+
+        assertEquals(false, reset.dynamicColor)
+        assertEquals(LyricsFontScale.NORMAL, reset.lyricsFontScale)
+        assertEquals(1.0f, reset.lyricsCustomFontScale)
+        assertEquals(true, reset.lyricsShowInstrumentalBreaks)
+        assertEquals(false, reset.playerShowRemainingTime)
+        assertEquals(ArtworkCornerStyle.ROUNDED, reset.artworkCornerStyle)
+    }
 }

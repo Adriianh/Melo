@@ -48,6 +48,7 @@ import com.github.adriianh.core.domain.model.DownloadType
 import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
+import com.github.adriianh.core.domain.model.NowPlayingInitialPanel
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.common_action_undo
@@ -101,6 +102,9 @@ fun NowPlayingScreen(
     backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     reduceMotion: Boolean = false,
     artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
+    initialPanel: NowPlayingInitialPanel = NowPlayingInitialPanel.AUTO,
+    showRemainingTime: Boolean = false,
+    onToggleShowRemainingTime: () -> Unit = {},
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
     idleHideDelayMs: Long? = FullscreenIdleHideDelay.SECONDS_3.delayMs,
     keepScreenOn: Boolean = false,
@@ -117,8 +121,14 @@ fun NowPlayingScreen(
     val sizeClass = rememberMeloWindowSizeClass()
     val reducedMotion = reduceMotion || rememberPrefersReducedMotion()
 
-    var showLyrics by remember(sizeClass.isExpandedOrMediumLandscape) {
-        mutableStateOf(sizeClass.isExpandedOrMediumLandscape)
+    var showLyrics by remember(sizeClass.isExpandedOrMediumLandscape, initialPanel) {
+        mutableStateOf(
+            when (initialPanel) {
+                NowPlayingInitialPanel.AUTO -> sizeClass.isExpandedOrMediumLandscape
+                NowPlayingInitialPanel.ARTWORK -> false
+                NowPlayingInitialPanel.LYRICS -> true
+            },
+        )
     }
     var showQueue by remember { mutableStateOf(false) }
     var predictiveBackProgress by remember { mutableStateOf<Float?>(null) }
@@ -398,6 +408,7 @@ fun NowPlayingScreen(
             onCloseQueue = { showQueue = false },
             onToggleTranslation = viewModel::toggleTranslation,
             onSelectLanguage = viewModel::setTargetLanguage,
+            onToggleShowRemainingTime = onToggleShowRemainingTime,
         )
 
     val backProgress = if (!showQueue && !reducedMotion) (predictiveBackProgress ?: 0f) else 0f
@@ -513,6 +524,7 @@ fun NowPlayingScreen(
                 controlsVisible = controlsVisible,
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
+                showRemainingTime = showRemainingTime,
                 lyricsConfig = lyricsConfig,
                 queueSidePanelContent = {
                     NowPlayingQueueSection(
