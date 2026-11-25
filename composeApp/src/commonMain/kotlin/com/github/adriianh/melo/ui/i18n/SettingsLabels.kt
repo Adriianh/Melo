@@ -4,17 +4,25 @@ package com.github.adriianh.melo.ui.i18n
 
 import androidx.compose.runtime.Composable
 import com.github.adriianh.core.domain.model.AppLanguage
+import com.github.adriianh.core.domain.model.ArtworkCornerStyle
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
 import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsAnchorPosition
 import com.github.adriianh.core.domain.model.LyricsFontScale
+import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
+import com.github.adriianh.core.domain.model.LyricsLineSpacing
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.ThemeMode
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.settings_artwork_corner_pill
+import com.github.adriianh.melo.resources.settings_artwork_corner_rounded
+import com.github.adriianh.melo.resources.settings_artwork_corner_square
 import com.github.adriianh.melo.resources.settings_blur_intense
 import com.github.adriianh.melo.resources.settings_blur_medium
 import com.github.adriianh.melo.resources.settings_blur_off
@@ -35,11 +43,24 @@ import com.github.adriianh.melo.resources.settings_language_spanish
 import com.github.adriianh.melo.resources.settings_language_system
 import com.github.adriianh.melo.resources.settings_lyrics_align_center
 import com.github.adriianh.melo.resources.settings_lyrics_align_start
+import com.github.adriianh.melo.resources.settings_lyrics_anchor_center
+import com.github.adriianh.melo.resources.settings_lyrics_anchor_upper
 import com.github.adriianh.melo.resources.settings_lyrics_color_accent
 import com.github.adriianh.melo.resources.settings_lyrics_color_white
+import com.github.adriianh.melo.resources.settings_lyrics_opacity_high
+import com.github.adriianh.melo.resources.settings_lyrics_opacity_normal
+import com.github.adriianh.melo.resources.settings_lyrics_opacity_subtle
 import com.github.adriianh.melo.resources.settings_lyrics_scale_compact
 import com.github.adriianh.melo.resources.settings_lyrics_scale_large
 import com.github.adriianh.melo.resources.settings_lyrics_scale_normal
+import com.github.adriianh.melo.resources.settings_lyrics_spacing_compact
+import com.github.adriianh.melo.resources.settings_lyrics_spacing_normal
+import com.github.adriianh.melo.resources.settings_lyrics_spacing_spacious
+import com.github.adriianh.melo.resources.settings_lyrics_weight_bold
+import com.github.adriianh.melo.resources.settings_lyrics_weight_extra_bold
+import com.github.adriianh.melo.resources.settings_lyrics_weight_normal
+import com.github.adriianh.melo.resources.settings_lyrics_weight_semibold
+import com.github.adriianh.melo.resources.settings_preset_custom
 import com.github.adriianh.melo.resources.settings_quality_auto
 import com.github.adriianh.melo.resources.settings_quality_high
 import com.github.adriianh.melo.resources.settings_quality_hint_auto
@@ -151,10 +172,44 @@ internal fun LyricsFontScale.labelRes(): StringResource =
         LyricsFontScale.COMPACT -> Res.string.settings_lyrics_scale_compact
         LyricsFontScale.NORMAL -> Res.string.settings_lyrics_scale_normal
         LyricsFontScale.LARGE -> Res.string.settings_lyrics_scale_large
+        LyricsFontScale.CUSTOM -> Res.string.settings_preset_custom
     }
 
 @Composable
 internal fun LyricsFontScale.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsLineSpacing.labelRes(): StringResource =
+    when (this) {
+        LyricsLineSpacing.COMPACT -> Res.string.settings_lyrics_spacing_compact
+        LyricsLineSpacing.NORMAL -> Res.string.settings_lyrics_spacing_normal
+        LyricsLineSpacing.SPACIOUS -> Res.string.settings_lyrics_spacing_spacious
+        LyricsLineSpacing.CUSTOM -> Res.string.settings_preset_custom
+    }
+
+@Composable
+internal fun LyricsLineSpacing.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsActiveLineWeight.labelRes(): StringResource =
+    when (this) {
+        LyricsActiveLineWeight.NORMAL -> Res.string.settings_lyrics_weight_normal
+        LyricsActiveLineWeight.SEMIBOLD -> Res.string.settings_lyrics_weight_semibold
+        LyricsActiveLineWeight.BOLD -> Res.string.settings_lyrics_weight_bold
+        LyricsActiveLineWeight.EXTRA_BOLD -> Res.string.settings_lyrics_weight_extra_bold
+    }
+
+@Composable
+internal fun LyricsActiveLineWeight.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsInactiveOpacity.labelRes(): StringResource =
+    when (this) {
+        LyricsInactiveOpacity.SUBTLE -> Res.string.settings_lyrics_opacity_subtle
+        LyricsInactiveOpacity.NORMAL -> Res.string.settings_lyrics_opacity_normal
+        LyricsInactiveOpacity.HIGH -> Res.string.settings_lyrics_opacity_high
+        LyricsInactiveOpacity.CUSTOM -> Res.string.settings_preset_custom
+    }
+
+@Composable
+internal fun LyricsInactiveOpacity.uiLabel(): String = stringResource(labelRes())
 
 internal fun LyricsAlignment.labelRes(): StringResource =
     when (this) {
@@ -174,12 +229,33 @@ internal fun LyricsActiveLineColor.labelRes(): StringResource =
 @Composable
 internal fun LyricsActiveLineColor.uiLabel(): String = stringResource(labelRes())
 
+internal fun LyricsAnchorPosition.labelRes(): StringResource =
+    when (this) {
+        LyricsAnchorPosition.UPPER -> Res.string.settings_lyrics_anchor_upper
+        LyricsAnchorPosition.CENTER -> Res.string.settings_lyrics_anchor_center
+    }
+
+@Composable
+internal fun LyricsAnchorPosition.uiLabel(): String = stringResource(labelRes())
+
+internal fun ArtworkCornerStyle.labelRes(): StringResource =
+    when (this) {
+        ArtworkCornerStyle.SQUARE -> Res.string.settings_artwork_corner_square
+        ArtworkCornerStyle.ROUNDED -> Res.string.settings_artwork_corner_rounded
+        ArtworkCornerStyle.PILL -> Res.string.settings_artwork_corner_pill
+        ArtworkCornerStyle.CUSTOM -> Res.string.settings_preset_custom
+    }
+
+@Composable
+internal fun ArtworkCornerStyle.uiLabel(): String = stringResource(labelRes())
+
 internal fun FullscreenIdleHideDelay.labelRes(): StringResource =
     when (this) {
         FullscreenIdleHideDelay.OFF -> Res.string.settings_idle_hide_off
         FullscreenIdleHideDelay.SECONDS_3 -> Res.string.settings_idle_hide_3s
         FullscreenIdleHideDelay.SECONDS_5 -> Res.string.settings_idle_hide_5s
         FullscreenIdleHideDelay.SECONDS_10 -> Res.string.settings_idle_hide_10s
+        FullscreenIdleHideDelay.CUSTOM -> Res.string.settings_preset_custom
     }
 
 @Composable
