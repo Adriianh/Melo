@@ -39,6 +39,7 @@ import com.github.adriianh.core.domain.model.LyricsActiveLineColor
 import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.LyricsAnchorPosition
+import com.github.adriianh.core.domain.model.LyricsAutoResumeDelay
 import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
@@ -137,10 +138,13 @@ import com.github.adriianh.melo.resources.settings_kw_keep_screen_on
 import com.github.adriianh.melo.resources.settings_kw_local_folders
 import com.github.adriianh.melo.resources.settings_kw_lyrics_alignment
 import com.github.adriianh.melo.resources.settings_kw_lyrics_anchor
+import com.github.adriianh.melo.resources.settings_kw_lyrics_auto_resume
 import com.github.adriianh.melo.resources.settings_kw_lyrics_auto_translate
 import com.github.adriianh.melo.resources.settings_kw_lyrics_blur
 import com.github.adriianh.melo.resources.settings_kw_lyrics_color
+import com.github.adriianh.melo.resources.settings_kw_lyrics_compact_preview
 import com.github.adriianh.melo.resources.settings_kw_lyrics_instrumental_breaks
+import com.github.adriianh.melo.resources.settings_kw_lyrics_keep_sync_button
 import com.github.adriianh.melo.resources.settings_kw_lyrics_offset
 import com.github.adriianh.melo.resources.settings_kw_lyrics_opacity
 import com.github.adriianh.melo.resources.settings_kw_lyrics_scale
@@ -171,6 +175,8 @@ import com.github.adriianh.melo.resources.settings_lyrics_alignment_desc
 import com.github.adriianh.melo.resources.settings_lyrics_alignment_title
 import com.github.adriianh.melo.resources.settings_lyrics_anchor_desc
 import com.github.adriianh.melo.resources.settings_lyrics_anchor_title
+import com.github.adriianh.melo.resources.settings_lyrics_auto_resume_desc
+import com.github.adriianh.melo.resources.settings_lyrics_auto_resume_title
 import com.github.adriianh.melo.resources.settings_lyrics_auto_translate_desc
 import com.github.adriianh.melo.resources.settings_lyrics_auto_translate_title
 import com.github.adriianh.melo.resources.settings_lyrics_blur_desc
@@ -178,8 +184,13 @@ import com.github.adriianh.melo.resources.settings_lyrics_blur_disabled_motion
 import com.github.adriianh.melo.resources.settings_lyrics_blur_title
 import com.github.adriianh.melo.resources.settings_lyrics_color_desc
 import com.github.adriianh.melo.resources.settings_lyrics_color_title
+import com.github.adriianh.melo.resources.settings_lyrics_compact_preview_desc
+import com.github.adriianh.melo.resources.settings_lyrics_compact_preview_title
 import com.github.adriianh.melo.resources.settings_lyrics_instrumental_breaks_desc
 import com.github.adriianh.melo.resources.settings_lyrics_instrumental_breaks_title
+import com.github.adriianh.melo.resources.settings_lyrics_keep_sync_button_desc
+import com.github.adriianh.melo.resources.settings_lyrics_keep_sync_button_disabled
+import com.github.adriianh.melo.resources.settings_lyrics_keep_sync_button_title
 import com.github.adriianh.melo.resources.settings_lyrics_offset_desc
 import com.github.adriianh.melo.resources.settings_lyrics_offset_title
 import com.github.adriianh.melo.resources.settings_lyrics_opacity_desc
@@ -762,38 +773,36 @@ private fun MutableList<SettingEntry>.addNowPlayingBackdropEntries(
         },
     )
 
-    if (platformType == PlatformType.DESKTOP) {
-        val idleHideTitle = stringResource(Res.string.settings_idle_hide_title)
-        val idleHideDesc = stringResource(Res.string.settings_idle_hide_desc)
-        add(
-            SettingEntry(
-                id = "now_playing_fullscreen_idle_hide",
-                category = SettingsCategory.NOW_PLAYING,
-                section = section,
+    val idleHideTitle = stringResource(Res.string.settings_idle_hide_title)
+    val idleHideDesc = stringResource(Res.string.settings_idle_hide_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_fullscreen_idle_hide",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = idleHideTitle,
+            description = idleHideDesc,
+            keywords = keywordsResource(Res.string.settings_kw_idle_hide),
+            categoryTitle = categoryTitle,
+        ) {
+            val labels = FullscreenIdleHideDelay.entries.associateWith { it.uiLabel() }
+            SettingPresetWithCustomRow(
                 title = idleHideTitle,
-                description = idleHideDesc,
-                keywords = keywordsResource(Res.string.settings_kw_idle_hide),
-                categoryTitle = categoryTitle,
-            ) {
-                val labels = FullscreenIdleHideDelay.entries.associateWith { it.uiLabel() }
-                SettingPresetWithCustomRow(
-                    title = idleHideTitle,
-                    subtitle = idleHideDesc,
-                    options = FullscreenIdleHideDelay.entries,
-                    selected = settings.fullscreenIdleHideDelay,
-                    isCustomSelected = settings.fullscreenIdleHideDelay == FullscreenIdleHideDelay.CUSTOM,
-                    onSelect = actions.onFullscreenIdleHideDelaySelected,
-                    optionLabel = { labels.getValue(it) },
-                    customValue = settings.fullscreenCustomIdleHideSeconds.toFloat(),
-                    valueRange = 1f..30f,
-                    step = 1f,
-                    valueLabel = { "${it.roundToInt()}s" },
-                    onCustomValueChange = { actions.onFullscreenCustomIdleHideSecondsChanged(it.roundToInt()) },
-                    onResetCustom = { actions.onFullscreenCustomIdleHideSecondsChanged(4) },
-                )
-            },
-        )
-    }
+                subtitle = idleHideDesc,
+                options = FullscreenIdleHideDelay.entries,
+                selected = settings.fullscreenIdleHideDelay,
+                isCustomSelected = settings.fullscreenIdleHideDelay == FullscreenIdleHideDelay.CUSTOM,
+                onSelect = actions.onFullscreenIdleHideDelaySelected,
+                optionLabel = { labels.getValue(it) },
+                customValue = settings.fullscreenCustomIdleHideSeconds.toFloat(),
+                valueRange = 1f..30f,
+                step = 1f,
+                valueLabel = { "${it.roundToInt()}s" },
+                onCustomValueChange = { actions.onFullscreenCustomIdleHideSecondsChanged(it.roundToInt()) },
+                onResetCustom = { actions.onFullscreenCustomIdleHideSecondsChanged(4) },
+            )
+        },
+    )
 
     if (platformType == PlatformType.ANDROID) {
         val keepScreenTitle = stringResource(Res.string.settings_keep_screen_on_title)
@@ -1161,6 +1170,81 @@ private fun MutableList<SettingEntry>.addLyricsBehaviorEntries(
                 subtitle = instrumentalBreaksDesc,
                 checked = settings.lyricsShowInstrumentalBreaks,
                 onCheckedChange = actions.onLyricsShowInstrumentalBreaksToggle,
+            )
+        },
+    )
+
+    val compactPreviewTitle = stringResource(Res.string.settings_lyrics_compact_preview_title)
+    val compactPreviewDesc = stringResource(Res.string.settings_lyrics_compact_preview_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_lyrics_compact_preview",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = compactPreviewTitle,
+            description = compactPreviewDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_compact_preview),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = compactPreviewTitle,
+                subtitle = compactPreviewDesc,
+                checked = settings.lyricsShowCompactPreviewLine,
+                onCheckedChange = actions.onLyricsShowCompactPreviewLineToggle,
+            )
+        },
+    )
+
+    val autoResumeTitle = stringResource(Res.string.settings_lyrics_auto_resume_title)
+    val autoResumeDesc = stringResource(Res.string.settings_lyrics_auto_resume_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_lyrics_auto_resume",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = autoResumeTitle,
+            description = autoResumeDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_auto_resume),
+            categoryTitle = categoryTitle,
+        ) {
+            val labels = LyricsAutoResumeDelay.entries.associateWith { it.uiLabel() }
+            SettingPresetWithCustomRow(
+                title = autoResumeTitle,
+                subtitle = autoResumeDesc,
+                options = LyricsAutoResumeDelay.entries,
+                selected = settings.lyricsAutoResumeDelay,
+                isCustomSelected = settings.lyricsAutoResumeDelay == LyricsAutoResumeDelay.CUSTOM,
+                onSelect = actions.onLyricsAutoResumeDelaySelected,
+                optionLabel = { labels.getValue(it) },
+                customValue = settings.lyricsCustomAutoResumeSeconds.toFloat(),
+                valueRange = 1f..30f,
+                step = 1f,
+                valueLabel = { "${it.roundToInt()}s" },
+                onCustomValueChange = { actions.onLyricsCustomAutoResumeSecondsChanged(it.roundToInt()) },
+                onResetCustom = { actions.onLyricsCustomAutoResumeSecondsChanged(4) },
+            )
+        },
+    )
+
+    val keepSyncTitle = stringResource(Res.string.settings_lyrics_keep_sync_button_title)
+    val keepSyncDesc = stringResource(Res.string.settings_lyrics_keep_sync_button_desc)
+    add(
+        SettingEntry(
+            id = "now_playing_lyrics_keep_sync_button",
+            category = SettingsCategory.NOW_PLAYING,
+            section = section,
+            title = keepSyncTitle,
+            description = keepSyncDesc,
+            keywords = keywordsResource(Res.string.settings_kw_lyrics_keep_sync_button),
+            categoryTitle = categoryTitle,
+        ) {
+            SettingToggleRow(
+                title = keepSyncTitle,
+                subtitle = keepSyncDesc,
+                checked = settings.lyricsKeepSyncButtonOnIdle,
+                onCheckedChange = actions.onLyricsKeepSyncButtonOnIdleToggle,
+                enabled = settings.lyricsAutoResumeDelay == LyricsAutoResumeDelay.OFF,
+                disabledNote = stringResource(Res.string.settings_lyrics_keep_sync_button_disabled),
             )
         },
     )

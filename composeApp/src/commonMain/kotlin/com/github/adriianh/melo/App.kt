@@ -601,6 +601,9 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             syncOffsetMs = settings.lyricsSyncOffsetMs,
                                             showSourceBadge = settings.lyricsShowSourceBadge,
                                             showInstrumentalBreaks = settings.lyricsShowInstrumentalBreaks,
+                                            showCompactPreviewLine = settings.lyricsShowCompactPreviewLine,
+                                            autoResumeDelayMs = settings.resolvedLyricsAutoResumeDelayMs(),
+                                            keepSyncButtonOnIdle = settings.lyricsKeepSyncButtonOnIdle,
                                         ),
                                     idleHideDelayMs = settings.resolvedFullscreenIdleHideDelayMs(),
                                     keepScreenOn = settings.nowPlayingKeepScreenOn,
@@ -837,6 +840,34 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
                                                     current.copy(lyricsShowInstrumentalBreaks = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsShowCompactPreviewLineToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsShowCompactPreviewLine = enabled)
+                                                }
+                                            }
+                                        },
+                                        onLyricsAutoResumeDelaySelected = { delay ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsAutoResumeDelay = delay)
+                                                }
+                                            }
+                                        },
+                                        onLyricsCustomAutoResumeSecondsChanged = { seconds ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsCustomAutoResumeSeconds = seconds)
+                                                }
+                                            }
+                                        },
+                                        onLyricsKeepSyncButtonOnIdleToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(lyricsKeepSyncButtonOnIdle = enabled)
                                                 }
                                             }
                                         },

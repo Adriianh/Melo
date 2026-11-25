@@ -2,15 +2,24 @@
 
 package com.github.adriianh.melo.ui.player.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
@@ -172,23 +181,44 @@ internal fun CompactTrackHeader(
     onArtistClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     onMoreClick: ((SongMenuAnchor?) -> Unit)? = null,
+    showActions: Boolean = true,
+    reducedMotion: Boolean = false,
 ) {
     var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
+    val enterMs = if (reducedMotion) 0 else 240
+    val exitMs = if (reducedMotion) 0 else 380
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        IconButton(
-            onClick = onCollapse,
-            modifier = Modifier.size(48.dp),
+        AnimatedVisibility(
+            visible = showActions,
+            enter =
+                expandHorizontally(
+                    expandFrom = Alignment.Start,
+                    animationSpec = tween(enterMs, easing = FastOutSlowInEasing),
+                ) + fadeIn(tween(enterMs, easing = FastOutSlowInEasing)),
+            exit =
+                shrinkHorizontally(
+                    shrinkTowards = Alignment.Start,
+                    animationSpec = tween(exitMs, easing = FastOutSlowInEasing),
+                ) + fadeOut(tween(exitMs, easing = FastOutSlowInEasing)),
         ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = stringResource(Res.string.a11y_collapse),
-                tint = Color.White,
-                modifier = Modifier.size(30.dp),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onCollapse,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = stringResource(Res.string.a11y_collapse),
+                        tint = Color.White,
+                        modifier = Modifier.size(30.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
         }
 
         MeloAsyncImage(
@@ -197,6 +227,8 @@ internal fun CompactTrackHeader(
             size = 48.dp,
             shape = RoundedCornerShape(10.dp),
         )
+
+        Spacer(modifier = Modifier.width(10.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -217,37 +249,55 @@ internal fun CompactTrackHeader(
             )
         }
 
-        IconButton(
-            onClick = onToggleFavorite,
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .semantics { selected = isFavorite },
+        AnimatedVisibility(
+            visible = showActions,
+            enter =
+                expandHorizontally(
+                    expandFrom = Alignment.End,
+                    animationSpec = tween(enterMs, easing = FastOutSlowInEasing),
+                ) + fadeIn(tween(enterMs, easing = FastOutSlowInEasing)),
+            exit =
+                shrinkHorizontally(
+                    shrinkTowards = Alignment.End,
+                    animationSpec = tween(exitMs, easing = FastOutSlowInEasing),
+                ) + fadeOut(tween(exitMs, easing = FastOutSlowInEasing)),
         ) {
-            Icon(
-                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = stringResource(Res.string.a11y_favorite),
-                tint = if (isFavorite) activeAccent else Color.White.copy(alpha = 0.78f),
-                modifier = Modifier.size(24.dp),
-            )
-        }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.width(8.dp))
 
-        IconButton(
-            onClick = {
-                onMoreClick?.invoke(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
-            },
-            enabled = onMoreClick != null,
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = stringResource(Res.string.a11y_more_options),
-                tint = Color.White,
-                modifier = Modifier.size(22.dp),
-            )
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .semantics { selected = isFavorite },
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = stringResource(Res.string.a11y_favorite),
+                        tint = if (isFavorite) activeAccent else Color.White.copy(alpha = 0.78f),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        onMoreClick?.invoke(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
+                    },
+                    enabled = onMoreClick != null,
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(Res.string.a11y_more_options),
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
         }
     }
 }

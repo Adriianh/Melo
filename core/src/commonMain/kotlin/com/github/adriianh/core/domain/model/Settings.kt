@@ -5,16 +5,20 @@ import com.github.adriianh.core.util.MeloVersion
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class ThemePreset(val displayName: String) {
+enum class ThemePreset(
+    val displayName: String,
+) {
     DEFAULT("Default"),
     CATPPUCCIN_MOCHA("Catppuccin Mocha"),
     GRUVBOX("Gruvbox"),
     NORD("Nord"),
-    TOKYO_NIGHT("Tokyo Night")
+    TOKYO_NIGHT("Tokyo Night"),
 }
 
 @Serializable
-enum class MeloAction(val displayName: String) {
+enum class MeloAction(
+    val displayName: String,
+) {
     PLAY_PAUSE("Play/Pause"),
     NEXT("Next Track"),
     PREVIOUS("Previous Track"),
@@ -31,50 +35,55 @@ enum class MeloAction(val displayName: String) {
     CLEAR_QUEUE("Clear Queue"),
     TRACK_OPTIONS("Track Options Menu"),
     TOGGLE_SELECTION("Toggle Selection Mode"),
-    TOGGLE_DETAIL("Toggle Detail Panel")
+    TOGGLE_DETAIL("Toggle Detail Panel"),
 }
 
 @Serializable
-enum class DownloadFormat(val displayName: String) {
+enum class DownloadFormat(
+    val displayName: String,
+) {
     MP3("mp3"),
     OPUS("opus"),
     FLAC("flac"),
     AAC("aac"),
     M4A("m4a"),
     OGG("ogg"),
-    WAV("wav")
+    WAV("wav"),
 }
 
 @Serializable
-enum class DownloadQuality(val displayName: String) {
+enum class DownloadQuality(
+    val displayName: String,
+) {
     LOW("64k"),
     MEDIUM("96k"),
     HIGH("128k"),
     VERY_HIGH("192k"),
-    BEST("320k")
+    BEST("320k"),
 }
-
 
 @Serializable
 data class MeloKey(
     val char: Char? = null,
     val code: String? = null,
-    val ctrl: Boolean = false
+    val ctrl: Boolean = false,
 )
 
 @Serializable
-enum class AudioQuality(val displayName: String) {
+enum class AudioQuality(
+    val displayName: String,
+) {
     AUTO("Auto"),
     HIGH("High (160-256 kbps)"),
     MEDIUM("Standard (128 kbps)"),
-    LOW("Data Saver (48-64 kbps)")
+    LOW("Data Saver (48-64 kbps)"),
 }
 
 @Serializable
 enum class ThemeMode {
     SYSTEM,
     LIGHT,
-    DARK
+    DARK,
 }
 
 @Serializable
@@ -87,18 +96,20 @@ enum class AppLanguage(
 }
 
 @Serializable
-enum class CacheSizeLimit(val sizeMb: Int, val displayName: String) {
+enum class CacheSizeLimit(
+    val sizeMb: Int,
+    val displayName: String,
+) {
     MB_500(512, "500 MB"),
     GB_1(1024, "1 GB"),
     GB_2(2048, "2 GB"),
     GB_5(5120, "5 GB"),
     GB_10(10240, "10 GB"),
-    UNLIMITED(0, "Sin límite");
+    UNLIMITED(0, "Sin límite"),
+    ;
 
     companion object {
-        fun fromSizeMb(sizeMb: Int): CacheSizeLimit {
-            return entries.find { it.sizeMb == sizeMb } ?: GB_1
-        }
+        fun fromSizeMb(sizeMb: Int): CacheSizeLimit = entries.find { it.sizeMb == sizeMb } ?: GB_1
     }
 }
 
@@ -165,6 +176,10 @@ data class Settings(
     val lyricsSyncOffsetMs: Int = 0,
     val lyricsShowSourceBadge: Boolean = true,
     val lyricsShowInstrumentalBreaks: Boolean = true,
+    val lyricsShowCompactPreviewLine: Boolean = true,
+    val lyricsAutoResumeDelay: LyricsAutoResumeDelay = LyricsAutoResumeDelay.SECONDS_3,
+    val lyricsCustomAutoResumeSeconds: Int = 4,
+    val lyricsKeepSyncButtonOnIdle: Boolean = true,
     val lyricsAutoTranslate: Boolean = false,
     val lyricsDefaultTargetLanguage: String = "es",
     val artworkCornerStyle: ArtworkCornerStyle = ArtworkCornerStyle.ROUNDED,
@@ -223,6 +238,13 @@ data class Settings(
             else -> fullscreenIdleHideDelay.delayMs
         }
 
+    fun resolvedLyricsAutoResumeDelayMs(): Long? =
+        when (lyricsAutoResumeDelay) {
+            LyricsAutoResumeDelay.OFF -> null
+            LyricsAutoResumeDelay.CUSTOM -> lyricsCustomAutoResumeSeconds.coerceIn(1, 30) * 1_000L
+            else -> lyricsAutoResumeDelay.delayMs
+        }
+
     fun resetNowPlayingDefaults(): Settings {
         val defaults = Settings()
         return copy(
@@ -251,6 +273,10 @@ data class Settings(
             lyricsSyncOffsetMs = defaults.lyricsSyncOffsetMs,
             lyricsShowSourceBadge = defaults.lyricsShowSourceBadge,
             lyricsShowInstrumentalBreaks = defaults.lyricsShowInstrumentalBreaks,
+            lyricsShowCompactPreviewLine = defaults.lyricsShowCompactPreviewLine,
+            lyricsAutoResumeDelay = defaults.lyricsAutoResumeDelay,
+            lyricsCustomAutoResumeSeconds = defaults.lyricsCustomAutoResumeSeconds,
+            lyricsKeepSyncButtonOnIdle = defaults.lyricsKeepSyncButtonOnIdle,
             lyricsAutoTranslate = defaults.lyricsAutoTranslate,
             lyricsDefaultTargetLanguage = defaults.lyricsDefaultTargetLanguage,
         )
@@ -358,6 +384,17 @@ enum class NowPlayingInitialPanel {
 
 @Serializable
 enum class FullscreenIdleHideDelay(
+    val delayMs: Long?,
+) {
+    OFF(null),
+    SECONDS_3(3_000L),
+    SECONDS_5(5_000L),
+    SECONDS_10(10_000L),
+    CUSTOM(4_000L),
+}
+
+@Serializable
+enum class LyricsAutoResumeDelay(
     val delayMs: Long?,
 ) {
     OFF(null),

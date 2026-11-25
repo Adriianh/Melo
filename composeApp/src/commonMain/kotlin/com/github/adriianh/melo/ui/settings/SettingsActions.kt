@@ -11,6 +11,7 @@ import com.github.adriianh.core.domain.model.LyricsActiveLineColor
 import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.LyricsAnchorPosition
+import com.github.adriianh.core.domain.model.LyricsAutoResumeDelay
 import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
@@ -49,6 +50,10 @@ data class SettingsActions(
     val onLyricsSyncOffsetChanged: (Int) -> Unit = {},
     val onLyricsShowSourceBadgeToggle: (Boolean) -> Unit = {},
     val onLyricsShowInstrumentalBreaksToggle: (Boolean) -> Unit = {},
+    val onLyricsShowCompactPreviewLineToggle: (Boolean) -> Unit = {},
+    val onLyricsAutoResumeDelaySelected: (LyricsAutoResumeDelay) -> Unit = {},
+    val onLyricsCustomAutoResumeSecondsChanged: (Int) -> Unit = {},
+    val onLyricsKeepSyncButtonOnIdleToggle: (Boolean) -> Unit = {},
     val onLyricsAutoTranslateToggle: (Boolean) -> Unit = {},
     val onLyricsDefaultTargetLanguageSelected: (String) -> Unit = {},
     val onNowPlayingInitialPanelSelected: (NowPlayingInitialPanel) -> Unit = {},

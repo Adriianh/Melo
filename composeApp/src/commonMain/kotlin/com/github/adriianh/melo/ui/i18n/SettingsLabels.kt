@@ -12,6 +12,7 @@ import com.github.adriianh.core.domain.model.LyricsActiveLineColor
 import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
 import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.LyricsAnchorPosition
+import com.github.adriianh.core.domain.model.LyricsAutoResumeDelay
 import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.LyricsInactiveOpacity
 import com.github.adriianh.core.domain.model.LyricsLineSpacing
@@ -49,6 +50,7 @@ import com.github.adriianh.melo.resources.settings_lyrics_align_center
 import com.github.adriianh.melo.resources.settings_lyrics_align_start
 import com.github.adriianh.melo.resources.settings_lyrics_anchor_center
 import com.github.adriianh.melo.resources.settings_lyrics_anchor_upper
+import com.github.adriianh.melo.resources.settings_lyrics_auto_resume_off
 import com.github.adriianh.melo.resources.settings_lyrics_color_accent
 import com.github.adriianh.melo.resources.settings_lyrics_color_white
 import com.github.adriianh.melo.resources.settings_lyrics_opacity_high
@@ -274,3 +276,15 @@ internal fun FullscreenIdleHideDelay.labelRes(): StringResource =
 
 @Composable
 internal fun FullscreenIdleHideDelay.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsAutoResumeDelay.labelRes(): StringResource =
+    when (this) {
+        LyricsAutoResumeDelay.OFF -> Res.string.settings_lyrics_auto_resume_off
+        LyricsAutoResumeDelay.SECONDS_3 -> Res.string.settings_idle_hide_3s
+        LyricsAutoResumeDelay.SECONDS_5 -> Res.string.settings_idle_hide_5s
+        LyricsAutoResumeDelay.SECONDS_10 -> Res.string.settings_idle_hide_10s
+        LyricsAutoResumeDelay.CUSTOM -> Res.string.settings_preset_custom
+    }
+
+@Composable
+internal fun LyricsAutoResumeDelay.uiLabel(): String = stringResource(labelRes())
