@@ -1052,4 +1052,63 @@ class PlaybackManagerTest {
             assertTrue(prefetchCancelled, "prefetch must be cancelled when the track starts playing")
             assertEquals(1, manager.queueState.value.currentIndex)
         }
+
+    @Test
+    fun `selectAudioOutput delegates to player and persists preferred device`() =
+        runTest {
+            var persistedId: String? = "unset"
+            val updateSettings =
+                mockk<com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase>(relaxed = true)
+            coEvery {
+                updateSettings.invoke(
+                    any<(com.github.adriianh.core.domain.model.Settings) -> com.github.adriianh.core.domain.model.Settings>(),
+                )
+            } coAnswers {
+                val transform =
+                    firstArg<(com.github.adriianh.core.domain.model.Settings) -> com.github.adriianh.core.domain.model.Settings>()
+                val defaults =
+                    com.github.adriianh.core.domain.model
+                        .Settings()
+                persistedId = transform(defaults).preferredAudioOutputId
+            }
+            val scope = managerScope()
+            val manager =
+                PlaybackManagerImpl(
+                    meloPlayer = meloPlayer,
+                    getStreamUseCase = getStreamUseCase,
+                    scope = scope,
+                    updateSettingsUseCase = updateSettings,
+                )
+
+            manager.selectAudioOutput("bt-headphones-1")
+            scope.advanceUntilIdle()
+
+            verify { meloPlayer.selectAudioOutput("bt-headphones-1") }
+            assertEquals("bt-headphones-1", persistedId)
+        }
+
+    @Test
+    fun `applies saved preferredAudioOutputId from settings on startup`() =
+        runTest {
+            val settingsFlow =
+                MutableStateFlow(
+                    com.github.adriianh.core.domain.model.Settings(
+                        preferredAudioOutputId = "usb-dac-1",
+                    ),
+                )
+            val getSettings = mockk<com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase>(relaxed = true)
+            every { getSettings.invoke() } returns settingsFlow
+            every { getSettings.getInitial() } returns settingsFlow.value
+            val scope = managerScope()
+
+            PlaybackManagerImpl(
+                meloPlayer = meloPlayer,
+                getStreamUseCase = getStreamUseCase,
+                scope = scope,
+                getSettingsUseCase = getSettings,
+            )
+            scope.advanceUntilIdle()
+
+            verify { meloPlayer.selectAudioOutput("usb-dac-1") }
+        }
 }

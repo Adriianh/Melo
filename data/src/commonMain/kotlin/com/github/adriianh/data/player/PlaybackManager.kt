@@ -4,6 +4,7 @@ import com.github.adriianh.core.domain.manager.DownloadManager
 import com.github.adriianh.core.domain.model.DownloadStatus
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.core.domain.network.NetworkMonitor
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.core.domain.player.MeloPlayer
 import com.github.adriianh.core.domain.player.PlaybackEvent
 import com.github.adriianh.core.domain.player.PlaybackManager
@@ -78,6 +79,11 @@ class PlaybackManagerImpl(
     override val volume: StateFlow<Float> = _volume.asStateFlow()
     private var lastUnmutedVolume: Float = 0.75f
 
+    override val availableAudioOutputs: StateFlow<List<AudioOutputDevice>> = meloPlayer.availableAudioOutputs
+    override val selectedAudioOutputId: StateFlow<String?> = meloPlayer.selectedAudioOutputId
+    private var lastAppliedPreferredAudioOutputId: String? = null
+    private var hasSyncedInitialAudioOutput = false
+
     private val _events = MutableSharedFlow<PlaybackEvent>(extraBufferCapacity = 16)
     override val events: SharedFlow<PlaybackEvent> = _events.asSharedFlow()
 
@@ -137,6 +143,13 @@ class PlaybackManagerImpl(
                 if (saveVolumeJob?.isActive != true && abs(_volume.value - newVol) > 0.01f) {
                     _volume.value = newVol
                     meloPlayer.setVolume(newVol)
+                }
+                if (!hasSyncedInitialAudioOutput || s.preferredAudioOutputId != lastAppliedPreferredAudioOutputId) {
+                    hasSyncedInitialAudioOutput = true
+                    lastAppliedPreferredAudioOutputId = s.preferredAudioOutputId
+                    if (s.preferredAudioOutputId != null || meloPlayer.selectedAudioOutputId.value != null) {
+                        meloPlayer.selectAudioOutput(s.preferredAudioOutputId)
+                    }
                 }
             }
         }
@@ -616,6 +629,21 @@ class PlaybackManagerImpl(
                         RepeatMode.ONE -> RepeatMode.NONE
                     },
             )
+        }
+    }
+
+    override fun refreshAudioOutputs() {
+        meloPlayer.refreshAudioOutputs()
+    }
+
+    override fun selectAudioOutput(deviceId: String?) {
+        lastAppliedPreferredAudioOutputId = deviceId
+        hasSyncedInitialAudioOutput = true
+        meloPlayer.selectAudioOutput(deviceId)
+        updateSettingsUseCase?.let { update ->
+            scope.launch(dispatcher) {
+                update { current -> current.copy(preferredAudioOutputId = deviceId) }
+            }
         }
     }
 

@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_collapse
 import com.github.adriianh.melo.resources.a11y_favorite
@@ -263,6 +264,11 @@ internal fun ExpandedUtilityRow(
     onToggleLyrics: () -> Unit,
     onToggleQueue: () -> Unit,
     modifier: Modifier = Modifier,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = null,
+    onRefreshAudioOutputs: () -> Unit = {},
+    onSelectAudioOutput: (String?) -> Unit = {},
+    onAudioOutputMenuOpenChanged: (Boolean) -> Unit = {},
 ) {
     val volumeIcon =
         when {
@@ -307,6 +313,20 @@ internal fun ExpandedUtilityRow(
             a11yValueDescription = volumePercent,
             modifier = Modifier.weight(1f),
         )
+
+        if (audioOutputs.isNotEmpty()) {
+            AudioOutputSelectorButton(
+                devices = audioOutputs,
+                selectedDeviceId = selectedAudioOutputId,
+                activeAccent = activeAccent,
+                onRefresh = onRefreshAudioOutputs,
+                onSelect = onSelectAudioOutput,
+                onMenuOpenChanged = onAudioOutputMenuOpenChanged,
+                tint = Color.White.copy(alpha = 0.78f),
+                buttonSize = 48.dp,
+                iconSize = 22.dp,
+            )
+        }
 
         IconButton(
             onClick = onToggleLyrics,
@@ -360,6 +380,10 @@ internal fun CompactUtilityRow(
     onSelectLanguage: (String) -> Unit,
     onToggleQueue: () -> Unit,
     modifier: Modifier = Modifier,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = null,
+    onRefreshAudioOutputs: () -> Unit = {},
+    onSelectAudioOutput: (String?) -> Unit = {},
 ) {
     var showLanguageMenu by remember { mutableStateOf(false) }
 
@@ -411,6 +435,19 @@ internal fun CompactUtilityRow(
                     useAccessibleTouchTarget = true,
                 )
             }
+        }
+
+        if (audioOutputs.size > 1) {
+            AudioOutputSelectorButton(
+                devices = audioOutputs,
+                selectedDeviceId = selectedAudioOutputId,
+                activeAccent = activeAccent,
+                onRefresh = onRefreshAudioOutputs,
+                onSelect = onSelectAudioOutput,
+                tint = Color.White.copy(alpha = 0.78f),
+                buttonSize = 48.dp,
+                iconSize = 22.dp,
+            )
         }
 
         IconButton(

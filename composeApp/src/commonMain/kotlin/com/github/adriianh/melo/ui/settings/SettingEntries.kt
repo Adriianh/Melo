@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,8 +52,11 @@ import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.core.util.MeloVersion
 import com.github.adriianh.melo.resources.Res
+import com.github.adriianh.melo.resources.player_audio_output_default
+import com.github.adriianh.melo.resources.player_audio_output_default_hint
 import com.github.adriianh.melo.resources.settings_account_channels_desc
 import com.github.adriianh.melo.resources.settings_account_channels_title
 import com.github.adriianh.melo.resources.settings_account_connected_desc
@@ -65,6 +69,9 @@ import com.github.adriianh.melo.resources.settings_app_language_desc
 import com.github.adriianh.melo.resources.settings_app_language_title
 import com.github.adriianh.melo.resources.settings_artwork_corners_desc
 import com.github.adriianh.melo.resources.settings_artwork_corners_title
+import com.github.adriianh.melo.resources.settings_audio_output_desc
+import com.github.adriianh.melo.resources.settings_audio_output_refresh
+import com.github.adriianh.melo.resources.settings_audio_output_title
 import com.github.adriianh.melo.resources.settings_audio_quality_desc
 import com.github.adriianh.melo.resources.settings_audio_quality_disabled
 import com.github.adriianh.melo.resources.settings_audio_quality_title
@@ -109,6 +116,7 @@ import com.github.adriianh.melo.resources.settings_kw_account_session
 import com.github.adriianh.melo.resources.settings_kw_ambient_motion
 import com.github.adriianh.melo.resources.settings_kw_app_language
 import com.github.adriianh.melo.resources.settings_kw_artwork_corners
+import com.github.adriianh.melo.resources.settings_kw_audio_output
 import com.github.adriianh.melo.resources.settings_kw_audio_quality
 import com.github.adriianh.melo.resources.settings_kw_auto_check
 import com.github.adriianh.melo.resources.settings_kw_autoplay
@@ -239,6 +247,7 @@ import com.github.adriianh.melo.ui.i18n.uiHint
 import com.github.adriianh.melo.ui.i18n.uiLabel
 import com.github.adriianh.melo.ui.i18n.uiTitle
 import com.github.adriianh.melo.ui.player.components.SUPPORTED_LYRICS_LANGUAGES
+import com.github.adriianh.melo.ui.player.components.labelRes
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
@@ -285,6 +294,10 @@ internal fun rememberSettingEntries(
     onStartUpdateDownload: (AppRelease, ReleaseAsset) -> Unit,
     onCancelUpdateDownload: () -> Unit,
     onInstallUpdate: (String) -> Unit,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = settings.preferredAudioOutputId,
+    onRefreshAudioOutputs: () -> Unit = {},
+    onSelectAudioOutput: (String?) -> Unit = {},
     currentVersion: String = MeloVersion.CURRENT,
     initialManualFolderExpanded: Boolean = false,
 ): List<SettingEntry> =
@@ -302,6 +315,10 @@ internal fun rememberSettingEntries(
             settings = settings,
             actions = actions,
             platformType = platformType,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
+            onRefreshAudioOutputs = onRefreshAudioOutputs,
+            onSelectAudioOutput = onSelectAudioOutput,
         )
         addLibraryEntries(
             settings = settings,
@@ -1253,9 +1270,57 @@ private fun MutableList<SettingEntry>.addPlaybackEntries(
     settings: Settings,
     actions: SettingsActions,
     platformType: PlatformType,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = settings.preferredAudioOutputId,
+    onRefreshAudioOutputs: () -> Unit = {},
+    onSelectAudioOutput: (String?) -> Unit = {},
 ) {
     val categoryTitle = stringResource(SettingsCategory.PLAYBACK.titleRes)
     val section = stringResource(Res.string.settings_section_playback)
+    if (platformType == PlatformType.DESKTOP) {
+        val outputTitle = stringResource(Res.string.settings_audio_output_title)
+        val outputDesc = stringResource(Res.string.settings_audio_output_desc)
+        val systemDefaultLabel = stringResource(Res.string.player_audio_output_default)
+        add(
+            SettingEntry(
+                id = "playback_audio_output",
+                category = SettingsCategory.PLAYBACK,
+                section = section,
+                title = outputTitle,
+                description = outputDesc,
+                keywords = keywordsResource(Res.string.settings_kw_audio_output),
+                categoryTitle = categoryTitle,
+            ) {
+                val defaultHint = stringResource(Res.string.player_audio_output_default_hint)
+                val deviceHints = audioOutputs.associate { it.id to stringResource(it.kind.labelRes()) }
+                val options: List<Pair<String?, String>> =
+                    listOf(null to systemDefaultLabel) + audioOutputs.map { it.id to it.name }
+                SettingChoiceRow(
+                    title = outputTitle,
+                    subtitle = outputDesc,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SettingOptionGrid(
+                            options = options,
+                            isSelected = { (id, _) -> id == selectedAudioOutputId },
+                            onSelect = { (id, _) -> onSelectAudioOutput(id) },
+                            title = { (_, label) -> label },
+                            hint = { (id, _) -> if (id == null) defaultHint else deviceHints[id] },
+                        )
+                        SettingActionButton(
+                            text = stringResource(Res.string.settings_audio_output_refresh),
+                            onClick = onRefreshAudioOutputs,
+                            emphasis = SettingActionEmphasis.SECONDARY,
+                            icon = Icons.Default.Refresh,
+                        )
+                    }
+                }
+            },
+        )
+    }
     val dataSaverTitle = stringResource(Res.string.settings_data_saver_title)
     val dataSaverDesc = stringResource(Res.string.settings_data_saver_desc)
     add(

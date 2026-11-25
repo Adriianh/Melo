@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.core.domain.model.ArtworkCornerStyle
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.player_lyrics_unavailable
 import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
@@ -89,6 +90,9 @@ internal data class FullscreenPlayerActions(
     val onToggleTranslation: () -> Unit = {},
     val onSelectLanguage: (String) -> Unit = {},
     val onToggleShowRemainingTime: () -> Unit = {},
+    val onRefreshAudioOutputs: () -> Unit = {},
+    val onSelectAudioOutput: (String?) -> Unit = {},
+    val onAudioOutputMenuOpenChanged: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -109,6 +113,8 @@ internal fun NowPlayingFullscreenContent(
     modifier: Modifier = Modifier,
     artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
     showRemainingTime: Boolean = false,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = null,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val isIdleHidden = isDesktop && !controlsVisible
@@ -145,6 +151,8 @@ internal fun NowPlayingFullscreenContent(
                 queueSidePanelContent = queueSidePanelContent,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
+                audioOutputs = audioOutputs,
+                selectedAudioOutputId = selectedAudioOutputId,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -162,6 +170,8 @@ internal fun NowPlayingFullscreenContent(
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
+                audioOutputs = audioOutputs,
+                selectedAudioOutputId = selectedAudioOutputId,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -179,6 +189,8 @@ internal fun NowPlayingFullscreenContent(
                 actions = actions,
                 artworkCornerRadiusDp = artworkCornerRadiusDp,
                 showRemainingTime = showRemainingTime,
+                audioOutputs = audioOutputs,
+                selectedAudioOutputId = selectedAudioOutputId,
                 lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
@@ -204,6 +216,8 @@ private fun ExpandedNowPlayingLayout(
     modifier: Modifier = Modifier,
     artworkCornerRadiusDp: Int = ArtworkCornerStyle.ROUNDED.radiusDp,
     showRemainingTime: Boolean = false,
+    audioOutputs: List<AudioOutputDevice> = emptyList(),
+    selectedAudioOutputId: String? = null,
     lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
@@ -306,6 +320,8 @@ private fun ExpandedNowPlayingLayout(
                         showLyrics = showLyrics,
                         showQueue = showQueue,
                         showRemainingTime = showRemainingTime,
+                        audioOutputs = audioOutputs,
+                        selectedAudioOutputId = selectedAudioOutputId,
                         chromeAlpha = chromeAlpha,
                         actions = actions,
                         onHeightChanged = { controlsBlockHeightPx = it },
@@ -446,6 +462,8 @@ private fun ExpandedControlsBlock(
     showLyrics: Boolean,
     showQueue: Boolean,
     showRemainingTime: Boolean,
+    audioOutputs: List<AudioOutputDevice>,
+    selectedAudioOutputId: String?,
     chromeAlpha: Float,
     actions: FullscreenPlayerActions,
     onHeightChanged: (Int) -> Unit,
@@ -504,6 +522,11 @@ private fun ExpandedControlsBlock(
             activeAccent = activeAccent,
             onToggleLyrics = actions.onToggleLyrics,
             onToggleQueue = actions.onToggleQueue,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
+            onRefreshAudioOutputs = actions.onRefreshAudioOutputs,
+            onSelectAudioOutput = actions.onSelectAudioOutput,
+            onAudioOutputMenuOpenChanged = actions.onAudioOutputMenuOpenChanged,
         )
 
         if (!hasLyrics && !state.isLyricsLoading) {
@@ -531,6 +554,8 @@ private fun MediumPortraitNowPlayingLayout(
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
     showRemainingTime: Boolean,
+    audioOutputs: List<AudioOutputDevice>,
+    selectedAudioOutputId: String?,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -665,6 +690,8 @@ private fun MediumPortraitNowPlayingLayout(
             isLyricsActive = effectiveShowLyrics,
             isQueueActive = showQueue,
             showRemainingTime = showRemainingTime,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
             actions = actions,
             modifier = Modifier.widthIn(max = 460.dp),
         )
@@ -683,6 +710,8 @@ private fun CompactNowPlayingLayout(
     actions: FullscreenPlayerActions,
     artworkCornerRadiusDp: Int,
     showRemainingTime: Boolean,
+    audioOutputs: List<AudioOutputDevice>,
+    selectedAudioOutputId: String?,
     lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
@@ -811,6 +840,8 @@ private fun CompactNowPlayingLayout(
             isLyricsActive = effectiveShowLyrics,
             isQueueActive = showQueue,
             showRemainingTime = showRemainingTime,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
             actions = actions,
         )
     }
@@ -825,6 +856,8 @@ private fun StackedBottomControls(
     isLyricsActive: Boolean,
     isQueueActive: Boolean,
     showRemainingTime: Boolean,
+    audioOutputs: List<AudioOutputDevice>,
+    selectedAudioOutputId: String?,
     actions: FullscreenPlayerActions,
     modifier: Modifier = Modifier,
 ) {
@@ -877,6 +910,10 @@ private fun StackedBottomControls(
             onToggleTranslation = actions.onToggleTranslation,
             onSelectLanguage = actions.onSelectLanguage,
             onToggleQueue = actions.onToggleQueue,
+            audioOutputs = audioOutputs,
+            selectedAudioOutputId = selectedAudioOutputId,
+            onRefreshAudioOutputs = actions.onRefreshAudioOutputs,
+            onSelectAudioOutput = actions.onSelectAudioOutput,
         )
 
         if (!hasLyrics && !state.isLyricsLoading) {

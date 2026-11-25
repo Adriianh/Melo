@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -80,6 +82,7 @@ import com.github.adriianh.melo.resources.a11y_unmute
 import com.github.adriianh.melo.ui.components.controls.AnimatedEqualizerBars
 import com.github.adriianh.melo.ui.components.controls.MeloSlider
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.player.components.AudioOutputSelectorButton
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloAsyncImage
 import com.github.adriianh.melo.util.MeloColors
@@ -348,6 +351,21 @@ internal fun DesktopPlayerBar(
                                             .padding(start = 2.dp, end = 2.dp),
                                 )
                             }
+                        }
+
+                        val audioOutputs by viewModel.availableAudioOutputs.collectAsState()
+                        val selectedAudioOutputId by viewModel.selectedAudioOutputId.collectAsState()
+                        if (audioOutputs.isNotEmpty()) {
+                            AudioOutputSelectorButton(
+                                devices = audioOutputs,
+                                selectedDeviceId = selectedAudioOutputId,
+                                activeAccent = activeAccent,
+                                onRefresh = viewModel::refreshAudioOutputs,
+                                onSelect = viewModel::selectAudioOutput,
+                                tint = MeloColors.textMuted,
+                                buttonSize = 34.dp,
+                                iconSize = 19.dp,
+                            )
                         }
 
                         IconButton(

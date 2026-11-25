@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:backing-property-naming")
+
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.ui.graphics.Color
@@ -5,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.core.domain.model.search.SearchResult
+import com.github.adriianh.core.domain.player.AudioOutputDevice
 import com.github.adriianh.core.domain.player.PlaybackManager
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.core.domain.repository.LibraryUpdateEvent
@@ -353,10 +356,16 @@ class PlayerViewModel(
     fun toggleRepeat() = manager.toggleRepeat()
 
     val volume: StateFlow<Float> = manager.volume
+    val availableAudioOutputs: StateFlow<List<AudioOutputDevice>> = manager.availableAudioOutputs
+    val selectedAudioOutputId: StateFlow<String?> = manager.selectedAudioOutputId
 
     fun setVolume(volume: Float) = manager.setVolume(volume)
 
     fun toggleMute() = manager.toggleMute()
+
+    fun refreshAudioOutputs() = manager.refreshAudioOutputs()
+
+    fun selectAudioOutput(deviceId: String?) = manager.selectAudioOutput(deviceId)
 
     private fun fetchLikedSongs() {
         if (getLikedSongsUseCase == null) return
