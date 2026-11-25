@@ -90,6 +90,12 @@
     <string name="a11y_back">Back</string>
     <string name="a11y_download">Download</string>
     <string name="a11y_reorder_track">Reorder track</string>
+    <string name="a11y_current_lyric_line">Current line</string>
+    <string name="a11y_instrumental_break">Instrumental break</string>
+    <string name="a11y_playback_progress">Playback progress</string>
+    <string name="a11y_volume">Volume</string>
+    <string name="a11y_close_queue">Close queue</string>
+    <string name="a11y_lyrics_source">Lyrics source: %1$s</string>
 
     <!-- Search -->
     <string name="search_placeholder_home">What do you want to listen to?</string>
@@ -199,8 +205,9 @@
     <string name="player_lyrics_expand">EXPAND</string>
     <string name="player_lyrics_title">Lyrics</string>
     <string name="player_lyrics_loading">Searching for lyrics...</string>
-    <string name="player_lyrics_unavailable">Lyrics unavailable for this song</string>
+    <string name="player_lyrics_unavailable">Lyrics not available for this song</string>
     <string name="player_lyrics_tap_to_return">Tap to return to cover</string>
+    <string name="player_lyrics_source_lrclib">LRCLIB</string>
     <string name="player_artist_popular">Popular</string>
     <string name="player_artist_popular_songs">Popular songs</string>
     <string name="player_artist_albums">Albums &amp; releases</string>

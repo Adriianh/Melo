@@ -90,6 +90,12 @@
     <string name="a11y_back">Atrás</string>
     <string name="a11y_download">Descargar</string>
     <string name="a11y_reorder_track">Reordenar pista</string>
+    <string name="a11y_current_lyric_line">Línea actual</string>
+    <string name="a11y_instrumental_break">Pausa instrumental</string>
+    <string name="a11y_playback_progress">Progreso de reproducción</string>
+    <string name="a11y_volume">Volumen</string>
+    <string name="a11y_close_queue">Cerrar cola</string>
+    <string name="a11y_lyrics_source">Fuente de letras: %1$s</string>
 
     <!-- Búsqueda -->
     <string name="search_placeholder_home">¿Qué quieres escuchar?</string>
@@ -201,6 +207,7 @@
     <string name="player_lyrics_loading">Buscando letras...</string>
     <string name="player_lyrics_unavailable">Letra no disponible para esta canción</string>
     <string name="player_lyrics_tap_to_return">Toca para volver a la portada</string>
+    <string name="player_lyrics_source_lrclib">LRCLIB</string>
     <string name="player_artist_popular">Populares</string>
     <string name="player_artist_popular_songs">Canciones populares</string>
     <string name="player_artist_albums">Álbumes y lanzamientos</string>

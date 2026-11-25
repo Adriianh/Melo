@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.components.controls
 
 import androidx.compose.animation.core.animateDpAsState
@@ -25,6 +27,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.adriianh.melo.util.MeloColors
@@ -45,6 +53,8 @@ fun MeloSlider(
     thumbRadius: Dp = 5.5.dp,
     alwaysShowThumb: Boolean = false,
     hitTargetHeight: Dp = 22.dp,
+    a11yLabel: String? = null,
+    a11yValueDescription: String? = null,
 ) {
     var isDragging by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -54,19 +64,19 @@ fun MeloSlider(
     val currentTrackHeight by animateDpAsState(
         targetValue = if (isInteracting) hoverTrackHeight else trackHeight,
         animationSpec = tween(durationMillis = 150),
-        label = "MeloSliderTrackHeight"
+        label = "MeloSliderTrackHeight",
     )
 
     val currentThumbRadius by animateDpAsState(
         targetValue = if (isInteracting) thumbRadius else 0.dp,
         animationSpec = tween(durationMillis = 150),
-        label = "MeloSliderThumbRadius"
+        label = "MeloSliderThumbRadius",
     )
 
     val thumbAlpha by animateFloatAsState(
         targetValue = if (isInteracting) 1f else 0f,
         animationSpec = tween(durationMillis = 150),
-        label = "MeloSliderThumbAlpha"
+        label = "MeloSliderThumbAlpha",
     )
 
     val currentOnValueChange by rememberUpdatedState(onValueChange)
@@ -75,47 +85,61 @@ fun MeloSlider(
     val fraction = ((value - valueRange.start) / rangeSpan).coerceIn(0f, 1f)
 
     Box(
-        modifier = modifier
-            .height(hitTargetHeight)
-            .hoverable(interactionSource, enabled = enabled)
-            .pointerInput(valueRange, enabled) {
-                if (!enabled) return@pointerInput
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    down.consume()
-                    isDragging = true
-
-                    fun updatePosition(x: Float) {
-                        val w = size.width.toFloat()
-                        if (w > 0f) {
-                            val f = (x / w).coerceIn(0f, 1f)
-                            val newVal = valueRange.start + f * rangeSpan
-                            currentOnValueChange(newVal)
+        modifier =
+            modifier
+                .height(hitTargetHeight)
+                .semantics {
+                    a11yLabel?.let { contentDescription = it }
+                    a11yValueDescription?.let { stateDescription = it }
+                    progressBarRangeInfo = ProgressBarRangeInfo(value.coerceIn(valueRange), valueRange)
+                    if (enabled) {
+                        setProgress { targetValue ->
+                            val clamped = targetValue.coerceIn(valueRange)
+                            currentOnValueChange(clamped)
+                            currentOnValueChangeFinished?.invoke()
+                            true
                         }
                     }
+                }.hoverable(interactionSource, enabled = enabled)
+                .pointerInput(valueRange, enabled) {
+                    if (!enabled) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        down.consume()
+                        isDragging = true
 
-                    updatePosition(down.position.x)
-
-                    try {
-                        var currentPointerId = down.id
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == currentPointerId }
-                                ?: event.changes.firstOrNull { it.pressed }
-                                ?: break
-
-                            if (!change.pressed) break
-                            change.consume()
-                            currentPointerId = change.id
-                            updatePosition(change.position.x)
+                        fun updatePosition(x: Float) {
+                            val w = size.width.toFloat()
+                            if (w > 0f) {
+                                val f = (x / w).coerceIn(0f, 1f)
+                                val newVal = valueRange.start + f * rangeSpan
+                                currentOnValueChange(newVal)
+                            }
                         }
-                    } finally {
-                        isDragging = false
-                        currentOnValueChangeFinished?.invoke()
+
+                        updatePosition(down.position.x)
+
+                        try {
+                            var currentPointerId = down.id
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val change =
+                                    event.changes.firstOrNull { it.id == currentPointerId }
+                                        ?: event.changes.firstOrNull { it.pressed }
+                                        ?: break
+
+                                if (!change.pressed) break
+                                change.consume()
+                                currentPointerId = change.id
+                                updatePosition(change.position.x)
+                            }
+                        } finally {
+                            isDragging = false
+                            currentOnValueChangeFinished?.invoke()
+                        }
                     }
-                }
-            },
-        contentAlignment = Alignment.CenterStart
+                },
+        contentAlignment = Alignment.CenterStart,
     ) {
         Canvas(modifier = Modifier.fillMaxWidth().height(hitTargetHeight)) {
             val width = size.width
@@ -129,7 +153,7 @@ fun MeloSlider(
                 color = inactiveColor,
                 topLeft = Offset(0f, centerY - trackR),
                 size = Size(width, trackH),
-                cornerRadius = CornerRadius(trackR, trackR)
+                cornerRadius = CornerRadius(trackR, trackR),
             )
 
             val activeWidth = (width * fraction).coerceIn(0f, width)
@@ -138,7 +162,7 @@ fun MeloSlider(
                     color = activeColor,
                     topLeft = Offset(0f, centerY - trackR),
                     size = Size(activeWidth, trackH),
-                    cornerRadius = CornerRadius(trackR, trackR)
+                    cornerRadius = CornerRadius(trackR, trackR),
                 )
             }
 
@@ -148,13 +172,13 @@ fun MeloSlider(
                 drawCircle(
                     color = Color.Black.copy(alpha = 0.25f * thumbAlpha),
                     radius = currentThumbR + 1.2.dp.toPx(),
-                    center = Offset(thumbX, centerY + 0.8.dp.toPx())
+                    center = Offset(thumbX, centerY + 0.8.dp.toPx()),
                 )
 
                 drawCircle(
                     color = thumbColor.copy(alpha = thumbAlpha),
                     radius = currentThumbR,
-                    center = Offset(thumbX, centerY)
+                    center = Offset(thumbX, centerY),
                 )
             }
         }

@@ -39,6 +39,7 @@ fun NowPlayingBackground(
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     accentColor: Color = MeloColors.brandAccent,
+    extraDarkScrimAlpha: Float = 0f,
 ) {
     val surface0 = MeloColors.surface0
     val isDark = MeloColors.isDark
@@ -50,6 +51,9 @@ fun NowPlayingBackground(
                 accentColor = accentColor,
                 isDark = isDark,
             )
+            if (extraDarkScrimAlpha > 0f) {
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = extraDarkScrimAlpha)))
+            }
             return@Box
         }
 
@@ -66,6 +70,10 @@ fun NowPlayingBackground(
                     isDark = isDark,
                 )
             }
+        }
+
+        if (extraDarkScrimAlpha > 0f) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = extraDarkScrimAlpha)))
         }
     }
 }
