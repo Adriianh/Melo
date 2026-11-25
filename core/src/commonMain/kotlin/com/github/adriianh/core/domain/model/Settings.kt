@@ -281,7 +281,9 @@ enum class NowPlayingBackdropScrim(
 }
 
 @Serializable
-enum class LyricsFontScale(val scaleFactor: Float) {
+enum class LyricsFontScale(
+    val scaleFactor: Float,
+) {
     COMPACT(0.85f),
     NORMAL(1.0f),
     LARGE(1.18f),
@@ -289,7 +291,9 @@ enum class LyricsFontScale(val scaleFactor: Float) {
 }
 
 @Serializable
-enum class LyricsLineSpacing(val spacingDp: Int) {
+enum class LyricsLineSpacing(
+    val spacingDp: Int,
+) {
     COMPACT(12),
     NORMAL(20),
     SPACIOUS(30),
@@ -305,7 +309,9 @@ enum class LyricsActiveLineWeight {
 }
 
 @Serializable
-enum class LyricsInactiveOpacity(val baseAlpha: Float) {
+enum class LyricsInactiveOpacity(
+    val baseAlpha: Float,
+) {
     SUBTLE(0.32f),
     NORMAL(0.55f),
     HIGH(0.75f),
@@ -325,13 +331,17 @@ enum class LyricsActiveLineColor {
 }
 
 @Serializable
-enum class LyricsAnchorPosition(val viewportFraction: Float) {
+enum class LyricsAnchorPosition(
+    val viewportFraction: Float,
+) {
     UPPER(0.35f),
     CENTER(0.50f),
 }
 
 @Serializable
-enum class ArtworkCornerStyle(val radiusDp: Int) {
+enum class ArtworkCornerStyle(
+    val radiusDp: Int,
+) {
     SQUARE(4),
     ROUNDED(20),
     PILL(32),
@@ -346,7 +356,9 @@ enum class NowPlayingInitialPanel {
 }
 
 @Serializable
-enum class FullscreenIdleHideDelay(val delayMs: Long?) {
+enum class FullscreenIdleHideDelay(
+    val delayMs: Long?,
+) {
     OFF(null),
     SECONDS_3(3_000L),
     SECONDS_5(5_000L),
