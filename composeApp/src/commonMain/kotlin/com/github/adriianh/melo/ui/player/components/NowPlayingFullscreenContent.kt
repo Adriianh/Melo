@@ -105,6 +105,7 @@ internal fun NowPlayingFullscreenContent(
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val isIdleHidden = isDesktop && !controlsVisible
     val chromeAlpha by animateFloatAsState(
@@ -138,6 +139,7 @@ internal fun NowPlayingFullscreenContent(
                 chromeAlpha = chromeAlpha,
                 actions = actions,
                 queueSidePanelContent = queueSidePanelContent,
+                lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
         }
@@ -152,6 +154,7 @@ internal fun NowPlayingFullscreenContent(
                 showLyrics = showLyrics,
                 showQueue = showQueue,
                 actions = actions,
+                lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
         }
@@ -166,6 +169,7 @@ internal fun NowPlayingFullscreenContent(
                 showLyrics = showLyrics,
                 showQueue = showQueue,
                 actions = actions,
+                lyricsConfig = lyricsConfig,
                 modifier = modifier,
             )
         }
@@ -188,6 +192,7 @@ private fun ExpandedNowPlayingLayout(
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
     val showRightPane = showQueue || (showLyrics && (hasLyrics || state.isLyricsLoading))
@@ -323,6 +328,7 @@ private fun ExpandedNowPlayingLayout(
                             showQueue = showQueue,
                             actions = actions,
                             queueSidePanelContent = queueSidePanelContent,
+                            lyricsConfig = lyricsConfig,
                             modifier =
                                 Modifier
                                     .width(rightPaneWidth)
@@ -349,6 +355,7 @@ private fun ExpandedRightPane(
     actions: FullscreenPlayerActions,
     queueSidePanelContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
 ) {
     Box(
         modifier = modifier,
@@ -404,6 +411,7 @@ private fun ExpandedRightPane(
                     onToggleTranslation = actions.onToggleTranslation,
                     onSelectLanguage = actions.onSelectLanguage,
                     style = FullscreenLyricsStyle.Expanded,
+                    lyricsConfig = lyricsConfig,
                     showControlsOnHoverOnly = isDesktop,
                     isIdleHidden = isIdleHidden,
                     reducedMotion = reducedMotion,
@@ -504,6 +512,7 @@ private fun MediumPortraitNowPlayingLayout(
     showLyrics: Boolean,
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
+    lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
@@ -588,6 +597,7 @@ private fun MediumPortraitNowPlayingLayout(
                         onToggleTranslation = actions.onToggleTranslation,
                         onSelectLanguage = actions.onSelectLanguage,
                         style = FullscreenLyricsStyle.Expanded,
+                        lyricsConfig = lyricsConfig,
                         showControlsOnHoverOnly = false,
                         reducedMotion = reducedMotion,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -650,6 +660,7 @@ private fun CompactNowPlayingLayout(
     showLyrics: Boolean,
     showQueue: Boolean,
     actions: FullscreenPlayerActions,
+    lyricsConfig: NowPlayingLyricsConfig,
     modifier: Modifier = Modifier,
 ) {
     val hasLyrics = state.trackLyrics.hasDisplayableLyrics()
@@ -720,6 +731,7 @@ private fun CompactNowPlayingLayout(
                         onToggleTranslation = actions.onToggleTranslation,
                         onSelectLanguage = actions.onSelectLanguage,
                         style = FullscreenLyricsStyle.Compact,
+                        lyricsConfig = lyricsConfig,
                         showControlsOnHoverOnly = false,
                         reducedMotion = reducedMotion,
                         showFloatingControls = false,

@@ -72,6 +72,7 @@ import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.ui.navigation.ScreenRoute
 import com.github.adriianh.melo.ui.player.NowPlayingScreen
 import com.github.adriianh.melo.ui.player.PlayerViewModel
+import com.github.adriianh.melo.ui.player.components.NowPlayingLyricsConfig
 import com.github.adriianh.melo.ui.search.SearchScreen
 import com.github.adriianh.melo.ui.settings.ChangelogDialog
 import com.github.adriianh.melo.ui.settings.LocalHasAvailableUpdate
@@ -573,6 +574,16 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                     blurEnabled = settings.nowPlayingBlur,
                                     blurIntensity = settings.nowPlayingBlurIntensity,
                                     backdropScrim = settings.nowPlayingBackdropScrim,
+                                    reduceMotion = settings.reduceMotion,
+                                    lyricsConfig =
+                                        NowPlayingLyricsConfig(
+                                            blurEnabled = settings.lyricsBlurEnabled,
+                                            activeLineZoom = settings.lyricsActiveLineZoom,
+                                            fontScale = settings.lyricsFontScale,
+                                            alignment = settings.lyricsAlignment,
+                                            activeLineColor = settings.lyricsActiveLineColor,
+                                        ),
+                                    idleHideDelay = settings.fullscreenIdleHideDelay,
                                     onCollapse = { isNowPlayingExpanded = false },
                                     onArtistClick = { id ->
                                         isNowPlayingExpanded = false

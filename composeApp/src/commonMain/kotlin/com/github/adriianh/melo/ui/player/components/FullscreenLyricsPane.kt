@@ -63,10 +63,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
 import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_current_lyric_line
@@ -143,6 +146,7 @@ internal fun FullscreenLyricsPane(
     modifier: Modifier = Modifier,
     progressFlow: StateFlow<PlayerProgressState>? = null,
     style: FullscreenLyricsStyle = FullscreenLyricsStyle.Expanded,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
     showControlsOnHoverOnly: Boolean = false,
     isIdleHidden: Boolean = false,
     reducedMotion: Boolean = false,
@@ -152,6 +156,7 @@ internal fun FullscreenLyricsPane(
     val isHovered by hoverSource.collectIsHoveredAsState()
     var hasFocus by remember { mutableStateOf(false) }
     var showLanguageMenu by remember { mutableStateOf(false) }
+    val resolvedStyle = remember(style, lyricsConfig) { resolveFullscreenLyricsStyle(style, lyricsConfig) }
 
     val hasLyrics = trackLyrics.hasDisplayableLyrics()
     val controlsVisible =
@@ -193,7 +198,8 @@ internal fun FullscreenLyricsPane(
             showTranslation = showTranslation,
             activeAccent = activeAccent,
             onSeekTo = onSeekTo,
-            style = style,
+            style = resolvedStyle,
+            lyricsConfig = lyricsConfig,
             reducedMotion = reducedMotion,
         )
 
@@ -228,6 +234,7 @@ private fun FullscreenLyricsBody(
     activeAccent: Color,
     onSeekTo: (Long) -> Unit,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
 ) {
     when {
@@ -239,8 +246,10 @@ private fun FullscreenLyricsBody(
                 positionMs = positionMs,
                 progressFlow = progressFlow,
                 showTranslation = showTranslation,
+                activeAccent = activeAccent,
                 onSeekTo = onSeekTo,
                 style = style,
+                lyricsConfig = lyricsConfig,
                 reducedMotion = reducedMotion,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -250,6 +259,7 @@ private fun FullscreenLyricsBody(
             FullscreenPlainLyricsView(
                 text = trackLyrics.plainLyrics.orEmpty(),
                 style = style,
+                alignment = lyricsConfig.alignment,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -323,8 +333,10 @@ private fun FullscreenSyncedLyricsList(
     positionMs: Long,
     progressFlow: StateFlow<PlayerProgressState>?,
     showTranslation: Boolean,
+    activeAccent: Color,
     onSeekTo: (Long) -> Unit,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -413,7 +425,9 @@ private fun FullscreenSyncedLyricsList(
                 isActive = isActive,
                 distance = distance,
                 showTranslation = showTranslation,
+                activeAccent = activeAccent,
                 style = style,
+                lyricsConfig = lyricsConfig,
                 reducedMotion = reducedMotion,
                 onSeekTo = {
                     userScrolledRecently = false
@@ -430,7 +444,9 @@ private fun FullscreenLyricEntryRow(
     isActive: Boolean,
     distance: Int,
     showTranslation: Boolean,
+    activeAccent: Color,
     style: FullscreenLyricsStyle,
+    lyricsConfig: NowPlayingLyricsConfig,
     reducedMotion: Boolean,
     onSeekTo: () -> Unit,
 ) {
@@ -446,8 +462,26 @@ private fun FullscreenLyricEntryRow(
             ).value
         }
 
-    val blurRadius = if (reducedMotion) 0.dp else lyricBlurForDistance(distance)
+    val blurRadius = if (reducedMotion || !lyricsConfig.blurEnabled) 0.dp else lyricBlurForDistance(distance)
     val currentLineLabel = stringResource(Res.string.a11y_current_lyric_line)
+    val rowAlignment =
+        if (lyricsConfig.alignment == LyricsAlignment.CENTER) {
+            Alignment.CenterHorizontally
+        } else {
+            Alignment.Start
+        }
+    val textAlign =
+        if (lyricsConfig.alignment == LyricsAlignment.CENTER) {
+            TextAlign.Center
+        } else {
+            TextAlign.Start
+        }
+    val lineColor =
+        if (isActive && lyricsConfig.activeLineColor == LyricsActiveLineColor.ACCENT) {
+            activeAccent
+        } else {
+            Color.White
+        }
 
     val blurModifier =
         if (blurRadius > 0.dp) {
@@ -473,7 +507,7 @@ private fun FullscreenLyricEntryRow(
                 ).then(blurModifier)
                 .alpha(alpha)
                 .padding(vertical = 4.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = rowAlignment,
     ) {
         when (entry) {
             is FullscreenLyricEntry.LyricLine -> {
@@ -482,6 +516,8 @@ private fun FullscreenLyricEntryRow(
                     isActive = isActive,
                     showTranslation = showTranslation,
                     style = style,
+                    textColor = lineColor,
+                    textAlign = textAlign,
                 )
             }
 
@@ -489,7 +525,7 @@ private fun FullscreenLyricEntryRow(
                 val instrumentalLabel = stringResource(Res.string.a11y_instrumental_break)
                 DancingMelodyIndicator(
                     isActive = isActive && !reducedMotion,
-                    tint = Color.White,
+                    tint = lineColor,
                     baseFontSize = if (isActive) 28.sp else 20.sp,
                     modifier =
                         Modifier
@@ -558,6 +594,8 @@ private fun FullscreenLyricLineContent(
     isActive: Boolean,
     showTranslation: Boolean,
     style: FullscreenLyricsStyle,
+    textColor: Color,
+    textAlign: TextAlign,
 ) {
     Text(
         text = entry.line.text,
@@ -567,7 +605,9 @@ private fun FullscreenLyricLineContent(
                 lineHeight = if (isActive) style.activeLineHeight else style.neighborLineHeight,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
             ),
-        color = Color.White,
+        color = textColor,
+        textAlign = textAlign,
+        modifier = Modifier.fillMaxWidth(),
     )
 
     val translation = entry.line.translation
@@ -582,7 +622,9 @@ private fun FullscreenLyricLineContent(
                     lineHeight = style.translationLineHeight,
                     fontWeight = FontWeight.Normal,
                 ),
-            color = Color.White.copy(alpha = if (isActive) 0.84f else 0.72f),
+            color = textColor.copy(alpha = if (isActive) 0.84f else 0.72f),
+            textAlign = textAlign,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -591,8 +633,10 @@ private fun FullscreenLyricLineContent(
 private fun FullscreenPlainLyricsView(
     text: String,
     style: FullscreenLyricsStyle,
+    alignment: LyricsAlignment,
     modifier: Modifier = Modifier,
 ) {
+    val isCentered = alignment == LyricsAlignment.CENTER
     Box(
         modifier =
             modifier
@@ -604,7 +648,7 @@ private fun FullscreenPlainLyricsView(
                     start = style.horizontalPadding,
                     end = style.horizontalPadding,
                 ),
-        contentAlignment = Alignment.TopStart,
+        contentAlignment = if (isCentered) Alignment.TopCenter else Alignment.TopStart,
     ) {
         Text(
             text = text,
@@ -615,6 +659,8 @@ private fun FullscreenPlainLyricsView(
                     fontWeight = FontWeight.Medium,
                 ),
             color = Color.White.copy(alpha = 0.92f),
+            textAlign = if (isCentered) TextAlign.Center else TextAlign.Start,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

@@ -44,6 +44,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.github.adriianh.core.domain.model.DownloadType
+import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Track
@@ -66,6 +67,7 @@ import com.github.adriianh.melo.ui.library.LibraryViewModel
 import com.github.adriianh.melo.ui.player.components.ExpandedSectionSheet
 import com.github.adriianh.melo.ui.player.components.FullscreenPlayerActions
 import com.github.adriianh.melo.ui.player.components.NowPlayingFullscreenContent
+import com.github.adriianh.melo.ui.player.components.NowPlayingLyricsConfig
 import com.github.adriianh.melo.ui.player.components.NowPlayingQueueSection
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.buildTrackShareUrl
@@ -76,7 +78,6 @@ import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val DESKTOP_IDLE_HIDE_DELAY_MS = 3_000L
 private const val FULLSCREEN_DARK_SCRIM_ALPHA = 0.28f
 
 enum class PanelSection {
@@ -97,6 +98,9 @@ fun NowPlayingScreen(
     blurEnabled: Boolean = true,
     blurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     backdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
+    reduceMotion: Boolean = false,
+    lyricsConfig: NowPlayingLyricsConfig = NowPlayingLyricsConfig(),
+    idleHideDelay: FullscreenIdleHideDelay = FullscreenIdleHideDelay.SECONDS_3,
     viewModel: PlayerViewModel = koinViewModel(),
     queueViewModel: QueueViewModel = koinViewModel(),
     libraryViewModel: LibraryViewModel = koinViewModel(),
@@ -108,7 +112,7 @@ fun NowPlayingScreen(
     val platform = remember { getPlatform() }
     val isDesktop = platform.type == PlatformType.DESKTOP
     val sizeClass = rememberMeloWindowSizeClass()
-    val reducedMotion = rememberPrefersReducedMotion()
+    val reducedMotion = reduceMotion || rememberPrefersReducedMotion()
 
     var showLyrics by remember(sizeClass.isExpandedOrMediumLandscape) {
         mutableStateOf(sizeClass.isExpandedOrMediumLandscape)
@@ -133,16 +137,18 @@ fun NowPlayingScreen(
         }
     }
 
+    val idleHideDelayMs = idleHideDelay.delayMs
     val keepControlsVisible =
         !isDesktop ||
+            idleHideDelayMs == null ||
             showQueue ||
             interaction.contextMenuTrack != null ||
             interaction.addToPlaylistTrack != null
 
-    LaunchedEffect(isDesktop, lastActivityTick, keepControlsVisible) {
+    LaunchedEffect(isDesktop, lastActivityTick, keepControlsVisible, idleHideDelayMs) {
         controlsVisible = true
         if (!keepControlsVisible) {
-            delay(DESKTOP_IDLE_HIDE_DELAY_MS.milliseconds)
+            delay(idleHideDelayMs.milliseconds)
             controlsVisible = false
         }
     }
@@ -502,6 +508,7 @@ fun NowPlayingScreen(
                 showQueue = showQueue,
                 controlsVisible = controlsVisible,
                 actions = actions,
+                lyricsConfig = lyricsConfig,
                 queueSidePanelContent = {
                     NowPlayingQueueSection(
                         state = effectiveState,

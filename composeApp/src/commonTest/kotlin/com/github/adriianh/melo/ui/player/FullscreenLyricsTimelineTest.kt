@@ -1,12 +1,17 @@
 package com.github.adriianh.melo.ui.player
 
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.melo.ui.player.components.FullscreenLyricEntry
+import com.github.adriianh.melo.ui.player.components.FullscreenLyricsStyle
+import com.github.adriianh.melo.ui.player.components.NowPlayingLyricsConfig
 import com.github.adriianh.melo.ui.player.components.buildFullscreenLyricEntries
 import com.github.adriianh.melo.ui.player.components.lyricAlphaForDistance
 import com.github.adriianh.melo.ui.player.components.lyricBlurForDistance
 import com.github.adriianh.melo.ui.player.components.resolveActiveFullscreenEntryIndex
+import com.github.adriianh.melo.ui.player.components.resolveFullscreenLyricsStyle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -103,5 +108,32 @@ class FullscreenLyricsTimelineTest {
         assertEquals(1.4.dp, lyricBlurForDistance(2))
         assertEquals(2.0.dp, lyricBlurForDistance(3))
         assertEquals(2.0.dp, lyricBlurForDistance(6))
+    }
+
+    @Test
+    fun `disabling active line zoom matches neighbor typography`() {
+        val resolved =
+            resolveFullscreenLyricsStyle(
+                base = FullscreenLyricsStyle.Expanded,
+                config = NowPlayingLyricsConfig(activeLineZoom = false),
+            )
+        assertEquals(resolved.neighborFontSize, resolved.activeFontSize)
+        assertEquals(resolved.neighborLineHeight, resolved.activeLineHeight)
+    }
+
+    @Test
+    fun `font scale adjusts expanded typography proportionally`() {
+        val compact =
+            resolveFullscreenLyricsStyle(
+                base = FullscreenLyricsStyle.Expanded,
+                config = NowPlayingLyricsConfig(fontScale = LyricsFontScale.COMPACT),
+            )
+        val large =
+            resolveFullscreenLyricsStyle(
+                base = FullscreenLyricsStyle.Expanded,
+                config = NowPlayingLyricsConfig(fontScale = LyricsFontScale.LARGE),
+            )
+        assertEquals((42f * 0.85f).sp, compact.activeFontSize)
+        assertEquals((42f * 1.18f).sp, large.activeFontSize)
     }
 }

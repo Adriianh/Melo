@@ -2,8 +2,20 @@ package com.github.adriianh.melo.ui.player.components
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.SyncedLine
 import com.github.adriianh.core.domain.model.TrackLyrics
+
+data class NowPlayingLyricsConfig(
+    val blurEnabled: Boolean = true,
+    val activeLineZoom: Boolean = true,
+    val fontScale: LyricsFontScale = LyricsFontScale.NORMAL,
+    val alignment: LyricsAlignment = LyricsAlignment.START,
+    val activeLineColor: LyricsActiveLineColor = LyricsActiveLineColor.WHITE,
+)
 
 internal const val INSTRUMENTAL_GAP_THRESHOLD_MS = 4_000L
 private const val LYRIC_SYNC_LEAD_MS = 150L
@@ -124,3 +136,34 @@ internal fun lyricBlurForDistance(distance: Int): Dp =
         2 -> 1.4.dp
         else -> 2.0.dp
     }
+
+internal fun resolveFullscreenLyricsStyle(
+    base: FullscreenLyricsStyle,
+    config: NowPlayingLyricsConfig,
+): FullscreenLyricsStyle {
+    val scale = config.fontScale.scaleFactor
+    val scaledNeighborSize = (base.neighborFontSize.value * scale).sp
+    val scaledNeighborHeight = (base.neighborLineHeight.value * scale).sp
+    val scaledActiveSize =
+        if (config.activeLineZoom) {
+            (base.activeFontSize.value * scale).sp
+        } else {
+            scaledNeighborSize
+        }
+    val scaledActiveHeight =
+        if (config.activeLineZoom) {
+            (base.activeLineHeight.value * scale).sp
+        } else {
+            scaledNeighborHeight
+        }
+    return base.copy(
+        activeFontSize = scaledActiveSize,
+        activeLineHeight = scaledActiveHeight,
+        neighborFontSize = scaledNeighborSize,
+        neighborLineHeight = scaledNeighborHeight,
+        plainFontSize = (base.plainFontSize.value * scale).sp,
+        plainLineHeight = (base.plainLineHeight.value * scale).sp,
+        translationFontSize = (base.translationFontSize.value * scale).sp,
+        translationLineHeight = (base.translationLineHeight.value * scale).sp,
+    )
+}
