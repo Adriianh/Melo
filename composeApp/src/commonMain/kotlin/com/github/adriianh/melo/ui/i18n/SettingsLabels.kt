@@ -6,6 +6,10 @@ import androidx.compose.runtime.Composable
 import com.github.adriianh.core.domain.model.AppLanguage
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
+import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.ThemeMode
@@ -22,9 +26,20 @@ import com.github.adriianh.melo.resources.settings_cache_hint_500mb
 import com.github.adriianh.melo.resources.settings_cache_hint_5gb
 import com.github.adriianh.melo.resources.settings_cache_hint_unlimited
 import com.github.adriianh.melo.resources.settings_cache_unlimited
+import com.github.adriianh.melo.resources.settings_idle_hide_10s
+import com.github.adriianh.melo.resources.settings_idle_hide_3s
+import com.github.adriianh.melo.resources.settings_idle_hide_5s
+import com.github.adriianh.melo.resources.settings_idle_hide_off
 import com.github.adriianh.melo.resources.settings_language_english
 import com.github.adriianh.melo.resources.settings_language_spanish
 import com.github.adriianh.melo.resources.settings_language_system
+import com.github.adriianh.melo.resources.settings_lyrics_align_center
+import com.github.adriianh.melo.resources.settings_lyrics_align_start
+import com.github.adriianh.melo.resources.settings_lyrics_color_accent
+import com.github.adriianh.melo.resources.settings_lyrics_color_white
+import com.github.adriianh.melo.resources.settings_lyrics_scale_compact
+import com.github.adriianh.melo.resources.settings_lyrics_scale_large
+import com.github.adriianh.melo.resources.settings_lyrics_scale_normal
 import com.github.adriianh.melo.resources.settings_quality_auto
 import com.github.adriianh.melo.resources.settings_quality_high
 import com.github.adriianh.melo.resources.settings_quality_hint_auto
@@ -130,3 +145,42 @@ internal fun AppLanguage.labelRes(): StringResource =
 
 @Composable
 internal fun AppLanguage.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsFontScale.labelRes(): StringResource =
+    when (this) {
+        LyricsFontScale.COMPACT -> Res.string.settings_lyrics_scale_compact
+        LyricsFontScale.NORMAL -> Res.string.settings_lyrics_scale_normal
+        LyricsFontScale.LARGE -> Res.string.settings_lyrics_scale_large
+    }
+
+@Composable
+internal fun LyricsFontScale.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsAlignment.labelRes(): StringResource =
+    when (this) {
+        LyricsAlignment.START -> Res.string.settings_lyrics_align_start
+        LyricsAlignment.CENTER -> Res.string.settings_lyrics_align_center
+    }
+
+@Composable
+internal fun LyricsAlignment.uiLabel(): String = stringResource(labelRes())
+
+internal fun LyricsActiveLineColor.labelRes(): StringResource =
+    when (this) {
+        LyricsActiveLineColor.WHITE -> Res.string.settings_lyrics_color_white
+        LyricsActiveLineColor.ACCENT -> Res.string.settings_lyrics_color_accent
+    }
+
+@Composable
+internal fun LyricsActiveLineColor.uiLabel(): String = stringResource(labelRes())
+
+internal fun FullscreenIdleHideDelay.labelRes(): StringResource =
+    when (this) {
+        FullscreenIdleHideDelay.OFF -> Res.string.settings_idle_hide_off
+        FullscreenIdleHideDelay.SECONDS_3 -> Res.string.settings_idle_hide_3s
+        FullscreenIdleHideDelay.SECONDS_5 -> Res.string.settings_idle_hide_5s
+        FullscreenIdleHideDelay.SECONDS_10 -> Res.string.settings_idle_hide_10s
+    }
+
+@Composable
+internal fun FullscreenIdleHideDelay.uiLabel(): String = stringResource(labelRes())

@@ -149,6 +149,13 @@ data class Settings(
     val nowPlayingBlurIntensity: NowPlayingBlurIntensity = NowPlayingBlurIntensity.MEDIUM,
     val nowPlayingBackdropScrim: NowPlayingBackdropScrim = NowPlayingBackdropScrim.NORMAL,
     val reduceTransparency: Boolean = false,
+    val reduceMotion: Boolean = false,
+    val lyricsBlurEnabled: Boolean = true,
+    val lyricsActiveLineZoom: Boolean = true,
+    val lyricsFontScale: LyricsFontScale = LyricsFontScale.NORMAL,
+    val lyricsAlignment: LyricsAlignment = LyricsAlignment.START,
+    val lyricsActiveLineColor: LyricsActiveLineColor = LyricsActiveLineColor.WHITE,
+    val fullscreenIdleHideDelay: FullscreenIdleHideDelay = FullscreenIdleHideDelay.SECONDS_3,
     val autoplay: Boolean = true,
     val resumeLastActiveSession: Boolean = false,
     val stopPlaybackOnTaskRemoval: Boolean = false,
@@ -189,4 +196,31 @@ enum class NowPlayingBackdropScrim(
     LIGHT("Ligero", 0.18f, 0.08f, 0.28f, 0.55f),
     NORMAL("Normal", 0.42f, 0.26f, 0.60f, 0.86f),
     DARK("Oscuro", 0.68f, 0.55f, 0.84f, 0.98f),
+}
+
+@Serializable
+enum class LyricsFontScale(val scaleFactor: Float) {
+    COMPACT(0.85f),
+    NORMAL(1.0f),
+    LARGE(1.18f),
+}
+
+@Serializable
+enum class LyricsAlignment {
+    START,
+    CENTER,
+}
+
+@Serializable
+enum class LyricsActiveLineColor {
+    WHITE,
+    ACCENT,
+}
+
+@Serializable
+enum class FullscreenIdleHideDelay(val delayMs: Long?) {
+    OFF(null),
+    SECONDS_3(3_000L),
+    SECONDS_5(5_000L),
+    SECONDS_10(10_000L),
 }

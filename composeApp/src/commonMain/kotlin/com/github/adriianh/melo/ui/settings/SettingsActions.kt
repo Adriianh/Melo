@@ -5,6 +5,10 @@ import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
+import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsAlignment
+import com.github.adriianh.core.domain.model.LyricsFontScale
 import com.github.adriianh.core.domain.model.NowPlayingBackdropScrim
 import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.ThemeMode
@@ -21,6 +25,13 @@ data class SettingsActions(
     val onNowPlayingBlurIntensitySelected: (NowPlayingBlurIntensity) -> Unit = {},
     val onNowPlayingBackdropScrimSelected: (NowPlayingBackdropScrim) -> Unit = {},
     val onReduceTransparencyToggle: (Boolean) -> Unit = {},
+    val onReduceMotionToggle: (Boolean) -> Unit = {},
+    val onLyricsBlurToggle: (Boolean) -> Unit = {},
+    val onLyricsActiveLineZoomToggle: (Boolean) -> Unit = {},
+    val onLyricsFontScaleSelected: (LyricsFontScale) -> Unit = {},
+    val onLyricsAlignmentSelected: (LyricsAlignment) -> Unit = {},
+    val onLyricsActiveLineColorSelected: (LyricsActiveLineColor) -> Unit = {},
+    val onFullscreenIdleHideDelaySelected: (FullscreenIdleHideDelay) -> Unit = {},
     val onDataSaverToggle: (Boolean) -> Unit,
     val onAudioQualitySelected: (AudioQuality) -> Unit,
     val onDownloadFormatSelected: (DownloadFormat) -> Unit = {},
