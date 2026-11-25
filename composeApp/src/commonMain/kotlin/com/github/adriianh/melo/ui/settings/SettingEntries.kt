@@ -1277,7 +1277,7 @@ private fun MutableList<SettingEntry>.addPlaybackEntries(
 ) {
     val categoryTitle = stringResource(SettingsCategory.PLAYBACK.titleRes)
     val section = stringResource(Res.string.settings_section_playback)
-    if (platformType != PlatformType.IOS) {
+    if (platformType == PlatformType.DESKTOP) {
         val outputTitle = stringResource(Res.string.settings_audio_output_title)
         val outputDesc = stringResource(Res.string.settings_audio_output_desc)
         val systemDefaultLabel = stringResource(Res.string.player_audio_output_default)

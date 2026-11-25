@@ -1,11 +1,7 @@
 package com.github.adriianh.core.domain.player
 
 import android.content.Context
-import android.media.AudioDeviceCallback
-import android.media.AudioDeviceInfo
-import android.media.AudioManager
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.OptIn
@@ -112,29 +108,10 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-    private val _availableAudioOutputs = MutableStateFlow<List<AudioOutputDevice>>(emptyList())
-    override val availableAudioOutputs: StateFlow<List<AudioOutputDevice>> = _availableAudioOutputs.asStateFlow()
-    private val _selectedAudioOutputId = MutableStateFlow<String?>(null)
-    override val selectedAudioOutputId: StateFlow<String?> = _selectedAudioOutputId.asStateFlow()
-
-    private val audioDeviceCallback =
-        object : AudioDeviceCallback() {
-            override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
-                refreshAudioOutputs()
-            }
-
-            override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
-                refreshAudioOutputs()
-            }
-        }
-
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
 
     init {
-        audioManager?.registerAudioDeviceCallback(audioDeviceCallback, mainHandler)
-        refreshAudioOutputs()
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _state.update { it.copy(isPlaying = isPlaying) }
@@ -252,99 +229,11 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
         }
     }
 
-    override fun refreshAudioOutputs() {
-        val devices =
-            queryMediaOutputDeviceInfos().map { info ->
-                AudioOutputDevice(
-                    id = info.id.toString(),
-                    name = resolveAndroidDeviceName(info),
-                    kind = resolveAndroidDeviceKind(info.type),
-                    isDefault = info.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-                )
-            }
-        _availableAudioOutputs.value = devices
-        val selected = _selectedAudioOutputId.value
-        if (selected != null && devices.none { it.id == selected }) {
-            _selectedAudioOutputId.value = null
-            runOnMain { exoPlayer.setPreferredAudioDevice(null) }
-        }
-    }
-
-    override fun selectAudioOutput(deviceId: String?): Boolean {
-        val target =
-            if (deviceId == null) {
-                null
-            } else {
-                queryMediaOutputDeviceInfos().firstOrNull { it.id.toString() == deviceId }
-            }
-        val resolvedId = if (deviceId != null && target != null) deviceId else null
-        _selectedAudioOutputId.value = resolvedId
-        runOnMain {
-            exoPlayer.setPreferredAudioDevice(target)
-        }
-        return resolvedId == deviceId
-    }
-
     override fun release() {
         stopProgressUpdate()
-        runCatching { audioManager?.unregisterAudioDeviceCallback(audioDeviceCallback) }
         scope.cancel()
         runOnMain {
             exoPlayer.release()
-        }
-    }
-
-    private fun queryMediaOutputDeviceInfos(): List<AudioDeviceInfo> {
-        return audioManager
-            ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-            .orEmpty()
-            .filter { isSupportedMediaOutputType(it.type) }
-            .distinctBy { it.id }
-    }
-
-    private fun isSupportedMediaOutputType(type: Int): Boolean =
-        when (type) {
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-            AudioDeviceInfo.TYPE_WIRED_HEADSET,
-            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
-            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
-            AudioDeviceInfo.TYPE_USB_DEVICE,
-            AudioDeviceInfo.TYPE_USB_HEADSET,
-            AudioDeviceInfo.TYPE_HDMI,
-            AudioDeviceInfo.TYPE_HDMI_ARC,
-            AudioDeviceInfo.TYPE_LINE_ANALOG,
-            AudioDeviceInfo.TYPE_LINE_DIGITAL,
-            -> true
-            else ->
-                (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    (type == AudioDeviceInfo.TYPE_BLE_HEADSET || type == AudioDeviceInfo.TYPE_BLE_SPEAKER)) ||
-                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && type == AudioDeviceInfo.TYPE_HEARING_AID)
-        }
-
-    private fun resolveAndroidDeviceKind(type: Int): AudioOutputKind =
-        when (type) {
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> AudioOutputKind.SPEAKER
-            AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> AudioOutputKind.HEADPHONES
-            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> AudioOutputKind.BLUETOOTH
-            AudioDeviceInfo.TYPE_USB_DEVICE, AudioDeviceInfo.TYPE_USB_HEADSET -> AudioOutputKind.USB
-            AudioDeviceInfo.TYPE_HDMI, AudioDeviceInfo.TYPE_HDMI_ARC -> AudioOutputKind.HDMI
-            else ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    (type == AudioDeviceInfo.TYPE_BLE_HEADSET || type == AudioDeviceInfo.TYPE_BLE_SPEAKER)
-                ) {
-                    AudioOutputKind.BLUETOOTH
-                } else {
-                    AudioOutputKind.OTHER
-                }
-        }
-
-    private fun resolveAndroidDeviceName(info: AudioDeviceInfo): String {
-        val productName = info.productName?.toString()?.trim().orEmpty()
-        return when (info.type) {
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Speaker"
-            AudioDeviceInfo.TYPE_WIRED_HEADSET, AudioDeviceInfo.TYPE_WIRED_HEADPHONES ->
-                productName.ifBlank { "Wired Headphones" }
-            else -> productName.ifBlank { "Audio Output ${info.id}" }
         }
     }
 
