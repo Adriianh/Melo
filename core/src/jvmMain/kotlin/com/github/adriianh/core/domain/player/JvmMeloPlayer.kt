@@ -16,6 +16,9 @@ import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
@@ -26,6 +29,15 @@ class JvmMeloPlayer : MeloPlayer {
     private var mediaPlayer: MediaPlayer? = null
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
+
+    private val _availableAudioOutputs = MutableStateFlow<List<AudioOutputDevice>>(emptyList())
+    override val availableAudioOutputs: StateFlow<List<AudioOutputDevice>> = _availableAudioOutputs.asStateFlow()
+
+    private val _selectedAudioOutputId = MutableStateFlow<String?>(null)
+    override val selectedAudioOutputId: StateFlow<String?> = _selectedAudioOutputId.asStateFlow()
+
+    @Volatile
+    private var preferredOutputDeviceId: String? = null
 
     private val scope = CoroutineScope(Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
     private var progressJob: Job? = null
@@ -72,6 +84,8 @@ class JvmMeloPlayer : MeloPlayer {
                             )
                         }
                         scope.launch {
+                            preferredOutputDeviceId?.let { applyAudioOutputInternal(it, refreshFirst = false) }
+                            refreshAudioOutputsInternal()
                             delay(500.milliseconds)
                             mediaPlayer?.audio()?.setVolume(currentVolume)
                             delay(2000.milliseconds)
@@ -121,6 +135,8 @@ class JvmMeloPlayer : MeloPlayer {
                 }
             )
             player.audio().setVolume(currentVolume)
+            refreshAudioOutputsInternal()
+            preferredOutputDeviceId?.let { applyAudioOutputInternal(it, refreshFirst = false) }
         } catch (e: Throwable) {
             log.fine("Could not initialize VLC MediaPlayerFactory: ${e.message}")
             _state.update {
@@ -257,6 +273,90 @@ class JvmMeloPlayer : MeloPlayer {
         }
     }
 
+    override fun refreshAudioOutputs() {
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            refreshAudioOutputsInternal()
+        }
+    }
+
+    override fun selectAudioOutput(deviceId: String?): Boolean {
+        preferredOutputDeviceId = deviceId
+        _selectedAudioOutputId.value = deviceId
+        scope.launch(Dispatchers.IO) {
+            initJob.join()
+            applyAudioOutputInternal(deviceId, refreshFirst = true)
+        }
+        return true
+    }
+
+    private fun refreshAudioOutputsInternal(): List<AudioOutputDevice> {
+        val player = mediaPlayer ?: return emptyList()
+        val devices =
+            runCatching {
+                val activeDevices = player.audio().outputDevices().orEmpty()
+                val rawDevices =
+                    if (activeDevices.isNotEmpty()) {
+                        activeDevices
+                    } else {
+                        val outputs = factory?.audio()?.audioOutputs().orEmpty()
+                        val preferredModule =
+                            outputs.firstOrNull { output ->
+                                output.name in PREFERRED_VLC_AUDIO_MODULES && output.devices.isNotEmpty()
+                            } ?: outputs.firstOrNull { it.devices.isNotEmpty() }
+                        preferredModule?.devices.orEmpty()
+                    }
+                rawDevices
+                    .mapNotNull { dev ->
+                        val id = dev.deviceId?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                        val rawLabel = dev.longName?.takeIf { it.isNotBlank() } ?: id
+                        val label = fixUtf8Mojibake(rawLabel)
+                        AudioOutputDevice(
+                            id = id,
+                            name = label,
+                            kind = inferAudioOutputKind(label),
+                            isDefault = isDefaultAudioDevice(id, label),
+                        )
+                    }.distinctBy { it.id }
+            }.getOrDefault(emptyList())
+
+        _availableAudioOutputs.value = devices
+        val currentSelected = _selectedAudioOutputId.value
+        if (currentSelected != null && devices.isNotEmpty() && devices.none { it.id == currentSelected }) {
+            preferredOutputDeviceId = null
+            _selectedAudioOutputId.value = null
+        }
+        return devices
+    }
+
+    private fun applyAudioOutputInternal(
+        deviceId: String?,
+        refreshFirst: Boolean,
+    ) {
+        val player = mediaPlayer ?: return
+        val devices = if (refreshFirst) refreshAudioOutputsInternal() else _availableAudioOutputs.value
+        val defaultDeviceToken = devices.firstOrNull { it.isDefault }?.id ?: ""
+        if (deviceId != null && devices.isNotEmpty() && devices.none { it.id == deviceId }) {
+            preferredOutputDeviceId = null
+            _selectedAudioOutputId.value = null
+            runCatching { player.audio().setOutputDevice(null, defaultDeviceToken) }
+            return
+        }
+        runCatching {
+            val targetId = deviceId ?: defaultDeviceToken
+            player.audio().setOutputDevice(null, targetId)
+            player.audio().setVolume(currentVolume)
+        }.onSuccess {
+            _selectedAudioOutputId.value = deviceId
+            scope.launch {
+                delay(250.milliseconds)
+                mediaPlayer?.audio()?.setVolume(currentVolume)
+            }
+        }.onFailure { e ->
+            log.fine("Could not switch audio output device: ${e.message}")
+        }
+    }
+
     override fun release() {
         if (!released.compareAndSet(false, true)) return
         stopProgressUpdate()
@@ -349,12 +449,63 @@ class JvmMeloPlayer : MeloPlayer {
 
     companion object {
         private val log = Logger.getLogger("Melo.JvmMeloPlayer")
+        private val PREFERRED_VLC_AUDIO_MODULES =
+            setOf("mmdevice", "wasapi", "waveout", "directsound", "pulse", "pipewire", "alsa", "auhal")
         private const val BROWSER_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/605.1.15"
         private var detectedPluginsDir: File? = null
 
+        private fun isDefaultAudioDevice(
+            id: String,
+            name: String,
+        ): Boolean =
+            id.equals("default", ignoreCase = true) ||
+                name.contains("default", ignoreCase = true) ||
+                name.contains("predeterminad", ignoreCase = true)
+
+        private fun inferAudioOutputKind(name: String): AudioOutputKind {
+            val lower = name.lowercase()
+            return when {
+                "bluetooth" in lower || "airpods" in lower || "buds" in lower || "bt " in lower ->
+                    AudioOutputKind.BLUETOOTH
+                "headphone" in lower || "headset" in lower || "auricular" in lower || "earphone" in lower ->
+                    AudioOutputKind.HEADPHONES
+                "usb" in lower || "dac" in lower ->
+                    AudioOutputKind.USB
+                "hdmi" in lower || "displayport" in lower || "monitor" in lower || "tv" in lower ->
+                    AudioOutputKind.HDMI
+                "speaker" in lower || "altavoz" in lower || "realtek" in lower || "built-in" in lower ->
+                    AudioOutputKind.SPEAKER
+                else -> AudioOutputKind.OTHER
+            }
+        }
+
         init {
+            if (System.getProperty("jna.encoding").isNullOrBlank()) {
+                System.setProperty("jna.encoding", "UTF-8")
+            }
             initVlcSearchPaths()
+        }
+
+        internal fun fixUtf8Mojibake(raw: String): String {
+            if (raw.all { it.code < 0x80 }) return raw
+            return runCatching {
+                val win1252 = Charset.forName("windows-1252")
+                val encoder =
+                    win1252
+                        .newEncoder()
+                        .onMalformedInput(CodingErrorAction.REPORT)
+                        .onUnmappableCharacter(CodingErrorAction.REPORT)
+                val encoded = encoder.encode(java.nio.CharBuffer.wrap(raw))
+                val bytes = ByteArray(encoded.remaining()).also { encoded.get(it) }
+                val decoder =
+                    Charsets.UTF_8
+                        .newDecoder()
+                        .onMalformedInput(CodingErrorAction.REPORT)
+                        .onUnmappableCharacter(CodingErrorAction.REPORT)
+                val decoded = decoder.decode(ByteBuffer.wrap(bytes)).toString()
+                if (decoded.length < raw.length) decoded else raw
+            }.getOrDefault(raw)
         }
 
         private fun initVlcSearchPaths() {

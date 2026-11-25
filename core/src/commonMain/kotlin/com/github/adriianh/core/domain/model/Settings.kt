@@ -179,6 +179,7 @@ data class Settings(
     val stopPlaybackOnTaskRemoval: Boolean = false,
     val dataSaver: Boolean = false,
     val audioQuality: AudioQuality = AudioQuality.AUTO,
+    val preferredAudioOutputId: String? = null,
     val syncHistoryToYouTube: Boolean = true,
     val syncLikesToYouTube: Boolean = true,
     val autoCheckUpdates: Boolean = true,
