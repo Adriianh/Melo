@@ -121,6 +121,8 @@ internal fun DockedQueueContent(
     state: PlayerUiState,
     activeAccent: Color,
     queueViewModel: QueueViewModel = koinViewModel(),
+    expandQueueByDefault: Boolean = false,
+    showSuggestions: Boolean = true,
     onRemoveFromQueue: ((Track) -> Unit)? = null,
     onClearQueue: (() -> Unit)? = null,
     onSaveQueueAsPlaylist: ((List<Track>) -> Unit)? = null,
@@ -166,6 +168,8 @@ internal fun DockedQueueContent(
         onPlaySuggestion = queueViewModel::playTrack,
         onAddSuggestionToQueue = queueViewModel::insertTrackNext,
         onOpenContextMenu = onOpenContextMenu,
+        initialExpanded = expandQueueByDefault,
+        showSuggestions = showSuggestions,
     )
 }
 
@@ -188,8 +192,9 @@ internal fun DockedQueueSectionContent(
     onAddSuggestionToQueue: (Track) -> Unit,
     onOpenContextMenu: ((Track, Boolean, SongMenuAnchor?) -> Unit)? = null,
     initialExpanded: Boolean = false,
+    showSuggestions: Boolean = true,
 ) {
-    var isQueueExpanded by remember { mutableStateOf(initialExpanded) }
+    var isQueueExpanded by remember(initialExpanded) { mutableStateOf(initialExpanded) }
     val visibleQueueTracks = if (isQueueExpanded) upNextTracks else upNextTracks.take(1)
     val upNextKeys =
         remember(visibleQueueTracks) {
@@ -260,42 +265,44 @@ internal fun DockedQueueSectionContent(
                 }
             }
 
-            item(key = "docked_suggestions_header") {
-                Spacer(modifier = Modifier.height(4.dp))
-                DockedSuggestionsHeader(
-                    isLoading = isLoadingSuggestions,
-                    activeAccent = activeAccent,
-                    onRefresh = onRefreshSuggestions,
-                )
-            }
-
-            if (isLoadingSuggestions && suggestions.isEmpty()) {
-                items(4) { SuggestionSkeletonCard() }
-            } else if (suggestions.isEmpty()) {
-                item(key = "docked_suggestions_empty") {
-                    Text(
-                        stringResource(Res.string.player_suggestions_empty),
-                        style = MeloType.labelSmall,
-                        color = DockedSecondaryTextColor,
-                        modifier = Modifier.padding(vertical = 8.dp),
+            if (showSuggestions) {
+                item(key = "docked_suggestions_header") {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    DockedSuggestionsHeader(
+                        isLoading = isLoadingSuggestions,
+                        activeAccent = activeAccent,
+                        onRefresh = onRefreshSuggestions,
                     )
                 }
-            } else {
-                itemsIndexed(
-                    suggestions,
-                    key = { index, track -> "docked_sugg_${index}_${track.id}" },
-                ) { _, track ->
-                    val isCurrent = currentTrackId == track.id
-                    DockedSuggestionRow(
-                        track = track,
-                        activeAccent = activeAccent,
-                        isCurrent = isCurrent,
-                        isPlaying = isPlaying && isCurrent,
-                        onClick = { onPlaySuggestion(track) },
-                        onAddClick = { onAddSuggestionToQueue(track) },
-                        onOpenContextMenu =
-                            onOpenContextMenu?.let { open -> { anchor -> open(track, false, anchor) } },
-                    )
+
+                if (isLoadingSuggestions && suggestions.isEmpty()) {
+                    items(4) { SuggestionSkeletonCard() }
+                } else if (suggestions.isEmpty()) {
+                    item(key = "docked_suggestions_empty") {
+                        Text(
+                            stringResource(Res.string.player_suggestions_empty),
+                            style = MeloType.labelSmall,
+                            color = DockedSecondaryTextColor,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        suggestions,
+                        key = { index, track -> "docked_sugg_${index}_${track.id}" },
+                    ) { _, track ->
+                        val isCurrent = currentTrackId == track.id
+                        DockedSuggestionRow(
+                            track = track,
+                            activeAccent = activeAccent,
+                            isCurrent = isCurrent,
+                            isPlaying = isPlaying && isCurrent,
+                            onClick = { onPlaySuggestion(track) },
+                            onAddClick = { onAddSuggestionToQueue(track) },
+                            onOpenContextMenu =
+                                onOpenContextMenu?.let { open -> { anchor -> open(track, false, anchor) } },
+                        )
+                    }
                 }
             }
         }

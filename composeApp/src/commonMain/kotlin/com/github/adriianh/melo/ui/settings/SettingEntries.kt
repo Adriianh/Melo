@@ -610,6 +610,13 @@ private fun MutableList<SettingEntry>.addNowPlayingEntries(
         actions = actions,
         categoryTitle = categoryTitle,
     )
+    if (platformType == PlatformType.DESKTOP) {
+        addDockedPanelEntries(
+            settings = settings,
+            actions = actions,
+            categoryTitle = categoryTitle,
+        )
+    }
     addNowPlayingResetEntry(
         actions = actions,
         categoryTitle = categoryTitle,

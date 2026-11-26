@@ -920,6 +920,41 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                                 }
                                             }
                                         },
+                                        onDockShowOnStartupToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(dockShowOnStartup = enabled)
+                                                }
+                                            }
+                                        },
+                                        onDockInitialTabSelected = { tab ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(dockInitialTab = tab)
+                                                }
+                                            }
+                                        },
+                                        onDockExpandQueueByDefaultToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(dockExpandQueueByDefault = enabled)
+                                                }
+                                            }
+                                        },
+                                        onDockShowSuggestionsToggle = { enabled ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(dockShowSuggestions = enabled)
+                                                }
+                                            }
+                                        },
+                                        onDockCollapsedArtworkModeSelected = { mode ->
+                                            coroutineScope.launch {
+                                                updateSettingsUseCase { current ->
+                                                    current.copy(dockCollapsedArtworkMode = mode)
+                                                }
+                                            }
+                                        },
                                         onResetNowPlayingDefaults = {
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->

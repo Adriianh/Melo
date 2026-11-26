@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.model.DockedInitialTab
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.melo.ui.navigation.MainTab
@@ -108,12 +109,19 @@ private fun DesktopMainLayout(
     val getSettingsUseCase: GetSettingsUseCase = koinInject()
     val updateSettingsUseCase: UpdateSettingsUseCase = koinInject()
     val scope = rememberCoroutineScope()
+    val initialSettings = remember { getSettingsUseCase.getInitial() }
     val initialSection =
-        remember {
-            val saved = getSettingsUseCase.getInitial().lastDockedSection
-            PanelSection.entries.firstOrNull { it.name == saved } ?: PanelSection.QUEUE
+        remember(initialSettings) {
+            when (initialSettings.dockInitialTab) {
+                DockedInitialTab.QUEUE -> PanelSection.QUEUE
+                DockedInitialTab.LYRICS -> PanelSection.LYRICS
+                DockedInitialTab.ARTIST -> PanelSection.ARTIST
+                DockedInitialTab.REMEMBER_LAST ->
+                    PanelSection.entries.firstOrNull { it.name == initialSettings.lastDockedSection }
+                        ?: PanelSection.QUEUE
+            }
         }
-    var isDesktopPaneVisible by remember { mutableStateOf(true) }
+    var isDesktopPaneVisible by remember { mutableStateOf(initialSettings.dockShowOnStartup) }
     var desktopPaneSection by remember { mutableStateOf(initialSection) }
     var isSidebarCollapsed by remember { mutableStateOf(false) }
 

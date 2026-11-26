@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,6 +56,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.adriianh.core.domain.model.DockedCollapsedArtworkMode
+import com.github.adriianh.core.domain.model.NowPlayingBlurIntensity
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
@@ -93,6 +96,88 @@ private val DockDefaultWidth = 348.dp
 private val DockSecondaryText = Color.White.copy(alpha = 0.70f)
 private val DockDarkSurfaceTop = Color(0xFF141720)
 private val DockDarkSurfaceBottom = Color(0xFF0A0C11)
+
+private fun Settings.resolveDockGlowFactor(): Float {
+    if (!nowPlayingBlur) return 0f
+    return when (nowPlayingBlurIntensity) {
+        NowPlayingBlurIntensity.OFF -> 0f
+        NowPlayingBlurIntensity.SOFT -> 0.55f
+        NowPlayingBlurIntensity.MEDIUM -> 1.0f
+        NowPlayingBlurIntensity.INTENSE -> 1.45f
+    }
+}
+
+private fun Modifier.dockAtmosphericSurface(
+    shape: RoundedCornerShape,
+    accent: Color,
+    reduceTransparency: Boolean,
+    fallbackSurface: Color,
+    fallbackBorder: Color,
+    glowFactor: Float,
+    isLyricsTab: Boolean,
+): Modifier {
+    val surfaceBrush =
+        if (reduceTransparency) {
+            SolidColor(fallbackSurface)
+        } else {
+            Brush.verticalGradient(
+                colors =
+                    listOf(
+                        DockDarkSurfaceTop.copy(alpha = 0.90f),
+                        DockDarkSurfaceBottom.copy(alpha = 0.94f),
+                    ),
+            )
+        }
+    val borderBrush =
+        if (reduceTransparency) {
+            SolidColor(fallbackBorder)
+        } else {
+            Brush.linearGradient(
+                colors =
+                    listOf(
+                        Color.White.copy(alpha = 0.22f),
+                        accent.copy(alpha = 0.28f),
+                        Color.White.copy(alpha = 0.10f),
+                        Color.White.copy(alpha = 0.06f),
+                    ),
+            )
+        }
+    return this
+        .clip(shape)
+        .background(surfaceBrush)
+        .drawBehind {
+            if (!reduceTransparency && glowFactor > 0f) {
+                drawRect(
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    accent.copy(alpha = (0.24f * glowFactor).coerceAtMost(0.42f)),
+                                    accent.copy(alpha = (0.08f * glowFactor).coerceAtMost(0.16f)),
+                                    Color.Transparent,
+                                ),
+                            center = Offset(x = size.width * 0.5f, y = size.height * 0.14f),
+                            radius = size.width * 1.15f,
+                        ),
+                )
+                if (isLyricsTab) {
+                    drawRect(
+                        brush =
+                            Brush.radialGradient(
+                                colors =
+                                    listOf(
+                                        accent.copy(alpha = (0.16f * glowFactor).coerceAtMost(0.30f)),
+                                        accent.copy(alpha = (0.05f * glowFactor).coerceAtMost(0.12f)),
+                                        Color.Transparent,
+                                    ),
+                                center = Offset(x = size.width * 0.5f, y = size.height * 0.58f),
+                                radius = size.width * 1.1f,
+                            ),
+                    )
+                }
+            }
+        }.border(1.dp, borderBrush, shape)
+}
 
 private fun Settings.toDockedLyricsConfig(): NowPlayingLyricsConfig =
     NowPlayingLyricsConfig(
@@ -151,6 +236,9 @@ fun DesktopNowPlayingDockedPane(
         inQueue = contextMenuInQueue,
     )
 
+    val glowFactor = settings.resolveDockGlowFactor()
+    val artworkCornerRadius = settings.resolvedArtworkCornerRadiusDp().coerceIn(4, 24).dp
+
     DesktopNowPlayingDockedPaneContent(
         state = state,
         artistDetails = artistDetails,
@@ -158,6 +246,9 @@ fun DesktopNowPlayingDockedPane(
         activeAccent = activeAccent,
         selectedSection = selectedSection,
         reducedMotion = reducedMotion,
+        glowFactor = glowFactor,
+        artworkCornerRadius = artworkCornerRadius,
+        collapsedArtworkMode = settings.dockCollapsedArtworkMode,
         onSectionChange = onSectionChange,
         onExpandToFullscreen = onExpandToFullscreen,
         onClose = onClose,
@@ -168,6 +259,8 @@ fun DesktopNowPlayingDockedPane(
                 state = state,
                 activeAccent = accent,
                 queueViewModel = queueViewModel,
+                expandQueueByDefault = settings.dockExpandQueueByDefault,
+                showSuggestions = settings.dockShowSuggestions,
                 onRemoveFromQueue = { track ->
                     interaction.showRemovedFromQueueSnackbar(track, accent)
                 },
@@ -206,6 +299,7 @@ fun DesktopNowPlayingDockedPane(
                 state = state,
                 artistDetails = artistDetails,
                 activeAccent = accent,
+                glowFactor = glowFactor,
                 onArtistClick = onArtistClick,
                 onAlbumClick = onAlbumClick,
                 queueViewModel = queueViewModel,
@@ -228,6 +322,9 @@ fun DesktopNowPlayingDockedPaneContent(
     selectedSection: PanelSection = PanelSection.QUEUE,
     reducedMotion: Boolean = false,
     dockWidth: Dp = DockDefaultWidth,
+    glowFactor: Float = 1.0f,
+    artworkCornerRadius: Dp = 16.dp,
+    collapsedArtworkMode: DockedCollapsedArtworkMode = DockedCollapsedArtworkMode.COMPACT,
     onSectionChange: (PanelSection) -> Unit = {},
     onExpandToFullscreen: () -> Unit = {},
     onClose: () -> Unit = {},
@@ -246,32 +343,6 @@ fun DesktopNowPlayingDockedPaneContent(
     )
     val dockShape = RoundedCornerShape(DockCornerRadius)
     val reduceTransparency = MeloColors.reduceTransparency
-    val surfaceBrush =
-        if (reduceTransparency) {
-            SolidColor(MeloColors.surface1)
-        } else {
-            Brush.verticalGradient(
-                colors =
-                    listOf(
-                        DockDarkSurfaceTop.copy(alpha = 0.90f),
-                        DockDarkSurfaceBottom.copy(alpha = 0.94f),
-                    ),
-            )
-        }
-    val borderBrush =
-        if (reduceTransparency) {
-            SolidColor(MeloColors.border)
-        } else {
-            Brush.linearGradient(
-                colors =
-                    listOf(
-                        Color.White.copy(alpha = 0.22f),
-                        animatedAccent.copy(alpha = 0.28f),
-                        Color.White.copy(alpha = 0.10f),
-                        Color.White.copy(alpha = 0.06f),
-                    ),
-            )
-        }
 
     Box(
         modifier =
@@ -279,40 +350,15 @@ fun DesktopNowPlayingDockedPaneContent(
                 .width(dockWidth)
                 .fillMaxHeight()
                 .padding(top = 12.dp, bottom = 12.dp, end = 12.dp)
-                .clip(dockShape)
-                .background(surfaceBrush)
-                .drawBehind {
-                    if (!reduceTransparency) {
-                        drawRect(
-                            brush =
-                                Brush.radialGradient(
-                                    colors =
-                                        listOf(
-                                            animatedAccent.copy(alpha = 0.24f),
-                                            animatedAccent.copy(alpha = 0.08f),
-                                            Color.Transparent,
-                                        ),
-                                    center = Offset(x = size.width * 0.5f, y = size.height * 0.14f),
-                                    radius = size.width * 1.15f,
-                                ),
-                        )
-                        if (selectedSection == PanelSection.LYRICS) {
-                            drawRect(
-                                brush =
-                                    Brush.radialGradient(
-                                        colors =
-                                            listOf(
-                                                animatedAccent.copy(alpha = 0.16f),
-                                                animatedAccent.copy(alpha = 0.05f),
-                                                Color.Transparent,
-                                            ),
-                                        center = Offset(x = size.width * 0.5f, y = size.height * 0.58f),
-                                        radius = size.width * 1.1f,
-                                    ),
-                            )
-                        }
-                    }
-                }.border(1.dp, borderBrush, dockShape),
+                .dockAtmosphericSurface(
+                    shape = dockShape,
+                    accent = animatedAccent,
+                    reduceTransparency = reduceTransparency,
+                    fallbackSurface = MeloColors.surface1,
+                    fallbackBorder = MeloColors.border,
+                    glowFactor = glowFactor,
+                    isLyricsTab = selectedSection == PanelSection.LYRICS,
+                ),
     ) {
         Column(
             modifier =
@@ -327,11 +373,19 @@ fun DesktopNowPlayingDockedPaneContent(
                 onClose = onClose,
             )
 
+            val headerState =
+                when {
+                    selectedSection == PanelSection.QUEUE -> DockHeaderDisplayState.EXPANDED
+                    collapsedArtworkMode == DockedCollapsedArtworkMode.HIDDEN -> DockHeaderDisplayState.HIDDEN
+                    else -> DockHeaderDisplayState.COMPACT
+                }
             DockedPaneNowPlayingBlock(
                 state = state,
                 artistId = artistDetails?.id,
                 activeAccent = activeAccent,
-                isExpandedArtwork = selectedSection == PanelSection.QUEUE,
+                displayState = headerState,
+                glowFactor = glowFactor,
+                artworkCornerRadius = artworkCornerRadius,
                 reducedMotion = reducedMotion,
                 onExpandToFullscreen = onExpandToFullscreen,
                 onArtistClick = onArtistClick,
@@ -410,19 +464,27 @@ private fun DockedPaneHeader(
     }
 }
 
+private enum class DockHeaderDisplayState {
+    EXPANDED,
+    COMPACT,
+    HIDDEN,
+}
+
 @Composable
 private fun DockedPaneNowPlayingBlock(
     state: PlayerUiState,
     artistId: String?,
     activeAccent: Color,
-    isExpandedArtwork: Boolean,
+    displayState: DockHeaderDisplayState,
+    glowFactor: Float,
+    artworkCornerRadius: Dp,
     reducedMotion: Boolean,
     onExpandToFullscreen: () -> Unit,
     onArtistClick: (String) -> Unit,
     onToggleFavorite: () -> Unit,
 ) {
     AnimatedContent(
-        targetState = isExpandedArtwork,
+        targetState = displayState,
         transitionSpec = {
             if (reducedMotion) {
                 EnterTransition.None togetherWith ExitTransition.None using SizeTransform(clip = false)
@@ -433,25 +495,31 @@ private fun DockedPaneNowPlayingBlock(
             }
         },
         label = "DockedArtworkCollapse",
-    ) { expanded ->
-        if (expanded) {
-            DockedExpandedTrackHeader(
-                state = state,
-                artistId = artistId,
-                activeAccent = activeAccent,
-                onExpandToFullscreen = onExpandToFullscreen,
-                onArtistClick = onArtistClick,
-                onToggleFavorite = onToggleFavorite,
-            )
-        } else {
-            DockedCompactTrackHeader(
-                state = state,
-                artistId = artistId,
-                activeAccent = activeAccent,
-                onExpandToFullscreen = onExpandToFullscreen,
-                onArtistClick = onArtistClick,
-                onToggleFavorite = onToggleFavorite,
-            )
+    ) { mode ->
+        when (mode) {
+            DockHeaderDisplayState.EXPANDED ->
+                DockedExpandedTrackHeader(
+                    state = state,
+                    artistId = artistId,
+                    activeAccent = activeAccent,
+                    glowFactor = glowFactor,
+                    artworkCornerRadius = artworkCornerRadius,
+                    onExpandToFullscreen = onExpandToFullscreen,
+                    onArtistClick = onArtistClick,
+                    onToggleFavorite = onToggleFavorite,
+                )
+
+            DockHeaderDisplayState.COMPACT ->
+                DockedCompactTrackHeader(
+                    state = state,
+                    artistId = artistId,
+                    activeAccent = activeAccent,
+                    onExpandToFullscreen = onExpandToFullscreen,
+                    onArtistClick = onArtistClick,
+                    onToggleFavorite = onToggleFavorite,
+                )
+
+            DockHeaderDisplayState.HIDDEN -> Unit
         }
     }
 }
@@ -461,6 +529,8 @@ private fun DockedExpandedTrackHeader(
     state: PlayerUiState,
     artistId: String?,
     activeAccent: Color,
+    glowFactor: Float,
+    artworkCornerRadius: Dp,
     onExpandToFullscreen: () -> Unit,
     onArtistClick: (String) -> Unit,
     onToggleFavorite: () -> Unit,
@@ -469,29 +539,31 @@ private fun DockedExpandedTrackHeader(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        val artworkShape = RoundedCornerShape(16.dp)
+        val artworkShape = RoundedCornerShape(artworkCornerRadius)
         val reduceTransparency = MeloColors.reduceTransparency
         Box(
             modifier =
-                Modifier.drawBehind {
-                    if (!reduceTransparency) {
-                        drawCircle(
-                            brush =
-                                Brush.radialGradient(
-                                    colors =
-                                        listOf(
-                                            activeAccent.copy(alpha = 0.30f),
-                                            activeAccent.copy(alpha = 0.10f),
-                                            Color.Transparent,
-                                        ),
-                                    center = center,
-                                    radius = size.maxDimension * 0.72f,
-                                ),
-                            radius = size.maxDimension * 0.72f,
-                            center = center,
-                        )
-                    }
-                },
+                Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        if (!reduceTransparency && glowFactor > 0f) {
+                            drawCircle(
+                                brush =
+                                    Brush.radialGradient(
+                                        colors =
+                                            listOf(
+                                                activeAccent.copy(alpha = (0.30f * glowFactor).coerceAtMost(0.45f)),
+                                                activeAccent.copy(alpha = (0.10f * glowFactor).coerceAtMost(0.18f)),
+                                                Color.Transparent,
+                                            ),
+                                        center = center,
+                                        radius = size.maxDimension * 0.65f,
+                                    ),
+                                radius = size.maxDimension * 0.65f,
+                                center = center,
+                            )
+                        }
+                    },
             contentAlignment = Alignment.Center,
         ) {
             MeloAsyncImage(
@@ -499,7 +571,8 @@ private fun DockedExpandedTrackHeader(
                 contentDescription = stringResource(Res.string.a11y_expand_player),
                 modifier =
                     Modifier
-                        .size(200.dp)
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
                         .shadow(
                             elevation = 14.dp,
                             shape = artworkShape,
@@ -507,7 +580,6 @@ private fun DockedExpandedTrackHeader(
                             spotColor = Color.Black.copy(alpha = 0.55f),
                         ).clip(artworkShape)
                         .clickable(onClick = onExpandToFullscreen),
-                size = 200.dp,
                 shape = artworkShape,
             )
         }

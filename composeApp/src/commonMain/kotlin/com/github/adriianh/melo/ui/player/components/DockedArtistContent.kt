@@ -87,6 +87,7 @@ internal fun DockedArtistContent(
     state: PlayerUiState,
     artistDetails: SearchResult.Artist?,
     activeAccent: Color,
+    glowFactor: Float = 1.0f,
     onArtistClick: (String) -> Unit,
     onAlbumClick: (String) -> Unit,
     queueViewModel: QueueViewModel = koinViewModel(),
@@ -96,6 +97,7 @@ internal fun DockedArtistContent(
         state = state,
         artistDetails = artistDetails,
         activeAccent = activeAccent,
+        glowFactor = glowFactor,
         onArtistClick = onArtistClick,
         onAlbumClick = onAlbumClick,
         onTrackClick = queueViewModel::playTrack,
@@ -108,6 +110,7 @@ internal fun DockedArtistSectionContent(
     state: PlayerUiState,
     artistDetails: SearchResult.Artist?,
     activeAccent: Color,
+    glowFactor: Float = 1.0f,
     onArtistClick: (String) -> Unit,
     onAlbumClick: (String) -> Unit,
     onTrackClick: (Track) -> Unit,
@@ -149,6 +152,7 @@ internal fun DockedArtistSectionContent(
             DockedArtistHeader(
                 artistDetails = artistDetails,
                 activeAccent = activeAccent,
+                glowFactor = glowFactor,
                 onArtistClick = onArtistClick,
             )
         }
@@ -232,6 +236,7 @@ private fun DockedArtistLoading(
 private fun DockedArtistHeader(
     artistDetails: SearchResult.Artist,
     activeAccent: Color,
+    glowFactor: Float,
     onArtistClick: (String) -> Unit,
 ) {
     val rawMetric = artistDetails.subscriberCountText?.ifBlank { null } ?: artistDetails.monthlyListenerCount
@@ -248,14 +253,14 @@ private fun DockedArtistHeader(
         Box(
             modifier =
                 Modifier.drawBehind {
-                    if (!reduceTransparency) {
+                    if (!reduceTransparency && glowFactor > 0f) {
                         drawCircle(
                             brush =
                                 Brush.radialGradient(
                                     colors =
                                         listOf(
-                                            activeAccent.copy(alpha = 0.28f),
-                                            activeAccent.copy(alpha = 0.08f),
+                                            activeAccent.copy(alpha = (0.28f * glowFactor).coerceAtMost(0.45f)),
+                                            activeAccent.copy(alpha = (0.08f * glowFactor).coerceAtMost(0.16f)),
                                             Color.Transparent,
                                         ),
                                     center = center,

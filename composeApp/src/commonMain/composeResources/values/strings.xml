@@ -225,6 +225,27 @@
     <string name="player_artist_subscribers">%1$s suscriptores</string>
     <string name="player_artist_monthly_listeners">%1$s oyentes mensuales</string>
 
+    <!-- Ajustes del panel lateral -->
+    <string name="settings_section_docked_panel">Panel lateral</string>
+    <string name="settings_dock_show_startup_title">Mostrar panel al iniciar</string>
+    <string name="settings_dock_show_startup_desc">Abre el panel lateral de reproducción automáticamente al iniciar la app.</string>
+    <string name="settings_kw_dock_show_startup">panel lateral, dock, iniciar, mostrar, ocultar</string>
+    <string name="settings_dock_initial_tab_title">Pestaña inicial del panel</string>
+    <string name="settings_dock_initial_tab_desc">Elige qué pestaña se abre al iniciar el panel lateral.</string>
+    <string name="settings_kw_dock_initial_tab">panel lateral, dock, pestaña, cola, letra, artista, recordar</string>
+    <string name="settings_dock_tab_remember">Recordar última</string>
+    <string name="settings_dock_expand_queue_title">Expandir "A continuación" por defecto</string>
+    <string name="settings_dock_expand_queue_desc">Muestra toda la cola desplegada en lugar de resumirla a la siguiente pista.</string>
+    <string name="settings_kw_dock_expand_queue">cola, expandir, a continuación, dock, panel</string>
+    <string name="settings_dock_show_suggestions_title">Mostrar "Sugerencias para ti"</string>
+    <string name="settings_dock_show_suggestions_desc">Muestra recomendaciones debajo de la cola en el panel lateral.</string>
+    <string name="settings_kw_dock_show_suggestions">sugerencias, recomendaciones, cola, dock, panel</string>
+    <string name="settings_dock_collapsed_artwork_title">Portada en Letra y Artista</string>
+    <string name="settings_dock_collapsed_artwork_desc">Elige si mostrar una miniatura compacta u ocultarla para ganar más espacio vertical.</string>
+    <string name="settings_kw_dock_collapsed_artwork">portada, carátula, compacta, ocultar, letra, artista, dock</string>
+    <string name="settings_dock_artwork_compact">Compacta (48 dp)</string>
+    <string name="settings_dock_artwork_hidden">Oculta</string>
+
     <!-- Secciones e Inicio -->
     <string name="section_trending">Tendencias</string>
     <string name="section_recently_played">Escuchado recientemente</string>
