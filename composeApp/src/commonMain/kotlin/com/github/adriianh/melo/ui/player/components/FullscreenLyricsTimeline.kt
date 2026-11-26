@@ -306,12 +306,14 @@ internal data class FullscreenLyricsStyle(
                         else -> 1.2.dp
                     }
                 },
-                alphaForDistance = { distance, _ ->
+                alphaForDistance = { distance, baseInactiveAlpha ->
+                    val clampedBase = baseInactiveAlpha.coerceIn(0.15f, 0.90f)
+                    val ratio = clampedBase / LyricsInactiveOpacity.NORMAL.baseAlpha
                     when (distance) {
                         0 -> 1.0f
-                        1 -> 0.60f
-                        2 -> 0.45f
-                        else -> 0.30f
+                        1 -> (0.60f * ratio).coerceIn(0.15f, 0.90f)
+                        2 -> (0.45f * ratio).coerceIn(0.12f, 0.85f)
+                        else -> (0.30f * ratio).coerceIn(0.10f, 0.75f)
                     }
                 },
             )

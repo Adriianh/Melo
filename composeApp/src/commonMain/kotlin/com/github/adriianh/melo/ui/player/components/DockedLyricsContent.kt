@@ -54,6 +54,7 @@ internal fun DockedLyricsContent(
     state: PlayerUiState,
     activeAccent: Color,
     viewModel: PlayerViewModel,
+    lyricsConfig: NowPlayingLyricsConfig = defaultDockedLyricsConfig(),
     reducedMotion: Boolean = false,
 ) {
     DockedLyricsPaneContent(
@@ -65,12 +66,23 @@ internal fun DockedLyricsContent(
         isTranslating = state.isTranslating,
         targetLanguage = state.targetLanguage,
         activeAccent = activeAccent,
+        lyricsConfig = lyricsConfig,
         reducedMotion = reducedMotion,
         onSeekTo = { viewModel.seekTo(it) },
         onToggleTranslation = { viewModel.toggleTranslation() },
         onSelectLanguage = { viewModel.setTargetLanguage(it) },
     )
 }
+
+internal fun defaultDockedLyricsConfig(reducedMotion: Boolean = false): NowPlayingLyricsConfig =
+    NowPlayingLyricsConfig(
+        blurEnabled = !reducedMotion,
+        activeLineWeight = LyricsActiveLineWeight.BOLD,
+        activeLineColor = LyricsActiveLineColor.WHITE,
+        lineSpacingDp = 14,
+        showSourceBadge = true,
+        showInstrumentalBreaks = true,
+    )
 
 @Suppress("FunctionNaming", "ktlint:standard:function-naming")
 @Composable
@@ -87,6 +99,7 @@ internal fun DockedLyricsPaneContent(
     onSelectLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
     progressFlow: StateFlow<PlayerProgressState>? = null,
+    lyricsConfig: NowPlayingLyricsConfig = defaultDockedLyricsConfig(),
     reducedMotion: Boolean = false,
 ) {
     FullscreenLyricsPane(
@@ -102,15 +115,7 @@ internal fun DockedLyricsPaneContent(
         onToggleTranslation = onToggleTranslation,
         onSelectLanguage = onSelectLanguage,
         style = FullscreenLyricsStyle.Docked,
-        lyricsConfig =
-            NowPlayingLyricsConfig(
-                blurEnabled = !reducedMotion,
-                activeLineWeight = LyricsActiveLineWeight.BOLD,
-                activeLineColor = LyricsActiveLineColor.WHITE,
-                lineSpacingDp = 14,
-                showSourceBadge = true,
-                showInstrumentalBreaks = true,
-            ),
+        lyricsConfig = lyricsConfig.copy(blurEnabled = lyricsConfig.blurEnabled && !reducedMotion),
         showControlsOnHoverOnly = false,
         reducedMotion = reducedMotion,
         showFloatingControls = true,

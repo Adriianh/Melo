@@ -39,8 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -63,6 +65,7 @@ import com.github.adriianh.melo.ui.components.track.SongMenuAnchor
 import com.github.adriianh.melo.ui.components.track.songMenuRightClick
 import com.github.adriianh.melo.ui.player.QueueViewModel
 import com.github.adriianh.melo.util.MeloAsyncImage
+import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.PlayerUiState
@@ -241,19 +244,44 @@ private fun DockedArtistHeader(
                 .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MeloAsyncImage(
-            url = artistDetails.artworkUrl,
-            contentDescription = artistDetails.name,
+        val reduceTransparency = MeloColors.reduceTransparency
+        Box(
             modifier =
-                Modifier
-                    .size(96.dp)
-                    .shadow(8.dp, CircleShape)
-                    .clip(CircleShape)
-                    .border(1.5.dp, Color.White.copy(alpha = 0.16f), CircleShape)
-                    .clickable { onArtistClick(artistDetails.id) },
-            size = 96.dp,
-            shape = CircleShape,
-        )
+                Modifier.drawBehind {
+                    if (!reduceTransparency) {
+                        drawCircle(
+                            brush =
+                                Brush.radialGradient(
+                                    colors =
+                                        listOf(
+                                            activeAccent.copy(alpha = 0.28f),
+                                            activeAccent.copy(alpha = 0.08f),
+                                            Color.Transparent,
+                                        ),
+                                    center = center,
+                                    radius = size.maxDimension * 0.78f,
+                                ),
+                            radius = size.maxDimension * 0.78f,
+                            center = center,
+                        )
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            MeloAsyncImage(
+                url = artistDetails.artworkUrl,
+                contentDescription = artistDetails.name,
+                modifier =
+                    Modifier
+                        .size(96.dp)
+                        .shadow(8.dp, CircleShape)
+                        .clip(CircleShape)
+                        .border(1.5.dp, Color.White.copy(alpha = 0.16f), CircleShape)
+                        .clickable { onArtistClick(artistDetails.id) },
+                size = 96.dp,
+                shape = CircleShape,
+            )
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -376,8 +404,13 @@ private fun DockedArtistTopSongRow(
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 60.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (isPlayingThis) activeAccent.copy(alpha = 0.18f) else Color.Transparent)
-                .hoverable(hoverSource)
+                .background(
+                    when {
+                        isPlayingThis -> activeAccent.copy(alpha = 0.18f)
+                        isHovered -> activeAccent.copy(alpha = 0.10f)
+                        else -> Color.Transparent
+                    },
+                ).hoverable(hoverSource)
                 .onGloballyPositioned { rowBounds = it.boundsInWindow() }
                 .songMenuRightClick(
                     enabled = onOpenContextMenu != null,

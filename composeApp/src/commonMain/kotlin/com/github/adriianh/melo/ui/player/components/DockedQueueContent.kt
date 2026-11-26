@@ -104,6 +104,18 @@ private val DockedTouchTargetSize = 44.dp
 private val DockedRowMinHeight = 60.dp
 private val DockedRowCoverSize = 44.dp
 
+private fun dockedRowBackground(
+    isEmphasized: Boolean,
+    isHovered: Boolean,
+    activeAccent: Color,
+    emphasizedAlpha: Float,
+): Color =
+    when {
+        isEmphasized -> activeAccent.copy(alpha = emphasizedAlpha)
+        isHovered -> activeAccent.copy(alpha = 0.10f)
+        else -> Color.White.copy(alpha = 0.05f)
+    }
+
 @Composable
 internal fun DockedQueueContent(
     state: PlayerUiState,
@@ -449,7 +461,12 @@ private fun ReorderableCollectionItemScope.DockedUpNextRow(
                 .defaultMinSize(minHeight = DockedRowMinHeight)
                 .clip(RoundedCornerShape(10.dp))
                 .background(
-                    if (isDragging) activeAccent.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.05f),
+                    dockedRowBackground(
+                        isEmphasized = isDragging,
+                        isHovered = isHovered,
+                        activeAccent = activeAccent,
+                        emphasizedAlpha = 0.22f,
+                    ),
                 ).hoverable(hoverSource)
                 .onGloballyPositioned { rowBounds = it.boundsInWindow() }
                 .songMenuRightClick(
@@ -544,6 +561,8 @@ private fun DockedSuggestionRow(
     onAddClick: () -> Unit,
     onOpenContextMenu: ((SongMenuAnchor?) -> Unit)?,
 ) {
+    val hoverSource = remember { MutableInteractionSource() }
+    val isHovered by hoverSource.collectIsHoveredAsState()
     var rowBounds by remember { mutableStateOf<Rect?>(null) }
 
     Row(
@@ -553,8 +572,14 @@ private fun DockedSuggestionRow(
                 .defaultMinSize(minHeight = DockedRowMinHeight)
                 .clip(RoundedCornerShape(10.dp))
                 .background(
-                    if (isCurrent) activeAccent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f),
-                ).onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                    dockedRowBackground(
+                        isEmphasized = isCurrent,
+                        isHovered = isHovered,
+                        activeAccent = activeAccent,
+                        emphasizedAlpha = 0.18f,
+                    ),
+                ).hoverable(hoverSource)
+                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
                 .songMenuRightClick(
                     enabled = onOpenContextMenu != null,
                     onOpenMenu = { anchor -> onOpenContextMenu?.invoke(anchor) },
