@@ -241,31 +241,13 @@ class MusicRepositoryImpl(
             if (related.isNotEmpty()) return related
         }
 
-        try {
-            val similar = discoveryProvider?.getSimilarTracks(
-                artist = track.artist,
-                title = track.title,
-                limit = 20
-            )
-            if (!similar.isNullOrEmpty()) {
-                val searchResults = mutableListOf<Track>()
-                for (sim in similar.take(10)) {
-                    val found = musicProvider.search("${sim.artist} - ${sim.title}").firstOrNull()
-                    if (found != null && searchResults.none { it.id == found.id } && found.id != track.id) {
-                        searchResults.add(found)
-                    }
-                }
-                if (searchResults.isNotEmpty()) return searchResults
-            }
-        } catch (_: Exception) {
-        }
-
-        return try {
-            musicProvider.search(track.artist).filter { it.id != track.id }
-        } catch (_: Exception) {
-            emptyList()
-        }
+        // No search-based fallback here: autoplay suggestions must never issue
+        // queries attributed to the signed-in account, because they would show
+        // up in the YouTube / YouTube Music search history. When radio and
+        // related tracks are empty, autoplay simply stops.
+        return emptyList()
     }
+
     override suspend fun getArtistRadio(artistId: String): List<Track> =
         musicProvider.getArtistRadio(artistId)
 

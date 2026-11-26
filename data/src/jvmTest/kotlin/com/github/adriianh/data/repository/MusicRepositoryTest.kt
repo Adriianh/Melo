@@ -189,6 +189,27 @@ class MusicRepositoryTest {
     }
 
     @Test
+    fun `getRadio with Track object never falls back to an artist search`() =
+        runTest {
+            val track = fakeTrack("itunes:777", title = "Ivy", artist = "Frank Ocean")
+
+            coEvery {
+                audioProvider.getSourceId(
+                    artist = "Frank Ocean",
+                    title = "Ivy",
+                    durationMs = any(),
+                )
+            } returns "yt_ivy_123"
+            coEvery { musicProvider.getRadio("yt_ivy_123") } returns emptyList()
+            coEvery { musicProvider.getRelated("yt_ivy_123") } returns emptyList()
+
+            val result = createRepository().getRadio(track)
+
+            assertTrue(result.isEmpty())
+            coVerify(exactly = 0) { musicProvider.search(any()) }
+        }
+
+    @Test
     fun `getTrack returns null when provider returns null`() = runTest {
         coEvery { musicProvider.getTrack("nonexistent") } returns null
 

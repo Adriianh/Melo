@@ -90,4 +90,25 @@ class InnerTubeAuthTest {
             "useLoginForBrowse must authenticate the home feed",
         )
     }
+
+    @Test
+    fun `anonymous search does not attach session headers even when login is enabled`() =
+        runTest {
+            var cookieHeader: String? = "unset"
+            var authHeader: String? = "unset"
+            val engine =
+                MockEngine { request ->
+                    cookieHeader = request.headers[HttpHeaders.Cookie]
+                    authHeader = request.headers[HttpHeaders.Authorization]
+                    respond("""{"contents":{}}""", HttpStatusCode.OK, jsonHeaders)
+                }
+
+            val innerTube = InnerTube(engine)
+            innerTube.cookie = sessionCookies
+            innerTube.useLoginForBrowse = true
+            innerTube.search(WEB_REMIX, query = "Frank Ocean", authenticate = false)
+
+            assertNull(cookieHeader, "anonymous search must not send cookies")
+            assertNull(authHeader, "anonymous search must not send authorization")
+        }
 }

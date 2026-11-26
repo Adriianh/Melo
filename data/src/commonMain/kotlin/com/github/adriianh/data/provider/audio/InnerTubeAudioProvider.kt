@@ -66,7 +66,13 @@ class InnerTubeAudioProvider(
             try {
                 val query = "$artist - $title"
                 val firstItem = retryWithBackoff(maxRetries = 1, initialDelayMs = 200L) {
-                    val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                    val response =
+                        YouTube.search(
+                            query,
+                            YouTube.SearchFilter.FILTER_SONG,
+                            authenticate = false,
+                        )
+                    val result = response.getOrNull()
                     result?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id
                 }
                 if (firstItem != null) {
