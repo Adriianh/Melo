@@ -173,6 +173,24 @@ class QueueViewModelTest {
         }
 
     @Test
+    fun `empty online suggestions fall back to offline without issuing a search`() =
+        runTest(testDispatcher) {
+            coEvery { getRelatedTracksUseCase.invoke(any()) } returns emptyList()
+            coEvery { getRadioUseCase.invoke(any()) } returns emptyList()
+            coEvery {
+                getOfflineSuggestionsUseCase.invoke(sampleTrack, any(), any())
+            } returns listOf(offlineTrack)
+
+            val vm = createViewModel()
+            queueStateFlow.value = QueueState(tracks = listOf(sampleTrack), currentIndex = 0)
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) { getRelatedTracksUseCase.invoke(any()) }
+            coVerify(exactly = 1) { getRadioUseCase.invoke(any()) }
+            assertEquals(listOf(offlineTrack), vm.suggestions.value)
+        }
+
+    @Test
     fun `startRadio when effectively offline enqueues offline suggestions`() =
         runTest(testDispatcher) {
             settingsFlow.value = Settings(offlineMode = true)

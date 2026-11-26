@@ -10,7 +10,6 @@ import com.github.adriianh.core.domain.usecase.playback.GetRecentTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.GetArtistRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRadioUseCase
 import com.github.adriianh.core.domain.usecase.search.GetRelatedTracksUseCase
-import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -28,7 +27,6 @@ import kotlinx.coroutines.launch
 
 class QueueViewModel(
     private val manager: PlaybackManager,
-    private val searchTracksUseCase: SearchTracksUseCase? = null,
     private val getRadioUseCase: GetRadioUseCase? = null,
     private val getArtistRadioUseCase: GetArtistRadioUseCase? = null,
     private val getRelatedTracksUseCase: GetRelatedTracksUseCase? = null,
@@ -135,15 +133,12 @@ class QueueViewModel(
 
             val related = safeCall { getRelatedTracksUseCase?.invoke(videoId) }.orEmpty()
             val radio = safeCall { getRadioUseCase?.invoke(videoId) }.orEmpty()
-            val search =
-                if (related.isEmpty() && radio.isEmpty() && searchTracksUseCase != null) {
-                    safeCall { searchTracksUseCase.invoke(track.artist) }.orEmpty()
-                } else {
-                    emptyList()
-                }
 
+            // Never fall back to a search here: automatic searches are
+            // attributed to the signed-in account and would pollute the
+            // YouTube / YouTube Music search history.
             val combined =
-                (related + radio + search)
+                (related + radio)
                     .distinctBy { it.id }
                     .filter { it.id != track.id && it.id !in queueIds }
 

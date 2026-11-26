@@ -218,15 +218,32 @@ object YouTube {
         )
     }
 
-    suspend fun search(query: String, filter: SearchFilter): Result<SearchResult> = runCatching {
-        val response = innerTube.search(WEB_REMIX, query, filter.value).body<SearchResponse>()
+    /**
+     * @param authenticate when false the request is sent without the account
+     *   session, so it is not recorded in the user's search history. Use it for
+     *   internal lookups (e.g. resolving a stream source), never for queries
+     *   the user typed.
+     */
+    suspend fun search(
+        query: String,
+        filter: SearchFilter,
+        authenticate: Boolean = true,
+    ): Result<SearchResult> = runCatching {
+        val response =
+            innerTube.search(
+                client = WEB_REMIX,
+                query = query,
+                params = filter.value,
+                authenticate = authenticate,
+            )
+        val searchResponse = response.body<SearchResponse>()
         SearchResult(
-            items = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
+            items = searchResponse.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
                 ?.tabRenderer?.content?.sectionListRenderer?.contents?.lastOrNull()
                 ?.musicShelfRenderer?.contents?.getItems()?.mapNotNull {
                     SearchPage.toYTItem(it)
                 }.orEmpty(),
-            continuation = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
+            continuation = searchResponse.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
                 ?.tabRenderer?.content?.sectionListRenderer?.contents?.lastOrNull()
                 ?.musicShelfRenderer?.continuations?.getContinuation()
         )

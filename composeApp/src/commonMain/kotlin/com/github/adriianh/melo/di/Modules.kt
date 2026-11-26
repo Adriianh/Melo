@@ -142,7 +142,6 @@ val viewModelModule =
         viewModel {
             QueueViewModel(
                 manager = get(),
-                searchTracksUseCase = getOrNull(),
                 getRadioUseCase = getOrNull(),
                 getArtistRadioUseCase = getOrNull(),
                 getRelatedTracksUseCase = getOrNull(),
