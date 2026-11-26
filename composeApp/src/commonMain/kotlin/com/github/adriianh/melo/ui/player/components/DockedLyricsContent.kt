@@ -5,9 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.github.adriianh.core.domain.model.LyricsActiveLineColor
+import com.github.adriianh.core.domain.model.LyricsActiveLineWeight
+import com.github.adriianh.core.domain.model.TrackLyrics
 import com.github.adriianh.melo.ui.player.PlayerViewModel
 import com.github.adriianh.melo.util.LocalWindowActivity
+import com.github.adriianh.melo.util.PlayerProgressState
 import com.github.adriianh.melo.util.PlayerUiState
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun rememberLiveActiveLyricIndex(viewModel: PlayerViewModel): Int =
@@ -49,11 +54,66 @@ internal fun DockedLyricsContent(
     state: PlayerUiState,
     activeAccent: Color,
     viewModel: PlayerViewModel,
+    reducedMotion: Boolean = false,
 ) {
-    IsolatedNowPlayingLyricsCard(
-        state = state,
+    DockedLyricsPaneContent(
+        trackLyrics = state.trackLyrics,
+        positionMs = viewModel.progressState.value.progressMs,
+        progressFlow = viewModel.progressState,
+        isLoading = state.isLyricsLoading,
+        showTranslation = state.showTranslation,
+        isTranslating = state.isTranslating,
+        targetLanguage = state.targetLanguage,
         activeAccent = activeAccent,
-        viewModel = viewModel,
-        modifier = Modifier.fillMaxSize(),
+        reducedMotion = reducedMotion,
+        onSeekTo = { viewModel.seekTo(it) },
+        onToggleTranslation = { viewModel.toggleTranslation() },
+        onSelectLanguage = { viewModel.setTargetLanguage(it) },
+    )
+}
+
+@Suppress("FunctionNaming", "ktlint:standard:function-naming")
+@Composable
+internal fun DockedLyricsPaneContent(
+    trackLyrics: TrackLyrics?,
+    positionMs: Long,
+    isLoading: Boolean,
+    showTranslation: Boolean,
+    isTranslating: Boolean,
+    targetLanguage: String,
+    activeAccent: Color,
+    onSeekTo: (Long) -> Unit,
+    onToggleTranslation: () -> Unit,
+    onSelectLanguage: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    progressFlow: StateFlow<PlayerProgressState>? = null,
+    reducedMotion: Boolean = false,
+) {
+    FullscreenLyricsPane(
+        trackLyrics = trackLyrics,
+        positionMs = positionMs,
+        progressFlow = progressFlow,
+        isLoading = isLoading,
+        showTranslation = showTranslation,
+        isTranslating = isTranslating,
+        targetLanguage = targetLanguage,
+        activeAccent = activeAccent,
+        onSeekTo = onSeekTo,
+        onToggleTranslation = onToggleTranslation,
+        onSelectLanguage = onSelectLanguage,
+        style = FullscreenLyricsStyle.Docked,
+        lyricsConfig =
+            NowPlayingLyricsConfig(
+                blurEnabled = !reducedMotion,
+                activeLineWeight = LyricsActiveLineWeight.BOLD,
+                activeLineColor = LyricsActiveLineColor.WHITE,
+                lineSpacingDp = 14,
+                showSourceBadge = true,
+                showInstrumentalBreaks = true,
+            ),
+        showControlsOnHoverOnly = false,
+        reducedMotion = reducedMotion,
+        showFloatingControls = true,
+        modifier = modifier.fillMaxSize(),
     )
 }

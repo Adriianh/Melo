@@ -239,7 +239,25 @@ internal data class FullscreenLyricsStyle(
     val translationLineHeight: TextUnit,
     val itemSpacing: Dp,
     val horizontalPadding: Dp,
+    val blurForDistance: ((Int) -> Dp)? = null,
+    val alphaForDistance: ((Int, Float) -> Float)? = null,
 ) {
+    fun resolveAlpha(
+        distance: Int,
+        inactiveOpacity: Float,
+    ): Float = alphaForDistance?.invoke(distance, inactiveOpacity) ?: lyricAlphaForDistance(distance, inactiveOpacity)
+
+    fun resolveBlur(
+        distance: Int,
+        blurEnabled: Boolean,
+        reducedMotion: Boolean,
+    ): Dp =
+        if (reducedMotion || !blurEnabled) {
+            0.dp
+        } else {
+            blurForDistance?.invoke(distance) ?: lyricBlurForDistance(distance)
+        }
+
     companion object {
         val Expanded =
             FullscreenLyricsStyle(
@@ -267,6 +285,35 @@ internal data class FullscreenLyricsStyle(
                 translationLineHeight = 21.sp,
                 itemSpacing = 16.dp,
                 horizontalPadding = 8.dp,
+            )
+
+        val Docked =
+            FullscreenLyricsStyle(
+                activeFontSize = 28.sp,
+                activeLineHeight = 35.sp,
+                neighborFontSize = 22.sp,
+                neighborLineHeight = 29.sp,
+                plainFontSize = 15.sp,
+                plainLineHeight = 23.sp,
+                translationFontSize = 14.sp,
+                translationLineHeight = 19.sp,
+                itemSpacing = 14.dp,
+                horizontalPadding = 4.dp,
+                blurForDistance = { distance ->
+                    when (distance) {
+                        0 -> 0.dp
+                        1 -> 0.6.dp
+                        else -> 1.2.dp
+                    }
+                },
+                alphaForDistance = { distance, _ ->
+                    when (distance) {
+                        0 -> 1.0f
+                        1 -> 0.60f
+                        2 -> 0.45f
+                        else -> 0.30f
+                    }
+                },
             )
     }
 }

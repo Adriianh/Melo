@@ -87,6 +87,7 @@ import com.github.adriianh.melo.resources.a11y_current_lyric_line
 import com.github.adriianh.melo.resources.a11y_instrumental_break
 import com.github.adriianh.melo.resources.player_lyrics_loading
 import com.github.adriianh.melo.resources.player_lyrics_resume_sync
+import com.github.adriianh.melo.resources.player_lyrics_unavailable
 import com.github.adriianh.melo.util.LocalWindowActivity
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -250,6 +251,22 @@ private fun FullscreenLyricsBody(
                 alignment = lyricsConfig.alignment,
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+
+        else -> {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text =
+                        trackLyrics?.error?.takeIf { it.isNotBlank() }
+                            ?: stringResource(Res.string.player_lyrics_unavailable),
+                    style = MeloType.body,
+                    color = Color.White.copy(alpha = 0.70f),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -528,7 +545,7 @@ private fun FullscreenLyricEntryRow(
     reducedMotion: Boolean,
     onSeekTo: () -> Unit,
 ) {
-    val targetAlpha = lyricAlphaForDistance(distance, lyricsConfig.inactiveOpacity)
+    val targetAlpha = style.resolveAlpha(distance, lyricsConfig.inactiveOpacity)
     val alpha =
         if (reducedMotion) {
             targetAlpha
@@ -540,7 +557,7 @@ private fun FullscreenLyricEntryRow(
             ).value
         }
 
-    val blurRadius = if (reducedMotion || !lyricsConfig.blurEnabled) 0.dp else lyricBlurForDistance(distance)
+    val blurRadius = style.resolveBlur(distance, lyricsConfig.blurEnabled, reducedMotion)
     val currentLineLabel = stringResource(Res.string.a11y_current_lyric_line)
     val rowAlignment =
         if (lyricsConfig.alignment == LyricsAlignment.CENTER) {
