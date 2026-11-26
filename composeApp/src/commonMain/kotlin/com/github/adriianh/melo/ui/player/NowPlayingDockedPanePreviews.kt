@@ -83,7 +83,7 @@ private fun DockPreviewContainer(
     title: String = "Get Lucky",
     artist: String = "Daft Punk feat. Pharrell Williams",
     accent: Color = PreviewAccentPink,
-    dockWidth: Dp = 310.dp,
+    dockWidth: Dp = 348.dp,
     fontScale: Float = 1.0f,
     reducedMotion: Boolean = false,
 ) {

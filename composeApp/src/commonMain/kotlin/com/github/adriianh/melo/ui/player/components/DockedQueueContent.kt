@@ -52,7 +52,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -68,7 +67,6 @@ import androidx.compose.ui.unit.sp
 import com.github.adriianh.core.domain.model.Track
 import com.github.adriianh.melo.resources.Res
 import com.github.adriianh.melo.resources.a11y_add_to_queue
-import com.github.adriianh.melo.resources.a11y_more_options
 import com.github.adriianh.melo.resources.a11y_queue_options
 import com.github.adriianh.melo.resources.a11y_refresh_suggestions
 import com.github.adriianh.melo.resources.a11y_remove_from_queue
@@ -477,7 +475,6 @@ private fun ReorderableCollectionItemScope.DockedUpNextRow(
                 modifier =
                     Modifier
                         .size(DockedTouchTargetSize)
-                        .alpha(if (showSecondaryActions) 1f else 0f)
                         .draggableHandle(
                             onDragStarted = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -488,7 +485,12 @@ private fun ReorderableCollectionItemScope.DockedUpNextRow(
                 Icon(
                     imageVector = Icons.Default.DragHandle,
                     contentDescription = stringResource(Res.string.a11y_reorder),
-                    tint = if (isDragging) activeAccent else DockedSecondaryTextColor,
+                    tint =
+                        when {
+                            isDragging -> activeAccent
+                            isHovered -> Color.White
+                            else -> DockedSecondaryTextColor
+                        },
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -542,12 +544,7 @@ private fun DockedSuggestionRow(
     onAddClick: () -> Unit,
     onOpenContextMenu: ((SongMenuAnchor?) -> Unit)?,
 ) {
-    val isDesktop = remember { getPlatform().type == PlatformType.DESKTOP }
-    val hoverSource = remember { MutableInteractionSource() }
-    val isHovered by hoverSource.collectIsHoveredAsState()
-    val showSecondaryActions = !isDesktop || isHovered
     var rowBounds by remember { mutableStateOf<Rect?>(null) }
-    var moreButtonBounds by remember { mutableStateOf<Rect?>(null) }
 
     Row(
         modifier =
@@ -557,8 +554,7 @@ private fun DockedSuggestionRow(
                 .clip(RoundedCornerShape(10.dp))
                 .background(
                     if (isCurrent) activeAccent.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f),
-                ).hoverable(hoverSource)
-                .onGloballyPositioned { rowBounds = it.boundsInWindow() }
+                ).onGloballyPositioned { rowBounds = it.boundsInWindow() }
                 .songMenuRightClick(
                     enabled = onOpenContextMenu != null,
                     onOpenMenu = { anchor -> onOpenContextMenu?.invoke(anchor) },
@@ -622,27 +618,13 @@ private fun DockedSuggestionRow(
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DockedTooltipIconButton(
-                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                contentDescription = stringResource(Res.string.a11y_add_to_queue),
-                tint = activeAccent,
-                iconSize = 20.dp,
-                onClick = onAddClick,
-            )
-            if (showSecondaryActions) {
-                DockedTooltipIconButton(
-                    icon = Icons.Default.MoreVert,
-                    contentDescription = stringResource(Res.string.a11y_more_options),
-                    tint = DockedSecondaryTextColor,
-                    iconSize = 18.dp,
-                    modifier = Modifier.onGloballyPositioned { moreButtonBounds = it.boundsInWindow() },
-                    onClick = {
-                        onOpenContextMenu?.invoke(moreButtonBounds?.let { SongMenuAnchor.Bounds(it) })
-                    },
-                )
-            }
-        }
+        DockedTooltipIconButton(
+            icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+            contentDescription = stringResource(Res.string.a11y_add_to_queue),
+            tint = activeAccent,
+            iconSize = 20.dp,
+            onClick = onAddClick,
+        )
     }
 }
 

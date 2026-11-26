@@ -82,7 +82,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private val DockCornerRadius = 24.dp
-private val DockDefaultWidth = 310.dp
+private val DockDefaultWidth = 348.dp
 private val DockSecondaryText = Color.White.copy(alpha = 0.70f)
 private val DockBorderColor = Color.White.copy(alpha = 0.12f)
 private val DockDarkSurfaceBase = Color(0xFF101218)
