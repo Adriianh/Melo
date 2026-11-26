@@ -10,7 +10,7 @@ class InnerTubeDiscoveryProvider : DiscoveryProvider {
 
     override suspend fun getSimilarTracks(artist: String, title: String, limit: Int): List<SimilarTrack> {
         val query = "$title $artist"
-        val searchResult = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+        val searchResult = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG, authenticate = false).getOrNull()
         val videoId = searchResult?.items?.filterIsInstance<SongItem>()?.firstOrNull()?.id ?: return emptyList()
 
         val tracks = mutableListOf<SimilarTrack>()

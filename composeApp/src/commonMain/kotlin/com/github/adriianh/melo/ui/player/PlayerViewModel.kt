@@ -333,9 +333,7 @@ class PlayerViewModel(
 
     private suspend fun loadArtistDetails(artistName: String) {
         runCatching {
-            val results = musicProvider.searchArtists(artistName)
-            val first = results.firstOrNull() ?: return@runCatching null
-            musicProvider.getArtistDetails(first.id)
+            musicProvider.getArtistDetails(artistName)
         }.onSuccess { details ->
             _artistDetails.value = details
         }.onFailure {

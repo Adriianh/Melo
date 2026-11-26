@@ -291,10 +291,16 @@ class InnerTubeMusicProvider(
 
         if (result == null || result.songs.isEmpty()) {
             val searchResults =
-                YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
-            val firstAlbum = searchResults?.items?.filterIsInstance<AlbumItem>()?.firstOrNull()
-                ?: YouTube.searchSummary(cleanId).getOrNull()?.summaries?.flatMap { it.items }
-                    ?.filterIsInstance<AlbumItem>()?.firstOrNull()
+                YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ALBUM, authenticate = false).getOrNull()
+            val firstAlbum =
+                searchResults?.items?.filterIsInstance<AlbumItem>()?.firstOrNull()
+                    ?: YouTube
+                        .searchSummary(cleanId, authenticate = false)
+                        .getOrNull()
+                        ?.summaries
+                        ?.flatMap { it.items }
+                        ?.filterIsInstance<AlbumItem>()
+                        ?.firstOrNull()
 
             val candidateAlbum = if (firstAlbum != null) {
                 val normalizedQuery = cleanId.lowercase().trim()
@@ -390,10 +396,10 @@ class InnerTubeMusicProvider(
         val resolvedId =
             if (!cleanId.startsWith("UC") && !cleanId.startsWith("FE") && cleanId.isNotBlank()) {
                 val searchResults =
-                    YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
+                    YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ARTIST, authenticate = false).getOrNull()
                 val firstArtist =
                     searchResults?.items?.filterIsInstance<ArtistItem>()?.firstOrNull()
-                        ?: YouTube.searchSummary(cleanId)
+                        ?: YouTube.searchSummary(cleanId, authenticate = false)
                             .getOrNull()?.summaries?.flatMap { it.items }
                             ?.filterIsInstance<ArtistItem>()?.firstOrNull()
                 firstArtist?.id ?: cleanId

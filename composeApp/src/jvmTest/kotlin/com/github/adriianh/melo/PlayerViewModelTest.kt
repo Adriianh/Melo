@@ -285,4 +285,36 @@ class PlayerViewModelTest {
         assertTrue(vm.stableUiState.value.isFavorite)
         coVerify { toggleLikeTrackUseCase("v1", true) }
     }
+
+    @Test
+    fun `playing a track loads artist details directly without calling searchArtists`() =
+        runTest {
+            val track =
+                Track(
+                    id = "piped:v1",
+                    title = "Sign of the Times",
+                    artist = "Harry Styles",
+                    album = "Harry Styles",
+                    durationMs = 340_000,
+                    genres = emptyList(),
+                    artworkUrl = null,
+                    sourceId = "v1",
+                )
+            val expectedArtist =
+                com.github.adriianh.core.domain.model.search.SearchResult.Artist(
+                    id = "UC-artist-id",
+                    name = "Harry Styles",
+                    artworkUrl = null,
+                    description = "English singer",
+                )
+            coEvery { musicProvider.getArtistDetails("Harry Styles") } returns expectedArtist
+            playbackFlow.value = PlaybackState(currentTrack = track, isPlaying = true)
+
+            val vm = createVm()
+            advanceUntilIdle()
+
+            assertEquals(expectedArtist, vm.artistDetails.value)
+            coVerify(exactly = 1) { musicProvider.getArtistDetails("Harry Styles") }
+            coVerify(exactly = 0) { musicProvider.searchArtists(any()) }
+        }
 }

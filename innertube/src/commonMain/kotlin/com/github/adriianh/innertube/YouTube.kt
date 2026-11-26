@@ -129,8 +129,15 @@ object YouTube {
         )
     }
 
-    suspend fun searchSummary(query: String): Result<SearchSummaryPage> = runCatching {
-        val response = innerTube.search(WEB_REMIX, query).body<SearchResponse>()
+    suspend fun searchSummary(
+        query: String,
+        authenticate: Boolean = true,
+    ): Result<SearchSummaryPage> =
+        runCatching {
+            val response =
+                innerTube
+                    .search(WEB_REMIX, query, authenticate = authenticate)
+                    .body<SearchResponse>()
         val contents = response.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()
             ?.tabRenderer?.content?.sectionListRenderer?.contents.orEmpty()
 
