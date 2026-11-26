@@ -58,6 +58,9 @@
     <string name="a11y_panel_lyrics">Lyrics panel</string>
     <string name="a11y_panel_queue">Queue panel</string>
     <string name="a11y_expand_fullscreen">Expand fullscreen</string>
+    <string name="a11y_expand_player">Expand player</string>
+    <string name="a11y_queue_options">Queue options</string>
+    <string name="a11y_add_to_queue">Add to queue</string>
     <string name="a11y_collapse">Collapse</string>
     <string name="a11y_close_panel">Close panel</string>
     <string name="a11y_start_radio">Start Radio</string>
@@ -200,6 +203,9 @@
     <string name="player_section_suggestions">Suggestions for you</string>
     <string name="player_queue_collapse">Collapse</string>
     <string name="player_queue_more_count">+%1$d in queue</string>
+    <string name="player_queue_clear">Clear queue</string>
+    <string name="player_queue_save_playlist">Save as playlist</string>
+    <string name="player_queue_cleared_snackbar">Queue cleared</string>
     <string name="player_suggestions_empty">No more suggestions for now</string>
     <string name="player_sheet_queue_title">Playback queue</string>
     <string name="player_sheet_artist_title">About the Artist</string>
@@ -216,6 +222,8 @@
     <string name="player_artist_biography">Biography</string>
     <string name="player_artist_view_full_profile">View full profile</string>
     <string name="player_artist_view_profile">View profile</string>
+    <string name="player_artist_subscribers">%1$s subscribers</string>
+    <string name="player_artist_monthly_listeners">%1$s monthly listeners</string>
 
     <!-- Sections & Home -->
     <string name="section_trending">Trending</string>

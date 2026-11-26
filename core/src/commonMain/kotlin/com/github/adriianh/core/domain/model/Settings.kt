@@ -206,6 +206,7 @@ data class Settings(
         },
     val lastAccentColor: Long? = null,
     val lastSeenVersion: String? = null,
+    val lastDockedSection: String? = null,
 ) {
     fun resolvedLyricsFontScale(): Float =
         when (lyricsFontScale) {

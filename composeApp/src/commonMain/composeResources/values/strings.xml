@@ -58,6 +58,9 @@
     <string name="a11y_panel_lyrics">Letras en panel</string>
     <string name="a11y_panel_queue">Cola en panel</string>
     <string name="a11y_expand_fullscreen">Expandir pantalla completa</string>
+    <string name="a11y_expand_player">Expandir reproductor</string>
+    <string name="a11y_queue_options">Opciones de cola</string>
+    <string name="a11y_add_to_queue">Añadir a la cola</string>
     <string name="a11y_collapse">Contraer</string>
     <string name="a11y_close_panel">Cerrar panel</string>
     <string name="a11y_start_radio">Iniciar Radio</string>
@@ -200,6 +203,9 @@
     <string name="player_section_suggestions">Sugerencias para ti</string>
     <string name="player_queue_collapse">Contraer</string>
     <string name="player_queue_more_count">+%1$d en cola</string>
+    <string name="player_queue_clear">Vaciar cola</string>
+    <string name="player_queue_save_playlist">Guardar como playlist</string>
+    <string name="player_queue_cleared_snackbar">Cola vaciada</string>
     <string name="player_suggestions_empty">No hay más sugerencias por ahora</string>
     <string name="player_sheet_queue_title">Cola de reproducción</string>
     <string name="player_sheet_artist_title">Acerca del Artista</string>
@@ -216,6 +222,8 @@
     <string name="player_artist_biography">Biografía</string>
     <string name="player_artist_view_full_profile">Ver perfil completo</string>
     <string name="player_artist_view_profile">Ver perfil</string>
+    <string name="player_artist_subscribers">%1$s suscriptores</string>
+    <string name="player_artist_monthly_listeners">%1$s oyentes mensuales</string>
 
     <!-- Secciones e Inicio -->
     <string name="section_trending">Tendencias</string>

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui
 
 import androidx.compose.animation.AnimatedVisibility
@@ -27,6 +29,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +38,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.melo.ui.navigation.MainTab
 import com.github.adriianh.melo.ui.player.DesktopNowPlayingDockedPane
 import com.github.adriianh.melo.ui.player.PanelSection
@@ -42,6 +47,8 @@ import com.github.adriianh.melo.util.LocalMeloColors
 import com.github.adriianh.melo.util.MeloMotion
 import com.github.adriianh.melo.util.PlatformType
 import com.github.adriianh.melo.util.getPlatform
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 val LocalSelectionMode = compositionLocalOf { mutableStateOf(false) }
 
@@ -57,7 +64,7 @@ fun AdaptiveScaffold(
     isDarkTheme: Boolean = true,
     isSelectionMode: Boolean = false,
     onToggleTheme: () -> Unit = {},
-    content: @Composable (MainTab, PaddingValues) -> Unit
+    content: @Composable (MainTab, PaddingValues) -> Unit,
 ) {
     val platform = remember { getPlatform() }
 
@@ -72,7 +79,7 @@ fun AdaptiveScaffold(
             onArtistClick = onArtistClick,
             isDarkTheme = isDarkTheme,
             onToggleTheme = onToggleTheme,
-            content = { padding -> content(selectedTab, padding) }
+            content = { padding -> content(selectedTab, padding) },
         )
     } else {
         MobileMainLayout(
@@ -80,7 +87,7 @@ fun AdaptiveScaffold(
             onTabSelected = onTabSelected,
             onOpenNowPlaying = onOpenNowPlaying,
             isSelectionMode = isSelectionMode,
-            content = { padding -> content(selectedTab, padding) }
+            content = { padding -> content(selectedTab, padding) },
         )
     }
 }
@@ -96,11 +103,26 @@ private fun DesktopMainLayout(
     onArtistClick: (String) -> Unit,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
+    val getSettingsUseCase: GetSettingsUseCase = koinInject()
+    val updateSettingsUseCase: UpdateSettingsUseCase = koinInject()
+    val scope = rememberCoroutineScope()
+    val initialSection =
+        remember {
+            val saved = getSettingsUseCase.getInitial().lastDockedSection
+            PanelSection.entries.firstOrNull { it.name == saved } ?: PanelSection.QUEUE
+        }
     var isDesktopPaneVisible by remember { mutableStateOf(true) }
-    var desktopPaneSection by remember { mutableStateOf(PanelSection.QUEUE) }
+    var desktopPaneSection by remember { mutableStateOf(initialSection) }
     var isSidebarCollapsed by remember { mutableStateOf(false) }
+
+    fun selectDockedSection(section: PanelSection) {
+        desktopPaneSection = section
+        scope.launch {
+            updateSettingsUseCase { current -> current.copy(lastDockedSection = section.name) }
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.weight(1f)) {
@@ -112,13 +134,14 @@ private fun DesktopMainLayout(
                 onToggleCollapsed = { isSidebarCollapsed = !isSidebarCollapsed },
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = onToggleTheme,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
             )
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(top = 12.dp, bottom = 12.dp, start = 12.dp, end = 12.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(top = 12.dp, bottom = 12.dp, start = 12.dp, end = 12.dp),
             ) {
                 val currentColors = LocalMeloColors.current
                 val contentBgBrush =
@@ -137,16 +160,21 @@ private fun DesktopMainLayout(
                     }
 
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(contentBgBrush)
-                        .border(
-                            width = 0.5.dp,
-                            color = if (isDarkTheme) currentColors.border.copy(alpha = 0.2f)
-                            else Color.Black.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(contentBgBrush)
+                            .border(
+                                width = 0.5.dp,
+                                color =
+                                    if (isDarkTheme) {
+                                        currentColors.border.copy(alpha = 0.2f)
+                                    } else {
+                                        Color.Black.copy(alpha = 0.12f)
+                                    },
+                                shape = RoundedCornerShape(20.dp),
+                            ),
                 ) {
                     Scaffold(
                         containerColor = Color.Transparent,
@@ -159,29 +187,31 @@ private fun DesktopMainLayout(
                     onOpenNowPlaying = onOpenNowPlaying,
                     onToggleLyrics = {
                         isDesktopPaneVisible = true
-                        desktopPaneSection = PanelSection.LYRICS
+                        selectDockedSection(PanelSection.LYRICS)
                     },
                     onToggleQueue = {
                         isDesktopPaneVisible = true
-                        desktopPaneSection = PanelSection.QUEUE
+                        selectDockedSection(PanelSection.QUEUE)
                     },
                     onToggleDockedPane = {
                         isDesktopPaneVisible = !isDesktopPaneVisible
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
             AnimatedVisibility(
                 visible = isDesktopPaneVisible,
-                enter = expandHorizontally(
-                    expandFrom = Alignment.End,
-                    animationSpec = MeloMotion.medium()
-                ) + fadeIn(animationSpec = MeloMotion.fast()),
-                exit = shrinkHorizontally(
-                    shrinkTowards = Alignment.End,
-                    animationSpec = MeloMotion.medium()
-                ) + fadeOut(animationSpec = MeloMotion.fast())
+                enter =
+                    expandHorizontally(
+                        expandFrom = Alignment.End,
+                        animationSpec = MeloMotion.medium(),
+                    ) + fadeIn(animationSpec = MeloMotion.fast()),
+                exit =
+                    shrinkHorizontally(
+                        shrinkTowards = Alignment.End,
+                        animationSpec = MeloMotion.medium(),
+                    ) + fadeOut(animationSpec = MeloMotion.fast()),
             ) {
                 DesktopNowPlayingDockedPane(
                     onExpandToFullscreen = onOpenNowPlaying,
@@ -189,7 +219,7 @@ private fun DesktopMainLayout(
                     onArtistClick = onArtistClick,
                     onAlbumClick = onAlbumClick,
                     selectedSection = desktopPaneSection,
-                    onSectionChange = { desktopPaneSection = it }
+                    onSectionChange = ::selectDockedSection,
                 )
             }
         }
@@ -202,7 +232,7 @@ private fun MobileMainLayout(
     onTabSelected: (MainTab) -> Unit,
     onOpenNowPlaying: () -> Unit,
     isSelectionMode: Boolean = false,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomClearance = navBarBottom + if (isSelectionMode) 90.dp else 180.dp
@@ -212,22 +242,25 @@ private fun MobileMainLayout(
 
         AnimatedVisibility(
             visible = !isSelectionMode,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = MeloMotion.medium()
-            ) + fadeIn(animationSpec = MeloMotion.fast()),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = MeloMotion.medium()
-            ) + fadeOut(animationSpec = MeloMotion.fast()),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            enter =
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = MeloMotion.medium(),
+                ) + fadeIn(animationSpec = MeloMotion.fast()),
+            exit =
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = MeloMotion.medium(),
+                ) + fadeOut(animationSpec = MeloMotion.fast()),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(bottom = 86.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(bottom = 86.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 MobilePlayerBar(onOpenNowPlaying = onOpenNowPlaying)
             }
@@ -235,25 +268,28 @@ private fun MobileMainLayout(
 
         AnimatedVisibility(
             visible = !isSelectionMode,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = MeloMotion.medium()
-            ) + fadeIn(animationSpec = MeloMotion.fast()),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = MeloMotion.medium()
-            ) + fadeOut(animationSpec = MeloMotion.fast()),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            enter =
+                slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = MeloMotion.medium(),
+                ) + fadeIn(animationSpec = MeloMotion.fast()),
+            exit =
+                slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = MeloMotion.medium(),
+                ) + fadeOut(animationSpec = MeloMotion.fast()),
+            modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Box(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 FloatingNavigationBar(
                     selectedTab = selectedTab,
-                    onTabSelected = onTabSelected
+                    onTabSelected = onTabSelected,
                 )
             }
         }
