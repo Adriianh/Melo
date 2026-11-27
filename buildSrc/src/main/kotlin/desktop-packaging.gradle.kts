@@ -391,6 +391,46 @@ val packageAppImage = tasks.register("packageAppImage") {
     }
 }
 
+val packageMacOsZip = tasks.register("packageMacOsZip") {
+    group = "compose desktop"
+    description = "Packages Melo.app as a macOS .zip archive for in-place auto-updates"
+    dependsOn("createDistributable")
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isMacOsX }
+
+    val appBundleDir = layout.buildDirectory.dir("compose/binaries/main/app/Melo.app")
+    val outputDir = layout.buildDirectory.dir("compose/binaries/main/zip")
+    outputs.dir(outputDir)
+
+    doLast {
+        val bundle = appBundleDir.get().asFile
+        if (!bundle.isDirectory) {
+            throw GradleException("Expected macOS app bundle at ${bundle.absolutePath}")
+        }
+        val outDir = outputDir.get().asFile
+        outDir.mkdirs()
+        val zipFile = File(outDir, "Melo-${desktopAppVersion}-macos-app.zip")
+        if (zipFile.exists()) {
+            zipFile.delete()
+        }
+
+        val exitCode =
+            ProcessBuilder(
+                "ditto",
+                "-c",
+                "-k",
+                "--sequesterRsrc",
+                "--keepParent",
+                bundle.absolutePath,
+                zipFile.absolutePath,
+            ).inheritIO().start().waitFor()
+
+        if (exitCode != 0) {
+            throw GradleException("ditto failed with exit code $exitCode while zipping ${bundle.absolutePath}")
+        }
+        logger.lifecycle("macOS auto-update archive generated at: ${zipFile.absolutePath}")
+    }
+}
+
 val packageInnoSetup = tasks.register<Exec>("packageInnoSetup") {
     group = "compose desktop"
     description = "Builds the modern Inno Setup Windows installer"
