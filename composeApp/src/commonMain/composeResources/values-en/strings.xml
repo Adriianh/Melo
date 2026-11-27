@@ -813,6 +813,9 @@
     <string name="update_changelog_installed_title">What's new in v%1$s</string>
     <string name="update_changelog_open_github">View on GitHub</string>
     <string name="update_changelog_empty">No release notes available for this version.</string>
+    <string name="update_changelog_tab_since_nightly">Last build</string>
+    <string name="update_changelog_tab_since_stable">Last release</string>
+    <string name="update_changelog_tab_since_stable_version">Since %1$s</string>
     <string name="common_action_got_it">Got it</string>
     <string name="update_error_check">Could not check for updates</string>
     <string name="update_error_check_with_detail">Could not check for updates: %1$s</string>

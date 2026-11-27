@@ -110,6 +110,49 @@ class ReleaseChangelogParserTest {
     }
 
     @Test
+    fun `groups nested H2 and H3 nightly changelog sections separately`() {
+        val raw =
+            """
+            ## Changes since the last nightly
+
+            ### Fixed
+            - normalize path separators
+
+            ## Changes since the last stable release (`v2.6.0`)
+
+            ### New
+            - structured changelog dialog
+
+            ### Fixed
+            - normalize path separators
+
+            ### CLI (TUI)
+
+            ```bash
+            curl -fsSL https://example.com/install.sh | bash
+            ```
+
+            ### Downloads & Assets
+
+            | Platform | Package / Type | File |
+            | :--- | :--- | :--- |
+            | Android | APK | [melo.apk](https://example.com/melo.apk) |
+            """.trimIndent()
+
+        val changelog = ReleaseChangelogParser.parse(raw)
+
+        assertEquals(2, changelog.groups.size)
+        assertEquals("Changes since the last nightly", changelog.groups[0].title)
+        assertEquals(1, changelog.groups[0].sections.size)
+        assertEquals("Fixed", changelog.groups[0].sections[0].title)
+
+        assertEquals("Changes since the last stable release (`v2.6.0`)", changelog.groups[1].title)
+        assertEquals(2, changelog.groups[1].sections.size)
+        assertEquals("New", changelog.groups[1].sections[0].title)
+        assertEquals("Fixed", changelog.groups[1].sections[1].title)
+    }
+
+    @Test
     fun `returns empty changelog for blank input`() {
         assertTrue(ReleaseChangelogParser.parse("   \n  ").isEmpty)
     }

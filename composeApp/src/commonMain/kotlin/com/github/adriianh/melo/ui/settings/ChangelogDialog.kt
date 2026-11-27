@@ -7,6 +7,7 @@
 package com.github.adriianh.melo.ui.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,9 +30,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
@@ -39,11 +45,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.github.adriianh.core.domain.model.update.AppRelease
+import com.github.adriianh.core.domain.model.update.ChangelogGroup
 import com.github.adriianh.core.domain.model.update.ChangelogItem
 import com.github.adriianh.core.domain.model.update.ChangelogSection
 import com.github.adriianh.core.domain.model.update.ChangelogSpan
@@ -56,6 +65,9 @@ import com.github.adriianh.melo.resources.update_changelog_dialog_subtitle
 import com.github.adriianh.melo.resources.update_changelog_empty
 import com.github.adriianh.melo.resources.update_changelog_installed_title
 import com.github.adriianh.melo.resources.update_changelog_open_github
+import com.github.adriianh.melo.resources.update_changelog_tab_since_nightly
+import com.github.adriianh.melo.resources.update_changelog_tab_since_stable
+import com.github.adriianh.melo.resources.update_changelog_tab_since_stable_version
 import com.github.adriianh.melo.resources.update_changelog_title
 import com.github.adriianh.melo.util.MeloColors
 import com.github.adriianh.melo.util.MeloType
@@ -154,6 +166,27 @@ internal fun ChangelogDialogCard(
                 }
             }
 
+            val hasMultipleGroups = changelog.groups.size > 1
+            var selectedGroupIndex by remember(release.releaseNotes) { mutableIntStateOf(0) }
+            val activeSections =
+                if (hasMultipleGroups) {
+                    changelog.groups[selectedGroupIndex.coerceIn(0, changelog.groups.lastIndex)].sections
+                } else {
+                    changelog.sections
+                }
+
+            LaunchedEffect(selectedGroupIndex) {
+                scrollState.scrollTo(0)
+            }
+
+            if (hasMultipleGroups) {
+                ChangelogGroupTabs(
+                    groups = changelog.groups,
+                    selectedIndex = selectedGroupIndex.coerceIn(0, changelog.groups.lastIndex),
+                    onSelect = { selectedGroupIndex = it },
+                )
+            }
+
             Column(
                 modifier =
                     Modifier
@@ -169,7 +202,7 @@ internal fun ChangelogDialogCard(
                         color = MeloColors.textSecondary,
                     )
                 } else {
-                    changelog.sections.forEachIndexed { index, section ->
+                    activeSections.forEachIndexed { index, section ->
                         if (index > 0) {
                             HorizontalDivider(color = MeloColors.border.copy(alpha = 0.5f))
                         }
@@ -215,6 +248,85 @@ internal fun ChangelogDialogCard(
         }
     }
 }
+
+@Composable
+private fun ChangelogGroupTabs(
+    groups: List<ChangelogGroup>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MeloColors.surface2,
+        border = BorderStroke(1.dp, MeloColors.border.copy(alpha = 0.6f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            groups.forEachIndexed { index, group ->
+                val isSelected = index == selectedIndex
+                val label = resolveGroupTabLabel(group.title)
+                Surface(
+                    shape = RoundedCornerShape(7.dp),
+                    color =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        } else {
+                            Color.Transparent
+                        },
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(7.dp))
+                            .clickable { onSelect(index) },
+                ) {
+                    Text(
+                        text = label,
+                        style = MeloType.labelSmall,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        color =
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MeloColors.textSecondary
+                            },
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val STABLE_VERSION_IN_HEADING_REGEX = Regex("""\(`?([^`)]+)`?\)""")
+
+@Composable
+private fun resolveGroupTabLabel(groupTitle: String): String =
+    when {
+        groupTitle.contains("since the last nightly", ignoreCase = true) ->
+            stringResource(Res.string.update_changelog_tab_since_nightly)
+
+        groupTitle.contains("since the last stable release", ignoreCase = true) -> {
+            val version =
+                STABLE_VERSION_IN_HEADING_REGEX
+                    .find(groupTitle)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.trim()
+            if (!version.isNullOrBlank()) {
+                stringResource(Res.string.update_changelog_tab_since_stable_version, version)
+            } else {
+                stringResource(Res.string.update_changelog_tab_since_stable)
+            }
+        }
+
+        else -> groupTitle
+    }
 
 @Composable
 private fun ChangelogSectionBlock(section: ChangelogSection) {

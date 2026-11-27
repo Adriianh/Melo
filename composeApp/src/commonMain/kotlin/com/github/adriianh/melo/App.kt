@@ -127,17 +127,31 @@ fun App(titleBar: @Composable () -> Unit = {}) {
     val postUpdateRelease by updateViewModel.postUpdateRelease.collectAsState()
     var dismissedUpdateVersion by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(settings.lastSeenVersion, isOfflineMode) {
+    LaunchedEffect(settings.lastSeenVersion, settings.pendingPostUpdateVersion, isOfflineMode) {
         val lastSeen = settings.lastSeenVersion
+        val pendingVersion = settings.pendingPostUpdateVersion
         if (lastSeen == null) {
             updateSettingsUseCase { current ->
-                current.copy(lastSeenVersion = MeloVersion.CURRENT)
+                current.copy(
+                    lastSeenVersion = MeloVersion.CURRENT,
+                    pendingPostUpdateVersion = null,
+                )
             }
-        } else if (lastSeen != MeloVersion.CURRENT && !isOfflineMode) {
-            updateViewModel.loadInstalledChangelog(
-                version = MeloVersion.CURRENT,
-                channel = settings.updateChannel,
-            )
+        } else if (lastSeen != MeloVersion.CURRENT) {
+            if (pendingVersion != null && !isOfflineMode) {
+                updateViewModel.loadInstalledChangelog(
+                    version = MeloVersion.CURRENT,
+                    channel = settings.updateChannel,
+                )
+            } else if (pendingVersion == null) {
+                updateSettingsUseCase { current ->
+                    current.copy(lastSeenVersion = MeloVersion.CURRENT)
+                }
+            }
+        } else if (pendingVersion != null) {
+            updateSettingsUseCase { current ->
+                current.copy(pendingPostUpdateVersion = null)
+            }
         }
     }
 
@@ -647,7 +661,10 @@ fun App(titleBar: @Composable () -> Unit = {}) {
                                             updateViewModel.dismissPostUpdateChangelog()
                                             coroutineScope.launch {
                                                 updateSettingsUseCase { current ->
-                                                    current.copy(lastSeenVersion = MeloVersion.CURRENT)
+                                                    current.copy(
+                                                        lastSeenVersion = MeloVersion.CURRENT,
+                                                        pendingPostUpdateVersion = null,
+                                                    )
                                                 }
                                             }
                                         },
