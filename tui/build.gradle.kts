@@ -33,7 +33,7 @@ dependencies {
     testImplementation(libs.junit)
 }
 
-val appVersion: String = providers.gradleProperty("melo.version").getOrElse("2.6.0")
+val appVersion: String = providers.gradleProperty("melo.version").getOrElse("2.7.0")
 val useQuickBuild: Boolean = providers.gradleProperty("graalvm.quickBuild").map { it.toBoolean() }.getOrElse(false)
 val appName = "melo"
 
