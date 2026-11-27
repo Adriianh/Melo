@@ -35,13 +35,30 @@ data class ChangelogSection(
 )
 
 /**
+ * A titled group of [ChangelogSection] entries (typically `##` headings such as
+ * "Changes since the last nightly" vs "Changes since the last stable release").
+ */
+data class ChangelogGroup(
+    val title: String,
+    val sections: List<ChangelogSection>,
+)
+
+/**
  * Structured representation of release notes after stripping CI boilerplate.
  */
 data class ReleaseChangelog(
     val sections: List<ChangelogSection>,
+    val groups: List<ChangelogGroup> = emptyList(),
 ) {
     val isEmpty: Boolean
-        get() = sections.all { it.items.isEmpty() && it.emptyNote == null }
+        get() =
+            if (groups.isNotEmpty()) {
+                groups.all { group ->
+                    group.sections.all { it.items.isEmpty() && it.emptyNote == null }
+                }
+            } else {
+                sections.all { it.items.isEmpty() && it.emptyNote == null }
+            }
 }
 
 /**
@@ -49,7 +66,7 @@ data class ReleaseChangelog(
  * Stable auto-generated notes and Nightly CI-generated bodies).
  */
 object ReleaseChangelogParser {
-    private val HEADING_REGEX = Regex("""^#{1,6}\s+(.+)$""")
+    private val HEADING_REGEX = Regex("""^(#{1,6})\s+(.+)$""")
     private val BULLET_REGEX = Regex("""^(?:[-*+]|•)\s+(.+)$""")
     private val MARKDOWN_LINK_REGEX = Regex("""\[([^\]]+)]\((https?://[^)]+)\)""")
     private val COMMIT_HASH_LINK_PREFIX_REGEX = Regex("""^`?[0-9a-f]{7,12}`?\s*[-–—:]?\s*""")
@@ -68,17 +85,21 @@ object ReleaseChangelogParser {
         )
 
     private class ParserState {
-        val sections = mutableListOf<ChangelogSection>()
+        val groups = mutableListOf<ChangelogGroup>()
+        var currentGroupTitle: String? = null
+        var currentGroupSections = mutableListOf<ChangelogSection>()
         var currentTitle: String? = null
         var currentItems = mutableListOf<ChangelogItem>()
         var currentEmptyNote: String? = null
+        var ignoringGroup = false
         var ignoringSection = false
         var inCodeBlock = false
 
         fun flushSection() {
             val title = currentTitle ?: return
-            if (!ignoringSection && (currentItems.isNotEmpty() || currentEmptyNote != null)) {
-                sections +=
+            val hasContent = currentItems.isNotEmpty() || currentEmptyNote != null
+            if (!ignoringGroup && !ignoringSection && hasContent) {
+                currentGroupSections +=
                     ChangelogSection(
                         title = title,
                         items = currentItems.toList(),
@@ -87,6 +108,20 @@ object ReleaseChangelogParser {
             }
             currentItems = mutableListOf()
             currentEmptyNote = null
+        }
+
+        fun flushGroup() {
+            flushSection()
+            val groupTitle = currentGroupTitle
+            if (!ignoringGroup && groupTitle != null && currentGroupSections.isNotEmpty()) {
+                groups +=
+                    ChangelogGroup(
+                        title = groupTitle,
+                        sections = currentGroupSections.toList(),
+                    )
+            }
+            currentGroupSections = mutableListOf()
+            currentTitle = null
         }
     }
 
@@ -99,8 +134,21 @@ object ReleaseChangelogParser {
         for (rawLine in rawMarkdown.lineSequence()) {
             processLine(rawLine.trim(), state)
         }
-        state.flushSection()
-        return ReleaseChangelog(state.sections)
+        state.flushGroup()
+        val flatSections =
+            state.groups.flatMap { group ->
+                group.sections.map { section ->
+                    if (section.title.isBlank() && group.title.isNotBlank()) {
+                        section.copy(title = group.title)
+                    } else {
+                        section
+                    }
+                }
+            }
+        return ReleaseChangelog(
+            sections = flatSections,
+            groups = state.groups.toList(),
+        )
     }
 
     private fun processLine(
@@ -113,11 +161,20 @@ object ReleaseChangelogParser {
             else -> {
                 val headingMatch = HEADING_REGEX.matchEntire(trimmed)
                 if (headingMatch != null) {
-                    state.flushSection()
-                    val headingText = cleanInlineNoise(headingMatch.groupValues[1])
-                    state.ignoringSection = shouldIgnoreSection(headingText)
-                    state.currentTitle = headingText
-                } else if (!state.ignoringSection && !shouldSkipLine(trimmed)) {
+                    val level = headingMatch.groupValues[1].length
+                    val headingText = cleanInlineNoise(headingMatch.groupValues[2])
+                    if (level <= 2) {
+                        state.flushGroup()
+                        state.ignoringGroup = shouldIgnoreSection(headingText)
+                        state.ignoringSection = state.ignoringGroup
+                        state.currentGroupTitle = headingText
+                        state.currentTitle = ""
+                    } else {
+                        state.flushSection()
+                        state.ignoringSection = state.ignoringGroup || shouldIgnoreSection(headingText)
+                        state.currentTitle = headingText
+                    }
+                } else if (!state.ignoringGroup && !state.ignoringSection && !shouldSkipLine(trimmed)) {
                     processBodyLine(trimmed, state)
                 }
             }
@@ -131,11 +188,13 @@ object ReleaseChangelogParser {
         val bulletMatch = BULLET_REGEX.matchEntire(trimmed)
         when {
             bulletMatch != null -> {
+                if (state.currentGroupTitle == null) state.currentGroupTitle = ""
                 if (state.currentTitle == null) state.currentTitle = ""
                 parseItem(bulletMatch.groupValues[1])?.let { state.currentItems += it }
             }
 
             isItalicEmptyNote(trimmed) -> {
+                if (state.currentGroupTitle == null) state.currentGroupTitle = ""
                 if (state.currentTitle == null) state.currentTitle = ""
                 if (state.currentItems.isEmpty()) {
                     state.currentEmptyNote = trimmed.removeSurrounding("_").trim()
