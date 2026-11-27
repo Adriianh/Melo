@@ -6,6 +6,8 @@ import com.github.adriianh.data.local.ContextHolder
 import java.io.File
 
 actual class PlatformUpdateInstaller actual constructor() {
+    actual fun supportsAutoRestart(installerPath: String): Boolean = false
+
     actual fun installAndRestart(installerPath: String): UpdateInstallResult {
         val context =
             ContextHolder.context

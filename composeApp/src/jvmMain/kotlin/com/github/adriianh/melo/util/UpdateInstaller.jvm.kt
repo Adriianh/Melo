@@ -21,6 +21,25 @@ import kotlin.system.exitProcess
  * being swallowed.
  */
 actual class PlatformUpdateInstaller actual constructor() {
+    actual fun supportsAutoRestart(installerPath: String): Boolean {
+        val environment = currentDesktopInstallEnvironment()
+        val exists: (String) -> Boolean = { File(it).exists() }
+        val readText: (String) -> String? = { PlatformFileSystem.readText(it) }
+        val name = File(installerPath).name.lowercase()
+
+        return when (DesktopInstall.detect(environment, exists, readText)) {
+            UpdateInstallMethod.APPIMAGE,
+            UpdateInstallMethod.TARBALL,
+            -> true
+
+            UpdateInstallMethod.MACOS_APP ->
+                name.endsWith(".zip") &&
+                    DesktopInstall.macAppBundlePath(environment)?.let { File(it).parentFile?.canWrite() } == true
+
+            else -> environment.osName.contains("win") && (name.endsWith(".exe") || name.endsWith(".msi"))
+        }
+    }
+
     actual fun installAndRestart(installerPath: String): UpdateInstallResult {
         val packageFile = File(installerPath)
         return if (!packageFile.isFile) {
@@ -37,11 +56,24 @@ actual class PlatformUpdateInstaller actual constructor() {
         val environment = currentDesktopInstallEnvironment()
         val exists: (String) -> Boolean = { File(it).exists() }
         val readText: (String) -> String? = { PlatformFileSystem.readText(it) }
+        val name = packageFile.name.lowercase()
 
         return when (DesktopInstall.detect(environment, exists, readText)) {
             UpdateInstallMethod.APPIMAGE -> applyAppImage(packageFile, environment.env, exists)
             UpdateInstallMethod.TARBALL -> applyPortable(packageFile, environment, readText)
-            else -> handOverToSystem(packageFile, environment.osName)
+            UpdateInstallMethod.MACOS_APP ->
+                if (name.endsWith(".zip")) {
+                    applyMacOsApp(packageFile, environment)
+                } else {
+                    handOverToSystem(packageFile, environment.osName)
+                }
+
+            else ->
+                if (environment.osName.contains("win") && (name.endsWith(".exe") || name.endsWith(".msi"))) {
+                    applyWindows(packageFile, environment, exists)
+                } else {
+                    handOverToSystem(packageFile, environment.osName)
+                }
         }
     }
 
@@ -93,6 +125,71 @@ actual class PlatformUpdateInstaller actual constructor() {
                 }
         }
 
+    private fun applyMacOsApp(
+        packageFile: File,
+        environment: DesktopInstallEnvironment,
+    ): UpdateInstallResult =
+        when (val bundle = DesktopInstall.macAppBundlePath(environment)?.let(::File)) {
+            null -> UpdateInstallResult.Failed(reason = InstallErrorReason.PORTABLE_INSTALL_NOT_FOUND)
+            else ->
+                if (bundle.parentFile?.canWrite() != true) {
+                    UpdateInstallResult.Failed(
+                        reason = InstallErrorReason.NO_WRITE_PERMISSION,
+                        detail = bundle.absolutePath,
+                    )
+                } else {
+                    startReplacement(
+                        resourceName = MACOS_HELPER,
+                        arguments = listOf(packageFile.absolutePath, bundle.absolutePath),
+                    )
+                }
+        }
+
+    private fun applyWindows(
+        packageFile: File,
+        environment: DesktopInstallEnvironment,
+        exists: (String) -> Boolean,
+    ): UpdateInstallResult {
+        val script = materialize(WINDOWS_HELPER)
+        if (script == null) {
+            return UpdateInstallResult.Failed(
+                reason = InstallErrorReason.HELPER_PREPARE_FAILED,
+                detail = WINDOWS_HELPER,
+            )
+        }
+
+        val installerType = if (packageFile.name.lowercase().endsWith(".msi")) "msi" else "exe"
+        val appExecutable = DesktopInstall.windowsExecutablePath(environment, exists).orEmpty()
+        val command =
+            listOf(
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-WindowStyle",
+                "Hidden",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                script.absolutePath,
+                "-ParentPid",
+                currentPid().toString(),
+                "-InstallerPath",
+                packageFile.absolutePath,
+                "-InstallerType",
+                installerType,
+                "-AppExecutable",
+                appExecutable,
+            )
+
+        val result = start(command, InstallErrorReason.START_HELPER_FAILED)
+        if (result is UpdateInstallResult.Failed) {
+            return result
+        }
+
+        // The helper waits for this process to disappear before launching the installer.
+        exitProcess(0)
+    }
+
     private fun handOverToSystem(
         packageFile: File,
         osName: String,
@@ -104,7 +201,7 @@ actual class PlatformUpdateInstaller actual constructor() {
                     listOf("msiexec.exe", "/i", packageFile.absolutePath, "/passive")
 
                 osName.contains("win") && name.endsWith(".exe") ->
-                    listOf(packageFile.absolutePath, "/SILENT", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS")
+                    listOf(packageFile.absolutePath, "/SILENT", "/CLOSEAPPLICATIONS")
 
                 osName.contains("mac") -> listOf("open", packageFile.absolutePath)
 
@@ -143,44 +240,46 @@ actual class PlatformUpdateInstaller actual constructor() {
         exitProcess(0)
     }
 
-    private fun start(
-        command: List<String>,
-        errorReason: InstallErrorReason,
-    ): UpdateInstallResult =
-        try {
-            ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile()))
-                .start()
-            UpdateInstallResult.Started
-        } catch (e: IOException) {
-            UpdateInstallResult.Failed(
-                reason = errorReason,
-                detail = e.message.orEmpty(),
-            )
-        }
-
-    private fun materialize(resourceName: String): File? {
-        val stream = javaClass.getResourceAsStream("/update/$resourceName") ?: return null
-        val text = stream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-
-        return runCatching {
-            val script = File(tempDir(), "melo-$resourceName")
-            script.writeText(text.replace("\r\n", "\n"))
-            script.setExecutable(true, true)
-            script
-        }.getOrNull()
-    }
-
-    private fun tempDir(): File = File(PlatformFileSystem.getTempDirectory())
-
-    private fun logFile(): File = File(tempDir(), "melo-update.log").also { it.parentFile?.mkdirs() }
-
-    private fun currentPid(): Long = ProcessHandle.current().pid()
-
     private companion object {
         const val APPIMAGE_HELPER = "appimage-update.sh"
         const val PORTABLE_HELPER = "portable-update.sh"
+        const val MACOS_HELPER = "macos-update.sh"
+        const val WINDOWS_HELPER = "windows-update.ps1"
         const val LAUNCHER_NAME = "melo-gui"
     }
 }
+
+private fun start(
+    command: List<String>,
+    errorReason: InstallErrorReason,
+): UpdateInstallResult =
+    try {
+        ProcessBuilder(command)
+            .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile()))
+            .start()
+        UpdateInstallResult.Started
+    } catch (e: IOException) {
+        UpdateInstallResult.Failed(
+            reason = errorReason,
+            detail = e.message.orEmpty(),
+        )
+    }
+
+private fun materialize(resourceName: String): File? {
+    val stream = PlatformUpdateInstaller::class.java.getResourceAsStream("/update/$resourceName") ?: return null
+    val text = stream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+
+    return runCatching {
+        val script = File(tempDir(), "melo-$resourceName")
+        script.writeText(text.replace("\r\n", "\n"))
+        script.setExecutable(true, true)
+        script
+    }.getOrNull()
+}
+
+private fun tempDir(): File = File(PlatformFileSystem.getTempDirectory())
+
+private fun logFile(): File = File(tempDir(), "melo-update.log").also { it.parentFile?.mkdirs() }
+
+private fun currentPid(): Long = ProcessHandle.current().pid()
