@@ -8,6 +8,7 @@ import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.MoodAndGenreCategory
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.MusicProvider
 import com.github.adriianh.innertube.YouTube
@@ -30,78 +31,158 @@ import kotlin.time.TimeSource
  * Acts as a drop-in replacement for PipedMusicProvider.
  */
 class InnerTubeMusicProvider(
-    private val fallback: MusicProvider? = null
+    private val fallback: MusicProvider? = null,
 ) : MusicProvider {
+    override suspend fun search(query: String): List<Track> = searchTracksPage(query).items
 
-    override suspend fun search(query: String): List<Track> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
-
-        return result?.items?.filterIsInstance<SongItem>()
-            ?.map { item -> mapSongItem(item) }
-            ?: (fallback?.search(query) ?: emptyList())
+    override suspend fun searchTracksPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<Track> {
+        val result =
+            fetchSearchPage(query, YouTube.SearchFilter.FILTER_SONG, continuation)
+                ?: return if (continuation == null) {
+                    fallback?.searchTracksPage(query, null) ?: SearchPage()
+                } else {
+                    SearchPage()
+                }
+        return SearchPage(
+            items = result.items.filterIsInstance<SongItem>().map { mapSongItem(it) },
+            continuation = result.continuation,
+        )
     }
 
-    override suspend fun searchVideos(query: String): List<Track> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_VIDEO).getOrNull()
-        return result?.items?.filterIsInstance<SongItem>()
-            ?.map { item -> mapSongItem(item) }
-            ?: (fallback?.searchVideos(query) ?: emptyList())
+    override suspend fun searchVideos(query: String): List<Track> = searchVideosPage(query).items
+
+    override suspend fun searchVideosPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<Track> {
+        val result =
+            fetchSearchPage(query, YouTube.SearchFilter.FILTER_VIDEO, continuation)
+                ?: return if (continuation == null) {
+                    fallback?.searchVideosPage(query, null) ?: SearchPage()
+                } else {
+                    SearchPage()
+                }
+        return SearchPage(
+            items = result.items.filterIsInstance<SongItem>().map { mapSongItem(it) },
+            continuation = result.continuation,
+        )
     }
 
     override suspend fun searchSummary(query: String): List<HomeSection> {
         val result = YouTube.searchSummary(query).getOrNull() ?: return emptyList()
         return result.summaries.mapNotNull { summary ->
             val items = summary.items.mapNotNull { mapYTItem(it) }
-            if (items.isEmpty()) null
-            else HomeSection(
-                title = summary.title,
-                type = summary.items.toHomeSectionType(),
-                items = items
-            )
+            if (items.isEmpty()) {
+                null
+            } else {
+                HomeSection(
+                    title = summary.title,
+                    type = summary.items.toHomeSectionType(),
+                    items = items,
+                )
+            }
         }
     }
 
-    override suspend fun searchAlbums(query: String): List<SearchResult.Album> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
-        return result?.items?.filterIsInstance<AlbumItem>()?.map { item ->
-            SearchResult.Album(
-                id = item.browseId,
-                title = item.title,
-                author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
-                year = item.year?.toString(),
-                artworkUrl = item.thumbnail
-            )
-        } ?: fallback?.searchAlbums(query) ?: emptyList()
-    }
+    override suspend fun searchAlbums(query: String): List<SearchResult.Album> = searchAlbumsPage(query).items
 
-    override suspend fun searchArtists(query: String): List<SearchResult.Artist> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
-        return result?.items?.filterIsInstance<ArtistItem>()?.map { item ->
-            SearchResult.Artist(
-                id = item.id,
-                name = item.title,
-                artworkUrl = item.thumbnail
-            )
-        } ?: fallback?.searchArtists(query) ?: emptyList()
-    }
-
-    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> {
+    override suspend fun searchAlbumsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Album> {
         val result =
-            YouTube.search(query, YouTube.SearchFilter.FILTER_COMMUNITY_PLAYLIST).getOrNull()
-        return result?.items?.filterIsInstance<PlaylistItem>()?.map { item ->
-            SearchResult.Playlist(
-                id = item.id,
-                title = item.title,
-                author = item.author?.name ?: "Unknown",
-                trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
-                artworkUrl = item.thumbnail
-            )
-        } ?: fallback?.searchPlaylists(query) ?: emptyList()
+            fetchSearchPage(query, YouTube.SearchFilter.FILTER_ALBUM, continuation)
+                ?: return if (continuation == null) {
+                    fallback?.searchAlbumsPage(query, null) ?: SearchPage()
+                } else {
+                    SearchPage()
+                }
+        return SearchPage(
+            items =
+                result.items.filterIsInstance<AlbumItem>().map { item ->
+                    SearchResult.Album(
+                        id = item.browseId,
+                        title = item.title,
+                        author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
+                        year = item.year?.toString(),
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            continuation = result.continuation,
+        )
+    }
+
+    override suspend fun searchArtists(query: String): List<SearchResult.Artist> = searchArtistsPage(query).items
+
+    override suspend fun searchArtistsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Artist> {
+        val result =
+            fetchSearchPage(query, YouTube.SearchFilter.FILTER_ARTIST, continuation)
+                ?: return if (continuation == null) {
+                    fallback?.searchArtistsPage(query, null) ?: SearchPage()
+                } else {
+                    SearchPage()
+                }
+        return SearchPage(
+            items =
+                result.items.filterIsInstance<ArtistItem>().map { item ->
+                    SearchResult.Artist(
+                        id = item.id,
+                        name = item.title,
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            continuation = result.continuation,
+        )
+    }
+
+    override suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = searchPlaylistsPage(query).items
+
+    override suspend fun searchPlaylistsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Playlist> {
+        val result =
+            fetchSearchPage(query, YouTube.SearchFilter.FILTER_COMMUNITY_PLAYLIST, continuation)
+                ?: return if (continuation == null) {
+                    fallback?.searchPlaylistsPage(query, null) ?: SearchPage()
+                } else {
+                    SearchPage()
+                }
+        return SearchPage(
+            items =
+                result.items.filterIsInstance<PlaylistItem>().map { item ->
+                    SearchResult.Playlist(
+                        id = item.id,
+                        title = item.title,
+                        author = item.author?.name ?: "Unknown",
+                        trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            continuation = result.continuation,
+        )
+    }
+
+    private suspend fun fetchSearchPage(
+        query: String,
+        filter: YouTube.SearchFilter,
+        continuation: String?,
+    ) = if (continuation != null) {
+        YouTube.searchContinuation(continuation).getOrNull()
+    } else {
+        YouTube.search(query, filter).getOrNull()
     }
 
     override suspend fun searchAll(query: String): List<Track> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
-            ?: return fallback?.searchAll(query) ?: emptyList()
+        val result =
+            YouTube.search(query, YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                ?: return fallback?.searchAll(query) ?: emptyList()
         val pages = mutableListOf<Track>()
         var continuation: String? = result.continuation
 
@@ -121,21 +202,24 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun searchAllAlbums(query: String): List<SearchResult.Album> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
-            ?: return fallback?.searchAllAlbums(query) ?: emptyList()
+        val result =
+            YouTube.search(query, YouTube.SearchFilter.FILTER_ALBUM).getOrNull()
+                ?: return fallback?.searchAllAlbums(query) ?: emptyList()
         val pages = mutableListOf<SearchResult.Album>()
         var continuation: String? = result.continuation
 
         fun mapItems(items: List<YTItem>) {
-            pages.addAll(items.filterIsInstance<AlbumItem>().map { item ->
-                SearchResult.Album(
-                    id = item.browseId,
-                    title = item.title,
-                    author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
-                    year = item.year?.toString(),
-                    artworkUrl = item.thumbnail
-                )
-            })
+            pages.addAll(
+                items.filterIsInstance<AlbumItem>().map { item ->
+                    SearchResult.Album(
+                        id = item.browseId,
+                        title = item.title,
+                        author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
+                        year = item.year?.toString(),
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            )
         }
 
         mapItems(result.items)
@@ -150,19 +234,22 @@ class InnerTubeMusicProvider(
     }
 
     override suspend fun searchAllArtists(query: String): List<SearchResult.Artist> {
-        val result = YouTube.search(query, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
-            ?: return fallback?.searchAllArtists(query) ?: emptyList()
+        val result =
+            YouTube.search(query, YouTube.SearchFilter.FILTER_ARTIST).getOrNull()
+                ?: return fallback?.searchAllArtists(query) ?: emptyList()
         val pages = mutableListOf<SearchResult.Artist>()
         var continuation: String? = result.continuation
 
         fun mapItems(items: List<YTItem>) {
-            pages.addAll(items.filterIsInstance<ArtistItem>().map { item ->
-                SearchResult.Artist(
-                    id = item.id,
-                    name = item.title,
-                    artworkUrl = item.thumbnail
-                )
-            })
+            pages.addAll(
+                items.filterIsInstance<ArtistItem>().map { item ->
+                    SearchResult.Artist(
+                        id = item.id,
+                        name = item.title,
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            )
         }
 
         mapItems(result.items)
@@ -184,15 +271,17 @@ class InnerTubeMusicProvider(
         var continuation: String? = result.continuation
 
         fun mapItems(items: List<YTItem>) {
-            pages.addAll(items.filterIsInstance<PlaylistItem>().map { item ->
-                SearchResult.Playlist(
-                    id = item.id,
-                    title = item.title,
-                    author = item.author?.name ?: "Unknown",
-                    trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
-                    artworkUrl = item.thumbnail
-                )
-            })
+            pages.addAll(
+                items.filterIsInstance<PlaylistItem>().map { item ->
+                    SearchResult.Playlist(
+                        id = item.id,
+                        title = item.title,
+                        author = item.author?.name ?: "Unknown",
+                        trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                        artworkUrl = item.thumbnail,
+                    )
+                },
+            )
         }
 
         mapItems(result.items)
@@ -214,13 +303,16 @@ class InnerTubeMusicProvider(
             val nextResult = YouTube.next(WatchEndpoint(videoId = videoId)).getOrNull()
             val songItem = nextResult?.items?.firstOrNull()
             if (songItem != null) {
-                val validArtists = songItem.artists.map { it.name.trim() }
-                    .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
-                val artistName = if (validArtists.isNotEmpty()) {
-                    validArtists.joinToString(", ")
-                } else {
-                    "Unknown"
-                }
+                val validArtists =
+                    songItem.artists
+                        .map { it.name.trim() }
+                        .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
+                val artistName =
+                    if (validArtists.isNotEmpty()) {
+                        validArtists.joinToString(", ")
+                    } else {
+                        "Unknown"
+                    }
                 val durationMs = songItem.duration?.times(1000L) ?: 0L
                 val albumName = songItem.album?.name.orEmpty()
                 return Track(
@@ -231,31 +323,29 @@ class InnerTubeMusicProvider(
                     album = albumName,
                     genres = emptyList(),
                     artworkUrl = songItem.thumbnail,
-                    sourceId = videoId
+                    sourceId = videoId,
                 )
             }
         } catch (_: Exception) {
         }
 
         return try {
-            val response = YouTube.player(videoId, null, YouTubeClient.WEB_REMIX).getOrNull()
-
-            if (response != null) {
-                val details = response.videoDetails
-                if (details != null) {
-                    Track(
-                        id = "piped:$videoId",
-                        title = details.title.orEmpty(),
-                        artist = details.author.orEmpty(),
-                        durationMs = (details.lengthSeconds?.toLongOrNull() ?: 0L) * 1000L,
-                        album = "",
-                        genres = emptyList(),
-                        artworkUrl = details.thumbnail?.thumbnails?.lastOrNull()?.url,
-                        sourceId = videoId
-                    )
-                } else {
-                    fallback?.getTrack(id)
-                }
+            val details = YouTube.player(videoId, null, YouTubeClient.WEB_REMIX).getOrNull()?.videoDetails
+            if (details != null) {
+                Track(
+                    id = "piped:$videoId",
+                    title = details.title.orEmpty(),
+                    artist = details.author.orEmpty(),
+                    durationMs = (details.lengthSeconds?.toLongOrNull() ?: 0L) * 1000L,
+                    album = "",
+                    genres = emptyList(),
+                    artworkUrl =
+                        details.thumbnail
+                            ?.thumbnails
+                            ?.lastOrNull()
+                            ?.url,
+                    sourceId = videoId,
+                )
             } else {
                 fallback?.getTrack(id)
             }
@@ -269,12 +359,12 @@ class InnerTubeMusicProvider(
 
     private data class CachedArtist(
         val result: SearchResult.Artist,
-        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow()
+        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow(),
     )
 
     private data class CachedAlbum(
         val result: SearchResult.Album,
-        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow()
+        val createdAt: ComparableTimeMark = TimeSource.Monotonic.markNow(),
     )
 
     override suspend fun getAlbumDetails(id: String): SearchResult.Album? {
@@ -302,18 +392,31 @@ class InnerTubeMusicProvider(
                         ?.filterIsInstance<AlbumItem>()
                         ?.firstOrNull()
 
-            val candidateAlbum = if (firstAlbum != null) {
-                val normalizedQuery = cleanId.lowercase().trim()
-                val albumTitle = firstAlbum.title.lowercase().trim()
-                val artistTitle =
-                    firstAlbum.artists?.joinToString(" ") { it.name }?.lowercase().orEmpty()
-                val isRelevant = albumTitle.contains(normalizedQuery) ||
-                        normalizedQuery.contains(albumTitle) ||
-                        (artistTitle.isNotBlank() && (normalizedQuery.contains(artistTitle) || artistTitle.contains(
-                            normalizedQuery
-                        )))
-                if (isRelevant) firstAlbum else null
-            } else null
+            val candidateAlbum =
+                if (firstAlbum != null) {
+                    val normalizedQuery = cleanId.lowercase().trim()
+                    val albumTitle = firstAlbum.title.lowercase().trim()
+                    val artistTitle =
+                        firstAlbum.artists
+                            ?.joinToString(" ") { it.name }
+                            ?.lowercase()
+                            .orEmpty()
+                    val isRelevant =
+                        albumTitle.contains(normalizedQuery) ||
+                            normalizedQuery.contains(albumTitle) ||
+                            (
+                                artistTitle.isNotBlank() &&
+                                    (
+                                        normalizedQuery.contains(artistTitle) ||
+                                            artistTitle.contains(
+                                                normalizedQuery,
+                                            )
+                                    )
+                            )
+                    if (isRelevant) firstAlbum else null
+                } else {
+                    null
+                }
 
             if (candidateAlbum != null && candidateAlbum.browseId != cleanId) {
                 albumCache[candidateAlbum.browseId]?.let {
@@ -331,48 +434,54 @@ class InnerTubeMusicProvider(
         }
 
         val albumItem = result.album
-        val tracks = result.songs.map { song ->
-            Track(
-                id = "piped:${song.id}",
-                title = song.title,
-                artist = song.artists.firstOrNull()?.name ?: albumItem.artists?.firstOrNull()?.name
-                ?: "Unknown",
-                durationMs = song.duration?.times(1000L) ?: 0L,
-                album = albumItem.title.ifBlank { cleanId },
-                genres = emptyList(),
-                artworkUrl = song.thumbnail,
-                sourceId = song.id
-            )
-        }
-        val otherVersions = result.otherVersions.map {
-            SearchResult.Album(
-                id = it.browseId,
-                title = it.title,
-                author = it.artists?.joinToString(", ") { a -> a.name } ?: "Unknown",
-                year = it.year?.toString(),
-                artworkUrl = it.thumbnail
-            )
-        }
+        val tracks =
+            result.songs.map { song ->
+                Track(
+                    id = "piped:${song.id}",
+                    title = song.title,
+                    artist =
+                        song.artists.firstOrNull()?.name ?: albumItem.artists?.firstOrNull()?.name
+                            ?: "Unknown",
+                    durationMs = song.duration?.times(1000L) ?: 0L,
+                    album = albumItem.title.ifBlank { cleanId },
+                    genres = emptyList(),
+                    artworkUrl = song.thumbnail,
+                    sourceId = song.id,
+                )
+            }
+        val otherVersions =
+            result.otherVersions.map {
+                SearchResult.Album(
+                    id = it.browseId,
+                    title = it.title,
+                    author = it.artists?.joinToString(", ") { a -> a.name } ?: "Unknown",
+                    year = it.year?.toString(),
+                    artworkUrl = it.thumbnail,
+                )
+            }
 
         val albumArtwork =
             albumItem.thumbnail.takeIf { it.isNotBlank() } ?: tracks.firstOrNull()?.artworkUrl
-        val albumTitle = albumItem.title.takeIf { it.isNotBlank() }
-            ?: tracks.firstOrNull()?.album?.takeIf { it.isNotBlank() }
-            ?: cleanId.takeIf { it.isNotBlank() }
-            ?: "Álbum"
+        val albumTitle =
+            albumItem.title.takeIf { it.isNotBlank() }
+                ?: tracks.firstOrNull()?.album?.takeIf { it.isNotBlank() }
+                ?: cleanId.takeIf { it.isNotBlank() }
+                ?: "Álbum"
 
-        val album = SearchResult.Album(
-            id = albumItem.browseId.ifBlank { cleanId },
-            title = albumTitle,
-            author = albumItem.artists?.joinToString(", ") { it.name }?.ifBlank { null }
-                ?: tracks.firstOrNull()?.artist
-                ?: "Unknown",
-            year = albumItem.year?.toString(),
-            artworkUrl = albumArtwork,
-            songs = tracks,
-            description = albumItem.description,
-            otherVersions = otherVersions
-        )
+        val album =
+            SearchResult.Album(
+                id = albumItem.browseId.ifBlank { cleanId },
+                title = albumTitle,
+                author =
+                    albumItem.artists?.joinToString(", ") { it.name }?.ifBlank { null }
+                        ?: tracks.firstOrNull()?.artist
+                        ?: "Unknown",
+                year = albumItem.year?.toString(),
+                artworkUrl = albumArtwork,
+                songs = tracks,
+                description = albumItem.description,
+                otherVersions = otherVersions,
+            )
 
         while (albumCache.size >= 30) {
             val oldest = albumCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key ?: break
@@ -399,9 +508,13 @@ class InnerTubeMusicProvider(
                     YouTube.search(cleanId, YouTube.SearchFilter.FILTER_ARTIST, authenticate = false).getOrNull()
                 val firstArtist =
                     searchResults?.items?.filterIsInstance<ArtistItem>()?.firstOrNull()
-                        ?: YouTube.searchSummary(cleanId, authenticate = false)
-                            .getOrNull()?.summaries?.flatMap { it.items }
-                            ?.filterIsInstance<ArtistItem>()?.firstOrNull()
+                        ?: YouTube
+                            .searchSummary(cleanId, authenticate = false)
+                            .getOrNull()
+                            ?.summaries
+                            ?.flatMap { it.items }
+                            ?.filterIsInstance<ArtistItem>()
+                            ?.firstOrNull()
                 firstArtist?.id ?: cleanId
             } else {
                 cleanId
@@ -415,92 +528,105 @@ class InnerTubeMusicProvider(
             }
         }
 
-        val result = YouTube.artist(resolvedId).getOrNull()
-            ?: (if (resolvedId != cleanId) YouTube.artist(cleanId).getOrNull() else null)
-            ?: return fallback?.getArtistDetails(id)
+        val result =
+            YouTube.artist(resolvedId).getOrNull()
+                ?: (if (resolvedId != cleanId) YouTube.artist(cleanId).getOrNull() else null)
+                ?: return fallback?.getArtistDetails(id)
 
-        val sections = result.sections.map { section ->
-            val mappedItems = section.items.map { item ->
-                when (item) {
-                    is SongItem -> SearchResult.Song(
-                        Track(
-                            id = "piped:${item.id}",
-                            title = item.title,
-                            artist = item.artists.firstOrNull()?.name ?: result.artist.title,
-                            durationMs = item.duration?.times(1000L) ?: 0L,
-                            album = item.album?.name ?: "",
-                            genres = emptyList(),
-                            artworkUrl = item.thumbnail,
-                            sourceId = item.id
-                        )
-                    )
+        val sections =
+            result.sections.map { section ->
+                val mappedItems =
+                    section.items.map { item ->
+                        when (item) {
+                            is SongItem ->
+                                SearchResult.Song(
+                                    Track(
+                                        id = "piped:${item.id}",
+                                        title = item.title,
+                                        artist = item.artists.firstOrNull()?.name ?: result.artist.title,
+                                        durationMs = item.duration?.times(1000L) ?: 0L,
+                                        album = item.album?.name ?: "",
+                                        genres = emptyList(),
+                                        artworkUrl = item.thumbnail,
+                                        sourceId = item.id,
+                                    ),
+                                )
 
-                    is AlbumItem -> SearchResult.Album(
-                        id = item.browseId,
-                        title = item.title,
-                        author = item.artists?.joinToString(", ") { it.name }
-                            ?: result.artist.title,
-                        year = item.year?.toString(),
-                        artworkUrl = item.thumbnail
-                    )
+                            is AlbumItem ->
+                                SearchResult.Album(
+                                    id = item.browseId,
+                                    title = item.title,
+                                    author =
+                                        item.artists?.joinToString(", ") { it.name }
+                                            ?: result.artist.title,
+                                    year = item.year?.toString(),
+                                    artworkUrl = item.thumbnail,
+                                )
 
-                    is ArtistItem -> SearchResult.Artist(
-                        id = item.id,
-                        name = item.title,
-                        artworkUrl = item.thumbnail
-                    )
+                            is ArtistItem ->
+                                SearchResult.Artist(
+                                    id = item.id,
+                                    name = item.title,
+                                    artworkUrl = item.thumbnail,
+                                )
 
-                    is PlaylistItem -> SearchResult.Playlist(
-                        id = item.id,
-                        title = item.title,
-                        author = item.author?.name ?: result.artist.title,
-                        trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
-                        artworkUrl = item.thumbnail
-                    )
-                }
+                            is PlaylistItem ->
+                                SearchResult.Playlist(
+                                    id = item.id,
+                                    title = item.title,
+                                    author = item.author?.name ?: result.artist.title,
+                                    trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                                    artworkUrl = item.thumbnail,
+                                )
+                        }
+                    }
+                SearchResult.ArtistSection(section.title, mappedItems)
             }
-            SearchResult.ArtistSection(section.title, mappedItems)
-        }
 
-        val songSection = result.sections.find {
-            it.title.equals("Songs", ignoreCase = true) ||
+        val songSection =
+            result.sections.find {
+                it.title.equals("Songs", ignoreCase = true) ||
                     it.title.equals("Top songs", ignoreCase = true) ||
                     it.title.contains("Cancion", ignoreCase = true) ||
                     it.title.contains("Temas", ignoreCase = true) ||
                     it.title.contains("Populares", ignoreCase = true) ||
                     it.title.contains("Pistas", ignoreCase = true)
-        } ?: result.sections.firstOrNull { sec -> sec.items.any { it is SongItem } }
+            } ?: result.sections.firstOrNull { sec -> sec.items.any { it is SongItem } }
 
-        val topSongs = songSection?.items?.filterIsInstance<SongItem>()
-            ?: result.sections.flatMap { it.items.filterIsInstance<SongItem>() }
-                .takeIf { it.isNotEmpty() }
+        val topSongs =
+            songSection?.items?.filterIsInstance<SongItem>()
+                ?: result.sections
+                    .flatMap { it.items.filterIsInstance<SongItem>() }
+                    .takeIf { it.isNotEmpty() }
 
-        val tracks = topSongs?.map { song ->
-            Track(
-                id = "piped:${song.id}",
-                title = song.title,
-                artist = song.artists.firstOrNull()?.name ?: result.artist.title,
-                durationMs = song.duration?.times(1000L) ?: 0L,
-                album = song.album?.name ?: "",
-                genres = emptyList(),
-                artworkUrl = song.thumbnail,
-                sourceId = song.id
-            )
-        }
+        val tracks =
+            topSongs?.map { song ->
+                Track(
+                    id = "piped:${song.id}",
+                    title = song.title,
+                    artist = song.artists.firstOrNull()?.name ?: result.artist.title,
+                    durationMs = song.duration?.times(1000L) ?: 0L,
+                    album = song.album?.name ?: "",
+                    genres = emptyList(),
+                    artworkUrl = song.thumbnail,
+                    sourceId = song.id,
+                )
+            }
 
         val artistArtwork =
             result.artist.thumbnail.takeIf { it.isNotBlank() } ?: tracks?.firstOrNull()?.artworkUrl
 
-        val artist = SearchResult.Artist(
-            id = result.artist.id,
-            name = result.artist.title,
-            artworkUrl = artistArtwork,
-            description = result.description,
-            subscriberCountText = result.subscriberCountText,
-            monthlyListenerCount = result.monthlyListenerCount,
-            topSongs = tracks,
-            sections = sections
-        )
+        val artist =
+            SearchResult.Artist(
+                id = result.artist.id,
+                name = result.artist.title,
+                artworkUrl = artistArtwork,
+                description = result.description,
+                subscriberCountText = result.subscriberCountText,
+                monthlyListenerCount = result.monthlyListenerCount,
+                topSongs = tracks,
+                sections = sections,
+            )
 
         while (artistCache.size >= 30) {
             val oldest = artistCache.entries.maxByOrNull { it.value.createdAt.elapsedNow() }?.key ?: break
@@ -515,32 +641,38 @@ class InnerTubeMusicProvider(
     override suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? {
         val result = YouTube.playlist(id).getOrNull() ?: return fallback?.getPlaylistDetails(id)
 
-        val tracks = result.songs.map { song ->
-            val albumName = song.album?.name
-            Track(
-                id = "piped:${song.id}",
-                title = song.title,
-                artist = song.artists.firstOrNull()?.name ?: "Unknown",
-                durationMs = song.duration?.times(1000L) ?: 0L,
-                album = albumName ?: "",
-                genres = emptyList(),
-                artworkUrl = song.thumbnail,
-                sourceId = song.id
-            )
-        }
+        val tracks =
+            result.songs.map { song ->
+                val albumName = song.album?.name
+                Track(
+                    id = "piped:${song.id}",
+                    title = song.title,
+                    artist = song.artists.firstOrNull()?.name ?: "Unknown",
+                    durationMs = song.duration?.times(1000L) ?: 0L,
+                    album = albumName ?: "",
+                    genres = emptyList(),
+                    artworkUrl = song.thumbnail,
+                    sourceId = song.id,
+                )
+            }
 
-        val playlistArtwork = result.playlist.thumbnail.takeIf { it.isNotBlank() }
-            ?: tracks.firstOrNull()?.artworkUrl
+        val playlistArtwork =
+            result.playlist.thumbnail.takeIf { it.isNotBlank() }
+                ?: tracks.firstOrNull()?.artworkUrl
         val playlistTitle = result.playlist.title.takeIf { it.isNotBlank() } ?: "Playlist"
-        val rawAuthor = result.playlist.author?.name?.trim()
-        val authorName = rawAuthor?.takeIf {
-            it.isNotBlank() &&
+        val rawAuthor =
+            result.playlist.author
+                ?.name
+                ?.trim()
+        val authorName =
+            rawAuthor?.takeIf {
+                it.isNotBlank() &&
                     !it.equals("Unknown", ignoreCase = true) &&
                     !it.equals("Playlist", ignoreCase = true) &&
                     !it.equals("Álbum", ignoreCase = true) &&
                     !it.equals("Album", ignoreCase = true) &&
                     !it.equals("Lista de reproducción", ignoreCase = true)
-        } ?: "YouTube Music"
+            } ?: "YouTube Music"
 
         return SearchResult.Playlist(
             id = result.playlist.id,
@@ -549,13 +681,14 @@ class InnerTubeMusicProvider(
             trackCount = result.songs.size,
             artworkUrl = playlistArtwork,
             songs = tracks,
-            description = result.playlist.description
+            description = result.playlist.description,
         )
     }
 
     override suspend fun getSearchSuggestions(query: String): List<String> {
-        val remoteSuggestions = YouTube.searchSuggestions(query).getOrNull()?.queries
-            ?: return fallback?.getSearchSuggestions(query) ?: emptyList()
+        val remoteSuggestions =
+            YouTube.searchSuggestions(query).getOrNull()?.queries
+                ?: return fallback?.getSearchSuggestions(query) ?: emptyList()
         return remoteSuggestions
     }
 
@@ -563,31 +696,34 @@ class InnerTubeMusicProvider(
 
     override suspend fun getHomeFeed(
         params: String?,
-        continuation: String?
+        continuation: String?,
     ): HomeFeed {
-        val homePage = YouTube.home(continuation = continuation, params = params).getOrNull()
-            ?: return HomeFeed()
+        val homePage =
+            YouTube.home(continuation = continuation, params = params).getOrNull()
+                ?: return HomeFeed()
 
-        val chips = homePage.chips.orEmpty().map { chip ->
-            val title = chip.title
-            com.github.adriianh.core.domain.model.HomeFeedChip(
-                title = title,
-                params = chip.endpoint?.params
-            )
-        }
+        val chips =
+            homePage.chips.orEmpty().map { chip ->
+                val title = chip.title
+                com.github.adriianh.core.domain.model.HomeFeedChip(
+                    title = title,
+                    params = chip.endpoint?.params,
+                )
+            }
 
-        val sections = homePage.sections.map { section ->
-            HomeSection(
-                title = section.title,
-                type = section.items.toHomeSectionType(),
-                items = section.items.mapNotNull { mapYTItem(it) }
-            )
-        }
+        val sections =
+            homePage.sections.map { section ->
+                HomeSection(
+                    title = section.title,
+                    type = section.items.toHomeSectionType(),
+                    items = section.items.mapNotNull { mapYTItem(it) },
+                )
+            }
 
         return HomeFeed(
             chips = chips,
             sections = sections,
-            continuation = homePage.continuation
+            continuation = homePage.continuation,
         )
     }
 
@@ -598,56 +734,64 @@ class InnerTubeMusicProvider(
             HomeSection(
                 title = section.title,
                 type = section.items.toHomeSectionType(),
-                items = section.items.mapNotNull { mapYTItem(it) }
+                items = section.items.mapNotNull { mapYTItem(it) },
             )
         }
     }
 
-    override suspend fun getCharts(): List<HomeSection> {
-        return YouTube.charts().getOrNull().orEmpty().map { section ->
+    override suspend fun getCharts(): List<HomeSection> =
+        YouTube.charts().getOrNull().orEmpty().map { section ->
             HomeSection(
                 title = section.title,
                 type = section.items.toHomeSectionType(),
-                items = section.items.mapNotNull { mapYTItem(it) }
+                items = section.items.mapNotNull { mapYTItem(it) },
             )
         }
-    }
 
     override suspend fun getTrending(): List<Track> {
         val home = getHome()
-        return home.find { it.title.contains("Trending", ignoreCase = true) }
-            ?.items?.filterIsInstance<SearchResult.Song>()?.map { it.track }
+        return home
+            .find { it.title.contains("Trending", ignoreCase = true) }
+            ?.items
+            ?.filterIsInstance<SearchResult.Song>()
+            ?.map { it.track }
             ?: emptyList()
     }
 
-    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> {
-        return YouTube.moodAndGenres().getOrNull().orEmpty().map { group ->
+    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> =
+        YouTube.moodAndGenres().getOrNull().orEmpty().map { group ->
             MoodAndGenreGroup(
                 title = group.title,
-                items = group.items.map { item ->
-                    MoodAndGenreCategory(
-                        title = item.title,
-                        stripeColor = item.stripeColor,
-                        browseId = item.endpoint.browseId,
-                        params = item.endpoint.params,
-                    )
-                }
+                items =
+                    group.items.map { item ->
+                        MoodAndGenreCategory(
+                            title = item.title,
+                            stripeColor = item.stripeColor,
+                            browseId = item.endpoint.browseId,
+                            params = item.endpoint.params,
+                        )
+                    },
             )
         }
-    }
 
     override suspend fun getRadio(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRadio(videoId)
-            ?: emptyList()
-        val endpoint = WatchEndpoint(
-            videoId = cleanId,
-            playlistId = "RDAMVM$cleanId"
-        )
-        val result = YouTube.next(endpoint).getOrNull()?.takeIf { it.items.isNotEmpty() }
-            ?: YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
-                ?.takeIf { it.items.isNotEmpty() }
-            ?: return fallback?.getRadio(videoId) ?: emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) {
+            return fallback?.getRadio(videoId)
+                ?: emptyList()
+        }
+        val endpoint =
+            WatchEndpoint(
+                videoId = cleanId,
+                playlistId = "RDAMVM$cleanId",
+            )
+        val result =
+            YouTube.next(endpoint).getOrNull()?.takeIf { it.items.isNotEmpty() }
+                ?: YouTube
+                    .next(WatchEndpoint(videoId = cleanId))
+                    .getOrNull()
+                    ?.takeIf { it.items.isNotEmpty() }
+                ?: return fallback?.getRadio(videoId) ?: emptyList()
         return result.items.map { mapSongItem(it) }
     }
 
@@ -655,17 +799,23 @@ class InnerTubeMusicProvider(
         val cleanId = artistId.removePrefix("piped:")
         if (cleanId.isBlank() || cleanId.contains(":")) return emptyList()
 
-        val endpoint = WatchEndpoint(
-            playlistId = if (cleanId.startsWith("RDAMEA")) cleanId else "RDAMEA$cleanId"
-        )
+        val endpoint =
+            WatchEndpoint(
+                playlistId = if (cleanId.startsWith("RDAMEA")) cleanId else "RDAMEA$cleanId",
+            )
         val result = YouTube.next(endpoint).getOrNull()
         if (result != null && result.items.isNotEmpty()) {
             return result.items.map { mapSongItem(it) }
         }
 
         val artistDetails = getArtistDetails(cleanId)
-        val firstTopSongId = artistDetails?.topSongs?.firstOrNull()?.sourceId
-            ?: artistDetails?.topSongs?.firstOrNull()?.id?.removePrefix("piped:")
+        val firstTopSongId =
+            artistDetails?.topSongs?.firstOrNull()?.sourceId
+                ?: artistDetails
+                    ?.topSongs
+                    ?.firstOrNull()
+                    ?.id
+                    ?.removePrefix("piped:")
         if (!firstTopSongId.isNullOrBlank()) {
             return getRadio(firstTopSongId)
         }
@@ -675,8 +825,10 @@ class InnerTubeMusicProvider(
 
     override suspend fun getRelated(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
-        if (cleanId.isBlank() || cleanId.contains(":")) return fallback?.getRelated(videoId)
-            ?: emptyList()
+        if (cleanId.isBlank() || cleanId.contains(":")) {
+            return fallback?.getRelated(videoId)
+                ?: emptyList()
+        }
 
         val nextResult = YouTube.next(WatchEndpoint(videoId = cleanId)).getOrNull()
         val relatedEndpoint = nextResult?.relatedEndpoint
@@ -693,48 +845,56 @@ class InnerTubeMusicProvider(
         return getRadio(cleanId)
     }
 
-    override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? {
+    override suspend fun browseCategory(
+        browseId: String,
+        params: String?,
+    ): BrowseCategoryResult? {
         val browseResult = YouTube.browse(browseId, params).getOrNull() ?: return null
-        val sections = browseResult.items.map { item ->
-            BrowseCategorySection(
-                title = item.title,
-                items = item.items.mapNotNull { mapYTItem(it) }
-            )
-        }
+        val sections =
+            browseResult.items.map { item ->
+                BrowseCategorySection(
+                    title = item.title,
+                    items = item.items.mapNotNull { mapYTItem(it) },
+                )
+            }
         return BrowseCategoryResult(
             title = browseResult.title,
-            sections = sections
+            sections = sections,
         )
     }
 
-    private fun mapYTItem(item: YTItem): SearchResult? {
-        return when (item) {
+    private fun mapYTItem(item: YTItem): SearchResult? =
+        when (item) {
             is SongItem -> SearchResult.Song(mapSongItem(item))
             is AlbumItem -> mapAlbumItem(item)
-            is ArtistItem -> SearchResult.Artist(
-                id = item.id,
-                name = item.title,
-                artworkUrl = item.thumbnail
-            )
+            is ArtistItem ->
+                SearchResult.Artist(
+                    id = item.id,
+                    name = item.title,
+                    artworkUrl = item.thumbnail,
+                )
 
-            is PlaylistItem -> SearchResult.Playlist(
-                id = item.id,
-                title = item.title,
-                author = item.author?.name ?: "Unknown",
-                trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
-                artworkUrl = item.thumbnail
-            )
+            is PlaylistItem ->
+                SearchResult.Playlist(
+                    id = item.id,
+                    title = item.title,
+                    author = item.author?.name ?: "Unknown",
+                    trackCount = item.songCountText?.filter { it.isDigit() }?.toIntOrNull(),
+                    artworkUrl = item.thumbnail,
+                )
         }
-    }
 
     private fun mapSongItem(item: SongItem): Track {
-        val validArtists = item.artists.map { it.name.trim() }
-            .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
-        val artistName = if (validArtists.isNotEmpty()) {
-            validArtists.joinToString(", ")
-        } else {
-            "Unknown"
-        }
+        val validArtists =
+            item.artists
+                .map { it.name.trim() }
+                .filter { it.isNotEmpty() && !it.isInvalidArtistName() }
+        val artistName =
+            if (validArtists.isNotEmpty()) {
+                validArtists.joinToString(", ")
+            } else {
+                "Unknown"
+            }
         return Track(
             id = "piped:${item.id}",
             title = item.title,
@@ -743,27 +903,27 @@ class InnerTubeMusicProvider(
             album = item.album?.name ?: "",
             genres = emptyList(),
             artworkUrl = item.thumbnail,
-            sourceId = item.id
+            sourceId = item.id,
         )
     }
 
-    private fun mapAlbumItem(item: AlbumItem): SearchResult.Album {
-        return SearchResult.Album(
+    private fun mapAlbumItem(item: AlbumItem): SearchResult.Album =
+        SearchResult.Album(
             id = item.browseId,
             title = item.title,
             author = item.artists?.joinToString(", ") { it.name } ?: "Unknown",
             year = item.year?.toString(),
-            artworkUrl = item.thumbnail
+            artworkUrl = item.thumbnail,
         )
-    }
 }
 
-private fun List<YTItem>.toHomeSectionType(): HomeSectionType = when {
-    isEmpty() -> HomeSectionType.MIXED
-    all { it is SongItem && it.isVideoSong } -> HomeSectionType.VIDEOS
-    all { it is SongItem } -> HomeSectionType.SONGS
-    all { it is AlbumItem } -> HomeSectionType.ALBUMS
-    all { it is PlaylistItem } -> HomeSectionType.PLAYLISTS
-    all { it is ArtistItem } -> HomeSectionType.ARTISTS
-    else -> HomeSectionType.MIXED
-}
+private fun List<YTItem>.toHomeSectionType(): HomeSectionType =
+    when {
+        isEmpty() -> HomeSectionType.MIXED
+        all { it is SongItem && it.isVideoSong } -> HomeSectionType.VIDEOS
+        all { it is SongItem } -> HomeSectionType.SONGS
+        all { it is AlbumItem } -> HomeSectionType.ALBUMS
+        all { it is PlaylistItem } -> HomeSectionType.PLAYLISTS
+        all { it is ArtistItem } -> HomeSectionType.ARTISTS
+        else -> HomeSectionType.MIXED
+    }

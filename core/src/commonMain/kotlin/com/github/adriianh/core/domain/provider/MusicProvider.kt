@@ -5,43 +5,103 @@ import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 
 interface MusicProvider {
     suspend fun search(query: String): List<Track>
+
     suspend fun searchAlbums(query: String): List<SearchResult.Album> = emptyList()
+
     suspend fun searchArtists(query: String): List<SearchResult.Artist> = emptyList()
+
     suspend fun searchPlaylists(query: String): List<SearchResult.Playlist> = emptyList()
 
     suspend fun searchVideos(query: String): List<Track> = emptyList()
+
     suspend fun searchSummary(query: String): List<HomeSection> = emptyList()
 
+    suspend fun searchTracksPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<Track> = if (continuation == null) SearchPage(items = search(query)) else SearchPage()
+
+    suspend fun searchAlbumsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Album> =
+        if (continuation == null) {
+            SearchPage(items = searchAlbums(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchArtistsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Artist> =
+        if (continuation == null) {
+            SearchPage(items = searchArtists(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchPlaylistsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Playlist> =
+        if (continuation == null) {
+            SearchPage(items = searchPlaylists(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchVideosPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<Track> = if (continuation == null) SearchPage(items = searchVideos(query)) else SearchPage()
+
     suspend fun searchAll(query: String): List<Track> = search(query)
+
     suspend fun searchAllAlbums(query: String): List<SearchResult.Album> = searchAlbums(query)
+
     suspend fun searchAllArtists(query: String): List<SearchResult.Artist> = searchArtists(query)
-    suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> =
-        searchPlaylists(query)
+
+    suspend fun searchAllPlaylists(query: String): List<SearchResult.Playlist> = searchPlaylists(query)
 
     suspend fun getTrack(id: String): Track?
 
     suspend fun getAlbumDetails(id: String): SearchResult.Album? = null
+
     suspend fun getArtistDetails(id: String): SearchResult.Artist? = null
+
     suspend fun getPlaylistDetails(id: String): SearchResult.Playlist? = null
+
     suspend fun getSearchSuggestions(query: String): List<String> = emptyList()
 
     suspend fun getHome(): List<HomeSection> = emptyList()
+
     suspend fun getHomeFeed(
         params: String? = null,
-        continuation: String? = null
-    ): HomeFeed =
-        HomeFeed(sections = getHome())
+        continuation: String? = null,
+    ): HomeFeed = HomeFeed(sections = getHome())
 
     suspend fun getExplore(): List<HomeSection> = emptyList()
+
     suspend fun getCharts(): List<HomeSection> = emptyList()
+
     suspend fun getTrending(): List<Track> = emptyList()
+
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = emptyList()
+
     suspend fun getRadio(videoId: String): List<Track> = emptyList()
+
     suspend fun getArtistRadio(artistId: String): List<Track> = emptyList()
+
     suspend fun getRelated(videoId: String): List<Track> = emptyList()
-    suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? = null
+
+    suspend fun browseCategory(
+        browseId: String,
+        params: String?,
+    ): BrowseCategoryResult? = null
 }

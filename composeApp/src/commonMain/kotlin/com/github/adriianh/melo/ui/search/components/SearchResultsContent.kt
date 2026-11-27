@@ -38,6 +38,7 @@ fun SearchResultsContent(
     onSwipeRight: (Track) -> Unit,
     isLiked: (Track) -> Boolean,
     modifier: Modifier = Modifier,
+    onLoadMore: () -> Unit = {},
     isSelectionMode: Boolean = false,
     selectedTrackIds: Set<String> = emptySet(),
     onToggleSelectTrack: ((Track) -> Unit)? = null,
@@ -95,6 +96,7 @@ fun SearchResultsContent(
                             uiState = uiState,
                             paddingValues = paddingValues,
                             queueViewModel = queueViewModel,
+                            onLoadMore = onLoadMore,
                             onMoreClick = onMoreClick,
                             onSwipeLeft = onSwipeLeft,
                             onSwipeRight = onSwipeRight,
@@ -111,6 +113,7 @@ fun SearchResultsContent(
                             uiState = uiState,
                             paddingValues = paddingValues,
                             onAlbumClick = onAlbumClick,
+                            onLoadMore = onLoadMore,
                         )
 
                     SearchFilterType.ARTISTS ->
@@ -118,6 +121,7 @@ fun SearchResultsContent(
                             uiState = uiState,
                             paddingValues = paddingValues,
                             onArtistClick = onArtistClick,
+                            onLoadMore = onLoadMore,
                             modifier = modifier,
                         )
 
@@ -126,6 +130,7 @@ fun SearchResultsContent(
                             uiState = uiState,
                             paddingValues = paddingValues,
                             onPlaylistClick = onPlaylistClick,
+                            onLoadMore = onLoadMore,
                             modifier = modifier,
                         )
 
@@ -134,6 +139,7 @@ fun SearchResultsContent(
                             uiState = uiState,
                             paddingValues = paddingValues,
                             queueViewModel = queueViewModel,
+                            onLoadMore = onLoadMore,
                             modifier = modifier,
                         )
                 }
