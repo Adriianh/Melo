@@ -48,6 +48,7 @@ sealed interface UpdateState {
     data class ReadyToInstall(
         val release: AppRelease,
         val installerPath: String,
+        val supportsAutoRestart: Boolean = true,
     ) : UpdateState
 
     data class Error(

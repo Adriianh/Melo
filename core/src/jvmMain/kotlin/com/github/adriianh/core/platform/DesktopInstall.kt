@@ -34,10 +34,12 @@ object DesktopInstall {
     private const val GUI_COMPONENT = "gui"
     private const val GUI_DIR_NAME = "melo-gui"
     private const val DEFAULT_SCOPE = "user"
-    private const val LAUNCHER_NAME = "Melo"
+    private const val WINDOWS_LAUNCHER_NAME = "Melo.exe"
     private const val BIN_DIR_NAME = "bin"
     private const val LIB_RUNTIME_MARKER = "/lib/runtime/"
     private const val LIB_APP_MARKER = "/lib/app/"
+    private const val WIN_RUNTIME_MARKER = "/runtime/"
+    private const val WIN_APP_MARKER = "/app/"
     private val SYSTEM_DIRS = listOf("/opt/", "/usr/")
 
     fun detect(
@@ -47,6 +49,7 @@ object DesktopInstall {
     ): UpdateInstallMethod =
         when {
             appImagePath(environment.env, exists) != null -> UpdateInstallMethod.APPIMAGE
+            macAppBundlePath(environment) != null -> UpdateInstallMethod.MACOS_APP
             portableInstall(environment, readFile) != null -> UpdateInstallMethod.TARBALL
             isPackageManaged(environment) -> UpdateInstallMethod.PACKAGE_MANAGER
             else -> UpdateInstallMethod.UNKNOWN
@@ -57,6 +60,57 @@ object DesktopInstall {
         env: Map<String, String>,
         exists: (String) -> Boolean,
     ): String? = env["APPIMAGE"]?.takeIf { it.isNotBlank() && exists(it) }
+
+    /** The macOS `.app` bundle containing the running process (e.g. `/Applications/Melo.app`). */
+    fun macAppBundlePath(environment: DesktopInstallEnvironment): String? {
+        val osName = environment.osName
+        if (!osName.contains("mac") && !osName.contains("darwin")) return null
+        return environment.processCommand?.let(::appBundleBeforeContents)
+            ?: environment.classpath
+                .split(File.pathSeparator)
+                .firstNotNullOfOrNull(::appBundleBeforeContents)
+    }
+
+    /** The Windows `Melo.exe` launcher for the running installation, when it can be verified on disk. */
+    fun windowsExecutablePath(
+        environment: DesktopInstallEnvironment,
+        exists: (String) -> Boolean,
+    ): String? {
+        if (!environment.osName.contains("win")) return null
+
+        val directCommand = environment.processCommand?.takeIf { it.isNotBlank() }
+        val directLauncher =
+            directCommand?.takeIf {
+                it.replace('\\', '/').substringAfterLast('/').equals(WINDOWS_LAUNCHER_NAME, ignoreCase = true) &&
+                    exists(it)
+            }
+        val derivedLauncher =
+            if (directLauncher != null) {
+                null
+            } else {
+                val appDir =
+                    directCommand?.let {
+                        appDirBefore(it.replace('\\', '/'), WIN_RUNTIME_MARKER)
+                            ?: appDirBefore(it.replace('\\', '/'), LIB_RUNTIME_MARKER)
+                    } ?: environment.classpath
+                        .split(File.pathSeparator)
+                        .firstNotNullOfOrNull { entry ->
+                            val normalized = entry.replace('\\', '/')
+                            appDirBefore(normalized, WIN_APP_MARKER) ?: appDirBefore(normalized, LIB_APP_MARKER)
+                        }
+
+                appDir?.let { dir ->
+                    val candidate = "$dir/$WINDOWS_LAUNCHER_NAME"
+                    val windowsCandidate = candidate.replace('/', '\\')
+                    when {
+                        exists(windowsCandidate) -> windowsCandidate
+                        exists(candidate) -> candidate
+                        else -> null
+                    }
+                }
+            }
+        return directLauncher ?: derivedLauncher
+    }
 
     fun portableInstall(
         environment: DesktopInstallEnvironment,
@@ -133,25 +187,35 @@ object DesktopInstall {
         val appDir = resolveAppDir(environment.processCommand, environment.classpath)
         return isLinux && appDir != null && SYSTEM_DIRS.any { appDir.startsWith(it) }
     }
+}
 
-    private fun appDirBefore(
-        path: String,
-        marker: String,
-    ): String? {
-        val index = path.indexOf(marker)
-        return if (index > 0) path.substring(0, index) else null
-    }
+private const val LAUNCHER_NAME_FILE = "Melo"
+private const val BIN_DIR_NAME_FILE = "bin"
+private const val MAC_APP_CONTENTS_MARKER_FILE = ".app/Contents/"
 
-    private fun launcherDir(command: String): String? {
-        val launcher = File(command)
-        return if (launcher.name == LAUNCHER_NAME && launcher.parentFile?.name == BIN_DIR_NAME) {
-            launcher.parentFile
-                ?.parentFile
-                ?.path
-                ?.replace('\\', '/')
-        } else {
-            null
-        }
+private fun appDirBefore(
+    path: String,
+    marker: String,
+): String? {
+    val index = path.indexOf(marker)
+    return if (index > 0) path.substring(0, index) else null
+}
+
+private fun appBundleBeforeContents(path: String): String? {
+    val normalized = path.replace('\\', '/')
+    val index = normalized.indexOf(MAC_APP_CONTENTS_MARKER_FILE)
+    return if (index > 0) normalized.substring(0, index + ".app".length) else null
+}
+
+private fun launcherDir(command: String): String? {
+    val launcher = File(command)
+    return if (launcher.name == LAUNCHER_NAME_FILE && launcher.parentFile?.name == BIN_DIR_NAME_FILE) {
+        launcher.parentFile
+            ?.parentFile
+            ?.path
+            ?.replace('\\', '/')
+    } else {
+        null
     }
 }
 

@@ -13,6 +13,9 @@ enum class UpdateInstallMethod {
     /** Portable install laid out by `install.sh`, located through its `.melo-install` marker. */
     TARBALL,
 
+    /** macOS: self-contained `.app` bundle (e.g. `/Applications/Melo.app`) replaceable in place. */
+    MACOS_APP,
+
     /** Owned by the system package manager (`.deb`/`.rpm`): it cannot be replaced in place. */
     PACKAGE_MANAGER,
 
