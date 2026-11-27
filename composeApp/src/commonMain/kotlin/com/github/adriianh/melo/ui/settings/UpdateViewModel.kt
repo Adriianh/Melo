@@ -9,6 +9,7 @@ import com.github.adriianh.core.domain.model.update.UpdateErrorReason
 import com.github.adriianh.core.domain.model.update.UpdateState
 import com.github.adriianh.core.domain.model.update.resolveUpdateState
 import com.github.adriianh.core.domain.repository.DownloadProgress
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.GetReleaseForVersionUseCase
@@ -30,6 +31,7 @@ class UpdateViewModel(
     private val downloadUpdateUseCase: DownloadUpdateUseCase,
     private val getReleaseForVersionUseCase: GetReleaseForVersionUseCase,
     private val installer: PlatformUpdateInstaller,
+    private val updateSettingsUseCase: UpdateSettingsUseCase? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val uiState: StateFlow<UpdateState> = _uiState.asStateFlow()
@@ -147,13 +149,34 @@ class UpdateViewModel(
     }
 
     fun installUpdate(installerPath: String) {
-        val result = installer.installAndRestart(installerPath)
-        if (result is UpdateInstallResult.Failed) {
-            _uiState.value =
-                UpdateState.Error(
-                    message = result.encodeForErrorState(),
-                    reason = UpdateErrorReason.INSTALL_FAILED,
-                )
+        val targetVersion = (_uiState.value as? UpdateState.ReadyToInstall)?.release?.version
+        val settingsUpdater = updateSettingsUseCase
+        if (settingsUpdater != null && targetVersion != null) {
+            viewModelScope.launch {
+                settingsUpdater { current ->
+                    current.copy(pendingPostUpdateVersion = targetVersion)
+                }
+                val result = installer.installAndRestart(installerPath)
+                if (result is UpdateInstallResult.Failed) {
+                    settingsUpdater { current ->
+                        current.copy(pendingPostUpdateVersion = null)
+                    }
+                    _uiState.value =
+                        UpdateState.Error(
+                            message = result.encodeForErrorState(),
+                            reason = UpdateErrorReason.INSTALL_FAILED,
+                        )
+                }
+            }
+        } else {
+            val result = installer.installAndRestart(installerPath)
+            if (result is UpdateInstallResult.Failed) {
+                _uiState.value =
+                    UpdateState.Error(
+                        message = result.encodeForErrorState(),
+                        reason = UpdateErrorReason.INSTALL_FAILED,
+                    )
+            }
         }
     }
 

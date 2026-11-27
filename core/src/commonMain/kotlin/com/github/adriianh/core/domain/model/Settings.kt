@@ -206,6 +206,7 @@ data class Settings(
         },
     val lastAccentColor: Long? = null,
     val lastSeenVersion: String? = null,
+    val pendingPostUpdateVersion: String? = null,
     val lastDockedSection: String? = null,
     val dockShowOnStartup: Boolean = true,
     val dockInitialTab: DockedInitialTab = DockedInitialTab.REMEMBER_LAST,

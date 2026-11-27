@@ -1,10 +1,13 @@
 package com.github.adriianh.melo
 
+import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.update.AppRelease
 import com.github.adriianh.core.domain.model.update.ReleaseAsset
 import com.github.adriianh.core.domain.model.update.UpdateChannel
 import com.github.adriianh.core.domain.model.update.UpdatePlatform
 import com.github.adriianh.core.domain.model.update.UpdateState
+import com.github.adriianh.core.domain.repository.DownloadProgress
+import com.github.adriianh.core.domain.usecase.settings.UpdateSettingsUseCase
 import com.github.adriianh.core.domain.usecase.update.CheckForUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.DownloadUpdateUseCase
 import com.github.adriianh.core.domain.usecase.update.GetReleaseForVersionUseCase
@@ -17,6 +20,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -172,6 +176,45 @@ class UpdateViewModelTest {
         assertIs<UpdateState.Error>(state)
         assertEquals("Sin permisos para actualizar la instalación", state.message)
     }
+
+    @Test
+    fun `installUpdate persists pendingPostUpdateVersion when ReadyToInstall and clears on failure`() =
+        runTest {
+            var currentSettings = Settings()
+            val updateSettingsUseCase = mockk<UpdateSettingsUseCase>()
+            coEvery { updateSettingsUseCase.invoke(any<(Settings) -> Settings>()) } coAnswers {
+                val transform = firstArg<(Settings) -> Settings>()
+                currentSettings = transform(currentSettings)
+            }
+            val release = fakeRelease("2.6.1")
+            coEvery { checkForUpdateUseCase(any(), any()) } returns Result.success(release)
+            every { installer.installAndRestart(any()) } returns UpdateInstallResult.Started
+
+            val viewModel =
+                UpdateViewModel(
+                    checkForUpdateUseCase = checkForUpdateUseCase,
+                    downloadUpdateUseCase = downloadUpdateUseCase,
+                    getReleaseForVersionUseCase = getReleaseForVersionUseCase,
+                    installer = installer,
+                    updateSettingsUseCase = updateSettingsUseCase,
+                )
+
+            // Transition to ReadyToInstall via startDownload + Completed
+            val asset = release.assets.first()
+            coEvery { downloadUpdateUseCase(asset, any()) } returns
+                flowOf(DownloadProgress.Completed("/tmp/melo"))
+            viewModel.startDownload(release, asset)
+            advanceUntilIdle()
+
+            viewModel.installUpdate("/tmp/melo")
+            advanceUntilIdle()
+            assertEquals("2.6.1", currentSettings.pendingPostUpdateVersion)
+
+            every { installer.installAndRestart(any()) } returns UpdateInstallResult.Failed("boom")
+            viewModel.installUpdate("/tmp/melo")
+            advanceUntilIdle()
+            assertEquals(null, currentSettings.pendingPostUpdateVersion)
+        }
 
     @Test
     fun `loadInstalledChangelog exposes release with notes and dismiss clears it`() =
