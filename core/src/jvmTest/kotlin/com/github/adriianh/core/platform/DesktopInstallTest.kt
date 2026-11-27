@@ -116,6 +116,46 @@ class DesktopInstallTest {
         assertEquals(APPIMAGE_PATH, DesktopInstall.appImagePath(mapOf("APPIMAGE" to APPIMAGE_PATH)) { true })
     }
 
+    @Test
+    fun `detect identifies a macOS app bundle from process command or classpath`() {
+        val fromCommand =
+            environment(
+                osName = "mac os x",
+                processCommand = "/Applications/Melo.app/Contents/MacOS/Melo",
+            )
+        assertEquals(UpdateInstallMethod.MACOS_APP, DesktopInstall.detect(fromCommand, { false }, { null }))
+        assertEquals("/Applications/Melo.app", DesktopInstall.macAppBundlePath(fromCommand))
+
+        val fromClasspath =
+            environment(
+                osName = "mac os x",
+                classpath = "/Users/melo/Applications/Melo.app/Contents/app/melo.jar",
+            )
+        assertEquals(UpdateInstallMethod.MACOS_APP, DesktopInstall.detect(fromClasspath, { false }, { null }))
+        assertEquals("/Users/melo/Applications/Melo.app", DesktopInstall.macAppBundlePath(fromClasspath))
+    }
+
+    @Test
+    fun `windowsExecutablePath resolves Melo exe from launcher, runtime, or classpath`() {
+        val directExe = """C:\Users\melo\AppData\Local\Programs\Melo\Melo.exe"""
+        val fromLauncher = environment(osName = "windows 11", processCommand = directExe)
+        assertEquals(directExe, DesktopInstall.windowsExecutablePath(fromLauncher) { it == directExe })
+
+        val fromRuntime =
+            environment(
+                osName = "windows 11",
+                processCommand = """C:\Users\melo\AppData\Local\Programs\Melo\runtime\bin\javaw.exe""",
+            )
+        assertEquals(directExe, DesktopInstall.windowsExecutablePath(fromRuntime) { it == directExe })
+
+        val fromClasspath =
+            environment(
+                osName = "windows 11",
+                classpath = """C:\Users\melo\AppData\Local\Programs\Melo\app\melo.jar""",
+            )
+        assertEquals(directExe, DesktopInstall.windowsExecutablePath(fromClasspath) { it == directExe })
+    }
+
     private fun markerOrNull(path: String): String? = MARKER.takeIf { path == MARKER_PATH }
 
     private fun environment(

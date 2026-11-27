@@ -129,6 +129,7 @@ class UpdateViewModel(
                                     UpdateState.ReadyToInstall(
                                         release = release,
                                         installerPath = progress.filePath,
+                                        supportsAutoRestart = installer.supportsAutoRestart(progress.filePath),
                                     )
                             }
                         }

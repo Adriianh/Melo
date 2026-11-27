@@ -102,7 +102,9 @@ data class AppRelease(
             name.endsWith(".tar.gz") &&
                 (name.contains("macos") || name.contains("darwin") || name.contains("mac")) -> 1
             name.endsWith(".tar.gz") -> 2
-            name.endsWith(".zip") && (name.contains("macos") || name.contains("mac")) -> 3
+            name.endsWith(".zip") &&
+                !name.endsWith("-app.zip") &&
+                (name.contains("macos") || name.contains("mac")) -> 3
             else -> 10
         }
 
@@ -114,7 +116,7 @@ data class AppRelease(
         when (platform) {
             UpdatePlatform.WINDOWS -> windowsPriority(name)
             UpdatePlatform.LINUX -> linuxPriority(name, method)
-            UpdatePlatform.MACOS -> macosPriority(name)
+            UpdatePlatform.MACOS -> macosPriority(name, method)
             UpdatePlatform.ANDROID -> if (name.endsWith(".apk")) 0 else 1
             UpdatePlatform.UNKNOWN -> 0
         }
@@ -155,13 +157,28 @@ data class AppRelease(
                 }
         }
 
-    private fun macosPriority(name: String): Int =
-        when {
-            name.endsWith(".dmg") -> 0
-            name.endsWith(".pkg") -> 1
-            name.endsWith(".zip") -> 2
-            name.endsWith(".tar.gz") -> 3
-            else -> 4
+    private fun macosPriority(
+        name: String,
+        method: UpdateInstallMethod,
+    ): Int =
+        when (method) {
+            UpdateInstallMethod.MACOS_APP ->
+                when {
+                    name.endsWith("-app.zip") -> 0
+                    name.endsWith(".dmg") -> 1
+                    name.endsWith(".pkg") -> 2
+                    else -> NO_MATCH_PRIORITY
+                }
+
+            else ->
+                when {
+                    name.endsWith(".dmg") -> 0
+                    name.endsWith("-app.zip") -> 1
+                    name.endsWith(".pkg") -> 2
+                    name.endsWith(".zip") -> 3
+                    name.endsWith(".tar.gz") -> 4
+                    else -> 5
+                }
         }
 }
 

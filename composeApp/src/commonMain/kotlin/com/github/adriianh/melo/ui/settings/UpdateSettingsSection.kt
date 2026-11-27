@@ -71,6 +71,7 @@ import com.github.adriianh.melo.resources.update_manual_default
 import com.github.adriianh.melo.resources.update_manual_package_manager
 import com.github.adriianh.melo.resources.update_new_version_line
 import com.github.adriianh.melo.resources.update_open_download_page
+import com.github.adriianh.melo.resources.update_open_installer_action
 import com.github.adriianh.melo.resources.update_ready_body
 import com.github.adriianh.melo.resources.update_ready_title
 import com.github.adriianh.melo.resources.update_restart_action
@@ -326,6 +327,14 @@ internal fun UpdateStatusContent(
         }
 
         is UpdateState.ReadyToInstall -> {
+            val actionText =
+                stringResource(
+                    if (state.supportsAutoRestart) {
+                        Res.string.update_restart_action
+                    } else {
+                        Res.string.update_open_installer_action
+                    },
+                )
             SettingsStatusBanner(
                 icon = Icons.Default.CheckCircle,
                 title = stringResource(Res.string.update_ready_title),
@@ -333,7 +342,7 @@ internal fun UpdateStatusContent(
                 tone = StatusTone.PRIMARY,
                 extraContent = {
                     SettingActionButton(
-                        text = stringResource(Res.string.update_restart_action),
+                        text = actionText,
                         onClick = { onInstallUpdate(state.installerPath) },
                         emphasis = SettingActionEmphasis.PRIMARY,
                         modifier = Modifier.fillMaxWidth(),

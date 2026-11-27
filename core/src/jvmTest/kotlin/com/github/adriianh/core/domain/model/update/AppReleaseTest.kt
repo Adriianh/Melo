@@ -229,6 +229,27 @@ class AppReleaseTest {
         assertEquals("composeApp-release.apk", selected.name)
     }
 
+    @Test
+    fun `macos app install prioritizes app zip over dmg and falls back to dmg`() {
+        val macAppZip = ReleaseAsset("Melo-2.2.1-macos-app.zip", "https://example.com/app.zip", 80_000_000L, UpdatePlatform.MACOS)
+        val macDmg = ReleaseAsset("Melo-2.2.1.dmg", "https://example.com/melo.dmg", 70_000_000L, UpdatePlatform.MACOS)
+        val macTui = ReleaseAsset("melo-2.2.1-macos.tar.gz", "https://example.com/tui.tar.gz", 15_000_000L, UpdatePlatform.MACOS)
+
+        val withZip = releaseOf(macTui, macDmg, macAppZip)
+        assertEquals(
+            macAppZip.name,
+            withZip.getAssetForPlatform(UpdatePlatform.MACOS, UpdateInstallMethod.MACOS_APP)?.name,
+        )
+
+        val withoutZip = releaseOf(macTui, macDmg)
+        assertEquals(
+            macDmg.name,
+            withoutZip.getAssetForPlatform(UpdatePlatform.MACOS, UpdateInstallMethod.MACOS_APP)?.name,
+        )
+
+        assertNull(releaseOf(macAppZip).getTuiAssetForPlatform(UpdatePlatform.MACOS))
+    }
+
     private fun releaseOf(vararg assets: ReleaseAsset): AppRelease =
         AppRelease(
             version = "2.2.1",

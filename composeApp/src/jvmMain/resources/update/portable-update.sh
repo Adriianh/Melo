@@ -26,18 +26,36 @@ STAGED="$INSTALL_DIR.staged"
 PREVIOUS="$INSTALL_DIR.previous"
 
 restart() {
+    cd "${HOME:-/}" 2>/dev/null || true
+    TARGET_BIN=""
     if [ -x "$BIN_DIR/$LAUNCHER" ]; then
-        "$BIN_DIR/$LAUNCHER" >/dev/null 2>&1 &
+        TARGET_BIN="$BIN_DIR/$LAUNCHER"
     elif [ -x "$INSTALL_DIR/bin/Melo" ]; then
-        "$INSTALL_DIR/bin/Melo" >/dev/null 2>&1 &
+        TARGET_BIN="$INSTALL_DIR/bin/Melo"
+    fi
+
+    if [ -n "$TARGET_BIN" ]; then
+        echo "relaunching portable install: $TARGET_BIN"
+        if command -v setsid >/dev/null 2>&1; then
+            setsid "$TARGET_BIN" </dev/null >/dev/null 2>&1 &
+        else
+            nohup "$TARGET_BIN" </dev/null >/dev/null 2>&1 &
+        fi
+    else
+        echo "cannot relaunch portable install: no executable launcher found"
     fi
 }
 
 # Detach from the dying parent and survive a closing terminal.
 trap '' HUP INT TERM
 
+WAITED=0
 while kill -0 "$PARENT_PID" 2>/dev/null; do
+    if [ "$WAITED" -ge 120 ]; then
+        break
+    fi
     sleep 0.5
+    WAITED=$((WAITED + 1))
 done
 
 rm -rf "$UNPACK" "$STAGED" "$PREVIOUS"

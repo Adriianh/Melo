@@ -797,6 +797,7 @@
     <string name="update_ready_title">Descarga completa</string>
     <string name="update_ready_body">v%1$s · La nueva versión de Melo está lista para instalarse.</string>
     <string name="update_restart_action">Reiniciar y actualizar ahora</string>
+    <string name="update_open_installer_action">Abrir instalador</string>
     <string name="update_error_title">Error de actualización</string>
     <string name="update_available_title">Nueva versión disponible</string>
     <string name="update_installer_fallback">Instalador de actualización</string>

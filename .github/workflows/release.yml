@@ -148,8 +148,10 @@ jobs:
             label: linux
 
           - os: macos-latest
-            tasks: "packageDmg"
-            artifacts: "composeApp/build/compose/binaries/main/dmg/*.dmg"
+            tasks: "packageDmg packageMacOsZip"
+            artifacts: |
+              composeApp/build/compose/binaries/main/dmg/*.dmg
+              composeApp/build/compose/binaries/main/zip/*.zip
             label: macos
 
           - os: windows-latest
@@ -489,10 +491,15 @@ jobs:
                   type="CLI (TUI)"
                   order=23
                   ;;
+                *-macos-app.zip)
+                  platform="🍎 macOS"
+                  type="App Bundle (ZIP)"
+                  order=41
+                  ;;
                 *macos.tar.gz)
                   platform="🍎 macOS"
                   type="CLI (TUI)"
-                  order=41
+                  order=42
                   ;;
                 *.tar.gz)
                   platform="🐧 Linux"
