@@ -1402,4 +1402,99 @@ class PlaybackManagerTest {
 
             verify { meloPlayer.selectAudioOutput("usb-dac-1") }
         }
+
+    @Test
+    fun `ignores stale finished event from previous track while next track is active`() =
+        runTest {
+            coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+            val scope = managerScope()
+            val manager = createManager(scope)
+
+            manager.setQueue(listOf(fakeTrack("A"), fakeTrack("B"), fakeTrack("C")))
+            scope.advanceUntilIdle()
+            assertEquals(0, manager.queueState.value.currentIndex)
+
+            // Track A finishes naturally -> advances to B.
+            meloPlayerState.value =
+                PlaybackState(
+                    currentTrack = fakeTrack("A"),
+                    isPlaying = false,
+                    isFinished = true,
+                    progressMs = 180_000,
+                    durationMs = 180_000,
+                )
+            scope.advanceUntilIdle()
+            assertEquals(1, manager.queueState.value.currentIndex)
+            assertEquals(
+                "B",
+                manager.queueState.value.currentTrack
+                    ?.id,
+            )
+
+            // A stale finished event from A arrives after B has been loaded -> must stay on B.
+            meloPlayerState.value =
+                PlaybackState(
+                    currentTrack = fakeTrack("A"),
+                    isPlaying = false,
+                    isFinished = true,
+                    progressMs = 180_000,
+                    durationMs = 180_000,
+                )
+            scope.advanceUntilIdle()
+            assertEquals(1, manager.queueState.value.currentIndex)
+            assertEquals(
+                "B",
+                manager.queueState.value.currentTrack
+                    ?.id,
+            )
+        }
+
+    @Test
+    fun `premature stream error before playback starts invalidates cache and recovers track B`() =
+        runTest {
+            val repo = cacheRepo()
+            coEvery { repo.getCachedUrl(any(), any()) } returns null
+            coEvery { getStreamUseCase(any()) } returns "http://stream.url"
+            val scope = managerScope()
+            val manager =
+                PlaybackManagerImpl(
+                    meloPlayer = meloPlayer,
+                    getStreamUseCase = getStreamUseCase,
+                    scope = scope,
+                    streamCacheRepository = repo,
+                )
+
+            manager.setQueue(listOf(fakeTrack("A"), fakeTrack("B"), fakeTrack("C")))
+            scope.advanceUntilIdle()
+
+            // A finishes -> moves to B.
+            meloPlayerState.value =
+                PlaybackState(
+                    currentTrack = fakeTrack("A"),
+                    isPlaying = false,
+                    isFinished = true,
+                )
+            scope.advanceUntilIdle()
+            assertEquals(1, manager.queueState.value.currentIndex)
+
+            // B hits premature EOF reported as an error instead of isFinished -> recovers B, does not skip to C.
+            meloPlayerState.value =
+                PlaybackState(
+                    currentTrack = fakeTrack("B"),
+                    isPlaying = false,
+                    isFinished = false,
+                    progressMs = 0L,
+                    error = "Stream ended before playback started.",
+                )
+            scope.advanceUntilIdle()
+
+            coVerify { repo.invalidate("B") }
+            assertEquals(1, manager.queueState.value.currentIndex)
+            assertEquals(
+                "B",
+                manager.queueState.value.currentTrack
+                    ?.id,
+            )
+            verify(atLeast = 2) { meloPlayer.load("http://stream.url", fakeTrack("B"), 0L) }
+        }
 }

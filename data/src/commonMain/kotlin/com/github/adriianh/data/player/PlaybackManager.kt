@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.ContinuationInterceptor
 
 class PlaybackManagerImpl(
@@ -141,6 +142,8 @@ class PlaybackManagerImpl(
     override val events: SharedFlow<PlaybackEvent> = _events.asSharedFlow()
 
     private var playJob: Job? = null
+
+    @Volatile
     private var lastHandledFinishedTrackId: String? = null
     private var isTrackLoaded = false
 
@@ -167,7 +170,8 @@ class PlaybackManagerImpl(
 
                     state.isFinished -> {
                         recovery.clearRecovery()
-                        if (trackId != null && trackId != lastHandledFinishedTrackId) {
+                        val activeTrackId = queueController.current.currentTrack?.id
+                        if (trackId != null && trackId == activeTrackId && trackId != lastHandledFinishedTrackId) {
                             lastHandledFinishedTrackId = trackId
                             handleTrackFinished()
                         }
@@ -436,7 +440,9 @@ class PlaybackManagerImpl(
         url: String,
         targetSeek: Long,
     ) {
-        lastHandledFinishedTrackId = null
+        if (lastHandledFinishedTrackId == track.id) {
+            lastHandledFinishedTrackId = null
+        }
         meloPlayer.load(url, track, targetSeek)
         emitPlaybackEvent(PlaybackEvent.TrackStarted(track, positionMs = targetSeek))
         persistCurrentSession(immediate = true)
