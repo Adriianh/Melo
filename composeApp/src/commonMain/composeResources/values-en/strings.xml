@@ -58,6 +58,9 @@
     <string name="a11y_panel_lyrics">Lyrics panel</string>
     <string name="a11y_panel_queue">Queue panel</string>
     <string name="a11y_expand_fullscreen">Expand fullscreen</string>
+    <string name="a11y_expand_player">Expand player</string>
+    <string name="a11y_queue_options">Queue options</string>
+    <string name="a11y_add_to_queue">Add to queue</string>
     <string name="a11y_collapse">Collapse</string>
     <string name="a11y_close_panel">Close panel</string>
     <string name="a11y_start_radio">Start Radio</string>
@@ -200,6 +203,9 @@
     <string name="player_section_suggestions">Suggestions for you</string>
     <string name="player_queue_collapse">Collapse</string>
     <string name="player_queue_more_count">+%1$d in queue</string>
+    <string name="player_queue_clear">Clear queue</string>
+    <string name="player_queue_save_playlist">Save as playlist</string>
+    <string name="player_queue_cleared_snackbar">Queue cleared</string>
     <string name="player_suggestions_empty">No more suggestions for now</string>
     <string name="player_sheet_queue_title">Playback queue</string>
     <string name="player_sheet_artist_title">About the Artist</string>
@@ -216,6 +222,29 @@
     <string name="player_artist_biography">Biography</string>
     <string name="player_artist_view_full_profile">View full profile</string>
     <string name="player_artist_view_profile">View profile</string>
+    <string name="player_artist_subscribers">%1$s subscribers</string>
+    <string name="player_artist_monthly_listeners">%1$s monthly listeners</string>
+
+    <!-- Side panel settings -->
+    <string name="settings_section_docked_panel">Side panel</string>
+    <string name="settings_dock_show_startup_title">Show panel on startup</string>
+    <string name="settings_dock_show_startup_desc">Automatically opens the side now-playing panel when starting the app.</string>
+    <string name="settings_kw_dock_show_startup">side panel, dock, startup, show, hide</string>
+    <string name="settings_dock_initial_tab_title">Initial panel tab</string>
+    <string name="settings_dock_initial_tab_desc">Choose which tab opens when starting the side panel.</string>
+    <string name="settings_kw_dock_initial_tab">side panel, dock, tab, queue, lyrics, artist, remember</string>
+    <string name="settings_dock_tab_remember">Remember last</string>
+    <string name="settings_dock_expand_queue_title">Expand "Up next" by default</string>
+    <string name="settings_dock_expand_queue_desc">Shows the full upcoming queue instead of collapsing to the next track.</string>
+    <string name="settings_kw_dock_expand_queue">queue, expand, up next, dock, panel</string>
+    <string name="settings_dock_show_suggestions_title">Show "Suggestions for you"</string>
+    <string name="settings_dock_show_suggestions_desc">Displays track recommendations below the queue in the side panel.</string>
+    <string name="settings_kw_dock_show_suggestions">suggestions, recommendations, queue, dock, panel</string>
+    <string name="settings_dock_collapsed_artwork_title">Artwork in Lyrics and Artist</string>
+    <string name="settings_dock_collapsed_artwork_desc">Choose whether to show a compact thumbnail or hide it for more vertical space.</string>
+    <string name="settings_kw_dock_collapsed_artwork">artwork, cover, compact, hide, lyrics, artist, dock</string>
+    <string name="settings_dock_artwork_compact">Compact (48 dp)</string>
+    <string name="settings_dock_artwork_hidden">Hidden</string>
 
     <!-- Sections & Home -->
     <string name="section_trending">Trending</string>

@@ -206,6 +206,12 @@ data class Settings(
         },
     val lastAccentColor: Long? = null,
     val lastSeenVersion: String? = null,
+    val lastDockedSection: String? = null,
+    val dockShowOnStartup: Boolean = true,
+    val dockInitialTab: DockedInitialTab = DockedInitialTab.REMEMBER_LAST,
+    val dockExpandQueueByDefault: Boolean = false,
+    val dockShowSuggestions: Boolean = true,
+    val dockCollapsedArtworkMode: DockedCollapsedArtworkMode = DockedCollapsedArtworkMode.COMPACT,
 ) {
     fun resolvedLyricsFontScale(): Float =
         when (lyricsFontScale) {
@@ -279,6 +285,11 @@ data class Settings(
             lyricsKeepSyncButtonOnIdle = defaults.lyricsKeepSyncButtonOnIdle,
             lyricsAutoTranslate = defaults.lyricsAutoTranslate,
             lyricsDefaultTargetLanguage = defaults.lyricsDefaultTargetLanguage,
+            dockShowOnStartup = defaults.dockShowOnStartup,
+            dockInitialTab = defaults.dockInitialTab,
+            dockExpandQueueByDefault = defaults.dockExpandQueueByDefault,
+            dockShowSuggestions = defaults.dockShowSuggestions,
+            dockCollapsedArtworkMode = defaults.dockCollapsedArtworkMode,
         )
     }
 }
@@ -402,4 +413,18 @@ enum class LyricsAutoResumeDelay(
     SECONDS_5(5_000L),
     SECONDS_10(10_000L),
     CUSTOM(4_000L),
+}
+
+@Serializable
+enum class DockedInitialTab {
+    REMEMBER_LAST,
+    QUEUE,
+    LYRICS,
+    ARTIST,
+}
+
+@Serializable
+enum class DockedCollapsedArtworkMode {
+    COMPACT,
+    HIDDEN,
 }

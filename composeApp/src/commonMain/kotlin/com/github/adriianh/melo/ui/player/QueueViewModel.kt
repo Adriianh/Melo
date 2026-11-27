@@ -284,6 +284,17 @@ class QueueViewModel(
         manager.moveQueueItem(fromIndex, toIndex)
     }
 
+    fun clearUpcomingQueue(): List<Track> {
+        val state = queueState.value
+        val currentIdx = state.currentIndex
+        if (currentIdx < 0 || currentIdx >= state.tracks.lastIndex) return emptyList()
+        val removed = state.tracks.drop(currentIdx + 1)
+        for (i in state.tracks.lastIndex downTo currentIdx + 1) {
+            manager.removeFromQueue(i)
+        }
+        return removed
+    }
+
     fun toggleShuffle() = manager.toggleShuffle()
 
     fun toggleRepeat() = manager.toggleRepeat()

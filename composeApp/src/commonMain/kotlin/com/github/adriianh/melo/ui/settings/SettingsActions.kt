@@ -4,6 +4,8 @@ import com.github.adriianh.core.domain.model.AppLanguage
 import com.github.adriianh.core.domain.model.ArtworkCornerStyle
 import com.github.adriianh.core.domain.model.AudioQuality
 import com.github.adriianh.core.domain.model.CacheSizeLimit
+import com.github.adriianh.core.domain.model.DockedCollapsedArtworkMode
+import com.github.adriianh.core.domain.model.DockedInitialTab
 import com.github.adriianh.core.domain.model.DownloadFormat
 import com.github.adriianh.core.domain.model.DownloadQuality
 import com.github.adriianh.core.domain.model.FullscreenIdleHideDelay
@@ -61,6 +63,11 @@ data class SettingsActions(
     val onFullscreenIdleHideDelaySelected: (FullscreenIdleHideDelay) -> Unit = {},
     val onFullscreenCustomIdleHideSecondsChanged: (Int) -> Unit = {},
     val onNowPlayingKeepScreenOnToggle: (Boolean) -> Unit = {},
+    val onDockShowOnStartupToggle: (Boolean) -> Unit = {},
+    val onDockInitialTabSelected: (DockedInitialTab) -> Unit = {},
+    val onDockExpandQueueByDefaultToggle: (Boolean) -> Unit = {},
+    val onDockShowSuggestionsToggle: (Boolean) -> Unit = {},
+    val onDockCollapsedArtworkModeSelected: (DockedCollapsedArtworkMode) -> Unit = {},
     val onResetNowPlayingDefaults: () -> Unit = {},
     val onDataSaverToggle: (Boolean) -> Unit,
     val onAudioQualitySelected: (AudioQuality) -> Unit,
