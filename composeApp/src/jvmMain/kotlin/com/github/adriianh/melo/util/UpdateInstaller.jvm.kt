@@ -254,10 +254,16 @@ private fun start(
     errorReason: InstallErrorReason,
 ): UpdateInstallResult =
     try {
-        ProcessBuilder(command)
-            .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile()))
-            .start()
+        val builder =
+            ProcessBuilder(command)
+                .directory(tempDir())
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile()))
+        val devNull = File("/dev/null")
+        if (devNull.exists()) {
+            builder.redirectInput(ProcessBuilder.Redirect.from(devNull))
+        }
+        builder.start()
         UpdateInstallResult.Started
     } catch (e: IOException) {
         UpdateInstallResult.Failed(

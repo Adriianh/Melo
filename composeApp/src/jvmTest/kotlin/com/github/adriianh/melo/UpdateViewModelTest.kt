@@ -43,6 +43,7 @@ class UpdateViewModelTest {
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        every { installer.supportsAutoRestart(any()) } returns true
     }
 
     @AfterTest
@@ -214,6 +215,24 @@ class UpdateViewModelTest {
             viewModel.installUpdate("/tmp/melo")
             advanceUntilIdle()
             assertEquals(null, currentSettings.pendingPostUpdateVersion)
+        }
+
+    @Test
+    fun `startDownload propagates supportsAutoRestart to ReadyToInstall`() =
+        runTest {
+            val release = fakeRelease("9.9.9")
+            val asset = release.assets.first { it.platform == UpdatePlatform.MACOS }
+            every { downloadUpdateUseCase(asset, any()) } returns
+                flowOf(DownloadProgress.Completed("/tmp/Melo-9.9.9.dmg"))
+            every { installer.supportsAutoRestart("/tmp/Melo-9.9.9.dmg") } returns false
+
+            val viewModel = createViewModel()
+            viewModel.startDownload(release, asset)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertIs<UpdateState.ReadyToInstall>(state)
+            assertEquals(false, state.supportsAutoRestart)
         }
 
     @Test
