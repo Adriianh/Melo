@@ -5,40 +5,117 @@ import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 
 interface MusicRepository {
     suspend fun search(query: String): List<Track>
+
     suspend fun searchAlbums(query: String): List<SearchResult.Album>
+
     suspend fun searchArtists(query: String): List<SearchResult.Artist>
+
     suspend fun searchPlaylists(query: String): List<SearchResult.Playlist>
+
     suspend fun searchVideos(query: String): List<Track> = emptyList()
+
     suspend fun searchSummary(query: String): List<HomeSection> = emptyList()
 
-    suspend fun loadMore(query: String, offset: Int): List<Track>
+    suspend fun searchTracksPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<Track> = if (continuation == null) SearchPage(items = search(query)) else SearchPage()
+
+    suspend fun searchAlbumsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Album> =
+        if (continuation == null) {
+            SearchPage(items = searchAlbums(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchArtistsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Artist> =
+        if (continuation == null) {
+            SearchPage(items = searchArtists(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchPlaylistsPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Playlist> =
+        if (continuation == null) {
+            SearchPage(items = searchPlaylists(query))
+        } else {
+            SearchPage()
+        }
+
+    suspend fun searchVideosPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<Track> = if (continuation == null) SearchPage(items = searchVideos(query)) else SearchPage()
+
+    suspend fun loadMore(
+        query: String,
+        offset: Int,
+    ): List<Track>
+
     fun hasMore(offset: Int): Boolean
 
-    suspend fun loadMoreAlbums(query: String, offset: Int): List<SearchResult.Album>
+    suspend fun loadMoreAlbums(
+        query: String,
+        offset: Int,
+    ): List<SearchResult.Album>
+
     fun hasMoreAlbums(offset: Int): Boolean
 
-    suspend fun loadMoreArtists(query: String, offset: Int): List<SearchResult.Artist>
+    suspend fun loadMoreArtists(
+        query: String,
+        offset: Int,
+    ): List<SearchResult.Artist>
+
     fun hasMoreArtists(offset: Int): Boolean
 
-    suspend fun loadMorePlaylists(query: String, offset: Int): List<SearchResult.Playlist>
+    suspend fun loadMorePlaylists(
+        query: String,
+        offset: Int,
+    ): List<SearchResult.Playlist>
+
     fun hasMorePlaylists(offset: Int): Boolean
 
     suspend fun getTrack(id: String): Track?
 
     suspend fun getHome(): List<HomeSection>
-    suspend fun getHomeFeed(params: String? = null, continuation: String? = null): HomeFeed
+
+    suspend fun getHomeFeed(
+        params: String? = null,
+        continuation: String? = null,
+    ): HomeFeed
+
     suspend fun getExplore(): List<HomeSection>
+
     suspend fun getCharts(): List<HomeSection>
+
     suspend fun getTrending(): List<Track>
+
     suspend fun getMoodAndGenres(): List<MoodAndGenreGroup>
+
     suspend fun getRadio(videoId: String): List<Track>
-    suspend fun getRadio(track: Track): List<Track> =
-        getRadio(track.sourceId ?: track.id.removePrefix("piped:"))
+
+    suspend fun getRadio(track: Track): List<Track> = getRadio(track.sourceId ?: track.id.removePrefix("piped:"))
+
     suspend fun getArtistRadio(artistId: String): List<Track>
+
     suspend fun getRelated(videoId: String): List<Track> = emptyList()
-    suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult?
+
+    suspend fun browseCategory(
+        browseId: String,
+        params: String?,
+    ): BrowseCategoryResult?
 }

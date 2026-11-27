@@ -1,13 +1,22 @@
 package com.github.adriianh.core.domain.usecase.search
 
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.repository.MusicRepository
 
 class SearchAlbumsUseCase(
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
 ) {
     suspend operator fun invoke(query: String): List<SearchResult.Album> {
         if (query.isBlank()) return emptyList()
         return repository.searchAlbums(query)
+    }
+
+    suspend fun searchPage(
+        query: String,
+        continuation: String? = null,
+    ): SearchPage<SearchResult.Album> {
+        if (query.isBlank() && continuation.isNullOrBlank()) return SearchPage()
+        return repository.searchAlbumsPage(query, continuation)
     }
 }

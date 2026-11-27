@@ -5,6 +5,7 @@ import com.github.adriianh.core.domain.model.HomeFeed
 import com.github.adriianh.core.domain.model.HomeSection
 import com.github.adriianh.core.domain.model.MoodAndGenreGroup
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.provider.AudioProvider
 import com.github.adriianh.core.domain.provider.DiscoveryProvider
@@ -23,9 +24,8 @@ class MusicRepositoryImpl(
     private val musicProvider: MusicProvider,
     private val audioProvider: AudioProvider?,
     private val discoveryProvider: DiscoveryProvider?,
-    private val metadataProvider: MetadataProvider? = null
+    private val metadataProvider: MetadataProvider? = null,
 ) : MusicRepository {
-
     private val pageSize = 20
     private val scope = CoroutineScope(MeloDispatchers.IO)
 
@@ -48,12 +48,13 @@ class MusicRepositoryImpl(
         val initial = deduplicate(musicProvider.search(query))
         cachedResults = initial
 
-        backgroundFetch = scope.launch {
-            val full = deduplicate(musicProvider.searchAll(query))
-            if (isActive && full.size > cachedResults.size) {
-                cachedResults = full.take(MAX_CACHE_SIZE)
+        backgroundFetch =
+            scope.launch {
+                val full = deduplicate(musicProvider.searchAll(query))
+                if (isActive && full.size > cachedResults.size) {
+                    cachedResults = full.take(MAX_CACHE_SIZE)
+                }
             }
-        }
 
         return initial.take(pageSize)
     }
@@ -65,12 +66,13 @@ class MusicRepositoryImpl(
         val initial = musicProvider.searchAlbums(query)
         cachedAlbums = initial
 
-        backgroundFetchAlbums = scope.launch {
-            val full = musicProvider.searchAllAlbums(query)
-            if (isActive && full.size > cachedAlbums.size) {
-                cachedAlbums = full.take(MAX_CACHE_SIZE)
+        backgroundFetchAlbums =
+            scope.launch {
+                val full = musicProvider.searchAllAlbums(query)
+                if (isActive && full.size > cachedAlbums.size) {
+                    cachedAlbums = full.take(MAX_CACHE_SIZE)
+                }
             }
-        }
         return initial.take(pageSize)
     }
 
@@ -81,12 +83,13 @@ class MusicRepositoryImpl(
         val initial = musicProvider.searchArtists(query)
         cachedArtists = initial
 
-        backgroundFetchArtists = scope.launch {
-            val full = musicProvider.searchAllArtists(query)
-            if (isActive && full.size > cachedArtists.size) {
-                cachedArtists = full.take(MAX_CACHE_SIZE)
+        backgroundFetchArtists =
+            scope.launch {
+                val full = musicProvider.searchAllArtists(query)
+                if (isActive && full.size > cachedArtists.size) {
+                    cachedArtists = full.take(MAX_CACHE_SIZE)
+                }
             }
-        }
         return initial.take(pageSize)
     }
 
@@ -97,16 +100,20 @@ class MusicRepositoryImpl(
         val initial = musicProvider.searchPlaylists(query)
         cachedPlaylists = initial
 
-        backgroundFetchPlaylists = scope.launch {
-            val full = musicProvider.searchAllPlaylists(query)
-            if (isActive && full.size > cachedPlaylists.size) {
-                cachedPlaylists = full.take(MAX_CACHE_SIZE)
+        backgroundFetchPlaylists =
+            scope.launch {
+                val full = musicProvider.searchAllPlaylists(query)
+                if (isActive && full.size > cachedPlaylists.size) {
+                    cachedPlaylists = full.take(MAX_CACHE_SIZE)
+                }
             }
-        }
         return initial.take(pageSize)
     }
 
-    override suspend fun loadMore(query: String, offset: Int): List<Track> {
+    override suspend fun loadMore(
+        query: String,
+        offset: Int,
+    ): List<Track> {
         backgroundFetch?.join()
         return cachedResults.drop(offset).take(pageSize)
     }
@@ -116,7 +123,10 @@ class MusicRepositoryImpl(
         return offset < cachedResults.size
     }
 
-    override suspend fun loadMoreAlbums(query: String, offset: Int): List<SearchResult.Album> {
+    override suspend fun loadMoreAlbums(
+        query: String,
+        offset: Int,
+    ): List<SearchResult.Album> {
         backgroundFetchAlbums?.join()
         return cachedAlbums.drop(offset).take(pageSize)
     }
@@ -126,7 +136,10 @@ class MusicRepositoryImpl(
         return offset < cachedAlbums.size
     }
 
-    override suspend fun loadMoreArtists(query: String, offset: Int): List<SearchResult.Artist> {
+    override suspend fun loadMoreArtists(
+        query: String,
+        offset: Int,
+    ): List<SearchResult.Artist> {
         backgroundFetchArtists?.join()
         return cachedArtists.drop(offset).take(pageSize)
     }
@@ -138,7 +151,7 @@ class MusicRepositoryImpl(
 
     override suspend fun loadMorePlaylists(
         query: String,
-        offset: Int
+        offset: Int,
     ): List<SearchResult.Playlist> {
         backgroundFetchPlaylists?.join()
         return cachedPlaylists.drop(offset).take(pageSize)
@@ -152,53 +165,62 @@ class MusicRepositoryImpl(
     private fun deduplicate(tracks: List<Track>): List<Track> {
         val seen = mutableSetOf<String>()
         return tracks.filter { track ->
-            val title = track.title
-                .lowercase()
-                .replace(Regex("""\s*[(\[{].*?[)\]}]"""), "")
-                .trim()
-            val durationBucket = track.durationMs / 10_000  // 10-second buckets
+            val title =
+                track.title
+                    .lowercase()
+                    .replace(Regex("""\s*[(\[{].*?[)\]}]"""), "")
+                    .trim()
+            val durationBucket = track.durationMs / 10_000 // 10-second buckets
             val key = "${track.artist.lowercase()}|$title|$durationBucket"
             seen.add(key)
         }
     }
 
-    override suspend fun getTrack(id: String): Track? = coroutineScope {
-        val track = musicProvider.getTrack(id) ?: return@coroutineScope null
-        val genres = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
-        val sourceId = if (track.sourceId != null) {
-            async { track.sourceId }
-        } else {
-            async {
-                audioProvider?.getSourceId(
-                    artist = track.artist,
-                    title = track.title,
-                    durationMs = track.durationMs
-                )
-            }
+    override suspend fun getTrack(id: String): Track? =
+        coroutineScope {
+            val track = musicProvider.getTrack(id) ?: return@coroutineScope null
+            val genres = async { discoveryProvider?.getGenres(track.artist) ?: emptyList() }
+            val sourceId =
+                if (track.sourceId != null) {
+                    async { track.sourceId }
+                } else {
+                    async {
+                        audioProvider?.getSourceId(
+                            artist = track.artist,
+                            title = track.title,
+                            durationMs = track.durationMs,
+                        )
+                    }
+                }
+            val metadata =
+                if (track.artworkUrl != null && track.album.isNotBlank()) {
+                    async { null }
+                } else {
+                    async { metadataProvider?.resolveMetadata(track.title, track.artist) }
+                }
+            val resolved = metadata.await()
+            track.copy(
+                genres = genres.await(),
+                sourceId = sourceId.await(),
+                artworkUrl = resolved?.artworkUrl ?: track.artworkUrl,
+                album = track.album.ifBlank { resolved?.album ?: "" },
+            )
         }
-        val metadata = if (track.artworkUrl != null && track.album.isNotBlank()) {
-            async { null }
-        } else {
-            async { metadataProvider?.resolveMetadata(track.title, track.artist) }
-        }
-        val resolved = metadata.await()
-        track.copy(
-            genres = genres.await(),
-            sourceId = sourceId.await(),
-            artworkUrl = resolved?.artworkUrl ?: track.artworkUrl,
-            album = track.album.ifBlank { resolved?.album ?: "" }
-        )
-    }
 
     override suspend fun getHome(): List<HomeSection> = musicProvider.getHome()
-    override suspend fun getHomeFeed(params: String?, continuation: String?): HomeFeed =
-        musicProvider.getHomeFeed(params, continuation)
+
+    override suspend fun getHomeFeed(
+        params: String?,
+        continuation: String?,
+    ): HomeFeed = musicProvider.getHomeFeed(params, continuation)
 
     override suspend fun getExplore(): List<HomeSection> = musicProvider.getExplore()
+
     override suspend fun getCharts(): List<HomeSection> = musicProvider.getCharts()
+
     override suspend fun getTrending(): List<Track> = musicProvider.getTrending()
-    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> =
-        musicProvider.getMoodAndGenres()
+
+    override suspend fun getMoodAndGenres(): List<MoodAndGenreGroup> = musicProvider.getMoodAndGenres()
 
     override suspend fun getRadio(videoId: String): List<Track> {
         val cleanId = videoId.removePrefix("piped:")
@@ -218,21 +240,25 @@ class MusicRepositoryImpl(
 
     override suspend fun getRadio(track: Track): List<Track> {
         val sid = track.sourceId
-        val resolvedId = if (!sid.isNullOrBlank() && !sid.contains(":") && sid.length == 11) {
-            sid
-        } else if (track.id.startsWith("piped:") && !track.id.removePrefix("piped:")
-                .contains(":") && track.id.removePrefix("piped:").length == 11
-        ) {
-            track.id.removePrefix("piped:")
-        } else if (!track.id.contains(":") && track.id.length == 11) {
-            track.id
-        } else {
-            audioProvider?.getSourceId(
-                artist = track.artist,
-                title = track.title,
-                durationMs = track.durationMs
-            )
-        }
+        val resolvedId =
+            if (!sid.isNullOrBlank() && !sid.contains(":") && sid.length == 11) {
+                sid
+            } else if (track.id.startsWith("piped:") &&
+                !track.id
+                    .removePrefix("piped:")
+                    .contains(":") &&
+                track.id.removePrefix("piped:").length == 11
+            ) {
+                track.id.removePrefix("piped:")
+            } else if (!track.id.contains(":") && track.id.length == 11) {
+                track.id
+            } else {
+                audioProvider?.getSourceId(
+                    artist = track.artist,
+                    title = track.title,
+                    durationMs = track.durationMs,
+                )
+            }
 
         if (!resolvedId.isNullOrBlank()) {
             val result = musicProvider.getRadio(resolvedId)
@@ -248,20 +274,49 @@ class MusicRepositoryImpl(
         return emptyList()
     }
 
-    override suspend fun getArtistRadio(artistId: String): List<Track> =
-        musicProvider.getArtistRadio(artistId)
+    override suspend fun getArtistRadio(artistId: String): List<Track> = musicProvider.getArtistRadio(artistId)
 
-    override suspend fun getRelated(videoId: String): List<Track> =
-        musicProvider.getRelated(videoId)
+    override suspend fun getRelated(videoId: String): List<Track> = musicProvider.getRelated(videoId)
 
-    override suspend fun searchVideos(query: String): List<Track> =
-        deduplicate(musicProvider.searchVideos(query))
+    override suspend fun searchVideos(query: String): List<Track> = deduplicate(musicProvider.searchVideos(query))
 
-    override suspend fun searchSummary(query: String): List<HomeSection> =
-        musicProvider.searchSummary(query)
+    override suspend fun searchTracksPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<Track> {
+        val page = musicProvider.searchTracksPage(query, continuation)
+        return page.copy(items = deduplicate(page.items))
+    }
 
-    override suspend fun browseCategory(browseId: String, params: String?): BrowseCategoryResult? =
-        musicProvider.browseCategory(browseId, params)
+    override suspend fun searchAlbumsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Album> = musicProvider.searchAlbumsPage(query, continuation)
+
+    override suspend fun searchArtistsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Artist> = musicProvider.searchArtistsPage(query, continuation)
+
+    override suspend fun searchPlaylistsPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<SearchResult.Playlist> = musicProvider.searchPlaylistsPage(query, continuation)
+
+    override suspend fun searchVideosPage(
+        query: String,
+        continuation: String?,
+    ): SearchPage<Track> {
+        val page = musicProvider.searchVideosPage(query, continuation)
+        return page.copy(items = deduplicate(page.items))
+    }
+
+    override suspend fun searchSummary(query: String): List<HomeSection> = musicProvider.searchSummary(query)
+
+    override suspend fun browseCategory(
+        browseId: String,
+        params: String?,
+    ): BrowseCategoryResult? = musicProvider.browseCategory(browseId, params)
 
     companion object {
         /** Maximum number of tracks kept in the in-memory result cache.
