@@ -111,33 +111,58 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var progressJob: Job? = null
 
+    @Volatile
+    private var hasStartedPlayingCurrentTrack = false
+
     init {
-        exoPlayer.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _state.update { it.copy(isPlaying = isPlaying) }
-                if (isPlaying) startProgressUpdate() else stopProgressUpdate()
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                _state.update {
-                    it.copy(
-                        isBuffering = playbackState == Player.STATE_BUFFERING,
-                        isFinished = playbackState == Player.STATE_ENDED,
-                        durationMs = if (playbackState == Player.STATE_READY) exoPlayer.duration else it.durationMs
-                    )
+        exoPlayer.addListener(
+            object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (isPlaying && exoPlayer.currentMediaItem?.mediaId == _state.value.currentTrack?.id) {
+                        hasStartedPlayingCurrentTrack = true
+                    }
+                    _state.update { it.copy(isPlaying = isPlaying) }
+                    if (isPlaying) startProgressUpdate() else stopProgressUpdate()
                 }
-            }
 
-            override fun onPlayerError(error: PlaybackException) {
-                _state.update {
-                    it.copy(
-                        isPlaying = false,
-                        isBuffering = false,
-                        error = error.message ?: "Playback error",
-                    )
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    val activeMediaId = exoPlayer.currentMediaItem?.mediaId
+                    val matchesCurrentTrack =
+                        activeMediaId != null && activeMediaId == _state.value.currentTrack?.id
+                    val endedPrematurely =
+                        playbackState == Player.STATE_ENDED &&
+                            matchesCurrentTrack &&
+                            !hasStartedPlayingCurrentTrack &&
+                            exoPlayer.currentPosition <= 0L
+                    _state.update {
+                        if (endedPrematurely) {
+                            it.copy(
+                                isPlaying = false,
+                                isBuffering = false,
+                                isFinished = false,
+                                error = "Stream ended before playback started.",
+                            )
+                        } else {
+                            it.copy(
+                                isBuffering = playbackState == Player.STATE_BUFFERING,
+                                isFinished = playbackState == Player.STATE_ENDED && matchesCurrentTrack,
+                                durationMs = if (playbackState == Player.STATE_READY) exoPlayer.duration else it.durationMs,
+                            )
+                        }
+                    }
                 }
-            }
-        })
+
+                override fun onPlayerError(error: PlaybackException) {
+                    _state.update {
+                        it.copy(
+                            isPlaying = false,
+                            isBuffering = false,
+                            error = error.message ?: "Playback error",
+                        )
+                    }
+                }
+            },
+        )
     }
 
     override fun load(
@@ -163,6 +188,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
                 .setMediaMetadata(metadata)
                 .build()
 
+        hasStartedPlayingCurrentTrack = false
         _state.update {
             it.copy(
                 currentTrack = track,
@@ -203,6 +229,7 @@ class AndroidMeloPlayer(context: Context) : MeloPlayer {
     }
 
     override fun stop() {
+        hasStartedPlayingCurrentTrack = false
         stopProgressUpdate()
         _state.update {
             it.copy(

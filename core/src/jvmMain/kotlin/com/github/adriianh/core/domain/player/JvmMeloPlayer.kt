@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
@@ -21,6 +23,7 @@ import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.logging.Logger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -40,6 +43,14 @@ class JvmMeloPlayer : MeloPlayer {
     private var preferredOutputDeviceId: String? = null
 
     private val scope = CoroutineScope(Dispatchers.Default + kotlinx.coroutines.SupervisorJob())
+    private val controlMutex = Mutex()
+    private val loadGeneration = AtomicLong(0L)
+
+    @Volatile
+    private var activePlaybackGeneration = 0L
+
+    @Volatile
+    private var playingStartedForGeneration = false
     private var progressJob: Job? = null
     private val loadStartTimes = ConcurrentHashMap<String, Long>()
     private var lastLoadedTrackId: String? = null
@@ -77,6 +88,9 @@ class JvmMeloPlayer : MeloPlayer {
             player.events().addMediaPlayerEventListener(
                 object : MediaPlayerEventAdapter() {
                     override fun playing(mediaPlayer: MediaPlayer?) {
+                        if (activePlaybackGeneration == loadGeneration.get()) {
+                            playingStartedForGeneration = true
+                        }
                         _state.update {
                             it.copy(
                                 isPlaying = true,
@@ -137,8 +151,23 @@ class JvmMeloPlayer : MeloPlayer {
                     }
 
                     override fun finished(mediaPlayer: MediaPlayer?) {
-                        _state.update { it.copy(isPlaying = false, isFinished = true) }
                         stopProgressUpdate()
+                        val currentGen = loadGeneration.get()
+                        if (activePlaybackGeneration != currentGen) {
+                            return
+                        }
+                        if (!playingStartedForGeneration) {
+                            _state.update {
+                                it.copy(
+                                    isPlaying = false,
+                                    isBuffering = false,
+                                    isFinished = false,
+                                    error = "Stream ended before playback started.",
+                                )
+                            }
+                            return
+                        }
+                        _state.update { it.copy(isPlaying = false, isFinished = true) }
                     }
                 },
             )
@@ -169,40 +198,46 @@ class JvmMeloPlayer : MeloPlayer {
             )
         }
         val now = System.currentTimeMillis()
+        val gen = loadGeneration.incrementAndGet()
+        playingStartedForGeneration = false
         lastLoadedTrackId = track.id
         loadStartTimes[track.id] = now
         scope.launch(Dispatchers.IO) {
             initJob.join()
-            val player = mediaPlayer
-            if (player == null) {
-                _state.update {
-                    it.copy(
-                        currentTrack = track,
-                        isPlaying = false,
-                        isBuffering = false,
-                        error = "VLC media engine is not available. Please install VLC 64-bit.",
-                    )
-                }
-                return@launch
-            }
-            try {
-                player.controls().stop()
-                val (mediaTarget, baseOptions) = resolveMediaTarget(url)
-                val options =
-                    if (initialPositionMs > 0) {
-                        baseOptions + ":start-time=${initialPositionMs / 1000.0}"
-                    } else {
-                        baseOptions
+            controlMutex.withLock {
+                if (loadGeneration.get() != gen) return@withLock
+                val player = mediaPlayer
+                if (player == null) {
+                    _state.update {
+                        it.copy(
+                            currentTrack = track,
+                            isPlaying = false,
+                            isBuffering = false,
+                            error = "VLC media engine is not available. Please install VLC 64-bit.",
+                        )
                     }
-                player.media().play(mediaTarget, *options)
-                player.audio().setVolume(currentVolume)
-            } catch (e: Throwable) {
-                _state.update {
-                    it.copy(
-                        isBuffering = false,
-                        isPlaying = false,
-                        error = "Playback error: ${e.message}",
-                    )
+                    return@withLock
+                }
+                try {
+                    player.controls().stop()
+                    activePlaybackGeneration = gen
+                    val (mediaTarget, baseOptions) = resolveMediaTarget(url)
+                    val options =
+                        if (initialPositionMs > 0) {
+                            baseOptions + ":start-time=${initialPositionMs / 1000.0}"
+                        } else {
+                            baseOptions
+                        }
+                    player.media().play(mediaTarget, *options)
+                    player.audio().setVolume(currentVolume)
+                } catch (e: Throwable) {
+                    _state.update {
+                        it.copy(
+                            isBuffering = false,
+                            isPlaying = false,
+                            error = "Playback error: ${e.message}",
+                        )
+                    }
                 }
             }
         }
@@ -258,6 +293,8 @@ class JvmMeloPlayer : MeloPlayer {
     }
 
     override fun stop() {
+        val gen = loadGeneration.incrementAndGet()
+        playingStartedForGeneration = false
         stopProgressUpdate()
         _state.update {
             it.copy(
@@ -269,7 +306,11 @@ class JvmMeloPlayer : MeloPlayer {
         }
         scope.launch(Dispatchers.IO) {
             initJob.join()
-            mediaPlayer?.controls()?.stop()
+            controlMutex.withLock {
+                if (loadGeneration.get() == gen) {
+                    mediaPlayer?.controls()?.stop()
+                }
+            }
         }
     }
 
