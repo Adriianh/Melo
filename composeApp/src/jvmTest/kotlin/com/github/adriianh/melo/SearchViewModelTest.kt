@@ -6,6 +6,8 @@ import com.github.adriianh.core.domain.model.HistoryEntry
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
+import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.usecase.library.GetRemoteHistoryUseCase
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
@@ -27,6 +29,7 @@ import com.github.adriianh.core.domain.usecase.search.SearchSummaryUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchTracksUseCase
 import com.github.adriianh.core.domain.usecase.search.SearchVideosUseCase
 import com.github.adriianh.core.domain.usecase.settings.GetSettingsUseCase
+import com.github.adriianh.melo.ui.search.SearchFilterType
 import com.github.adriianh.melo.ui.search.SearchViewModel
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -283,5 +286,75 @@ class SearchViewModelTest {
             assertEquals(1, state.recentHistory.size)
             assertEquals("t1", state.recentHistory[0].id)
             coVerify(exactly = 0) { getRemoteHistoryUseCase() }
+        }
+
+    @Test
+    fun `songs filter loads additional pages progressively with continuation`() =
+        runTest {
+            val page2Track = sampleTrack.copy(id = "t3", title = "Clocks")
+            coEvery { searchTracksUseCase.searchPage("Coldplay", null) } returns
+                SearchPage(items = listOf(sampleTrack), continuation = "next_songs")
+            coEvery { searchTracksUseCase.searchPage("Coldplay", "next_songs") } returns
+                SearchPage(items = listOf(sampleTrack, page2Track), continuation = null)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onFilterSelected(SearchFilterType.SONGS)
+            viewModel.executeSearch("Coldplay")
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("t1"),
+                viewModel.uiState.value.songResults
+                    .map { it.id },
+            )
+            assertEquals("next_songs", viewModel.uiState.value.continuation)
+
+            viewModel.loadMoreResults()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("t1", "t3"),
+                viewModel.uiState.value.songResults
+                    .map { it.id },
+            )
+            assertEquals(null, viewModel.uiState.value.continuation)
+            assertFalse(viewModel.uiState.value.isLoadingMore)
+        }
+
+    @Test
+    fun `albums filter loads additional pages progressively with continuation`() =
+        runTest {
+            val album1 = SearchResult.Album(id = "a1", title = "Parachutes", author = "Coldplay", year = "2000", artworkUrl = null)
+            val album2 = SearchResult.Album(id = "a2", title = "X&Y", author = "Coldplay", year = "2005", artworkUrl = null)
+            coEvery { searchAlbumsUseCase.searchPage("Coldplay", null) } returns
+                SearchPage(items = listOf(album1), continuation = "next_albums")
+            coEvery { searchAlbumsUseCase.searchPage("Coldplay", "next_albums") } returns
+                SearchPage(items = listOf(album2), continuation = null)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onFilterSelected(SearchFilterType.ALBUMS)
+            viewModel.executeSearch("Coldplay")
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("a1"),
+                viewModel.uiState.value.albumResults
+                    .map { it.id },
+            )
+            assertEquals("next_albums", viewModel.uiState.value.continuation)
+
+            viewModel.loadMoreResults()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("a1", "a2"),
+                viewModel.uiState.value.albumResults
+                    .map { it.id },
+            )
+            assertEquals(null, viewModel.uiState.value.continuation)
         }
 }

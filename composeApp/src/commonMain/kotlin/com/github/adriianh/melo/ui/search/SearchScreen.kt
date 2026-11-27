@@ -229,6 +229,7 @@ fun SearchScreen(
                             SearchResultsContent(
                                 uiState = uiState,
                                 paddingValues = paddingValues,
+                                onLoadMore = viewModel::loadMoreResults,
                                 onAlbumClick = onAlbumClick,
                                 onArtistClick = onArtistClick,
                                 onPlaylistClick = onPlaylistClick,

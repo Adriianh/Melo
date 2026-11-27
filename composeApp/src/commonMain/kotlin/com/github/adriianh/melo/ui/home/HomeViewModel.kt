@@ -52,7 +52,9 @@ data class HomeUiState(
     val error: String? = null,
     val searchQuery: String = "",
     val searchResults: List<Track> = emptyList(),
+    val searchContinuation: String? = null,
     val isSearching: Boolean = false,
+    val isLoadingMoreSearch: Boolean = false,
     val isOfflineFeed: Boolean = false,
 )
 
@@ -75,6 +77,7 @@ class HomeViewModel(
 
     private var previousBaseFeed: HomeUiState? = null
     private var searchJob: Job? = null
+    private var loadMoreSearchJob: Job? = null
     private var loadFeedJob: Job? = null
 
     init {
@@ -153,16 +156,30 @@ class HomeViewModel(
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
         searchJob?.cancel()
+        loadMoreSearchJob?.cancel()
 
         if (query.isBlank()) {
-            _uiState.update { it.copy(isSearching = false, searchResults = emptyList()) }
+            _uiState.update {
+                it.copy(
+                    isSearching = false,
+                    isLoadingMoreSearch = false,
+                    searchResults = emptyList(),
+                    searchContinuation = null,
+                )
+            }
             return
         }
 
         searchJob =
             viewModelScope.launch {
                 delay(300.milliseconds)
-                _uiState.update { it.copy(isSearching = true) }
+                _uiState.update {
+                    it.copy(
+                        isSearching = true,
+                        isLoadingMoreSearch = false,
+                        searchContinuation = null,
+                    )
+                }
 
                 val isOffline =
                     _uiState.value.isOfflineFeed ||
@@ -172,11 +189,51 @@ class HomeViewModel(
                     performOfflineSearch(query)
                 } else {
                     try {
-                        val results = searchTracksUseCase(query)
-                        _uiState.update { it.copy(searchResults = results, isSearching = false) }
+                        val page = searchTracksUseCase.searchPage(query)
+                        _uiState.update {
+                            it.copy(
+                                searchResults = page.items.distinctBy { track -> track.id },
+                                searchContinuation = page.continuation,
+                                isSearching = false,
+                                isLoadingMoreSearch = false,
+                            )
+                        }
                     } catch (_: Exception) {
                         performOfflineSearch(query)
                     }
+                }
+            }
+    }
+
+    fun loadMoreSearchResults() {
+        val state = _uiState.value
+        val token = state.searchContinuation ?: return
+        val canLoadMore =
+            !state.isLoadingMoreSearch &&
+                !state.isSearching &&
+                state.searchQuery.isNotBlank() &&
+                !state.isOfflineFeed
+        if (!canLoadMore) return
+        val activeQuery = state.searchQuery
+        loadMoreSearchJob?.cancel()
+        loadMoreSearchJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoadingMoreSearch = true) }
+                try {
+                    val nextPage = searchTracksUseCase.searchPage(activeQuery, continuation = token)
+                    _uiState.update { current ->
+                        if (current.searchQuery != activeQuery) {
+                            current.copy(isLoadingMoreSearch = false)
+                        } else {
+                            current.copy(
+                                searchResults = (current.searchResults + nextPage.items).distinctBy { it.id },
+                                searchContinuation = nextPage.continuation,
+                                isLoadingMoreSearch = false,
+                            )
+                        }
+                    }
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(isLoadingMoreSearch = false) }
                 }
             }
     }
@@ -201,16 +258,26 @@ class HomeViewModel(
                         ignoreCase = true,
                     )
             }
-        _uiState.update { it.copy(searchResults = allLocal, isSearching = false) }
+        _uiState.update {
+            it.copy(
+                searchResults = allLocal,
+                searchContinuation = null,
+                isSearching = false,
+                isLoadingMoreSearch = false,
+            )
+        }
     }
 
     fun clearSearch() {
         searchJob?.cancel()
+        loadMoreSearchJob?.cancel()
         _uiState.update {
             it.copy(
                 searchQuery = "",
                 searchResults = emptyList(),
+                searchContinuation = null,
                 isSearching = false,
+                isLoadingMoreSearch = false,
             )
         }
     }

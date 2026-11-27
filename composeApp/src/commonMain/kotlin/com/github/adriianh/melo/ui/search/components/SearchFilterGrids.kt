@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:function-naming")
+
 package com.github.adriianh.melo.ui.search.components
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +18,7 @@ fun AlbumsResultsContent(
     uiState: SearchUiState,
     paddingValues: PaddingValues,
     onAlbumClick: (String) -> Unit,
+    onLoadMore: () -> Unit = {},
 ) {
     SearchResultsGrid(
         items = uiState.albumResults,
@@ -23,13 +26,16 @@ fun AlbumsResultsContent(
         paddingValues = paddingValues,
         horizontalSpacing = 14.dp,
         verticalSpacing = 14.dp,
-        key = { index, album -> "album_${index}_${album.id}" }
+        isLoadingMore = uiState.isLoadingMore,
+        hasMore = uiState.continuation != null && !uiState.isOfflineSearch,
+        onLoadMore = onLoadMore,
+        key = { index, album -> "album_${index}_${album.id}" },
     ) { album ->
         AlbumCard(
             title = album.title,
             subtitle = album.author,
             artworkUrl = album.artworkUrl,
-            onClick = { onAlbumClick(album.id) }
+            onClick = { onAlbumClick(album.id) },
         )
     }
 }
@@ -40,6 +46,7 @@ fun ArtistsResultsContent(
     paddingValues: PaddingValues,
     onArtistClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onLoadMore: () -> Unit = {},
 ) {
     SearchResultsGrid(
         items = uiState.artistResults,
@@ -48,13 +55,16 @@ fun ArtistsResultsContent(
         horizontalSpacing = 16.dp,
         verticalSpacing = 16.dp,
         modifier = modifier,
-        key = { index, artist -> "artist_${index}_${artist.id}" }
+        isLoadingMore = uiState.isLoadingMore,
+        hasMore = uiState.continuation != null && !uiState.isOfflineSearch,
+        onLoadMore = onLoadMore,
+        key = { index, artist -> "artist_${index}_${artist.id}" },
     ) { artist ->
         ArtistCircle(
             name = artist.name,
             artworkUrl = artist.artworkUrl,
             onClick = { onArtistClick(artist.id) },
-            size = 120.dp
+            size = 120.dp,
         )
     }
 }
@@ -65,6 +75,7 @@ fun PlaylistsResultsContent(
     paddingValues: PaddingValues,
     onPlaylistClick: (String, String, String?, String) -> Unit,
     modifier: Modifier = Modifier,
+    onLoadMore: () -> Unit = {},
 ) {
     SearchResultsGrid(
         items = uiState.playlistResults,
@@ -73,7 +84,10 @@ fun PlaylistsResultsContent(
         horizontalSpacing = 14.dp,
         verticalSpacing = 14.dp,
         modifier = modifier,
-        key = { index, playlist -> "pl_${index}_${playlist.id}" }
+        isLoadingMore = uiState.isLoadingMore,
+        hasMore = uiState.continuation != null && !uiState.isOfflineSearch,
+        onLoadMore = onLoadMore,
+        key = { index, playlist -> "pl_${index}_${playlist.id}" },
     ) { playlist ->
         AlbumCard(
             title = playlist.title,
@@ -84,9 +98,9 @@ fun PlaylistsResultsContent(
                     playlist.id,
                     playlist.title,
                     playlist.artworkUrl,
-                    playlist.author
+                    playlist.author,
                 )
-            }
+            },
         )
     }
 }
@@ -97,6 +111,7 @@ fun VideosResultsContent(
     paddingValues: PaddingValues,
     queueViewModel: QueueViewModel,
     modifier: Modifier = Modifier,
+    onLoadMore: () -> Unit = {},
 ) {
     SearchResultsGrid(
         items = uiState.videoResults,
@@ -105,13 +120,16 @@ fun VideosResultsContent(
         horizontalSpacing = 14.dp,
         verticalSpacing = 14.dp,
         modifier = modifier,
-        key = { index, track -> "video_${index}_${track.id}" }
+        isLoadingMore = uiState.isLoadingMore,
+        hasMore = uiState.continuation != null && !uiState.isOfflineSearch,
+        onLoadMore = onLoadMore,
+        key = { index, track -> "video_${index}_${track.id}" },
     ) { track ->
         VideoCard(
             title = track.title,
             subtitle = track.artist,
             artworkUrl = track.artworkUrl,
-            onClick = { queueViewModel.playTrack(track) }
+            onClick = { queueViewModel.playTrack(track) },
         )
     }
 }

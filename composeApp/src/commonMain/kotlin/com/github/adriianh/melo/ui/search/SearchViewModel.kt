@@ -78,6 +78,8 @@ data class SearchUiState(
     val playlistResults: List<SearchResult.Playlist> = emptyList(),
     val videoResults: List<Track> = emptyList(),
     val isSearching: Boolean = false,
+    val isLoadingMore: Boolean = false,
+    val continuation: String? = null,
     val exploreSections: List<HomeSection> = emptyList(),
     val isLoadingExplore: Boolean = true,
     val moodAndGenres: List<MoodAndGenreGroup> = emptyList(),
@@ -130,6 +132,7 @@ class SearchViewModel(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job = Job()
+    private var loadMoreJob: Job? = null
     private var suggestionsJob: Job = Job()
 
     private fun resetResults() {
@@ -144,6 +147,8 @@ class SearchViewModel(
                 videoResults = emptyList(),
                 suggestions = emptyList(),
                 isSearching = false,
+                isLoadingMore = false,
+                continuation = null,
                 isOffline = isOffline,
                 isOfflineSearch = isOffline,
             )
@@ -187,6 +192,7 @@ class SearchViewModel(
             val currentQuery = _uiState.value.query
             if (currentQuery.isNotBlank()) {
                 searchJob.cancel()
+                loadMoreJob?.cancel()
                 suggestionsJob.cancel()
                 performOfflineSearch(currentQuery)
             } else {
@@ -197,6 +203,7 @@ class SearchViewModel(
             val currentQuery = _uiState.value.query
             if (currentQuery.isNotBlank()) {
                 searchJob.cancel()
+                loadMoreJob?.cancel()
                 suggestionsJob.cancel()
                 performSearch(currentQuery, _uiState.value.selectedFilter)
             } else {
@@ -210,6 +217,7 @@ class SearchViewModel(
     fun onQueryChange(query: String) {
         _uiState.update { it.copy(query = query) }
         searchJob.cancel()
+        loadMoreJob?.cancel()
         suggestionsJob.cancel()
 
         if (query.isBlank()) {
@@ -254,6 +262,7 @@ class SearchViewModel(
         val trimmed = query.trim()
         if (trimmed.isBlank()) return
         searchJob.cancel()
+        loadMoreJob?.cancel()
         suggestionsJob.cancel()
         _uiState.update { it.copy(query = trimmed, suggestions = emptyList()) }
 
@@ -267,7 +276,7 @@ class SearchViewModel(
         query: String,
         filter: SearchFilterType,
     ) {
-        _uiState.update { it.copy(isSearching = true) }
+        _uiState.update { it.copy(isSearching = true, isLoadingMore = false, continuation = null) }
         if (isEffectivelyOffline()) {
             performOfflineSearch(query)
             return
@@ -282,12 +291,13 @@ class SearchViewModel(
                             it.copy(
                                 summarySections = summary,
                                 isSearching = false,
+                                continuation = null,
                                 isOffline = false,
                                 isOfflineSearch = false,
                             )
                         }
                     } else {
-                        val tracks = searchTracksUseCase(query)
+                        val tracks = searchTracksUseCase.searchPage(query).items
                         val fallbackSections =
                             if (tracks.isNotEmpty()) {
                                 listOf(
@@ -305,6 +315,7 @@ class SearchViewModel(
                             it.copy(
                                 summarySections = fallbackSections,
                                 isSearching = false,
+                                continuation = null,
                                 isOffline = false,
                                 isOfflineSearch = false,
                             )
@@ -313,10 +324,11 @@ class SearchViewModel(
                 }
 
                 SearchFilterType.SONGS -> {
-                    val results = searchTracksUseCase(query)
+                    val page = searchTracksUseCase.searchPage(query)
                     _uiState.update {
                         it.copy(
-                            songResults = results,
+                            songResults = page.items.distinctBy { track -> track.id },
+                            continuation = page.continuation,
                             isSearching = false,
                             isOffline = false,
                             isOfflineSearch = false,
@@ -325,10 +337,11 @@ class SearchViewModel(
                 }
 
                 SearchFilterType.ALBUMS -> {
-                    val results = searchAlbumsUseCase(query)
+                    val page = searchAlbumsUseCase.searchPage(query)
                     _uiState.update {
                         it.copy(
-                            albumResults = results,
+                            albumResults = page.items.distinctBy { album -> album.id },
+                            continuation = page.continuation,
                             isSearching = false,
                             isOffline = false,
                             isOfflineSearch = false,
@@ -337,10 +350,11 @@ class SearchViewModel(
                 }
 
                 SearchFilterType.ARTISTS -> {
-                    val results = searchArtistsUseCase(query)
+                    val page = searchArtistsUseCase.searchPage(query)
                     _uiState.update {
                         it.copy(
-                            artistResults = results,
+                            artistResults = page.items.distinctBy { artist -> artist.id },
+                            continuation = page.continuation,
                             isSearching = false,
                             isOffline = false,
                             isOfflineSearch = false,
@@ -349,10 +363,11 @@ class SearchViewModel(
                 }
 
                 SearchFilterType.PLAYLISTS -> {
-                    val results = searchPlaylistsUseCase(query)
+                    val page = searchPlaylistsUseCase.searchPage(query)
                     _uiState.update {
                         it.copy(
-                            playlistResults = results,
+                            playlistResults = page.items.distinctBy { playlist -> playlist.id },
+                            continuation = page.continuation,
                             isSearching = false,
                             isOffline = false,
                             isOfflineSearch = false,
@@ -361,10 +376,11 @@ class SearchViewModel(
                 }
 
                 SearchFilterType.VIDEOS -> {
-                    val results = searchVideosUseCase(query)
+                    val page = searchVideosUseCase.searchPage(query)
                     _uiState.update {
                         it.copy(
-                            videoResults = results,
+                            videoResults = page.items.distinctBy { video -> video.id },
+                            continuation = page.continuation,
                             isSearching = false,
                             isOffline = false,
                             isOfflineSearch = false,
@@ -376,6 +392,51 @@ class SearchViewModel(
             loadRecentSearches()
         } catch (_: Exception) {
             performOfflineSearch(query)
+        }
+    }
+
+    fun loadMoreResults() {
+        val state = _uiState.value
+        val token = state.continuation ?: return
+        val activeFilter = state.selectedFilter
+        val activeQuery = state.query
+        val canLoadMore = canLoadMoreSearch(state)
+        if (!canLoadMore) return
+
+        loadMoreJob?.cancel()
+        loadMoreJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoadingMore = true) }
+                try {
+                    fetchMoreForFilter(activeQuery, activeFilter, token)
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(isLoadingMore = false) }
+                }
+            }
+    }
+
+    private suspend fun fetchMoreForFilter(
+        query: String,
+        filter: SearchFilterType,
+        token: String,
+    ) {
+        val update =
+            fetchNextFilterPage(
+                query = query,
+                filter = filter,
+                token = token,
+                searchTracksUseCase = searchTracksUseCase,
+                searchAlbumsUseCase = searchAlbumsUseCase,
+                searchArtistsUseCase = searchArtistsUseCase,
+                searchPlaylistsUseCase = searchPlaylistsUseCase,
+                searchVideosUseCase = searchVideosUseCase,
+            )
+        _uiState.update { current ->
+            if (current.query != query || current.selectedFilter != filter) {
+                current.copy(isLoadingMore = false)
+            } else {
+                update(current).copy(isLoadingMore = false)
+            }
         }
     }
 
@@ -410,6 +471,8 @@ class SearchViewModel(
                 videoResults = emptyList(),
                 summarySections = summarySections,
                 isSearching = false,
+                isLoadingMore = false,
+                continuation = null,
                 isOffline = true,
                 isOfflineSearch = true,
             )
@@ -428,6 +491,7 @@ class SearchViewModel(
 
     fun clearQuery() {
         searchJob.cancel()
+        loadMoreJob?.cancel()
         suggestionsJob.cancel()
         _uiState.update { it.copy(query = "") }
         resetResults()
@@ -639,6 +703,7 @@ class SearchViewModel(
     ) {
         if (isEffectivelyOffline()) return
         searchJob.cancel()
+        loadMoreJob?.cancel()
         suggestionsJob.cancel()
         resetResults()
         _uiState.update {
@@ -666,6 +731,7 @@ class SearchViewModel(
 
     fun exitBrowsing() {
         searchJob.cancel()
+        loadMoreJob?.cancel()
         _uiState.update {
             it.copy(
                 browseCategoryResult = null,
@@ -676,6 +742,80 @@ class SearchViewModel(
         loadRecentHistory(isOffline = isEffectivelyOffline())
     }
 }
+
+private fun canLoadMoreSearch(state: SearchUiState): Boolean {
+    val isBusy = state.isLoadingMore || state.isSearching || state.isOfflineSearch
+    return !isBusy && state.query.isNotBlank() && state.selectedFilter != SearchFilterType.ALL
+}
+
+private suspend fun fetchNextFilterPage(
+    query: String,
+    filter: SearchFilterType,
+    token: String,
+    searchTracksUseCase: SearchTracksUseCase,
+    searchAlbumsUseCase: SearchAlbumsUseCase,
+    searchArtistsUseCase: SearchArtistsUseCase,
+    searchPlaylistsUseCase: SearchPlaylistsUseCase,
+    searchVideosUseCase: SearchVideosUseCase,
+): (SearchUiState) -> SearchUiState =
+    when (filter) {
+        SearchFilterType.SONGS -> {
+            val page = searchTracksUseCase.searchPage(query, continuation = token)
+            val transform: (SearchUiState) -> SearchUiState = { state ->
+                state.copy(
+                    songResults = (state.songResults + page.items).distinctBy { it.id },
+                    continuation = page.continuation,
+                )
+            }
+            transform
+        }
+
+        SearchFilterType.ALBUMS -> {
+            val page = searchAlbumsUseCase.searchPage(query, continuation = token)
+            val transform: (SearchUiState) -> SearchUiState = { state ->
+                state.copy(
+                    albumResults = (state.albumResults + page.items).distinctBy { it.id },
+                    continuation = page.continuation,
+                )
+            }
+            transform
+        }
+
+        SearchFilterType.ARTISTS -> {
+            val page = searchArtistsUseCase.searchPage(query, continuation = token)
+            val transform: (SearchUiState) -> SearchUiState = { state ->
+                state.copy(
+                    artistResults = (state.artistResults + page.items).distinctBy { it.id },
+                    continuation = page.continuation,
+                )
+            }
+            transform
+        }
+
+        SearchFilterType.PLAYLISTS -> {
+            val page = searchPlaylistsUseCase.searchPage(query, continuation = token)
+            val transform: (SearchUiState) -> SearchUiState = { state ->
+                state.copy(
+                    playlistResults = (state.playlistResults + page.items).distinctBy { it.id },
+                    continuation = page.continuation,
+                )
+            }
+            transform
+        }
+
+        SearchFilterType.VIDEOS -> {
+            val page = searchVideosUseCase.searchPage(query, continuation = token)
+            val transform: (SearchUiState) -> SearchUiState = { state ->
+                state.copy(
+                    videoResults = (state.videoResults + page.items).distinctBy { it.id },
+                    continuation = page.continuation,
+                )
+            }
+            transform
+        }
+
+        SearchFilterType.ALL -> { state -> state }
+    }
 
 private fun buildOfflineSummarySections(
     songs: List<Track>,

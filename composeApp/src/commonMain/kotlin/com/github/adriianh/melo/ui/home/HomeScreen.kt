@@ -212,6 +212,9 @@ fun HomeScreen(
                             HomeSearchResultsView(
                                 activeAccent = activeAccent,
                                 isSearching = uiState.isSearching,
+                                isLoadingMore = uiState.isLoadingMoreSearch,
+                                hasMore = uiState.searchContinuation != null,
+                                onLoadMore = viewModel::loadMoreSearchResults,
                                 results = uiState.searchResults,
                                 likedSongs = libraryState.likedSongs,
                                 queueViewModel = queueViewModel,

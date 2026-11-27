@@ -10,6 +10,7 @@ import com.github.adriianh.core.domain.model.HomeSectionType
 import com.github.adriianh.core.domain.model.OfflineTrack
 import com.github.adriianh.core.domain.model.Settings
 import com.github.adriianh.core.domain.model.Track
+import com.github.adriianh.core.domain.model.search.SearchPage
 import com.github.adriianh.core.domain.model.search.SearchResult
 import com.github.adriianh.core.domain.network.NetworkMonitor
 import com.github.adriianh.core.domain.usecase.offline.GetOfflineTracksUseCase
@@ -446,5 +447,60 @@ class HomeViewModelTest {
 
             coVerify(atLeast = 2) { getHomeUseCase(any(), any()) }
             assertFalse(viewModel.uiState.value.isRefreshing)
+        }
+
+    @Test
+    fun `search pagination appends deduplicated tracks until continuation is null`() =
+        runTest {
+            val track1 = testTrack("t1", "Song 1")
+            val track2 = testTrack("t2", "Song 2")
+            val track3 = testTrack("t3", "Song 3")
+            coEvery { homeFeedCache.get() } returns sampleCachedFeed
+            coEvery { getHomeUseCase(any(), any()) } returns sampleCachedFeed
+            coEvery { searchTracksUseCase.searchPage("rock", null) } returns
+                SearchPage(items = listOf(track1, track2), continuation = "token_2")
+            coEvery { searchTracksUseCase.searchPage("rock", "token_2") } returns
+                SearchPage(items = listOf(track2, track3), continuation = null)
+
+            val viewModel =
+                HomeViewModel(
+                    getHomeUseCase = getHomeUseCase,
+                    getExploreUseCase = getExploreUseCase,
+                    getChartsUseCase = getChartsUseCase,
+                    getTrendingUseCase = getTrendingUseCase,
+                    searchTracksUseCase = searchTracksUseCase,
+                    getSettingsUseCase = getSettingsUseCase,
+                    getOfflineTracksUseCase = getOfflineTracksUseCase,
+                    scanLocalTracksUseCase = scanLocalTracksUseCase,
+                    getRecentTracksUseCase = getRecentTracksUseCase,
+                    homeFeedCache = homeFeedCache,
+                    ioDispatcher = testDispatcher,
+                )
+
+            advanceUntilIdle()
+            viewModel.onSearchQueryChange("rock")
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("t1", "t2"),
+                viewModel.uiState.value.searchResults
+                    .map { it.id },
+            )
+            assertEquals("token_2", viewModel.uiState.value.searchContinuation)
+
+            viewModel.loadMoreSearchResults()
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf("t1", "t2", "t3"),
+                viewModel.uiState.value.searchResults
+                    .map { it.id },
+            )
+            assertEquals(null, viewModel.uiState.value.searchContinuation)
+            assertFalse(viewModel.uiState.value.isLoadingMoreSearch)
+
+            viewModel.loadMoreSearchResults()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { searchTracksUseCase.searchPage("rock", "token_2") }
         }
 }
