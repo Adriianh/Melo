@@ -99,6 +99,7 @@ graalvmNative {
                 "--no-fallback",
                 "--install-exit-handlers",
                 "--initialize-at-build-time=io.ktor",
+                "--initialize-at-run-time=io.ktor.util.NonceKt",
                 "--initialize-at-build-time=kotlin",
                 "--initialize-at-run-time=kotlin.uuid.SecureRandomHolder",
                 "--initialize-at-run-time=io.github.selemba1000",
