@@ -22,7 +22,7 @@ kotlin {
     jvm()
 
     // iOS targets
-    iosX64()
+    // iosX64 is no longer published by Compose Multiplatform 1.11+ (Apple x86_64 dropped).
     iosArm64()
     iosSimulatorArm64()
 
