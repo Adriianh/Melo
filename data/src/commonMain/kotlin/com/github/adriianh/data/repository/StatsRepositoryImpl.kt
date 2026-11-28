@@ -60,7 +60,7 @@ class StatsRepositoryImpl(database: MeloDatabase) : StatsRepository {
                 since = period.sinceEpochMillis(),
             ).executeAsOne()
             ListeningStats(
-                totalMs = row.total_ms,
+                totalMs = row.total_ms!!,
                 totalPlays = row.total_plays.toInt(),
                 uniqueTracks = row.unique_tracks.toInt(),
                 uniqueArtists = row.unique_artists.toInt(),
