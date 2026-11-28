@@ -34,10 +34,10 @@ media3 = "1.11.1"
 vlcj = "4.12.1"
 agp = "9.5.3"
 chaquopy = "17.2.0"
-compose-plugin = "1.12.2"
 androidx-activityCompose = "1.13.0"
 kmpalette = "3.1.0"
 reorderable = "3.1.0"
+jnaPlatform = "5.19.1"
 
 
 [libraries]
@@ -76,7 +76,6 @@ koinAndroid = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koinCompose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koinComposeViewModel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeGradlePlugin" }
 tambouiTui = { module = "dev.tamboui:tamboui-tui", version.ref = "tamboui" }
 tambouiToolkit = { module = "dev.tamboui:tamboui-toolkit", version.ref = "tamboui" }
 tamboouiJline = { module = "dev.tamboui:tamboui-jline3-backend", version.ref = "tamboui" }
@@ -96,7 +95,6 @@ brotli = { module = "org.brotli:dec", version.ref = "brotli" }
 newpipeExtractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipe" }
 junit = { module = "junit:junit", version.ref = "junit" }
 ktorClientDarwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
-ktorClientAndroid = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 sqldelightAndroidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelightNativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
@@ -105,29 +103,22 @@ androidx-media3-session = { module = "androidx.media3:media3-session", version.r
 coilCompose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coilNetworkKtor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 vlcj = { module = "uk.co.caprica:vlcj", version.ref = "vlcj" }
-jnaPlatform = { module = "net.java.dev.jna:jna-platform", version = "5.14.0" }
+jnaPlatform = { module = "net.java.dev.jna:jna-platform", version.ref = "jnaPlatform" }
 ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeGradlePlugin" }
 ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeGradlePlugin" }
 ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeGradlePlugin" }
 composeRuntime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeGradlePlugin" }
 composeFoundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeGradlePlugin" }
 composeResources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeGradlePlugin" }
-composeUiToolingPreview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "composeGradlePlugin" }
 kmpaletteCore = { module = "com.kmpalette:kmpalette-core", version.ref = "kmpalette" }
 kmpaletteByteArray = { module = "com.kmpalette:extensions-bytearray", version.ref = "kmpalette" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 
 
 [bundles]
-kotlinxEcosystem = ["kotlinxDatetime", "kotlinxSerialization", "kotlinxCoroutines"]
 ktor = ["ktorClientCore", "ktorClientCio", "ktorClientContentNegotiation", "ktorSerializationKotlinxJson", "ktorClientLogging"]
 tamboui = ["tambouiTui", "tambouiToolkit", "tamboouiJline", "tambouiImage"]
 
 [plugins]
 graalvmNative = { id = "org.graalvm.buildtools.native", version.ref = "graalvm" }
-androidApplication = { id = "com.android.application", version.ref = "agp" }
-androidLibrary = { id = "com.android.library", version.ref = "agp" }
-androidKotlinMultiplatform = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 chaquopy = { id = "com.chaquo.python", version.ref = "chaquopy" }
-composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
-composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
